@@ -1,0 +1,63 @@
+{
+  "lane": "anchor-batch",
+  "description": "Style anchor batch — 10 Compact human crew. DreamShaper XL for painterly rendering. Prompts grounded in spaceship life, not Earth clothes.",
+  "style_prefix": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, thick paint texture, slightly textured brushwork not smooth CG, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background",
+  "negative": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, modern earth clothes, contemporary fashion, jeans, sneakers, t-shirt logo, brand name, medieval, fantasy armor, superhero",
+  "subjects": [
+    {
+      "id": "anchor_01_deckhand",
+      "prompt": "human male cargo handler in his 30s with stubble and bags under his eyes from rotating shift cycles, wearing a faded charcoal shipboard thermal undersuit with integrated pressure seals at the wrists and neck, a reinforced cargo harness with magnetic tool clips and a battered handheld cargo scanner holstered at the hip, heavy mag-lock work boots with scuffed steel toes, a thin chain holding a laminated ship ID tag, the undersuit fabric is a synthetic polymer weave that has been through hundreds of decon cycles showing fading at stress points and a heat-bonded repair patch on the left shoulder, a small radiation dosimeter badge clipped to the chest"
+    },
+    {
+      "id": "anchor_02_mechanic",
+      "prompt": "human female ship engineer in her late 20s with dark hair tied back and reactor coolant residue staining her hands and forearms, wearing oil-stained khaki shipboard coveralls with a faded vessel registry number stenciled across the back, the coveralls unzipped to the waist with the top half tied around her hips by the sleeves revealing a grey thermal compression undershirt, a leather tool roll slung across her chest containing plasma cutter tips and circuit probes, welding visor pushed up on her forehead, heavy insulated deck boots rated for hull work, burn marks on the cuff from arc welding"
+    },
+    {
+      "id": "anchor_03_officer",
+      "prompt": "human male fleet officer in his late 40s with close-cropped greying hair and deep lines from years under artificial lighting, wearing a pressed steel-blue shipboard uniform jacket with a rigid high collar and two tarnished silver rank tabs at the collar points, a diagonal shoulder strap connecting to a slim sidearm holster, charcoal uniform trousers with a regulation crease, black composite-sole shipboard shoes, a compact data slate clipped to his belt in a worn polymer case, the jacket fabric is a woven composite that was crisp once but shows pilling at the elbows and a subtle shine at pressure points from years of wear"
+    },
+    {
+      "id": "anchor_04_pilot",
+      "prompt": "human female shuttle pilot in her 30s with a lean build and short practical hair buzzed at the sides, wearing a faded olive pressure-rated flight suit with ship and mission patches heat-bonded onto the shoulders and chest, a worn quick-release flight harness with emergency beacon clips across the torso, fingerless interface gloves with conductive grip pads for cockpit controls, lightweight zero-g rated boots with ankle locks, a pair of heads-up flight goggles hanging around her neck, the flight suit shows salt stains at the collar and the patches are curling at the edges from heat exposure"
+    },
+    {
+      "id": "anchor_05_medic",
+      "prompt": "human male shipboard medic in his 50s with wire-rimmed glasses and hands that do not shake, wearing a faded cream-white medical coat over a charcoal thermal undersuit, the coat has been through two hundred autoclave cycles and has turned from white to a warm ivory with faint chemical stains that never fully came out, a compact trauma pack in a scuffed hard-shell case mag-locked to his hip, sterile gloves tucked into a breast pocket, a biometric scanner pendant around his neck on a lanyard, plain black non-slip medical deck shoes"
+    },
+    {
+      "id": "anchor_06_commander",
+      "prompt": "human female ship commander in her late 50s with silver hair pulled back severely and a face that has made hard calls under pressure for thirty years, wearing a long navy bridge coat over a steel-blue uniform with tarnished gold shoulder boards and cuff rings, the coat reaches mid-calf and shows fraying at the hem from years of narrow corridors and airlock thresholds, a rigid encrypted document case in one hand, polished but deeply scuffed composite boots, an antique brass chronometer on her wrist that is the only non-regulation item she carries, everything about her says institutional authority worn like a second skin"
+    },
+    {
+      "id": "anchor_07_galley_chief",
+      "prompt": "human male ship galley chief in his 40s with thick forearms and a shaved head, wearing a stained off-white shipboard galley apron over grey thermal work clothes, the apron has scorch marks from a galley fire two tours ago and protein paste stains that autoclave cannot fully remove, a towel tucked into the apron string, rubber-soled anti-slip galley clogs, a cheap ship-issue digital chronometer on his wrist, rolled-up sleeves showing a faded tattoo of a vessel registry number on his inner forearm, he feeds thirty crew from a galley the size of an airlock"
+    },
+    {
+      "id": "anchor_08_security",
+      "prompt": "human female shipboard security officer in her 30s with a muscular build and a scar across her chin from a boarding action, wearing a dark charcoal ballistic vest over a steel-blue uniform shirt with the sleeves rolled to mid-forearm, black reinforced shipboard trousers with armored knee inserts, heavy mag-lock boots, a compact energy sidearm in a thigh-mounted retention holster, a ship security comm unit clipped to the vest shoulder strap, a restraint kit pouch on the back of the belt, no rank insignia visible only a security department patch with a hull breach response certification tab"
+    },
+    {
+      "id": "anchor_09_free_trader",
+      "prompt": "human male independent free trader in his 40s with a weathered face and the look of someone who has been through customs on forty different stations, wearing a faded brown leather flight jacket with mismatched patches from ports and fuel stops over a grey thermal henley, dark cargo trousers with too many utility pockets half of them stuffed with data chits and docking receipts, scuffed leather boots that were quality once before ten thousand hours of deck plating wore them down, a personal comm device clipped to his collar, a data pad in a worn belt holster, no uniform no insignia no affiliation just a man and his ship"
+    },
+    {
+      "id": "anchor_10_dock_loader",
+      "prompt": "human female dockside cargo loader in her 20s with strong shoulders and hands callused from grav-clamp handles, wearing a high-visibility orange safety hardshell over a dirty charcoal thermal undersuit, heavy reinforced vacuum-rated work gloves clipped to a belt ring, steel-toe mag-lock boots caked with cargo dust and docking bay grime, a half-face respirator hanging around her neck for atmo-breach protocols, safety goggles pushed up on her forehead, the hardshell vest is scuffed and the hazard strips are peeling from UV exposure under station floods, she loads freight in partial vacuum for a living"
+    }
+  ],
+  "variations": [
+    {"id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 0.8}], "note": "ClassipeintXL at 0.8 — strong painterly push"},
+    {"id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "ClassipeintXL at 1.0 — maximum painterly"},
+    {"id": "v3", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 0.8}, {"name": "DetailTweakerXL.safetensors", "weight": 0.3}], "seed_offset": 1000, "note": "Painterly + detail texture"}
+  ],
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 9900
+  }
+}

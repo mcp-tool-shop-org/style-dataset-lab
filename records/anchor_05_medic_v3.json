@@ -1,0 +1,60 @@
+{
+  "id": "anchor_05_medic_v3",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:05:11.573Z",
+  "asset_path": "outputs/approved/anchor_05_medic_v3.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1385855
+  },
+  "provenance": {
+    "workflow_id": "anchor-batch",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 0.8
+      },
+      {
+        "name": "DetailTweakerXL.safetensors",
+        "weight": 0.3
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, thick paint texture, slightly textured brushwork not smooth CG, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male shipboard medic in his 50s with wire-rimmed glasses and hands that do not shake, wearing a faded cream-white medical coat over a charcoal thermal undersuit, the coat has been through two hundred autoclave cycles and has turned from white to a warm ivory with faint chemical stains that never fully came out, a compact trauma pack in a scuffed hard-shell case mag-locked to his hip, sterile gloves tucked into a breast pocket, a biometric scanner pendant around his neck on a lanyard, plain black non-slip medical deck shoes",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, modern earth clothes, contemporary fashion, jeans, sneakers, t-shirt logo, brand name, medieval, fantasy armor, superhero",
+    "seed": 10914,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 9372,
+    "gpu_model": "RTX 5080",
+    "batch_index": 14
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T21:35:31.456Z",
+    "explanation": "Medical coat, stethoscope, black gloves. Ship corridor. Worn but competent.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.85,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

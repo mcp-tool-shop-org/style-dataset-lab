@@ -1,0 +1,56 @@
+{
+  "id": "anchor_09_free_trader_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:06:43.300Z",
+  "asset_path": "outputs/approved/anchor_09_free_trader_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1506531
+  },
+  "provenance": {
+    "workflow_id": "anchor-batch",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 0.8
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, thick paint texture, slightly textured brushwork not smooth CG, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male independent free trader in his 40s with a weathered face and the look of someone who has been through customs on forty different stations, wearing a faded brown leather flight jacket with mismatched patches from ports and fuel stops over a grey thermal henley, dark cargo trousers with too many utility pockets half of them stuffed with data chits and docking receipts, scuffed leather boots that were quality once before ten thousand hours of deck plating wore them down, a personal comm device clipped to his collar, a data pad in a worn belt holster, no uniform no insignia no affiliation just a man and his ship",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, modern earth clothes, contemporary fashion, jeans, sneakers, t-shirt logo, brand name, medieval, fantasy armor, superhero",
+    "seed": 9924,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 9098,
+    "gpu_model": "RTX 5080",
+    "batch_index": 24
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T21:35:06.541Z",
+    "explanation": "Flight jacket with patches in ship cockpit. Worn leather, mission badges. Strong independent spacer feel.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.9,
+      "faction_read": 0.85,
+      "wear_level": 0.9,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.75
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

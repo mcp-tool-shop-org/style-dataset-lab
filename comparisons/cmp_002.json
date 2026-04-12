@@ -1,14 +1,14 @@
 {
   "id": "cmp_002",
-  "asset_a_id": "health_potion_base",
-  "asset_b_id": "health_potion_icon_mid",
-  "asset_a_path": "outputs/approved/health_potion_base.png",
-  "asset_b_path": "outputs/rejected/health_potion_icon_mid.png",
+  "asset_a_id": "anchor_06_commander_v2",
+  "asset_b_id": "anchor_06_commander_v1",
+  "asset_a_path": "outputs/approved/anchor_06_commander_v2.png",
+  "asset_b_path": "outputs/approved/anchor_06_commander_v1.png",
   "chosen": "a",
   "source": "human",
-  "reasoning": "Base is a single bottle, icon_mid shows three identical bottles side by side. Single item rule violation makes this an easy call.",
+  "reasoning": "v2 shows the commander in a full ship corridor with control panels — sells the environment. v1 has cleaner composition but less context. The coat reads the same but v2 feels more embedded in the world.",
   "criteria_scores": {},
   "rubric_citations": [],
   "reviewer": "human:mike",
-  "reviewed_at": "2026-04-12T19:20:07.384Z"
+  "reviewed_at": "2026-04-12T21:35:56.126Z"
 }

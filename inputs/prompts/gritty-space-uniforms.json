@@ -1,0 +1,70 @@
+{
+  "lane": "gritty-space-uniforms",
+  "description": "Gritty space uniforms and costume design. Compact humans + Veshan reptilians across rank tiers. Firefly/Alien aesthetic.",
+  "style_prefix": "semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, full body visible, front-facing view, isolated on plain dark grey background",
+  "negative": "photorealistic, photograph, 3d render, smooth CG, anime, cartoon, chibi, bright saturated colors, clean pristine surfaces, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, text, watermark, blurry, low quality, extra limbs, deformed, star trek uniform, spandex, superhero suit, neon glow, lens flare, generic sci-fi",
+  "subjects": [
+    {
+      "id": "compact_deckhand_male",
+      "prompt": "human male spacer in his 30s with tired eyes and calloused hands, wearing plain charcoal regulation thermal undersuit with no insignia, scuffed work boots, tool belt with magnetic clips, the fabric is synthetic weave that has been washed dozens of times and shows fading at the elbows and knees, utilitarian and anonymous, the kind of person who keeps a cargo hauler running between ports"
+    },
+    {
+      "id": "compact_deckhand_female",
+      "prompt": "human female spacer in her 40s with cropped practical hair and grease under her fingernails, wearing plain charcoal regulation thermal undersuit with no insignia, heavy-soled magnetic boots, utility pouch on hip, the undersuit shows repair patches at one shoulder where the seam was re-bonded, she looks like she has done this job for fifteen years and will do it for fifteen more"
+    },
+    {
+      "id": "compact_officer_male",
+      "prompt": "human male officer in his 50s with a lined face and regulation haircut going grey, wearing pressed steel-blue uniform jacket with high collar and silver rank tabs on the collar points, department patches on both shoulders, matte polymer sidearm holstered at right hip, data tablet case on belt, the jacket is clean but not new with slight wear at the cuffs, posture is rigid and controlled"
+    },
+    {
+      "id": "compact_officer_female",
+      "prompt": "human female officer in her 30s with hair pulled back severely, wearing pressed steel-blue uniform jacket with high collar and silver rank tabs, white undershirt visible at the throat, department patch on left shoulder, document folder tucked under one arm, the fabric is pressed composite with a slight sheen that says regulation-issue not luxury, stance is stiff and bureaucratic"
+    },
+    {
+      "id": "compact_commander",
+      "prompt": "human male commander in his 60s with weathered face and deliberate posture, wearing long navy overcoat over steel-blue uniform with gold shoulder boards and polished boots, rigid document case in left hand, the coat shows subtle wear at the hem from years of corridors and docking bays, gold trim is tarnished not gleaming, this is institutional authority worn like a second skin not a costume"
+    },
+    {
+      "id": "veshan_unblooded",
+      "prompt": "tall broad reptilian alien with dark green-grey overlapping scales, heavy brow ridges over amber slit-pupil eyes, bony crest ridge from brow to crown, lipless jaw with visible teeth, thick muscular tail hanging behind, wearing minimal cured leather vest with no armor plates and no house markings, bare scaled arms showing natural scale patterns, wide plantigrade stance, young and unproven, the leather is simple and functional with visible stitching"
+    },
+    {
+      "id": "veshan_warrior",
+      "prompt": "tall broad reptilian alien with dark green-grey overlapping scales, heavy brow ridges over amber slit-pupil eyes, bony crest ridge, thick tail, barrel chest with natural forward lean, wearing dark bronze chest plate and pauldrons shaped to follow the natural ridges of the scales beneath, crimson house sash tied at waist over cured dark leather underpadding, small house badge riveted to left shoulder, a heavy blade sheathed at the hip, the metal shows forge hammer marks and one deep gouge from a past fight"
+    },
+    {
+      "id": "veshan_champion",
+      "prompt": "tall imposing reptilian alien with dark green-grey scales scarred from many battles, heavy brow ridges over fierce amber slit-pupil eyes, prominent bony crest ridge with a metal crest-cap bolted to it, thick scarred tail, wearing heavy master-forged plate armor in dark bronze with gold trim and crimson ceremonial cape split at the back for the tail, full house heraldry etched across the chest plate, honor tokens hanging from belt on metal links, a named weapon with an ornate pommel at the hip, every plate shows intentional imperfections from the house smith"
+    },
+    {
+      "id": "veshan_warrior_female",
+      "prompt": "tall broad female reptilian alien with olive-green overlapping scales, heavy brow ridges over amber slit-pupil eyes, slightly narrower crest ridge than male, muscular tail, wearing dark bronze chest plate shaped for her frame over cured leather, single crimson sash at waist, house badge on shoulder, a curved cleaver-blade at her hip, the armor plates are layered over the natural scale ridges with visible rivets, she stands with the same aggressive forward lean as all Veshan"
+    },
+    {
+      "id": "compact_deckhand_varied",
+      "prompt": "human male spacer of east asian descent in his 20s with short black hair and an old burn scar on his neck, wearing charcoal regulation thermal undersuit with the sleeves pushed up to the elbows showing forearm tattoo of a ship registry number, magnetic boots, a personal charm hanging from the tool belt, the undersuit has a replaced zipper pull and darker patches where spills were cleaned but stained, working class and young and already tired"
+    },
+    {
+      "id": "compact_petty_officer",
+      "prompt": "human female petty officer of west african descent in her 40s with close-cropped hair, wearing steel-blue uniform with white trim at collar and cuffs, shoulder-mounted radio unit, double bar pin at collar, department patch on left shoulder, belt with regulation pouches, the uniform is a step above deckhand issue but still clearly mass-produced, posture suggests someone who gives orders to deckhands and takes them from officers"
+    },
+    {
+      "id": "veshan_unblooded_alt",
+      "prompt": "young reptilian alien with slate-grey scales instead of the usual green, heavy brow ridges, small undeveloped crest ridge, amber eyes with uncertainty in the stance, wearing basic cured hide vest and leather leg wraps, no house markings, no weapons, bare clawed feet on the ground, the hide is stiff and cheap, clearly bottom-tier issue, the tail hangs low showing submission or nervousness"
+    }
+  ],
+  "variations": [
+    {"id": "jugg_base", "loras": [], "note": "JuggernautXL raw — detailed realistic baseline"},
+    {"id": "jugg_detail", "loras": [{"name": "DetailTweakerXL.safetensors", "weight": 0.4}], "note": "JuggernautXL + detail push for surface texture"}
+  ],
+  "defaults": {
+    "checkpoint": "juggernautXL_ragnarokBy.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 28,
+    "cfg": 6,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "base_seed": 7700
+  }
+}

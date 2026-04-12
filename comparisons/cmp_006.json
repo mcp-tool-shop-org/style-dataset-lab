@@ -1,14 +1,14 @@
 {
   "id": "cmp_006",
-  "asset_a_id": "battle_axe_base",
-  "asset_b_id": "battle_axe_icon_strong",
-  "asset_a_path": "outputs/approved/battle_axe_base.png",
-  "asset_b_path": "outputs/approved/battle_axe_icon_strong.png",
+  "asset_a_id": "anchor_08_security_v2",
+  "asset_b_id": "anchor_08_security_v1",
+  "asset_a_path": "outputs/approved/anchor_08_security_v2.png",
+  "asset_b_path": "outputs/approved/anchor_08_security_v1.png",
   "chosen": "b",
   "source": "human",
-  "reasoning": "Both valid single axes. Icon_strong is a dramatic double-headed axe with gold detailing and superior painterly execution. Base is a simpler single-headed axe, slightly small in frame.",
+  "reasoning": "v1 has ship corridor background that adds context. v2 has clean grey background which is better for concept art isolation. Close call — v1 wins on environment but v2 on composition.",
   "criteria_scores": {},
   "rubric_citations": [],
   "reviewer": "human:mike",
-  "reviewed_at": "2026-04-12T19:20:07.591Z"
+  "reviewed_at": "2026-04-12T21:35:56.345Z"
 }
