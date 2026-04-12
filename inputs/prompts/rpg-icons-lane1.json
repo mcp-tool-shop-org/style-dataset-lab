@@ -1,29 +1,89 @@
 {
   "lane": "rpg-icons-lane1",
   "description": "RPG item icons — weapons, potions, scrolls, accessories. 20 subjects x 4 variations = 80 candidates.",
-  "style_prefix": "hand-painted fantasy RPG game icon, single item centered on solid dark background, painterly style, clean edges, detailed brushwork, inventory icon",
-  "negative": "blurry, text, watermark, 3d render, photorealistic, multiple items, cropped, pixel art, cel-shaded, neon colors, gradient background, white background, modern, sci-fi",
+  "style_prefix": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality",
+  "negative": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
   "subjects": [
-    {"id": "iron_sword", "prompt": "iron longsword with leather-wrapped grip, steel blade with subtle fuller"},
-    {"id": "battle_axe", "prompt": "two-handed battle axe, dark iron head with notched edge, oak haft"},
-    {"id": "wooden_staff", "prompt": "gnarled wooden wizard staff with pale crystal orb at top, twisted grain"},
-    {"id": "crossbow", "prompt": "compact hand crossbow, dark wood stock, bronze mechanism, loaded bolt"},
-    {"id": "throwing_dagger", "prompt": "balanced throwing dagger, slim double-edged blade, cord-wrapped handle"},
-    {"id": "health_potion", "prompt": "glass health potion bottle, ruby red liquid, cork stopper, teardrop shape"},
-    {"id": "mana_potion", "prompt": "glass mana potion vial, luminous blue liquid, silver cap, cylindrical"},
-    {"id": "poison_vial", "prompt": "skull-marked glass vial, sickly green poison, wax-sealed cork"},
-    {"id": "strength_elixir", "prompt": "amber strength elixir in thick glass flask, iron bands, bubbling"},
-    {"id": "speed_tonic", "prompt": "pale golden speed tonic in slim bottle, feather etched on glass"},
-    {"id": "fire_scroll", "prompt": "rolled parchment scroll with red wax seal, charred edges, flame motif ribbon"},
-    {"id": "healing_scroll", "prompt": "rolled parchment scroll with green wax seal, fresh white paper, vine ribbon"},
-    {"id": "teleport_scroll", "prompt": "rolled parchment scroll with purple wax seal, shimmer dust, silver ribbon"},
-    {"id": "curse_scroll", "prompt": "dark rolled scroll with black wax seal, cracked parchment, thorned ribbon"},
-    {"id": "ward_scroll", "prompt": "rolled vellum scroll with gold wax seal, pristine edges, chain clasp"},
-    {"id": "amulet", "prompt": "silver amulet pendant on fine chain, oval sapphire center stone, filigree border"},
-    {"id": "ring", "prompt": "gold band ring with single emerald, delicate setting, warm metal glow"},
-    {"id": "leather_belt", "prompt": "thick adventurer leather belt with brass buckle, tool loops, worn patina"},
-    {"id": "iron_gauntlet", "prompt": "plate iron gauntlet, articulated fingers, rivet details, scratched surface"},
-    {"id": "war_horn", "prompt": "curved war horn, dark bone or horn material, brass fittings, leather strap"}
+    {
+      "id": "iron_sword",
+      "prompt": "iron longsword, straight double-edged steel blade with a shallow fuller running two-thirds of its length, cross-guard of dark wrought iron, leather-wrapped grip with visible cord binding, flat pommel, cool blue-grey metal catching warm highlight on the edge, slight battle wear on the blade surface"
+    },
+    {
+      "id": "battle_axe",
+      "prompt": "heavy two-handed battle axe, broad dark iron axe head with a bearded cutting edge and hammer poll on the back, long straight oak haft with iron ferrule at the base, leather wrapping at the grip, the iron head shows forge scale and a few notches, warm wood grain visible on the shaft"
+    },
+    {
+      "id": "wooden_staff",
+      "prompt": "gnarled wizard staff of dark twisted wood, natural bark texture along the shaft, a pale blue crystal orb cradled in the forked crown of the staff, faint inner glow from the crystal, the wood grain spirals upward, simple leather thong tied below the crystal mount, earthy brown tones on the wood"
+    },
+    {
+      "id": "crossbow",
+      "prompt": "compact hand crossbow, dark walnut wood stock with a smooth contour, bronze trigger mechanism and latch, steel prod arms with taut string, a single iron bolt loaded in the channel, small and elegant proportions suggesting a one-handed weapon, warm wood tones against cool metal parts"
+    },
+    {
+      "id": "throwing_dagger",
+      "prompt": "balanced throwing dagger, slim symmetrical double-edged blade tapering to a fine point, minimal cross-guard, cord-wrapped handle with no pommel for clean release, the blade is polished steel with a bright central ridge, compact proportions showing it is meant for throwing not fighting"
+    },
+    {
+      "id": "health_potion",
+      "prompt": "glass health potion bottle, teardrop-shaped vessel of clear glass containing luminous ruby-red liquid, light refracts through the red potion casting subtle color onto the glass walls, simple cork stopper with a wax drip seal, the glass has slight imperfections and a hand-blown quality, warm red glow"
+    },
+    {
+      "id": "mana_potion",
+      "prompt": "glass mana potion vial, tall cylindrical vessel of clear glass containing deep luminous blue liquid, the blue potion glows faintly from within like captured moonlight, tarnished silver cap with a flip clasp, tiny air bubbles suspended in the liquid, cool blue tones dominating"
+    },
+    {
+      "id": "poison_vial",
+      "prompt": "small poison vial, squat round-bottomed glass bottle containing viscous sickly yellow-green liquid, a tiny skull embossed on the glass surface, dark wax seal over a wooden cork, the liquid looks thick and oily with a menacing shimmer, the glass is slightly clouded from the corrosive contents"
+    },
+    {
+      "id": "strength_elixir",
+      "prompt": "strength elixir in a thick reinforced glass flask, wide-bodied bottle with iron bands riveted around the middle, deep amber-orange liquid with visible effervescence and rising bubbles, heavy iron screw cap, the flask looks sturdy and industrial compared to delicate potion bottles, warm amber glow"
+    },
+    {
+      "id": "speed_tonic",
+      "prompt": "speed tonic in a slim elegant glass bottle, tall narrow vessel containing pale golden translucent liquid, a delicate feather silhouette etched into the glass surface, thin silver stopper with a pointed finial, the liquid looks light and airy almost weightless inside the bottle, bright golden highlights"
+    },
+    {
+      "id": "fire_scroll",
+      "prompt": "fire magic scroll, tightly rolled aged parchment tied with a crimson silk ribbon, dark red wax seal stamped with a flame sigil, the edges of the parchment are slightly charred and browned from the magic within, warm orange-red tones on the seal and ribbon against the yellowed paper"
+    },
+    {
+      "id": "healing_scroll",
+      "prompt": "healing magic scroll, neatly rolled clean white parchment tied with a fresh green vine-patterned ribbon, emerald green wax seal stamped with a leaf motif, the paper looks pristine and new, soft green and white tones suggesting restoration and life, gentle warm highlights on the paper surface"
+    },
+    {
+      "id": "teleport_scroll",
+      "prompt": "teleportation scroll, rolled parchment of pale lavender-tinted paper tied with a shimmering silver ribbon, deep purple wax seal with a spiral portal sigil, faint sparkling dust particles cling to the surface of the paper, mysterious purple and silver color palette with hints of arcane shimmer"
+    },
+    {
+      "id": "curse_scroll",
+      "prompt": "curse scroll, tightly rolled dark stained parchment tied with a thorned black leather cord, jet black wax seal cracked down the middle, the paper is aged and brittle with dark spots and torn edges, ominous dark brown and black tones, the scroll radiates a sense of dread and decay"
+    },
+    {
+      "id": "ward_scroll",
+      "prompt": "ward scroll, rolled fine vellum of cream color tied with a thin gold chain clasp, bright gold wax seal stamped with a shield emblem, the vellum is smooth and pristine with gilt edges, noble gold and cream white tones suggesting divine protection, warm golden light on the seal"
+    },
+    {
+      "id": "amulet",
+      "prompt": "silver amulet pendant hanging from a fine chain, oval-cut deep blue sapphire set in an ornate silver bezel with delicate filigree scrollwork around the border, the sapphire catches light with a bright star-shaped specular highlight, the silver has a soft aged patina, elegant and compact proportions"
+    },
+    {
+      "id": "ring",
+      "prompt": "gold signet ring, warm polished gold band with a single oval emerald in a raised prong setting, the emerald has rich deep green color with subtle internal facets catching light, the gold band has a comfortable rounded profile and shows warm reflections, simple elegant design suggesting nobility"
+    },
+    {
+      "id": "leather_belt",
+      "prompt": "thick adventurer leather belt, wide strap of dark brown oiled leather with visible grain and slight scuffing from use, heavy brass buckle with a simple pin closure, several tool loops and a small pouch riveted to the belt, brass rivets and stitching details visible, worn utilitarian patina"
+    },
+    {
+      "id": "iron_gauntlet",
+      "prompt": "iron plate gauntlet for the right hand, articulated finger plates connected with chain links, broad cuff flaring at the wrist, the iron surface shows hammer marks from the forge and scratches from combat, dark iron with a few spots of surface rust, functional heavy design without decoration"
+    },
+    {
+      "id": "war_horn",
+      "prompt": "curved war horn made from a large dark animal horn, polished to a deep brown-black sheen, brass ferrule at the mouthpiece and brass band around the bell end, a braided leather carrying strap attached with brass rings, the horn surface shows natural ridges and color variation, imposing and ancient"
+    }
   ],
   "variations": [
     {"id": "base", "loras": [], "note": "Raw SDXL, no LoRA — baseline quality"},
