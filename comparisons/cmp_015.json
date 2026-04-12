@@ -1,0 +1,14 @@
+{
+  "id": "cmp_015",
+  "asset_a_id": "leather_belt_base",
+  "asset_b_id": "leather_belt_icon_strong",
+  "asset_a_path": "outputs/approved/leather_belt_base.png",
+  "asset_b_path": "outputs/approved/leather_belt_icon_strong.png",
+  "chosen": "b",
+  "source": "human",
+  "reasoning": "Both clean belts on dark bg. Icon_strong has pouches and brass fittings that give it more visual interest and RPG utility-belt character. Base is a simpler strap.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:29.188Z"
+}

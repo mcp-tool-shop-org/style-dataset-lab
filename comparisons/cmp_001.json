@@ -1,0 +1,14 @@
+{
+  "id": "cmp_001",
+  "asset_a_id": "health_potion_base",
+  "asset_b_id": "health_potion_icon_strong",
+  "asset_a_path": "outputs/approved/health_potion_base.png",
+  "asset_b_path": "outputs/rejected/health_potion_icon_strong.png",
+  "chosen": "a",
+  "source": "human",
+  "reasoning": "Base is a single clean teardrop bottle with ruby liquid on dark bg. Icon_strong generated 8 bottles in a grid — completely violates the single-item rule. Base wins on framing, silhouette, and composition.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:07.333Z"
+}

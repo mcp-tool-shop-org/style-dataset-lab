@@ -1,0 +1,14 @@
+{
+  "id": "cmp_005",
+  "asset_a_id": "iron_sword_base",
+  "asset_b_id": "iron_sword_icon_strong",
+  "asset_a_path": "outputs/approved/iron_sword_base.png",
+  "asset_b_path": "outputs/approved/iron_sword_icon_strong.png",
+  "chosen": "b",
+  "source": "human",
+  "reasoning": "Both are clean single swords on dark bg. Icon_strong has more ornate fantasy styling — richer blue blade, gold guard details — that better fits the RPG inventory aesthetic. Base is good but plainer.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:07.539Z"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "cmp_016",
+  "asset_a_id": "fire_scroll_icon_strong_alt",
+  "asset_b_id": "fire_scroll_base",
+  "asset_a_path": "outputs/approved/fire_scroll_icon_strong_alt.png",
+  "asset_b_path": "outputs/rejected/fire_scroll_base.png",
+  "chosen": "a",
+  "source": "human",
+  "reasoning": "Icon_strong_alt is a circular medallion with flame emblem on dark bg — works as a magic token. Base is a wax seal on light parchment, not dark bg, not a scroll.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:29.241Z"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "cmp_006",
+  "asset_a_id": "battle_axe_base",
+  "asset_b_id": "battle_axe_icon_strong",
+  "asset_a_path": "outputs/approved/battle_axe_base.png",
+  "asset_b_path": "outputs/approved/battle_axe_icon_strong.png",
+  "chosen": "b",
+  "source": "human",
+  "reasoning": "Both valid single axes. Icon_strong is a dramatic double-headed axe with gold detailing and superior painterly execution. Base is a simpler single-headed axe, slightly small in frame.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:07.591Z"
+}

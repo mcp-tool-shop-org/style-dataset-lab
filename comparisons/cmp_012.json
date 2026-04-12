@@ -1,0 +1,14 @@
+{
+  "id": "cmp_012",
+  "asset_a_id": "ring_icon_mid",
+  "asset_b_id": "ring_icon_strong_alt",
+  "asset_a_path": "outputs/approved/ring_icon_mid.png",
+  "asset_b_path": "outputs/borderline/ring_icon_strong_alt.png",
+  "chosen": "a",
+  "source": "human",
+  "reasoning": "Icon_mid is a clean gold ring with emerald, good painterly feel. Icon_strong_alt is too photorealistic — looks like a jewelry photo, not a painted game icon. Icon_mid has better style consistency.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:29.029Z"
+}

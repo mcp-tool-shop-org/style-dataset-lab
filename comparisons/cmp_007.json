@@ -1,0 +1,14 @@
+{
+  "id": "cmp_007",
+  "asset_a_id": "throwing_dagger_base",
+  "asset_b_id": "throwing_dagger_icon_strong",
+  "asset_a_path": "outputs/approved/throwing_dagger_base.png",
+  "asset_b_path": "outputs/approved/throwing_dagger_icon_strong.png",
+  "chosen": "b",
+  "source": "human",
+  "reasoning": "Both clean daggers on dark bg. Icon_strong has more ornate gold guard and sharper blade definition. Slightly better material contrast and more fantasy RPG character.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:07.649Z"
+}

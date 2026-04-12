@@ -1,0 +1,14 @@
+{
+  "id": "cmp_004",
+  "asset_a_id": "mana_potion_base",
+  "asset_b_id": "mana_potion_icon_strong_alt",
+  "asset_a_path": "outputs/approved/mana_potion_base.png",
+  "asset_b_path": "outputs/rejected/mana_potion_icon_strong_alt.png",
+  "chosen": "a",
+  "source": "human",
+  "reasoning": "Base is a single bottle with beautiful glass transparency. Icon_strong_alt is six bottles in a grid. Base wins overwhelmingly.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:07.487Z"
+}

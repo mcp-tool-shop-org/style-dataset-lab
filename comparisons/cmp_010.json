@@ -1,0 +1,14 @@
+{
+  "id": "cmp_010",
+  "asset_a_id": "speed_tonic_icon_strong",
+  "asset_b_id": "speed_tonic_base",
+  "asset_a_path": "outputs/approved/speed_tonic_icon_strong.png",
+  "asset_b_path": "outputs/rejected/speed_tonic_base.png",
+  "chosen": "a",
+  "source": "human",
+  "reasoning": "Icon_strong is a single elegant bottle with gold feather motif on dark bg. Base has two bottles and a light background area. Icon_strong wins on composition, single-item, and background.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:28.922Z"
+}

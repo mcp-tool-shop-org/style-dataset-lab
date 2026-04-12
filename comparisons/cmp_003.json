@@ -1,0 +1,14 @@
+{
+  "id": "cmp_003",
+  "asset_a_id": "mana_potion_base",
+  "asset_b_id": "mana_potion_icon_mid",
+  "asset_a_path": "outputs/approved/mana_potion_base.png",
+  "asset_b_path": "outputs/rejected/mana_potion_icon_mid.png",
+  "chosen": "a",
+  "source": "human",
+  "reasoning": "Base is a perfect single blue potion with excellent glass material. Icon_mid has two bottles of different sizes. Base wins on composition and item count.",
+  "criteria_scores": {},
+  "rubric_citations": [],
+  "reviewer": "human:mike",
+  "reviewed_at": "2026-04-12T19:20:07.436Z"
+}
