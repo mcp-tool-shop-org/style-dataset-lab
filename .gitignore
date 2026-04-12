@@ -1,0 +1,7 @@
+node_modules/
+outputs/candidates/*.png
+outputs/approved/*.png
+outputs/rejected/*.png
+outputs/borderline/*.png
+exports/
+*.tmp

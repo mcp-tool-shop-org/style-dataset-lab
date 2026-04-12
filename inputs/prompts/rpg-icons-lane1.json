@@ -1,0 +1,44 @@
+{
+  "lane": "rpg-icons-lane1",
+  "description": "RPG item icons — weapons, potions, scrolls, accessories. 20 subjects x 4 variations = 80 candidates.",
+  "style_prefix": "hand-painted fantasy RPG game icon, single item centered on solid dark background, painterly style, clean edges, detailed brushwork, inventory icon",
+  "negative": "blurry, text, watermark, 3d render, photorealistic, multiple items, cropped, pixel art, cel-shaded, neon colors, gradient background, white background, modern, sci-fi",
+  "subjects": [
+    {"id": "iron_sword", "prompt": "iron longsword with leather-wrapped grip, steel blade with subtle fuller"},
+    {"id": "battle_axe", "prompt": "two-handed battle axe, dark iron head with notched edge, oak haft"},
+    {"id": "wooden_staff", "prompt": "gnarled wooden wizard staff with pale crystal orb at top, twisted grain"},
+    {"id": "crossbow", "prompt": "compact hand crossbow, dark wood stock, bronze mechanism, loaded bolt"},
+    {"id": "throwing_dagger", "prompt": "balanced throwing dagger, slim double-edged blade, cord-wrapped handle"},
+    {"id": "health_potion", "prompt": "glass health potion bottle, ruby red liquid, cork stopper, teardrop shape"},
+    {"id": "mana_potion", "prompt": "glass mana potion vial, luminous blue liquid, silver cap, cylindrical"},
+    {"id": "poison_vial", "prompt": "skull-marked glass vial, sickly green poison, wax-sealed cork"},
+    {"id": "strength_elixir", "prompt": "amber strength elixir in thick glass flask, iron bands, bubbling"},
+    {"id": "speed_tonic", "prompt": "pale golden speed tonic in slim bottle, feather etched on glass"},
+    {"id": "fire_scroll", "prompt": "rolled parchment scroll with red wax seal, charred edges, flame motif ribbon"},
+    {"id": "healing_scroll", "prompt": "rolled parchment scroll with green wax seal, fresh white paper, vine ribbon"},
+    {"id": "teleport_scroll", "prompt": "rolled parchment scroll with purple wax seal, shimmer dust, silver ribbon"},
+    {"id": "curse_scroll", "prompt": "dark rolled scroll with black wax seal, cracked parchment, thorned ribbon"},
+    {"id": "ward_scroll", "prompt": "rolled vellum scroll with gold wax seal, pristine edges, chain clasp"},
+    {"id": "amulet", "prompt": "silver amulet pendant on fine chain, oval sapphire center stone, filigree border"},
+    {"id": "ring", "prompt": "gold band ring with single emerald, delicate setting, warm metal glow"},
+    {"id": "leather_belt", "prompt": "thick adventurer leather belt with brass buckle, tool loops, worn patina"},
+    {"id": "iron_gauntlet", "prompt": "plate iron gauntlet, articulated fingers, rivet details, scratched surface"},
+    {"id": "war_horn", "prompt": "curved war horn, dark bone or horn material, brass fittings, leather strap"}
+  ],
+  "variations": [
+    {"id": "base", "loras": [], "note": "Raw SDXL, no LoRA — baseline quality"},
+    {"id": "icon_mid", "loras": [{"name": "IconsRedmondV2-Icons.safetensors", "weight": 0.5}], "note": "Moderate icon style push"},
+    {"id": "icon_strong", "loras": [{"name": "IconsRedmondV2-Icons.safetensors", "weight": 0.8}, {"name": "DetailTweakerXL.safetensors", "weight": 0.3}], "note": "Strong icon + detail"},
+    {"id": "icon_strong_alt", "loras": [{"name": "IconsRedmondV2-Icons.safetensors", "weight": 0.8}, {"name": "DetailTweakerXL.safetensors", "weight": 0.3}], "seed_offset": 1000, "note": "Same config, different seed — tests variance"}
+  ],
+  "defaults": {
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "width": 512,
+    "height": 512,
+    "steps": 6,
+    "cfg": 2.0,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "base_seed": 42
+  }
+}
