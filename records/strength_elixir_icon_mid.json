@@ -1,0 +1,58 @@
+{
+  "id": "strength_elixir_icon_mid",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:01:43.247Z",
+  "asset_path": "outputs/rejected/strength_elixir_icon_mid.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 326366
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.5
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, strength elixir in a thick reinforced glass flask, wide-bodied bottle with iron bands riveted around the middle, deep amber-orange liquid with visible effervescence and rising bubbles, heavy iron screw cap, the flask looks sturdy and industrial compared to delicate potion bottles, warm amber glow",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 75,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3031,
+    "gpu_model": "RTX 5080",
+    "batch_index": 33
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:15:59.536Z",
+    "explanation": "Six bottles in a 2x3 grid, different shapes. Violates SIL-002. Looks like a reference sheet not an icon.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.2,
+      "palette_adherence": 0.6,
+      "framing": 0.1,
+      "material_fidelity": 0.6,
+      "style_consistency": 0.5,
+      "background_cleanliness": 0.5,
+      "detail_level": 0.5,
+      "lighting_consistency": 0.4
+    },
+    "failure_modes": [
+      "multiple_items"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,63 @@
+{
+  "id": "teleport_scroll_icon_strong",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:02:28.921Z",
+  "asset_path": "outputs/rejected/teleport_scroll_icon_strong.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 336489
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.8
+      },
+      {
+        "name": "DetailTweakerXL.safetensors",
+        "weight": 0.3
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, teleportation scroll, rolled parchment of pale lavender-tinted paper tied with a shimmering silver ribbon, deep purple wax seal with a spiral portal sigil, faint sparkling dust particles cling to the surface of the paper, mysterious purple and silver color palette with hints of arcane shimmer",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 92,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3029,
+    "gpu_model": "RTX 5080",
+    "batch_index": 50
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:16:21.464Z",
+    "explanation": "Purple quill or pen on parchment background. Not a scroll at all. Wrong item identity entirely.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.3,
+      "palette_adherence": 0.5,
+      "framing": 0.5,
+      "material_fidelity": 0.4,
+      "style_consistency": 0.3,
+      "background_cleanliness": 0.3,
+      "detail_level": 0.5,
+      "lighting_consistency": 0.5
+    },
+    "failure_modes": [
+      "gradient_background",
+      "lost_silhouette"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,51 @@
+{
+  "id": "curse_scroll_base",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:02:33.999Z",
+  "asset_path": "outputs/approved/curse_scroll_base.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 360539
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, curse scroll, tightly rolled dark stained parchment tied with a thorned black leather cord, jet black wax seal cracked down the middle, the paper is aged and brittle with dark spots and torn edges, ominous dark brown and black tones, the scroll radiates a sense of dread and decay",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 94,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3043,
+    "gpu_model": "RTX 5080",
+    "batch_index": 52
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:17:40.200Z",
+    "explanation": "Dark rolled scroll with leather cord, dark bg. Good scroll shape, menacing feel. Reads clearly as a scroll icon.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "framing": 0.8,
+      "material_fidelity": 0.8,
+      "style_consistency": 0.8,
+      "background_cleanliness": 0.85,
+      "detail_level": 0.75,
+      "lighting_consistency": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

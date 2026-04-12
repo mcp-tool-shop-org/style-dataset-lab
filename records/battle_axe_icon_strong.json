@@ -1,0 +1,60 @@
+{
+  "id": "battle_axe_icon_strong",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:00:29.983Z",
+  "asset_path": "outputs/approved/battle_axe_icon_strong.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 281376
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.8
+      },
+      {
+        "name": "DetailTweakerXL.safetensors",
+        "weight": 0.3
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, heavy two-handed battle axe, broad dark iron axe head with a bearded cutting edge and hammer poll on the back, long straight oak haft with iron ferrule at the base, leather wrapping at the grip, the iron head shows forge scale and a few notches, warm wood grain visible on the shaft",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 48,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3190,
+    "gpu_model": "RTX 5080",
+    "batch_index": 6
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:13:59.864Z",
+    "explanation": "Beautiful double-headed axe, excellent painterly execution, warm wood grain, ornate iron head with gold details. Strong icon silhouette. Best of the axe set.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.9,
+      "palette_adherence": 0.85,
+      "framing": 0.85,
+      "material_fidelity": 0.9,
+      "style_consistency": 0.9,
+      "background_cleanliness": 0.85,
+      "detail_level": 0.85,
+      "lighting_consistency": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

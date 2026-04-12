@@ -1,0 +1,63 @@
+{
+  "id": "speed_tonic_icon_strong_alt",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:01:58.469Z",
+  "asset_path": "outputs/rejected/speed_tonic_icon_strong_alt.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 324554
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.8
+      },
+      {
+        "name": "DetailTweakerXL.safetensors",
+        "weight": 0.3
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, speed tonic in a slim elegant glass bottle, tall narrow vessel containing pale golden translucent liquid, a delicate feather silhouette etched into the glass surface, thin silver stopper with a pointed finial, the liquid looks light and airy almost weightless inside the bottle, bright golden highlights",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 1081,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 2018,
+    "gpu_model": "RTX 5080",
+    "batch_index": 39
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:15:59.694Z",
+    "explanation": "Two objects — a bottle and a loose feather. Violates SIL-002. Background has a light triangular area.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.4,
+      "palette_adherence": 0.7,
+      "framing": 0.4,
+      "material_fidelity": 0.7,
+      "style_consistency": 0.7,
+      "background_cleanliness": 0.5,
+      "detail_level": 0.7,
+      "lighting_consistency": 0.6
+    },
+    "failure_modes": [
+      "multiple_items",
+      "gradient_background"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

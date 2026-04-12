@@ -1,0 +1,51 @@
+{
+  "id": "iron_sword_base",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:00:09.516Z",
+  "asset_path": "outputs/approved/iron_sword_base.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 272747
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, iron longsword, straight double-edged steel blade with a shallow fuller running two-thirds of its length, cross-guard of dark wrought iron, leather-wrapped grip with visible cord binding, flat pommel, cool blue-grey metal catching warm highlight on the edge, slight battle wear on the blade surface",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 42,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 29449,
+    "gpu_model": "RTX 5080",
+    "batch_index": 0
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:13:59.648Z",
+    "explanation": "Clean single sword on dark background, good steel material read, warm leather grip, painterly brushwork. Silhouette reads well at 64px.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "framing": 0.8,
+      "material_fidelity": 0.85,
+      "style_consistency": 0.8,
+      "background_cleanliness": 0.9,
+      "detail_level": 0.8,
+      "lighting_consistency": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

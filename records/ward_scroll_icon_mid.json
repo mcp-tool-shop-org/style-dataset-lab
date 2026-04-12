@@ -1,0 +1,56 @@
+{
+  "id": "ward_scroll_icon_mid",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:02:48.265Z",
+  "asset_path": "outputs/approved/ward_scroll_icon_mid.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 325076
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.5
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, ward scroll, rolled fine vellum of cream color tied with a thin gold chain clasp, bright gold wax seal stamped with a shield emblem, the vellum is smooth and pristine with gilt edges, noble gold and cream white tones suggesting divine protection, warm golden light on the seal",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 99,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3032,
+    "gpu_model": "RTX 5080",
+    "batch_index": 57
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:18:25.053Z",
+    "explanation": "Gold and navy circular medallion/seal with star motif and red gem. Dark bg. Reads as a ward token icon. Strong heraldic feel.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "framing": 0.8,
+      "material_fidelity": 0.8,
+      "style_consistency": 0.8,
+      "background_cleanliness": 0.8,
+      "detail_level": 0.8,
+      "lighting_consistency": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

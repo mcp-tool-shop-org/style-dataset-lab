@@ -1,0 +1,60 @@
+{
+  "id": "healing_scroll_icon_strong_alt",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:02:19.811Z",
+  "asset_path": "outputs/approved/healing_scroll_icon_strong_alt.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 380927
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.8
+      },
+      {
+        "name": "DetailTweakerXL.safetensors",
+        "weight": 0.3
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, healing magic scroll, neatly rolled clean white parchment tied with a fresh green vine-patterned ribbon, emerald green wax seal stamped with a leaf motif, the paper looks pristine and new, soft green and white tones suggesting restoration and life, gentle warm highlights on the paper surface",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 1089,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 2007,
+    "gpu_model": "RTX 5080",
+    "batch_index": 47
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:18:02.406Z",
+    "explanation": "Circular medallion icon with leaf motif, dark bg with ornate border. Same style as fire_scroll_icon_strong_alt. Works as a nature/healing token icon.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "framing": 0.75,
+      "material_fidelity": 0.7,
+      "style_consistency": 0.75,
+      "background_cleanliness": 0.65,
+      "detail_level": 0.75,
+      "lighting_consistency": 0.7
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

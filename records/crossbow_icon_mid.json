@@ -1,0 +1,58 @@
+{
+  "id": "crossbow_icon_mid",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:00:49.493Z",
+  "asset_path": "outputs/rejected/crossbow_icon_mid.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 283502
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [
+      {
+        "name": "IconsRedmondV2-Icons.safetensors",
+        "weight": 0.5
+      }
+    ],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, compact hand crossbow, dark walnut wood stock with a smooth contour, bronze trigger mechanism and latch, steel prod arms with taut string, a single iron bolt loaded in the channel, small and elegant proportions suggesting a one-handed weapon, warm wood tones against cool metal parts",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 55,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3023,
+    "gpu_model": "RTX 5080",
+    "batch_index": 13
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:17:06.722Z",
+    "explanation": "Ornate flintlock pistol or musket — not a crossbow. Wood and brass material read is fine but the item identity is completely wrong.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.3,
+      "palette_adherence": 0.6,
+      "framing": 0.7,
+      "material_fidelity": 0.8,
+      "style_consistency": 0.3,
+      "background_cleanliness": 0.8,
+      "detail_level": 0.7,
+      "lighting_consistency": 0.7
+    },
+    "failure_modes": [
+      "lost_silhouette"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

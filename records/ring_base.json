@@ -1,0 +1,51 @@
+{
+  "id": "ring_base",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:03:07.742Z",
+  "asset_path": "outputs/approved/ring_base.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 260269
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, gold signet ring, warm polished gold band with a single oval emerald in a raised prong setting, the emerald has rich deep green color with subtle internal facets catching light, the gold band has a comfortable rounded profile and shows warm reflections, simple elegant design suggesting nobility",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 106,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3027,
+    "gpu_model": "RTX 5080",
+    "batch_index": 64
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:15:10.761Z",
+    "explanation": "Gold signet ring with emerald, dark bg. Good gold material, visible facets in gem. Single item, clean. Slightly photorealistic but passes.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.75,
+      "palette_adherence": 0.8,
+      "framing": 0.8,
+      "material_fidelity": 0.85,
+      "style_consistency": 0.7,
+      "background_cleanliness": 0.9,
+      "detail_level": 0.8,
+      "lighting_consistency": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

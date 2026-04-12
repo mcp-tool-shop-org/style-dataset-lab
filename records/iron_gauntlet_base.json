@@ -1,0 +1,51 @@
+{
+  "id": "iron_gauntlet_base",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:03:30.171Z",
+  "asset_path": "outputs/approved/iron_gauntlet_base.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 364524
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, iron plate gauntlet for the right hand, articulated finger plates connected with chain links, broad cuff flaring at the wrist, the iron surface shows hammer marks from the forge and scratches from combat, dark iron with a few spots of surface rust, functional heavy design without decoration",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 114,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3038,
+    "gpu_model": "RTX 5080",
+    "batch_index": 72
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:15:10.917Z",
+    "explanation": "Dark iron gauntlet, articulated fingers, gold trim details. Excellent metalwork material read, dark bg. Imposing and functional.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.85,
+      "framing": 0.85,
+      "material_fidelity": 0.9,
+      "style_consistency": 0.85,
+      "background_cleanliness": 0.85,
+      "detail_level": 0.9,
+      "lighting_consistency": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

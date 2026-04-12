@@ -1,0 +1,53 @@
+{
+  "id": "strength_elixir_base",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T19:01:40.205Z",
+  "asset_path": "outputs/rejected/strength_elixir_base.png",
+  "image": {
+    "format": "png",
+    "width": 512,
+    "height": 512,
+    "bytes": 301811
+  },
+  "provenance": {
+    "workflow_id": "rpg-icons-lane1",
+    "workflow_version": "1.0.0",
+    "checkpoint": "realvisxlV50_v50LightningBakedvae.safetensors",
+    "loras": [],
+    "prompt": "hand-painted fantasy RPG inventory icon, single item centered on solid dark navy background, painterly brushwork, warm top-left lighting, rich earth tones with jewel accents, clean silhouette, concept art quality, strength elixir in a thick reinforced glass flask, wide-bodied bottle with iron bands riveted around the middle, deep amber-orange liquid with visible effervescence and rising bubbles, heavy iron screw cap, the flask looks sturdy and industrial compared to delicate potion bottles, warm amber glow",
+    "negative_prompt": "blurry, text, letters, runes, watermark, signature, 3d render, ambient occlusion, photorealistic, photograph, multiple items, two objects, cropped, cut off, pixel art, cel-shaded, flat shading, neon colors, gradient background, white background, light background, modern, sci-fi, futuristic, low quality, deformed, extra limbs, frame, border, vignette",
+    "seed": 74,
+    "steps": 6,
+    "cfg": 2,
+    "sampler": "euler",
+    "scheduler": "sgm_uniform",
+    "width": 512,
+    "height": 512,
+    "generation_time_ms": 3037,
+    "gpu_model": "RTX 5080",
+    "batch_index": 32
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T19:15:59.483Z",
+    "explanation": "Two bottles side by side, one amber and one dark. Violates SIL-002 single object rule.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.3,
+      "palette_adherence": 0.7,
+      "framing": 0.3,
+      "material_fidelity": 0.7,
+      "style_consistency": 0.7,
+      "background_cleanliness": 0.7,
+      "detail_level": 0.7,
+      "lighting_consistency": 0.7
+    },
+    "failure_modes": [
+      "multiple_items"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}
