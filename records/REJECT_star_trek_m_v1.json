@@ -1,0 +1,59 @@
+{
+  "id": "REJECT_star_trek_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:56:26.858Z",
+  "asset_path": "outputs/rejected/REJECT_star_trek_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1272574
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male captain in a one-piece stretchy uniform in solid red with a metallic badge on the chest, black ankle boots, the uniform has no pockets no tools no belt no harness nothing functional, it clings to the body like athletic wear, there are no visible seams patches repairs or signs of use, the fabric is a single solid color with no variation in tone or texture, he stands on a clean carpeted bridge",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11062,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8075,
+    "gpu_model": "RTX 5080",
+    "batch_index": 62
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:04:44.645Z",
+    "explanation": "Red one-piece jumpsuit with metallic badge, in ship corridor. Reads as Star Trek / generic fleet uniform. No pockets, no tools, no wear, no functional purpose. Violates CLO-003 and MAT-002.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.4,
+      "material_fidelity": 0.4,
+      "faction_read": 0.2,
+      "wear_level": 0.4,
+      "style_consistency": 0.6,
+      "clothing_logic": 0.3,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "generic_scifi",
+      "costume_not_clothes"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

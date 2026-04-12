@@ -1,0 +1,56 @@
+{
+  "id": "c_mechanic_senior_m_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:49:21.575Z",
+  "asset_path": "outputs/approved/c_mechanic_senior_m_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1327299
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male chief engineer in his 50s with thick scarred hands and a permanent squint from decades of reading gauges in bad lighting, wearing stained dark olive coveralls with both sleeves torn off at the shoulder showing muscular tattooed arms, a heavy leather tool harness across his chest loaded with wrenches and circuit testers, steel-toe boots with welding burns, the coveralls are more stain than fabric at this point",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11509,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8082,
+    "gpu_model": "RTX 5080",
+    "batch_index": 9
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:01:16.483Z",
+    "explanation": "Alt seed senior mechanic. Consistent grizzled look.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.9,
+      "faction_read": 0.8,
+      "wear_level": 0.95,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

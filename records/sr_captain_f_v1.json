@@ -1,0 +1,58 @@
+{
+  "id": "sr_captain_f_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:54:53.331Z",
+  "asset_path": "outputs/rejected/sr_captain_f_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1218810
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human female pirate captain in her 50s with silver-streaked hair and eyes that have calculated a thousand margins, wearing an unmistakable signature coat assembled from a Compact commander navy overcoat with the insignia ripped off and Veshan bronze clasps added, beneath it a practical black thermal undersuit with concealed armor panels, tall boots with mag-lock soles, a slim data pad on one hip and an ornate pistol on the other that was clearly taken from someone important, her crew dress in echo of her color palette of navy and bronze and black",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11050,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8081,
+    "gpu_model": "RTX 5080",
+    "batch_index": 50
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:03:16.657Z",
+    "explanation": "Two figures instead of one — appears to be showing two variants of the same captain side by side. Violates single character composition rule.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.2
+    },
+    "failure_modes": [
+      "bad_composition"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

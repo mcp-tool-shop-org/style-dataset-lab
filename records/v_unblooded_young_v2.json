@@ -1,0 +1,56 @@
+{
+  "id": "v_unblooded_young_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:52:19.595Z",
+  "asset_path": "outputs/borderline/v_unblooded_young_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1341609
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, tall broad young reptilian alien with pale olive-green overlapping scales and an undeveloped bony crest ridge barely visible on the skull, heavy brow ridges over anxious amber slit-pupil eyes, a thin muscular tail held low showing nervousness, wearing a basic cured hide vest with no armor plates and no markings of any kind, leather leg wraps around digitigrade legs, bare clawed feet, the hide vest is stiff and cheap and clearly the lowest tier of equipment, this is someone who has not yet earned the right to bear a house mark",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11531,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8086,
+    "gpu_model": "RTX 5080",
+    "batch_index": 31
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:02:22.426Z",
+    "explanation": "Same issue as v1 — too skeletal, not reptilian enough. Veshan should have overlapping scales and a broad snout.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.7,
+      "material_fidelity": 0.8,
+      "faction_read": 0.5,
+      "wear_level": 0.7,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.7,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,56 @@
+{
+  "id": "sr_named_m_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:54:45.232Z",
+  "asset_path": "outputs/approved/sr_named_m_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1148997
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male in his 40s with a distinctive facial scar and a confident stance, wearing a signature outfit assembled from quality stolen pieces including a Veshan bronze pauldron on one shoulder and a Compact officer coat cut down to a vest on the torso, dark leather trousers and heavy boots taken from someone who no longer needs them, a custom-modified energy weapon with an extended barrel holstered in a thigh rig, personal color palette of black and rust-red emerging from the chaos, people in the Reach know this silhouette",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11549,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8057,
+    "gpu_model": "RTX 5080",
+    "batch_index": 49
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:03:16.600Z",
+    "explanation": "Alt seed Named. Consistent reputation-read.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

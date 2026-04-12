@@ -1,0 +1,56 @@
+{
+  "id": "c_deckhand_mid_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:48:42.176Z",
+  "asset_path": "outputs/approved/c_deckhand_mid_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1304644
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male of south asian descent in his 30s with a thick beard and tired eyes, wearing a charcoal thermal undersuit with rolled-up sleeves showing forearm tattoos of ship registry numbers, a cargo harness with a handheld scanner and pry bar, mag-lock boots caked with cargo dust, the undersuit zipper pull has been replaced with a wire loop",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11004,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7286,
+    "gpu_model": "RTX 5080",
+    "batch_index": 4
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:00:46.664Z",
+    "explanation": "South asian male, dark charcoal suit, ship corridor with wiring. Good ethnic diversity. Beard and tired eyes sell the character.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

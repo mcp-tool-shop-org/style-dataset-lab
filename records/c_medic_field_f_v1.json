@@ -1,0 +1,56 @@
+{
+  "id": "c_medic_field_f_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:50:34.394Z",
+  "asset_path": "outputs/approved/c_medic_field_f_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1353150
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human female combat medic in her 30s with close-cropped hair and a calm focused expression, wearing a charcoal tactical undersuit with a cream medical vest over it marked with a red cross on the back, a compact trauma pack on her right hip and a drug dispenser unit on her left, medical scanner hanging from a lanyard, nitrile gloves tucked into every pocket, blood-resistant boots, she looks like someone who works calmly while people are screaming",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11018,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8070,
+    "gpu_model": "RTX 5080",
+    "batch_index": 18
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:01:50.365Z",
+    "explanation": "Combat medic in tan medical vest with red crosses over black tactical suit. Trauma pack, drug dispenser. Ship doorway. Exactly right — calm competence.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.9,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}
