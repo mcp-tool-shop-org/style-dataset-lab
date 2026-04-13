@@ -1,0 +1,59 @@
+{
+  "id": "REJECT3_generic_lizard_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:55:11.268Z",
+  "asset_path": "outputs/rejected/REJECT3_generic_lizard_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1374062
+  },
+  "provenance": {
+    "workflow_id": "wave3-veshan-deep",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, generic green lizard person in a simple brown tunic with a belt, no crest ridge no brow ridges no tail visible, round eyes instead of slit pupils, smooth skin instead of overlapping scales, human proportions instead of barrel-chested forward lean, the creature looks like a human in a lizard mask not an alien species with its own biomechanics and culture",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval knight, human face, mammalian features, fur, hair, ears",
+    "seed": 30531,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8068,
+    "gpu_model": "RTX 5080",
+    "batch_index": 31
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.198Z",
+    "explanation": "Generic lizard person in brown tunic. No crest ridge, no brow ridges, no tail, round eyes, smooth skin, human proportions. Human in lizard mask, not an alien species.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.4,
+      "material_fidelity": 0.3,
+      "faction_read": 0.1,
+      "wear_level": 0.5,
+      "style_consistency": 0.5,
+      "clothing_logic": 0.3,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "faction_unreadable",
+      "wrong_material"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}

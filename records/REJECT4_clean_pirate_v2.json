@@ -1,0 +1,59 @@
+{
+  "id": "REJECT4_clean_pirate_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:58:57.899Z",
+  "asset_path": "outputs/rejected/REJECT4_clean_pirate_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1283915
+  },
+  "provenance": {
+    "workflow_id": "wave4-sable-reach",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, dashing handsome pirate captain in a pristine white shirt with billowing sleeves and a perfectly tailored embroidered vest, polished knee-high boots, a rapier with a jeweled hilt, styled flowing hair, a clean tricorn hat with a feather, he looks like a romance novel cover not someone who lives in a lawless frontier, everything is theatrical and new and designed to look good not to survive",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero, symmetrical matching armor",
+    "seed": 40527,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8069,
+    "gpu_model": "RTX 5080",
+    "batch_index": 27
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.208Z",
+    "explanation": "Dashing pirate in pristine white shirt, embroidered vest, polished boots, jeweled rapier. Romance novel cover not lawless frontier. Violates MAT-002, CLO-003.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.3,
+      "material_fidelity": 0.3,
+      "faction_read": 0.2,
+      "wear_level": 0.1,
+      "style_consistency": 0.4,
+      "clothing_logic": 0.2,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "too_clean",
+      "costume_not_clothes"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}

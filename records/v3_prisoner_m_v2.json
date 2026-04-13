@@ -1,0 +1,56 @@
+{
+  "id": "v3_prisoner_m_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:54:06.519Z",
+  "asset_path": "outputs/approved/v3_prisoner_m_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1430735
+  },
+  "provenance": {
+    "workflow_id": "wave3-veshan-deep",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, gaunt reptilian alien with dull grey-green scales showing stress discoloration, a crest ridge that has been deliberately filed down to the bone as a mark of shame, sunken amber eyes, a thin tail hanging limp, wearing nothing but a rough sackcloth wrap around the waist and heavy iron shackles on both wrists connected by a chain, bare clawed feet on cold ground, the filed crest is the worst part — it means the house has formally disowned this individual, every Veshan who sees that stump knows what it means",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval knight, human face, mammalian features, fur, hair, ears",
+    "seed": 30523,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8062,
+    "gpu_model": "RTX 5080",
+    "batch_index": 23
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.384Z",
+    "explanation": "Veshan faction. Forged material vocabulary with overlapping scales, dark bronze plate, leather underpadding. Martial culture expressed through gear.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": null,
+  "iteration": null
+}

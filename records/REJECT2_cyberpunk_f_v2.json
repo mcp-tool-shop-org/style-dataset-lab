@@ -1,0 +1,59 @@
+{
+  "id": "REJECT2_cyberpunk_f_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:50:19.805Z",
+  "asset_path": "outputs/rejected/REJECT2_cyberpunk_f_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1330487
+  },
+  "provenance": {
+    "workflow_id": "wave2-compact-diversity",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, young woman with neon blue hair and glowing circuit-pattern tattoos covering her arms, wearing a shiny black PVC bodysuit with chrome buckles and LED-lit accessories, platform boots with transparent soles, holographic jewelry, the outfit screams nightclub not cargo bay, bright neon purple and cyan color palette that violates every color rule in the constitution",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 20545,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8065,
+    "gpu_model": "RTX 5080",
+    "batch_index": 45
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.185Z",
+    "explanation": "Neon hair, glowing circuit tattoos, shiny PVC bodysuit, LED accessories. Cyberpunk nightclub not cargo bay. Violates COL-003, CLO-003.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.3,
+      "faction_read": 0,
+      "wear_level": 0.1,
+      "style_consistency": 0.3,
+      "clothing_logic": 0.1,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "wrong_palette",
+      "costume_not_clothes"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}
