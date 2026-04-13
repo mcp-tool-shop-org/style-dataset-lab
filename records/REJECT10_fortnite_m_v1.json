@@ -1,0 +1,50 @@
+{
+  "id": "REJECT10_fortnite_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:56:28.877Z",
+  "asset_path": "outputs/rejected/REJECT10_fortnite_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1147516
+  },
+  "provenance": {
+    "workflow_id": "wave10-close-the-gap",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring civilization, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male in a brightly colored cartoonish outfit with a llama-head backpack, oversized sneakers with glowing soles, a pickaxe harvesting tool, emote-ready pose, the colors are bright purple yellow and cyan, every element is designed for maximum visual pop and zero functional purpose, this is a battle royale skin not a person who lives and works in space",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 100046,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7265,
+    "gpu_model": "RTX 5080",
+    "batch_index": 46
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-13T01:58:21.109Z",
+    "explanation": "Bright cartoonish outfit, llama backpack, glowing sneakers. Battle royale skin not a spacefaring person. Violates every art pillar.",
+    "criteria_scores": {},
+    "failure_modes": [
+      "costume_not_clothes",
+      "wrong_palette"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

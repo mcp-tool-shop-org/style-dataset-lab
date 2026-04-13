@@ -1,0 +1,56 @@
+{
+  "id": "c10_librarian_f_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:51:17.609Z",
+  "asset_path": "outputs/approved/c10_librarian_f_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1277556
+  },
+  "provenance": {
+    "workflow_id": "wave10-close-the-gap",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring civilization, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, quiet human woman in her 60s who manages the station data archive, wearing a soft blue-grey civilian cardigan over a cream blouse, comfortable skirt, practical flat shoes, reading glasses that she is always looking for, a data tablet that contains the index to every record on the station, she is the memory of the institution and she remembers everything including things people wish she would forget",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 100507,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7075,
+    "gpu_model": "RTX 5080",
+    "batch_index": 7
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:57:58.823Z",
+    "explanation": "On-style gritty space costume. Faction-appropriate material vocabulary and wear level. Reads as a working person in a spacefaring civilization.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.8,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": null,
+  "iteration": null
+}

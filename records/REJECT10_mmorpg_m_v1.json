@@ -1,0 +1,51 @@
+{
+  "id": "REJECT10_mmorpg_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:57:15.568Z",
+  "asset_path": "outputs/rejected/REJECT10_mmorpg_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1336426
+  },
+  "provenance": {
+    "workflow_id": "wave10-close-the-gap",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring civilization, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male in impossibly ornate MMORPG-style armor with enormous shoulder pauldrons bigger than his head, a glowing enchanted sword with particle effects, a flowing cloak with magical runes, the armor has seventeen different materials and colors including glowing blue crystals and ethereal wisps, no human being could walk in this armor let alone work on a ship, this is a video game character sheet not a concept for a real person",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 100052,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8076,
+    "gpu_model": "RTX 5080",
+    "batch_index": 52
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-13T01:58:21.421Z",
+    "explanation": "Enormous ornate MMORPG armor with glowing crystals, particle effects, impossibly large pauldrons. Video game character sheet not a real person.",
+    "criteria_scores": {},
+    "failure_modes": [
+      "generic_scifi",
+      "costume_not_clothes",
+      "too_clean"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

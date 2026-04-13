@@ -1,0 +1,50 @@
+{
+  "id": "REJECT10_pin_up_f_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:57:07.451Z",
+  "asset_path": "outputs/rejected/REJECT10_pin_up_f_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1535459
+  },
+  "provenance": {
+    "workflow_id": "wave10-close-the-gap",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring civilization, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, attractive young woman in a retro 1940s pin-up style space outfit — a cropped flight jacket over a bikini top, high-waisted shorts, platform heels, victory rolls in her hair, bright red lipstick, sitting on a rocket with a wink, this is mid-century nostalgia illustration not lived-in sci-fi, the aesthetic prioritizes sex appeal and retro charm over any functional reality",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 100551,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8040,
+    "gpu_model": "RTX 5080",
+    "batch_index": 51
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-13T01:58:21.371Z",
+    "explanation": "Same — retro pin-up aesthetic.",
+    "criteria_scores": {},
+    "failure_modes": [
+      "costume_not_clothes",
+      "too_clean"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

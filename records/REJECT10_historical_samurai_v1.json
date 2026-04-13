@@ -1,0 +1,50 @@
+{
+  "id": "REJECT10_historical_samurai_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:56:43.252Z",
+  "asset_path": "outputs/rejected/REJECT10_historical_samurai_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1238367
+  },
+  "provenance": {
+    "workflow_id": "wave10-close-the-gap",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring civilization, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male in full traditional Japanese samurai armor with a kabuto helmet, face guard, layered do chest armor, sode shoulder guards, a katana and wakizashi, the armor is lacquered red and black with gold mon crests, this is historically accurate feudal Japanese armor not sci-fi, the craftsmanship is beautiful but it belongs in a different millennium",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 100048,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7246,
+    "gpu_model": "RTX 5080",
+    "batch_index": 48
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-13T01:58:21.214Z",
+    "explanation": "Traditional Japanese samurai armor. Historically accurate, wrong millennium. Not sci-fi.",
+    "criteria_scores": {},
+    "failure_modes": [
+      "generic_scifi",
+      "wrong_material"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}
