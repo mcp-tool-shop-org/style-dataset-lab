@@ -26,8 +26,7 @@ async function comfyHealth() {
   }
 }
 
-function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, cfg, sampler, scheduler, width, height) {
-  // Minimal KSampler workflow in API format
+function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, cfg, sampler, scheduler, width, height, ipAdapterConfig) {
   const nodes = {};
   let nextId = 1;
 
@@ -56,6 +55,49 @@ function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, c
     };
     modelOut = [loraId, 0];
     clipOut = [loraId, 1];
+  }
+
+  // IP-Adapter for style reference (if configured)
+  if (ipAdapterConfig) {
+    // Load CLIP Vision model
+    const clipVisionId = String(nextId++);
+    nodes[clipVisionId] = {
+      class_type: "CLIPVisionLoader",
+      inputs: { clip_name: ipAdapterConfig.clip_vision_model },
+    };
+
+    // Load IP-Adapter model
+    const ipaLoaderId = String(nextId++);
+    nodes[ipaLoaderId] = {
+      class_type: "IPAdapterModelLoader",
+      inputs: { ipadapter_file: ipAdapterConfig.model },
+    };
+
+    // Load reference image
+    const refImageId = String(nextId++);
+    nodes[refImageId] = {
+      class_type: "LoadImage",
+      inputs: { image: ipAdapterConfig.reference_image },
+    };
+
+    // Apply IP-Adapter
+    const ipaApplyId = String(nextId++);
+    nodes[ipaApplyId] = {
+      class_type: "IPAdapterApply",
+      inputs: {
+        ipadapter: [ipaLoaderId, 0],
+        clip_vision: [clipVisionId, 0],
+        image: [refImageId, 0],
+        model: modelOut,
+        weight: ipAdapterConfig.weight || 0.6,
+        noise: ipAdapterConfig.noise || 0.0,
+        weight_type: ipAdapterConfig.weight_type || "linear",
+        start_at: ipAdapterConfig.start_at || 0.0,
+        end_at: ipAdapterConfig.end_at || 1.0,
+      },
+    };
+
+    modelOut = [ipaApplyId, 0];
   }
 
   // CLIP Text Encode — positive

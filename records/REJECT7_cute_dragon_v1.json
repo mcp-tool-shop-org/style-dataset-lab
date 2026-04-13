@@ -1,0 +1,59 @@
+{
+  "id": "REJECT7_cute_dragon_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:35:23.547Z",
+  "asset_path": "outputs/rejected/REJECT7_cute_dragon_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1351611
+  },
+  "provenance": {
+    "workflow_id": "wave7-veshan-society",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, adorable small dragon creature with big sparkly eyes and tiny wings and pink pastel scales, wearing a cute little crown and a tiny cape with stars on it, sitting in a cheerful pose with a happy smile, the creature is designed to sell plush toys not to be a member of a warrior civilization with its own deep cultural identity, everything about it undermines the Veshan as a serious species",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval knight, human face, mammalian features, fur, hair, ears",
+    "seed": 70022,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8086,
+    "gpu_model": "RTX 5080",
+    "batch_index": 22
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:46:51.453Z",
+    "explanation": "Adorable small dragon with sparkly eyes, tiny wings, pink pastel scales, cute crown and cape with stars. Mascot toy not warrior civilization member.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.2,
+      "faction_read": 0,
+      "wear_level": 0.1,
+      "style_consistency": 0.2,
+      "clothing_logic": 0.1,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "faction_unreadable",
+      "costume_not_clothes"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}

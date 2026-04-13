@@ -1,0 +1,56 @@
+{
+  "id": "sr8_tech_genius_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:36:27.632Z",
+  "asset_path": "outputs/approved/sr8_tech_genius_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1204048
+  },
+  "provenance": {
+    "workflow_id": "wave8-reach-specialists-borderline",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, young human male in his 20s who is a technical savant living in the Reach because he was expelled from a Compact technical academy, wearing a mix of Compact cadet coveralls with the insignia removed and civilian clothes underneath, surrounded by jury-rigged tech devices clipped and strapped to every surface of his clothing, data cables wound around his forearms like bracelets, his clothes are secondary to the tech — he is a walking repair shop",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 80006,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8084,
+    "gpu_model": "RTX 5080",
+    "batch_index": 6
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:46:51.607Z",
+    "explanation": "On-style gritty space costume. Faction-appropriate material vocabulary and wear level. Reads as a working person in a spacefaring civilization.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.8,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": null,
+  "iteration": null
+}

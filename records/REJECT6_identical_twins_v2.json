@@ -1,0 +1,59 @@
+{
+  "id": "REJECT6_identical_twins_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:32:17.951Z",
+  "asset_path": "outputs/rejected/REJECT6_identical_twins_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1342732
+  },
+  "provenance": {
+    "workflow_id": "wave6-compact-civilian-life",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring civilization, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, two identical human women standing side by side in exactly matching pristine white Compact uniforms, same hairstyle same posture same expression, they look like clones or mannequins not individuals, the uniforms are brand new and identical down to the crease, violates single character rule and too-clean rule simultaneously",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 60535,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7063,
+    "gpu_model": "RTX 5080",
+    "batch_index": 35
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:46:51.448Z",
+    "explanation": "Two identical figures in matching pristine uniforms. Violates single character rule and too-clean rule. Looks like mannequins or clones.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.5,
+      "palette_adherence": 0.6,
+      "material_fidelity": 0.5,
+      "faction_read": 0.5,
+      "wear_level": 0.1,
+      "style_consistency": 0.5,
+      "clothing_logic": 0.4,
+      "composition": 0.2
+    },
+    "failure_modes": [
+      "bad_composition",
+      "too_clean"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}
