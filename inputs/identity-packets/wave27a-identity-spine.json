@@ -1,0 +1,344 @@
+{
+  "lane": "wave27a-identity-spine",
+  "description": "Wave 27A: P0 identity proof — 4 named prologue characters + The Corrigan. Each subject gets anchor portrait, full-body, context shot, and optional variant. This is the proof set: if these five do not land, everything else is noise.",
+  "authority": "VISUAL_BIBLE.md Section 11 + PROLOGUE_CANON.md",
+  "gates": "canon/identity-gates.md",
+  "generation_method": "Phase 1 txt2img discovery, Phase 2 anchor curation, Phase 3 img2img/IP-Adapter follow-on",
+  "style_prefix": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes",
+  "negative_base": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+
+  "subjects": [
+    {
+      "subject_name": "kael_maren",
+      "subject_type": "named_character",
+      "faction": "compact",
+      "role": "protagonist",
+      "identity_lock": {
+        "face_shape": "lean angular face, early thirties, circles under eyes, military-straight posture when tense",
+        "hair_head_structure": "short dark hair with early grey at temples, clean-shaven",
+        "body_language": "guarded posture, arms crossed or one hand on console, hands always doing something, pilot's hands with long steady fingers",
+        "costume_silhouette": "faded charcoal flight jacket with visible removed-insignia outline, dark trousers, regulation flight boots, muted blue thermal undershirt at collar",
+        "non_negotiable_details": [
+          "removed rank insignia outline on jacket — visible fabric ghost where badges were stripped",
+          "regulation flight boots — the one military item that still serves a purpose",
+          "lean and underfed — eight months of bad rations visible in face and frame"
+        ],
+        "forbidden_drift_cues": [
+          "clean or well-fed appearance",
+          "heroic pose or confident smile",
+          "bright colors or pristine uniform",
+          "any visible rank insignia or badges",
+          "bulky or muscular build"
+        ]
+      },
+      "shots": [
+        {
+          "id": "kael_maren_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish face and costume truth — the defining image of Kael Maren",
+          "prompt": "portrait head and shoulders, detailed face, lean angular man in his early thirties, short dark hair with early grey at temples, circles under eyes from poor sleep and worse rations, military-straight posture, pilot's hands with long steady fingers, faded charcoal grey military flight jacket with rank insignia visibly removed leaving fabric outline where badges were, muted blue thermal undershirt visible at collar, empty holster on hip, tired determination, quiet anger, competence hiding exhaustion, isolated on plain dark grey background",
+          "negative_additions": "clean, well-fed, heroic pose, bright colors, smiling, pristine uniform, badges, insignia, muscular"
+        },
+        {
+          "id": "kael_maren_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full costume and silhouette truth — recognizable at 64px",
+          "prompt": "full body visible, front-facing view, lean underfed man in his early thirties, short dark hair with early grey at temples, circles under eyes, faded charcoal grey military flight jacket with rank insignia removed leaving visible fabric outline, muted blue thermal undershirt visible at collar, dark trousers, regulation flight boots well-maintained, empty holster on hip, pilot's gloves tucked into belt, worn leather logbook in breast pocket, standing with arms crossed, guarded posture, steel buckles, isolated on plain dark grey background",
+          "negative_additions": "clean, well-fed, heroic pose, bright colors, smiling, pristine uniform, badges, insignia, muscular, busy background"
+        },
+        {
+          "id": "kael_maren_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Kael at work in the Corrigan cockpit — proves identity in environment",
+          "prompt": "lean man in faded charcoal grey flight jacket with removed insignia outline, short dark hair with early grey at temples, sitting in a cramped two-seat cargo hauler cockpit, one hand on console controls, pilot's hands with long steady fingers, worn leather logbook on the console beside him, amber cockpit glow from instruments, tired determination, competence hiding exhaustion, the cockpit of a battered ugly ship",
+          "negative_additions": "clean, well-fed, heroic, smiling, pristine, military bridge, spacious cockpit, bright lighting"
+        },
+        {
+          "id": "kael_maren_variant",
+          "view_type": "expression_variant",
+          "shot_type": "variant",
+          "variant_intent": "persistence_under_shift",
+          "variant_constraint": "same face and costume, different lighting — Freeport harsh yellow vs anchor neutral",
+          "identity_anchor": false,
+          "scene_function": "Kael under harsh Freeport lighting — proves identity persists across lighting conditions",
+          "prompt": "portrait head and shoulders, lean angular man in his early thirties, short dark hair with early grey at temples, circles under eyes from poor sleep, faded charcoal grey flight jacket with removed insignia outline, muted blue undershirt at collar, harsh flickering yellow-white industrial station lighting from above, quiet anger visible in jaw tension, guarded watchfulness, the face of someone scanning a rough station crowd, isolated on plain dark background",
+          "negative_additions": "clean, well-fed, heroic pose, bright colors, smiling, pristine uniform, soft lighting, warm tones"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "renna_vasik",
+      "subject_type": "named_character",
+      "faction": "reach",
+      "role": "crew",
+      "identity_lock": {
+        "face_shape": "warm brown skin, dark brown eyes constantly scanning, early thirties, compact athletic build",
+        "hair_head_structure": "dark hair pulled back in functional ponytail or short crop",
+        "body_language": "slightly forward lean, alert posture, hands always busy, one hand on tool belt",
+        "costume_silhouette": "open-front canvas vest over thermal undershirt, heavy canvas work pants with reinforced knees, loaded tool belt, reinforced boots with mag-lock soles",
+        "non_negotiable_details": [
+          "tool belt always present — loaded with wrenches, cutters, diagnostic scanner",
+          "grease-stained hands and forearms that never fully wash out",
+          "small plasma burn scar on left forearm"
+        ],
+        "forbidden_drift_cues": [
+          "glamorous or decorative clothing",
+          "clean hands or manicured nails",
+          "jewelry or makeup",
+          "matching outfit or coordinated colors",
+          "posed or fashion-forward stance"
+        ]
+      },
+      "shots": [
+        {
+          "id": "renna_vasik_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish face and costume truth — the defining image of Renna Vasik",
+          "prompt": "portrait head and shoulders, detailed face, woman in her early thirties with warm brown skin and compact athletic build, dark brown eyes constantly scanning, dark hair pulled back in functional ponytail, strong hands with short nails and permanent grease stains under them, small plasma burn scar visible on left forearm, open-front dark canvas vest over olive thermal undershirt, tool belt visible at bottom of frame loaded with wrenches and diagnostic scanner, practical confidence, watchful, no-nonsense, isolated on plain dark grey background",
+          "negative_additions": "glamorous, clean hands, decorative clothing, jewelry, makeup, posed, matching outfit, fashion"
+        },
+        {
+          "id": "renna_vasik_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full costume and silhouette truth — the mismatched Reach gear reads as one person's kit",
+          "prompt": "full body visible, front-facing view, woman in her early thirties with warm brown skin and compact athletic build, dark hair in functional ponytail, open-front dark canvas vest over olive thermal undershirt, heavy canvas work pants with reinforced knees, reinforced boots with mag-lock soles, tool belt loaded with wrenches and cutters and diagnostic scanner, roll of thermal tape on a carabiner, grease stains on hands and forearms, small plasma burn scar on left forearm, standing with one hand on tool belt, slightly forward lean, alert posture, isolated on plain dark grey background",
+          "negative_additions": "glamorous, clean hands, decorative, jewelry, makeup, posed, matching outfit, military uniform, bright colors"
+        },
+        {
+          "id": "renna_vasik_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Renna working on ship systems — proves identity in her natural element",
+          "prompt": "woman with warm brown skin in dark canvas vest and olive thermal, dark hair pulled back, grease-stained hands deep inside an open engine access panel, diagnostic scanner in one hand, wrenches laid out on a mag-strip beside her, tool belt loaded, reinforced knee pads visible as she kneels, plasma burn scar on left forearm, dim engine room lighting with amber instrument glow, practical concentration on her face, a mechanic who trusts her hands more than readouts",
+          "negative_additions": "glamorous, clean, decorative, posed, bright lighting, spacious room, military, clean hands"
+        },
+        {
+          "id": "renna_vasik_variant",
+          "view_type": "expression_variant",
+          "shot_type": "variant",
+          "variant_intent": "persistence_under_shift",
+          "variant_constraint": "same face and costume, different expression — assessment vs anchor's practical confidence",
+          "identity_anchor": false,
+          "scene_function": "Renna assessing — the watchful look she gives people she hasn't decided to trust",
+          "prompt": "portrait head and shoulders, woman in her early thirties with warm brown skin, dark brown eyes narrowed in assessment, dark hair in functional ponytail, strong jaw, canvas vest collar visible, tool belt strap over one shoulder, grease under her short nails, the look of someone deciding whether you are worth the risk, harsh station lighting from one side, practical wariness not hostility, isolated on plain dark background",
+          "negative_additions": "glamorous, clean hands, smiling, decorative, soft lighting, makeup, friendly, open expression"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "jace_delvari",
+      "subject_type": "named_character",
+      "faction": "compact",
+      "role": "crew",
+      "identity_lock": {
+        "face_shape": "easy smile, slight frontier-station tan, late twenties, medium lean build, the kind of face you forget unless he wants you to remember it",
+        "hair_head_structure": "light brown hair slightly longer than military regulation, clean-shaven",
+        "body_language": "relaxed lean, casual but balanced, one hand near belt, friendly predator at rest",
+        "costume_silhouette": "muted grey-brown civilian jacket over thermal base layer, cargo pants with deep pockets, worn boots — forgettable earth tones, nothing that stands out",
+        "non_negotiable_details": [
+          "forgettable clothing — deliberate, Intelligence-trained blandness, everything in earth tones",
+          "pulse pistol holster — compact military-issue, the one thing too good for a freelancer",
+          "easy genuine smile — the charm weapon, friendly because that is what makes it dangerous"
+        ],
+        "forbidden_drift_cues": [
+          "military uniform or tactical gear",
+          "aggressive or threatening pose",
+          "obvious spy gadgets or sunglasses",
+          "bright colors or memorable clothing",
+          "brooding or villainous expression"
+        ]
+      },
+      "shots": [
+        {
+          "id": "jace_delvari_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish the double-read face — friendly on first look, dangerous on second",
+          "prompt": "portrait head and shoulders, detailed face, man in his late twenties with light brown hair slightly longer than military regulation, easy genuine smile, clean-shaven, slight frontier-station tan, steady hands visible at collar, eyes that track movement without appearing to, muted grey-brown civilian jacket, the kind of face you forget unless he wants you to remember it, easy charm masking something watchful underneath, isolated on plain dark grey background",
+          "negative_additions": "military uniform, tactical gear, aggressive pose, obvious spy gear, sunglasses, brooding, villainous, bright colors, memorable clothing"
+        },
+        {
+          "id": "jace_delvari_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full costume truth — everything forgettable except the holster",
+          "prompt": "full body visible, front-facing view, man in his late twenties with light brown hair slightly longer than military regulation, easy smile, muted grey-brown civilian jacket over thermal base layer, cargo pants with deep pockets in dark olive, worn brown boots, pulse pistol in hip holster that is slightly too well-made for a freelancer, everything in forgettable earth tones, nothing stands out in a crowd, relaxed lean posture, one hand near belt, casual but balanced, matte black holster, isolated on plain dark grey background",
+          "negative_additions": "military uniform, tactical gear, aggressive, spy gear, sunglasses, bright colors, memorable, heroic pose, combat stance"
+        },
+        {
+          "id": "jace_delvari_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Jace at a station bar — the cover in its natural habitat",
+          "prompt": "man with light brown hair in muted grey-brown jacket leaning casually against a dim station bar counter, easy smile directed at someone off-frame, one hand wrapped around a drink, other hand resting near his belt where the too-good holster sits, warm dim bar lighting, the posture of someone completely at ease who is actually tracking every exit, forgettable earth-tone clothing, frontier-station atmosphere",
+          "negative_additions": "military, tactical, aggressive, threatening, bright lighting, clean bar, luxury, spy gear visible"
+        },
+        {
+          "id": "jace_delvari_variant",
+          "view_type": "expression_variant",
+          "shot_type": "variant",
+          "variant_intent": "role_read_shift",
+          "variant_constraint": "MUST be unmistakably the same man as the friendly anchor — same hair, same jawline, same jacket, same holster position. Only the expression and read change. If this could be a different person, reject.",
+          "identity_anchor": false,
+          "scene_function": "the second-read Jace — the same face without the smile, reveals what lives underneath",
+          "prompt": "portrait head and shoulders, man in his late twenties with light brown hair, the smile gone, eyes sharp and tracking, jaw set with professional assessment, the same face as the friendly version but now the military discipline shows through the civilian surface, muted grey-brown jacket collar, steady hands, a trained eye now sees the posture is too balanced, the grooming too coordinated, the competence too practiced for a freelancer, cold station lighting, isolated on plain dark background",
+          "negative_additions": "smiling, friendly, warm, casual, relaxed, bright colors, obvious military, tactical gear"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "naia_of_threesong",
+      "subject_type": "named_character",
+      "faction": "keth",
+      "role": "crew",
+      "identity_lock": {
+        "face_shape": "elongated oval head, two large compound dark amber eyes, two segmented antennae sweeping forward, mandible plates, pale ivory chitin with amber segment edges",
+        "hair_head_structure": "no hair — segmented chitin head, antennae held carefully neutral (not relaxed, not aggressive)",
+        "body_language": "upper arms still and controlled, lower arms always busy organizing tools or data chips, wing-casings folded tight",
+        "costume_silhouette": "utility harness across upper torso with tool loops for all four arms, bone-white chitin-fiber woven harness, translucent amber bio-film base layer",
+        "non_negotiable_details": [
+          "censure mark etched into wing-casings — visible to other Keth, a permanent social wound",
+          "faded colony glyph on thorax — present but dim, she stopped maintaining it",
+          "dimmer bioluminescence than standard Keth — veins at joints muted, the visual symptom of isolation"
+        ],
+        "forbidden_drift_cues": [
+          "bright or vibrant bioluminescence",
+          "relaxed wing-casings",
+          "vibrant saturated colors",
+          "celebratory or open posture",
+          "human proportions or anatomy",
+          "insect that reads as Earth bug rather than alien arthropod"
+        ]
+      },
+      "shots": [
+        {
+          "id": "naia_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish Naia's face and the visual markers of censure — the diminished Keth",
+          "prompt": "portrait head and upper torso of a four-armed arthropod alien with pale ivory chitin exoskeleton, alien person standing upright in humanoid posture, segmented chitin torso with three plate divisions, four arms visible with upper pair still at sides and lower pair holding navigation data chips, elongated oval head wider than tall with two large dark amber compound eyes and no pupils, two segmented antennae sweeping forward held carefully neutral, mandible plates, chitin slightly duller than healthy with amber segment edges, faint censure mark etched into wing-casings folded flat against back tightly closed, bioluminescent veins at joints dimmer than standard, bone-white chitin-fiber utility harness across torso with tool loops, colony glyph on thorax present but dim, quiet competence, controlled grief, dignity under censure, isolated on plain dark background",
+          "negative_additions": "bright bioluminescence, relaxed wing-casings, spread wings, flying, vibrant colors, celebratory pose, human, person, man, woman, human proportions, Earth insect, bug, ant, beetle, spider, mantis, grasshopper, robotic, mechanical, cyborg, two arms only"
+        },
+        {
+          "id": "naia_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full anatomy and costume truth — four arms, digitigrade legs, harness tool loops",
+          "prompt": "full body visible front-facing view of a four-armed arthropod alien with pale ivory chitin exoskeleton, alien person standing upright in humanoid posture, 1.6 meters tall, segmented chitin torso with three visible plate divisions, four arms with two shoulder pairs each ending in three-digit hands with upper pair stronger and lower pair dexterous, two digitigrade legs with reverse-knee joints, elongated oval head with two large dark amber compound eyes, two segmented antennae, mandible plates, pale ivory chitin with muted amber edges, bone-white chitin-fiber utility harness across torso with tool loops for all four arms, translucent amber bio-film base layer, seasonal marker bands on upper arms faded, faint censure mark on wing-casings folded flat against back tightly closed, bioluminescent veins at joints dim, colony glyph on thorax faded, lower arms organizing tools, isolated on plain dark background",
+          "negative_additions": "bright bioluminescence, relaxed wing-casings, spread wings, flying, vibrant colors, celebratory, human, person, man, woman, Earth insect, bug, ant, beetle, spider, mantis, grasshopper, robotic, mechanical, cyborg, cute, chibi, two arms only, bipedal human"
+        },
+        {
+          "id": "naia_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Naia at her navigation station — proves identity in the Keth workspace",
+          "prompt": "four-armed arthropod alien with pale ivory chitin exoskeleton at a navigation work station inside an organic bio-resin room with warm amber bioluminescent walls, alien person in humanoid posture, all four arms working simultaneously with upper pair still on console edge and lower pair rapidly sorting navigation data chips into organic storage slots, elongated oval head with dark amber compound eyes focused on holographic star chart, two antennae extended forward reading data, segmented chitin torso, bone-white utility harness with tool loops, wing-casings folded flat against back tightly closed, bioluminescent veins dim, the professional precision of someone who has made this workspace her refuge",
+          "negative_additions": "bright bioluminescence, relaxed wing-casings, spread wings, vibrant, human, person, man, woman, metal walls, industrial, harsh lighting, Earth insect, bug, ant, spider, mantis, robotic, mechanical"
+        },
+        {
+          "id": "naia_variant",
+          "view_type": "expression_variant",
+          "shot_type": "variant",
+          "variant_intent": "persistence_under_shift",
+          "variant_constraint": "same anatomy, same harness, same censure mark — only the antennae position and bioluminescence intensity change. The body must read as the same Keth as the anchor.",
+          "identity_anchor": false,
+          "scene_function": "Naia's antennae-forward moment — curiosity overriding control, the flash of who she was before censure",
+          "prompt": "portrait head and upper torso of a four-armed arthropod alien with pale ivory chitin exoskeleton, alien person in humanoid posture, elongated oval head with dark amber compound eyes widened with interest, two antennae swept fully forward in involuntary curiosity, mandible plates slightly parted, segmented chitin with amber edges, the briefest flash of brighter bioluminescence at joints before she catches herself and dims again, wing-casings twitching toward opening before she forces them flat against back, bone-white chitin-fiber harness, four arms visible, a moment of the person she was before the colony marked her, warm amber ambient light, isolated on plain dark background",
+          "negative_additions": "fully bright bioluminescence, relaxed posture, spread wings, human, person, man, woman, Earth insect, bug, ant, spider, mantis, grasshopper, cold lighting, vibrant colors, celebratory, robotic, mechanical, cyborg"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "the_corrigan",
+      "subject_type": "named_ship",
+      "faction": "none",
+      "role": "ship",
+      "identity_lock": {
+        "silhouette": "small boxy cargo hauler, asymmetric profile from asymmetric repairs, cargo section visibly larger than crew section, cockpit a cramped bump on the front — reads at distance as ugly and functional",
+        "wear_pattern": "heaviest wear around docking collar and cargo ramp from daily use, engine nacelle area scorched from exhaust, hull midships shows oldest damage with deepest patching layers, cockpit area relatively cleaner because Maren maintains what he uses",
+        "patch_logic": "three visible generations of hull repair — original Compact grey, first dark replacement plate welded over breach, second lighter plate bolted on top of that. Each generation uses different fastening (weld, rivet, bolt) because different yards did the work. Patches are structural not cosmetic — nobody sanded the edges.",
+        "modification_philosophy": "every modification is functional, never aesthetic. The replacement engine nacelle is a different color because it was cheaper. The cargo hold rails were added aftermarket. Nothing was done to make the ship look better, only to keep it flying.",
+        "material_language": "Compact decommission origin — the underlying shape is regulation Compact boxy, but twenty years of non-Compact repair have layered Reach-style patch jobs and universal salvage parts over the original hull. The ship's faction is its history.",
+        "non_negotiable_details": [
+          "mismatched hull plates in at least 3 different shades — the repair history IS the ship's biography",
+          "one replacement engine nacelle a visibly different color from the other — the most recognizable asymmetry",
+          "CORRIGAN stenciled on hull in faded paint — already there when Maren bought it, never repainted"
+        ],
+        "recurring_identity_cues": [
+          "hull plate color mismatch must appear in every exterior shot",
+          "mismatched engine nacelle must appear in any shot showing the engine section",
+          "faded CORRIGAN stencil must appear in any shot showing that hull section",
+          "amber cockpit glow must appear in any shot showing the cockpit area",
+          "cramped two-seat cockpit must appear in any interior cockpit shot"
+        ],
+        "forbidden_drift_cues": [
+          "sleek or aerodynamic hull lines",
+          "military hardpoints, weapons, or military markings",
+          "pristine, new, or uniform hull color",
+          "large or impressive scale — this is a small hauler",
+          "heroic framing or dramatic beauty angles",
+          "symmetrical hull — the asymmetry from repairs is core identity"
+        ]
+      },
+      "shots": [
+        {
+          "id": "corrigan_anchor",
+          "view_type": "establishing",
+          "shot_type": "wide",
+          "identity_anchor": true,
+          "scene_function": "establish the Corrigan's hull truth — the ship equivalent of a used car with 200k miles",
+          "prompt": "tiny single-deck shuttle-sized cargo ship docked at a space station, boxy rectangular hull the size of a large van, the ship is dwarfed by the station docking arm towering above it, ugly and asymmetric from mismatched repair patches in three different shades of dirty grey and brown welded and bolted over old damage, one engine nacelle a visibly different color from the other, cockpit bump on the front barely large enough for two seats visible through a small viewport with amber glow, cargo section takes up most of the ship, the name CORRIGAN in faded peeling stencil paint on the hull, no weapons no military markings, docking scratches and scorch marks, a ship the size of a panel van with engines, dark space background",
+          "negative_additions": "sleek, military, pristine, large, impressive, weapon hardpoints, heroic angle, dramatic lighting, clean hull, symmetrical, new paint, carrier, destroyer, battleship, capital ship, fleet ship, warship, cruiser, frigate, corvette, massive, majestic, aerodynamic, multiple decks, aircraft carrier"
+        },
+        {
+          "id": "corrigan_cockpit",
+          "view_type": "signature_interior",
+          "shot_type": "interior",
+          "identity_anchor": false,
+          "scene_function": "the cockpit — two seats, cramped, amber glow, where Kael and crew live",
+          "prompt": "interior of a tiny cramped two-seat cockpit in a small cargo shuttle, the pilot and copilot seats are so close their elbows would touch, worn cracked seat padding, instrument panels with amber glow from aging displays, a worn leather logbook wedged beside the throttle, small viewport showing dark space, exposed cable runs under the console panels, toggle switches and manual controls not touchscreens, coffee ring stain on the copilot console, the walls are close enough to touch from either seat, dim amber lighting, the cockpit of a working van not a warship",
+          "negative_additions": "spacious, clean, military bridge, holographic displays, bright lighting, multiple crew stations, pristine, new equipment, touchscreens, large bridge, captain's chair, command deck"
+        },
+        {
+          "id": "corrigan_cargo",
+          "view_type": "functional_detail",
+          "shot_type": "detail",
+          "identity_anchor": false,
+          "scene_function": "the cargo hold — the useful part, the reason the ship exists",
+          "prompt": "interior of a tiny cargo shuttle hold, the single largest room on a very small ship, barely tall enough to stand in, mag-locked cargo crates strapped to deck rails leaving a narrow walkway down the center, exposed hull plates visible from inside showing different repair generations in different shades of grey, a tool rack mounted to one wall with wrenches and cutters, overhead industrial lighting strip with one section flickering, loading ramp mechanism at the back with hydraulic stains on the deck, the hold of a ship the size of a delivery van",
+          "negative_additions": "spacious, luxury, clean, military, organized neatly, bright lighting, passenger seating, decorative, cavernous, large bay, hangar"
+        },
+        {
+          "id": "corrigan_exterior_detail",
+          "view_type": "lived_in_proof",
+          "shot_type": "proof",
+          "identity_anchor": false,
+          "scene_function": "close-up hull detail — the repair history is the ship's biography",
+          "prompt": "close-up detail of a small boxy ship hull showing three generations of repair work, original Compact-standard grey hull plate with faded registry numbers, a darker replacement panel welded over a patched breach, a third lighter plate bolted over that with visible rivet heads, the name CORRIGAN partially visible in faded stencil paint, docking scratch marks, scorch marks from an old engine flare, a hull that tells twenty years of survival stories in metal, the scale suggests a small shuttle not a large vessel",
+          "negative_additions": "clean, pristine, new paint, uniform color, military markings, smooth hull, decorative, large vessel, capital ship"
+        }
+      ]
+    }
+  ]
+}

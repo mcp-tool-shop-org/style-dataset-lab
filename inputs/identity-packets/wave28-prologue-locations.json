@@ -1,0 +1,210 @@
+{
+  "lane": "wave28-prologue-locations",
+  "description": "Wave 28: Named prologue locations — 3 spaces that define the prologue's emotional arc. Freeport is rock bottom. Communion Relay is first contact with the alien. TCS Ardent is the institution that betrayed Kael. Each gets establishing + signature interior + functional detail + lived-in proof.",
+  "authority": "VISUAL_BIBLE.md Section 11 + STATION_BIBLE.md",
+  "gates": "canon/identity-gates.md",
+  "depends_on": "wave27a-identity-spine (character anchors help ground location context shots)",
+  "generation_method": "txt2img from Section 11 specs, curate establishing shot as anchor, img2img for interior consistency",
+  "style_prefix": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes",
+  "negative_base": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+
+  "subjects": [
+    {
+      "subject_name": "freeport_station",
+      "subject_type": "named_location",
+      "faction": "reach",
+      "role": "location",
+      "identity_lock": {
+        "structural_shape": "asymmetric, jerry-rigged, mismatched hull plating from multiple salvage sources, exposed conduits and cable runs, no symmetry anywhere",
+        "material_language": "Sable Reach stripped — torn off something else, welded from scrap, held together with intent not craft. Rust brown hull plates, dirty yellow lighting, grey deck plates, copper conduits",
+        "signature_elements": [
+          "mismatched hull plating from multiple salvage sources — no two panels the same shade",
+          "improvised market stalls built from cargo crates — commerce as survival architecture",
+          "flickering yellow-white industrial lighting — harsh, cheap, functional"
+        ],
+        "lighting_mood": "flickering yellow-white industrial, harsh and cheap, occasional warm pool from bar or vendor lamp",
+        "forbidden_drift_cues": [
+          "clean or organized appearance",
+          "bright uniform lighting",
+          "military or government signage",
+          "decorative or luxurious elements",
+          "spacious or well-planned layout"
+        ]
+      },
+      "shots": [
+        {
+          "id": "freeport_establishing",
+          "view_type": "establishing",
+          "shot_type": "wide",
+          "identity_anchor": true,
+          "scene_function": "the first impression of rock bottom — rough but alive",
+          "location_name": "freeport_station",
+          "prompt": "wide establishing shot of a rough space station interior market district, exposed conduits and cable runs across ceiling, mismatched hull plating from multiple salvage sources in different shades of rust brown and grey, flickering yellow-white industrial lighting, cargo crates repurposed as market stalls and furniture, improvised vendor signs in multiple alien scripts, grease stains on deck plates, people moving through in worn functional clothing, the architecture of survival not design, rough but alive, a place where outcasts build something",
+          "negative_additions": "clean, bright, military, organized, decorative, luxurious, spacious, government signage, regulation, uniform lighting"
+        },
+        {
+          "id": "freeport_old_drens_bar",
+          "view_type": "signature_interior",
+          "shot_type": "interior",
+          "identity_anchor": false,
+          "scene_function": "Old Dren's bar — the social center, where contracts happen and rumors travel",
+          "location_name": "freeport_station",
+          "prompt": "interior of a dim rough station bar, warm amber lighting from improvised lamps mounted on exposed conduit brackets, a long counter made from welded hull plating, mismatched stools bolted to the deck, bottles on shelves behind the bar in no particular order, a faded contract board on one wall covered in pinned notes, a few patrons in worn functional clothing nursing drinks, cargo crate booths along one wall with privacy screens made from old hull panels, the social center of a station that does not have official ones, warm despite the rust",
+          "negative_additions": "clean, bright, upscale, cocktail bar, neon signs, luxury, organized, spacious, modern, decorative lighting"
+        },
+        {
+          "id": "freeport_docks",
+          "view_type": "functional_detail",
+          "shot_type": "detail",
+          "identity_anchor": false,
+          "scene_function": "the docking level — where cargo moves and mechanics work",
+          "location_name": "freeport_station",
+          "prompt": "station docking bay interior, industrial and rough, a small battered cargo hauler visible through the docking port, mechanics working on exposed ship systems, fuel vendor cart with improvised pumping rig, cargo crates being moved on hand-pushed trolleys, deck plates stained with hydraulic fluid and fuel, overhead industrial lighting strips some working some not, tool carts and welding equipment scattered around work areas, the smell of ozone and engine grease suggested by the visual grime, copper conduit runs along every wall",
+          "negative_additions": "clean, organized, military docking bay, automated systems, bright lighting, pristine ships, robotic cargo handling"
+        },
+        {
+          "id": "freeport_bunks",
+          "view_type": "lived_in_proof",
+          "shot_type": "proof",
+          "identity_anchor": false,
+          "scene_function": "bunk rentals — where Kael sleeps when he first arrives, the lowest point",
+          "location_name": "freeport_station",
+          "prompt": "cramped station bunk rental, a narrow corridor with stacked sleeping pods behind thin curtains made from cargo netting and salvaged fabric, a single overhead light strip casting harsh shadows, a shared lavatory door at the end with a queue mark scratched into the wall, personal belongings in mesh bags hung from hooks, the temporary housing of people between ships or between luck, functional and depressing but not dangerous, the floor swept even if the walls are rusted",
+          "negative_additions": "spacious, comfortable, hotel room, clean sheets, private room, bright lighting, decorative, luxury, military barracks"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "communion_relay",
+      "subject_type": "named_location",
+      "faction": "keth",
+      "role": "location",
+      "identity_lock": {
+        "structural_shape": "grown not built, curved bio-resin walls, no straight lines anywhere, segmented archways like the inside of a massive arthropod shell, compound curves",
+        "material_language": "Keth Communion grown — cultivated, secreted, harvested. Warm amber resin, pale ivory chitin surfaces, coral-pink accents, soft gold bioluminescent veins",
+        "signature_elements": [
+          "bio-resin walls that pulse with soft amber bioluminescence — the station breathes",
+          "segmented archways like arthropod shell interior — organic architecture at cathedral scale",
+          "no straight lines or metal surfaces anywhere — everything curves, everything grows"
+        ],
+        "lighting_mood": "soft warm amber bioluminescence from the walls themselves, no artificial light sources, warm and formal like a living cathedral",
+        "forbidden_drift_cues": [
+          "metal surfaces or industrial materials",
+          "straight lines or right angles",
+          "harsh or cold lighting",
+          "human architectural conventions",
+          "cold color temperature"
+        ]
+      },
+      "shots": [
+        {
+          "id": "communion_relay_establishing",
+          "view_type": "establishing",
+          "shot_type": "wide",
+          "identity_anchor": true,
+          "scene_function": "first contact with the alien — a cathedral made of bone and light",
+          "location_name": "communion_relay",
+          "prompt": "wide establishing shot of an alien organic space station interior, grown not built, curved bio-resin walls that pulse with soft amber bioluminescence, no straight lines anywhere, segmented archways like the inside of a massive arthropod shell receding into warm distance, pale ivory chitin surfaces with coral-pink accents, soft gold bioluminescent veins tracing through every surface, keth arthropod aliens moving through at unhurried pace, warm amber light emanating from the walls themselves, ancient and alive, a cathedral made of bone and light",
+          "negative_additions": "metal, straight lines, industrial, harsh lighting, human architecture, cold colors, modern, steel, concrete, fluorescent, angular, human, person, man, woman"
+        },
+        {
+          "id": "communion_relay_trade_hall",
+          "view_type": "signature_interior",
+          "shot_type": "interior",
+          "identity_anchor": false,
+          "scene_function": "the trade hall — where commerce happens at Keth pace, bioluminescent price displays grown into walls",
+          "location_name": "communion_relay",
+          "prompt": "interior of an alien trade hall, curved bio-resin chamber with high vaulted ceiling of segmented arcs, bioluminescent price displays grown directly into the amber resin walls showing trade values in alien glyphs, a trade-speaker's alcove in the center with a slightly raised organic platform, keth arthropod aliens in bone-white harnesses standing at trade positions, warm amber and coral-pink bioluminescent glow, organic storage niches in the walls holding trade goods, no metal no screens no technology that was built rather than grown, patient ancient commerce",
+          "negative_additions": "metal, screens, digital displays, straight lines, industrial, harsh lighting, human, modern technology, cold, angular, fluorescent"
+        },
+        {
+          "id": "communion_relay_navigation_office",
+          "view_type": "functional_detail",
+          "shot_type": "detail",
+          "identity_anchor": false,
+          "scene_function": "Naia's workplace — navigation data chips in organic storage slots, where she builds her refuge",
+          "location_name": "communion_relay",
+          "prompt": "close view of an organic navigation office inside a Keth station, a curved work surface grown from amber bio-resin, rows of small organic storage slots in the wall each holding a navigation data chip, a holographic star chart projected from a bioluminescent membrane, tool loops grown into the desk surface for four-armed workers, soft amber bioluminescent lighting from veins in the ceiling, data chip organizing trays made of chitin, the precise organized workspace of someone who finds order comforting, warm and functional despite being entirely alien",
+          "negative_additions": "metal desk, computer screens, keyboard, mouse, straight lines, cold lighting, human office, industrial, angular, fluorescent, human, person"
+        },
+        {
+          "id": "communion_relay_archive_corridor",
+          "view_type": "lived_in_proof",
+          "shot_type": "proof",
+          "identity_anchor": false,
+          "scene_function": "the restricted archive corridor — dimmer, deeper, ancient knowledge stored in living walls",
+          "location_name": "communion_relay",
+          "prompt": "a corridor deep inside a Keth organic station, narrower than the public areas, dimmer amber bioluminescence suggesting restricted access, the bio-resin walls thicker and older here with visible growth rings like ancient wood, sealed membrane doors with faint pheromone-lock indicators, the corridor curves and descends gently, archive chambers visible through translucent resin walls showing dark shapes of stored knowledge objects, the feeling of entering somewhere very old and very private, warm but solemn amber glow",
+          "negative_additions": "bright, metal, industrial, modern, straight corridor, doors with handles, human architecture, cold, fluorescent, angular, open, public, human, person"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "tcs_ardent",
+      "subject_type": "named_location",
+      "faction": "compact",
+      "role": "location",
+      "identity_lock": {
+        "structural_shape": "rectangles, straight edges, 90-degree corners everywhere, regulation-standard, identical panels, the opposite of Freeport in every way",
+        "material_language": "Compact military pressed — machine-stamped, regulation-issued, identical. Steel-blue wall panels, charcoal grey deck, white regulation lighting, silver trim",
+        "signature_elements": [
+          "steel-blue wall panels with regulation lighting strips — institutional uniformity",
+          "mag-locked doors with security scanners — controlled access everywhere",
+          "rank insignia on bulkheads — the military hierarchy made visible in architecture"
+        ],
+        "lighting_mood": "white regulation lighting strips, cool and even, competent but impersonal — a well-lit cage",
+        "forbidden_drift_cues": [
+          "organic or curved surfaces",
+          "warm or colored lighting",
+          "civilian or messy elements",
+          "personal decoration or graffiti",
+          "aged or deteriorated materials"
+        ]
+      },
+      "shots": [
+        {
+          "id": "ardent_establishing",
+          "view_type": "establishing",
+          "shot_type": "wide",
+          "identity_anchor": true,
+          "scene_function": "the institution — home that becomes a cage, everything Kael lost",
+          "location_name": "tcs_ardent",
+          "prompt": "wide establishing shot of a military spaceship corridor interior, Compact Fleet carrier, clean straight corridor with steel-blue wall panels, regulation white lighting strips, mag-locked doors with security scanners, rank insignia plates on bulkheads, everything rectangular and precise, charcoal grey deck perfectly clean, silver trim on doorframes, crew in regulation uniforms moving with purpose, institutional order, competent but impersonal, the architecture of authority and control, cool even lighting",
+          "negative_additions": "organic, curved, warm, colorful, civilian, messy, lived-in, personal decoration, graffiti, rust, damage, flickering lights"
+        },
+        {
+          "id": "ardent_ready_room",
+          "view_type": "signature_interior",
+          "shot_type": "interior",
+          "identity_anchor": false,
+          "scene_function": "the ready room — where missions are briefed and careers are made or broken",
+          "location_name": "tcs_ardent",
+          "prompt": "interior of a military ready room on a Compact Fleet carrier, rectangular room with steel-blue wall panels, a central briefing table with a holographic navigation chart display, padded chairs in regulation charcoal at each station, mission status boards on one wall with current assignments in regulation format, the Compact Fleet emblem on the far wall in silver and blue, overhead white regulation lighting, a podium for the briefing officer, the room where crew prep happens before missions, institutional precision, cool lighting",
+          "negative_additions": "organic, curved, warm lighting, civilian, messy, personal items, decorative, colorful, cozy, informal"
+        },
+        {
+          "id": "ardent_corridor_detail",
+          "view_type": "functional_detail",
+          "shot_type": "detail",
+          "identity_anchor": false,
+          "scene_function": "corridor junction — the institutional machine visible in its infrastructure",
+          "location_name": "tcs_ardent",
+          "prompt": "close detail of a Compact Fleet carrier corridor junction, steel-blue wall panels meeting at precise 90-degree corners, a mag-locked security door with a scanner pad glowing soft blue, directional signage in regulation Compact font pointing to sections by number, a fire suppression system panel flush-mounted in the wall, deck plate with anti-slip texture in charcoal grey, silver trim strips at panel joints, regulation lighting strip running the corridor length, a wall-mounted emergency station with sealed equipment behind a labeled panel, everything labeled everything controlled",
+          "negative_additions": "organic, curved, rust, damage, graffiti, warm lighting, civilian, personal items, messy, improvised"
+        },
+        {
+          "id": "ardent_docking_bay",
+          "view_type": "lived_in_proof",
+          "shot_type": "proof",
+          "identity_anchor": false,
+          "scene_function": "the docking bay — the last thing Maren sees as the Ardent pulls away, the moment of loss",
+          "location_name": "tcs_ardent",
+          "prompt": "Compact Fleet carrier docking bay viewed from outside through a viewport, the carrier pulling away showing its rectangular hull section and regulation nav lights, the docking bay doors closing with mechanical precision, the steel-blue interior visible through the narrowing gap, the last glimpse of institutional order receding, cold space surrounding, the carrier getting smaller, the emotional weight of watching your life close a door on you, cool regulation lighting inside contrasting with the dark of space outside",
+          "negative_additions": "organic, warm, colorful, civilian, approaching ship, welcoming, bright, dramatic explosion, combat, weapons fire"
+        }
+      ]
+    }
+  ]
+}

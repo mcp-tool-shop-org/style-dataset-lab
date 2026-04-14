@@ -1,0 +1,174 @@
+{
+  "lane": "wave27b-prologue-expansion",
+  "description": "Wave 27B: P1 prologue expansion — 3 named supporting characters. Only proceed after Wave 27A anchors are accepted. These characters appear in the prologue but are not the proof set.",
+  "authority": "VISUAL_BIBLE.md Section 11 + PROLOGUE_CANON.md",
+  "gates": "canon/identity-gates.md",
+  "depends_on": "wave27a-identity-spine (anchors must be accepted first)",
+  "generation_method": "Phase 1 txt2img discovery, Phase 2 anchor curation, Phase 3 img2img/IP-Adapter follow-on",
+  "style_prefix": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes",
+  "negative_base": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+
+  "subjects": [
+    {
+      "subject_name": "aldric_solen",
+      "subject_type": "named_character",
+      "faction": "compact",
+      "role": "antagonist",
+      "identity_lock": {
+        "face_shape": "square jaw, deep lines around eyes from decades of command, grey-blue eyes direct and unwavering, early fifties",
+        "hair_head_structure": "silver at temples, military-cut, greying but distinguished not aged",
+        "body_language": "command posture, hands clasped behind back or at attention, the stillness of someone who does not need to prove anything",
+        "costume_silhouette": "Compact Fleet captain's dress uniform, dark navy with silver trim, high collar, long coat variant, captain's insignia polished",
+        "non_negotiable_details": [
+          "impeccable uniform — the institution personified, not a crease out of place",
+          "worn leather logbook in breast pocket — Maren's gift, he still carries it",
+          "direct eye contact — he faces what he does, that is the cruelty"
+        ],
+        "forbidden_drift_cues": [
+          "casual clothing or disheveled appearance",
+          "visible emotion or villainous expression",
+          "cape or dramatic costume elements",
+          "dramatic villain lighting",
+          "young or handsome-hero look"
+        ]
+      },
+      "shots": [
+        {
+          "id": "aldric_solen_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish the mentor-turned-trap — authority that reads as trustworthy because it was built to",
+          "prompt": "portrait head and shoulders, detailed face, military man in his early fifties, silver at temples, grey-blue eyes direct and unwavering, deep lines around eyes from decades of command, square jaw, military-straight posture, Compact Fleet captain's dress uniform in dark navy with silver trim, high collar, captain's insignia polished, the kind of face that inspires trust because it was built to, authority masking controlled regret, conviction masking guilt, isolated on plain dark grey background",
+          "negative_additions": "casual clothing, visible emotion, disheveled, villainous expression, cape, dramatic lighting, young, handsome hero, smirking"
+        },
+        {
+          "id": "aldric_solen_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full uniform truth — he IS the institution",
+          "prompt": "full body visible, front-facing view, military man in his early fifties with silver at temples, Compact Fleet captain's dress uniform in dark navy with silver trim, captain's insignia polished, high collar, fitted cut, long coat variant for senior officers, worn leather logbook visible in breast pocket, officer's sidearm in regulation holster, polished black boots, standing with hands clasped behind back, command posture, charcoal coat over navy uniform, the uniform is spotless because the institution demands it, isolated on plain dark grey background",
+          "negative_additions": "casual, disheveled, villainous, dramatic, cape, bright colors, combat gear, field uniform, young"
+        },
+        {
+          "id": "aldric_solen_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Solen on the Ardent bridge — command in its natural habitat",
+          "prompt": "military man in his early fifties with silver temples in dark navy captain's uniform standing at a Compact Fleet carrier bridge, steel-blue wall panels, regulation lighting strips, hands clasped behind his back reviewing a tactical display, grey-blue eyes focused, the leather logbook visible in his breast pocket, officers at stations around him, institutional competence personified, the bridge of TCS Ardent, cool regulation lighting",
+          "negative_additions": "casual, emotional, villainous, dramatic, dark moody lighting, alone, civilian surroundings"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "risa_kade",
+      "subject_type": "named_character",
+      "faction": "compact",
+      "role": "supporting",
+      "identity_lock": {
+        "face_shape": "square face, jaw set, compact powerful build, forty, small scars on hands and knuckles",
+        "hair_head_structure": "grey-streaked short-cropped hair, close military cut with visible grey",
+        "body_language": "fills doorways with certainty not size, always scanning, hands busy checking gear",
+        "costume_silhouette": "Compact NCO flight suit, practical and well-worn, reinforced at shoulders and knees, equipment pouches on thighs and chest, no officer trim",
+        "non_negotiable_details": [
+          "grey-streaked cropped hair — twenty-year veteran marker",
+          "hand scars — small battle scars on both hands from two decades of tight-quarters work",
+          "standard-issue everything maintained perfectly — NCO pride, not officer polish"
+        ],
+        "forbidden_drift_cues": [
+          "officer uniform or officer trim",
+          "glamorous or decorative appearance",
+          "posed or fashion stance",
+          "clean unused gear",
+          "young appearance"
+        ]
+      },
+      "shots": [
+        {
+          "id": "risa_kade_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish the backbone of the ship — twenty years of corridors in one face",
+          "prompt": "portrait head and shoulders, detailed face, woman of forty with compact powerful build, grey-streaked hair cropped close, square face with jaw set, small scars on hands visible at frame edge, eyes that have seen twenty years of corridors and read every one of them, Compact NCO flight suit in steel blue, well-worn, reinforced at shoulders, comms headset around neck, posture that fills the frame with certainty not size, reliable competence, protective watchfulness, isolated on plain dark grey background",
+          "negative_additions": "officer uniform, glamorous, decorative, posed, clean unused gear, young, pretty, soft, officer trim, silver insignia"
+        },
+        {
+          "id": "risa_kade_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full NCO kit — the working-class military silhouette",
+          "prompt": "full body visible, front-facing view, woman of forty with compact powerful build, grey-streaked hair cropped close, Compact NCO flight suit in steel blue practical and well-worn, reinforced at shoulders and knees, equipment pouches on thighs and chest, no officer trim, sidearm in thigh holster, multi-tool on belt, comms headset around neck, small battle scars on both hands, charcoal reinforcement panels, matte black gear, standing in doorway checking gear, hands busy, scanning, isolated on plain dark grey background",
+          "negative_additions": "officer uniform, glamorous, decorative, clean gear, young, pretty, officer trim, silver trim, posed, fashion"
+        },
+        {
+          "id": "risa_kade_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Kade checking squad equipment — the NCO in her element",
+          "prompt": "woman of forty with grey-streaked cropped hair in steel blue NCO flight suit standing in a military corridor checking a subordinate's equipment, hands testing a strap buckle, small scars on knuckles visible, comms headset around her neck, equipment pouches loaded, thigh holster, the posture of someone who has done this check ten thousand times and will do it ten thousand more, steel-blue wall panels, regulation corridor lighting",
+          "negative_additions": "officer uniform, glamorous, seated, relaxed, decorative, young, civilian corridor, bright lighting"
+        }
+      ]
+    },
+
+    {
+      "subject_name": "lysa_orin",
+      "subject_type": "named_character",
+      "faction": "compact",
+      "role": "supporting",
+      "identity_lock": {
+        "face_shape": "earnest young face that shows every emotion, late twenties, slight build",
+        "hair_head_structure": "brown hair in regulation bun",
+        "body_language": "focused downward when working, hands move with medical precision, always near her med kit",
+        "costume_silhouette": "Compact Fleet medical uniform, white-over-blue, slightly rumpled from long shifts, medical department patch on shoulder",
+        "non_negotiable_details": [
+          "med kit always present — slung over one shoulder, her tool belt equivalent",
+          "slightly rumpled uniform — she works, she does not polish",
+          "expressive face — she cannot hide what she feels, which makes the court martial silence worse"
+        ],
+        "forbidden_drift_cues": [
+          "combat gear or weapons",
+          "aggressive pose or military bearing",
+          "hardened or stoic expression",
+          "pristine pressed uniform",
+          "older or weathered appearance"
+        ]
+      },
+      "shots": [
+        {
+          "id": "lysa_orin_anchor",
+          "view_type": "anchor_portrait",
+          "shot_type": "portrait",
+          "identity_anchor": true,
+          "scene_function": "establish the healer who could not speak — earnest face carrying the weight of silence",
+          "prompt": "portrait head and shoulders, detailed face, young woman in her late twenties with slight build, brown hair in regulation bun, young earnest face that shows every emotion, Compact Fleet medical uniform white-over-blue slightly rumpled from long shifts, medical department patch on shoulder, scanner pen in breast pocket, the kind of person you trust to stitch you up and tell you the truth, earnest competence, quiet empathy, the weight of knowing and saying nothing, isolated on plain dark grey background",
+          "negative_additions": "combat gear, aggressive, military bearing, hardened expression, weapons, pristine uniform, older, weathered, stoic"
+        },
+        {
+          "id": "lysa_orin_fullbody",
+          "view_type": "full_body",
+          "shot_type": "standing",
+          "identity_anchor": false,
+          "scene_function": "full medical corps silhouette — the healer variant of institutional uniform",
+          "prompt": "full body visible, front-facing view, young woman in her late twenties with slight build, brown hair in regulation bun, Compact Fleet medical uniform white tunic over steel blue, slightly rumpled, medical department patch on shoulder, Compact-issue med kit slung over one shoulder, scanner pen in breast pocket, data tablet for patient records in one hand, latex-analog gloves tucked into belt, sensible flat shoes, the softer cut of medical corps uniform with more practical pockets, silver med kit, matte polymer tools, checking med kit contents, focused downward, hands working, isolated on plain dark grey background",
+          "negative_additions": "combat gear, aggressive, military, hardened, weapons, pristine, older, weathered, heroic, posed"
+        },
+        {
+          "id": "lysa_orin_context",
+          "view_type": "context",
+          "shot_type": "working",
+          "identity_anchor": false,
+          "scene_function": "Dr. Orin treating a patient — medical precision and visible empathy",
+          "prompt": "young woman in white-over-blue Compact medical uniform kneeling beside a patient on a military ship corridor deck, brown hair in regulation bun coming slightly loose, med kit open beside her, hands working with medical precision applying a wound seal, scanner pen between her teeth, young face showing undisguised concern for the patient, rumpled uniform sleeves pushed up, the corridor of TCS Ardent with steel-blue walls and regulation lighting, earnest focus",
+          "negative_additions": "combat, aggressive, stoic, standing idle, pristine, older, weapons, dark moody lighting, civilian hospital"
+        }
+      ]
+    }
+  ]
+}
