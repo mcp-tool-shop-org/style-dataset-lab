@@ -1,0 +1,117 @@
+{
+  "lane": "wave26-station-identities",
+  "description": "Wave 26: 9 station visual identities — 2-3 key shots per station capturing the defining landmark and atmosphere. Focus on architecture, lighting, and lived-in detail that makes each station recognizable.",
+  "style_prefix": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+
+  "subjects": [
+    {
+      "id": "meridian_customs_queue",
+      "prompt": "long customs checkpoint queue inside a space station — harsh overhead fluorescent lighting, grey composite walls with steel-blue accent bands, yellow safety stripe along floor, digital customs displays, a line of scanning equipment and inspection desks stretching into the distance, regulation signage everywhere, floor tiles worn through at the queue line, institutional and soulless, the bureaucratic face of space commerce"
+    },
+    {
+      "id": "meridian_market_hall",
+      "prompt": "regulated space station market hall — open rectangular floor plan with vendor booths arranged in perfect grid pattern, digital price board displays glowing amber, customs desk at every entrance, steel-blue walls, warm calculated lighting designed to make goods look appealing, cargo crates stacked precisely, the efficient soulless commerce of an institutional trade hub"
+    },
+    {
+      "id": "meridian_exterior",
+      "prompt": "large rotating ring space station seen from approaching ship — clean cylindrical profile with docking pylons extending outward, steel-blue hull plating with regulation white stripe at equator, amber navigation lights at even intervals, painted hull numbers, corporate logos faded by solar exposure, the station arc visible against star field, cold institutional beauty"
+    },
+    {
+      "id": "communion_docking_iris",
+      "prompt": "organic alien space station docking entrance — a massive iris aperture made of overlapping bio-resin plates spiraling open like a camera shutter, warm amber bioluminescent veins threading through translucent amber walls, the interior glowing golden, a ship approaching the biological entrance, the station's living hull visible with growth rings and hexagonal compound-eye windows, deeply alien architecture"
+    },
+    {
+      "id": "communion_outer_market",
+      "prompt": "alien organic bazaar inside a living space station — curved bio-resin walls with amber bioluminescent lighting, trade niches and alcoves grown directly into the organic structure, grip-ridge textured floors, pheromone staining as dark deposits at doorways, metal grab handles bolted crudely to living walls as concession to visiting species, humid atmosphere with moisture on surfaces, hexagonal corridors"
+    },
+    {
+      "id": "communion_nursery_glimpse",
+      "prompt": "translucent amber bio-resin wall of an alien space station with a nursery visible through the semi-transparent surface — pale shapes of alien hatchlings moving inside in warm golden light, bioluminescent veins pulsing slowly in the wall structure, growth rings visible in cross-section, moisture beading on the warm organic surface, intimate and alien, the living architecture of a hive species"
+    },
+    {
+      "id": "drashan_approach",
+      "prompt": "angular dark fortress space station exterior — aggressive wedge-shaped structure with pointed arches and triangular buttresses, dark charcoal metal plates with visible hammer marks and rivet heads, house insignia painted large in crimson on flanks, crimson engine glow, weapon emplacements visible and deliberate, captured hull fragments mounted along the approach corridor as trophies, intimidating martial architecture floating in space"
+    },
+    {
+      "id": "drashan_trade_hall",
+      "prompt": "interior of an alien warrior civilization's trade hall — tall pointed-arch vaulted ceiling in dark stone, a massive bronze wall panel covered in etched names and debts (the Debt Ledger), dim amber forge-light casting long shadows, weapon racks along walls with some brackets empty, heated dark stone floor with bronze inlay crests, heavy forged metal furniture, trade conducted under the weight of martial tradition"
+    },
+    {
+      "id": "drashan_training_yard",
+      "prompt": "open training arena inside an angular fortress space station — heated dark stone floor worn smooth in combat circles, weapon racks along angular basalt walls, amber torchlike lighting, heavy forged structural beams with hammer-mark texture overhead, crimson banners hanging from ceiling, the sparring ground of a warrior species, scorch marks and blade gouges preserved on surfaces as pride"
+    },
+    {
+      "id": "drift_exterior",
+      "prompt": "smooth elliptical alien space station surrounded by a cloud of small broker pods and shuttle traffic — teal matte hull with chrome sensor nodes bristling from every surface, oversized engine nacelles, dozens of small trading vessels clustered around the main hull like pilot fish around a whale, holographic drift-pattern identifiers shifting on the hull surface, the mobile marketplace of space traders"
+    },
+    {
+      "id": "drift_data_wall",
+      "prompt": "floor-to-ceiling holographic commodity display inside an alien trading station — shifting teal and gold data streams, real-time price feeds and trade volume indicators projected on translucent membrane walls, chrome structural elements reflecting the glow, micro-dimple flooring for tentacle grip, condensation on every metal surface, the living heartbeat of an interstellar market"
+    },
+    {
+      "id": "drift_telling_chamber",
+      "prompt": "spherical negotiation chamber inside a cephalopod alien trading station — curved teal membrane walls, a raised chrome platform in the center, holographic trade data surrounding the space, ambient teal lighting with chromatophore-reactive fabric shifting between teal and pearl and violet in slow waves, designed for intense face-to-face negotiation, intimate and pressurized atmosphere"
+    },
+    {
+      "id": "ironjaw_main_cavern",
+      "prompt": "massive cavern market inside a hollowed asteroid pirate station — natural rock ceiling high above, vendor stalls made from stacked cargo containers, goods displayed on tarps and metal shelving, lighting from a hundred different stolen sources in conflicting color temperatures, spray paint territory tags on rock walls, every surface layered with paint and rust and weld scars, chaotic dense and alive, the Kowloon Walled City of space"
+    },
+    {
+      "id": "ironjaw_approach",
+      "prompt": "exterior of a pirate space station carved from a large asteroid — raw rock surface with welded steel patches, stolen docking clamps bolted on at random angles, mismatched running lights in different colors from different ships, antenna arrays and exhaust vents poking out of rock crevices, faction tags spray-painted on approach-facing surfaces, weapon emplacements hidden in rock fissures, a dangerous place that advertises danger"
+    },
+    {
+      "id": "ironjaw_ancestor_market",
+      "prompt": "guarded section of an asteroid cavern market where ancient alien artifacts are sold — polyhedral objects with faint luminescent veins displayed under armed guard on makeshift platforms, the artifacts visibly too regular and too clean compared to everything around them, ancient technology amid scavenged chaos, harsh work-light illumination, the most valuable and dangerous corner of a lawless station"
+    },
+    {
+      "id": "mourning_exterior",
+      "prompt": "small golden organic space station grown around a thermal vent — barnacle-like bio-resin structure attached to an asteroid near a heat source, translucent amber walls glowing with warm internal light, bioluminescent veins pulsing very slowly (a resting heartbeat), a few ships docked at organic iris ports, gentler and smaller than other stations, a hospice in space, warmth radiating outward"
+    },
+    {
+      "id": "mourning_healer_dock",
+      "prompt": "organic docking bay of an alien hospice station — a damaged merchant ship surrounded by small healer drones examining hull scars, warm amber bioluminescent lighting, bio-resin walls grown close and nurturing around the docking space, the atmosphere visibly humid and warm, a place where ships come to be repaired and crews come to recover, gentle alien compassion expressed through living architecture"
+    },
+    {
+      "id": "spindle_claims_hall",
+      "prompt": "bureaucratic claims processing hall in a narrow space station — rows of identical desks under aggressively bright overhead lighting, document stamps and data terminals on every surface, filing systems and regulation manuals stacked precisely, queue dividers creating orderly lines, the walls covered in compliance notices and administrative codes, brighter and more uncomfortable than any other station interior, institutional power through paperwork"
+    },
+    {
+      "id": "spindle_exterior",
+      "prompt": "tall thin vertical space station floating in space — narrow rotating cylinder bristling with communication arrays and data relay dishes, antenna arrays extending from every surface, clean steel-blue hull with corporate Compact logo visible, looks like a broadcast tower not a habitat, precise and bureaucratic even in silhouette, orbiting alone against starfield"
+    },
+    {
+      "id": "queue_board",
+      "prompt": "massive queue display board inside a crowded relief station — a wall-sized screen showing ship queue positions with priority levels and estimated wait times in multiple languages, the most watched screen in the system, teal Orryn membrane architecture meeting grey Compact bolt-on panels at visible seams, condensation on mixed-material surfaces, tense atmosphere of ships waiting for clearance during shortage operations"
+    },
+    {
+      "id": "queue_seam_corridor",
+      "prompt": "architectural seam corridor inside a hybrid space station — teal translucent alien membrane wall meeting flat grey composite Compact panel at an ugly junction, visible bolts and sealant where two incompatible building systems were forced together, condensation dripping at the thermal boundary, neither comfortable for either species, emergency cooperation made permanent, the visual scar of compromise"
+    },
+    {
+      "id": "burn_gate_approach",
+      "prompt": "small angular fortress space station controlling a narrow passage — squat aggressive military structure with two forward-facing weapon platforms flanking a narrow docking channel, dark unpainted metal with weapon scorch marks, searchlights sweeping the approach, warning beacons flashing, the gate is the only way through, a tollbooth with guns floating in space, utilitarian Veshan military architecture stripped of all ceremony"
+    },
+    {
+      "id": "burn_gate_tariff_office",
+      "prompt": "interior of a border fortress tariff inspection office — narrow angular room with a military alien official behind heated dark stone desk, seized cargo visible through a window into the holding bay where crates have gathered dust for years, dim amber lighting, weapon racks on walls, the air of a place where everything is negotiable but nothing is acknowledged as negotiable, border corruption expressed through architecture"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 270000
+  }
+}

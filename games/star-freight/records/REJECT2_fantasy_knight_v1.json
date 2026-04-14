@@ -1,0 +1,171 @@
+{
+  "id": "REJECT2_fantasy_knight_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:49:55.530Z",
+  "asset_path": "outputs/rejected/REJECT2_fantasy_knight_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1568842
+  },
+  "provenance": {
+    "workflow_id": "wave2-compact-diversity",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male in full medieval plate armor with chainmail, a heraldic tabard, a broadsword and kite shield, standing in front of a castle wall, the armor is polished silver with gold trim and enamel inlays, a plumed helmet under one arm, he looks like he belongs at a Renaissance faire not on a spaceship",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 20042,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7384,
+    "gpu_model": "RTX 5080",
+    "batch_index": 42
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.186Z",
+    "explanation": "Full medieval plate armor, heraldic tabard, broadsword and shield. Fantasy not sci-fi. Violates every art pillar.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.2,
+      "material_fidelity": 0.4,
+      "faction_read": 0,
+      "wear_level": 0.3,
+      "style_consistency": 0.4,
+      "clothing_logic": 0.1,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "generic_scifi",
+      "wrong_material"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.800Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.4,
+        "rationale": "Partially meets semi-realistic painterly style (40%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.05,
+        "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 3,
+    "fail_count": 3,
+    "partial_count": 1
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.4,
+      "rationale": "Partially meets semi-realistic painterly style (40%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.05,
+      "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-003, COL-003, CLO-003. Full medieval plate armor, heraldic tabard, broadsword and shield. Fantasy not sci-fi. Violates every art pillar."
+}

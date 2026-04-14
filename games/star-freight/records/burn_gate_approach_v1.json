@@ -1,0 +1,38 @@
+{
+  "id": "burn_gate_approach_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:29:54.252Z",
+  "asset_path": "outputs/candidates/burn_gate_approach_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1591654
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, small angular fortress space station controlling a narrow passage — squat aggressive military structure with two forward-facing weapon platforms flanking a narrow docking channel, dark unpainted metal with weapon scorch marks, searchlights sweeping the approach, warning beacons flashing, the gate is the only way through, a tollbooth with guns floating in space, utilitarian Veshan military architecture stripped of all ceremony",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270042,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7276,
+    "gpu_model": "RTX 5080",
+    "batch_index": 42
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

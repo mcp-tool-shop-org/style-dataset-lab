@@ -1,0 +1,182 @@
+{
+  "id": "ship_ext_compact_patrol_cutter_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T02:48:42.916Z",
+  "asset_path": "outputs/approved/ship_ext_compact_patrol_cutter_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1339415
+  },
+  "provenance": {
+    "workflow_id": "wave11-ship-exteriors",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi spacecraft, visible hull texture and surface detail, visible brushstrokes, three-quarter view showing full ship profile, isolated on plain dark grey-black background with subtle star field, small military patrol vessel with box-section hull and angular bridge tower, steel blue and charcoal grey hull plating, painted hull numbers and regulation navigation lights, modular weapon turrets on dorsal hardpoints, small cockpit relative to hull mass, docking clamps and cargo rails visible, several hull patches from micro-debris impacts, antenna array on spine, utilitarian and impersonal like a police cruiser",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, bright saturated colors, clean pristine new, glamorous, Star Wars, Star Trek, luxury yacht, multiple ships, busy background, text, watermark, blurry, low quality, video game screenshot, miniature model",
+    "seed": 50501,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7049,
+    "gpu_model": "RTX 5080",
+    "batch_index": 1
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.707Z",
+    "explanation": "Ship exterior with faction-appropriate hull design, wear, and construction.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.847Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette readable at gameplay scale (85%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "SHP-EXT-002",
+        "category": "ship",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Passes SHP-EXT-002 (83%)"
+      }
+    ],
+    "assertion_count": 8,
+    "pass_count": 8,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette readable at gameplay scale (85%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "SHP-EXT-002",
+      "category": "ship",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Passes SHP-EXT-002 (83%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 8/8 constitution rules.  Ship exterior with faction-appropriate hull design, wear, and construction."
+}

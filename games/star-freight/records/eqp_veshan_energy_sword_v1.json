@@ -1,0 +1,290 @@
+{
+  "id": "eqp_veshan_energy_sword_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:04:55.311Z",
+  "asset_path": "outputs/approved/eqp_veshan_energy_sword_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1363929
+  },
+  "provenance": {
+    "workflow_id": "wave14-equipment-props",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly item concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi equipment, visible material texture and surface detail, visible brushstrokes, centered item on plain dark grey background, studio lighting, heavy forged blade with energy-edged cutting surface glowing faint crimson, dark bronze cross-guard with house seal hammered into pommel, leather-wrapped grip showing deep wear from generations of use, intentional imperfections in the forging visible in blade surface, this weapon has a name and a history, martial and personal",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, hands holding item, person, character, environmental background, multiple items, text, watermark, blurry, low quality, video game icon, UI element",
+    "seed": 80008,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7326,
+    "gpu_model": "RTX 5080",
+    "batch_index": 8
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.554Z",
+    "explanation": "Equipment/weapon with faction-specific design language, wear marks, and functional design.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.559Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "veshan",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette readable at gameplay scale (85%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Surfaces read as Forged (hammered, riveted, layered) (85%)",
+        "faction": "veshan",
+        "faction_context": "Forged (hammered, riveted, layered)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+        "faction": "veshan",
+        "faction_context": "Battle-scarred with pride — damage displayed"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+        "faction": "veshan",
+        "faction_context": "Triangles, chevrons, sharp angles"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Faction palette present and dominant (83%)",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "EQP-001",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Passes EQP-001 (85%)",
+        "faction": "veshan",
+        "faction_context": null
+      },
+      {
+        "rule_id": "EQP-002",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Passes EQP-002 (80%)"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette readable at gameplay scale (85%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Surfaces read as Forged (hammered, riveted, layered) (85%)",
+      "faction": "veshan",
+      "faction_context": "Forged (hammered, riveted, layered)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+      "faction": "veshan",
+      "faction_context": "Battle-scarred with pride — damage displayed"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+      "faction": "veshan",
+      "faction_context": "Triangles, chevrons, sharp angles"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Faction palette present and dominant (83%)",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "EQP-001",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Passes EQP-001 (85%)",
+      "faction": "veshan",
+      "faction_context": null
+    },
+    {
+      "rule_id": "EQP-002",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Passes EQP-002 (80%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: veshan. Equipment/weapon with faction-specific design language, wear marks, and functional design."
+}

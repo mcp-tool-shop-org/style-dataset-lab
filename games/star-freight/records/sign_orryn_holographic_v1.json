@@ -1,0 +1,196 @@
+{
+  "id": "sign_orryn_holographic_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:13:13.641Z",
+  "asset_path": "outputs/approved/sign_orryn_holographic_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1313629
+  },
+  "provenance": {
+    "workflow_id": "wave15-signage-ui-logos",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly prop concept art, muted dusty palette, subtle dark edges, soft directional lighting, worn and functional sci-fi signage and interface design, visible surface texture and aging, visible brushstrokes, centered on plain dark grey background, floating holographic trade display projected from chrome base, teal and pearl data visualizations in elliptical layouts, commodity prices, route maps, and contract terms displayed in flowing curves, transparent and layered like looking through water, alien elegance in data presentation",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated neon, clean pristine new, modern graphic design, flat UI mockup, website screenshot, people, characters, text watermark, blurry, low quality",
+    "seed": 90026,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7246,
+    "gpu_model": "RTX 5080",
+    "batch_index": 26
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.755Z",
+    "explanation": "Signage/UI/logo with faction-specific graphic design, appropriate weathering.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.8,
+      "faction_read": 0.85,
+      "wear_level": 0.75,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.880Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette readable at gameplay scale (85%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "EQP-002",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Passes EQP-002 (75%)"
+      },
+      {
+        "rule_id": "EQP-003",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Passes EQP-003 (80%)"
+      }
+    ],
+    "assertion_count": 9,
+    "pass_count": 9,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette readable at gameplay scale (85%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "EQP-002",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Passes EQP-002 (75%)"
+    },
+    {
+      "rule_id": "EQP-003",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Passes EQP-003 (80%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 9/9 constitution rules.  Signage/UI/logo with faction-specific graphic design, appropriate weathering."
+}

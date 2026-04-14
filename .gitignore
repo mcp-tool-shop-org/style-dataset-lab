@@ -1,18 +1,28 @@
 node_modules/
-outputs/candidates/*.png
-outputs/approved/*.png
-outputs/rejected/*.png
-outputs/borderline/*.png
-outputs/painterly-test/
-exports/
-*.tmp
-*.zip
+
+# Per-game generated images (large, regenerable from prompt packs)
+games/*/outputs/candidates/
+games/*/outputs/approved/
+games/*/outputs/rejected/
+games/*/outputs/borderline/
+games/*/outputs/painterly/
+games/*/outputs/painterly-test/
+games/*/exports/
+
+# Model weights (never commit)
 *.safetensors
 *.ckpt
 *.pth
 *.bin
+
+# Misc
+*.tmp
+*.zip
 *.log
 .polyglot-cache.json
+.DS_Store
+
+# Site build
 site/.astro/
 site/dist/
 site/node_modules/

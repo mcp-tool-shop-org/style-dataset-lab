@@ -1,0 +1,38 @@
+{
+  "id": "mourning_healer_dock_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:28:48.289Z",
+  "asset_path": "outputs/candidates/mourning_healer_dock_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1675403
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, organic docking bay of an alien hospice station — a damaged merchant ship surrounded by small healer drones examining hull scars, warm amber bioluminescent lighting, bio-resin walls grown close and nurturing around the docking space, the atmosphere visibly humid and warm, a place where ships come to be repaired and crews come to recover, gentle alien compassion expressed through living architecture",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270533,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8092,
+    "gpu_model": "RTX 5080",
+    "batch_index": 33
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

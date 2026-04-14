@@ -1,0 +1,294 @@
+{
+  "id": "artifact_keth_seasonal_ring_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:25:08.208Z",
+  "asset_path": "outputs/approved/artifact_keth_seasonal_ring_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1260345
+  },
+  "provenance": {
+    "workflow_id": "wave18-culture-creatures",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly still life concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi, visible material texture and surface detail, visible brushstrokes, centered on plain dark grey background, Keth elder's antenna ring marking seasonal cycle, grown amber-coral ring with bio-pigment bands showing ages of growth, each band a different seasonal color, living jewelry that records biological time, warm and organic, deeply personal to Keth",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, glamorous, people, characters, hands, text, watermark, blurry, low quality",
+    "seed": 120016,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7317,
+    "gpu_model": "RTX 5080",
+    "batch_index": 16
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.487Z",
+    "explanation": "Cultural artifact with deep faction identity, appropriate materials and aging.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.85,
+      "faction_read": 0.9,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.353Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "keth",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Surfaces read as Grown (cultivated, secreted, bio-film) (88%)",
+        "faction": "keth",
+        "faction_context": "Grown (cultivated, secreted, bio-film)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Wear level appropriate — Alive — aging means growing, not decaying",
+        "faction": "keth",
+        "faction_context": "Alive — aging means growing, not decaying"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Shape language compliant — Segments, arcs, compound curves",
+        "faction": "keth",
+        "faction_context": "Segments, arcs, compound curves"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Faction palette present and dominant (88%)",
+        "faction": "keth",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "keth",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "keth",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Construction matches faction building method",
+        "faction": "keth",
+        "faction_context": "Grown on wearer or harvested from communal bio-stocks"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Surfaces read as Grown (cultivated, secreted, bio-film) (88%)",
+      "faction": "keth",
+      "faction_context": "Grown (cultivated, secreted, bio-film)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Wear level appropriate — Alive — aging means growing, not decaying",
+      "faction": "keth",
+      "faction_context": "Alive — aging means growing, not decaying"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Shape language compliant — Segments, arcs, compound curves",
+      "faction": "keth",
+      "faction_context": "Segments, arcs, compound curves"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Faction palette present and dominant (88%)",
+      "faction": "keth",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "keth",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "keth",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Construction matches faction building method",
+      "faction": "keth",
+      "faction_context": "Grown on wearer or harvested from communal bio-stocks"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: keth. Cultural artifact with deep faction identity, appropriate materials and aging."
+}

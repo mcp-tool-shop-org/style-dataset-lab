@@ -1,0 +1,102 @@
+{
+  "lane": "wave15-signage-ui-logos",
+  "description": "Wave 15: Signage, UI panels, faction logos, warning labels, cargo tags, screen interfaces. The Ron Cobb Semiotic Standard approach — graphic design that makes the world feel bureaucratically real.",
+  "style_prefix": "oil painting, semi-realistic painterly prop concept art, muted dusty palette, subtle dark edges, soft directional lighting, worn and functional sci-fi signage and interface design, visible surface texture and aging, visible brushstrokes, centered on plain dark grey background",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated neon, clean pristine new, modern graphic design, flat UI mockup, website screenshot, people, characters, text watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "sign_compact_logo",
+      "prompt": "official Compact faction emblem on a metal plaque, rectangular border with straight edges, steel blue on charcoal background, stamped into brushed metal surface, mounting bolts visible at corners, institutional and impersonal like a government seal, slight patina from years of display"
+    },
+    {
+      "id": "sign_compact_logo_weathered",
+      "prompt": "Compact faction emblem spray-painted on a hull wall, steel blue paint faded and flaking, partially obscured by rust streaks and grime, one corner of the stencil slipped during application, scratches over the surface from cargo bumps, still recognizable but showing years of neglect"
+    },
+    {
+      "id": "sign_veshan_house_crest",
+      "prompt": "Veshan house crest forged in dark bronze metal, triangular chevron design pointing upward, crimson enamel inlay in central element, hammered texture with intentional imperfections showing hand-forging, mounted on rough stone or heavy metal wall, intimidating and martial"
+    },
+    {
+      "id": "sign_veshan_crest_battle_worn",
+      "prompt": "Veshan house crest on ship hull armor, dark bronze with deep scoring from combat, one corner of the crest dented from impact, crimson paint faded and chipped, battle damage worn as badge of honor — the crest is scarred like the warriors who serve under it"
+    },
+    {
+      "id": "sign_keth_bio_glyph",
+      "prompt": "Keth communal identifier grown into an amber bio-wall, organic flowing script in compound curves and segments, bioluminescent glow pulsing through the glyph channels, living signage that changes with the season — currently showing harvest-amber, alien and beautiful, completely unreadable to non-Keth"
+    },
+    {
+      "id": "sign_orryn_trade_seal",
+      "prompt": "Orryn trade certification displayed on chrome and teal mounting bracket, elliptical design with flowing curves, holographic shimmer visible in certain angles, data crystal embedded in center containing contract verification, smooth and precise with no hard corners, merchant credential"
+    },
+    {
+      "id": "sign_reach_territory_tag",
+      "prompt": "Sable Reach crew territory marker scratched and painted on a bulkhead wall, crude asymmetric skull-and-crossbones variant, layered over older territory marks from previous crews, multiple colors of stolen paint, tally marks nearby counting raids or kills, street art of the spacelanes"
+    },
+    {
+      "id": "sign_compact_wayfinding",
+      "prompt": "regulation directional sign mounted on corridor wall, steel blue arrow on charcoal panel, department names in blocky standardized font, deck number and section code, fluorescent emergency strip along bottom edge, mounting screws visible, one corner slightly dented, institutional and clear"
+    },
+    {
+      "id": "sign_compact_hazard_warning",
+      "prompt": "radiation hazard warning sign on sealed door, yellow and charcoal with universal radiation trefoil, exposure limits printed below, last inspection date stamped, emergency procedure bullet points, slightly yellowed from age, regulation safety bureaucracy"
+    },
+    {
+      "id": "sign_compact_ship_registration",
+      "prompt": "hull-mounted ship identification plate, stamped metal with registration number, port of registry, tonnage class, and inspection dates, steel blue border with charcoal text, mounting rivets, some characters slightly misaligned from stamping process, maritime registration for space"
+    },
+    {
+      "id": "sign_cargo_manifest_tag",
+      "prompt": "cargo container identification tag hanging from wire tie, weather-resistant plastic card with barcode, origin stamp, destination code, weight, hazmat classification, handling instructions, multiple stamps from different ports creating a travel history, some ink smeared"
+    },
+    {
+      "id": "sign_compact_ui_screen",
+      "prompt": "ship systems display panel showing navigation data, charcoal background with steel blue interface elements, rectangular buttons and data fields, system status indicators in green-amber-red, worn bezel around screen edge, fingerprint smudges on touchscreen, text-heavy interface — form over function"
+    },
+    {
+      "id": "sign_veshan_ui_screen",
+      "prompt": "Veshan tactical display with heavy metal frame, triangular UI elements and chevron-shaped data blocks, crimson and bronze color scheme on dark background, weapon status dominant in display hierarchy, physical switches and heavy buttons beside screen, forged-looking frame with hammered edges"
+    },
+    {
+      "id": "sign_orryn_holographic",
+      "prompt": "floating holographic trade display projected from chrome base, teal and pearl data visualizations in elliptical layouts, commodity prices, route maps, and contract terms displayed in flowing curves, transparent and layered like looking through water, alien elegance in data presentation"
+    },
+    {
+      "id": "sign_reach_door_marking",
+      "prompt": "crude handwritten warning on a door in salvaged marker, misspelled words, aggressive tone — KEEP OUT MEANS KEEP OUT, scratched tally marks beside it, previous marking painted over beneath, the door itself is mismatched panels welded together, personalized threatening signage"
+    },
+    {
+      "id": "sign_keth_seasonal_marker",
+      "prompt": "bio-pigment marker applied to a Keth doorway, warm amber seasonal pattern showing current growth cycle, changes color with biological calendar, applied directly to living amber wall surface, compound curves and arc patterns, alien time-keeping made visible"
+    },
+
+    {
+      "id": "REJECT15_modern_ui",
+      "prompt": "sleek modern flat UI design with bright blue gradients and clean white text, Material Design aesthetic, crisp pixel-perfect elements, looks like a smartphone app mockup, contemporary not sci-fi"
+    },
+    {
+      "id": "REJECT15_neon_sign",
+      "prompt": "bright glowing neon sign with vivid pink and cyan tubes, cyberpunk nightclub aesthetic, clean glass tubing on dark wall, Hong Kong street vibes, too bright too colorful too urban"
+    },
+    {
+      "id": "REJECT15_fantasy_runes",
+      "prompt": "glowing magical runes carved into stone archway, blue mystical energy emanating from each symbol, fantasy wizard's tower aesthetic, Lord of the Rings inspired, medieval not sci-fi"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 90000
+  }
+}

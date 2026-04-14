@@ -1,0 +1,38 @@
+{
+  "id": "ironjaw_approach_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:27:59.673Z",
+  "asset_path": "outputs/candidates/ironjaw_approach_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1624802
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, exterior of a pirate space station carved from a large asteroid — raw rock surface with welded steel patches, stolen docking clamps bolted on at random angles, mismatched running lights in different colors from different ships, antenna arrays and exhaust vents poking out of rock crevices, faction tags spray-painted on approach-facing surfaces, weapon emplacements hidden in rock fissures, a dangerous place that advertises danger",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270527,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8089,
+    "gpu_model": "RTX 5080",
+    "batch_index": 27
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

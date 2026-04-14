@@ -1,0 +1,38 @@
+{
+  "id": "meridian_exterior_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:25:04.778Z",
+  "asset_path": "outputs/candidates/meridian_exterior_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1549410
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, large rotating ring space station seen from approaching ship — clean cylindrical profile with docking pylons extending outward, steel-blue hull plating with regulation white stripe at equator, amber navigation lights at even intervals, painted hull numbers, corporate logos faded by solar exposure, the station arc visible against star field, cold institutional beauty",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270505,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7056,
+    "gpu_model": "RTX 5080",
+    "batch_index": 5
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,38 @@
+{
+  "id": "burn_gate_tariff_office_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:30:15.732Z",
+  "asset_path": "outputs/candidates/burn_gate_tariff_office_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1401055
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, interior of a border fortress tariff inspection office — narrow angular room with a military alien official behind heated dark stone desk, seized cargo visible through a window into the holding bay where crates have gathered dust for years, dim amber lighting, weapon racks on walls, the air of a place where everything is negotiable but nothing is acknowledged as negotiable, border corruption expressed through architecture",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270545,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7039,
+    "gpu_model": "RTX 5080",
+    "batch_index": 45
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

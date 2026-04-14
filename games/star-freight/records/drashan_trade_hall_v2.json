@@ -1,0 +1,38 @@
+{
+  "id": "drashan_trade_hall_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:26:23.378Z",
+  "asset_path": "outputs/candidates/drashan_trade_hall_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1513347
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, interior of an alien warrior civilization's trade hall — tall pointed-arch vaulted ceiling in dark stone, a massive bronze wall panel covered in etched names and debts (the Debt Ledger), dim amber forge-light casting long shadows, weapon racks along walls with some brackets empty, heated dark stone floor with bronze inlay crests, heavy forged metal furniture, trade conducted under the weight of martial tradition",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270515,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8099,
+    "gpu_model": "RTX 5080",
+    "batch_index": 15
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

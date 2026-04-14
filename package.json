@@ -10,16 +10,13 @@
     "canon-bind": "node scripts/canon-bind.js",
     "painterly": "node scripts/painterly.js",
     "generate:identity": "node scripts/generate-identity.js",
-    "export": "npx repo-dataset visual generate . --format trl",
-    "export:embed": "npx repo-dataset visual generate . --format trl --embed",
-    "inspect": "npx repo-dataset visual inspect .",
-    "validate": "npx repo-dataset visual validate exports/dataset.jsonl"
+    "export": "echo 'Usage: repo-dataset visual generate ./games/<game> --format trl'",
+    "inspect": "echo 'Usage: repo-dataset visual inspect ./games/<game>'"
   },
   "files": [
     "scripts/",
-    "canon/",
-    "inputs/",
-    "workflows/",
+    "games/*/canon/",
+    "games/*/inputs/",
     "package.json",
     "README.md",
     "LICENSE",

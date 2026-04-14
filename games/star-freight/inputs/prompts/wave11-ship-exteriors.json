@@ -1,0 +1,106 @@
+{
+  "lane": "wave11-ship-exteriors",
+  "description": "Wave 11: Ship exteriors across all 5 factions. Each ship is a working vehicle — scorch marks, hull patches, docking scratches, faded paint. No pristine showrooms.",
+  "style_prefix": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi spacecraft, visible hull texture and surface detail, visible brushstrokes, three-quarter view showing full ship profile, isolated on plain dark grey-black background with subtle star field",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, bright saturated colors, clean pristine new, glamorous, Star Wars, Star Trek, luxury yacht, multiple ships, busy background, text, watermark, blurry, low quality, video game screenshot, miniature model",
+
+  "subjects": [
+    {
+      "id": "ship_ext_compact_patrol_cutter",
+      "prompt": "small military patrol vessel with box-section hull and angular bridge tower, steel blue and charcoal grey hull plating, painted hull numbers and regulation navigation lights, modular weapon turrets on dorsal hardpoints, small cockpit relative to hull mass, docking clamps and cargo rails visible, several hull patches from micro-debris impacts, antenna array on spine, utilitarian and impersonal like a police cruiser"
+    },
+    {
+      "id": "ship_ext_compact_cargo_hauler",
+      "prompt": "medium freight hauler with long rectangular cargo spine and detachable container modules, steel blue hull with faded company logos, regulation nav lights and docking beacons, bridge section at forward end like a locomotive cab, cargo grapple arms folded against hull, visible wear from thousands of docking cycles, scratched paint, small crew section relative to massive cargo volume, tugboat of space"
+    },
+    {
+      "id": "ship_ext_compact_colony_transport",
+      "prompt": "large deep-space transport vessel with stacked rectangular habitat modules along central spine, steel blue and white hull with passenger windows in rows, medical crosses and evacuation markers painted on hull, massive engine cluster at rear, communication dishes and sensor masts, hull shows long-haul wear and micro-meteor patches, looks like an ocean liner crossed with a cargo ship, functional not glamorous"
+    },
+    {
+      "id": "ship_ext_compact_survey_vessel",
+      "prompt": "small science and survey ship with sensor dome on dorsal surface, steel blue hull with department markings and sample bay doors, robotic arm folded against starboard hull, modest engine, large viewport windows on observation deck, antenna clusters and probe launchers, hull covered in sensor equipment mounts, workhorse research vessel not sleek explorer"
+    },
+    {
+      "id": "ship_ext_compact_shuttle",
+      "prompt": "small personnel shuttle with blunt rectangular profile, steel blue and grey with faded unit markings, stubby wings with landing gear visible, boarding ramp under belly, small cockpit windows, scratched and dented from daily use, looks like a regional commuter plane not a fighter, regulation emergency lighting strips along hull"
+    },
+    {
+      "id": "ship_ext_veshan_war_galley",
+      "prompt": "imposing angular warship with aggressive forward-pointing prow and triangular cross-section, dark bronze and crimson hull plates forged and riveted with visible seams, house insignia painted large on flanks, forward-mounted weapon batteries, heavy armor plating with battle scars left unrepaired as status marks, engine glow in house crimson, looks like it was built to intimidate before firing a shot"
+    },
+    {
+      "id": "ship_ext_veshan_raider",
+      "prompt": "fast angular attack craft with chevron-shaped profile, dark bronze armor plates with triangular reinforcement ridges, single house crest on tail fin, underslung weapon pylons, scarred hull from multiple engagements, ramming prow with reinforced tip, minimal crew compartment — all engine and weapon, aggressive and predatory silhouette"
+    },
+    {
+      "id": "ship_ext_veshan_transport",
+      "prompt": "heavy angular transport with armored cargo bay and chevron-shaped cross-section, dark bronze hull with crimson accent stripes, forged hull plates bolted together with exposed rivets, troop deployment ramp visible at rear, weapon turrets on defensive hardpoints, house markings on armor, battle damage worn with pride — dents and scoring left visible"
+    },
+    {
+      "id": "ship_ext_veshan_honor_barge",
+      "prompt": "ceremonial ship with tall angular superstructure and elaborate chevron decorations, dark bronze and deep crimson with gold trim on prow, ancestral house crests etched into hull armor, banner poles mounted along spine, heavy but elegant in a martial way, forged and hammered appearance, not pretty but impressive and ancient-looking"
+    },
+    {
+      "id": "ship_ext_keth_communion_tender",
+      "prompt": "organic-hulled vessel with smooth curves and no visible seams, warm amber and bone-white bio-hull that looks grown not welded, self-repairing surface with visible scar tissue where old damage healed, amber bioluminescent running lights in vein-like patterns, no windows — translucent sensory membranes instead, antenna-like sensory stalks extending from hull, living ship that breathes"
+    },
+    {
+      "id": "ship_ext_keth_spore_carrier",
+      "prompt": "large organic ship with bulbous cargo pods that look like seed cases, warm amber bio-hull with darker growth rings showing age, translucent membrane panels glow with stored bio-cargo, tendril-like docking appendages, no hard angles anywhere — all compound curves and segments, surface texture like polished chitin, looks uncomfortable and alive"
+    },
+    {
+      "id": "ship_ext_orryn_trade_runner",
+      "prompt": "sleek elliptical-hulled trader with smooth dark matte teal coating, oversized engine nacelles relative to small hull mass, sensor arrays covering every surface like scales, retractable docking arms and cargo grapples, pearl-white accent panels with chrome trim, no visible weapons — all sensors and engines, built to detect and flee rather than fight, holographic navigation lights"
+    },
+    {
+      "id": "ship_ext_orryn_drift_carrier",
+      "prompt": "large elliptical mothership with flowing curves and multiple docking rings for smaller vessels, deep teal hull with pearl panels and chrome sensor nodes, data relay antennae in organic-looking clusters, massive engine array for fleet-speed travel, modular hull sections that can be reconfigured, smooth and practical but not flashy, merchant fleet flagship"
+    },
+    {
+      "id": "ship_ext_reach_frankenstein_freighter",
+      "prompt": "cobbled-together freighter with mismatched hull sections from different factions welded together, one section clearly Compact box-hull in faded blue, another section angular bronze Veshan armor plate, rust and ash colored patches filling gaps, exposed wiring and jury-rigged antenna, claw marks and scorch marks on hull, trophy kills painted crudely near cockpit, no two panels match, held together by will and welds"
+    },
+    {
+      "id": "ship_ext_reach_stolen_cutter",
+      "prompt": "Compact patrol cutter with hull numbers painted over and faction markings gouged out, original steel blue paint visible under rust-brown respray, aftermarket weapon mounts welded crudely to hull, modified engine nacelles with stolen Orryn sensor panels bolted on, serial numbers filed off visible equipment, clearly military hardware in criminal hands, docking clamps replaced with grappling hooks"
+    },
+    {
+      "id": "ship_ext_reach_smuggler_skiff",
+      "prompt": "small fast ship with low profile and matte dark paint for stealth, mismatched engine pods — one Compact one Veshan, hidden cargo compartments visible as seam lines in hull, signal scrambler antenna cluster on spine, cockpit windows tinted dark, no faction markings at all, built from scrap but built fast, looks like it could outrun anything"
+    },
+    {
+      "id": "ship_ext_reach_salvage_hauler",
+      "prompt": "ugly heavy ship covered in salvage arms and cutting equipment, rust and ash colored patchwork hull, massive clamp jaws at front for grabbing wreckage, cargo nets and magnetic grapple arrays, towing cables coiled on exterior, hull made from harvested ship parts welded into a functional shape, industrial and brutal looking, space garbage truck"
+    },
+
+    {
+      "id": "REJECT11_star_destroyer",
+      "prompt": "massive triangular warship with gleaming white hull and perfectly clean surfaces, glowing blue engines in perfect rows, smooth CGI appearance, Imperial Star Destroyer inspired, pristine military flagship with no wear or damage"
+    },
+    {
+      "id": "REJECT11_luxury_yacht",
+      "prompt": "sleek white luxury spacecraft with chrome trim and panoramic windows, polished to mirror finish, interior visible through glass showing leather seats and champagne, looks like a rich person's toy, clean and expensive"
+    },
+    {
+      "id": "REJECT11_anime_ship",
+      "prompt": "colorful spacecraft with exaggerated proportions, bright blue and red paint with racing stripes, anime-style cockpit with oversized canopy, cel-shaded appearance, looks like a toy or action figure vehicle"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0 — locked anchor style" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Same style, different seed — tests consistency" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 50000
+  }
+}

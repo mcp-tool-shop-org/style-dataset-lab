@@ -1,0 +1,170 @@
+{
+  "id": "REJECT16_bright_clean_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:18:04.261Z",
+  "asset_path": "outputs/rejected/REJECT16_bright_clean_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1284704
+  },
+  "provenance": {
+    "workflow_id": "wave16-lighting-mood",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly interior scene, muted dusty palette, visible brushstrokes, atmospheric sci-fi corridor or room interior, no characters present, strong mood through lighting, brightly lit pristine white corridor with even recessed lighting, clean floors reflecting light perfectly, modern office building aesthetic, comfortable and well-maintained, could be a hospital or corporate headquarters",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, people, characters, figures, bright cheerful, luxury, text, watermark, blurry, low quality",
+    "seed": 100028,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7287,
+    "gpu_model": "RTX 5080",
+    "batch_index": 28
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.686Z",
+    "explanation": "Brightly lit pristine white corridor — modern office aesthetic. Too clean, too comfortable, no grit.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.5,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.1,
+      "faction_read": 0,
+      "wear_level": 0,
+      "style_consistency": 0.3,
+      "clothing_logic": 0.1,
+      "composition": 0.6
+    },
+    "failure_modes": [
+      "too_clean"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.767Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Not painterly — reads as photorealistic/3D/anime (30%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.6,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.6,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets readable at 128px, identifiable at 64px (50%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.05,
+        "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 2,
+    "fail_count": 4,
+    "partial_count": 1
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Not painterly — reads as photorealistic/3D/anime (30%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.6,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.6,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets readable at 128px, identifiable at 64px (50%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.05,
+      "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-001, RND-003, COL-003, CLO-003. Brightly lit pristine white corridor — modern office aesthetic. Too clean, too comfortable, no grit."
+}

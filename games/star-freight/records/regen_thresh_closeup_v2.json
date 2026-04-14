@@ -1,0 +1,38 @@
+{
+  "id": "regen_thresh_closeup_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:09:41.413Z",
+  "asset_path": "outputs/candidates/regen_thresh_closeup_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1478943
+  },
+  "provenance": {
+    "workflow_id": "wave25b-regen",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, close-up of a silicon alien organism growing on a station wall — dark grey-blue crystalline formation with pale blue bioluminescent veins threading through its faceted surface, a small contact microphone pressed against the crystal by a gloved hand, the crystal glowing brighter where the microphone touches as if responding, industrial metal wall around the crystal showing where decades of growth have pushed into the infrastructure, warm amber work-light illuminating the alien mineral",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 260504,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7193,
+    "gpu_model": "RTX 5080",
+    "batch_index": 4
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,38 @@
+{
+  "id": "regen_mire_breach_v3",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:10:32.501Z",
+  "asset_path": "outputs/candidates/regen_mire_breach_v3.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1548781
+  },
+  "provenance": {
+    "workflow_id": "wave25b-regen",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, mass of pale green-grey translucent alien slug-cells flowing through a narrow gap in a damaged ship hull — individual cells visible squeezing through the breach like liquid, reforming into working pseudopod arms on the other side that are patching the hole with sealant, the organism has no bones and compresses to flow through gaps smaller than a fist, industrial damage around the breach with sparks and atmospheric venting, the biological reality of an expendable alien laborer",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 261011,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7058,
+    "gpu_model": "RTX 5080",
+    "batch_index": 11
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

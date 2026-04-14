@@ -10,6 +10,8 @@ import { readFile, writeFile, rename, readdir, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 const DEFAULT_APPROVED_SCORES = {
   silhouette_clarity: 0.8, palette_adherence: 0.8, material_fidelity: 0.8,
@@ -43,7 +45,7 @@ const REJECT_EXPLANATIONS = {
 };
 
 async function main() {
-  const recordsDir = join(REPO_ROOT, "records");
+  const recordsDir = join(GAME_ROOT, "records");
   const files = await readdir(recordsDir);
 
   let approved = 0;
@@ -96,13 +98,13 @@ async function main() {
     }
 
     // Move image
-    const oldPath = join(REPO_ROOT, record.asset_path);
+    const oldPath = join(GAME_ROOT, record.asset_path);
     const newDir = `outputs/${status}`;
     const newPath = `${newDir}/${id}.png`;
-    await mkdir(join(REPO_ROOT, newDir), { recursive: true });
+    await mkdir(join(GAME_ROOT, newDir), { recursive: true });
 
     try {
-      await rename(oldPath, join(REPO_ROOT, newPath));
+      await rename(oldPath, join(GAME_ROOT, newPath));
     } catch {
       console.log(`  skip ${id} — image not found at ${record.asset_path}`);
       continue;

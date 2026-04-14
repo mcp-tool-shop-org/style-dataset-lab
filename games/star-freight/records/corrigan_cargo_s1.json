@@ -1,0 +1,59 @@
+{
+  "id": "corrigan_cargo_s1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:24:33.137Z",
+  "asset_path": "outputs/candidates/corrigan_cargo_s1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1460697
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, interior of a tiny cargo shuttle hold, the single largest room on a very small ship, barely tall enough to stand in, mag-locked cargo crates strapped to deck rails leaving a narrow walkway down the center, exposed hull plates visible from inside showing different repair generations in different shades of grey, a tool rack mounted to one wall with wrenches and cutters, overhead industrial lighting strip with one section flickering, loading ramp mechanism at the back with hydraulic stains on the deck, the hold of a ship the size of a delivery van",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, spacious, luxury, clean, military, organized neatly, bright lighting, passenger seating, decorative, cavernous, large bay, hangar",
+    "seed": 27007,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8045,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "the_corrigan",
+    "subject_type": "named_ship",
+    "faction": "none",
+    "role": "ship",
+    "view_type": "functional_detail",
+    "shot_type": "detail",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": "the_corrigan",
+    "scene_function": "the cargo hold — the useful part, the reason the ship exists",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

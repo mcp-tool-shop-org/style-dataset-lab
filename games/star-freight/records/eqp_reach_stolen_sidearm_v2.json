@@ -1,0 +1,290 @@
+{
+  "id": "eqp_reach_stolen_sidearm_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:07:15.147Z",
+  "asset_path": "outputs/approved/eqp_reach_stolen_sidearm_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1469063
+  },
+  "provenance": {
+    "workflow_id": "wave14-equipment-props",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly item concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi equipment, visible material texture and surface detail, visible brushstrokes, centered item on plain dark grey background, studio lighting, Compact-issue sidearm with serial number filed off and faction markings gouged out, original steel blue paint showing under crude dark respray, aftermarket grip tape, modified energy cell for higher output — dangerous to user, holster is scrap leather stitched together, criminal's weapon",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, hands holding item, person, character, environmental background, multiple items, text, watermark, blurry, low quality, video game icon, UI element",
+    "seed": 80527,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8046,
+    "gpu_model": "RTX 5080",
+    "batch_index": 27
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.551Z",
+    "explanation": "Equipment/weapon with faction-specific design language, wear marks, and functional design.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.557Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "reach",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette readable at gameplay scale (85%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Surfaces read as Stripped (torn, welded from scrap, jury-rigged) (85%)",
+        "faction": "reach",
+        "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Wear level appropriate — Jury-rigged — functional ugly",
+        "faction": "reach",
+        "faction_context": "Jury-rigged — functional ugly"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Shape language compliant — Asymmetric, irregular, mismatched",
+        "faction": "reach",
+        "faction_context": "Asymmetric, irregular, mismatched"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Faction palette present and dominant (83%)",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "EQP-001",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Passes EQP-001 (85%)",
+        "faction": "reach",
+        "faction_context": null
+      },
+      {
+        "rule_id": "EQP-002",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Passes EQP-002 (80%)"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette readable at gameplay scale (85%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Surfaces read as Stripped (torn, welded from scrap, jury-rigged) (85%)",
+      "faction": "reach",
+      "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Wear level appropriate — Jury-rigged — functional ugly",
+      "faction": "reach",
+      "faction_context": "Jury-rigged — functional ugly"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Shape language compliant — Asymmetric, irregular, mismatched",
+      "faction": "reach",
+      "faction_context": "Asymmetric, irregular, mismatched"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Faction palette present and dominant (83%)",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "EQP-001",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Passes EQP-001 (85%)",
+      "faction": "reach",
+      "faction_context": null
+    },
+    {
+      "rule_id": "EQP-002",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Passes EQP-002 (80%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: reach. Equipment/weapon with faction-specific design language, wear marks, and functional design."
+}

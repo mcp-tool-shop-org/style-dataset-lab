@@ -1,0 +1,59 @@
+{
+  "id": "renna_vasik_fullbody_s0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:06:32.509Z",
+  "asset_path": "outputs/candidates/renna_vasik_fullbody_s0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1146848
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing view, woman in her early thirties with warm brown skin and compact athletic build, dark hair in functional ponytail, open-front dark canvas vest over olive thermal undershirt, heavy canvas work pants with reinforced knees, reinforced boots with mag-lock soles, tool belt loaded with wrenches and cutters and diagnostic scanner, roll of thermal tape on a carabiner, grease stains on hands and forearms, small plasma burn scar on left forearm, standing with one hand on tool belt, slightly forward lean, alert posture, isolated on plain dark grey background",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, glamorous, clean hands, decorative, jewelry, makeup, posed, matching outfit, military uniform, bright colors",
+    "seed": 27015,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8069,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "renna_vasik",
+    "subject_type": "named_character",
+    "faction": "reach",
+    "role": "crew",
+    "view_type": "full_body",
+    "shot_type": "standing",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "full costume and silhouette truth — the mismatched Reach gear reads as one person's kit",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

@@ -27,6 +27,8 @@ import { join } from "node:path";
 
 const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -266,7 +268,7 @@ async function main() {
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
 
     // Upload reference image
-    const refData = await readFile(join(REPO_ROOT, opts.refPath));
+    const refData = await readFile(join(GAME_ROOT, opts.refPath));
     const refFilename = `ipa_ref_${opts.subject}.png`;
     const formData = new FormData();
     formData.append("image", new Blob([refData], { type: "image/png" }), refFilename);
@@ -280,7 +282,7 @@ async function main() {
     console.log(`\x1b[32m+\x1b[0m Reference uploaded: ${uploadResult.name}`);
   }
 
-  await mkdir(join(REPO_ROOT, "outputs/candidates"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
 
   const refFilename = `ipa_ref_${opts.subject}.png`;
 
@@ -320,7 +322,7 @@ async function main() {
       }
 
       const imgData = await downloadImage(imageFile, imageSubfolder);
-      await writeFile(join(REPO_ROOT, destPath), imgData);
+      await writeFile(join(GAME_ROOT, destPath), imgData);
       console.log(`    \x1b[32m+\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
     } catch (err) {
       console.log(`    \x1b[31mx\x1b[0m ${err.message}`);

@@ -1,0 +1,127 @@
+{
+  "lane": "wave14-equipment-props",
+  "description": "Wave 14: Weapons, tools, equipment, and environmental props. Individual item portraits — concept art style for game production. Every item shows use, wear, and faction identity.",
+  "style_prefix": "oil painting, semi-realistic painterly item concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi equipment, visible material texture and surface detail, visible brushstrokes, centered item on plain dark grey background, studio lighting",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, hands holding item, person, character, environmental background, multiple items, text, watermark, blurry, low quality, video game icon, UI element",
+
+  "subjects": [
+    {
+      "id": "eqp_compact_sidearm",
+      "prompt": "regulation military sidearm with rectangular matte polymer frame, stamped serial number on slide, steel blue accent on grip panel, energy cell magazine visible in transparent window, simple iron sights, belt holster clip, worn grip showing hand impressions from daily carry, functional and impersonal like a government-issue tool"
+    },
+    {
+      "id": "eqp_compact_rifle",
+      "prompt": "standard-issue service rifle with rectangular stock and foregrip, charcoal polymer body with steel blue department markings, modular rail for attachments, energy cell housing with charge indicator, adjustable stock with wear marks, sling attachment points, stamped unit designation, maintained but not new"
+    },
+    {
+      "id": "eqp_compact_data_tablet",
+      "prompt": "regulation data tablet in flat rectangular case, steel blue shell with department insignia, screen showing text interface, protective corner bumpers scuffed from drops, stylus holstered in side slot, security lanyard attachment, crack in one corner of screen from impact, civilian smartphone equivalent for Compact crew"
+    },
+    {
+      "id": "eqp_compact_trauma_pack",
+      "prompt": "field medical kit in regulation charcoal hard case with red medical cross, snap-open latches, interior visible showing organized compartments with supplies, worn carry handle, instruction card laminated inside lid, several items clearly used and replaced, blood-resistant coating on exterior showing wear"
+    },
+    {
+      "id": "eqp_veshan_energy_sword",
+      "prompt": "heavy forged blade with energy-edged cutting surface glowing faint crimson, dark bronze cross-guard with house seal hammered into pommel, leather-wrapped grip showing deep wear from generations of use, intentional imperfections in the forging visible in blade surface, this weapon has a name and a history, martial and personal"
+    },
+    {
+      "id": "eqp_veshan_ceremonial_axe",
+      "prompt": "heavy battle axe with forged dark bronze head and triangular cheek designs, crimson leather wrapping on shaft, house crest etched into axe head, notches in blade edge from honored combat, weapon maintenance oil sheen on metal, hung from a display hook — this is both tool and trophy"
+    },
+    {
+      "id": "eqp_veshan_honor_token",
+      "prompt": "small forged metal token on a chain link, dark bronze with house crest stamped on one side, combat record scratched on reverse, worn smooth from years of handling, carried in leather pouch at belt, personal and precious — worth more than money in Veshan culture"
+    },
+    {
+      "id": "eqp_keth_growth_tool",
+      "prompt": "organic cultivation implement with curved amber handle that looks grown not manufactured, working end has multiple articulated fingers like a living pruning tool, warm ivory coloring with amber bioluminescent veins at joints, tool bonds to user's hand and responds to grip, uncomfortable and alive-looking, agricultural tool for tending bio-structures"
+    },
+    {
+      "id": "eqp_keth_bio_sprayer",
+      "prompt": "gourd-shaped organic weapon with translucent amber reservoir showing bio-acid contents, no visible trigger — activates by squeeze, grown from bio-stock not manufactured, surface has chitin-like texture, nozzle end has mandible-like opening, looks like a plant organ repurposed as weapon, deeply uncomfortable for non-Keth to hold"
+    },
+    {
+      "id": "eqp_orryn_data_crystal",
+      "prompt": "faceted translucent crystal about the size of a thumb drive, teal inner glow when active, chrome mounting clip for attachment to vest or mantle, multiple data layers visible as color bands within crystal, smooth and perfectly formed, alien USB drive — stores vast amounts of trade data"
+    },
+    {
+      "id": "eqp_orryn_trade_screen",
+      "prompt": "wrist-mounted holographic projector with chrome base and teal accent panels, projects small holographic display showing market data, modular clip attachment for tentacle or arm mounting, data crystal input slot on side, smooth elliptical design with no hard corners, merchant's essential tool"
+    },
+    {
+      "id": "eqp_orryn_stun_lance",
+      "prompt": "collapsible chrome weapon with smooth elliptical grip and retractable teal-tipped stun element, looks like a tool repurposed as weapon — because it is, no blade or projectile — purely electrical, designed for defense not offense, reluctantly carried by pacifist traders"
+    },
+    {
+      "id": "eqp_reach_boarding_axe",
+      "prompt": "improvised axe made from hull plating welded to a pipe handle, crude but functional, edge sharpened on a grinder, tape wrapping on handle for grip, rust and scoring on blade, no maker's mark or house seal — anonymous violence, could breach a hull or a person"
+    },
+    {
+      "id": "eqp_reach_stolen_sidearm",
+      "prompt": "Compact-issue sidearm with serial number filed off and faction markings gouged out, original steel blue paint showing under crude dark respray, aftermarket grip tape, modified energy cell for higher output — dangerous to user, holster is scrap leather stitched together, criminal's weapon"
+    },
+    {
+      "id": "eqp_reach_salvage_cutter",
+      "prompt": "heavy cutting tool cobbled from ship repair equipment, plasma cutting head on a reinforced handle, power cell jury-rigged from stolen components, safety guards removed for reach, scorch marks on housing from use, dual-purpose — cuts hull plating and threatens enemies, tool and weapon in one"
+    },
+
+    {
+      "id": "prop_compact_ration_pack",
+      "prompt": "regulation meal ration in sealed foil package with printed nutrition info and department logo, steel blue accent stripe, heating element tab visible, lot number and expiration date stamped on, several packages stacked — identical and impersonal, military MRE equivalent for spacefaring crew"
+    },
+    {
+      "id": "prop_veshan_honor_bowl",
+      "prompt": "heavy forged metal drinking bowl with house crest on one side, dark bronze with crimson lacquer interior, dented and scratched from years of use, ceremonial but practical — used daily not displayed, thick walls meant to survive being slammed on table, warrior's dining ware"
+    },
+    {
+      "id": "prop_reach_scrap_throne",
+      "prompt": "improvised chair assembled from a Compact captain's seat base with Veshan armor plate armrests welded on, mismatched cushion, trophy items hung from backrest, power cables running to stolen heating element beneath seat, personal throne of a Reach captain — status through display of stolen goods"
+    },
+    {
+      "id": "prop_compact_warning_sign",
+      "prompt": "regulation safety sign with standard hazard symbols, steel blue border with charcoal text panel, fluorescent strip for emergency visibility, mounting bolts visible, one corner slightly bent from impact, message about radiation hazard or pressurization, bureaucratic safety in space"
+    },
+    {
+      "id": "prop_reach_graffiti_tag",
+      "prompt": "section of hull wall with crude crew marks and territory tags scratched and painted, tally marks counting kills or days, crude portraits and symbols, layered over older marks, multiple colors of stolen paint, tells the story of who controlled this space and when, street art of the spacelanes"
+    },
+    {
+      "id": "prop_compact_dog_tags",
+      "prompt": "military identification tags on regulation chain, stamped metal with service number and department, slightly tarnished from years of wear against skin, regulation issue — identical to every other crew member's, one tag showing the ghost impression of text from rubbing against its pair"
+    },
+    {
+      "id": "prop_cantina_bottles",
+      "prompt": "assortment of drink bottles from different civilizations on a bar shelf, Compact regulation bottles with labels, Veshan heavy ceramic flask, Orryn translucent teal vial, various sizes and shapes, some nearly empty, some dusty, the drinks of a multi-species spacefaring culture"
+    },
+
+    {
+      "id": "REJECT14_lightsaber",
+      "prompt": "elegant glowing energy sword with chrome hilt and bright blue blade, clean and pristine, ornate design, clearly inspired by Star Wars lightsaber"
+    },
+    {
+      "id": "REJECT14_anime_weapon",
+      "prompt": "oversized fantasy sword with glowing runes and impossible proportions, bright colors, cel-shaded appearance, anime aesthetic, too large for any person to actually wield"
+    },
+    {
+      "id": "REJECT14_chrome_gun",
+      "prompt": "perfectly polished chrome handgun with blue LED accents and holographic sight, pristine and new, looks like a luxury product advertisement, no wear or history"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 80000
+  }
+}

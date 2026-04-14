@@ -1,0 +1,196 @@
+{
+  "id": "prop_compact_ration_pack_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:07:45.797Z",
+  "asset_path": "outputs/approved/prop_compact_ration_pack_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1425956
+  },
+  "provenance": {
+    "workflow_id": "wave14-equipment-props",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly item concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi equipment, visible material texture and surface detail, visible brushstrokes, centered item on plain dark grey background, studio lighting, regulation meal ration in sealed foil package with printed nutrition info and department logo, steel blue accent stripe, heating element tab visible, lot number and expiration date stamped on, several packages stacked — identical and impersonal, military MRE equivalent for spacefaring crew",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, hands holding item, person, character, environmental background, multiple items, text, watermark, blurry, low quality, video game icon, UI element",
+    "seed": 80531,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7080,
+    "gpu_model": "RTX 5080",
+    "batch_index": 31
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.645Z",
+    "explanation": "Environmental prop with faction identity or universal grit, showing use and history.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.75,
+      "material_fidelity": 0.8,
+      "faction_read": 0.7,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.75,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.715Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.73,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "EQP-002",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Passes EQP-002 (80%)"
+      },
+      {
+        "rule_id": "EQP-003",
+        "category": "equipment",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Passes EQP-003 (75%)"
+      }
+    ],
+    "assertion_count": 9,
+    "pass_count": 9,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.73,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "EQP-002",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Passes EQP-002 (80%)"
+    },
+    {
+      "rule_id": "EQP-003",
+      "category": "equipment",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Passes EQP-003 (75%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 9/9 constitution rules.  Environmental prop with faction identity or universal grit, showing use and history."
+}

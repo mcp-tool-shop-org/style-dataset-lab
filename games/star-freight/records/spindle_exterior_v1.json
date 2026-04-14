@@ -1,0 +1,38 @@
+{
+  "id": "spindle_exterior_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:29:11.045Z",
+  "asset_path": "outputs/candidates/spindle_exterior_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1545019
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, tall thin vertical space station floating in space — narrow rotating cylinder bristling with communication arrays and data relay dishes, antenna arrays extending from every surface, clean steel-blue hull with corporate Compact logo visible, looks like a broadcast tower not a habitat, precise and bureaucratic even in silhouette, orbiting alone against starfield",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270036,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7297,
+    "gpu_model": "RTX 5080",
+    "batch_index": 36
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

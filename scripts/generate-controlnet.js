@@ -30,6 +30,8 @@ import { join } from "node:path";
 
 const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -241,7 +243,7 @@ async function main() {
   let negative = opts.negative;
 
   if (opts.promptFile && !prompt) {
-    const pf = JSON.parse(await readFile(join(REPO_ROOT, opts.promptFile), "utf-8"));
+    const pf = JSON.parse(await readFile(join(GAME_ROOT, opts.promptFile), "utf-8"));
     prompt = pf.prompt;
     negative = negative || pf.negative;
   }
@@ -275,7 +277,7 @@ async function main() {
 
   // The guide image needs to be in ComfyUI's input directory
   // Copy it there
-  const guideFullPath = join(REPO_ROOT, opts.guidePath);
+  const guideFullPath = join(GAME_ROOT, opts.guidePath);
   const guideData = await readFile(guideFullPath);
   const guideFilename = `cn_guide_${opts.subject}.png`;
 
@@ -299,7 +301,7 @@ async function main() {
     console.log(`\x1b[32m+\x1b[0m Guide uploaded: ${uploadResult.name}`);
   }
 
-  await mkdir(join(REPO_ROOT, "outputs/candidates"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
 
   for (let si = 0; si < opts.seeds; si++) {
     const seed = DEFAULTS.base_seed + si;
@@ -338,7 +340,7 @@ async function main() {
       }
 
       const imgData = await downloadImage(imageFile, imageSubfolder);
-      await writeFile(join(REPO_ROOT, destPath), imgData);
+      await writeFile(join(GAME_ROOT, destPath), imgData);
       console.log(`    \x1b[32m+\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
     } catch (err) {
       console.log(`    \x1b[31mx\x1b[0m ${err.message}`);

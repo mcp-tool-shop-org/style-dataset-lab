@@ -1,0 +1,296 @@
+{
+  "id": "v_blooded_veteran_f_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:53:32.342Z",
+  "asset_path": "outputs/rejected/v_blooded_veteran_f_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1350464
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, female reptilian alien with dark olive scales and a crest ridge bearing three notch-marks filed into the bone indicating kills, amber eyes that have seen too many fights, a tail with a missing tip from an old wound, wearing layered bronze plate armor over dark leather with a crimson sash faded from sun and salt, house crest on the chest plate scratched and re-etched after being damaged in combat, multiple honor tokens on the belt some of them taken from defeated opponents, a heavy cleaver-blade worn edge-down on the back",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11040,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8072,
+    "gpu_model": "RTX 5080",
+    "batch_index": 40
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:02:49.156Z",
+    "explanation": "Two figures shown (front and back view of same character). Violates single character rule. The armor design is good but the composition is a concept art turnaround sheet not a single portrait.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.3
+    },
+    "failure_modes": [
+      "bad_composition"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:43.038Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "veshan",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Lighting incorrect or flat"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Composition fails — not full body/centered/plain bg (30%)"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Silhouette readable at gameplay scale (70%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Surfaces read as Forged (hammered, riveted, layered) (83%)",
+        "faction": "veshan",
+        "faction_context": "Forged (hammered, riveted, layered)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+        "faction": "veshan",
+        "faction_context": "Battle-scarred with pride — damage displayed"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+        "faction": "veshan",
+        "faction_context": "Triangles, chevrons, sharp angles"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Faction palette present and dominant (80%)",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "veshan",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Construction matches faction building method",
+        "faction": "veshan",
+        "faction_context": "Smith-forged, imperfections intentional"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 12,
+    "fail_count": 2,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Lighting incorrect or flat"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Composition fails — not full body/centered/plain bg (30%)"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Silhouette readable at gameplay scale (70%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Surfaces read as Forged (hammered, riveted, layered) (83%)",
+      "faction": "veshan",
+      "faction_context": "Forged (hammered, riveted, layered)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+      "faction": "veshan",
+      "faction_context": "Battle-scarred with pride — damage displayed"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+      "faction": "veshan",
+      "faction_context": "Triangles, chevrons, sharp angles"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Faction palette present and dominant (80%)",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "veshan",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Construction matches faction building method",
+      "faction": "veshan",
+      "faction_context": "Smith-forged, imperfections intentional"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-002, RND-004. Two figures shown (front and back view of same character). Violates single character rule. The armor design is good but the composition is a concept art turnaround sheet not a single portrait."
+}

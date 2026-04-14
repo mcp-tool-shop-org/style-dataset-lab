@@ -1,0 +1,294 @@
+{
+  "id": "surf_orryn_membrane_layers_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T04:05:20.054Z",
+  "asset_path": "outputs/approved/surf_orryn_membrane_layers_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1549544
+  },
+  "provenance": {
+    "workflow_id": "wave22-damage-repair-surfaces",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly close-up detail study, muted dusty palette, subtle dark edges, soft directional lighting, worn and damaged sci-fi surface, extreme visible material texture and wear detail, visible brushstrokes, tight crop on surface detail, close-up of Orryn reconfigured wall surface — multiple layers of translucent pearl-white membrane, some cut away revealing older layers beneath, anchor point holes in regular patterns from previous wall positions, slight iridescent sheen, moisture condensation beading on surface, ink stain from chromatophore discharge",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, wide shot, full environment, people, characters, text, watermark, blurry, low quality",
+    "seed": 160022,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7318,
+    "gpu_model": "RTX 5080",
+    "batch_index": 22
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T04:10:52.768Z",
+    "explanation": "Surface texture/damage study showing the visual vocabulary of wear that defines gritty space.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.9,
+      "faction_read": 0.7,
+      "wear_level": 0.9,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.75,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.976Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "orryn",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Silhouette readable at gameplay scale (70%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Surfaces read as Woven (modular, interlocking, reconfigurable) (80%)",
+        "faction": "orryn",
+        "faction_context": "Woven (modular, interlocking, reconfigurable)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Wear level appropriate — Adaptive — reconfigured, not worn",
+        "faction": "orryn",
+        "faction_context": "Adaptive — reconfigured, not worn"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Shape language compliant — Ellipses, flowing curves, translucent layers",
+        "faction": "orryn",
+        "faction_context": "Ellipses, flowing curves, translucent layers"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Faction palette present and dominant (75%)",
+        "faction": "orryn",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "orryn",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "orryn",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Construction matches faction building method",
+        "faction": "orryn",
+        "faction_context": "Modular panels that clip together magnetically"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.73,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Silhouette readable at gameplay scale (70%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Surfaces read as Woven (modular, interlocking, reconfigurable) (80%)",
+      "faction": "orryn",
+      "faction_context": "Woven (modular, interlocking, reconfigurable)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Wear level appropriate — Adaptive — reconfigured, not worn",
+      "faction": "orryn",
+      "faction_context": "Adaptive — reconfigured, not worn"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Shape language compliant — Ellipses, flowing curves, translucent layers",
+      "faction": "orryn",
+      "faction_context": "Ellipses, flowing curves, translucent layers"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Faction palette present and dominant (75%)",
+      "faction": "orryn",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "orryn",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "orryn",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Construction matches faction building method",
+      "faction": "orryn",
+      "faction_context": "Modular panels that clip together magnetically"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.73,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: orryn. Surface texture/damage study showing the visual vocabulary of wear that defines gritty space."
+}

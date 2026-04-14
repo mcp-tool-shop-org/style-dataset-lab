@@ -1,0 +1,297 @@
+{
+  "id": "REJECT5_all_factions_salad_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T01:03:49.470Z",
+  "asset_path": "outputs/rejected/REJECT5_all_factions_salad_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1291462
+  },
+  "provenance": {
+    "workflow_id": "wave5-cross-faction-comparisons",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, human wearing a perfectly integrated outfit that smoothly combines Compact steel-blue rectangular fabric with Veshan crimson triangular bronze plates and Orryn teal elliptical circuit-woven panels and Keth amber organic bio-film accents, the outfit looks designer and intentional and harmonious, as if someone created a fashion line that blends all four faction aesthetics into one coherent garment, nothing is torn nothing is stolen nothing is improvised it was designed this way",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero",
+    "seed": 50531,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8034,
+    "gpu_model": "RTX 5080",
+    "batch_index": 31
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.217Z",
+    "explanation": "Designer outfit smoothly blending all faction aesthetics into one harmonious garment. Nothing is torn, stolen, or improvised. Violates every faction boundary rule.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.3,
+      "material_fidelity": 0.5,
+      "faction_read": 0.1,
+      "wear_level": 0.3,
+      "style_consistency": 0.5,
+      "clothing_logic": 0.2,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "faction_unreadable",
+      "too_clean"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.813Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "veshan",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets semi-realistic painterly style (50%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Surfaces don't read as Forged (hammered, riveted, layered) (30%)",
+        "faction": "veshan",
+        "faction_context": "Forged (hammered, riveted, layered)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Wear level wrong — doesn't match Battle-scarred with pride — damage displayed",
+        "faction": "veshan",
+        "faction_context": "Battle-scarred with pride — damage displayed"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "fail",
+        "score": 0.45,
+        "rationale": "Shape language violates faction — wrong geometry (45%)",
+        "faction": "veshan",
+        "faction_context": "Triangles, chevrons, sharp angles"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Faction palette missing or wrong colors (20%)",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Color ratios off — primary doesn't dominate",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Layer logic broken — layers don't follow faction system",
+        "faction": "veshan",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.35,
+        "rationale": "Construction doesn't match faction building method (35%)",
+        "faction": "veshan",
+        "faction_context": "Smith-forged, imperfections intentional"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.15,
+        "rationale": "Reads as generic sci-fi — not faction-specific (15%)"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 3,
+    "fail_count": 10,
+    "partial_count": 1
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets semi-realistic painterly style (50%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Surfaces don't read as Forged (hammered, riveted, layered) (30%)",
+      "faction": "veshan",
+      "faction_context": "Forged (hammered, riveted, layered)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Wear level wrong — doesn't match Battle-scarred with pride — damage displayed",
+      "faction": "veshan",
+      "faction_context": "Battle-scarred with pride — damage displayed"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "fail",
+      "score": 0.45,
+      "rationale": "Shape language violates faction — wrong geometry (45%)",
+      "faction": "veshan",
+      "faction_context": "Triangles, chevrons, sharp angles"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Faction palette missing or wrong colors (20%)",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Color ratios off — primary doesn't dominate",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Layer logic broken — layers don't follow faction system",
+      "faction": "veshan",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.35,
+      "rationale": "Construction doesn't match faction building method (35%)",
+      "faction": "veshan",
+      "faction_context": "Smith-forged, imperfections intentional"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.15,
+      "rationale": "Reads as generic sci-fi — not faction-specific (15%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-003, MAT-001, MAT-002, SHP-001, COL-001, COL-002, COL-003, CLO-001, CLO-002, CLO-003. Designer outfit smoothly blending all faction aesthetics into one harmonious garment. Nothing is torn, stolen, or improvised. Violates every faction boundary rule."
+}

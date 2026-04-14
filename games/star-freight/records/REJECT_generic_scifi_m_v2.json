@@ -1,0 +1,171 @@
+{
+  "id": "REJECT_generic_scifi_m_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:55:50.048Z",
+  "asset_path": "outputs/rejected/REJECT_generic_scifi_m_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1400438
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male space soldier in a sleek form-fitting white and blue bodysuit with glowing accents and a holographic visor, standing in a heroic pose with legs apart and arms crossed, clean pristine futuristic armor with no visible wear or damage, bright blue LED strips along the arms and legs, smooth aerodynamic helmet, the outfit looks like it was designed by a committee for a video game cover, everything is symmetric and perfect and new",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11557,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8071,
+    "gpu_model": "RTX 5080",
+    "batch_index": 57
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:04:11.369Z",
+    "explanation": "Same issue — clean white armor with blue glow. Exact opposite of gritty space.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.2,
+      "material_fidelity": 0.3,
+      "faction_read": 0.1,
+      "wear_level": 0.1,
+      "style_consistency": 0.5,
+      "clothing_logic": 0.2,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "generic_scifi",
+      "too_clean"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.832Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets semi-realistic painterly style (50%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.15,
+        "rationale": "Reads as generic sci-fi — not faction-specific (15%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 3,
+    "fail_count": 3,
+    "partial_count": 1
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets semi-realistic painterly style (50%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.15,
+      "rationale": "Reads as generic sci-fi — not faction-specific (15%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-003, COL-003, CLO-003. Same issue — clean white armor with blue glow. Exact opposite of gritty space."
+}

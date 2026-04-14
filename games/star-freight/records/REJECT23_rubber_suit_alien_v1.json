@@ -1,0 +1,170 @@
+{
+  "id": "REJECT23_rubber_suit_alien_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T04:16:31.915Z",
+  "asset_path": "outputs/rejected/REJECT23_rubber_suit_alien_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1479501
+  },
+  "provenance": {
+    "workflow_id": "wave23-alien-species-life",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, humanoid alien that is clearly a human in a rubber mask, human proportions with painted skin, Star Trek makeup aesthetic, bipedal human body plan with decorative ridges, not truly alien",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+    "seed": 170040,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7275,
+    "gpu_model": "RTX 5080",
+    "batch_index": 40
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T04:17:30.769Z",
+    "explanation": "Humanoid alien that is clearly a human in makeup. Star Trek rubber-forehead aesthetic. Human body plan with decorative ridges. Not truly alien.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.5,
+      "palette_adherence": 0.3,
+      "material_fidelity": 0.3,
+      "faction_read": 0.1,
+      "wear_level": 0.3,
+      "style_consistency": 0.4,
+      "clothing_logic": 0.3,
+      "composition": 0.7
+    },
+    "failure_modes": [
+      "generic_scifi"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.793Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.4,
+        "rationale": "Partially meets semi-realistic painterly style (40%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets readable at 128px, identifiable at 64px (50%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Reads as generic sci-fi — not faction-specific (20%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 2,
+    "fail_count": 3,
+    "partial_count": 2
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.4,
+      "rationale": "Partially meets semi-realistic painterly style (40%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets readable at 128px, identifiable at 64px (50%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Reads as generic sci-fi — not faction-specific (20%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-003, COL-003, CLO-003. Humanoid alien that is clearly a human in makeup. Star Trek rubber-forehead aesthetic. Human body plan with decorative ridges. Not truly alien."
+}

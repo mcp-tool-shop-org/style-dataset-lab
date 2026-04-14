@@ -1,0 +1,294 @@
+{
+  "id": "c_commander_retiring_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:50:50.530Z",
+  "asset_path": "outputs/approved/c_commander_retiring_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1240925
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male station commander in his late 60s on his final tour, wearing a navy bridge coat that has been recut twice to fit his changing frame over forty years, tarnished gold shoulder boards and cuff rings that he has stopped polishing, a leather document case so old the stitching has been re-done by hand, the coat has a small moth hole near the hem that he has not bothered to fix, comfortable broken-in boots, everything about him says tired authority",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11020,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8056,
+    "gpu_model": "RTX 5080",
+    "batch_index": 20
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:01:50.476Z",
+    "explanation": "Retiring commander in navy jacket with gold trim, by rusted ship door. Tired authority. The worn gold and aged face tell the story.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.9,
+      "material_fidelity": 0.85,
+      "faction_read": 0.9,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.9,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.485Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "compact",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Surfaces read as Pressed (machine-stamped, regulation-issued) (88%)",
+        "faction": "compact",
+        "faction_context": "Pressed (machine-stamped, regulation-issued)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Wear level appropriate — Maintained but impersonal — kept to standard",
+        "faction": "compact",
+        "faction_context": "Maintained but impersonal — kept to standard"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Shape language compliant — Rectangles, straight edges, 90° corners",
+        "faction": "compact",
+        "faction_context": "Rectangles, straight edges, 90° corners"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Faction palette present and dominant (90%)",
+        "faction": "compact",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "compact",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "compact",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Construction matches faction building method",
+        "faction": "compact",
+        "faction_context": "Machine-made, identical cuts, zero personalization"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Surfaces read as Pressed (machine-stamped, regulation-issued) (88%)",
+      "faction": "compact",
+      "faction_context": "Pressed (machine-stamped, regulation-issued)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Wear level appropriate — Maintained but impersonal — kept to standard",
+      "faction": "compact",
+      "faction_context": "Maintained but impersonal — kept to standard"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Shape language compliant — Rectangles, straight edges, 90° corners",
+      "faction": "compact",
+      "faction_context": "Rectangles, straight edges, 90° corners"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Faction palette present and dominant (90%)",
+      "faction": "compact",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "compact",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "compact",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Construction matches faction building method",
+      "faction": "compact",
+      "faction_context": "Machine-made, identical cuts, zero personalization"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: compact. Retiring commander in navy jacket with gold trim, by rusted ship door. Tired authority. The worn gold and aged face tell the story."
+}

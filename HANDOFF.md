@@ -1,128 +1,133 @@
-# Session Handoff — 2026-04-12
+# Session Handoff — 2026-04-13 (Universe Expansion + Painterly Pass)
 
-## What this repo is
+## What Happened This Session
 
-A Comfy-backed visual dataset factory for manufacturing multimodal training data. Every asset carries three things: **image pixels + canonical explanation + quality judgment**. The output feeds into `repo-dataset` to produce training data for vision-language model fine-tuning.
+Expanded the Star Freight universe with new species, customs, stations, and visual identities. Then ran the full 887-image painterly post-processing pass.
 
-Current lane: **Gritty Space** — uniforms and costumes for Star Freight's lived-in sci-fi universe.
+### Deliverables
 
-## What happened this session
+1. **SPECIES_CANON.md v0.2** — 12 new customs for core aliens (Keth molting/hive-song/pheromone libraries/seasonal debt, Veshan forge-trials/scale-reading/cold-debt/battle-opera, Orryn drift parliament/crystal inheritance/dark trade/tentacle autonomy). 3 minor species (Thresh silicon filter-feeders, Mire colonial aggregates, Vaelk gaseous proxy-traders). Extinct Architects. Station fauna (void lice, drift kelp, faction vermin). Cross-species trade protocols (pidgin trade-sign, station protocols, smuggler cant).
 
-1. Scaffolded repo from scratch — scripts, canon, directory structure
-2. First attempt with RPG item icons — **scrapped** (wrong direction entirely)
-3. Pivoted to gritty space costumes grounded in Star Freight visual bible
-4. Iterated on checkpoint (JuggernautXL → DreamShaper XL) and prompts (Earth clothes → sci-fi shipboard gear)
-5. Downloaded DreamShaper XL Turbo + ClassipeintXL painterly LoRA
-6. Generated 10 waves of candidates across 3 factions
-7. Curated all 432 assets with judgment records
-8. First export: 570 training units in TRL format
+2. **VISUAL_BIBLE.md v0.3** — Added anatomy specs for Thresh, Mire, Vaelk proxy. Architect ruins visual language. Drift kelp spec.
 
-## Current state
+3. **STATION_BIBLE.md v0.1** — 9 stations with full visual identity (thesis, architecture, lighting, sound, smell, commerce infrastructure, wear patterns, key landmarks). New station: Burn Gate (Veshan border toll — needs code implementation).
 
-- **Repo:** https://github.com/mcp-tool-shop-org/style-dataset-lab
-- **Local:** F:/AI/style-dataset-lab
-- **Assets:** 432 curated (345 approved, 71 rejected, 16 borderline)
-- **Records:** 432 JSON files with provenance + judgment
-- **Comparisons:** 6 human pairwise
-- **Export:** 570 training units, 528MB image folder
-- **All pushed.** Working tree clean.
+4. **Wave 25** (expanded universe) — 60 images, 48 approved / 12 rejected
+5. **Wave 25b** (species regen) — 18 images, fixed SDXL human-default with negative prompt trick
+6. **Wave 26** (station identities) — 46 images, 23 subjects × 2 variations
+7. **Painterly post-processing pass** — 887 approved images through img2img at denoise 0.5, ClassipeintXL LoRA 1.0
+
+### Key Discovery: Alien Negative Prompt
+
+SDXL defaults all figures to human anatomy. Adding `human, person, man, woman` to the negative prompt + frontloading species anatomy in the prompt text solved this immediately. This is the single biggest lever for non-human species accuracy.
+
+### Key Discovery: Painterly Denoise Sweet Spot
+
+- **0.38** — barely visible difference (too subtle)
+- **0.50** — visible brushwork, composition preserved, content intact (sweet spot)
+- **0.60** — faces change, phantom figures appear (too much)
+- **0.70** — completely different image (content destroyed)
 
 ---
 
-## Generation setup
+## Current State
+
+```
+887 approved originals + 124 new candidates (waves 25/25b/26)
+887 painterly versions (in progress, ~9s/image)
+18 visual categories across 26 waves
+```
+
+### Pipeline Architecture
+
+```
+Canon (species, factions, world lore)
+  → Visual Style Bible (art rules, prompt fragments, validation checklist)
+    → Style Dataset Lab (ComfyUI txt2img + painterly img2img + curation)
+      → repo-dataset (training JSONL export)
+        → Fine-tuned VLM (consistent style generation + judgment)
+```
+
+### Generation Setup
 
 ```yaml
+# txt2img (base generation)
 checkpoint: dreamshaperXL_v21TurboDPMSDE.safetensors
 lora: classipeintxl_v21.safetensors (weight: 1.0)
 resolution: 1024x1024
-steps: 8
-cfg: 2.0
-sampler: dpmpp_sde
-scheduler: karras
-comfyui: http://127.0.0.1:8188
+steps: 8, cfg: 2.0, sampler: dpmpp_sde, scheduler: karras
+
+# img2img (painterly post-processing)
+same checkpoint + lora at 1.0
+denoise: 0.50, steps: 10, cfg: 2.5, seed: 42
+prompt: "oil painting, visible brushstrokes, painterly concept art..."
+negative: "photorealistic, photograph, 3d render, smooth CG..."
 ```
 
-**Start ComfyUI:** `cd F:/AI-Models/ComfyUI-runtime && python main.py --listen 127.0.0.1 --port 8188`
-
-**Note:** Output is still photorealistic despite painterly LoRA. Post-processing painterly pass not yet implemented. The costume design is strong, the rendering style needs work.
-
 ---
 
-## Dataset composition (10 waves)
-
-| Wave | Focus | Subjects | Rejects |
-|------|-------|----------|---------|
-| Anchor | Style finding — 10 Compact crew roles | 10 | 0 |
-| 1 | Compact + Veshan + Reach + traps | 28 | 8 |
-| 2 | Compact diversity — ethnicities, body types, roles | 21 | 4 |
-| 3 | Veshan deep — full rank + non-combat | 13 | 3 |
-| 4 | Sable Reach deep — specialists + mixed species | 13 | 3 |
-| 5 | Cross-faction comparisons | 15 | 3 |
-| 6 | Compact civilians — station life, refugees, children | 15 | 3 |
-| 7 | Veshan society — diplomat, priest, cook, mother | 10 | 2 |
-| 8 | Reach specialists + borderline rejects | 8 | 7 |
-| 9 | Iteration pairs + edge cases | 12 | 4 |
-| 10 | Final push — more diversity + iteration pairs | 19 | 4 |
-
-**Rejection categories:** generic sci-fi, too clean, wrong material vocabulary, Star Trek, anime, too heroic, mixed factions, modern Earth, cyberpunk, steampunk, fantasy knight, Warhammer, too sexy, cute dragon, Fortnite, samurai, pin-up, MMORPG, superhero, zombie, invisible, xenomorph.
-
-**Borderline categories:** almost-right-Compact (too stylish), almost-right-Veshan (too ornate), almost-right-Reach (too coordinated), right-style-wrong-era, too-much-wear.
-
----
-
-## What's next
-
-### Quality improvements
-1. **Canon binding pass** — populate `canon_assertions` in records by linking each asset to specific constitution rules. This will bring triangle completion from 0% to target >90%.
-2. **More pairwise comparisons** — only 6 human comparisons. Need 50+ for meaningful DPO training. Use same-role cross-variation and cross-faction pairs.
-3. **Painterly post-processing** — img2img pass through ComfyUI with stronger painterly style transfer to convert photorealistic renders to concept art.
-4. **Human review override** — bulk curation used rule-based first pass at confidence 0.75. Individual visual review would raise confidence to 0.9+.
-
-### Scale to 500
-- Currently at 432. Need ~70 more for 500 target.
-- Could add: Orryn (cephalopod) subjects, Keth (arthropod) with ControlNet, more civilian roles, more iteration pairs.
-
-### Export improvements
-- Run with `--embed` for self-contained base64 JSONL
-- Try `llava`, `qwen2vl`, `llama_factory` formats
-- Run `repo-dataset visual validate` on the export for health metrics
-
----
-
-## Key files
+## Key Files
 
 | File | Purpose |
 |------|---------|
-| `canon/constitution.md` | Style rules — art pillars, material vocab, shape language, color rules |
-| `canon/review-rubric.md` | Curation protocol + failure mode catalog |
-| `inputs/prompts/wave*.json` | Prompt packs per wave (subjects, variations, defaults) |
-| `scripts/generate.js` | ComfyUI HTTP API automation — generates + writes provenance |
-| `scripts/curate.js` | Individual asset curation — approve/reject/borderline |
-| `scripts/compare.js` | Pairwise A-vs-B preference recording |
-| `scripts/bulk-curate-wave2-5.js` | Rules-based bulk curation for large batches |
-| `records/*.json` | Per-asset structured records (provenance + judgment) |
-| `comparisons/*.json` | A-vs-B preference judgments |
-| `exports/_manifest.json` | Latest export metadata |
+| `scripts/generate.js` | txt2img ComfyUI automation |
+| `scripts/painterly.js` | img2img painterly post-processing |
+| `scripts/painterly-test.js` | A/B test denoise levels |
+| `scripts/curate.js` | Individual curation |
+| `scripts/curate-wave25.js` | Bulk curation for wave 25 |
+| `scripts/compare.js` | Pairwise A-vs-B preference |
+| `scripts/bulk-curate-waves11-18.js` | Bulk curation waves 11-24 |
+| `scripts/canon-bind.js` | Canon binding (25 rules) |
+| `canon/constitution.md` | Style rules |
+| `canon/species-canon.md` | Species cultural depth |
+| `canon/review-rubric.md` | Curation protocol |
+
+### Companion Files
+
+| File | Purpose |
+|------|---------|
+| `F:/AI/star-freight-ue5/VISUAL_BIBLE.md` | v0.3 — design authority |
+| `F:/AI/star-freight-ue5/SPECIES_CANON.md` | v0.2 — species/culture |
+| `F:/AI/star-freight-ue5/STATION_BIBLE.md` | v0.1 — 9 stations |
 
 ---
 
 ## Commands
 
 ```bash
-# Generate candidates (ComfyUI must be running)
-node scripts/generate.js inputs/prompts/wave1.json
-node scripts/generate.js inputs/prompts/wave1.json --dry-run
+# Start ComfyUI
+cd F:/AI-Models/ComfyUI-runtime && python main.py --listen 127.0.0.1 --port 8188
 
-# Curate individual assets
-node scripts/curate.js <asset_id> approved "explanation" --scores "k:v,..."
-node scripts/curate.js <asset_id> rejected "explanation" --failures "f1,f2"
-node scripts/curate.js --list
+# Generate a wave
+cd F:/AI/style-dataset-lab
+node scripts/generate.js inputs/prompts/wave26-station-identities.json
 
-# Record comparisons
-node scripts/compare.js <asset_a> <asset_b> <a|b|tie> "reasoning"
+# Painterly pass (auto-skips already processed)
+node scripts/painterly.js --limit 100
+node scripts/painterly.js --source outputs/candidates --limit 50
 
-# Export via repo-dataset (local build)
-node F:/AI/repo-dataset/dist/cli.js visual generate . --format trl --output exports --allow-incomplete
-node F:/AI/repo-dataset/dist/cli.js visual inspect .
-node F:/AI/repo-dataset/dist/cli.js visual validate exports/dataset.jsonl
+# Curate wave 25
+node scripts/curate-wave25.js
+
+# Canon bind all records
+node scripts/canon-bind.js --force
+
+# Export dataset
+node F:/AI/repo-dataset/dist/cli.js visual generate . --format trl --output exports
 ```
+
+---
+
+## What's Next
+
+1. **Painterly pass completion** — 887 images running
+2. **Painterly the new waves** — run waves 25/25b/26 through painterly after curation
+3. **Pairwise comparisons** — original vs painterly pairs for DPO preference data
+4. **Export** — training JSONL with both original and painterly variants
+5. **Blank pipeline template** — extract reusable starter kit from this workflow
+6. **Crew character concepts** — 6 named crew as individuals
+7. **Ship fleet sheets** — faction ship design language rendered
+
+---
+
+*The pipeline is now: canon informs bible, bible informs generation, generation produces training data, training data teaches the model to maintain the style. Each new game starts with a blank template and fills it in.*

@@ -1,0 +1,297 @@
+{
+  "id": "REJECT4_clean_pirate_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:58:57.899Z",
+  "asset_path": "outputs/rejected/REJECT4_clean_pirate_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1283915
+  },
+  "provenance": {
+    "workflow_id": "wave4-sable-reach",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, dashing handsome pirate captain in a pristine white shirt with billowing sleeves and a perfectly tailored embroidered vest, polished knee-high boots, a rapier with a jeweled hilt, styled flowing hair, a clean tricorn hat with a feather, he looks like a romance novel cover not someone who lives in a lawless frontier, everything is theatrical and new and designed to look good not to survive",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero, symmetrical matching armor",
+    "seed": 40527,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8069,
+    "gpu_model": "RTX 5080",
+    "batch_index": 27
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.208Z",
+    "explanation": "Dashing pirate in pristine white shirt, embroidered vest, polished boots, jeweled rapier. Romance novel cover not lawless frontier. Violates MAT-002, CLO-003.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.3,
+      "material_fidelity": 0.3,
+      "faction_read": 0.2,
+      "wear_level": 0.1,
+      "style_consistency": 0.4,
+      "clothing_logic": 0.2,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "too_clean",
+      "costume_not_clothes"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.809Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "reach",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.4,
+        "rationale": "Partially meets semi-realistic painterly style (40%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "fail",
+        "score": 0.25,
+        "rationale": "Surfaces don't read as Stripped (torn, welded from scrap, jury-rigged) (25%)",
+        "faction": "reach",
+        "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Wear level wrong — doesn't match Jury-rigged — functional ugly",
+        "faction": "reach",
+        "faction_context": "Jury-rigged — functional ugly"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets faction shape language compliance (50%)",
+        "faction": "reach",
+        "faction_context": "Asymmetric, irregular, mismatched"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.25,
+        "rationale": "Faction palette missing or wrong colors (25%)",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Color ratios off — primary doesn't dominate",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Layer logic broken — layers don't follow faction system",
+        "faction": "reach",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.25,
+        "rationale": "Construction doesn't match faction building method (25%)",
+        "faction": "reach",
+        "faction_context": "Assembled from salvage, nothing matches"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Reads as generic sci-fi — not faction-specific (20%)"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 3,
+    "fail_count": 9,
+    "partial_count": 2
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.4,
+      "rationale": "Partially meets semi-realistic painterly style (40%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "fail",
+      "score": 0.25,
+      "rationale": "Surfaces don't read as Stripped (torn, welded from scrap, jury-rigged) (25%)",
+      "faction": "reach",
+      "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Wear level wrong — doesn't match Jury-rigged — functional ugly",
+      "faction": "reach",
+      "faction_context": "Jury-rigged — functional ugly"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets faction shape language compliance (50%)",
+      "faction": "reach",
+      "faction_context": "Asymmetric, irregular, mismatched"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.25,
+      "rationale": "Faction palette missing or wrong colors (25%)",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Color ratios off — primary doesn't dominate",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Layer logic broken — layers don't follow faction system",
+      "faction": "reach",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.25,
+      "rationale": "Construction doesn't match faction building method (25%)",
+      "faction": "reach",
+      "faction_context": "Assembled from salvage, nothing matches"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Reads as generic sci-fi — not faction-specific (20%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-003, MAT-001, MAT-002, COL-001, COL-002, COL-003, CLO-001, CLO-002, CLO-003. Dashing pirate in pristine white shirt, embroidered vest, polished boots, jeweled rapier. Romance novel cover not lawless frontier. Violates MAT-002, CLO-003."
+}

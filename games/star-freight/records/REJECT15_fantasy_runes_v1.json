@@ -1,0 +1,170 @@
+{
+  "id": "REJECT15_fantasy_runes_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:14:25.617Z",
+  "asset_path": "outputs/rejected/REJECT15_fantasy_runes_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1643782
+  },
+  "provenance": {
+    "workflow_id": "wave15-signage-ui-logos",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly prop concept art, muted dusty palette, subtle dark edges, soft directional lighting, worn and functional sci-fi signage and interface design, visible surface texture and aging, visible brushstrokes, centered on plain dark grey background, glowing magical runes carved into stone archway, blue mystical energy emanating from each symbol, fantasy wizard's tower aesthetic, Lord of the Rings inspired, medieval not sci-fi",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated neon, clean pristine new, modern graphic design, flat UI mockup, website screenshot, people, characters, text watermark, blurry, low quality",
+    "seed": 90036,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7315,
+    "gpu_model": "RTX 5080",
+    "batch_index": 36
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.680Z",
+    "explanation": "Glowing magical runes on stone — Lord of the Rings aesthetic. Fantasy, not sci-fi. Wrong genre entirely.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.5,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.1,
+      "faction_read": 0,
+      "wear_level": 0.2,
+      "style_consistency": 0.2,
+      "clothing_logic": 0.1,
+      "composition": 0.5
+    },
+    "failure_modes": [
+      "generic_scifi"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.762Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Not painterly — reads as photorealistic/3D/anime (20%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets single upper-left warm lighting with soft ao shadows (50%)"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets full body front-facing on plain background, 70-85% fill (50%)"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets readable at 128px, identifiable at 64px (50%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.05,
+        "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 0,
+    "fail_count": 4,
+    "partial_count": 3
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Not painterly — reads as photorealistic/3D/anime (20%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets single upper-left warm lighting with soft ao shadows (50%)"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets full body front-facing on plain background, 70-85% fill (50%)"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets readable at 128px, identifiable at 64px (50%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.05,
+      "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-001, RND-003, COL-003, CLO-003. Glowing magical runes on stone — Lord of the Rings aesthetic. Fantasy, not sci-fi. Wrong genre entirely."
+}

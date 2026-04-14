@@ -1,0 +1,146 @@
+{
+  "lane": "wave25-expanded-universe",
+  "description": "Wave 25: Expanded universe — deeper alien customs (molting rites, forge-trials, drift parliament, hive-song), minor species (Thresh, Mire, Vaelk), Architect ruins, station fauna, cross-species trade protocols. The content that makes the galaxy feel populated and ancient.",
+  "style_prefix": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+
+  "subjects": [
+    {
+      "id": "keth_molt_before",
+      "prompt": "young Keth arthropod standing before a sealed growth-chamber iris door, about to enter for their First Adult Molt, antennae flat against head in fear, four arms at sides trembling slightly, bioluminescent veins dimmed with anxiety, colony members standing in a semicircle behind them as witnesses, warm amber bio-resin chamber, the most important moment of a young Keth's life"
+    },
+    {
+      "id": "keth_molt_emerging",
+      "prompt": "Keth arthropod mid-molt inside a private growth-chamber — cracked old chitin shell on the floor in jagged pieces, the Keth emerging pale and soft and trembling, new exoskeleton not yet hardened, temporarily translucent showing internal structures beneath, bioluminescent veins flickering weakly, four arms bracing against the chamber walls, vulnerable and newborn, warm amber light"
+    },
+    {
+      "id": "keth_hivesong",
+      "prompt": "Keth hive exterior at night during a hive-song celebration — the entire bio-resin structure glowing with synchronized amber pulse-waves visible through translucent walls, cascading light rippling from the colony center outward in heartbeat rhythm, a human observer standing at the edge illuminated amber from the glow, expression caught between wonder and unease, the hive acting as one organism"
+    },
+    {
+      "id": "keth_pheromone_library",
+      "prompt": "Keth elder standing motionless inside a pheromone library — a sealed amber bio-resin chamber with visible atmospheric layers of different warm-toned haze densities, antennae fully extended reading chemical memories, bioluminescence cycling through complex patterns as they process decades of recorded colony history, rows of sealed archive chambers visible receding into amber-lit distance, the scale of a species' memory"
+    },
+    {
+      "id": "veshan_forge_trial",
+      "prompt": "Veshan Forge-Trial — two massive reptilian warriors at parallel forges, identical raw bronze ingots glowing on each anvil, both hammering with intense focus, crests flushing with competitive heat, a panel of master smiths observing from elevated stone seats, angular hall with crimson banners, the legal alternative to a duel — craftsmanship as combat, sparks flying"
+    },
+    {
+      "id": "veshan_forge_trial_judgment",
+      "prompt": "moment of judgment in a Veshan Forge-Trial — two finished blades laid side by side on a heated stone table, judges' thick clawed hands hovering over the superior piece, the losing smith watching with tail tucked and crest pale, the winner standing rigid with tail raised, the loser's blade about to be melted back to nothing, angular hall with torch-amber light"
+    },
+    {
+      "id": "veshan_scale_reader",
+      "prompt": "Veshan scale-reader in a dim chamber — a weathered old reptilian examining shed warrior scales laid out on a heated bronze plate under a magnifying lens, tracing patterns with a thin bronze stylus, candle-like warm light, shelves of preserved scale collections in glass cases behind, across from the reader a young warrior sits with tail nervously low waiting for the reading, divination through biology"
+    },
+    {
+      "id": "veshan_battle_opera",
+      "prompt": "Veshan battle-opera performance — two performers in ceremonial armor on an angular stage in a great hall, mid-swing with blunted weapons, mouths open in deep resonant song, crests flushing crimson with performance intensity, the audience visible as rows of Veshan on open-backed stone seats with tails absolutely still in rapt attention, warm amber and crimson stage lighting, bruises visible on performers' scales from rehearsal"
+    },
+    {
+      "id": "orryn_drift_parliament",
+      "prompt": "Orryn Drift Parliament in session — a spherical chamber with cephalopod aliens arranged on every surface including walls and ceiling, all tentacles gripping, chromatophores shifting to matching teal-gold as a vote passes in consensus, the facilitator in the center cycling through the full color spectrum reading the room, holographic data displays floating between them, biological democracy in action"
+    },
+    {
+      "id": "orryn_drift_parliament_failed",
+      "prompt": "failed vote in an Orryn Drift Parliament — the same spherical chamber but chromatophore colors fractured and chaotic across the assembled Orryn, clashing teal and white-dark alarm pulses and conflicting amber patches, visual disorder representing political disagreement, the facilitator's chromatophores cycling rapidly trying to find consensus that isn't there, tension visible in curled tentacles"
+    },
+    {
+      "id": "orryn_sealed_mantle",
+      "prompt": "Orryn sealed-mantle intermediary — a cephalopod alien in full-body opaque dark fabric covering every inch of chromatophore skin, only large dark eyes visible through a narrow slit, the most unnatural state an Orryn can be in, standing in a dim membrane-walled chamber across from a Sable Reach human smuggler, both equally unreadable for opposite reasons, the dark trade"
+    },
+    {
+      "id": "orryn_crystal_inheritance",
+      "prompt": "Orryn data crystal redistribution ceremony — a circle of cephalopod aliens each receiving a glowing faceted crystal from a central collection laid out on a chrome platform, chromatophores showing slow dark grief patterns, the dead Orryn's knowledge being divided among those who knew them, each crystal carrying a lifetime of trade data, personal data crystals on vests catching the light"
+    },
+    {
+      "id": "thresh_old_station",
+      "prompt": "ancient Thresh silicon filter-feeder growing from a station wall junction — a large dark grey-blue crystalline formation roughly two meters across, internal luminescent veins pulsing faintly pale blue, station cables and pipes routed carefully around and through the growth over decades, a maintenance engineer placing a contact microphone against the crystal surface to listen to recorded station history, industrial corridor lighting"
+    },
+    {
+      "id": "thresh_young",
+      "prompt": "a newly placed young Thresh — a small fist-sized translucent crystalline formation being carefully positioned in a fresh station bay by a Compact maintenance worker in regulation coveralls, the tiny Thresh barely visible against the steel infrastructure, its internal luminescent veins just starting to glow for the first time, the beginning of a century-long relationship between station and living archive"
+    },
+    {
+      "id": "mire_at_work",
+      "prompt": "Mire colonial organism working in a cargo bay — vaguely humanoid shape assembled from hundreds of thumb-sized pale green-grey translucent slug-cells, two darker sensory patches where eyes would be, multiple pseudopod-arms reaching in different directions handling heavy cargo containers, edges dissolving slightly as stray cells detach and reattach, moist surface gleaming under industrial lights, the galaxy's expendable labor"
+    },
+    {
+      "id": "mire_reforming",
+      "prompt": "Mire aggregation in progress — a pool of individual slug-like cells on a cargo bay floor flowing together into a half-formed humanoid shape rising from the ground, translucent green-grey cells climbing over each other, sensory clusters darkening as the collective intelligence assembles, deeply disturbing to the human crew member watching from a safe distance, industrial setting"
+    },
+    {
+      "id": "mire_hull_breach",
+      "prompt": "Mire flowing through a hull breach to repair it from inside — the mass of cells squeezing through a gap too small for any solid organism, individual cells visible as translucent green-grey slugs, reforming on the far side into working arms that patch the breach with sealant, a Sable Reach crew member watching through a viewport, the practical reality of expendable alien labor"
+    },
+    {
+      "id": "vaelk_proxy_market",
+      "prompt": "Vaelk proxy vessel in a busy cross-species market — a featureless dark matte cylinder on an anti-gravity pad, 1.5 meters tall, no visible features except a small speaker grille and cargo hatch, perfectly smooth and unworn while every other surface in frame shows age, other species giving it a wide respectful berth, the unsettling blankness of an intelligence that won't show itself"
+    },
+    {
+      "id": "vaelk_proxy_trade",
+      "prompt": "Keth bio-trader completing an exchange with a Vaelk proxy — the arthropod handing over sealed mineral samples with upper arms while lower arms prepare to receive a glowing catalyst vial from the proxy's small cargo hatch, the proxy showing zero emotion or reaction, the Keth's antennae angled in cautious respect, a transaction between the biological and the unknowable"
+    },
+    {
+      "id": "architect_jump_gate",
+      "prompt": "Architect jump gate — massive dark ring structure 3 kilometers in diameter floating at a system Lagrange point, faint luminescent veining threading through the ancient alloy, a small merchant freighter approaching for transit looking like a minnow before a whale, faction navigation beacons bolted to the exterior looking like barnacles, stars visible through the ring center, ancient infrastructure still functioning"
+    },
+    {
+      "id": "architect_archive_node",
+      "prompt": "Architect archive node excavation — a dense polyhedral object roughly one meter across, half-embedded in asteroid rock, surface showing micro-etched fractal patterns, slightly too regular to be natural, a multi-species research team setting up scanning equipment around it, the node's pale luminescent veins glowing faintly as if responding to proximity, ancient mystery"
+    },
+    {
+      "id": "architect_ruin_surface",
+      "prompt": "Architect ruin on a planet surface — hexagonal geometric foundations extending beyond frame, dark alloy that shows no weathering despite obvious age, native vegetation growing through cracks but unable to stain the surface, a Keth and a human standing at the base for scale revealing the foundations were built for beings much larger or for infrastructure-scale thinking, cloudy sky, lonely"
+    },
+    {
+      "id": "drift_kelp_bed",
+      "prompt": "merchant ship emerging from a drift kelp bed — hull trailing long green-amber organic tendrils, bioluminescent spots along the kelp catching starlight, crew members visible on the exterior hull with cleaning tools removing kelp residue from sensors, the kelp bed extending vast behind the ship, beautiful and hazardous"
+    },
+    {
+      "id": "drift_kelp_ambush",
+      "prompt": "Sable Reach ambush hidden in dense drift kelp — a pirate vessel barely visible through thick green-amber kelp tendrils, only engine glow betraying its position, the kelp bed masking sensor signatures, a merchant ship approaching unaware in the distance, the organic concealment of space piracy"
+    },
+    {
+      "id": "pidgin_trade_sign",
+      "prompt": "cross-species market scene with pidgin trade-sign communication — a human merchant and a Keth trader facing each other over a display of goods, both making exaggerated hand gestures that form the pidgin trade language, drawn symbols chalked on a board between them showing quantities and prices, other species passing in the background, the practical reality of multi-species commerce without universal translators"
+    },
+    {
+      "id": "translator_rig",
+      "prompt": "professional multi-species translator at work — a human wearing a pheromone-sampling headset over their nose, a chromatophore-reading color-display wristband, earpieces tuned to infrasonic frequencies, and a gesture-interpretation glove, looking like a walking antenna farm, standing between a Veshan diplomat and an Orryn broker facilitating a negotiation, sweat visible on the translator's brow"
+    },
+    {
+      "id": "smuggler_cant_meeting",
+      "prompt": "smuggler cant in action — a mixed-species group in a dim back room, the human watching a Veshan's tail movements for encoded price data, an Orryn projecting shifting holographic patterns that carry hidden cargo manifests, a Keth subtly touching the table to leave pheromone coordinates, each species communicating in a channel the others can't fully decode, multi-species encryption through biology"
+    },
+    {
+      "id": "station_climate_border",
+      "prompt": "station climate zone boundary — the exact line where the hot dry Veshan quarter meets the cold humid Orryn district, visible condensation fog at the thermal barrier, frost forming on Orryn-side handrails, heat shimmer on Veshan-side deck plating, a transition corridor with gradual environmental shift, the mundane infrastructure of multi-species coexistence"
+    },
+
+    {
+      "id": "REJECT25_clean_alien",
+      "prompt": "clean sterile alien civilization with smooth white walls and glowing blue accents, Star Trek utopia aesthetic, no wear or damage, everything looks manufactured yesterday, clinical and perfect"
+    },
+    {
+      "id": "REJECT25_fantasy_alien",
+      "prompt": "fantasy wizard alien with robes and magic staff and glowing runes, high fantasy aesthetic, elven features with pointed ears, nothing grounded or industrial, magic instead of technology"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 250000
+  }
+}

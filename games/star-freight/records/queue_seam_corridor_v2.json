@@ -1,0 +1,38 @@
+{
+  "id": "queue_seam_corridor_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:29:46.958Z",
+  "asset_path": "outputs/candidates/queue_seam_corridor_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1453834
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, architectural seam corridor inside a hybrid space station — teal translucent alien membrane wall meeting flat grey composite Compact panel at an ugly junction, visible bolts and sealant where two incompatible building systems were forced together, condensation dripping at the thermal boundary, neither comfortable for either species, emergency cooperation made permanent, the visual scar of compromise",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270541,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7045,
+    "gpu_model": "RTX 5080",
+    "batch_index": 41
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

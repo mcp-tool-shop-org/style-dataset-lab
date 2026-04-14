@@ -1,0 +1,38 @@
+{
+  "id": "regen_thresh_station_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:09:12.783Z",
+  "asset_path": "outputs/candidates/regen_thresh_station_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1675547
+  },
+  "provenance": {
+    "workflow_id": "wave25b-regen",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, large dark grey-blue crystalline mineral formation growing from a metal wall in a space station engineering bay, the crystal is two meters wide with internal pale blue luminescent veins pulsing faintly, station pipes and cables routed carefully around the organic crystalline growth, the crystal has visible faceted surfaces and translucent sections showing internal structure, industrial fluorescent lighting, the mineral formation is clearly alive — a silicon-based alien filter-feeder that has grown into the station infrastructure over decades",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 260000,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8086,
+    "gpu_model": "RTX 5080",
+    "batch_index": 0
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

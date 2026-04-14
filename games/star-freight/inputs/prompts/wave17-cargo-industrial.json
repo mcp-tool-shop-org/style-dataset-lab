@@ -1,0 +1,104 @@
+{
+  "lane": "wave17-cargo-industrial",
+  "description": "Wave 17: Cargo, containers, trade goods, industrial scenes, ground vehicles. The economic texture of gritty space — crates, salvage yards, mining rigs, cargo movers. Background fill that makes environments real.",
+  "style_prefix": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi industrial, visible material texture and surface detail, visible brushstrokes, centered on plain dark grey background",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, glamorous, people, characters, figures, text, watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "cargo_compact_container",
+      "prompt": "regulation Compact cargo container with rectangular profile and stamped steel blue panels, standard locking mechanism, barcode label and destination stamp, magnetic clamp mounting points on top and sides, scuffed corners from loading cycles, stenciled weight class and hazmat classification, intermodal shipping container for space"
+    },
+    {
+      "id": "cargo_compact_container_stack",
+      "prompt": "stack of three Compact cargo containers in a hold, standardized sizes interlocking, steel blue with faded company logos, one container showing a repair patch from impact damage, cargo manifest tags hanging from latches, organized and regulation but well-used"
+    },
+    {
+      "id": "cargo_veshan_war_chest",
+      "prompt": "heavy Veshan supply crate with forged bronze plating and triangular reinforcement ridges, heavy padlock with house seal, crimson rope lashing, designed to survive rough handling and combat transport, corners reinforced with hammered plates, weapons or armor inside"
+    },
+    {
+      "id": "cargo_keth_growth_pod",
+      "prompt": "organic Keth cargo container that looks grown not manufactured, amber resin shell with translucent membrane window showing contents, living bio-hinge instead of mechanical latch, surface has chitin-like texture with warmth, pulsing bioluminescent marker showing freshness, uncomfortable alive-looking container"
+    },
+    {
+      "id": "cargo_orryn_trade_case",
+      "prompt": "modular Orryn cargo case with smooth teal shell and chrome clip mechanisms, elliptical profile, magnetic mounting pads, interlocking design for stacking in various configurations, data crystal manifest embedded in lid, sleek and practical, merchant's portable inventory"
+    },
+    {
+      "id": "cargo_reach_stolen_mix",
+      "prompt": "mismatched pile of stolen cargo — a Compact container with its labels defaced, a Veshan chest with the house seal gouged out, an Orryn case with the tracking crystal removed, all stacked haphazardly, the visual signature of piracy and scavenging"
+    },
+    {
+      "id": "cargo_contraband_bundle",
+      "prompt": "concealed cargo wrapped in sensor-opaque material, no markings, no labels, vacuum-sealed packages inside anonymous container, hidden compartment visible in cross-section, signal damping mesh visible at edges, the shape of illegal trade"
+    },
+    {
+      "id": "cargo_hazmat_drum",
+      "prompt": "heavy hazardous material drum with universal warning labels in yellow and red, containment seals and pressure gauges, scorch marks around base from reactor proximity, stenciled chemical codes, blast shield storage bracket marks, dangerous and essential"
+    },
+    {
+      "id": "cargo_fuel_cells",
+      "prompt": "rack of ship fuel cells in standardized mounting cradle, heavy industrial objects with safety lockouts, charge level indicators on each cell, some fully charged glowing faint amber, some depleted showing dark, connection ports for ship power systems, critical supplies"
+    },
+
+    {
+      "id": "ind_asteroid_mine",
+      "prompt": "asteroid mining operation with drilling equipment mounted on rock surface, industrial lighting towers illuminating work area, ore extraction conveyor leading to collection hopper, pressure domes for crew shelter, dust and debris floating in low gravity, hard industrial labor in vacuum, muted palette of grey rock and industrial yellow"
+    },
+    {
+      "id": "ind_salvage_yard",
+      "prompt": "Sable Reach salvage yard with stripped ship hulls in various states of dismantlement, cutting torches visible at work stations, sorted piles of hull plating and engine parts and electronics, rickety scaffolding around a half-gutted frigate, rust and ash colors everywhere, organized chaos of the scavenging economy"
+    },
+    {
+      "id": "ind_compact_drydock",
+      "prompt": "Compact shipyard facility with a vessel in maintenance cradle, regulation scaffolding and gantry cranes, welding stations and diagnostic equipment, parts bins labeled and catalogued, safety markings on floor, overhead fluorescent banks, industrial ship maintenance at institutional scale"
+    },
+    {
+      "id": "ind_refinery_platform",
+      "prompt": "orbital refinery processing raw ore, massive pipes and reaction vessels, control booth overlooking processing floor, warning labels and hazmat markings everywhere, heat shimmer from processing, industrial grime coating every surface, the factory of space"
+    },
+
+    {
+      "id": "veh_compact_cargo_mover",
+      "prompt": "electric cargo mover vehicle with boxy Compact design, steel blue and charcoal with safety stripes, forklift arms for container handling, operator cab with scratched viewport, rubber treads showing wear, registration number stenciled on side, warehouse forklift of the future"
+    },
+    {
+      "id": "veh_reach_speeder",
+      "prompt": "improvised personal transport vehicle cobbled from salvaged parts, exposed engine from one make bolted to frame from another, handlebars wrapped in tape, no matching body panels, rust and crude paint, fast and dangerous, outlaw motorcycle of space"
+    },
+    {
+      "id": "veh_dock_tug",
+      "prompt": "small station dock tug with heavy push plates and magnetic grapples, industrial yellow and grey paint worn from constant bumping, compact powerful engine, operator cage with dented safety bars, the tugboat of space docking bays, universal work vehicle"
+    },
+
+    {
+      "id": "REJECT17_sleek_hovervehicle",
+      "prompt": "sleek hovering luxury transport with chrome finish and glowing blue anti-gravity pods, clean aerodynamic design, tinted windows, looks like a concept car from an auto show, no dirt or wear"
+    },
+    {
+      "id": "REJECT17_military_tank",
+      "prompt": "heavy armored military tank with camouflage paint and large caliber cannon, tracks and reactive armor, modern Earth military vehicle placed in sci-fi context, wrong genre"
+    },
+    {
+      "id": "REJECT17_golden_crate",
+      "prompt": "ornate golden treasure chest with jeweled inlays and velvet interior, fantasy game loot container, gleaming and precious, wrong genre entirely"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 110000
+  }
+}

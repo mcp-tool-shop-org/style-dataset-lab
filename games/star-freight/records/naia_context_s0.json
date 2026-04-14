@@ -1,0 +1,59 @@
+{
+  "id": "naia_context_s0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:22:35.015Z",
+  "asset_path": "outputs/candidates/naia_context_s0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1625327
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, four-armed arthropod alien with pale ivory chitin exoskeleton at a navigation work station inside an organic bio-resin room with warm amber bioluminescent walls, alien person in humanoid posture, all four arms working simultaneously with upper pair still on console edge and lower pair rapidly sorting navigation data chips into organic storage slots, elongated oval head with dark amber compound eyes focused on holographic star chart, two antennae extended forward reading data, segmented chitin torso, bone-white utility harness with tool loops, wing-casings folded flat against back tightly closed, bioluminescent veins dim, the professional precision of someone who has made this workspace her refuge",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, bright bioluminescence, relaxed wing-casings, spread wings, vibrant, human, person, man, woman, metal walls, industrial, harsh lighting, Earth insect, bug, ant, spider, mantis, robotic, mechanical",
+    "seed": 27006,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8048,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "naia_of_threesong",
+    "subject_type": "named_character",
+    "faction": "keth",
+    "role": "crew",
+    "view_type": "context",
+    "shot_type": "working",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "Naia at her navigation station — proves identity in the Keth workspace",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

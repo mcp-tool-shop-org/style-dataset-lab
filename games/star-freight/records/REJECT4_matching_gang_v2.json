@@ -1,0 +1,297 @@
+{
+  "id": "REJECT4_matching_gang_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T00:59:14.092Z",
+  "asset_path": "outputs/rejected/REJECT4_matching_gang_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1239219
+  },
+  "provenance": {
+    "workflow_id": "wave4-sable-reach",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing standing pose, isolated on plain dark grey background, human gang member wearing a perfectly matching set of black tactical gear — matching plate carrier matching combat pants matching assault boots matching gloves matching helmet, all in the same matte black, all the same brand all pristine, this is a video game loadout not Sable Reach, nothing is mismatched nothing is salvaged nothing is stolen nothing tells a story",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy, superhero, symmetrical matching armor",
+    "seed": 40529,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8080,
+    "gpu_model": "RTX 5080",
+    "batch_index": 29
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v1",
+    "reviewed_at": "2026-04-13T01:07:41.211Z",
+    "explanation": "Perfectly matching black tactical gear — same brand, same condition, all pristine. Video game loadout not Sable Reach. Nothing mismatched, nothing salvaged, nothing stolen.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.4,
+      "material_fidelity": 0.5,
+      "faction_read": 0.1,
+      "wear_level": 0.2,
+      "style_consistency": 0.5,
+      "clothing_logic": 0.2,
+      "composition": 0.8
+    },
+    "failure_modes": [
+      "too_clean",
+      "generic_scifi"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.810Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "reach",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets semi-realistic painterly style (50%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.4,
+        "rationale": "Partially meets muted dusty color saturation (40%)"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Surfaces don't read as Stripped (torn, welded from scrap, jury-rigged) (30%)",
+        "faction": "reach",
+        "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Wear level wrong — doesn't match Jury-rigged — functional ugly",
+        "faction": "reach",
+        "faction_context": "Jury-rigged — functional ugly"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "partial",
+        "score": 0.45,
+        "rationale": "Partially meets faction shape language compliance (45%)",
+        "faction": "reach",
+        "faction_context": "Asymmetric, irregular, mismatched"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.25,
+        "rationale": "Faction palette missing or wrong colors (25%)",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "partial",
+        "score": 0.4,
+        "rationale": "Partially meets palette ratio ~60/30/10 (40%)",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.4,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Layer logic broken — layers don't follow faction system",
+        "faction": "reach",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.35,
+        "rationale": "Construction doesn't match faction building method (35%)",
+        "faction": "reach",
+        "faction_context": "Assembled from salvage, nothing matches"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.15,
+        "rationale": "Reads as generic sci-fi — not faction-specific (15%)"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 3,
+    "fail_count": 7,
+    "partial_count": 4
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets semi-realistic painterly style (50%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.4,
+      "rationale": "Partially meets muted dusty color saturation (40%)"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Surfaces don't read as Stripped (torn, welded from scrap, jury-rigged) (30%)",
+      "faction": "reach",
+      "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Wear level wrong — doesn't match Jury-rigged — functional ugly",
+      "faction": "reach",
+      "faction_context": "Jury-rigged — functional ugly"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "partial",
+      "score": 0.45,
+      "rationale": "Partially meets faction shape language compliance (45%)",
+      "faction": "reach",
+      "faction_context": "Asymmetric, irregular, mismatched"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.25,
+      "rationale": "Faction palette missing or wrong colors (25%)",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "partial",
+      "score": 0.4,
+      "rationale": "Partially meets palette ratio ~60/30/10 (40%)",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.4,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Layer logic broken — layers don't follow faction system",
+      "faction": "reach",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.35,
+      "rationale": "Construction doesn't match faction building method (35%)",
+      "faction": "reach",
+      "faction_context": "Assembled from salvage, nothing matches"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.15,
+      "rationale": "Reads as generic sci-fi — not faction-specific (15%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails MAT-001, MAT-002, COL-001, COL-003, CLO-001, CLO-002, CLO-003. Perfectly matching black tactical gear — same brand, same condition, all pristine. Video game loadout not Sable Reach. Nothing mismatched, nothing salvaged, nothing stolen."
+}

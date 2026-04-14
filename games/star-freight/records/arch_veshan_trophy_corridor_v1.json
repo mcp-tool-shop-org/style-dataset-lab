@@ -1,0 +1,294 @@
+{
+  "id": "arch_veshan_trophy_corridor_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:50:21.527Z",
+  "asset_path": "outputs/approved/arch_veshan_trophy_corridor_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1410832
+  },
+  "provenance": {
+    "workflow_id": "wave19-architecture",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly architectural concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi architecture, visible material texture and construction detail, visible brushstrokes, establishing view, Veshan hallway lined with trophy displays — captured enemy weapons and banners mounted on hammered bronze plaques, commemorative plates beneath each trophy recording the battle, claw-scratch marks worn into floor, dim amber lighting emphasizing each display, heavy pointed-arch doorways at intervals, the hallway IS the history book",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, people, characters, figures, text, watermark, blurry, low quality, fantasy castle, medieval",
+    "seed": 130020,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7305,
+    "gpu_model": "RTX 5080",
+    "batch_index": 20
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T04:10:52.638Z",
+    "explanation": "Faction architecture with species-appropriate ergonomics, material vocabulary, and lived-in detail.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.8,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.348Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "veshan",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette readable at gameplay scale (80%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Surfaces read as Forged (hammered, riveted, layered) (85%)",
+        "faction": "veshan",
+        "faction_context": "Forged (hammered, riveted, layered)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+        "faction": "veshan",
+        "faction_context": "Battle-scarred with pride — damage displayed"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+        "faction": "veshan",
+        "faction_context": "Triangles, chevrons, sharp angles"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Faction palette present and dominant (83%)",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "veshan",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Construction matches faction building method",
+        "faction": "veshan",
+        "faction_context": "Smith-forged, imperfections intentional"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette readable at gameplay scale (80%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Surfaces read as Forged (hammered, riveted, layered) (85%)",
+      "faction": "veshan",
+      "faction_context": "Forged (hammered, riveted, layered)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+      "faction": "veshan",
+      "faction_context": "Battle-scarred with pride — damage displayed"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+      "faction": "veshan",
+      "faction_context": "Triangles, chevrons, sharp angles"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Faction palette present and dominant (83%)",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "veshan",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Construction matches faction building method",
+      "faction": "veshan",
+      "faction_context": "Smith-forged, imperfections intentional"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: veshan. Faction architecture with species-appropriate ergonomics, material vocabulary, and lived-in detail."
+}

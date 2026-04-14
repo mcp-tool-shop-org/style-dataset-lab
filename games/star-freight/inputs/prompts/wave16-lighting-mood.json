@@ -1,0 +1,90 @@
+{
+  "lane": "wave16-lighting-mood",
+  "description": "Wave 16: Lighting and mood studies — same corridor rendered under different lighting conditions. Lighting defines gritty space more than any prop. Small batch, massive training signal.",
+  "style_prefix": "oil painting, semi-realistic painterly interior scene, muted dusty palette, visible brushstrokes, atmospheric sci-fi corridor or room interior, no characters present, strong mood through lighting",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, people, characters, figures, bright cheerful, luxury, text, watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "mood_emergency_red_corridor",
+      "prompt": "ship corridor bathed in emergency red lighting, alarm state active, red strobes casting harsh shadows, normal lights off, everything tinted crimson, metal walls reflecting red, oppressive urgent atmosphere, battle stations or hull breach warning, subtle dark edges and deep shadows"
+    },
+    {
+      "id": "mood_emergency_red_bridge",
+      "prompt": "ship bridge under emergency red lighting, console screens the only other light source casting blue-white pools, crew stations casting long shadows, alert status indicators flashing amber, the red turns familiar space into threatening territory, tense and claustrophobic"
+    },
+    {
+      "id": "mood_dim_running_lights",
+      "prompt": "ship corridor during night cycle with only dim strip running lights along floor edges, most of the space in deep shadow, occasional doorway casting faint blue rectangle of light from occupied quarters, quiet sleeping ship atmosphere, submarine at depth feeling"
+    },
+    {
+      "id": "mood_dim_engine_room",
+      "prompt": "engine room during low-power mode with minimal amber running lights, reactor housing glowing faint warm orange behind safety glass, deep shadows everywhere, dripping condensation catching what little light exists, a space that never fully sleeps, perpetual mechanical hum implied"
+    },
+    {
+      "id": "mood_cantina_neon",
+      "prompt": "dive bar interior with mismatched neon light sources — amber overhead, teal from a display screen, warm from behind the bar, green from an exit sign, multicolored light pools creating distinct zones, hazy atmosphere from vapor and cooking, shadows between light pools hide faces"
+    },
+    {
+      "id": "mood_cantina_smoke",
+      "prompt": "station cantina with smoke haze drifting through amber and teal light sources, booth lighting creating warm pools, bar surface reflecting neon, dark corners deliberately unlit, the kind of atmospheric lighting where deals are made and nobody sees clearly"
+    },
+    {
+      "id": "mood_harsh_fluorescent",
+      "prompt": "medical bay under harsh overhead fluorescent strip lighting, everything lit evenly and unforgivingly, charcoal and white surfaces reflecting cold blue-white light, no shadows to hide in, sterile examining light that makes everything look worse, clinical and uncomfortable"
+    },
+    {
+      "id": "mood_harsh_customs",
+      "prompt": "customs checkpoint hall with overhead fluorescent banks creating flat institutional lighting, queue barriers casting long shadows, scanning arches lit from within, steel blue walls look cold under fluorescent, waiting area feels like a government office at closing time"
+    },
+    {
+      "id": "mood_warm_galley",
+      "prompt": "ship galley with warm amber lighting from cooking surfaces and overhead lamp, steam catching the light, metal surfaces glowing warm, the only comfortable-feeling space on the ship, coffee pot steaming, warmth in a cold universe, home feeling in a metal box"
+    },
+    {
+      "id": "mood_warm_quarters",
+      "prompt": "crew bunk with single warm reading light, everything else in shadow, personal space defined by the cone of warm light, photos and personal items visible in the warm pool, beyond the light — cold metal and darkness, island of warmth in industrial space"
+    },
+    {
+      "id": "mood_cold_vacuum_viewport",
+      "prompt": "room lit only by starlight and planet-glow coming through a viewport, cold blue-white light casting long shadows from furniture, no artificial lights active, the outside universe providing the only illumination, beautiful but deeply cold and alien"
+    },
+    {
+      "id": "mood_cold_airlock",
+      "prompt": "airlock antechamber with cold blue indicator lighting, pressure gauges lit from behind, EVA suit lockers in shadow, the door to vacuum outlined in warning yellow, liminal space between safety and death, cold light suggests what's on the other side"
+    },
+    {
+      "id": "mood_welding_flash",
+      "prompt": "repair bay with welding flash illuminating the scene in harsh white-blue, sparks trailing through the air, everything lit in the momentary intensity of arc welding, deep shadows behind equipment, industrial violence of light, metal surfaces catching the flash"
+    },
+    {
+      "id": "mood_power_failure",
+      "prompt": "corridor during power outage with only chemical glow sticks providing sickly green-yellow light, emergency strip lights dead, shadows dominate, glow sticks placed at intervals on floor creating pools of weak light, fear and uncertainty, systems down"
+    },
+
+    {
+      "id": "REJECT16_bright_clean",
+      "prompt": "brightly lit pristine white corridor with even recessed lighting, clean floors reflecting light perfectly, modern office building aesthetic, comfortable and well-maintained, could be a hospital or corporate headquarters"
+    },
+    {
+      "id": "REJECT16_sunset_beauty",
+      "prompt": "beautiful golden sunset visible through large panoramic window, warm perfect light bathing a clean lounge area, lens flare and god rays, romantic scenic lighting, tourist brochure for space station"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 100000
+  }
+}

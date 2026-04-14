@@ -1,0 +1,114 @@
+{
+  "lane": "wave23-alien-species-life",
+  "description": "Wave 23: Alien species in their own spaces — cultural moments, daily life, species-specific behaviors. The concept art that makes aliens feel like people, not just character models. Keth tending gardens, Veshan at the forge, Orryn negotiating, cross-species misunderstandings.",
+  "style_prefix": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+
+  "subjects": [
+    {
+      "id": "life_keth_elder_garden",
+      "prompt": "alien arthropod elder with four arms tending a fungal garden inside a warm amber bio-resin chamber, all four arms working simultaneously — upper pair pruning growth-stalks while lower pair collecting samples into translucent pods, bioluminescent veins glowing steady amber in concentration, compound eyes reflecting warm light, humid atmosphere with moisture on surfaces, segmented chitin exoskeleton in pale ivory with darker segment edges, antennae swept forward focused on work, peaceful and ancient"
+    },
+    {
+      "id": "life_keth_hatchling_nursery",
+      "prompt": "small Keth hatchling in a growth-nursery chamber, paler and smaller than adult with translucent chitin showing developing organs beneath, four tiny arms reaching for a bio-luminescent growth, compound eyes proportionally larger than adult, an elder visible in background tending the nursery bio-structures, warm amber light, organic curved walls, the nursery of an arthropod civilization"
+    },
+    {
+      "id": "life_keth_colony_glyph_ceremony",
+      "prompt": "Keth coming-of-age ritual — an elder applying bio-pigment to a young Keth's thorax using a grown applicator tool, the glyph glowing as it bonds to the chitin surface, other colony members standing still around them with antennae forward in witness, bioluminescence pulsing in synchronized rhythm across the gathered Keth, warm amber ceremonial lighting in a hexagonal chamber, deeply meaningful alien ritual"
+    },
+    {
+      "id": "life_keth_in_human_corridor",
+      "prompt": "single Keth arthropod navigating a regulation Compact ship corridor, the Keth using ceiling grip-points that humans didn't know were there — upper arms gripping overhead rail while lower arms carry equipment, digitigrade legs on the floor, compound eyes reflecting fluorescent lighting, too short and too wide for the human-proportioned space, adapting alien body to human architecture"
+    },
+    {
+      "id": "life_keth_hive_crystal_mourning",
+      "prompt": "Keth elder holding a hive-memory crystal — warm amber ovoid with frozen organic patterns inside, mounted on a coral-like stand before them, the elder's bioluminescent veins dimmer than usual in grief, colony members around them also dimmed, the chamber atmosphere visibly different — a shared chemical sadness that literally changes the air, alien mourning through biology"
+    },
+    {
+      "id": "life_veshan_smith_forge",
+      "prompt": "massive Veshan reptilian at a forge, barrel-chested with dark green-grey scales, heavy leather apron scarred from sparks, muscular arms bringing a hammer down on glowing bronze metal, forge-fire reflecting crimson off scales, crest ridge flushing with exertion, thick tail braced for balance, weapons and armor pieces on racks behind, the sacred craft of a warrior civilization, sweat and metal"
+    },
+    {
+      "id": "life_veshan_unblooded_first_armor",
+      "prompt": "young Veshan receiving first armor — a lean unblooded warrior standing stiffly while an armorer fits an oversized chest plate, the armor clearly too large for the young body, tail nervously low, crest pale, amber eyes wide, an elder warrior watching from the side with arms crossed and scarred scales, the moment before a warrior's life begins, angular fortress room with weapon racks"
+    },
+    {
+      "id": "life_veshan_honor_ceremony",
+      "prompt": "Veshan honor token ceremony — an elder in heavy ancestral armor adding a forged bronze link to a blooded warrior's chain, the entire house standing at attention in angular hall, crimson banners overhead, dim amber torchlight, the recipient's crest flushing darker with pride while their tail stands perfectly still showing controlled emotion, martial ceremony of debt and honor"
+    },
+    {
+      "id": "life_veshan_child_sparring",
+      "prompt": "young Veshan hatchlings play-fighting in a training yard — two younglings with small practice weapons (wooden, carved), one lunging while the other parries, both with tails raised in mock-aggression and crests pale with excitement not anger, a scarred elder warrior supervising from a basking platform, afternoon amber light in the open yard of a fortress compound, warrior children learning"
+    },
+    {
+      "id": "life_veshan_at_human_table",
+      "prompt": "Veshan warrior attempting to eat at a human mess hall — massive frame crammed into too-small chair with tail awkwardly threaded through the open back, trying to grip a fork with thick clawed four-digit hands, heavy forged drinking bowl placed next to delicate human coffee mug for scale, looking uncomfortable and dignified simultaneously, cross-species daily life friction"
+    },
+    {
+      "id": "life_veshan_death_mask_making",
+      "prompt": "Veshan smith hammering a death mask — dark bronze sheet being shaped over a form into a stylized reptilian face with closed eyes, the recently fallen warrior visible on a forge-heated stone slab in background with named weapon across chest, house members gathered in angular hall, the mask being made quickly while memory is fresh, crimson torchlight, sacred craft"
+    },
+    {
+      "id": "life_orryn_drift_captain_console",
+      "prompt": "Orryn Drift Captain at their command station — compact cephalopod alien with smooth bulbous head, chromatophores showing focused deep teal, all six limbs operating different interfaces simultaneously — two primary arms on navigation consoles, four secondary tentacles manipulating data crystal arrays and holographic displays, seated — actually draped — over a curved chrome command pod, elliptical bridge with sensor data everywhere"
+    },
+    {
+      "id": "life_orryn_caught_lying",
+      "prompt": "Orryn in a trade negotiation with chromatophores showing the mottled uneven pattern of attempted deception — patches of conflicting teal and dark that clearly read as dishonest, the other Orryn in the scene recoiling slightly with rapid white-dark pulsing showing alarm, the biological impossibility of lying made visible, chrome and teal trading chamber, data crystals on display"
+    },
+    {
+      "id": "life_orryn_first_trade",
+      "prompt": "young Orryn runner presenting their first completed trade seal — faceted teal crystal held carefully in primary arm while secondary tentacles fidget with excitement, chromatophores blazing warm amber with pride, an older Broker watching with calm blue-green approval, the moment a young Orryn begins building their life's trade history, simple membrane-walled trading post"
+    },
+    {
+      "id": "life_orryn_resting_alcove",
+      "prompt": "Orryn resting in a private alcove — body compressed into a snug smooth-walled nook sized for one, all tentacles tucked and curled, chromatophores dim and slow-cycling in sleep pattern, personal data crystals clipped to the alcove wall within reach, the private vulnerable moment of an alien species that never stops moving when awake"
+    },
+    {
+      "id": "life_orryn_eating_private",
+      "prompt": "Orryn in a sealed private alcove during a meal — hood-like mantle partially extended to cover the hidden beak-mouth, nutrient vial in one hand, posture hunched and private, door sealed, doing the thing that is deeply taboo to do publicly, the intimacy of an alien eating ritual, soft ambient teal lighting"
+    },
+    {
+      "id": "life_cross_species_conference",
+      "prompt": "cross-species meeting room scene — human sitting in a standard chair, Veshan on an open-back stone bench with tail through the slot, Keth anchored to floor grip-channels with four arms resting on the table at different levels, Orryn draped over a raised platform with sucker-grip surface, each species in their own furniture that doesn't match anything else in the room, diplomatic tension visible in postures"
+    },
+    {
+      "id": "life_cross_species_door_problem",
+      "prompt": "station corridor junction showing the door problem — a tall pointed Veshan arch doorway next to a wide low Keth iris aperture next to a standard human rectangle next to an Orryn sphincter valve, all opening onto the same hallway, each designed for a completely different body plan, the architectural comedy of multi-species coexistence"
+    },
+    {
+      "id": "life_cross_species_temperature",
+      "prompt": "station boundary between districts showing temperature clash — frost forming on handrails at the edge of the Orryn cold-humid quarter meeting the Veshan dry-heat quarter, condensation fog drifting between climate zones, thermal barrier curtain partially deployed, two environmental systems fighting at the border, visible discomfort zone"
+    },
+    {
+      "id": "life_reach_keth_exile",
+      "prompt": "Keth exile living in the Sable Reach — arthropod with chipped and dulled chitin from lack of proper bio-maintenance, colony glyph scratched off deliberately, living in a cramped salvaged space with none of the organic comforts of a hive, four arms clutching a stolen Compact heating pad for warmth, bio-luminescence flickering weak and irregular, alone for the first time in a species that is never alone"
+    },
+
+    {
+      "id": "REJECT23_rubber_suit_alien",
+      "prompt": "humanoid alien that is clearly a human in a rubber mask, human proportions with painted skin, Star Trek makeup aesthetic, bipedal human body plan with decorative ridges, not truly alien"
+    },
+    {
+      "id": "REJECT23_cute_alien",
+      "prompt": "adorable big-eyed alien with soft rounded features and pastel colors, baby-like proportions, kawaii aesthetic, designed to sell plush toys not inhabit a gritty universe"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 170000
+  }
+}

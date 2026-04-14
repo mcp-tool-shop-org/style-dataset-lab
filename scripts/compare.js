@@ -12,6 +12,8 @@ import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 async function main() {
   const args = process.argv.slice(2);
@@ -68,9 +70,9 @@ async function main() {
     reviewed_at: new Date().toISOString(),
   };
 
-  await mkdir(join(REPO_ROOT, "comparisons"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "comparisons"), { recursive: true });
   await writeFile(
-    join(REPO_ROOT, `comparisons/${cmpId}.json`),
+    join(GAME_ROOT, `comparisons/${cmpId}.json`),
     JSON.stringify(comparison, null, 2),
   );
 
@@ -81,7 +83,7 @@ async function main() {
 
 async function loadRecord(id) {
   try {
-    const path = join(REPO_ROOT, `records/${id}.json`);
+    const path = join(GAME_ROOT, `records/${id}.json`);
     return JSON.parse(await readFile(path, "utf-8"));
   } catch {
     console.error(`Record not found: records/${id}.json`);
@@ -91,7 +93,7 @@ async function loadRecord(id) {
 
 async function countComparisons() {
   try {
-    const files = await readdir(join(REPO_ROOT, "comparisons"));
+    const files = await readdir(join(GAME_ROOT, "comparisons"));
     return files.filter((f) => f.endsWith(".json")).length;
   } catch {
     return 0;

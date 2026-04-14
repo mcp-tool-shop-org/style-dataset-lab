@@ -1,0 +1,110 @@
+{
+  "lane": "wave19-architecture",
+  "description": "Wave 19: Faction architecture — building facades, doorways, structural details, interior architectural elements. Where material vocabulary and shape language become spatial. Informed by alien ergonomics research.",
+  "style_prefix": "oil painting, semi-realistic painterly architectural concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi architecture, visible material texture and construction detail, visible brushstrokes, establishing view",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, people, characters, figures, text, watermark, blurry, low quality, fantasy castle, medieval",
+
+  "subjects": [
+    {
+      "id": "arch_compact_corridor_junction",
+      "prompt": "T-junction of two regulation ship corridors, steel blue walls with charcoal floor, overhead fluorescent strips, directional signs with deck numbers and department codes in stenciled font, fire extinguisher and emergency kit mounted on wall, cable conduits bundled along ceiling, diamond plate flooring with worn paths showing decades of foot traffic, handrails along walls for zero-g"
+    },
+    {
+      "id": "arch_compact_pressure_door",
+      "prompt": "heavy rectangular pressure door in closed position, steel blue frame with visible gasket seal, safety stripes painted on edges, alphanumeric code stenciled above — BULKHEAD 07 DECK 14-C, manual override wheel beside electronic lock panel, small viewport window in door center, scuff marks at kick height, regulation and impersonal"
+    },
+    {
+      "id": "arch_compact_hab_facade",
+      "prompt": "exterior face of Compact habitation block on a space station, rows of identical rectangular windows in pressed steel panel wall, numbered apartment entries, steel blue paint fading to grey, fire escape markings, ventilation grilles at regular intervals, looks like government housing block — functional and soulless"
+    },
+    {
+      "id": "arch_keth_iris_door",
+      "prompt": "Keth iris aperture doorway — overlapping amber bio-resin plates spiraled partially open like a camera shutter, translucent edges showing layered growth rings, bioluminescent guide-veins pulsing around the frame, wider and lower than human doors sized for hexapod passage, pheromone staining around the frame in dark tar-like deposits, organic and alive"
+    },
+    {
+      "id": "arch_keth_hex_chamber",
+      "prompt": "interior of Keth hexagonal chamber with ribbed monocoque shell walls in warm amber bio-resin, no visible beams — the wall IS the structure, bioluminescent veins running through ceiling providing warm amber light, floor has rasp-like grip ridges for six-legged traction, vertical U-shaped work alcoves with tool access points at four arm heights, shed chitin fragments in corner, ceiling storage racks — Keth walk on ceilings"
+    },
+    {
+      "id": "arch_keth_hive_exterior",
+      "prompt": "exterior of Keth communal structure — grown amber bio-resin dome with compound-eye faceted windows in convex clusters, no sharp edges anywhere, surface shows growth rings like tree bark, scar tissue from old damage healed over, bioluminescent vein patterns marking colony identity, small tendril-like sensor stalks at crown, organic termite-mound architecture at alien scale"
+    },
+    {
+      "id": "arch_keth_fungal_garden",
+      "prompt": "Keth sub-chamber used for fungal cultivation — humid amber bio-resin room with carefully maintained fungal colonies growing on cultivated substrate platforms, bioluminescent organisms providing grow-light, moisture beading on every surface, temperature-regulated micro-pore vents in walls that breathe, the cafeteria-as-farm of an arthropod civilization"
+    },
+    {
+      "id": "arch_veshan_pointed_arch",
+      "prompt": "tall pointed arch doorway in Veshan architecture, dark charcoal basalt blocks with visible chisel grooves, hammered bronze door frame with house clan sigil carved at apex, door itself is heavy forged metal that hinges outward, 2.5 meters tall for tail clearance, crimson lacquer on carved stone trim cracked at edges, amber torchlike light from above casting dramatic shadows"
+    },
+    {
+      "id": "arch_veshan_basking_hall",
+      "prompt": "Veshan communal basking chamber — large raised dark stone platform under overhead radiant heat array, thick angular columns with chevron reliefs supporting heavy ceiling, weapon racks along walls within arm's reach, house banners in crimson and bronze hanging from ceiling beams frayed at edges, floor of polished obsidian-like stone with bronze clan crest inlay, warm amber light"
+    },
+    {
+      "id": "arch_veshan_fortress_wall",
+      "prompt": "exterior wall of Veshan fortress compound, dark basalt blocks with mortar stained rust-orange, angular buttresses bracing the wall like Gothic cathedral redesigned by military engineer, narrow arrow-slit windows, hammered bronze clan banner mounted large on wall face, battle scarring on stones left unrepaired as badges of honor — lacquered over to preserve"
+    },
+    {
+      "id": "arch_veshan_trophy_corridor",
+      "prompt": "Veshan hallway lined with trophy displays — captured enemy weapons and banners mounted on hammered bronze plaques, commemorative plates beneath each trophy recording the battle, claw-scratch marks worn into floor, dim amber lighting emphasizing each display, heavy pointed-arch doorways at intervals, the hallway IS the history book"
+    },
+    {
+      "id": "arch_orryn_membrane_room",
+      "prompt": "interior of Orryn living space — taut translucent pearl-white membrane walls stretched over curved chrome armatures, walls flex visibly, iridescent sheen shifting teal to lavender, snug resting alcoves like octopus dens in the walls, webbed hammock-nets with objects in transparent membrane pouches, micro-dimple floor for tentacle suction, old anchor-point holes from previous wall configurations"
+    },
+    {
+      "id": "arch_orryn_sphincter_valve",
+      "prompt": "Orryn doorway — circular sphincter valve made of overlapping flexible teal-tinted panels partially dilated open, chrome mounting ring, no rigid hinges, designed for bodies that compress and flow through openings, slight moisture on surfaces from ambient humidity, ink residue stain on wall beside it from chromatophore discharge"
+    },
+    {
+      "id": "arch_orryn_trade_hub",
+      "prompt": "Orryn trading post interior — elliptical room with continuous curved viewstrip windows, holographic commodity displays floating above chrome consoles, dozens of transparent membrane pouches hanging at various heights containing trade goods, modular furniture clips, rigid angular human chairs bolted awkwardly to curved Orryn floor as multi-species afterthought"
+    },
+    {
+      "id": "arch_reach_scrap_corridor",
+      "prompt": "Sable Reach corridor assembled from mismatched salvaged hull sections — brushed steel Compact panel welded to hammered Veshan bronze plate with thick gray epoxy sealant at seam, exposed wiring bundles hanging from ceiling, stolen neon tube flickering teal wired to junction box with electrical tape, steel grating floor over visible pipes, rust and spray-painted territory tags"
+    },
+    {
+      "id": "arch_reach_multi_species_room",
+      "prompt": "Sable Reach common room that badly accommodates every species — a human chair next to a Veshan basking slab next to an Orryn grip-nook all jammed into same space, Keth bio-panel ripped from somewhere used as ceiling light slowly dying from sickly amber to green, Veshan heated plate repurposed as cooking surface, nothing fits anyone perfectly"
+    },
+    {
+      "id": "arch_reach_shanty_exterior",
+      "prompt": "exterior of Sable Reach shantytown structure — repurposed cargo containers stacked at angles, hull plating walls with mismatched colors, stolen Compact polycarbonate window bolted over a hole, tarps of salvaged Orryn membrane as awning, power cables running between structures, hand-painted number on door, community built from salvage"
+    },
+    {
+      "id": "arch_market_cross_faction",
+      "prompt": "cross-faction marketplace section on a neutral station — Compact shipping container stall with fold-down counter next to amber Keth resin trade-pod next to hammered bronze Veshan booth with pointed arch window next to Orryn membrane tent canopy, all crammed together in same corridor, mixed signage in multiple scripts, the visual collision of five civilizations trading"
+    },
+
+    {
+      "id": "REJECT19_fantasy_castle",
+      "prompt": "ornate medieval fantasy castle with tall spires and flying buttresses, stone walls with ivy, drawbridge and moat, pointed towers with flags, Lord of the Rings aesthetic"
+    },
+    {
+      "id": "REJECT19_modern_office",
+      "prompt": "sleek modern office building interior with glass partitions, ergonomic mesh chairs, flat screen monitors on clean white desks, potted plants, contemporary corporate aesthetic"
+    },
+    {
+      "id": "REJECT19_art_nouveau",
+      "prompt": "elegant Art Nouveau building facade with flowing organic curves, decorative ironwork, stained glass, graceful thin spires, beautiful and delicate — too pretty for any faction"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 130000
+  }
+}

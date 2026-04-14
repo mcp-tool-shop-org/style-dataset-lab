@@ -1,0 +1,50 @@
+{
+  "lane": "wave25b-regen",
+  "description": "Wave 25b: Regen pass for 4 missed subjects from wave 25. Prompts rewritten to frontload species anatomy, simplify composition, and avoid SDXL's human-default tendency. Each subject gets 3 variations for better odds.",
+  "style_prefix": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+
+  "subjects": [
+    {
+      "id": "regen_thresh_station",
+      "prompt": "large dark grey-blue crystalline mineral formation growing from a metal wall in a space station engineering bay, the crystal is two meters wide with internal pale blue luminescent veins pulsing faintly, station pipes and cables routed carefully around the organic crystalline growth, the crystal has visible faceted surfaces and translucent sections showing internal structure, industrial fluorescent lighting, the mineral formation is clearly alive — a silicon-based alien filter-feeder that has grown into the station infrastructure over decades"
+    },
+    {
+      "id": "regen_thresh_closeup",
+      "prompt": "close-up of a silicon alien organism growing on a station wall — dark grey-blue crystalline formation with pale blue bioluminescent veins threading through its faceted surface, a small contact microphone pressed against the crystal by a gloved hand, the crystal glowing brighter where the microphone touches as if responding, industrial metal wall around the crystal showing where decades of growth have pushed into the infrastructure, warm amber work-light illuminating the alien mineral"
+    },
+    {
+      "id": "regen_mire_reforming",
+      "prompt": "alien colonial organism reassembling itself on a cargo bay floor — hundreds of thumb-sized pale green-grey translucent slug-like cells flowing together into a rising humanoid shape, the lower half still a pool of individual cells crawling over each other, the upper half partially formed with two darker sensory patches where eyes would be, edges of the forming body constantly dissolving and re-aggregating, slimy wet residue on the industrial metal floor, overhead cargo bay lighting, deeply unsettling biological process"
+    },
+    {
+      "id": "regen_mire_breach",
+      "prompt": "mass of pale green-grey translucent alien slug-cells flowing through a narrow gap in a damaged ship hull — individual cells visible squeezing through the breach like liquid, reforming into working pseudopod arms on the other side that are patching the hole with sealant, the organism has no bones and compresses to flow through gaps smaller than a fist, industrial damage around the breach with sparks and atmospheric venting, the biological reality of an expendable alien laborer"
+    },
+    {
+      "id": "regen_smuggler_mixed",
+      "prompt": "back-room meeting between a large reptilian alien warrior with dark green scales and a heavy tail sitting at one end of a table, and a cephalopod alien with smooth bulbous head and chromatophore-patterned teal skin at the other end, tentacles manipulating a holographic display while the reptilian watches the tentacle movements for encoded meaning, dim industrial lighting, cargo containers stacked behind, the two alien species communicating through species-specific biological channels"
+    },
+    {
+      "id": "regen_smuggler_signal",
+      "prompt": "close-up of a large four-armed arthropod alien with amber chitin exoskeleton touching a wall with one lower arm, leaving an invisible chemical trace — the alien has compound eyes and segmented body, standing in a busy station corridor while other species pass unaware, the arthropod's upper arms carrying trade goods, lower arms doing the secret work, the biological dead-drop of pheromone-based smuggler communication"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" },
+    { "id": "v3", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 1000, "note": "Third seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 260000
+  }
+}

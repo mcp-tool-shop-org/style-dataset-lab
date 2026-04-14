@@ -1,0 +1,86 @@
+{
+  "lane": "wave21-environments-planetary",
+  "description": "Wave 21: Planetary and environmental scenes — landing pads, mining operations, colony outposts, refugee camps, training yards. Not scenic landscapes — functional places where people work and survive.",
+  "style_prefix": "oil painting, semi-realistic painterly environment concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi environment, visible material texture and industrial detail, visible brushstrokes, wide establishing view, no characters present",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine, tourist vista, beautiful landscape, scenic, sunset, people, characters, text, watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "env_compact_landing_pad",
+      "prompt": "Compact-administered landing pad on a dusty colony world, concrete pad with painted guide lines and landing markers faded by weather, control tower of pressed steel construction in background, fuel umbilical stations, wind sock, chain link perimeter fence with regulation signage, everything covered in fine dust, the bus stop of space travel"
+    },
+    {
+      "id": "env_compact_colony_street",
+      "prompt": "main street of a Compact frontier colony, prefabricated rectangular habitat modules lining both sides, steel blue paint fading in alien sun, overhead power lines strung between utility poles, regulation street lighting, a few parked ground vehicles, the municipal infrastructure of human expansion — organized but lonely"
+    },
+    {
+      "id": "env_compact_mining_surface",
+      "prompt": "open-pit mining operation on an asteroid surface, heavy drilling equipment anchored to rock, ore conveyor leading to collection hopper, industrial lighting towers casting harsh shadows in vacuum, pressure domes for crew shelter, safety barriers and warning beacons, fine dust covering every surface, hard industrial labor at the edge of nowhere"
+    },
+    {
+      "id": "env_keth_bio_farm",
+      "prompt": "Keth agricultural cultivation field on a colony world, rows of grown amber bio-structures producing food organisms, bioluminescent guide-markers along pathways, humidity domes over sensitive growth areas, irrigation channels filled with amber nutrient solution, alien agriculture that looks more like tending a reef than farming a field"
+    },
+    {
+      "id": "env_keth_hive_settlement",
+      "prompt": "Keth settlement on a colony world — cluster of grown bio-resin domes and connected tunnel structures, amber-glowing against twilight sky, compound-eye faceted windows catching light, organic forms rising from ground like enormous termite mounds, no sharp edges, surface showing growth rings and healed scars, alien and beautiful"
+    },
+    {
+      "id": "env_veshan_training_yard",
+      "prompt": "Veshan warrior training compound — open yard of compacted dark stone with weapon practice dummies showing deep blade scoring, angular fortress walls on all sides, heavy forged weapon racks along walls, basking platform to one side for rest between bouts, house banner flying from angular pole, the outdoor classroom where warriors are made"
+    },
+    {
+      "id": "env_veshan_fortress_gate",
+      "prompt": "entrance gate of a Veshan house fortress, massive pointed-arch gateway in dark basalt wall, hammered bronze doors showing battle damage worn as decoration, house clan sigil carved enormous above the arch, defensive positions flanking the entrance, approach road of worn stone, the front door that says do not come here uninvited"
+    },
+    {
+      "id": "env_orryn_floating_market",
+      "prompt": "Orryn open-air trading zone on a station exterior — membrane canopy stretched between docking spars, transparent trade pods hanging at various heights, chrome fixtures and teal-tinted structural elements, data crystal transaction points, multiple species browsing at different heights, designed for tentacle access but awkwardly adapted for legs"
+    },
+    {
+      "id": "env_reach_scrapyard",
+      "prompt": "Sable Reach scrapyard on a frontier moon — vast field of stripped ship hulls and sorted wreckage piles, cutting torches at work stations, rickety scaffolding around a half-gutted frigate, sorted piles of hull plating and engine parts and electronics, rust and ash colors everywhere, the economy of the desperate"
+    },
+    {
+      "id": "env_reach_hideout_entrance",
+      "prompt": "concealed entrance to a Sable Reach hideout — cargo container doors set into a rocky cliff face, camouflage netting partially covering the entrance, power cables running from stolen generator, lookout position on ledge above, crude warning signs, the kind of place you only find if someone tells you where it is"
+    },
+    {
+      "id": "env_refugee_camp",
+      "prompt": "mixed-species refugee camp administered by the Compact — rows of prefab shelter units in regulation grey, medical tent with red cross, water distribution point, ration dispensary, security checkpoint at entrance, families' personal belongings stacked outside shelters, compassionate bureaucracy at its most organized and its most inadequate"
+    },
+    {
+      "id": "env_debris_field",
+      "prompt": "ship debris field after a battle — twisted hull fragments floating against starfield, recognizable faction hull pieces — Compact blue plate, Veshan bronze armor, blown-out viewports, trailing wiring and frozen atmosphere crystals, emergency beacon flashing on one fragment, the aftermath that nobody cleans up in space"
+    },
+    {
+      "id": "env_derelict_ship",
+      "prompt": "abandoned derelict ship drifting in space — dark hull with navigation lights dead, hull breach visible as black wound in the side, frost forming on exterior surfaces, one section still showing faint power glow, salvage markers attached by a previous survey crew, a coffin waiting to be opened"
+    },
+
+    {
+      "id": "REJECT21_paradise_planet",
+      "prompt": "beautiful alien paradise world with crystal blue waterfalls, lush purple vegetation, twin suns setting over pristine landscape, tourist brochure for an alien vacation, too beautiful for gritty space"
+    },
+    {
+      "id": "REJECT21_clean_colony",
+      "prompt": "pristine futuristic colony with gleaming white domes and manicured gardens, holographic welcome signs, clean walkways, utopian settlement — the brochure, not the reality"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 150000
+  }
+}

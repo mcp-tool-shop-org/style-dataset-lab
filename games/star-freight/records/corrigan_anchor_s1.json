@@ -1,0 +1,59 @@
+{
+  "id": "corrigan_anchor_s1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:23:44.593Z",
+  "asset_path": "outputs/candidates/corrigan_anchor_s1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1553982
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, tiny single-deck shuttle-sized cargo ship docked at a space station, boxy rectangular hull the size of a large van, the ship is dwarfed by the station docking arm towering above it, ugly and asymmetric from mismatched repair patches in three different shades of dirty grey and brown welded and bolted over old damage, one engine nacelle a visibly different color from the other, cockpit bump on the front barely large enough for two seats visible through a small viewport with amber glow, cargo section takes up most of the ship, the name CORRIGAN in faded peeling stencil paint on the hull, no weapons no military markings, docking scratches and scorch marks, a ship the size of a panel van with engines, dark space background",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, sleek, military, pristine, large, impressive, weapon hardpoints, heroic angle, dramatic lighting, clean hull, symmetrical, new paint, carrier, destroyer, battleship, capital ship, fleet ship, warship, cruiser, frigate, corvette, massive, majestic, aerodynamic, multiple decks, aircraft carrier",
+    "seed": 27001,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8096,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "the_corrigan",
+    "subject_type": "named_ship",
+    "faction": "none",
+    "role": "ship",
+    "view_type": "establishing",
+    "shot_type": "wide",
+    "identity_anchor": true,
+    "location_name": null,
+    "ship_name": "the_corrigan",
+    "scene_function": "establish the Corrigan's hull truth — the ship equivalent of a used car with 200k miles",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

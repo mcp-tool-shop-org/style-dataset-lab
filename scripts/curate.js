@@ -13,6 +13,8 @@ import { readFile, writeFile, rename, readdir, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 async function main() {
   const args = process.argv.slice(2);
@@ -49,7 +51,7 @@ async function main() {
   const failure_modes = failuresStr ? failuresStr.split(",").map((s) => s.trim()) : [];
 
   // Load existing record
-  const recordPath = join(REPO_ROOT, `records/${assetId}.json`);
+  const recordPath = join(GAME_ROOT, `records/${assetId}.json`);
   let record;
   try {
     record = JSON.parse(await readFile(recordPath, "utf-8"));
@@ -59,10 +61,10 @@ async function main() {
   }
 
   // Update record first (write before move to avoid orphaned images)
-  const oldPath = join(REPO_ROOT, record.asset_path);
+  const oldPath = join(GAME_ROOT, record.asset_path);
   const newDir = `outputs/${status}`;
   const newPath = `${newDir}/${assetId}.png`;
-  await mkdir(join(REPO_ROOT, newDir), { recursive: true });
+  await mkdir(join(GAME_ROOT, newDir), { recursive: true });
 
   record.asset_path = newPath;
   record.judgment = {
@@ -80,7 +82,7 @@ async function main() {
 
   // Move image file
   try {
-    await rename(oldPath, join(REPO_ROOT, newPath));
+    await rename(oldPath, join(GAME_ROOT, newPath));
   } catch {
     console.error(`Could not move ${oldPath} to ${newPath}`);
     process.exit(1);
@@ -92,7 +94,7 @@ async function main() {
 }
 
 async function listUncurated() {
-  const recordsDir = join(REPO_ROOT, "records");
+  const recordsDir = join(GAME_ROOT, "records");
   let files;
   try {
     files = await readdir(recordsDir);

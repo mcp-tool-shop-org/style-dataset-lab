@@ -1,0 +1,38 @@
+{
+  "id": "drashan_approach_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:26:00.743Z",
+  "asset_path": "outputs/candidates/drashan_approach_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1507002
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, angular dark fortress space station exterior — aggressive wedge-shaped structure with pointed arches and triangular buttresses, dark charcoal metal plates with visible hammer marks and rivet heads, house insignia painted large in crimson on flanks, crimson engine glow, weapon emplacements visible and deliberate, captured hull fragments mounted along the approach corridor as trophies, intimidating martial architecture floating in space",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270012,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7260,
+    "gpu_model": "RTX 5080",
+    "batch_index": 12
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

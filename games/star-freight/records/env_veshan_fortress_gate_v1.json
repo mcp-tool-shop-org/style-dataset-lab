@@ -1,0 +1,308 @@
+{
+  "id": "env_veshan_fortress_gate_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T04:00:23.158Z",
+  "asset_path": "outputs/approved/env_veshan_fortress_gate_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1629997
+  },
+  "provenance": {
+    "workflow_id": "wave21-environments-planetary",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly environment concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi environment, visible material texture and industrial detail, visible brushstrokes, wide establishing view, no characters present, entrance gate of a Veshan house fortress, massive pointed-arch gateway in dark basalt wall, hammered bronze doors showing battle damage worn as decoration, house clan sigil carved enormous above the arch, defensive positions flanking the entrance, approach road of worn stone, the front door that says do not come here uninvited",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine, tourist vista, beautiful landscape, scenic, sunset, people, characters, text, watermark, blurry, low quality",
+    "seed": 150012,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7369,
+    "gpu_model": "RTX 5080",
+    "batch_index": 12
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T04:10:52.667Z",
+    "explanation": "Planetary/environmental scene with functional gritty atmosphere, faction presence or universal frontier quality.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.75,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.8,
+      "faction_read": 0.7,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.75,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.536Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "veshan",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Silhouette readable at gameplay scale (75%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Surfaces read as Forged (hammered, riveted, layered) (75%)",
+        "faction": "veshan",
+        "faction_context": "Forged (hammered, riveted, layered)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+        "faction": "veshan",
+        "faction_context": "Battle-scarred with pride — damage displayed"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.73,
+        "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+        "faction": "veshan",
+        "faction_context": "Triangles, chevrons, sharp angles"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Faction palette present and dominant (75%)",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "veshan",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.73,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "ENV-001",
+        "category": "environment",
+        "verdict": "pass",
+        "score": 0.77,
+        "rationale": "Passes ENV-001 (77%)"
+      },
+      {
+        "rule_id": "ENV-002",
+        "category": "environment",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Passes ENV-002 (75%)",
+        "faction": "veshan",
+        "faction_context": null
+      },
+      {
+        "rule_id": "ENV-003",
+        "category": "environment",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Passes ENV-003 (80%)",
+        "faction": "veshan",
+        "faction_context": null
+      }
+    ],
+    "assertion_count": 15,
+    "pass_count": 15,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Silhouette readable at gameplay scale (75%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Surfaces read as Forged (hammered, riveted, layered) (75%)",
+      "faction": "veshan",
+      "faction_context": "Forged (hammered, riveted, layered)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Wear level appropriate — Battle-scarred with pride — damage displayed",
+      "faction": "veshan",
+      "faction_context": "Battle-scarred with pride — damage displayed"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.73,
+      "rationale": "Shape language compliant — Triangles, chevrons, sharp angles",
+      "faction": "veshan",
+      "faction_context": "Triangles, chevrons, sharp angles"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Faction palette present and dominant (75%)",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "veshan",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.73,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "ENV-001",
+      "category": "environment",
+      "verdict": "pass",
+      "score": 0.77,
+      "rationale": "Passes ENV-001 (77%)"
+    },
+    {
+      "rule_id": "ENV-002",
+      "category": "environment",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Passes ENV-002 (75%)",
+      "faction": "veshan",
+      "faction_context": null
+    },
+    {
+      "rule_id": "ENV-003",
+      "category": "environment",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Passes ENV-003 (80%)",
+      "faction": "veshan",
+      "faction_context": null
+    }
+  ],
+  "canon_explanation": "Approved: passes 15/15 constitution rules. Faction: veshan. Planetary/environmental scene with functional gritty atmosphere, faction presence or universal frontier quality."
+}

@@ -1,0 +1,308 @@
+{
+  "id": "int_reach_crew_hammocks_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T02:58:08.740Z",
+  "asset_path": "outputs/approved/int_reach_crew_hammocks_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1579249
+  },
+  "provenance": {
+    "workflow_id": "wave12-ship-interiors",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly interior concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi ship interior, visible surface texture and lived-in detail, visible brushstrokes, wide establishing view of room interior, no characters present, cramped sleeping area with hammocks strung between exposed hull ribs, personal belongings in nets and bags hung from hooks, mismatched blankets and stolen regulation pillows, weapon kept within arm's reach of each hammock, dim lighting from a single salvaged lamp, scratched tally marks on wall counting days, improvised curtains from cargo tarps",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, glamorous, luxury, Star Trek bridge, holodeck, people, characters, figures, text, watermark, blurry, low quality, exterior view, space, stars visible",
+    "seed": 60535,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8068,
+    "gpu_model": "RTX 5080",
+    "batch_index": 35
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.604Z",
+    "explanation": "Ship interior with lived-in detail, faction-specific design language, and atmospheric lighting.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.75,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.8,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.595Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "reach",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Silhouette readable at gameplay scale (75%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Surfaces read as Stripped (torn, welded from scrap, jury-rigged) (83%)",
+        "faction": "reach",
+        "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Wear level appropriate — Jury-rigged — functional ugly",
+        "faction": "reach",
+        "faction_context": "Jury-rigged — functional ugly"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Shape language compliant — Asymmetric, irregular, mismatched",
+        "faction": "reach",
+        "faction_context": "Asymmetric, irregular, mismatched"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Faction palette present and dominant (80%)",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "SHP-INT-001",
+        "category": "interior",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Passes SHP-INT-001 (83%)",
+        "faction": "reach",
+        "faction_context": null
+      },
+      {
+        "rule_id": "SHP-INT-002",
+        "category": "interior",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Passes SHP-INT-002 (85%)"
+      },
+      {
+        "rule_id": "ENV-003",
+        "category": "environment",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Passes ENV-003 (80%)",
+        "faction": "reach",
+        "faction_context": null
+      }
+    ],
+    "assertion_count": 15,
+    "pass_count": 15,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Silhouette readable at gameplay scale (75%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Surfaces read as Stripped (torn, welded from scrap, jury-rigged) (83%)",
+      "faction": "reach",
+      "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Wear level appropriate — Jury-rigged — functional ugly",
+      "faction": "reach",
+      "faction_context": "Jury-rigged — functional ugly"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Shape language compliant — Asymmetric, irregular, mismatched",
+      "faction": "reach",
+      "faction_context": "Asymmetric, irregular, mismatched"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Faction palette present and dominant (80%)",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "SHP-INT-001",
+      "category": "interior",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Passes SHP-INT-001 (83%)",
+      "faction": "reach",
+      "faction_context": null
+    },
+    {
+      "rule_id": "SHP-INT-002",
+      "category": "interior",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Passes SHP-INT-002 (85%)"
+    },
+    {
+      "rule_id": "ENV-003",
+      "category": "environment",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Passes ENV-003 (80%)",
+      "faction": "reach",
+      "faction_context": null
+    }
+  ],
+  "canon_explanation": "Approved: passes 15/15 constitution rules. Faction: reach. Ship interior with lived-in detail, faction-specific design language, and atmospheric lighting."
+}

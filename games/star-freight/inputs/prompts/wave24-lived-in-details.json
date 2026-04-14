@@ -1,0 +1,126 @@
+{
+  "lane": "wave24-lived-in-details",
+  "description": "Wave 24: The details that separate 'gritty space' from 'space with rust textures.' Domestic objects in industrial settings, paper ephemera, mixed-era tech, mundane commercial spaces, weathering progressions, fabric on machinery. The Roger Christian lesson: logical junk, army green, oil drips. The Firefly lesson: homes inside machines.",
+  "style_prefix": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft directional lighting, worn and functional lived-in sci-fi, visible material texture and use-wear detail, visible brushstrokes",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, glamorous, luxury, people, characters, figures, text, watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "lived_rug_on_grating",
+      "prompt": "domestic touch on a spaceship — a worn area rug laid over metal deck grating in a crew common area, the rug faded and slightly frayed at edges, pattern barely visible from years of boots, grating visible at the edges where the rug doesn't reach, a small attempt at home in an industrial tube, centered on plain dark grey background"
+    },
+    {
+      "id": "lived_photos_on_bulkhead",
+      "prompt": "section of ship bulkhead near a bunk covered with personal photographs and postcards taped and pinned to the metal wall, some photos curling at edges with age, a few handwritten notes, a child's drawing, a pressed flower under tape, the human layer on industrial steel, centered on plain dark grey background"
+    },
+    {
+      "id": "lived_plant_in_engine_room",
+      "prompt": "small potted plant growing in a repurposed coffee mug on a pipe bracket in an engine room, the plant reaching toward a light source, leaves dusty from engine particulate, someone is caring for this in a place that smells like oil and ozone, life finding a foothold in machinery, centered on plain dark grey background"
+    },
+    {
+      "id": "lived_picnic_table_mess",
+      "prompt": "cramped ship mess hall with a bolted-down picnic-style bench table, metal surface showing years of knife scratches and mug rings, condiment bottles clustered at center, someone's abandoned crossword puzzle, overhead fluorescent slightly yellow with age, not a dining room — a place where workers eat fast, wide interior view"
+    },
+    {
+      "id": "lived_noodle_shop_station",
+      "prompt": "tiny noodle shop counter in a space station corridor, hand-painted menu board in multiple scripts, steaming pot behind counter, mismatched stools bolted to floor, overhead lamp casting warm pool of light in otherwise dim corridor, the kind of place that's open at 3am station time, atmospheric establishing view, no characters"
+    },
+    {
+      "id": "lived_pawnshop_station",
+      "prompt": "cramped pawn shop in a station commercial level, display case showing mixed-faction goods behind scratched glass — a Compact data tablet, a Veshan ceremonial blade, Orryn data crystals, security cage over the counter, handwritten CASH PAID sign, the place where desperate people trade what they have, atmospheric interior view"
+    },
+    {
+      "id": "lived_laundromat_station",
+      "prompt": "industrial laundry facility on a space station — row of heavy-duty wash units bolted to wall, someone's clothes in a pile on a bench waiting, overhead fluorescent with one tube dead, a vending machine dispensing detergent pods, dryer vent piping along ceiling, a forgotten sock on the floor, the most boring room in space, wide interior view"
+    },
+    {
+      "id": "lived_poster_wall",
+      "prompt": "section of station wall covered in layered paper ephemera — a safety notice half-covered by a union sticker, a missing person flyer, a recruitment poster for Compact merchant fleet faded and torn at one corner, maintenance schedule printout with handwritten updates, religious tract, concert announcement, layers of human communication on industrial surface, close-up detail"
+    },
+    {
+      "id": "lived_maintenance_sticker",
+      "prompt": "close-up of equipment panel covered in maintenance stickers and inspection tags — last serviced dates going back years, some stickers peeling, a CONDEMNED tag crossed out and replaced with PASSED, technician initials in marker, barcode labels partially scanned off, the bureaucratic archaeology of keeping machines alive, detail study on plain background"
+    },
+    {
+      "id": "lived_mixed_era_console",
+      "prompt": "ship console showing mixed-era technology — a modern holographic display panel mounted next to an older CRT-style screen with green phosphor text, analog pressure gauges with physical needles beside digital readouts, toggle switches from one generation next to touch panels from another, the accumulated technology of a ship that was never fully refitted, close-up detail"
+    },
+    {
+      "id": "lived_analog_gauges",
+      "prompt": "cluster of analog instrument gauges on a ship engineering panel — round faces with physical needles, one gauge with cracked glass still functioning, another with a sticky note saying IGNORE THIS ONE, brass fittings turning green with verdigris, the technology that predates digital but keeps working, close-up detail on plain background"
+    },
+    {
+      "id": "lived_fabric_on_pipes",
+      "prompt": "section of ship corridor where pipes and conduits are wrapped in thermal insulation fabric — some wrapping neat and regulation, some loose and rewrapped with tape, a section torn showing the pipe beneath, drip stains where condensation soaked through, the soft layer on hard infrastructure, close-up detail"
+    },
+    {
+      "id": "lived_tarp_covering_equipment",
+      "prompt": "heavy canvas tarp draped over broken equipment in a ship corridor, tarp secured with cargo straps and marked with grease pen — OUT OF SERVICE, equipment beneath visible as angular shapes under fabric, dust accumulating in folds suggesting weeks since anyone looked at it, deferred maintenance made visible"
+    },
+    {
+      "id": "lived_greeble_panel_compact",
+      "prompt": "close-up of a dense mechanical panel on a Compact ship wall — hexagonal vents, dome-shaped sensor housings, ribbed conduit covers, stamped steel service plates with embossed part numbers, cable routing channels, all in regulation charcoal and steel blue, slightly grimy, the background texture that makes a set feel real, detail study"
+    },
+    {
+      "id": "lived_greeble_panel_reach",
+      "prompt": "close-up of a Sable Reach jerry-rigged wall panel — components from three different factions grafted together, a Compact vent cover next to a Veshan bronze plate next to bare wiring, sealant filling gaps, spray paint over old markings, the mechanical collage of scavenger engineering, detail study"
+    },
+    {
+      "id": "lived_weathering_new",
+      "prompt": "brand-new Compact regulation equipment panel fresh from the supply depot — sharp edges, crisp paint, bright steel blue with clean white lettering, plastic wrap still on the display screen, factory-clean stickers, the baseline state before the universe ages it, shown for contrast against the gritty norm, item study on plain background"
+    },
+    {
+      "id": "lived_weathering_moderate",
+      "prompt": "same type of Compact equipment panel after five years of service — paint chipped at corners revealing grey primer, fingerprint oils around frequently-used buttons, one sticker peeling, minor scuff marks, screen slightly scratched, still functional but showing its age, the middle state of wear, item study on plain background"
+    },
+    {
+      "id": "lived_weathering_heavy",
+      "prompt": "same type of Compact equipment panel after twenty years of service — paint mostly gone revealing multiple primer layers and bare metal, replacement buttons that don't match originals, tape repair on screen bezel, handwritten label replacing printed one that wore off, one section bypassed with exposed wiring, a veteran machine, item study on plain background"
+    },
+    {
+      "id": "lived_toilet_spaceship",
+      "prompt": "ship head — the toilet of a spaceship, suction-assisted compact unit in a closet-sized booth with privacy curtain, instruction placard mounted on wall for zero-g operation, hand-holds for stability, cleaning supplies stowed in bracket, the most unglamorous essential on any vessel, Whedon put one on Serenity and it changed everything, interior view"
+    },
+    {
+      "id": "lived_shower_spaceship",
+      "prompt": "ship shower — compact vacuum-assisted water recycling pod barely large enough for one person, timer display showing water ration remaining, drain with filter grate, grab handles on walls, non-slip surface, a tube of shampoo velcroed to the wall, the three-minute shower that keeps you human between the stars, interior view"
+    },
+    {
+      "id": "lived_bar_back_shelf",
+      "prompt": "the back shelf of a multi-species station bar — bottles from five civilizations arranged by a bartender who knows what they all are, Compact regulation flask next to Veshan ceramic jug next to Orryn translucent teal vial next to unlabeled Reach moonshine, some bottles dusty from no demand, some nearly empty from too much, warm amber bar lighting, still life detail"
+    },
+    {
+      "id": "lived_sleeping_bag_corridor",
+      "prompt": "someone's sleeping roll tucked into an alcove of a station corridor — insulated sleeping bag, a small bag of personal belongings used as pillow, a water bottle and a protein bar wrapper, this person doesn't have quarters — they have this spot, and everyone walks past, the poverty of space made personal, atmospheric interior view"
+    },
+    {
+      "id": "lived_graffiti_love_note",
+      "prompt": "small personal graffiti scratched into a ship bulkhead near a bunk — two initials inside a rough heart, a date, tiny and hidden in a corner where someone would see it only lying in this specific bunk, surrounded by industrial metal and regulation paint, the smallest human gesture in the largest emptiness, extreme close-up detail"
+    },
+
+    {
+      "id": "REJECT24_catalog_interior",
+      "prompt": "IKEA-style perfectly staged living space with coordinated furniture, decorative throw pillows, ambient LED mood lighting, potted plants artfully arranged, contemporary lifestyle catalog aesthetic"
+    },
+    {
+      "id": "REJECT24_museum_clean",
+      "prompt": "pristine museum exhibition of space artifacts behind glass cases with dramatic spotlighting, white walls, polished floors, interpretive plaques, everything preserved and untouchable"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 180000
+  }
+}

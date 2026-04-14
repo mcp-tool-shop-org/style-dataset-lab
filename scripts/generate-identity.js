@@ -32,6 +32,8 @@ import { join } from "node:path";
 
 const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 // ── Defaults (match existing lab pipeline) ──
 
@@ -462,7 +464,7 @@ async function main() {
     process.exit(1);
   }
 
-  const fullPackPath = join(REPO_ROOT, packPath);
+  const fullPackPath = join(GAME_ROOT, packPath);
   const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
 
   // Validate
@@ -512,8 +514,8 @@ async function main() {
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
   }
 
-  await mkdir(join(REPO_ROOT, "outputs/candidates"), { recursive: true });
-  await mkdir(join(REPO_ROOT, "records"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "records"), { recursive: true });
 
   let generated = 0;
   let imageIndex = 0;
@@ -575,7 +577,7 @@ async function main() {
           }
 
           const imgData = await downloadImage(imageFile, imageSubfolder);
-          await writeFile(join(REPO_ROOT, destPath), imgData);
+          await writeFile(join(GAME_ROOT, destPath), imgData);
 
           const anchorInfo =
             phase === "follow_on"
@@ -593,7 +595,7 @@ async function main() {
           );
 
           await writeFile(
-            join(REPO_ROOT, `records/${assetId}.json`),
+            join(GAME_ROOT, `records/${assetId}.json`),
             JSON.stringify(record, null, 2)
           );
 

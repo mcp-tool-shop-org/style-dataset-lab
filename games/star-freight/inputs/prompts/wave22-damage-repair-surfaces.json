@@ -1,0 +1,94 @@
+{
+  "lane": "wave22-damage-repair-surfaces",
+  "description": "Wave 22: Damage, repair, and surface texture studies. Hull patches, weld lines, paint layers, graffiti, rust patterns, oil stains. The visual vocabulary of wear that defines gritty space. Close-up detail shots that train the model on TEXTURE, not just subjects.",
+  "style_prefix": "oil painting, semi-realistic painterly close-up detail study, muted dusty palette, subtle dark edges, soft directional lighting, worn and damaged sci-fi surface, extreme visible material texture and wear detail, visible brushstrokes, tight crop on surface detail",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, wide shot, full environment, people, characters, text, watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "surf_hull_patch_weld",
+      "prompt": "close-up of ship hull repair — darker metal patch plate welded over impact damage, hand-welded bead visible with slight irregularity, original steel blue paint stops at patch edge revealing bare metal, heat discoloration halo around the weld, scratches from the grinder used to prep the surface, three months of space grime collecting in the seam"
+    },
+    {
+      "id": "surf_paint_layers",
+      "prompt": "close-up of hull surface showing multiple paint layers — current rust-brown Sable Reach paint over original Compact steel blue, which itself shows a primer layer of grey beneath at chip edges, each layer a chapter of the ship's history, scratches revealing the archaeology of ownership"
+    },
+    {
+      "id": "surf_rust_pattern",
+      "prompt": "close-up of metal surface with realistic rust patterns — orange-brown oxide forming along seam lines and around bolt heads, rust running in drip streaks from a leaking joint above, pitting in the metal surface where moisture sat, some areas showing bare metal where rust was recently scraped"
+    },
+    {
+      "id": "surf_oil_stain_deck",
+      "prompt": "close-up of deck plating with accumulated oil and grease stains — dark iridescent patches from hydraulic fluid, boot prints in the oil tracking away, absorbent pad partially covering one stain, the floor near an engine access hatch that nobody can keep clean"
+    },
+    {
+      "id": "surf_graffiti_layers",
+      "prompt": "close-up of bulkhead wall with layered graffiti — territory tags in spray paint, older marks scratched into metal beneath, tally marks counting something (days? raids?), a crude portrait, competing crew symbols painted over each other, the social media of the spacelanes"
+    },
+    {
+      "id": "surf_cable_management",
+      "prompt": "close-up of ship cable and pipe routing — original bundled cables in proper conduits alongside later additions zip-tied and taped to the outside, a repaired cable splice wrapped in electrical tape, junction box with one cover missing showing terminals, the nervous system of a vessel showing its age"
+    },
+    {
+      "id": "surf_worn_controls",
+      "prompt": "close-up of a frequently-used control panel — toggle switches with worn labeling, one replacement switch that doesn't match the others, fingerprint oils on the most-used buttons, scratch around a key slot from thousands of insertions, a stuck toggle with tape marked DO NOT TOUCH"
+    },
+    {
+      "id": "surf_keth_resin_growth",
+      "prompt": "close-up of Keth bio-resin surface — translucent amber with visible layered growth rings like a tree cross-section, older layers darker and harder, newer surface growth lighter and slightly tacky, embedded shed chitin fragment preserved like an insect in amber, bioluminescent capillary veins pulsing faintly"
+    },
+    {
+      "id": "surf_keth_healed_scar",
+      "prompt": "close-up of healed damage on a Keth bio-hull — impact crater where hull was breached, re-grown tissue filling the wound but with different texture and slightly different amber tone, scar tissue ridges around the edge, bioluminescent veins rerouted around the damage like new blood vessels"
+    },
+    {
+      "id": "surf_veshan_hammered_plate",
+      "prompt": "close-up of Veshan forged armor plate — dark bronze metal with visible overlapping hammer marks in concentric arcs, green-brown patina in recessed areas, intentional imperfections left by the smith, iron rivet heads with slight mushrooming from hand-peening, crimson lacquer accent stripe with cracking at edges"
+    },
+    {
+      "id": "surf_veshan_battle_gouge",
+      "prompt": "close-up of battle damage on Veshan architecture — deep blade gouge in dark basalt stone doorframe, lacquered over with clear preservative to seal as a memorial, bronze plaque mounted below with inscription, secondary scratches around it from daily weapon practice, damage as decoration"
+    },
+    {
+      "id": "surf_orryn_membrane_layers",
+      "prompt": "close-up of Orryn reconfigured wall surface — multiple layers of translucent pearl-white membrane, some cut away revealing older layers beneath, anchor point holes in regular patterns from previous wall positions, slight iridescent sheen, moisture condensation beading on surface, ink stain from chromatophore discharge"
+    },
+    {
+      "id": "surf_reach_epoxy_seam",
+      "prompt": "close-up of Sable Reach hull join — two mismatched metal plates from different factions brought together, thick bead of grey epoxy sealant filling the gap, original Compact bolt holes not aligned with Veshan rivet spacing, improvised L-bracket bridging the difference, both surfaces showing their own distinct wear patterns meeting at the seam"
+    },
+    {
+      "id": "surf_condensation_drip",
+      "prompt": "close-up of condensation damage on a ship wall — water stain trail running vertically from a pipe joint, mineral deposit buildup at the base where drips accumulate, slight corrosion on painted surface beneath the drip path, mold starting at the base, the slow water damage of recycled atmosphere"
+    },
+    {
+      "id": "surf_worn_floor_path",
+      "prompt": "close-up of deck flooring showing wear path — diamond plate with raised pattern worn smooth along the path crew walks daily, original sharp diamond pattern visible at edges where nobody walks, boot scuff marks, a dropped bolt embedded in the textured surface, the foot-traffic archaeology of a working ship"
+    },
+
+    {
+      "id": "REJECT22_clean_surface",
+      "prompt": "perfectly smooth brushed aluminum surface with even satin finish, factory-new appearance, no scratches marks or wear, showroom quality metal panel"
+    },
+    {
+      "id": "REJECT22_ornate_surface",
+      "prompt": "elaborately decorated gold-leafed surface with intricate filigree patterns and gemstone inlays, luxury craftsmanship, too beautiful and precious for a working environment"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 160000
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "naia_fullbody_s0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:22:10.720Z",
+  "asset_path": "outputs/candidates/naia_fullbody_s0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1390296
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, full body visible front-facing view of a four-armed arthropod alien with pale ivory chitin exoskeleton, alien person standing upright in humanoid posture, 1.6 meters tall, segmented chitin torso with three visible plate divisions, four arms with two shoulder pairs each ending in three-digit hands with upper pair stronger and lower pair dexterous, two digitigrade legs with reverse-knee joints, elongated oval head with two large dark amber compound eyes, two segmented antennae, mandible plates, pale ivory chitin with muted amber edges, bone-white chitin-fiber utility harness across torso with tool loops for all four arms, translucent amber bio-film base layer, seasonal marker bands on upper arms faded, faint censure mark on wing-casings folded flat against back tightly closed, bioluminescent veins at joints dim, colony glyph on thorax faded, lower arms organizing tools, isolated on plain dark background",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, bright bioluminescence, relaxed wing-casings, spread wings, flying, vibrant colors, celebratory, human, person, man, woman, Earth insect, bug, ant, beetle, spider, mantis, grasshopper, robotic, mechanical, cyborg, cute, chibi, two arms only, bipedal human",
+    "seed": 27003,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8108,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "naia_of_threesong",
+    "subject_type": "named_character",
+    "faction": "keth",
+    "role": "crew",
+    "view_type": "full_body",
+    "shot_type": "standing",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "full anatomy and costume truth — four arms, digitigrade legs, harness tool loops",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

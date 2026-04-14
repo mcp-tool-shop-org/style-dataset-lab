@@ -1,0 +1,290 @@
+{
+  "id": "ship_ext_orryn_drift_carrier_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T02:51:30.035Z",
+  "asset_path": "outputs/approved/ship_ext_orryn_drift_carrier_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1509126
+  },
+  "provenance": {
+    "workflow_id": "wave11-ship-exteriors",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi spacecraft, visible hull texture and surface detail, visible brushstrokes, three-quarter view showing full ship profile, isolated on plain dark grey-black background with subtle star field, large elliptical mothership with flowing curves and multiple docking rings for smaller vessels, deep teal hull with pearl panels and chrome sensor nodes, data relay antennae in organic-looking clusters, massive engine array for fleet-speed travel, modular hull sections that can be reconfigured, smooth and practical but not flashy, merchant fleet flagship",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, bright saturated colors, clean pristine new, glamorous, Star Wars, Star Trek, luxury yacht, multiple ships, busy background, text, watermark, blurry, low quality, video game screenshot, miniature model",
+    "seed": 50024,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7298,
+    "gpu_model": "RTX 5080",
+    "batch_index": 24
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.718Z",
+    "explanation": "Ship exterior with faction-appropriate hull design, wear, and construction.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.85,
+      "faction_read": 0.8,
+      "wear_level": 0.8,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.8,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.75
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.853Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "keth",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette readable at gameplay scale (85%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Surfaces read as Grown (cultivated, secreted, bio-film) (83%)",
+        "faction": "keth",
+        "faction_context": "Grown (cultivated, secreted, bio-film)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Wear level appropriate — Alive — aging means growing, not decaying",
+        "faction": "keth",
+        "faction_context": "Alive — aging means growing, not decaying"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Shape language compliant — Segments, arcs, compound curves",
+        "faction": "keth",
+        "faction_context": "Segments, arcs, compound curves"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Faction palette present and dominant (80%)",
+        "faction": "keth",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "keth",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      },
+      {
+        "rule_id": "SHP-EXT-001",
+        "category": "ship",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Passes SHP-EXT-001 (83%)",
+        "faction": "keth",
+        "faction_context": null
+      },
+      {
+        "rule_id": "SHP-EXT-002",
+        "category": "ship",
+        "verdict": "pass",
+        "score": 0.83,
+        "rationale": "Passes SHP-EXT-002 (83%)"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 14,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette readable at gameplay scale (85%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Surfaces read as Grown (cultivated, secreted, bio-film) (83%)",
+      "faction": "keth",
+      "faction_context": "Grown (cultivated, secreted, bio-film)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Wear level appropriate — Alive — aging means growing, not decaying",
+      "faction": "keth",
+      "faction_context": "Alive — aging means growing, not decaying"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Shape language compliant — Segments, arcs, compound curves",
+      "faction": "keth",
+      "faction_context": "Segments, arcs, compound curves"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Faction palette present and dominant (80%)",
+      "faction": "keth",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "keth",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    },
+    {
+      "rule_id": "SHP-EXT-001",
+      "category": "ship",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Passes SHP-EXT-001 (83%)",
+      "faction": "keth",
+      "faction_context": null
+    },
+    {
+      "rule_id": "SHP-EXT-002",
+      "category": "ship",
+      "verdict": "pass",
+      "score": 0.83,
+      "rationale": "Passes SHP-EXT-002 (83%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 14/14 constitution rules. Faction: keth. Ship exterior with faction-appropriate hull design, wear, and construction."
+}

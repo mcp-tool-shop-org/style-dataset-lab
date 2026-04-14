@@ -20,6 +20,8 @@ import { existsSync } from "node:fs";
 
 const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 // ── Config ──
 
@@ -239,8 +241,8 @@ async function main() {
     if (args[i] === "--offset" && args[i + 1]) offset = parseInt(args[++i]);
   }
 
-  const fullSourceDir = join(REPO_ROOT, sourceDir);
-  const outDir = join(REPO_ROOT, "outputs/painterly");
+  const fullSourceDir = join(GAME_ROOT, sourceDir);
+  const outDir = join(GAME_ROOT, "outputs/painterly");
   await mkdir(outDir, { recursive: true });
 
   // Collect source PNGs

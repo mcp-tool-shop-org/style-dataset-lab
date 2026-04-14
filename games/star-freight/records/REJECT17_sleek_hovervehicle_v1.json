@@ -1,0 +1,171 @@
+{
+  "id": "REJECT17_sleek_hovervehicle_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T03:22:25.164Z",
+  "asset_path": "outputs/rejected/REJECT17_sleek_hovervehicle_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1498595
+  },
+  "provenance": {
+    "workflow_id": "wave17-cargo-industrial",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi industrial, visible material texture and surface detail, visible brushstrokes, centered on plain dark grey background, sleek hovering luxury transport with chrome finish and glowing blue anti-gravity pods, clean aerodynamic design, tinted windows, looks like a concept car from an auto show, no dirt or wear",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, glamorous, people, characters, figures, text, watermark, blurry, low quality",
+    "seed": 110032,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7306,
+    "gpu_model": "RTX 5080",
+    "batch_index": 32
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.695Z",
+    "explanation": "Chrome luxury hover transport — concept car aesthetic. No dirt, no wear, wrong power fantasy.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.1,
+      "faction_read": 0,
+      "wear_level": 0,
+      "style_consistency": 0.3,
+      "clothing_logic": 0.1,
+      "composition": 0.7
+    },
+    "failure_modes": [
+      "too_clean",
+      "generic_scifi"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.774Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.3,
+        "rationale": "Not painterly — reads as photorealistic/3D/anime (30%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Silhouette readable at gameplay scale (70%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.05,
+        "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 3,
+    "fail_count": 4,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.3,
+      "rationale": "Not painterly — reads as photorealistic/3D/anime (30%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Silhouette readable at gameplay scale (70%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.05,
+      "rationale": "Reads as generic sci-fi — not faction-specific (5%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-001, RND-003, COL-003, CLO-003. Chrome luxury hover transport — concept car aesthetic. No dirt, no wear, wrong power fantasy."
+}

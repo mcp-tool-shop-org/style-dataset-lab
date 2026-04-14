@@ -14,6 +14,8 @@ import { join, basename } from "node:path";
 
 const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 // ── ComfyUI API helpers ──
 
@@ -214,7 +216,7 @@ async function main() {
   const packPath = args.find((a) => !a.startsWith("--")) || "inputs/prompts/rpg-icons-lane1.json";
   const dryRun = args.includes("--dry-run");
 
-  const fullPackPath = join(REPO_ROOT, packPath);
+  const fullPackPath = join(GAME_ROOT, packPath);
   const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
 
   console.log(`\x1b[1mstyle-dataset-lab\x1b[0m generate`);
@@ -234,8 +236,8 @@ async function main() {
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
 
-  await mkdir(join(REPO_ROOT, "outputs/candidates"), { recursive: true });
-  await mkdir(join(REPO_ROOT, "records"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
+  await mkdir(join(GAME_ROOT, "records"), { recursive: true });
 
   const d = pack.defaults;
   let generated = 0;
@@ -288,7 +290,7 @@ async function main() {
         // Download and save
         const imgData = await downloadImage(imageFile, imageSubfolder);
         const destPath = `outputs/candidates/${assetId}.png`;
-        await writeFile(join(REPO_ROOT, destPath), imgData);
+        await writeFile(join(GAME_ROOT, destPath), imgData);
 
         // Write provenance record
         const record = {
@@ -321,7 +323,7 @@ async function main() {
         };
 
         await writeFile(
-          join(REPO_ROOT, `records/${assetId}.json`),
+          join(GAME_ROOT, `records/${assetId}.json`),
           JSON.stringify(record, null, 2),
         );
 

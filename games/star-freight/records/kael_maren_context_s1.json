@@ -1,0 +1,59 @@
+{
+  "id": "kael_maren_context_s1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:05:28.483Z",
+  "asset_path": "outputs/candidates/kael_maren_context_s1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1549343
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, lean man in faded charcoal grey flight jacket with removed insignia outline, short dark hair with early grey at temples, sitting in a cramped two-seat cargo hauler cockpit, one hand on console controls, pilot's hands with long steady fingers, worn leather logbook on the console beside him, amber cockpit glow from instruments, tired determination, competence hiding exhaustion, the cockpit of a battered ugly ship",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, clean, well-fed, heroic, smiling, pristine, military bridge, spacious cockpit, bright lighting",
+    "seed": 27007,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8061,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "kael_maren",
+    "subject_type": "named_character",
+    "faction": "compact",
+    "role": "protagonist",
+    "view_type": "context",
+    "shot_type": "working",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "Kael at work in the Corrigan cockpit — proves identity in environment",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

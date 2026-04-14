@@ -1,0 +1,59 @@
+{
+  "id": "kael_maren_anchor_s0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:04:31.862Z",
+  "asset_path": "outputs/candidates/kael_maren_anchor_s0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1427026
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, portrait head and shoulders, detailed face, lean angular man in his early thirties, short dark hair with early grey at temples, circles under eyes from poor sleep and worse rations, military-straight posture, pilot's hands with long steady fingers, faded charcoal grey military flight jacket with rank insignia visibly removed leaving fabric outline where badges were, muted blue thermal undershirt visible at collar, empty holster on hip, tired determination, quiet anger, competence hiding exhaustion, isolated on plain dark grey background",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, clean, well-fed, heroic pose, bright colors, smiling, pristine uniform, badges, insignia, muscular",
+    "seed": 27000,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 37356,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "kael_maren",
+    "subject_type": "named_character",
+    "faction": "compact",
+    "role": "protagonist",
+    "view_type": "anchor_portrait",
+    "shot_type": "portrait",
+    "identity_anchor": true,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "establish face and costume truth — the defining image of Kael Maren",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

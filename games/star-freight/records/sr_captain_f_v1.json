@@ -1,0 +1,296 @@
+{
+  "id": "sr_captain_f_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:54:53.331Z",
+  "asset_path": "outputs/rejected/sr_captain_f_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1218810
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human female pirate captain in her 50s with silver-streaked hair and eyes that have calculated a thousand margins, wearing an unmistakable signature coat assembled from a Compact commander navy overcoat with the insignia ripped off and Veshan bronze clasps added, beneath it a practical black thermal undersuit with concealed armor panels, tall boots with mag-lock soles, a slim data pad on one hip and an ornate pistol on the other that was clearly taken from someone important, her crew dress in echo of her color palette of navy and bronze and black",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11050,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8081,
+    "gpu_model": "RTX 5080",
+    "batch_index": 50
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:03:16.657Z",
+    "explanation": "Two figures instead of one — appears to be showing two variants of the same captain side by side. Violates single character composition rule.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.85,
+      "material_fidelity": 0.85,
+      "faction_read": 0.85,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.85,
+      "composition": 0.2
+    },
+    "failure_modes": [
+      "bad_composition"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.932Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "reach",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Lighting incorrect or flat"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.2,
+        "rationale": "Composition fails — not full body/centered/plain bg (20%)"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Silhouette readable at gameplay scale (70%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Surfaces read as Stripped (torn, welded from scrap, jury-rigged) (85%)",
+        "faction": "reach",
+        "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Wear level appropriate — Jury-rigged — functional ugly",
+        "faction": "reach",
+        "faction_context": "Jury-rigged — functional ugly"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.77,
+        "rationale": "Shape language compliant — Asymmetric, irregular, mismatched",
+        "faction": "reach",
+        "faction_context": "Asymmetric, irregular, mismatched"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Faction palette present and dominant (85%)",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "reach",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "reach",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Construction matches faction building method",
+        "faction": "reach",
+        "faction_context": "Assembled from salvage, nothing matches"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 12,
+    "fail_count": 2,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Lighting incorrect or flat"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.2,
+      "rationale": "Composition fails — not full body/centered/plain bg (20%)"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Silhouette readable at gameplay scale (70%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Surfaces read as Stripped (torn, welded from scrap, jury-rigged) (85%)",
+      "faction": "reach",
+      "faction_context": "Stripped (torn, welded from scrap, jury-rigged)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Wear level appropriate — Jury-rigged — functional ugly",
+      "faction": "reach",
+      "faction_context": "Jury-rigged — functional ugly"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.77,
+      "rationale": "Shape language compliant — Asymmetric, irregular, mismatched",
+      "faction": "reach",
+      "faction_context": "Asymmetric, irregular, mismatched"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Faction palette present and dominant (85%)",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "reach",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "reach",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Construction matches faction building method",
+      "faction": "reach",
+      "faction_context": "Assembled from salvage, nothing matches"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-002, RND-004. Two figures instead of one — appears to be showing two variants of the same captain side by side. Violates single character composition rule."
+}

@@ -1,0 +1,38 @@
+{
+  "id": "ironjaw_ancestor_market_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:28:07.760Z",
+  "asset_path": "outputs/candidates/ironjaw_ancestor_market_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1666830
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, guarded section of an asteroid cavern market where ancient alien artifacts are sold — polyhedral objects with faint luminescent veins displayed under armed guard on makeshift platforms, the artifacts visibly too regular and too clean compared to everything around them, ancient technology amid scavenged chaos, harsh work-light illumination, the most valuable and dangerous corner of a lawless station",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270028,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8060,
+    "gpu_model": "RTX 5080",
+    "batch_index": 28
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

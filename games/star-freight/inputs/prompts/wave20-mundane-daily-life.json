@@ -1,0 +1,122 @@
+{
+  "lane": "wave20-mundane-daily-life",
+  "description": "Wave 20: Mundane daily life objects — the coffee stains, the maintenance tools, the vending machines, the broken things. The unsexy details that make a universe breathe. Zero-g adaptations, hygiene, bureaucracy props, and faction-specific daily objects.",
+  "style_prefix": "oil painting, semi-realistic painterly still life concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi daily life object, visible material texture and use-wear, visible brushstrokes, centered on plain dark grey background",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, people, characters, hands, text, watermark, blurry, low quality, luxury, glamorous",
+
+  "subjects": [
+    {
+      "id": "prop_coffee_maker",
+      "prompt": "battered communal ship coffee maker bolted to a galley counter, charcoal metal body with scorch marks around heating element, drip tray stained brown from years of use, water line connection to ship plumbing, the most important object on any ship, dented from someone bumping it during rough maneuvers, regulation sticker peeling off"
+    },
+    {
+      "id": "prop_mag_boots",
+      "prompt": "pair of heavy-soled magnetic boots for zero gravity work, charcoal with steel blue accents, toggle switch on ankle for magnetic engagement, worn heavily at the toe where crews kick off from surfaces, scratched soles from metal deck contact, tethering clip on back"
+    },
+    {
+      "id": "prop_tethered_tools",
+      "prompt": "collection of zero-g adapted hand tools on retractable lanyards attached to a belt clip — wrench, multitool, diagnostic probe, flashlight, all with carabiner clips and velcro patches, lanyards tangled from use, the toolbelt of a spacefaring maintenance worker"
+    },
+    {
+      "id": "prop_velcro_wall",
+      "prompt": "section of ship wall covered with velcro strips and magnetic patches for zero-g item storage, data tablet velcroed at reading angle, pen stuck to magnetic strip, photos held by clips, a mug with velcro base pad, the mundane infrastructure of living without gravity"
+    },
+    {
+      "id": "prop_compact_vending_machine",
+      "prompt": "Compact regulation vending machine mounted on ship wall, steel blue body with numbered selection buttons and small display screen, dispenses ration supplements and caffeine packets, coin/credit slot with wear marks, one button stuck, small dent from someone punching it, fluorescent backlight slightly flickering"
+    },
+    {
+      "id": "prop_compact_id_card",
+      "prompt": "Compact regulation identification card on lanyard, laminated plastic with photo, name, department, clearance level, barcode, and regulation serial number, steel blue stripe, slightly dog-eared corners from daily wear, the badge that defines your existence in a bureaucracy"
+    },
+    {
+      "id": "prop_compact_forms",
+      "prompt": "stack of regulation paper forms in triplicate on a clipboard, carbon copy sheets in white-yellow-pink, stamp boxes for approvals, spaces for signatures, header reading something like REQUISITION FORM 27-B, pen laying across them, the paper soul of Compact bureaucracy"
+    },
+    {
+      "id": "prop_fire_extinguisher",
+      "prompt": "ship fire extinguisher in wall-mounted bracket, red cylinder with charcoal grey fittings, inspection tag dangling from handle, discharge nozzle with safety pin, mount bracket shows scuff marks from being grabbed and re-mounted hundreds of times, universal safety equipment"
+    },
+    {
+      "id": "prop_first_aid_kit",
+      "prompt": "wall-mounted first aid kit with hinged cover open showing contents — bandages, antiseptic, painkillers, tourniquet, pressure bandage, scissors, all in labeled compartments, some compartments partially depleted, interior stained from previous use, red cross symbol on cover"
+    },
+    {
+      "id": "prop_water_recycler",
+      "prompt": "wall-mounted water recycler tap with filter status indicator showing amber (due for change), dispensing nozzle with drip stain beneath, regulation label with maintenance schedule, small digital readout showing water quality metrics, the thing that keeps you alive between ports"
+    },
+    {
+      "id": "prop_intercom_panel",
+      "prompt": "wall-mounted ship intercom unit with speaker grille, press-to-talk button worn smooth, numbered channel selector dial, crew directory card in slot beside it, cord for handset (handset missing — probably borrowed and not returned), the internal phone system of a spaceship"
+    },
+    {
+      "id": "prop_bulletin_board",
+      "prompt": "physical ship bulletin board with pinned notices — off-duty schedule, safety reminder, someone's birthday note, lost-and-found listing, maintenance request, crew photo from last port, all overlapping and some yellowed with age, thumbtack holes from previous postings, the community board of a metal village"
+    },
+    {
+      "id": "prop_compact_cleaning_supplies",
+      "prompt": "ship cleaning caddy with regulation supplies — spray bottle of degreaser, scrub brush, mop head for the wet-vac, disposable gloves, absorbent pads, all in a charcoal plastic bucket with department label, the glamourless reality of keeping a ship habitable"
+    },
+    {
+      "id": "prop_maintenance_log",
+      "prompt": "battered maintenance logbook in hardcover binder, pages showing handwritten inspection entries with dates and signatures, some entries highlighted in red for deficiencies, coffee ring stain on cover, pen clipped to spine, the paper record that keeps a ship running"
+    },
+    {
+      "id": "prop_keth_nutrient_dispenser",
+      "prompt": "organic Keth nutrient station — living amber bio-wall growth that secretes nutritional paste when pressed, warm to touch with bioluminescent feeding veins, collection trough grown from same material, slightly disturbing for non-Keth — like eating from a living wall, this is fast food for arthropods"
+    },
+    {
+      "id": "prop_veshan_weapon_oil_kit",
+      "prompt": "Veshan weapon maintenance kit in worn leather pouch — oiling cloth darkened with years of use, natural whetstone with deep groove from blade sharpening, polishing compound in forged bronze tin, small vial of rust preventative, the daily ritual of every Veshan warrior"
+    },
+    {
+      "id": "prop_veshan_ancestor_shrine",
+      "prompt": "small personal Veshan ancestor shrine on a shelf — carved dark stone tablet with house seal, small forged bronze dish for offerings, candle-equivalent heat element, honor token on chain draped over the tablet, worn from daily reverence, the spiritual center of a warrior's quarters"
+    },
+    {
+      "id": "prop_orryn_crystal_rack",
+      "prompt": "Orryn personal data crystal rack mounted on curved wall — chrome frame with individual slots for faceted teal crystals, some slots occupied with glowing crystals, some empty, the Orryn equivalent of a bookshelf or filing cabinet, each crystal holds a lifetime of trade data"
+    },
+    {
+      "id": "prop_reach_hidden_stash",
+      "prompt": "Sable Reach hidden stash behind a loose wall panel — small cavity in ship hull containing personal valuables, a few stolen credit chips, a small weapon, a photo, a good luck charm, crude lock mechanism on the panel, everyone in the Reach has one of these and everyone knows"
+    },
+    {
+      "id": "prop_reach_improvised_still",
+      "prompt": "cobbled together distillation apparatus for making alcohol — mismatched containers connected by stolen tubing, heat source from repurposed engine component, collection bottle at the end, the chemistry set of desperate recreation, probably not safe but definitely effective"
+    },
+    {
+      "id": "prop_broken_light_fixture",
+      "prompt": "damaged overhead light fixture hanging at an angle from exposed wiring, one tube of a dual fluorescent panel dead, the other flickering intermittently, mounting bracket partially broken, maintenance request tag tied to it but clearly ignored for weeks, the universal sign of deferred maintenance"
+    },
+    {
+      "id": "prop_hull_patch_closeup",
+      "prompt": "close-up of ship hull repair patch — darker metal square welded over a micro-meteor impact, weld bead visible around edges showing hand-welding technique, original paint stops at patch edge, slight discoloration around impact site from heat, the scar tissue of a working vessel"
+    },
+
+    {
+      "id": "REJECT20_luxury_item",
+      "prompt": "sleek chrome and glass designer coffee machine with blue LED accent lighting, touchscreen interface, polished to mirror finish, looks like it belongs in a luxury kitchen showroom"
+    },
+    {
+      "id": "REJECT20_modern_gadget",
+      "prompt": "pristine modern smartphone-like device with edge-to-edge glass screen, thin aluminum body, wireless charging pad, contemporary Apple aesthetic, too clean and too now"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 140000
+  }
+}

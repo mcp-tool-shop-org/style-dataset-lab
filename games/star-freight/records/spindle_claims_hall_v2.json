@@ -1,0 +1,38 @@
+{
+  "id": "spindle_claims_hall_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:29:03.728Z",
+  "asset_path": "outputs/candidates/spindle_claims_hall_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1519750
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, bureaucratic claims processing hall in a narrow space station — rows of identical desks under aggressively bright overhead lighting, document stamps and data terminals on every surface, filing systems and regulation manuals stacked precisely, queue dividers creating orderly lines, the walls covered in compliance notices and administrative codes, brighter and more uncomfortable than any other station interior, institutional power through paperwork",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270535,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8063,
+    "gpu_model": "RTX 5080",
+    "batch_index": 35
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

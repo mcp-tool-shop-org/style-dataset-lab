@@ -15,10 +15,14 @@
 import { readFileSync, writeFileSync, readdirSync, renameSync, existsSync, mkdirSync } from 'fs';
 import { join, basename } from 'path';
 
-const RECORDS_DIR = join(process.cwd(), 'records');
-const CANDIDATES_DIR = join(process.cwd(), 'outputs', 'candidates');
-const APPROVED_DIR = join(process.cwd(), 'outputs', 'approved');
-const REJECTED_DIR = join(process.cwd(), 'outputs', 'rejected');
+const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+
+const RECORDS_DIR = join(GAME_ROOT, 'records');
+const CANDIDATES_DIR = join(GAME_ROOT, 'outputs', 'candidates');
+const APPROVED_DIR = join(GAME_ROOT, 'outputs', 'approved');
+const REJECTED_DIR = join(GAME_ROOT, 'outputs', 'rejected');
 const DRY_RUN = process.argv.includes('--dry-run');
 
 // Ensure output dirs exist

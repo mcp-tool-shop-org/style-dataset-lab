@@ -1,0 +1,294 @@
+{
+  "id": "c_officer_veteran_m_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-12T21:49:45.840Z",
+  "asset_path": "outputs/borderline/c_officer_veteran_m_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1221478
+  },
+  "provenance": {
+    "workflow_id": "wave1-gritty-space",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi spacefaring crew, visible material texture and surface grain, visible brushstrokes, full body visible, front-facing relaxed standing pose, isolated on plain dark grey background, human male senior officer in his 60s with deep creases around his mouth and a white scar along his jaw from a decompression incident, wearing a steel-blue uniform jacket that has been tailored to fit him over the decades with two silver rank tabs and a ribbon bar that tells a long story, the jacket cuffs are slightly frayed, leather belt with a worn sidearm holster that has a visible mold of the weapon from years of carrying it",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, heroic pose, dynamic action pose, multiple characters, busy background, environmental background, landscape, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero",
+    "seed": 11012,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8072,
+    "gpu_model": "RTX 5080",
+    "batch_index": 12
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-04-12T22:01:16.645Z",
+    "explanation": "Veteran officer, steel-blue jacket, ribbon bar. Half-body crop — legs cut at mid-thigh. Good costume but fails RND-004 full body.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.9,
+      "material_fidelity": 0.85,
+      "faction_read": 0.9,
+      "wear_level": 0.85,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.9,
+      "composition": 0.5
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.502Z",
+    "bound_by": "canon-bind-v1",
+    "faction": "compact",
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Painterly rendering achieved (70%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets single upper-left warm lighting with soft ao shadows (50%)"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Palette is muted and dusty — no bright saturated colors"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "partial",
+        "score": 0.5,
+        "rationale": "Partially meets full body front-facing on plain background, 70-85% fill (50%)"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.7,
+        "rationale": "Silhouette readable at gameplay scale (70%)"
+      },
+      {
+        "rule_id": "MAT-001",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Surfaces read as Pressed (machine-stamped, regulation-issued) (88%)",
+        "faction": "compact",
+        "faction_context": "Pressed (machine-stamped, regulation-issued)"
+      },
+      {
+        "rule_id": "MAT-002",
+        "category": "material",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Wear level appropriate — Maintained but impersonal — kept to standard",
+        "faction": "compact",
+        "faction_context": "Maintained but impersonal — kept to standard"
+      },
+      {
+        "rule_id": "SHP-001",
+        "category": "shape",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Shape language compliant — Rectangles, straight edges, 90° corners",
+        "faction": "compact",
+        "faction_context": "Rectangles, straight edges, 90° corners"
+      },
+      {
+        "rule_id": "COL-001",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Faction palette present and dominant (90%)",
+        "faction": "compact",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-002",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Color ratios read as ~60/30/10",
+        "faction": "compact",
+        "faction_context": "Faction primary should dominate at ~60%"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+      },
+      {
+        "rule_id": "CLO-001",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Layer logic follows base → functional → identity → accessory",
+        "faction": "compact",
+        "faction_context": "base → functional → identity → accessory"
+      },
+      {
+        "rule_id": "CLO-002",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.88,
+        "rationale": "Construction matches faction building method",
+        "faction": "compact",
+        "faction_context": "Machine-made, identical cuts, zero personalization"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+      }
+    ],
+    "assertion_count": 14,
+    "pass_count": 12,
+    "fail_count": 0,
+    "partial_count": 2
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Painterly rendering achieved (70%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets single upper-left warm lighting with soft ao shadows (50%)"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Palette is muted and dusty — no bright saturated colors"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "partial",
+      "score": 0.5,
+      "rationale": "Partially meets full body front-facing on plain background, 70-85% fill (50%)"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.7,
+      "rationale": "Silhouette readable at gameplay scale (70%)"
+    },
+    {
+      "rule_id": "MAT-001",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Surfaces read as Pressed (machine-stamped, regulation-issued) (88%)",
+      "faction": "compact",
+      "faction_context": "Pressed (machine-stamped, regulation-issued)"
+    },
+    {
+      "rule_id": "MAT-002",
+      "category": "material",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Wear level appropriate — Maintained but impersonal — kept to standard",
+      "faction": "compact",
+      "faction_context": "Maintained but impersonal — kept to standard"
+    },
+    {
+      "rule_id": "SHP-001",
+      "category": "shape",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Shape language compliant — Rectangles, straight edges, 90° corners",
+      "faction": "compact",
+      "faction_context": "Rectangles, straight edges, 90° corners"
+    },
+    {
+      "rule_id": "COL-001",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Faction palette present and dominant (90%)",
+      "faction": "compact",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-002",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Color ratios read as ~60/30/10",
+      "faction": "compact",
+      "faction_context": "Faction primary should dominate at ~60%"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Colors muted and lived-in — no neon or bright saturated tones"
+    },
+    {
+      "rule_id": "CLO-001",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Layer logic follows base → functional → identity → accessory",
+      "faction": "compact",
+      "faction_context": "base → functional → identity → accessory"
+    },
+    {
+      "rule_id": "CLO-002",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.88,
+      "rationale": "Construction matches faction building method",
+      "faction": "compact",
+      "faction_context": "Machine-made, identical cuts, zero personalization"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Not generic sci-fi — reads as faction-specific and lived-in"
+    }
+  ],
+  "canon_explanation": "Borderline: 12 pass, 0 fail out of 14 rules. Veteran officer, steel-blue jacket, ribbon bar. Half-body crop — legs cut at mid-thigh. Good costume but fails RND-004 full body."
+}

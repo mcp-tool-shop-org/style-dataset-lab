@@ -1,0 +1,98 @@
+{
+  "lane": "wave13-stations-ports",
+  "description": "Wave 13: Space stations, ports, docking bays, markets, cantinas, customs. Sunless Seas atmosphere meets Mos Eisley functionality. Dense, culturally layered, not tourist-pretty.",
+  "style_prefix": "oil painting, semi-realistic painterly environment concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi space station interior, visible surface texture and lived-in detail, visible brushstrokes, wide establishing view, no characters present",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, luxury, Star Trek promenade, people, characters, figures, text, watermark, blurry, low quality, exterior space view",
+
+  "subjects": [
+    {
+      "id": "stn_compact_docking_bay",
+      "prompt": "large regulated docking bay with numbered berths and painted guide lines on deck, steel blue walls with safety signage, overhead gantry cranes for cargo transfer, docking clamps and fuel umbilicals in standardized positions, cargo inspection area with scanning equipment, fluorescent lighting banks, floor worn smooth from heavy traffic, organized and impersonal like a government shipping terminal"
+    },
+    {
+      "id": "stn_mixed_docking_bay",
+      "prompt": "chaotic multi-faction docking bay with ships from different civilizations crammed into berths, mixed signage in multiple scripts, fuel spills on deck, cargo containers from various factions stacked haphazardly, repair teams working on multiple ships, overhead lights some working some not, bustling crossroads of space commerce, slightly dangerous feeling"
+    },
+    {
+      "id": "stn_orryn_trade_exchange",
+      "prompt": "curved elliptical trading hall with holographic price boards and commodity displays, teal and chrome fixtures, modular trading booths that can be reconfigured, data crystal transaction terminals, pearl-white arched ceiling, ambient lighting, designed for tentacle-operated terminals at low height, organized but busy, stock exchange meets bazaar"
+    },
+    {
+      "id": "stn_reach_black_market",
+      "prompt": "hidden underground market in converted maintenance tunnels, dim lighting from stolen fixtures, makeshift stalls built from cargo crates and hull plating, goods displayed on tarps on the floor, improvised power taps running cables everywhere, graffiti territory markers on walls, narrow passages between stalls, could be raided any moment"
+    },
+    {
+      "id": "stn_mixed_cantina",
+      "prompt": "multi-species dive bar on a space station, dim amber lighting, scratched metal bar counter with mismatched stools, bottles from different civilizations on shelves, booth seating with worn upholstery, faded neon sign, sticky floor, dartboard equivalent on wall, the kind of place where nobody asks questions and everyone is armed"
+    },
+    {
+      "id": "stn_compact_rec_room",
+      "prompt": "regulation crew recreation room with bolted-down tables, steel blue walls with morale posters, vending machines for drinks and snacks, small viewscreen showing news feed, board game left mid-play on one table, coffee maker on counter, fluorescent lighting, attempt at comfort within regulation parameters, break room not bar"
+    },
+    {
+      "id": "stn_reach_fight_pit",
+      "prompt": "crude arena in station underbelly with metal cage walls, rust and blood stains on floor, improvised bleacher seating from stacked crates, overhead industrial lights casting harsh shadows, betting board scratched into wall, weapon rack with rules — blunt only, dark and aggressive atmosphere, illegal entertainment"
+    },
+    {
+      "id": "stn_compact_customs",
+      "prompt": "strict customs checkpoint with scanning arches and inspection lanes, steel blue regulation walls with procedure signage, document check windows with armored glass, cargo scanning equipment, queue barriers, security camera mounts, stern and bureaucratic, immigration office in space, waiting area with uncomfortable metal benches"
+    },
+    {
+      "id": "stn_compact_drydock",
+      "prompt": "large ship repair facility with gantry scaffolding around a vessel in maintenance, steel blue walls with safety markings, welding sparks implied by warm light spots, tool stations and parts bins along walls, diagnostic displays showing ship systems, heavy-duty equipment and lifting cranes, industrial and functional, shipyard atmosphere"
+    },
+    {
+      "id": "stn_reach_salvage_lot",
+      "prompt": "open salvage yard with ship parts and wreckage sorted into rough piles, cutting equipment and welding stations, stripped hull sections leaning against walls, component bins labeled in crude handwriting, overhead crane with rust, parts from multiple factions mixed together, organized chaos of a used car lot but for spaceships"
+    },
+    {
+      "id": "stn_compact_hab_block",
+      "prompt": "regulation habitation corridor with numbered apartment doors, steel blue walls with floor numbering, overhead fluorescent strips, fire suppression equipment at intervals, community notice board with posted regulations, small window at corridor end showing stars, identical doors stretching into distance, submarine crew quarters scaled up"
+    },
+    {
+      "id": "stn_keth_hive_quarter",
+      "prompt": "organic living space with curved amber bio-walls forming interconnected chambers, bioluminescent lighting in warm veins, growth-niches for rest and storage, communal areas with multiple levels connected by organic ramps, moisture and warmth in the air, pheromone circulation vents, alien and alive architecture, honeycomb-like structure"
+    },
+    {
+      "id": "stn_reach_shantytown",
+      "prompt": "improvised habitation in repurposed cargo containers and hull sections, narrow passages between makeshift homes, stolen power running through exposed cables, laundry strung between containers, personal touches — painted doors, small gardens in containers, community in the margins of a station, resourceful poverty"
+    },
+    {
+      "id": "stn_compact_hospital",
+      "prompt": "station medical facility with examination rooms visible through glass partitions, white and charcoal walls with medical markings, waiting area with uncomfortable chairs, triage station with bio-monitors, supply cabinets with inventory labels, overhead surgical lighting, sterile but heavily used, busy clinic not luxury hospital"
+    },
+    {
+      "id": "stn_mixed_fuel_depot",
+      "prompt": "fuel transfer station with heavy pipes and storage tanks, warning labels for hazardous materials, control booth with monitoring equipment, fuel umbilical connections for docked ships, safety barriers and blast shields, industrial grime from fuel residue, functional and dangerous, gas station of space"
+    },
+
+    {
+      "id": "REJECT13_clean_promenade",
+      "prompt": "pristine space station shopping promenade with gleaming white floors, luxury brand storefronts, holographic advertisements, fountain in center, well-dressed people strolling, feels like a high-end mall in space"
+    },
+    {
+      "id": "REJECT13_resort_station",
+      "prompt": "luxury resort space station with infinity pool visible through transparent hull, tropical plants in pressurized gardens, spa and wellness center, elegant architecture with curved white walls and ambient mood lighting"
+    },
+    {
+      "id": "REJECT13_anime_mall",
+      "prompt": "colorful space station interior with bright neon signs in Japanese, cute mascot decorations, oversized food displays, clean shiny floors, anime aesthetic with cel-shaded appearance"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 70000
+  }
+}

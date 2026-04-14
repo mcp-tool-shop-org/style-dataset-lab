@@ -1,0 +1,110 @@
+{
+  "lane": "wave12-ship-interiors",
+  "description": "Wave 12: Ship interiors — bridges, engine rooms, crew quarters, cargo holds, mess halls, medical bays. The Nostromo standard: these are workplaces and living spaces, not museums.",
+  "style_prefix": "oil painting, semi-realistic painterly interior concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional sci-fi ship interior, visible surface texture and lived-in detail, visible brushstrokes, wide establishing view of room interior, no characters present",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine new, glamorous, luxury, Star Trek bridge, holodeck, people, characters, figures, text, watermark, blurry, low quality, exterior view, space, stars visible",
+
+  "subjects": [
+    {
+      "id": "int_compact_bridge",
+      "prompt": "military ship bridge with regulation layout, steel blue and charcoal grey walls, fluorescent strip lighting, rows of identical duty stations with flat-panel displays, captain's chair centered and slightly elevated, safety placards and procedure checklists posted on walls, coffee mug stain rings on console edge, comm headsets hanging from hooks, impersonal and organized like a government office in space"
+    },
+    {
+      "id": "int_compact_cargo_hold",
+      "prompt": "regulation cargo bay with organized metal shelving and secured container racks, steel blue walls with yellow safety stripes on floor, overhead fluorescent banks, cargo manifest screens mounted near door, magnetic locks on containers, pallet jack parked against wall, everything labeled and catalogued, slightly scuffed floor from years of loading"
+    },
+    {
+      "id": "int_compact_engine_room",
+      "prompt": "ship engine compartment with exposed reactor housing behind safety glass, charcoal grey walls with warning labels and radiation markers, maintenance catwalks with metal grating, tool station with regulation kit mounted on wall, diagnostic panels with status lights, the hum of machinery implied by slight vibration blur, pipes and conduits neatly bundled and labeled, warm from engine heat"
+    },
+    {
+      "id": "int_compact_crew_quarters",
+      "prompt": "shared crew bunkroom with four regulation bunks stacked in pairs, steel blue privacy curtains, personal locker beneath each bunk, small reading light per bunk, photos and small personal items pinned to walls near pillows, one bunk unmade showing lived-in use, shared sink and mirror, cramped but orderly, submarine-like"
+    },
+    {
+      "id": "int_compact_mess_hall",
+      "prompt": "ship mess hall with bolted-down metal tables and benches, steel blue walls with department notices posted, serving window to galley visible, food trays and cups in drying rack, vending machine for drinks, overhead fluorescent lighting slightly flickering, salt shaker and condiment bottles on tables, breakfast remnants not yet cleared from one table, communal and utilitarian"
+    },
+    {
+      "id": "int_compact_medical_bay",
+      "prompt": "small ship medical bay with two examination beds and equipment monitors, white and charcoal walls with medical cross symbol, locked pharmaceutical cabinet, overhead surgical light, washable floor, trauma kit mounted on wall, bio-monitor screens showing vital readouts, sterile but showing wear around bed edges and scuff marks on floor, cramped clinic not luxury hospital"
+    },
+    {
+      "id": "int_compact_corridor",
+      "prompt": "narrow ship corridor with steel blue walls and charcoal grey floor, overhead fluorescent strips, numbered doorways with department labels, fire extinguisher and emergency kit mounted on wall, handrails along both sides for zero-g situations, cable conduits running along ceiling, scuff marks on walls at shoulder height from years of crew passing through"
+    },
+    {
+      "id": "int_veshan_bridge",
+      "prompt": "angular warship command center with heavy dark bronze wall panels and crimson accent lighting, weapon control stations with heavy mechanical switches, central tactical display table, commander's throne-like seat with house crest carved into backrest, weapon rack mounted on wall within arm's reach, trophy skulls or honor tokens displayed in alcove, spartan and martial, dim torchlike amber lighting"
+    },
+    {
+      "id": "int_veshan_armory",
+      "prompt": "ship weapon storage room with walls lined with forged blades and heavy weapons on display racks, dark bronze metal walls with house crests etched at intervals, weapon maintenance bench with oiling cloth and whetstone, each weapon slot labeled with owner's name, floor worn smooth from training footwork, dim amber lighting from overhead, smells of metal oil and leather"
+    },
+    {
+      "id": "int_veshan_quarters",
+      "prompt": "spartan warrior sleeping quarters with simple cot and weapon rack beside it, dark bronze walls with house banner hanging, small shrine or ancestor tablet on shelf, armor stand holding chest plate and pauldrons, no decoration except martial items, dim amber lighting, stone-like floor, the bed is functional — sleeping is just preparation for the next fight"
+    },
+    {
+      "id": "int_keth_growth_chamber",
+      "prompt": "organic ship interior with curved amber bio-walls that pulse with bioluminescent veins, growth vats containing cultivated equipment or materials, warm amber glow from living walls, no hard angles — everything curves and flows, moisture on surfaces, tendril-like fixtures holding tools, translucent membrane doorways, alien and alive feeling, uncomfortable for non-Keth"
+    },
+    {
+      "id": "int_keth_corridor",
+      "prompt": "curved organic ship passageway with amber bio-luminescent walls, floor that gives slightly underfoot like living tissue, no visible seams or joints — everything grown as one piece, pheromone circulation vents along ceiling, guide-lights in vein patterns along floor, warm humid atmosphere implied by slight moisture sheen, segmented archway transitions between sections"
+    },
+    {
+      "id": "int_orryn_trading_floor",
+      "prompt": "curved elliptical room with holographic trade displays floating above chrome-and-teal consoles, modular furniture that clips and reconfigures, data crystal racks along curved walls, pearl-white ceiling panels with ambient teal lighting, multiple workstations designed for tentacle operation — low surfaces with many access points, clean but used, information hub"
+    },
+    {
+      "id": "int_orryn_pod_nest",
+      "prompt": "Orryn sleeping quarters with individual curved pods arranged in cluster, teal and pearl interior with soft ambient lighting, each pod has data crystal rack and personal holographic display, modular walls that can slide to reconfigure space, no beds — pods are filled with temperature-controlled fluid or gel, chrome fixtures, alien and practical"
+    },
+    {
+      "id": "int_reach_bridge_cobbled",
+      "prompt": "jury-rigged ship bridge assembled from stolen parts, mismatched consoles — one Compact regulation panel next to a Veshan heavy-switch board, exposed wiring hanging from ceiling, rust and ash colored walls, graffiti and crew marks scratched into surfaces, one chair is a salvaged Compact officer's seat with original upholstery torn, dim flickering overhead light, functional chaos"
+    },
+    {
+      "id": "int_reach_cargo_hold",
+      "prompt": "chaotic ship cargo bay with stolen goods stacked haphazardly, mismatched containers from different factions, some with markings gouged off, hidden compartment panels visible where wall panels don't quite align, dim lighting with shadows, crates used as furniture, improvised weapon rack on wall, contraband and legitimate goods mixed together"
+    },
+    {
+      "id": "int_reach_engine_room",
+      "prompt": "jury-rigged engine compartment with mismatched reactor components bolted together, wiring held in place with tape and cable ties, warning labels in multiple faction languages, improvised cooling system made from salvaged parts, tools scattered on every surface, constant hum and slight vibration, one wrong touch could blow the whole ship, miracle it runs at all"
+    },
+    {
+      "id": "int_reach_crew_hammocks",
+      "prompt": "cramped sleeping area with hammocks strung between exposed hull ribs, personal belongings in nets and bags hung from hooks, mismatched blankets and stolen regulation pillows, weapon kept within arm's reach of each hammock, dim lighting from a single salvaged lamp, scratched tally marks on wall counting days, improvised curtains from cargo tarps"
+    },
+
+    {
+      "id": "REJECT12_star_trek_bridge",
+      "prompt": "sleek futuristic bridge with smooth curved consoles and holographic displays everywhere, bright clean white and blue lighting, large panoramic viewscreen showing stars, pristine leather captain's chair, everything gleaming and new, Star Trek inspired"
+    },
+    {
+      "id": "REJECT12_luxury_cabin",
+      "prompt": "spacious luxury ship cabin with king-size bed and silk sheets, panoramic viewport showing nebula, polished wood furniture and chandelier, champagne on bedside table, plush carpet, five-star hotel in space"
+    },
+    {
+      "id": "REJECT12_holodeck",
+      "prompt": "empty room with glowing grid lines on walls floor and ceiling, yellow-orange grid pattern, clean geometric space that can simulate any environment, holographic technology"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 60000
+  }
+}

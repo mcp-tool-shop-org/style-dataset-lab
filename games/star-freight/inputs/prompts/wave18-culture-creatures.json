@@ -1,0 +1,112 @@
+{
+  "lane": "wave18-culture-creatures",
+  "description": "Wave 18: Food, cultural artifacts, creatures, personal effects. The small stuff that builds atmosphere — Kaylee's strawberries, the ship cat, Veshan honor tokens, Keth hive-memory crystals. Worldbuilding depth.",
+  "style_prefix": "oil painting, semi-realistic painterly still life concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi, visible material texture and surface detail, visible brushstrokes, centered on plain dark grey background",
+  "negative": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, anime, cartoon, bright saturated colors, clean pristine new, glamorous, people, characters, hands, text, watermark, blurry, low quality",
+
+  "subjects": [
+    {
+      "id": "food_compact_ration",
+      "prompt": "Compact military ration pack torn open showing contents — sealed foil entree pouch, electrolyte powder, protein bar, utensil pack, heating element, all in regulation packaging with nutrition labels and lot numbers, steel blue accent stripe, efficient and joyless, space MRE"
+    },
+    {
+      "id": "food_compact_mess_tray",
+      "prompt": "ship mess hall meal tray with compartmented metal plate, reconstituted protein portion, starch side, vitamin gel, regulation mug of synthetic coffee, utilitarian food presentation — nourishment not cuisine, the fork is bent from previous users"
+    },
+    {
+      "id": "food_veshan_feast_bowl",
+      "prompt": "Veshan dining arrangement on heavy forged metal plate — raw or barely cooked meat cuts, whole roasted creature, dark grain bread torn not sliced, ceremonial drinking bowl of dark bronze with crimson lacquer interior, warrior's meal — protein heavy and unpretentious"
+    },
+    {
+      "id": "food_cantina_drinks",
+      "prompt": "bar shelf with bottles from different civilizations, Compact regulation flask (rectangular steel blue), Veshan ceramic jug (heavy forged bronze), Orryn translucent teal vial, mismatched glasses, some dusty, some nearly empty, the drinks of a multi-species spacefaring culture collected by a bartender who doesn't judge"
+    },
+    {
+      "id": "food_reach_scavenge_meal",
+      "prompt": "Sable Reach meal assembled from whatever was available — stolen ration components mixed with market finds, eaten from a repurposed Compact helmet used as bowl, mismatched utensils, drink in a salvaged Orryn container, creative poverty cuisine"
+    },
+
+    {
+      "id": "artifact_veshan_honor_chain",
+      "prompt": "Veshan honor token chain with forged bronze links, each link representing a significant combat or debt paid, house seal pendant at center, smaller tokens for kills and victories, worn smooth from years of handling, the warrior's autobiography in metal"
+    },
+    {
+      "id": "artifact_veshan_death_mask",
+      "prompt": "Veshan funeral mask in hammered dark bronze, stylized reptilian face with closed eyes and peaceful expression, house crest on forehead, placed on fallen warriors before burial, this one shows age and care — passed down through generations, solemn and heavy"
+    },
+    {
+      "id": "artifact_keth_hive_crystal",
+      "prompt": "Keth hive-memory crystal in warm amber, ovoid shape with faceted surfaces, inner structure shows organic data patterns like frozen neural networks, mounted on a grown-coral stand, stores collective memories of a colony, bioluminescent veins pulse faintly, alien hard drive"
+    },
+    {
+      "id": "artifact_keth_seasonal_ring",
+      "prompt": "Keth elder's antenna ring marking seasonal cycle, grown amber-coral ring with bio-pigment bands showing ages of growth, each band a different seasonal color, living jewelry that records biological time, warm and organic, deeply personal to Keth"
+    },
+    {
+      "id": "artifact_compact_service_medals",
+      "prompt": "set of Compact military service decorations in regulation case — stamped metal ribbons and pins, standard issue across all departments, long service medal, campaign bars, merit cross, everything identical and impersonal, bureaucratic valor recognized with bureaucratic tokens"
+    },
+    {
+      "id": "artifact_compact_dog_tags_personal",
+      "prompt": "Compact identification tags on regulation chain laying on a bunk, next to a worn photo of family, a good luck charm (small stone), and a pocket-sized regulation manual with dog-eared pages — the personal effects that make regulation life bearable"
+    },
+    {
+      "id": "artifact_orryn_trade_contract",
+      "prompt": "Orryn trade contract marker — faceted teal crystal with embedded holographic text, chrome mounting clip, data verification seal in pearl white, the Orryn version of a notarized document, beautiful and precise, carries the weight of radical honesty culture"
+    },
+    {
+      "id": "artifact_reach_trophy_wall",
+      "prompt": "Sable Reach captain's trophy collection mounted on a bulkhead — gouged-out faction badges from defeated enemies, a Compact officer's sidearm with serial number filed off, a Veshan house seal taken in combat, dog tags on hooks, crude paint tallying raids, reputation displayed as stolen goods"
+    },
+
+    {
+      "id": "creature_ship_cat",
+      "prompt": "scruffy ship cat lounging on warm engine housing, half-tabby with notched ear from some past adventure, slightly too thin but alert, rats are the real enemy, this cat has lived in low gravity and industrial spaces its whole life, working animal not pet, the Nostromo had one too"
+    },
+    {
+      "id": "creature_station_vermin",
+      "prompt": "station pest creature — small multi-legged scavenger adapted to zero-gravity life, grey-brown chitin body with magnetic foot pads for clinging to hull surfaces, cluster of simple eyes, feeds on organic waste and insulation, the cockroach of space stations, inevitable and unwelcome"
+    },
+    {
+      "id": "creature_keth_symbiote",
+      "prompt": "small Keth biological companion organism, amber-translucent body with visible internal organs, multiple small limbs for clinging to Keth exoskeleton, bioluminescent nodules, serves a useful purpose — cleaning, temperature regulation, or chemical sensing, symbiotic not parasitic, alien but functional"
+    },
+    {
+      "id": "creature_veshan_war_beast",
+      "prompt": "Veshan guard creature — heavy reptilian quadruped with thick scaled hide, dark green-brown coloring, short powerful legs, wide jaw with visible teeth, kept as status symbol and actual defense, chained to a heavy forged post, not cute — functional and dangerous, alien guard dog"
+    },
+    {
+      "id": "creature_cargo_mite",
+      "prompt": "magnified view of hull barnacle organism — small crustacean-like creature that attaches to ship hulls near warm exhaust ports, clusters forming mineral deposits that must be scraped off in drydock, universal pest of spacefaring vessels, the barnacle of starships"
+    },
+
+    {
+      "id": "REJECT18_cute_pet",
+      "prompt": "adorable fluffy alien pet with big sparkly eyes and pastel colors, cute round body, friendly expression, kawaii aesthetic, looks like a children's toy or anime mascot, too cute for gritty space"
+    },
+    {
+      "id": "REJECT18_fantasy_feast",
+      "prompt": "lavish medieval fantasy banquet table with golden roast turkey, crystal goblets of wine, ornate silver platters, candelabra, richly decorated tablecloth, feast for a king not a crew"
+    },
+    {
+      "id": "REJECT18_gem_artifact",
+      "prompt": "glowing magical gemstone in ornate golden setting with mystical runes, pulsing with inner power, fantasy RPG artifact, belongs in a wizard's staff not a cargo hold"
+    }
+  ],
+
+  "variations": [
+    { "id": "v1", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "note": "ClassipeintXL at 1.0" },
+    { "id": "v2", "loras": [{"name": "classipeintxl_v21.safetensors", "weight": 1.0}], "seed_offset": 500, "note": "Different seed" }
+  ],
+
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 120000
+  }
+}

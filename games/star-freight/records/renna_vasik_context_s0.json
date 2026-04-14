@@ -1,0 +1,59 @@
+{
+  "id": "renna_vasik_context_s0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:06:56.778Z",
+  "asset_path": "outputs/candidates/renna_vasik_context_s0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1528407
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, woman with warm brown skin in dark canvas vest and olive thermal, dark hair pulled back, grease-stained hands deep inside an open engine access panel, diagnostic scanner in one hand, wrenches laid out on a mag-strip beside her, tool belt loaded, reinforced knee pads visible as she kneels, plasma burn scar on left forearm, dim engine room lighting with amber instrument glow, practical concentration on her face, a mechanic who trusts her hands more than readouts",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, glamorous, clean, decorative, posed, bright lighting, spacious room, military, clean hands",
+    "seed": 27018,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8094,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "renna_vasik",
+    "subject_type": "named_character",
+    "faction": "reach",
+    "role": "crew",
+    "view_type": "context",
+    "shot_type": "working",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "Renna working on ship systems — proves identity in her natural element",
+    "variant_intent": null,
+    "variant_constraint": null
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

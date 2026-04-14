@@ -10,6 +10,8 @@ import { join } from "node:path";
 
 const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
 
 const PAINTERLY_PROMPT = [
   "oil painting, visible brushstrokes, painterly concept art,",
@@ -103,7 +105,7 @@ async function download(filename, subfolder) {
 }
 
 async function main() {
-  const outDir = join(REPO_ROOT, "outputs/painterly-test");
+  const outDir = join(GAME_ROOT, "outputs/painterly-test");
   await mkdir(outDir, { recursive: true });
 
   // Pick two test images — one character, one environment
@@ -116,7 +118,7 @@ async function main() {
   const loraWeight = 1.0;  // Full LoRA weight for stronger effect
 
   for (const testFile of testFiles) {
-    const srcPath = join(REPO_ROOT, testFile);
+    const srcPath = join(GAME_ROOT, testFile);
     const fname = testFile.split("/").pop().replace(".png", "");
 
     console.log(`\nTesting: ${fname}`);

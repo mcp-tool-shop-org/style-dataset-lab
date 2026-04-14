@@ -15,7 +15,11 @@
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
-const RECORDS_DIR = join(process.cwd(), 'records');
+const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+
+const RECORDS_DIR = join(GAME_ROOT, 'records');
 const DRY_RUN = process.argv.includes('--dry-run');
 const STATS_ONLY = process.argv.includes('--stats');
 

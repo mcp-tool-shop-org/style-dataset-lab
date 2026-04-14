@@ -20,7 +20,9 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
 const REPO_ROOT = join(__dirname, '..');
-const RECORDS_DIR = join(REPO_ROOT, 'records');
+const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
+const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+const RECORDS_DIR = join(GAME_ROOT, 'records');
 const DRY_RUN = process.argv.includes('--dry-run');
 
 async function fileExists(p) {
@@ -49,7 +51,7 @@ async function migrateRecord(filePath) {
     // Still check for stale asset_path on standard records
     if (rec.asset_path && rec.asset_path.includes('outputs/candidates/')) {
       const approvedPath = rec.asset_path.replace('outputs/candidates/', 'outputs/approved/');
-      const fullApproved = join(REPO_ROOT, approvedPath);
+      const fullApproved = join(GAME_ROOT, approvedPath);
       if (await fileExists(fullApproved)) {
         rec.asset_path = approvedPath;
         if (!DRY_RUN) await writeFile(filePath, JSON.stringify(rec, null, 2) + '\n');
@@ -87,7 +89,7 @@ async function migrateRecord(filePath) {
   // Fix asset_path if image moved to approved/
   if (rec.asset_path && rec.asset_path.includes('outputs/candidates/')) {
     const approvedPath = rec.asset_path.replace('outputs/candidates/', 'outputs/approved/');
-    const fullApproved = join(REPO_ROOT, approvedPath);
+    const fullApproved = join(GAME_ROOT, approvedPath);
     if (await fileExists(fullApproved)) {
       rec.asset_path = approvedPath;
       changes.push(`asset_path: candidates/ → approved/`);

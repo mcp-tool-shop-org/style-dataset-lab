@@ -1,0 +1,171 @@
+{
+  "id": "REJECT11_anime_ship_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T02:53:13.623Z",
+  "asset_path": "outputs/rejected/REJECT11_anime_ship_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1497297
+  },
+  "provenance": {
+    "workflow_id": "wave11-ship-exteriors",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional sci-fi spacecraft, visible hull texture and surface detail, visible brushstrokes, three-quarter view showing full ship profile, isolated on plain dark grey-black background with subtle star field, colorful spacecraft with exaggerated proportions, bright blue and red paint with racing stripes, anime-style cockpit with oversized canopy, cel-shaded appearance, looks like a toy or action figure vehicle",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, bright saturated colors, clean pristine new, glamorous, Star Wars, Star Trek, luxury yacht, multiple ships, busy background, text, watermark, blurry, low quality, video game screenshot, miniature model",
+    "seed": 50038,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7373,
+    "gpu_model": "RTX 5080",
+    "batch_index": 38
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "bulk_curate_v2",
+    "reviewed_at": "2026-04-13T03:31:14.655Z",
+    "explanation": "Colorful exaggerated spacecraft with anime proportions and racing stripes. Wrong aesthetic entirely — cel-shaded toy, not working vessel.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.6,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.2,
+      "faction_read": 0,
+      "wear_level": 0,
+      "style_consistency": 0.1,
+      "clothing_logic": 0.2,
+      "composition": 0.6
+    },
+    "failure_modes": [
+      "anime_style",
+      "wrong_palette"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-04-13T04:27:42.745Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "RND-001",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Not painterly — reads as photorealistic/3D/anime (10%)"
+      },
+      {
+        "rule_id": "RND-002",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.6,
+        "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+      },
+      {
+        "rule_id": "RND-003",
+        "category": "rendering",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Colors too bright or saturated — not muted/dusty"
+      },
+      {
+        "rule_id": "RND-004",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.6,
+        "rationale": "Full body, front-facing, plain background, correct fill"
+      },
+      {
+        "rule_id": "RND-005",
+        "category": "rendering",
+        "verdict": "pass",
+        "score": 0.6,
+        "rationale": "Silhouette readable at gameplay scale (60%)"
+      },
+      {
+        "rule_id": "COL-003",
+        "category": "color",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Bright saturated colors present — violates muted/dusty rule"
+      },
+      {
+        "rule_id": "CLO-003",
+        "category": "clothing",
+        "verdict": "fail",
+        "score": 0.1,
+        "rationale": "Reads as generic sci-fi — not faction-specific (10%)"
+      }
+    ],
+    "assertion_count": 7,
+    "pass_count": 3,
+    "fail_count": 4,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "RND-001",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Not painterly — reads as photorealistic/3D/anime (10%)"
+    },
+    {
+      "rule_id": "RND-002",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.6,
+      "rationale": "Lighting reads correctly — warm upper-left with soft shadows"
+    },
+    {
+      "rule_id": "RND-003",
+      "category": "rendering",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "rule_id": "RND-004",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.6,
+      "rationale": "Full body, front-facing, plain background, correct fill"
+    },
+    {
+      "rule_id": "RND-005",
+      "category": "rendering",
+      "verdict": "pass",
+      "score": 0.6,
+      "rationale": "Silhouette readable at gameplay scale (60%)"
+    },
+    {
+      "rule_id": "COL-003",
+      "category": "color",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "rule_id": "CLO-003",
+      "category": "clothing",
+      "verdict": "fail",
+      "score": 0.1,
+      "rationale": "Reads as generic sci-fi — not faction-specific (10%)"
+    }
+  ],
+  "canon_explanation": "Rejected: fails RND-001, RND-003, COL-003, CLO-003. Colorful exaggerated spacecraft with anime proportions and racing stripes. Wrong aesthetic entirely — cel-shaded toy, not working vessel."
+}

@@ -1,0 +1,59 @@
+{
+  "id": "jace_delvari_variant_s2",
+  "schema_version": "2.0.0",
+  "created_at": "2026-04-14T07:09:11.362Z",
+  "asset_path": "outputs/candidates/jace_delvari_variant_s2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1489007
+  },
+  "provenance": {
+    "workflow_id": "wave27a-identity-spine",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, worn and functional aesthetic, lived-in sci-fi, visible material texture and surface grain, visible brushstrokes, portrait head and shoulders, man in his late twenties with light brown hair, the smile gone, eyes sharp and tracking, jaw set with professional assessment, the same face as the friendly version but now the military discipline shows through the civilian surface, muted grey-brown jacket collar, steady hands, a trained eye now sees the posture is too balanced, the grooming too coordinated, the competence too practiced for a freelancer, cold station lighting, isolated on plain dark background",
+    "negative_prompt": "photorealistic, photograph, photo, stock photo, 3d render, smooth CG, CGI, octane render, unreal engine, anime, cartoon, chibi, bright saturated colors, clean pristine new clothing, glamorous, dynamic action pose, multiple characters, text, watermark, blurry, low quality, extra limbs, deformed, medieval, fantasy armor, superhero, smiling, friendly, warm, casual, relaxed, bright colors, obvious military, tactical gear",
+    "seed": 27035,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8099,
+    "gpu_model": "RTX 5080",
+    "denoise": 1
+  },
+  "identity": {
+    "subject_name": "jace_delvari",
+    "subject_type": "named_character",
+    "faction": "compact",
+    "role": "crew",
+    "view_type": "expression_variant",
+    "shot_type": "variant",
+    "identity_anchor": false,
+    "location_name": null,
+    "ship_name": null,
+    "scene_function": "the second-read Jace — the same face without the smile, reveals what lives underneath",
+    "variant_intent": "role_read_shift",
+    "variant_constraint": "MUST be unmistakably the same man as the friendly anchor — same hair, same jawline, same jacket, same holster position. Only the expression and read change. If this could be a different person, reject."
+  },
+  "lineage": {
+    "generation_phase": "discovery",
+    "anchor_source_image": null,
+    "anchor_subject_version": null,
+    "identity_persistence_score": null,
+    "derived_from_record_id": null
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}
