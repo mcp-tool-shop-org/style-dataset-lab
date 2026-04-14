@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Visual dataset pipeline — canon to prompts to ComfyUI generation to curated, canon-bound training data",
   "type": "module",
   "scripts": {

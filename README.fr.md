@@ -13,91 +13,133 @@
 
 # style-dataset-lab
 
-Fabrique de jeux de données visuels : génère, organise et exporte des données d'entraînement multimodales pour l'affinage des modèles de langage visuels (VLM).
+Une chaîne de production pour la création de jeux de données visuels : des règles de base aux invites structurées, en passant par la génération avec ComfyUI, jusqu'aux données d'entraînement sélectionnées et conformes aux règles.
 
 ## Qu'est-ce que c'est ?
 
-Une boîte à outils pour créer une **vérité visuelle entraînable**. Chaque élément contient trois informations :
+Une **chaîne de production** pour la création de jeux de données visuels structurés. Vous définissez des règles de style (règles de base), rédigez des invites, générez avec ComfyUI, sélectionnez les données avec un système de notation par dimension, associez les jugements aux règles de base et exportez dans 10 formats via [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset).
+
+Cette chaîne de production est indépendante du jeu. Chaque jeu dispose de son propre répertoire de données sous `games/<nom>/`; les 13 scripts et les modèles vierges sont partagés. Chaque élément produit contient trois informations.
 
 1. **Pixels de l'image** : générés par ComfyUI avec une traçabilité complète (point de contrôle, LoRA, graine, échantillonneur, cfg).
 2. **Explication canonique** : pourquoi cet élément est conforme ou non au style, basé sur une constitution du style.
 3. **Jugement de qualité** : approuvé/refusé avec des scores par dimension et des règles citées.
 
-La sortie est intégrée à [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) pour produire des données d'entraînement multimodales dans 10 formats : TRL, LLaVA, Qwen2-VL, Axolotl, LLaMA-Factory, ShareGPT, paires RLHF, DPO, légende et classification.
-
 ## Modèle de sécurité
 
 **Uniquement local.** style-dataset-lab communique avec ComfyUI sur `localhost:8188` et ne fait jamais de requêtes réseau externes. Pas de télémétrie, pas d'analyses, pas de communication avec un serveur distant. La génération d'images se fait entièrement sur votre GPU. Les enregistrements et les données canoniques restent sur votre système de fichiers.
 
-## Statistiques du jeu de données
+## Ce que le paquet npm contient
 
-| Métrique | Valeur |
-|--------|-------|
-| Enregistrements organisés | 1,182 |
-| Nombre total d'éléments | 2 571 (893 approuvés, 887 variantes picturales) |
-| Séquences de prompts | 28 |
-| Catégories visuelles | 18 (costumes, bateaux, intérieurs, équipements, environnements, espèces, stations, signalisation, éclairage, cargaison, architecture, créatures, surfaces, vie quotidienne, planétaire, dommages/réparations, biologie extraterrestre, détails de vie) |
-| Comparaisons par paires | 6 réalisées par des humains + 71 synthétiques |
-| Types de refus distincts | 30+ |
-| Système de paquets d'identité | Personnages nommés avec ADN de faction, grade et ancres visuelles. |
-| Formats d'exportation | 10 (via @mcptoolshop/repo-dataset) |
+`npm install @mcptoolshop/style-dataset-lab` vous donne :
+
+- **13 scripts** -- génération, sélection, comparaison, application des règles de base, style pictural, génération d'identités, génération ControlNet/IP-Adapter, sélection en masse, migration.
+- **Modèles vierges** -- constitution de base, grille d'évaluation et ensemble d'exemples d'invites dans le dossier `templates/`.
+
+Le paquet npm **ne contient pas** les données du jeu. Clonez le dépôt si vous souhaitez l'exemple de Star Freight (1 182 enregistrements, 28 séries d'invites, 18 catégories visuelles).
 
 ## Installation
 
 ```bash
-npm install -g @mcptoolshop/style-dataset-lab
-```
+# Get the pipeline scripts + templates
+npm install @mcptoolshop/style-dataset-lab
 
-Clonez ensuite un projet ou initialisez un nouvel espace de travail de jeu de données :
-
-```bash
-git clone https://github.com/mcp-tool-shop-org/style-dataset-lab my-dataset
-cd my-dataset
+# Or clone the repo for the Star Freight example data
+git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
+cd style-dataset-lab
 npm install
 ```
 
-## Flux de travail
+Pour démarrer un nouveau jeu à partir des modèles :
 
 ```bash
-# 1. Start ComfyUI
-# (point it at your checkpoint + LoRA setup)
+# Copy templates into your game directory
+mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
+cp -r templates/canon games/my-game/canon
+cp templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
+# Edit the canon and prompts, then generate
+```
 
-# 2. Generate candidates from a prompt pack
-npm run generate -- inputs/prompts/wave1.json
-npm run generate -- inputs/prompts/wave1.json --dry-run
+## Structure du dépôt monorepo
 
-# 3. Generate identity-packet characters
-npm run generate:identity -- inputs/identity-packets/wave27a-identity-spine.json
+La chaîne de production se trouve dans les dossiers `scripts/` et `templates/`. Chaque jeu se trouve dans le dossier `games/<nom>/` et possède ses propres règles de base, enregistrements et ressources. Les scripts acceptent l'argument `--game <nom>` (par défaut : `star-freight`).
 
-# 4. Generate painterly variants of approved assets
-npm run painterly -- <asset_id>
+```
+style-dataset-lab/
+  scripts/                  13 pipeline scripts (generate, curate, compare, etc.)
+  templates/                Blank starting point for new games
+    canon/                  Starter constitution + review rubric
+    inputs/prompts/         Example prompt pack
+  games/
+    star-freight/           Star Freight example (1,182 records, repo-only)
+      canon/                Style constitution, review rubric, species canon
+      records/              Per-asset JSON (provenance + judgment + canon)
+      comparisons/          A-vs-B preference judgments
+      inputs/               Prompt packs, identity packets, references
+      outputs/              Generated images (gitignored)
+      exports/              repo-dataset output (gitignored)
+    <your-game>/            Add more games with the same structure
+```
+
+## Flux de travail de la chaîne de production
+
+La chaîne de production complète, des règles de base à l'exportation des données d'entraînement :
+
+```bash
+# 1. Write your canon -- style constitution + review rubric
+#    (start from templates/ or write from scratch)
+
+# 2. Create prompt packs in inputs/prompts/
+#    (see templates/inputs/prompts/example-wave.json)
+
+# 3. Start ComfyUI and generate candidates
+npm run generate -- --game star-freight inputs/prompts/wave1.json
+npm run generate -- --game star-freight inputs/prompts/wave1.json --dry-run
+
+# 4. Generate identity-packet characters (named subjects)
+npm run generate:identity -- --game star-freight inputs/identity-packets/wave27a.json
 
 # 5. Curate -- approve, reject, or mark borderline
-npm run curate -- <asset_id> approved "explanation" --scores "silhouette:0.9,palette:0.8"
-npm run curate -- <asset_id> rejected "explanation" --failures "too_clean,wrong_material"
+npm run curate -- --game star-freight <asset_id> approved "explanation"
+npm run curate -- --game star-freight <asset_id> rejected "explanation" --failures "too_clean"
 
-# 6. Bind canon explanations to assets
-npm run canon-bind -- <asset_id>
+# 6. Generate painterly variants of approved assets
+npm run painterly -- --game star-freight
 
-# 7. Record pairwise comparisons
-npm run compare -- <asset_a> <asset_b> a "A has better faction read because..."
+# 7. Bind canon explanations to curated assets
+npm run canon-bind -- --game star-freight
 
-# 8. Export training data via repo-dataset
-npm run export
-npm run inspect
-npm run validate
+# 8. Record pairwise comparisons
+npm run compare -- --game star-freight <asset_a> <asset_b> a "A has better faction read"
+
+# 9. Export training data via repo-dataset
+repo-dataset visual generate ./games/star-freight --format trl
+repo-dataset visual inspect ./games/star-freight
 ```
 
-## Structure des répertoires
+## Ajout d'un nouveau jeu
+
+```bash
+# Create structure and copy blank templates
+mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
+cp -r templates/canon games/my-game/canon
+cp templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
+
+# Edit your canon/constitution.md and canon/review-rubric.md
+# Edit your prompt pack, then run the pipeline with --game my-game
+```
+
+## Structure du répertoire par jeu
+
+Chaque répertoire `games/<nom>/` contient :
 
 ```
-canon/                  Style constitution, review rubric, identity gates, species canon
+canon/                  Style constitution, review rubric, species canon, identity gates
 inputs/
   prompts/              Prompt packs per wave (JSON: subjects, variations, defaults)
   references/           IP-Adapter reference images
-  control/              ControlNet control images
   control-guides/       ControlNet guide overlays
-  identity-packets/     Named character identity spines (faction DNA, rank, visual anchors)
+  identity-packets/     Named character identity spines
 outputs/
   candidates/           Raw generations (gitignored)
   approved/             Curated approved (gitignored)
@@ -107,8 +149,6 @@ outputs/
 records/                Per-asset JSON (provenance + judgment + canon binding)
 comparisons/            A-vs-B preference judgments
 exports/                repo-dataset output (gitignored)
-scripts/                generate, curate, compare, canon-bind, painterly, identity gen
-workflows/              Reusable ComfyUI workflow templates
 ```
 
 ## Configuration de la génération
