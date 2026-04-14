@@ -13,3 +13,6 @@ exports/
 *.bin
 *.log
 .polyglot-cache.json
+site/.astro/
+site/dist/
+site/node_modules/

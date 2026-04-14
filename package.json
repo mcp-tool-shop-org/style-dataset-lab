@@ -1,8 +1,7 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "0.6.0",
-  "private": true,
-  "description": "Comfy-backed visual dataset lab — generate, curate, and export multimodal training data",
+  "version": "1.0.0",
+  "description": "Visual dataset factory — generate, curate, and export multimodal training data for VLM fine-tuning",
   "type": "module",
   "scripts": {
     "generate": "node scripts/generate.js",
@@ -16,12 +15,33 @@
     "inspect": "npx repo-dataset visual inspect .",
     "validate": "npx repo-dataset visual validate exports/dataset.jsonl"
   },
+  "files": [
+    "scripts/",
+    "canon/",
+    "inputs/",
+    "workflows/",
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "dataset",
+    "visual",
+    "training-data",
+    "comfyui",
+    "vlm",
+    "fine-tuning",
+    "multimodal"
+  ],
+  "homepage": "https://mcp-tool-shop-org.github.io/style-dataset-lab/",
   "repository": {
     "type": "git",
     "url": "https://github.com/mcp-tool-shop-org/style-dataset-lab.git"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "author": "mcp-tool-shop",
   "license": "MIT"
