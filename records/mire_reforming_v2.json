@@ -1,0 +1,58 @@
+{
+  "id": "mire_reforming_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T04:57:20.477Z",
+  "asset_path": "outputs/candidates/mire_reforming_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1450628
+  },
+  "provenance": {
+    "workflow_id": "wave25-expanded-universe",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, Mire aggregation in progress — a pool of individual slug-like cells on a cargo bay floor flowing together into a half-formed humanoid shape rising from the ground, translucent green-grey cells climbing over each other, sensory clusters darkening as the collective intelligence assembles, deeply disturbing to the human crew member watching from a safe distance, industrial setting",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+    "seed": 250531,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7061,
+    "gpu_model": "RTX 5080",
+    "batch_index": 31
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "wave25-script",
+    "reviewed_at": "2026-04-13T05:08:11.654Z",
+    "explanation": "Green-tinted corridor with organic matter but no clear colonial organism reforming. The aggregation process needs to be the focal point.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.5,
+      "palette_adherence": 0.6,
+      "material_fidelity": 0.6,
+      "faction_read": 0.3,
+      "wear_level": 0.7,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.3,
+      "composition": 0.6
+    },
+    "failure_modes": [
+      "concept_miss"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

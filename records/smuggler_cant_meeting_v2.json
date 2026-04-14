@@ -1,0 +1,59 @@
+{
+  "id": "smuggler_cant_meeting_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:00:00.867Z",
+  "asset_path": "outputs/candidates/smuggler_cant_meeting_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1491745
+  },
+  "provenance": {
+    "workflow_id": "wave25-expanded-universe",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, smuggler cant in action — a mixed-species group in a dim back room, the human watching a Veshan's tail movements for encoded price data, an Orryn projecting shifting holographic patterns that carry hidden cargo manifests, a Keth subtly touching the table to leave pheromone coordinates, each species communicating in a channel the others can't fully decode, multi-species encryption through biology",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+    "seed": 250553,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8048,
+    "gpu_model": "RTX 5080",
+    "batch_index": 53
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "wave25-script",
+    "reviewed_at": "2026-04-13T05:08:11.670Z",
+    "explanation": "All figures rendered as human — no multi-species element. The cross-species communication concept requires at least 2 different species visible.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.6,
+      "material_fidelity": 0.7,
+      "faction_read": 0.1,
+      "wear_level": 0.7,
+      "style_consistency": 0.7,
+      "clothing_logic": 0.5,
+      "composition": 0.7
+    },
+    "failure_modes": [
+      "species_not_rendered",
+      "concept_miss"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

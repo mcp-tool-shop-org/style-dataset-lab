@@ -58,20 +58,12 @@ async function main() {
     process.exit(1);
   }
 
-  // Move image file
+  // Update record first (write before move to avoid orphaned images)
   const oldPath = join(REPO_ROOT, record.asset_path);
   const newDir = `outputs/${status}`;
   const newPath = `${newDir}/${assetId}.png`;
   await mkdir(join(REPO_ROOT, newDir), { recursive: true });
 
-  try {
-    await rename(oldPath, join(REPO_ROOT, newPath));
-  } catch {
-    console.error(`Could not move ${oldPath} to ${newPath}`);
-    process.exit(1);
-  }
-
-  // Update record
   record.asset_path = newPath;
   record.judgment = {
     status,
@@ -85,6 +77,14 @@ async function main() {
   };
 
   await writeFile(recordPath, JSON.stringify(record, null, 2));
+
+  // Move image file
+  try {
+    await rename(oldPath, join(REPO_ROOT, newPath));
+  } catch {
+    console.error(`Could not move ${oldPath} to ${newPath}`);
+    process.exit(1);
+  }
 
   console.log(`\x1b[32m✓\x1b[0m ${assetId} → ${status}`);
   console.log(`  ${explanation}`);

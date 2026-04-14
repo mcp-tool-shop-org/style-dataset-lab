@@ -1,0 +1,56 @@
+{
+  "id": "mire_at_work_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T04:57:06.087Z",
+  "asset_path": "outputs/approved/mire_at_work_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1455821
+  },
+  "provenance": {
+    "workflow_id": "wave25-expanded-universe",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, Mire colonial organism working in a cargo bay — vaguely humanoid shape assembled from hundreds of thumb-sized pale green-grey translucent slug-cells, two darker sensory patches where eyes would be, multiple pseudopod-arms reaching in different directions handling heavy cargo containers, edges dissolving slightly as stray cells detach and reattach, moist surface gleaming under industrial lights, the galaxy's expendable labor",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+    "seed": 250529,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7026,
+    "gpu_model": "RTX 5080",
+    "batch_index": 29
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "wave25-script",
+    "reviewed_at": "2026-04-13T05:08:11.649Z",
+    "explanation": "Strong hit — concept reads clearly, style consistent, gritty lived-in aesthetic.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.85,
+      "palette_adherence": 0.8,
+      "material_fidelity": 0.8,
+      "faction_read": 0.75,
+      "wear_level": 0.85,
+      "style_consistency": 0.85,
+      "clothing_logic": 0.7,
+      "composition": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

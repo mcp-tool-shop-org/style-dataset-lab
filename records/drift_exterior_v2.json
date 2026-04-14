@@ -1,0 +1,38 @@
+{
+  "id": "drift_exterior_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:26:54.783Z",
+  "asset_path": "outputs/candidates/drift_exterior_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1528319
+  },
+  "provenance": {
+    "workflow_id": "wave26-station-identities",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture, visible brushstrokes, architectural interior or exterior, smooth elliptical alien space station surrounded by a cloud of small broker pods and shuttle traffic — teal matte hull with chrome sensor nodes bristling from every surface, oversized engine nacelles, dozens of small trading vessels clustered around the main hull like pilot fish around a whale, holographic drift-pattern identifiers shifting on the hull surface, the mobile marketplace of space traders",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi, human, person, man, woman",
+    "seed": 270519,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8054,
+    "gpu_model": "RTX 5080",
+    "batch_index": 19
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

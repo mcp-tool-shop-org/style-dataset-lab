@@ -188,6 +188,8 @@ async function comfyHealth() {
   }
 }
 
+const MAX_POLL_MS = 600_000; // 10 minutes
+
 async function submitAndWait(workflow) {
   const clientId = `cn-${Date.now()}`;
   const res = await fetch(`${COMFY_URL}/prompt`, {
@@ -201,14 +203,16 @@ async function submitAndWait(workflow) {
     throw new Error(`ComfyUI submit failed: ${res.status} ${text}`);
   }
 
-  const { prompt_id } = await res.json();
+  const { prompt_id: promptId } = await res.json();
 
+  const start = Date.now();
   while (true) {
+    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
     await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${prompt_id}`);
+    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
     if (!histRes.ok) continue;
     const history = await histRes.json();
-    const entry = history[prompt_id];
+    const entry = history[promptId];
     if (!entry) continue;
     if (entry.status?.completed) return entry;
     if (entry.status?.status_str === "error") {

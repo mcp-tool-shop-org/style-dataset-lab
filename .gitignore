@@ -3,5 +3,13 @@ outputs/candidates/*.png
 outputs/approved/*.png
 outputs/rejected/*.png
 outputs/borderline/*.png
+outputs/painterly-test/
 exports/
 *.tmp
+*.zip
+*.safetensors
+*.ckpt
+*.pth
+*.bin
+*.log
+.polyglot-cache.json

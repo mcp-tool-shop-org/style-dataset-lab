@@ -1,0 +1,58 @@
+{
+  "id": "pidgin_trade_sign_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T04:59:23.998Z",
+  "asset_path": "outputs/approved/pidgin_trade_sign_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1681281
+  },
+  "provenance": {
+    "workflow_id": "wave25-expanded-universe",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, cross-species market scene with pidgin trade-sign communication — a human merchant and a Keth trader facing each other over a display of goods, both making exaggerated hand gestures that form the pidgin trade language, drawn symbols chalked on a board between them showing quantities and prices, other species passing in the background, the practical reality of multi-species commerce without universal translators",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+    "seed": 250048,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7314,
+    "gpu_model": "RTX 5080",
+    "batch_index": 48
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "wave25-script",
+    "reviewed_at": "2026-04-13T05:08:11.663Z",
+    "explanation": "Partial hit — atmosphere and style correct, some species anatomy or concept details missed.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.7,
+      "palette_adherence": 0.7,
+      "material_fidelity": 0.7,
+      "faction_read": 0.5,
+      "wear_level": 0.75,
+      "style_consistency": 0.75,
+      "clothing_logic": 0.55,
+      "composition": 0.75
+    },
+    "failure_modes": [
+      "partial_species_accuracy"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

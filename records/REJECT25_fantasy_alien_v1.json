@@ -1,0 +1,59 @@
+{
+  "id": "REJECT25_fantasy_alien_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-13T05:00:39.842Z",
+  "asset_path": "outputs/candidates/REJECT25_fantasy_alien_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1505101
+  },
+  "provenance": {
+    "workflow_id": "wave25-expanded-universe",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "prompt": "oil painting, semi-realistic painterly scene concept art, muted dusty palette, subtle dark edges, atmospheric directional lighting, worn and functional lived-in sci-fi, visible material texture and cultural detail, visible brushstrokes, fantasy wizard alien with robes and magic staff and glowing runes, high fantasy aesthetic, elven features with pointed ears, nothing grounded or industrial, magic instead of technology",
+    "negative_prompt": "photorealistic, photograph, photo, 3d render, smooth CG, CGI, octane render, anime, cartoon, bright saturated colors, clean pristine, heroic pose, action scene, combat, text, watermark, blurry, low quality, cute, chibi",
+    "seed": 250058,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8070,
+    "gpu_model": "RTX 5080",
+    "batch_index": 58
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "wave25-script",
+    "reviewed_at": "2026-04-13T05:08:11.667Z",
+    "explanation": "Fantasy wizard alien with robes and magic staff — high fantasy, not grounded sci-fi.",
+    "criteria_scores": {
+      "silhouette_clarity": 0.6,
+      "palette_adherence": 0.1,
+      "material_fidelity": 0.2,
+      "faction_read": 0,
+      "wear_level": 0.1,
+      "style_consistency": 0.1,
+      "clothing_logic": 0.1,
+      "composition": 0.6
+    },
+    "failure_modes": [
+      "wrong_genre",
+      "costume_not_clothes"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

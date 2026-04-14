@@ -1,17 +1,27 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Comfy-backed visual dataset lab — generate, curate, and export multimodal training data",
   "type": "module",
   "scripts": {
     "generate": "node scripts/generate.js",
-    "record": "node scripts/record.js",
+    "curate": "node scripts/curate.js",
     "compare": "node scripts/compare.js",
+    "canon-bind": "node scripts/canon-bind.js",
+    "painterly": "node scripts/painterly.js",
+    "generate:identity": "node scripts/generate-identity.js",
     "export": "npx repo-dataset visual generate . --format trl",
     "export:embed": "npx repo-dataset visual generate . --format trl --embed",
     "inspect": "npx repo-dataset visual inspect .",
     "validate": "npx repo-dataset visual validate exports/dataset.jsonl"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcp-tool-shop-org/style-dataset-lab.git"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "author": "mcp-tool-shop",
   "license": "MIT"
