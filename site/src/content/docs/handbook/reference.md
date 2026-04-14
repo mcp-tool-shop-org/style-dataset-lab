@@ -1,11 +1,25 @@
 ---
 title: Reference
-description: All scripts with flags, arguments, and behavior.
+description: All 13 pipeline scripts, templates, flags, and arguments.
 sidebar:
   order: 2
 ---
 
-All scripts accept `--game <name>` to target a specific game directory under `games/`. The default is `star-freight`.
+Style Dataset Lab v1.2.0 ships 13 scripts and a `templates/` directory. All scripts accept `--game <name>` to target a specific game directory under `games/`. The default is `star-freight`.
+
+## Templates
+
+The `templates/` directory provides a blank starting point for new games:
+
+| Path | Purpose |
+|------|---------|
+| `templates/canon/constitution.md` | Blank style constitution -- fill in your rules |
+| `templates/canon/review-rubric.md` | Blank review rubric -- define scoring criteria |
+| `templates/inputs/prompts/example-wave.json` | Example prompt pack structure |
+
+Copy these into a new `games/<name>/` directory to bootstrap a game without writing boilerplate from scratch.
+
+## Scripts
 
 ## generate.js
 
@@ -202,3 +216,43 @@ repo-dataset visual validate games/star-freight/exports/dataset.jsonl
 ```
 
 Supported formats: TRL, LLaVA, Qwen2-VL, Axolotl, LLaMA-Factory, ShareGPT, OpenAI, DPO, ORPO, KTO.
+
+---
+
+## Additional scripts
+
+### generate-controlnet.js
+
+Generate candidates using ControlNet (pose/depth-guided generation).
+
+```bash
+node scripts/generate-controlnet.js --game <name> <prompt-pack-path> [options]
+```
+
+### generate-ipadapter.js
+
+Generate candidates using IP-Adapter (reference-image-driven generation).
+
+```bash
+node scripts/generate-ipadapter.js --game <name> <prompt-pack-path> [options]
+```
+
+### bulk-curate-wave2-5.js / bulk-curate-waves11-18.js
+
+Batch curation scripts for processing multiple assets from specific waves.
+
+### curate-wave25.js
+
+Specialized curation for wave 25 (alien species) with species-specific scoring.
+
+### migrate-records.js
+
+Migrate records from older schema versions to the current format.
+
+```bash
+node scripts/migrate-records.js --game <name> [--dry-run]
+```
+
+### painterly-test.js
+
+Test the painterly pipeline on a single image before running a full batch.

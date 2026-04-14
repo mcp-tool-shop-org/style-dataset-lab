@@ -1,17 +1,51 @@
 ---
 title: Architecture
-description: Record schemas, canon constitution, curation workflow, and export pipeline.
+description: Pipeline flow, record schemas, templates structure, canon constitution, and export pipeline.
 sidebar:
   order: 3
 ---
 
-## Monorepo layout
+## Pipeline flow
+
+The full production pipeline from canon to training export:
+
+```
+ Write Canon                Create Prompts
+ (constitution.md           (prompt packs .json)
+  review-rubric.md)               |
+       |                          |
+       v                          v
+  Canon rules             generate.js / generate-identity.js
+  inform curation              |
+       |                       v
+       |               Candidate images
+       |                       |
+       v                       v
+  curate.js  <------>  per-dimension scoring
+       |
+       v
+  painterly.js --> painterly variants
+       |
+       v
+  canon-bind.js --> pass/fail/partial per rule
+       |
+       v
+  compare.js --> pairwise A-vs-B preferences
+       |
+       v
+  repo-dataset --> TRL / LLaVA / Qwen2-VL / 10 formats
+```
+
+## Repository layout
 
 ```
 style-dataset-lab/
-  scripts/                    Shared tooling (all accept --game <name>)
+  scripts/                    13 pipeline scripts (all accept --game <name>)
+  templates/                  Blank starting point (ships with npm package)
+    canon/                    Starter constitution + review rubric
+    inputs/prompts/           Example prompt pack
   games/
-    star-freight/             Star Freight universe data (included)
+    star-freight/             Star Freight example data (repo-only, not in npm)
       canon/                  Style constitution, review rubric, species canon
       records/                Per-asset JSON (provenance + judgment + canon)
       comparisons/            A-vs-B preference judgments
@@ -23,7 +57,19 @@ style-dataset-lab/
   package.json
 ```
 
-Each game is fully isolated -- its own canon, records, and assets. Scripts read from and write to `games/<name>/` based on the `--game` flag (default: `star-freight`).
+The npm package ships `scripts/` and `templates/` only. Game data stays in the repo. Each game is fully isolated -- its own canon, records, and assets. Scripts read from and write to `games/<name>/` based on the `--game` flag (default: `star-freight`).
+
+### Templates structure
+
+The `templates/` directory provides blank files for bootstrapping a new game:
+
+| File | Purpose |
+|------|---------|
+| `templates/canon/constitution.md` | Empty constitution with section headings -- fill in your style rules |
+| `templates/canon/review-rubric.md` | Empty rubric with scoring dimension stubs |
+| `templates/inputs/prompts/example-wave.json` | Prompt pack with the correct JSON schema and placeholder subjects |
+
+To start a new game: copy templates into `games/<name>/`, edit the canon and prompts, then run the pipeline.
 
 ## Record schema
 

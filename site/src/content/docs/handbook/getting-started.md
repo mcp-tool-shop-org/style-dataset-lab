@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Prerequisites, first generation, first curation, and first export.
+description: Install the pipeline, set up your first game, generate, curate, and export.
 sidebar:
   order: 1
 ---
@@ -26,14 +26,41 @@ The default generation setup uses:
 
 Place these in your ComfyUI `models/checkpoints/` and `models/loras/` directories respectively.
 
-## Clone the repo
+## Install
+
+There are two ways to get started:
+
+**Option A: npm install (pipeline only)**
+
+```bash
+npm install @mcptoolshop/style-dataset-lab
+```
+
+This gives you the 13 pipeline scripts and blank templates (starter constitution, review rubric, example prompt pack). No game data included.
+
+**Option B: Clone the repo (pipeline + Star Freight example)**
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab.git
 cd style-dataset-lab
+npm install
 ```
 
-No `npm install` needed for the core scripts -- they use only Node built-ins and `fetch`.
+This includes the Star Freight example dataset (1,182 records, 28 prompt waves) so you can explore a working pipeline immediately.
+
+## Set up your first game
+
+If you installed from npm, use the included templates to bootstrap a new game:
+
+```bash
+mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
+cp -r node_modules/@mcptoolshop/style-dataset-lab/templates/canon games/my-game/canon
+cp node_modules/@mcptoolshop/style-dataset-lab/templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
+```
+
+Edit `games/my-game/canon/constitution.md` to define your style rules, then edit the prompt pack to match your visual targets.
+
+If you cloned the repo, you can skip this step and use `--game star-freight` with all scripts to explore the existing dataset.
 
 ## Start ComfyUI
 
@@ -136,18 +163,20 @@ repo-dataset visual validate games/star-freight/exports/dataset.jsonl
 
 The export produces classification, preference, and critique training units depending on the judgments and comparisons in your dataset.
 
-## Adding a new game
+## Adding more games
 
-Create the directory structure for your new game and write its canon files:
+Each game is fully isolated under `games/<name>/`. To add another game, repeat the template copy:
 
 ```bash
-mkdir -p games/my-game/{canon,records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
+mkdir -p games/another-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
+cp -r templates/canon games/another-game/canon
+cp templates/inputs/prompts/example-wave.json games/another-game/inputs/prompts/wave1.json
 ```
 
-Then write `games/my-game/canon/constitution.md` and `games/my-game/canon/review-rubric.md` to define your style rules. Once the canon is in place, use `--game my-game` with all scripts:
+Then use `--game another-game` with all scripts:
 
 ```bash
-npm run generate -- --game my-game inputs/prompts/wave1.json
-npm run curate -- --game my-game <id> approved "explanation"
-npm run canon-bind -- --game my-game
+npm run generate -- --game another-game inputs/prompts/wave1.json
+npm run curate -- --game another-game <id> approved "explanation"
+npm run canon-bind -- --game another-game
 ```

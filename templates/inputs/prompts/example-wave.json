@@ -1,0 +1,27 @@
+{
+  "wave": "wave1",
+  "description": "First generation wave — core subjects for your visual style",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "lora": { "name": "classipeintxl_v21.safetensors", "weight": 1.0 },
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "negative": "photorealistic, photograph, 3d render, smooth CG, sharp photo detail"
+  },
+  "subjects": [
+    {
+      "id": "subject_a",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR SUBJECT HERE], painterly concept art, canvas grain"
+    },
+    {
+      "id": "subject_b",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR SUBJECT HERE], painterly concept art, canvas grain"
+    }
+  ]
+}
