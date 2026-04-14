@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Visual dataset factory — generate, curate, and export multimodal training data for VLM fine-tuning",
   "type": "module",
   "scripts": {

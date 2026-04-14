@@ -29,7 +29,9 @@ The output feeds into [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-
 
 **Local-only.** style-dataset-lab talks to ComfyUI on `localhost:8188` and never makes external network requests. No telemetry, no analytics, no phoning home. Image generation happens entirely on your GPU. Records and canon data stay on your filesystem.
 
-## Dataset stats
+## Dataset stats (Star Freight)
+
+The included `games/star-freight/` dataset ships with the repo as a working example:
 
 | Metric | Value |
 |--------|-------|
@@ -45,16 +47,22 @@ The output feeds into [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-
 ## Install
 
 ```bash
+# Install scripts globally (optional)
 npm install -g @mcptoolshop/style-dataset-lab
-```
 
-Then clone a project or initialize a new dataset workspace:
-
-```bash
-git clone https://github.com/mcp-tool-shop-org/style-dataset-lab my-dataset
-cd my-dataset
+# Clone the repo (includes star-freight game data)
+git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
+cd style-dataset-lab
 npm install
 ```
+
+To start a new game, create its directory structure:
+
+```bash
+mkdir -p games/my-game/{canon,records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected},exports}
+```
+
+Or use the existing `games/star-freight/` data to explore the workflow immediately.
 
 ## Monorepo structure
 

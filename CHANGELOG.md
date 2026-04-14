@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-04-14
+
+- Monorepo restructure: each game lives in `games/<name>/` with isolated canon, records, and assets
+- All scripts accept `--game <name>` flag (default: `star-freight`)
+- Existing Star Freight data moved to `games/star-freight/`
+- Translations added (7 languages: ja, zh, es, fr, hi, it, pt-BR)
+
 ## [0.5.0] - 2026-04-14
 
 - Identity packet system for waves 27A, 27B, and 28

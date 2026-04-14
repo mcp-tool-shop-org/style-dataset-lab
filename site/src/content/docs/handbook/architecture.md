@@ -5,9 +5,29 @@ sidebar:
   order: 3
 ---
 
+## Monorepo layout
+
+```
+style-dataset-lab/
+  scripts/                    Shared tooling (all accept --game <name>)
+  games/
+    star-freight/             Star Freight universe data (included)
+      canon/                  Style constitution, review rubric, species canon
+      records/                Per-asset JSON (provenance + judgment + canon)
+      comparisons/            A-vs-B preference judgments
+      inputs/                 Prompt packs, identity packets, references
+      outputs/                Generated images (gitignored)
+      exports/                repo-dataset output (gitignored)
+    <your-game>/              Add more games here with the same structure
+  site/                       Documentation site (Starlight)
+  package.json
+```
+
+Each game is fully isolated -- its own canon, records, and assets. Scripts read from and write to `games/<name>/` based on the `--game` flag (default: `star-freight`).
+
 ## Record schema
 
-Every asset in the dataset is represented by a JSON file in `records/`. Records accumulate data over time as the asset moves through the pipeline.
+Every asset in the dataset is represented by a JSON file in `games/<name>/records/`. Records accumulate data over time as the asset moves through the pipeline.
 
 ### Standard record (curated + canon-bound)
 
@@ -92,7 +112,7 @@ Follow-on records must reference their anchor via `anchor_source_image` and `der
 
 ## Canon constitution
 
-The style constitution lives in `canon/constitution.md`. It defines every rule that judgments can cite.
+The style constitution lives in `games/<name>/canon/constitution.md`. It defines every rule that judgments can cite.
 
 ### Rule categories
 
@@ -119,10 +139,10 @@ The constitution defines 8 scoring dimensions (0.0 to 1.0) that apply to all ima
 
 | File | Purpose |
 |------|---------|
-| `canon/constitution.md` | Full style rules with faction details |
-| `canon/review-rubric.md` | Quick review protocol and common failure modes |
-| `canon/identity-gates.md` | Named-subject acceptance criteria and lineage schema |
-| `canon/species-canon.md` | Alien species anatomy and design specifications |
+| `games/<name>/canon/constitution.md` | Full style rules with faction details |
+| `games/<name>/canon/review-rubric.md` | Quick review protocol and common failure modes |
+| `games/<name>/canon/identity-gates.md` | Named-subject acceptance criteria and lineage schema |
+| `games/<name>/canon/species-canon.md` | Alien species anatomy and design specifications |
 
 ## Curation workflow
 
@@ -157,16 +177,18 @@ Key design decisions:
 
 ## Export pipeline
 
-The export is handled by the external `@mcptoolshop/repo-dataset` CLI, which scans the repository structure and produces multimodal training data.
+The export is handled by the external `@mcptoolshop/repo-dataset` CLI, which scans a game directory and produces multimodal training data.
 
 ### What it scans
 
+Point repo-dataset at a game directory: `repo-dataset visual generate ./games/star-freight --format trl`
+
 | Source | What it reads |
 |--------|--------------|
-| `records/*.json` | Provenance, judgment, canon assertions |
-| `outputs/approved/*.png` | Approved images (classification + critique) |
-| `outputs/rejected/*.png` | Rejected images (classification + critique) |
-| `comparisons/*.json` | Pairwise preferences (DPO/ORPO pairs) |
+| `games/<name>/records/*.json` | Provenance, judgment, canon assertions |
+| `games/<name>/outputs/approved/*.png` | Approved images (classification + critique) |
+| `games/<name>/outputs/rejected/*.png` | Rejected images (classification + critique) |
+| `games/<name>/comparisons/*.json` | Pairwise preferences (DPO/ORPO pairs) |
 
 ### Training unit types
 
@@ -208,8 +230,8 @@ Locations and ships have their own parallel gates (IL-1 through IL-5) focused on
 ### Directory structure
 
 ```
-inputs/identity-packets/    Identity packet definitions (JSON)
-records/                    Extended records with identity + lineage blocks
-outputs/candidates/         Discovery outputs (uncurated)
-outputs/approved/           Curated approved (anchors + follow-ons)
+games/<name>/inputs/identity-packets/    Identity packet definitions (JSON)
+games/<name>/records/                    Extended records with identity + lineage blocks
+games/<name>/outputs/candidates/         Discovery outputs (uncurated)
+games/<name>/outputs/approved/           Curated approved (anchors + follow-ons)
 ```

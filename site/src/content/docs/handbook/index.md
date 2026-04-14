@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-Style Dataset Lab is a visual dataset factory. It turns ComfyUI image generation into structured, judgment-grounded training data for vision-language models.
+Style Dataset Lab is a visual dataset **monorepo**. It turns ComfyUI image generation into structured, judgment-grounded training data for vision-language models -- across multiple games, each with its own canon, records, and assets under `games/<name>/`.
 
 ## The training triangle
 
@@ -38,7 +38,7 @@ compare.js --> pairwise A-vs-B --> preference pairs
 repo-dataset --> TRL / LLaVA / Qwen2-VL / Axolotl / LLaMA-Factory
 ```
 
-Each stage writes structured JSON records to `records/`. The records accumulate provenance, judgment, and canon binding over time. Nothing is lost -- a curated record still carries its original generation provenance.
+Each stage writes structured JSON records to `games/<name>/records/`. All scripts accept `--game <name>` (defaults to `star-freight`). Records accumulate provenance, judgment, and canon binding over time. Nothing is lost -- a curated record still carries its original generation provenance.
 
 ## What it produces
 
@@ -50,9 +50,19 @@ The export pipeline (via `@mcptoolshop/repo-dataset`) reads the records and imag
 | **Critique** | Given an image, explain what is on-style and what fails |
 | **Preference** | Given two images, pick the better one and explain why |
 
-## Current lane: Gritty Space
+## Multi-game structure
 
-The active style constitution targets a lived-in sci-fi universe with 5 factions, each with distinct material vocabulary, shape language, and color palettes. The art pillars are: Worn, Functional, Tense, Culturally specific, Scrappy.
+The repo is organized as a monorepo. Each game lives in `games/<name>/` with its own canon, records, comparisons, inputs, outputs, and exports. Scripts in `scripts/` are shared and accept `--game <name>` to target any game (default: `star-freight`).
+
+To add a new game, create the directory structure and write your canon files:
+
+```bash
+mkdir -p games/my-game/{canon,records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected},exports}
+```
+
+## Current lane: Gritty Space (Star Freight)
+
+The included `games/star-freight/` dataset targets a lived-in sci-fi universe with 5 factions, each with distinct material vocabulary, shape language, and color palettes. The art pillars are: Worn, Functional, Tense, Culturally specific, Scrappy.
 
 The constitution covers costumes, ships, interiors, equipment, props, and environments. Every judgment cites specific constitution rules by ID (e.g., `RND-001`, `MAT-002`, `SHP-001`).
 

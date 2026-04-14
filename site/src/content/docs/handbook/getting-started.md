@@ -52,17 +52,17 @@ You should get a JSON response with GPU and queue information.
 
 ## Generate your first wave
 
-A prompt pack is a JSON file in `inputs/prompts/` that defines subjects, variations, and generation defaults. To generate images from one:
+A prompt pack is a JSON file in `games/<name>/inputs/prompts/` that defines subjects, variations, and generation defaults. All scripts accept `--game <name>` to target a specific game (defaults to `star-freight`).
 
 ```bash
 # Preview what would be generated (no ComfyUI calls)
-node scripts/generate.js inputs/prompts/wave1.json --dry-run
+npm run generate -- --game star-freight inputs/prompts/wave1.json --dry-run
 
 # Generate for real
-node scripts/generate.js inputs/prompts/wave1.json
+npm run generate -- --game star-freight inputs/prompts/wave1.json
 ```
 
-Each generated image lands in `outputs/candidates/` with a matching record in `records/`. The record captures full provenance: checkpoint, LoRA, seed, steps, cfg, sampler, scheduler, resolution, and the exact prompt used.
+Each generated image lands in `games/star-freight/outputs/candidates/` with a matching record in `games/star-freight/records/`. The record captures full provenance: checkpoint, LoRA, seed, steps, cfg, sampler, scheduler, resolution, and the exact prompt used.
 
 ## Curate
 
@@ -70,20 +70,20 @@ Once you have candidates, curate them one at a time:
 
 ```bash
 # List uncurated candidates
-node scripts/curate.js --list
+npm run curate -- --game star-freight --list
 
 # Approve with per-dimension scores
-node scripts/curate.js wave1_compact_officer_s42 approved \
+npm run curate -- --game star-freight wave1_compact_officer_s42 approved \
   "Clean silhouette, correct palette, good material read" \
   --scores silhouette:0.9,palette:0.85,material:0.8,faction:0.9
 
 # Reject with failure modes
-node scripts/curate.js wave1_compact_officer_s43 rejected \
+npm run curate -- --game star-freight wave1_compact_officer_s43 rejected \
   "Too clean, photorealistic rendering, no wear" \
   --failures too_clean,photorealistic
 ```
 
-Curation moves the image from `outputs/candidates/` to `outputs/approved/`, `outputs/rejected/`, or `outputs/borderline/` and writes the judgment into the record.
+Curation moves the image from `outputs/candidates/` to `outputs/approved/`, `outputs/rejected/`, or `outputs/borderline/` within the game directory, and writes the judgment into the record.
 
 ### Scoring dimensions
 
@@ -107,31 +107,47 @@ Each image is scored on 8 dimensions (0.0 to 1.0):
 After curation, run the canon binding pass to link each record to specific constitution rules:
 
 ```bash
-# Bind all records
-node scripts/canon-bind.js
+# Bind all records for a game
+npm run canon-bind -- --game star-freight
 
 # Preview without writing
-node scripts/canon-bind.js --dry-run
+npm run canon-bind -- --game star-freight --dry-run
 
 # Print coverage stats
-node scripts/canon-bind.js --stats
+npm run canon-bind -- --game star-freight --stats
 ```
 
 Each record gets `canon.assertions` -- an array of rule citations with pass/fail/partial verdicts and one-line rationale.
 
 ## Export training data
 
-Use `repo-dataset` to produce training data from your curated, canon-bound records:
+Use `repo-dataset` to produce training data from your curated, canon-bound records. Point it at the specific game directory:
 
 ```bash
 # Generate TRL-format training data
-npx repo-dataset visual generate . --format trl --output exports
+repo-dataset visual generate ./games/star-freight --format trl --output games/star-freight/exports
 
 # Inspect what the scanner found
-npx repo-dataset visual inspect .
+repo-dataset visual inspect ./games/star-freight
 
 # Validate the output
-npx repo-dataset visual validate exports/dataset.jsonl
+repo-dataset visual validate games/star-freight/exports/dataset.jsonl
 ```
 
 The export produces classification, preference, and critique training units depending on the judgments and comparisons in your dataset.
+
+## Adding a new game
+
+Create the directory structure for your new game and write its canon files:
+
+```bash
+mkdir -p games/my-game/{canon,records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
+```
+
+Then write `games/my-game/canon/constitution.md` and `games/my-game/canon/review-rubric.md` to define your style rules. Once the canon is in place, use `--game my-game` with all scripts:
+
+```bash
+npm run generate -- --game my-game inputs/prompts/wave1.json
+npm run curate -- --game my-game <id> approved "explanation"
+npm run canon-bind -- --game my-game
+```

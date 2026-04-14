@@ -5,16 +5,19 @@ sidebar:
   order: 2
 ---
 
+All scripts accept `--game <name>` to target a specific game directory under `games/`. The default is `star-freight`.
+
 ## generate.js
 
 Drive ComfyUI to produce candidate images from a prompt pack.
 
 ```bash
-node scripts/generate.js <prompt-pack-path> [options]
+node scripts/generate.js --game <name> <prompt-pack-path> [options]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--game <name>` | `star-freight` | Target game directory under `games/` |
 | `--dry-run` | -- | Print what would be generated without calling ComfyUI |
 | `--subject <name>` | all | Only generate for one subject |
 | `--seeds <n>` | 3 | Number of random seeds per subject-variation pair |
@@ -43,7 +46,7 @@ node scripts/generate.js <prompt-pack-path> [options]
 }
 ```
 
-**Outputs:** Images to `outputs/candidates/`, records to `records/`.
+**Outputs:** Images to `games/<name>/outputs/candidates/`, records to `games/<name>/records/`.
 
 **Environment variables:**
 
@@ -58,8 +61,8 @@ node scripts/generate.js <prompt-pack-path> [options]
 Move a candidate to approved/rejected/borderline and record the judgment.
 
 ```bash
-node scripts/curate.js <asset_id> <status> <explanation> [options]
-node scripts/curate.js --list
+node scripts/curate.js --game <name> <asset_id> <status> <explanation> [options]
+node scripts/curate.js --game <name> --list
 ```
 
 | Argument | Required | Description |
@@ -68,14 +71,15 @@ node scripts/curate.js --list
 | `status` | yes | `approved`, `rejected`, or `borderline` |
 | `explanation` | yes | Free-text rationale for the judgment |
 
-| Flag | Description |
-|------|-------------|
-| `--list` | Show uncurated candidates (no other args needed) |
-| `--scores <k:v,...>` | Per-dimension scores, e.g. `silhouette:0.9,palette:0.8` |
-| `--failures <f1,f2>` | Named failure modes, e.g. `too_clean,wrong_material` |
-| `--notes <text>` | Improvement notes for borderline or rejected images |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--list` | -- | Show uncurated candidates (no other args needed) |
+| `--scores <k:v,...>` | -- | Per-dimension scores, e.g. `silhouette:0.9,palette:0.8` |
+| `--failures <f1,f2>` | -- | Named failure modes, e.g. `too_clean,wrong_material` |
+| `--notes <text>` | -- | Improvement notes for borderline or rejected images |
 
-**Behavior:** Updates the record's `judgment` block, moves the image file from `outputs/candidates/` to the status directory. The record is written before the file move to prevent orphaned images.
+**Behavior:** Updates the record's `judgment` block, moves the image file from `outputs/candidates/` to the status directory within the game folder. The record is written before the file move to prevent orphaned images.
 
 ---
 
@@ -84,7 +88,7 @@ node scripts/curate.js --list
 Record a pairwise A-vs-B style comparison.
 
 ```bash
-node scripts/compare.js <asset_a_id> <asset_b_id> <winner> <reasoning>
+node scripts/compare.js --game <name> <asset_a_id> <asset_b_id> <winner> <reasoning>
 ```
 
 | Argument | Required | Description |
@@ -94,11 +98,12 @@ node scripts/compare.js <asset_a_id> <asset_b_id> <winner> <reasoning>
 | `winner` | yes | `a`, `b`, or `tie` |
 | `reasoning` | yes | Why the winner is better |
 
-| Flag | Description |
-|------|-------------|
-| `--scores <k:v/v,...>` | Per-dimension comparison, e.g. `silhouette:0.9/0.6` |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--scores <k:v/v,...>` | -- | Per-dimension comparison, e.g. `silhouette:0.9/0.6` |
 
-**Outputs:** Comparison record to `comparisons/`. Used by repo-dataset to produce preference training pairs.
+**Outputs:** Comparison record to `games/<name>/comparisons/`. Used by repo-dataset to produce preference training pairs.
 
 ---
 
@@ -107,13 +112,14 @@ node scripts/compare.js <asset_a_id> <asset_b_id> <winner> <reasoning>
 Populate canon assertions in all records based on judgment scores and failure modes.
 
 ```bash
-node scripts/canon-bind.js [options]
+node scripts/canon-bind.js --game <name> [options]
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--dry-run` | Preview bindings without writing to records |
-| `--stats` | Print coverage statistics |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--dry-run` | -- | Preview bindings without writing to records |
+| `--stats` | -- | Print coverage statistics |
 
 **Behavior:** For each curated record, maps judgment scores and failure modes to constitution rules (e.g., `RND-001`, `MAT-002`) and writes `canon.assertions` with pass/fail/partial verdicts. Each assertion includes the rule ID, category, description, and a one-line rationale derived from the scores.
 
@@ -124,12 +130,13 @@ node scripts/canon-bind.js [options]
 Post-process images through an img2img painterly pass via ComfyUI.
 
 ```bash
-node scripts/painterly.js [options]
+node scripts/painterly.js --game <name> [options]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--source <dir>` | `outputs/approved` | Source directory for images |
+| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--source <dir>` | `outputs/approved` | Source directory for images (relative to game dir) |
 | `--limit <n>` | all | Maximum number of images to process |
 | `--offset <n>` | `0` | Skip the first n images |
 | `--dry-run` | -- | Preview without processing |
@@ -143,7 +150,7 @@ node scripts/painterly.js [options]
 | CFG | 2.5 |
 | Seed | 42 (fixed for reproducibility) |
 
-**Outputs:** Processed images to `outputs/painterly/`.
+**Outputs:** Processed images to `games/<name>/outputs/painterly/`.
 
 ---
 
@@ -152,11 +159,12 @@ node scripts/painterly.js [options]
 Generate named-subject identity images with lineage tracking.
 
 ```bash
-node scripts/generate-identity.js <identity-packet-path> [options]
+node scripts/generate-identity.js --game <name> <identity-packet-path> [options]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--game <name>` | `star-freight` | Target game directory under `games/` |
 | `--dry-run` | -- | Preview without generating |
 | `--subject <name>` | all | Only generate for one subject |
 | `--seeds <n>` | `3` | Discovery seeds per shot |
@@ -177,20 +185,20 @@ node scripts/generate-identity.js <identity-packet-path> [options]
 
 ## Export (via repo-dataset)
 
-Export is handled by the separate `@mcptoolshop/repo-dataset` CLI:
+Export is handled by the separate `@mcptoolshop/repo-dataset` CLI. Point it at the specific game directory:
 
 ```bash
 # Generate training data
-npx repo-dataset visual generate . --format trl --output exports
+repo-dataset visual generate ./games/star-freight --format trl --output games/star-freight/exports
 
 # With embedded images (base64 in JSONL)
-npx repo-dataset visual generate . --format trl --embed
+repo-dataset visual generate ./games/star-freight --format trl --embed
 
 # Inspect scanner results
-npx repo-dataset visual inspect .
+repo-dataset visual inspect ./games/star-freight
 
 # Validate output
-npx repo-dataset visual validate exports/dataset.jsonl
+repo-dataset visual validate games/star-freight/exports/dataset.jsonl
 ```
 
 Supported formats: TRL, LLaVA, Qwen2-VL, Axolotl, LLaMA-Factory, ShareGPT, OpenAI, DPO, ORPO, KTO.
