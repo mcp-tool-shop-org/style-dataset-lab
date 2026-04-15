@@ -1,0 +1,81 @@
+{
+  "group_label": "faction",
+  "groups": {
+    "compact": {
+      "material": "Pressed (machine-stamped, regulation-issued)",
+      "shapes": "Rectangles, straight edges, 90° corners",
+      "wear": "Maintained but impersonal — kept to standard",
+      "id_patterns": ["^anchor_", "^c_", "^c2_", "^c6_", "^c10_"],
+      "prompt_patterns": [],
+      "construction": {
+        "CLO-002": "Machine-made, identical cuts, zero personalization"
+      }
+    },
+    "keth": {
+      "material": "Grown (cultivated, secreted, bio-film)",
+      "shapes": "Segments, arcs, compound curves",
+      "wear": "Alive — aging means growing, not decaying",
+      "id_patterns": ["^k_", "^k\\d+_"],
+      "prompt_patterns": ["arthropod", "keth", "chitin", "antennae"],
+      "construction": {
+        "CLO-002": "Grown on wearer or harvested from communal bio-stocks"
+      }
+    },
+    "veshan": {
+      "material": "Forged (hammered, riveted, layered)",
+      "shapes": "Triangles, chevrons, sharp angles",
+      "wear": "Battle-scarred with pride — damage displayed",
+      "id_patterns": ["^v_", "^v3_", "^v7_", "^v10_"],
+      "prompt_patterns": ["reptilian", "veshan", "scales", "crest"],
+      "construction": {
+        "CLO-002": "Smith-forged, imperfections intentional"
+      }
+    },
+    "orryn": {
+      "material": "Woven (modular, interlocking, reconfigurable)",
+      "shapes": "Ellipses, flowing curves, translucent layers",
+      "wear": "Adaptive — reconfigured, not worn",
+      "id_patterns": ["^o_", "^o\\d+_"],
+      "prompt_patterns": ["cephalopod", "orryn", "tentacle", "chromatophore"],
+      "construction": {
+        "CLO-002": "Modular panels that clip together magnetically"
+      }
+    },
+    "reach": {
+      "material": "Stripped (torn, welded from scrap, jury-rigged)",
+      "shapes": "Asymmetric, irregular, mismatched",
+      "wear": "Jury-rigged — functional ugly",
+      "id_patterns": ["^sr_", "^sr4_", "^sr8_", "^sr10_"],
+      "prompt_patterns": ["salvaged", "scrap", "jury.rigged", "outlaw", "pirate"],
+      "construction": {
+        "CLO-002": "Assembled from salvage, nothing matches"
+      }
+    }
+  },
+  "cross_group_patterns": {
+    "^cf_": "detect_from_id_suffix"
+  },
+  "edge_defaults": {
+    "^edge_": "compact"
+  },
+  "null_faction_patterns": [
+    "generic_scifi", "too_clean", "too_heroic", "star_trek", "cyberpunk",
+    "fantasy_knight", "warhammer", "too_sexy", "steampunk", "fashion_model",
+    "pin_up", "fortnite", "mmorpg", "superhero", "invisible", "xenomorph",
+    "zombified", "samurai"
+  ],
+  "id_fallbacks": {
+    "wrong_material_v": "veshan",
+    "veshan|cute_dragon|generic_lizard|veshan_robot|veshan_human": "veshan",
+    "reach|pirate|matching_gang|space_cowboy": "reach",
+    "keth": "keth",
+    "almost_right_compact": "compact",
+    "almost_right_veshan": "veshan",
+    "almost_right_reach": "reach"
+  },
+  "faction_context": {
+    "COL-001": "Faction primary should dominate at ~60%",
+    "COL-002": "Faction primary should dominate at ~60%",
+    "CLO-001": "base → functional → identity → accessory"
+  }
+}

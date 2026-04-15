@@ -1,0 +1,47 @@
+{
+  "default_lane": "costume",
+  "lanes": [
+    {
+      "id": "costume",
+      "label": "Character / Costume",
+      "description": "Character costumes, personal gear, faction-specific clothing",
+      "id_patterns": []
+    },
+    {
+      "id": "ship",
+      "label": "Ship Exterior",
+      "description": "Ship hull design, faction construction language, exterior views",
+      "id_patterns": ["^ship_ext_", "^se_", "^ship_"]
+    },
+    {
+      "id": "interior",
+      "label": "Ship Interior",
+      "description": "Ship and station interiors, environmental storytelling",
+      "id_patterns": ["^ship_int_", "^si_", "^int_", "^interior_"]
+    },
+    {
+      "id": "station",
+      "label": "Station / Port",
+      "description": "Docking bays, markets, cantinas, public spaces",
+      "id_patterns": ["^station_", "^port_", "^stn_"]
+    },
+    {
+      "id": "equipment",
+      "label": "Equipment / Weapons",
+      "description": "Tools, weapons, functional objects with faction identity",
+      "id_patterns": ["^eqp_", "^wpn_", "^weapon_", "^tool_", "^equip_"]
+    },
+    {
+      "id": "prop",
+      "label": "Props / Furniture",
+      "description": "Story-carrying objects, food, signs, furniture",
+      "id_patterns": ["^prop_", "^food_", "^sign_", "^furn_"]
+    },
+    {
+      "id": "environment",
+      "label": "Environment / Planetary",
+      "description": "Planetary environments, landscapes, exteriors",
+      "id_patterns": ["^env_", "^planet_", "^landing_", "^mine_"]
+    }
+  ]
+}

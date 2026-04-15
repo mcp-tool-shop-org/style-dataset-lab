@@ -93,7 +93,7 @@ async function migrateRecord(filePath, GAME_ROOT, DRY_RUN) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const RECORDS_DIR = join(GAME_ROOT, 'records');
   const DRY_RUN = argv.includes('--dry-run');
 

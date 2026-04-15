@@ -1,0 +1,40 @@
+{
+  "dimensions": [
+    "silhouette_clarity",
+    "palette_adherence",
+    "material_fidelity",
+    "faction_read",
+    "wear_level",
+    "style_consistency",
+    "clothing_logic",
+    "composition"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "generic_scifi": ["CLO-003"],
+    "too_clean": ["MAT-002", "COL-003"],
+    "wrong_material": ["MAT-001"],
+    "wrong_shapes": ["SHP-001"],
+    "wrong_palette": ["COL-001", "COL-002", "COL-003"],
+    "photorealistic": ["RND-001"],
+    "3d_render": ["RND-001"],
+    "bad_composition": ["RND-004"],
+    "costume_not_clothes": ["CLO-001", "CLO-002"],
+    "faction_unreadable": ["MAT-001", "SHP-001", "COL-001"],
+    "anime_style": ["RND-001"],
+    "hero_pose": ["RND-004"]
+  }
+}

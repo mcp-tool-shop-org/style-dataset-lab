@@ -1,0 +1,173 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "RND-001", "category": "rendering",
+      "desc": "Semi-realistic painterly style",
+      "dims": ["style_consistency"], "faction_specific": false,
+      "rationale_pass": "Painterly rendering achieved (${scorePct}%)",
+      "rationale_fail": "Not painterly — reads as photorealistic/3D/anime (${scorePct}%)"
+    },
+    {
+      "id": "RND-002", "category": "rendering",
+      "desc": "Single upper-left warm lighting with soft AO shadows",
+      "dims": ["composition"], "faction_specific": false,
+      "rationale_pass": "Lighting reads correctly — warm upper-left with soft shadows",
+      "rationale_fail": "Lighting incorrect or flat"
+    },
+    {
+      "id": "RND-003", "category": "rendering",
+      "desc": "Muted dusty color saturation",
+      "dims": ["palette_adherence"], "faction_specific": false,
+      "rationale_pass": "Palette is muted and dusty — no bright saturated colors",
+      "rationale_fail": "Colors too bright or saturated — not muted/dusty"
+    },
+    {
+      "id": "RND-004", "category": "rendering",
+      "desc": "Full body front-facing on plain background, 70-85% fill",
+      "dims": ["composition"], "faction_specific": false,
+      "rationale_pass": "Full body, front-facing, plain background, correct fill",
+      "rationale_fail": "Composition fails — not full body/centered/plain bg (${scorePct}%)"
+    },
+    {
+      "id": "RND-005", "category": "rendering",
+      "desc": "Readable at 128px, identifiable at 64px",
+      "dims": ["silhouette_clarity"], "faction_specific": false,
+      "rationale_pass": "Silhouette readable at gameplay scale (${scorePct}%)",
+      "rationale_fail": "Silhouette unreadable at gameplay scale (${scorePct}%)"
+    },
+    {
+      "id": "MAT-001", "category": "material",
+      "desc": "Every surface reads as faction material vocabulary",
+      "dims": ["material_fidelity", "faction_read"], "faction_specific": true,
+      "rationale_pass": "Surfaces read as ${groupMaterial} (${scorePct}%)",
+      "rationale_fail": "Surfaces don't read as ${groupMaterial} (${scorePct}%)"
+    },
+    {
+      "id": "MAT-002", "category": "material",
+      "desc": "Faction-appropriate aging and wear",
+      "dims": ["wear_level"], "faction_specific": true,
+      "rationale_pass": "Wear level appropriate — ${groupWear}",
+      "rationale_fail": "Wear level wrong — doesn't match ${groupWear}"
+    },
+    {
+      "id": "SHP-001", "category": "shape",
+      "desc": "Faction shape language compliance",
+      "dims": ["silhouette_clarity", "faction_read"], "faction_specific": true,
+      "rationale_pass": "Shape language compliant — ${groupShapes}",
+      "rationale_fail": "Shape language violates faction — wrong geometry (${scorePct}%)"
+    },
+    {
+      "id": "COL-001", "category": "color",
+      "desc": "Correct faction palette colors",
+      "dims": ["palette_adherence", "faction_read"], "faction_specific": true,
+      "rationale_pass": "Faction palette present and dominant (${scorePct}%)",
+      "rationale_fail": "Faction palette missing or wrong colors (${scorePct}%)"
+    },
+    {
+      "id": "COL-002", "category": "color",
+      "desc": "Palette ratio ~60/30/10",
+      "dims": ["palette_adherence"], "faction_specific": true,
+      "rationale_pass": "Color ratios read as ~60/30/10",
+      "rationale_fail": "Color ratios off — primary doesn't dominate"
+    },
+    {
+      "id": "COL-003", "category": "color",
+      "desc": "No bright saturated colors — everything muted/dusty",
+      "dims": ["palette_adherence"], "faction_specific": false,
+      "rationale_pass": "Colors muted and lived-in — no neon or bright saturated tones",
+      "rationale_fail": "Bright saturated colors present — violates muted/dusty rule"
+    },
+    {
+      "id": "CLO-001", "category": "clothing",
+      "desc": "Layer logic: base → functional → identity → accessory",
+      "dims": ["clothing_logic"], "faction_specific": true, "lanes": ["costume"],
+      "rationale_pass": "Layer logic follows base → functional → identity → accessory",
+      "rationale_fail": "Layer logic broken — layers don't follow faction system"
+    },
+    {
+      "id": "CLO-002", "category": "clothing",
+      "desc": "Construction matches faction building method",
+      "dims": ["clothing_logic", "material_fidelity"], "faction_specific": true, "lanes": ["costume"],
+      "rationale_pass": "Construction matches faction building method",
+      "rationale_fail": "Construction doesn't match faction building method (${scorePct}%)"
+    },
+    {
+      "id": "CLO-003", "category": "clothing",
+      "desc": "Not generic sci-fi (no spandex/Star Trek/Marvel/asset store)",
+      "dims": ["faction_read", "clothing_logic"], "faction_specific": false,
+      "rationale_pass": "Not generic sci-fi — reads as faction-specific and lived-in",
+      "rationale_fail": "Reads as generic sci-fi — not faction-specific (${scorePct}%)"
+    },
+    {
+      "id": "SHP-EXT-001", "category": "ship",
+      "desc": "Faction hull language — construction reads as faction-built",
+      "dims": ["material_fidelity", "faction_read"], "faction_specific": true, "lanes": ["ship"],
+      "rationale_pass": "Hull construction reads as faction-built (${scorePct}%)",
+      "rationale_fail": "Hull doesn't read as faction-built (${scorePct}%)"
+    },
+    {
+      "id": "SHP-EXT-002", "category": "ship",
+      "desc": "Scale and grit — working vehicle not showpiece",
+      "dims": ["wear_level", "material_fidelity"], "faction_specific": false, "lanes": ["ship"],
+      "rationale_pass": "Reads as working vehicle — proper scale and grit (${scorePct}%)",
+      "rationale_fail": "Reads as showpiece — lacks working-vehicle grit (${scorePct}%)"
+    },
+    {
+      "id": "SHP-INT-001", "category": "interior",
+      "desc": "Interior faction character — environmental storytelling",
+      "dims": ["faction_read", "material_fidelity"], "faction_specific": true, "lanes": ["interior"],
+      "rationale_pass": "Interior reads as faction space — environmental storytelling present (${scorePct}%)",
+      "rationale_fail": "Interior lacks faction character (${scorePct}%)"
+    },
+    {
+      "id": "SHP-INT-002", "category": "interior",
+      "desc": "Lived-in detail — coffee stains, tool marks, wear",
+      "dims": ["wear_level"], "faction_specific": false, "lanes": ["interior"],
+      "rationale_pass": "Lived-in detail present — wear, stains, tool marks (${scorePct}%)",
+      "rationale_fail": "Too clean — lacks lived-in detail (${scorePct}%)"
+    },
+    {
+      "id": "EQP-001", "category": "equipment",
+      "desc": "Faction design language for tools and weapons",
+      "dims": ["material_fidelity", "faction_read"], "faction_specific": true, "lanes": ["equipment", "prop"],
+      "rationale_pass": "Equipment reads as faction-designed (${scorePct}%)",
+      "rationale_fail": "Equipment lacks faction design language (${scorePct}%)"
+    },
+    {
+      "id": "EQP-002", "category": "equipment",
+      "desc": "Tool not toy — used, worn, functional",
+      "dims": ["wear_level"], "faction_specific": false, "lanes": ["equipment", "prop"],
+      "rationale_pass": "Reads as functional tool — used and worn (${scorePct}%)",
+      "rationale_fail": "Reads as toy — too clean or decorative (${scorePct}%)"
+    },
+    {
+      "id": "EQP-003", "category": "equipment",
+      "desc": "Props carry faction identity or universal grit",
+      "dims": ["faction_read", "wear_level"], "faction_specific": false, "lanes": ["prop"],
+      "rationale_pass": "Prop carries identity or grit (${scorePct}%)",
+      "rationale_fail": "Prop is generic — no faction identity or grit (${scorePct}%)"
+    },
+    {
+      "id": "ENV-001", "category": "environment",
+      "desc": "Atmosphere over beauty — industrial, tense, functional",
+      "dims": ["style_consistency", "wear_level"], "faction_specific": false, "lanes": ["environment", "station"],
+      "rationale_pass": "Atmosphere reads as industrial and functional (${scorePct}%)",
+      "rationale_fail": "Too beautiful — lacks industrial tension (${scorePct}%)"
+    },
+    {
+      "id": "ENV-002", "category": "environment",
+      "desc": "Faction footprint in architecture and signage",
+      "dims": ["faction_read", "material_fidelity"], "faction_specific": true, "lanes": ["environment", "station"],
+      "rationale_pass": "Faction footprint visible in architecture (${scorePct}%)",
+      "rationale_fail": "No faction footprint — generic architecture (${scorePct}%)"
+    },
+    {
+      "id": "ENV-003", "category": "environment",
+      "desc": "Lighting carries mood — faction-specific lighting character",
+      "dims": ["palette_adherence"], "faction_specific": true, "lanes": ["environment", "station", "interior"],
+      "rationale_pass": "Lighting carries faction-specific mood (${scorePct}%)",
+      "rationale_fail": "Lighting generic — no faction mood (${scorePct}%)"
+    }
+  ]
+}

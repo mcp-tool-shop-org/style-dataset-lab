@@ -27,7 +27,7 @@ function getFlagValue(args, flag) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
 
   // Strip --project/--game and their values from positional parsing
   const args = argv.filter((a, i) => {

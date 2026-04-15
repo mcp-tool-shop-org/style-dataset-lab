@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+const GAME_ROOT = join(REPO_ROOT, 'projects', GAME);
 
 const DEFAULT_APPROVED_SCORES = {
   silhouette_clarity: 0.8, palette_adherence: 0.8, material_fidelity: 0.8,

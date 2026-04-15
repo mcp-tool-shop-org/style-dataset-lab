@@ -154,7 +154,7 @@ function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, c
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
   const packPath = argv.find((a) => !a.startsWith("--")) || "inputs/prompts/rpg-icons-lane1.json";

@@ -1,13 +1,13 @@
 node_modules/
 
-# Per-game generated images (large, regenerable from prompt packs)
-games/*/outputs/candidates/
-games/*/outputs/approved/
-games/*/outputs/rejected/
-games/*/outputs/borderline/
-games/*/outputs/painterly/
-games/*/outputs/painterly-test/
-games/*/exports/
+# Per-project generated images (large, regenerable from prompt packs)
+projects/*/outputs/candidates/
+projects/*/outputs/approved/
+projects/*/outputs/rejected/
+projects/*/outputs/borderline/
+projects/*/outputs/painterly/
+projects/*/outputs/painterly-test/
+projects/*/exports/
 
 # Model weights (never commit)
 *.safetensors

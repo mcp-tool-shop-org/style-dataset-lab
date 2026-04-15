@@ -10,8 +10,8 @@
     "canon-bind": "node scripts/canon-bind.js",
     "painterly": "node scripts/painterly.js",
     "generate:identity": "node scripts/generate-identity.js",
-    "export": "echo 'Usage: repo-dataset visual generate ./games/<game> --format trl'",
-    "inspect": "echo 'Usage: repo-dataset visual inspect ./games/<game>'"
+    "export": "echo 'Usage: repo-dataset visual generate ./projects/<project> --format trl'",
+    "inspect": "echo 'Usage: repo-dataset visual inspect ./projects/<project>'"
   },
   "files": [
     "scripts/",
