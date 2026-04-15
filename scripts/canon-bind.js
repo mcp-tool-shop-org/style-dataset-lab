@@ -6,6 +6,9 @@
  * a verdict (pass/fail/partial) and a one-line rationale derived from
  * the judgment scores and failure modes.
  *
+ * Loads rules, lanes, rubric, and terminology from per-project config files.
+ * Missing config files cause a hard failure — no silent fallback.
+ *
  * Usage:
  *   node scripts/canon-bind.js            # bind all records
  *   node scripts/canon-bind.js --dry-run  # preview without writing
@@ -13,222 +16,212 @@
  *   sdlab bind --project star-freight --stats
  */
 
-import { readFileSync, writeFileSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { loadConstitution, loadLanes, loadRubric, loadTerminology } from '../lib/config.js';
 
-// ─── Constitution Rules ──────────────────────────────────────────────
-// Each rule has: id, category, description, scoring_dimensions (which
-// judgment scores map to this rule), and faction_specific flag.
+// ─── Config-Driven Detection ────────────────────────────────────────
 
-const CONSTITUTION_RULES = [
-  // Rendering rules (universal)
-  { id: 'RND-001', category: 'rendering', desc: 'Semi-realistic painterly style',
-    dims: ['style_consistency'], faction_specific: false },
-  { id: 'RND-002', category: 'rendering', desc: 'Single upper-left warm lighting with soft AO shadows',
-    dims: ['composition'], faction_specific: false },
-  { id: 'RND-003', category: 'rendering', desc: 'Muted dusty color saturation',
-    dims: ['palette_adherence'], faction_specific: false },
-  { id: 'RND-004', category: 'rendering', desc: 'Full body front-facing on plain background, 70-85% fill',
-    dims: ['composition'], faction_specific: false },
-  { id: 'RND-005', category: 'rendering', desc: 'Readable at 128px, identifiable at 64px',
-    dims: ['silhouette_clarity'], faction_specific: false },
-
-  // Material rules (faction-specific)
-  { id: 'MAT-001', category: 'material', desc: 'Every surface reads as faction material vocabulary',
-    dims: ['material_fidelity', 'faction_read'], faction_specific: true },
-  { id: 'MAT-002', category: 'material', desc: 'Faction-appropriate aging and wear',
-    dims: ['wear_level'], faction_specific: true },
-
-  // Shape language (faction-specific)
-  { id: 'SHP-001', category: 'shape', desc: 'Faction shape language compliance',
-    dims: ['silhouette_clarity', 'faction_read'], faction_specific: true },
-
-  // Color rules (faction-specific)
-  { id: 'COL-001', category: 'color', desc: 'Correct faction palette colors',
-    dims: ['palette_adherence', 'faction_read'], faction_specific: true },
-  { id: 'COL-002', category: 'color', desc: 'Palette ratio ~60/30/10',
-    dims: ['palette_adherence'], faction_specific: true },
-  { id: 'COL-003', category: 'color', desc: 'No bright saturated colors — everything muted/dusty',
-    dims: ['palette_adherence'], faction_specific: false },
-
-  // Clothing rules (faction-specific — costume subjects only)
-  { id: 'CLO-001', category: 'clothing', desc: 'Layer logic: base → functional → identity → accessory',
-    dims: ['clothing_logic'], faction_specific: true, lanes: ['costume'] },
-  { id: 'CLO-002', category: 'clothing', desc: 'Construction matches faction building method',
-    dims: ['clothing_logic', 'material_fidelity'], faction_specific: true, lanes: ['costume'] },
-  { id: 'CLO-003', category: 'clothing', desc: 'Not generic sci-fi (no spandex/Star Trek/Marvel/asset store)',
-    dims: ['faction_read', 'clothing_logic'], faction_specific: false },
-
-  // Ship rules (ship subjects only)
-  { id: 'SHP-EXT-001', category: 'ship', desc: 'Faction hull language — construction reads as faction-built',
-    dims: ['material_fidelity', 'faction_read'], faction_specific: true, lanes: ['ship'] },
-  { id: 'SHP-EXT-002', category: 'ship', desc: 'Scale and grit — working vehicle not showpiece',
-    dims: ['wear_level', 'material_fidelity'], faction_specific: false, lanes: ['ship'] },
-  { id: 'SHP-INT-001', category: 'interior', desc: 'Interior faction character — environmental storytelling',
-    dims: ['faction_read', 'material_fidelity'], faction_specific: true, lanes: ['interior'] },
-  { id: 'SHP-INT-002', category: 'interior', desc: 'Lived-in detail — coffee stains, tool marks, wear',
-    dims: ['wear_level'], faction_specific: false, lanes: ['interior'] },
-
-  // Equipment rules (equipment/prop subjects only)
-  { id: 'EQP-001', category: 'equipment', desc: 'Faction design language for tools and weapons',
-    dims: ['material_fidelity', 'faction_read'], faction_specific: true, lanes: ['equipment', 'prop'] },
-  { id: 'EQP-002', category: 'equipment', desc: 'Tool not toy — used, worn, functional',
-    dims: ['wear_level'], faction_specific: false, lanes: ['equipment', 'prop'] },
-  { id: 'EQP-003', category: 'equipment', desc: 'Props carry faction identity or universal grit',
-    dims: ['faction_read', 'wear_level'], faction_specific: false, lanes: ['prop'] },
-
-  // Environment rules (environment subjects only)
-  { id: 'ENV-001', category: 'environment', desc: 'Atmosphere over beauty — industrial, tense, functional',
-    dims: ['style_consistency', 'wear_level'], faction_specific: false, lanes: ['environment', 'station'] },
-  { id: 'ENV-002', category: 'environment', desc: 'Faction footprint in architecture and signage',
-    dims: ['faction_read', 'material_fidelity'], faction_specific: true, lanes: ['environment', 'station'] },
-  { id: 'ENV-003', category: 'environment', desc: 'Lighting carries mood — faction-specific lighting character',
-    dims: ['palette_adherence'], faction_specific: true, lanes: ['environment', 'station', 'interior'] },
-];
-
-// ─── Lane Detection ──────────────────────────────────────────────────
-
-function detectLane(id, prompt) {
+/**
+ * Detect lane from asset ID using project lane config.
+ * Tests each lane's id_patterns as regex against the lowercase ID.
+ * Returns the first match, or the default_lane.
+ */
+function detectLane(id, prompt, lanesConfig) {
   const lower = id.toLowerCase();
-  if (/^ship_ext_|^se_|^ship_/.test(lower)) return 'ship';
-  if (/^ship_int_|^si_|^int_|^interior_/.test(lower)) return 'interior';
-  if (/^station_|^port_|^stn_/.test(lower)) return 'station';
-  if (/^eqp_|^wpn_|^weapon_|^tool_|^equip_/.test(lower)) return 'equipment';
-  if (/^prop_|^food_|^sign_|^furn_/.test(lower)) return 'prop';
-  if (/^env_|^planet_|^landing_|^mine_/.test(lower)) return 'environment';
-  return 'costume';
+  for (const lane of lanesConfig.lanes) {
+    if (!lane.id_patterns || lane.id_patterns.length === 0) continue;
+    for (const pattern of lane.id_patterns) {
+      if (new RegExp(pattern).test(lower)) return lane.id;
+    }
+  }
+  return lanesConfig.default_lane;
 }
 
-// ─── Faction Detection ───────────────────────────────────────────────
+/**
+ * Detect group (faction) from asset ID and prompt using terminology config.
+ * Mirrors the exact detection order from the original hardcoded detectFaction():
+ *   1. Primary ID patterns per group
+ *   2. Cross-group patterns (e.g. ^cf_ → detect from ID suffix)
+ *   3. Edge defaults (e.g. ^edge_ → compact)
+ *   4. Prompt-based fallback patterns
+ *   5. Null-faction patterns (generic rejects with no faction)
+ *   6. ID fallback patterns (specific reject/borderline IDs)
+ */
+function detectGroup(id, prompt, termConfig) {
+  // Explicit ordering for ID-based and prompt-based detection phases.
+  // These can differ — e.g. ID checks reach before keth, but prompt
+  // checks veshan before keth before orryn before reach.
+  const idOrder = termConfig.id_detection_order || Object.keys(termConfig.groups);
+  const promptOrder = termConfig.prompt_detection_order || Object.keys(termConfig.groups);
 
-const FACTION_MATERIAL = {
-  compact: 'Pressed (machine-stamped, regulation-issued)',
-  keth: 'Grown (cultivated, secreted, bio-film)',
-  veshan: 'Forged (hammered, riveted, layered)',
-  orryn: 'Woven (modular, interlocking, reconfigurable)',
-  reach: 'Stripped (torn, welded from scrap, jury-rigged)',
-};
-
-const FACTION_SHAPES = {
-  compact: 'Rectangles, straight edges, 90° corners',
-  keth: 'Segments, arcs, compound curves',
-  veshan: 'Triangles, chevrons, sharp angles',
-  orryn: 'Ellipses, flowing curves, translucent layers',
-  reach: 'Asymmetric, irregular, mismatched',
-};
-
-const FACTION_WEAR = {
-  compact: 'Maintained but impersonal — kept to standard',
-  keth: 'Alive — aging means growing, not decaying',
-  veshan: 'Battle-scarred with pride — damage displayed',
-  orryn: 'Adaptive — reconfigured, not worn',
-  reach: 'Jury-rigged — functional ugly',
-};
-
-function detectFaction(id, prompt) {
-  if (/^(anchor_|c_|c2_|c6_|c10_)/.test(id)) return 'compact';
-  if (/^(v_|v3_|v7_|v10_)/.test(id)) return 'veshan';
-  if (/^(sr_|sr4_|sr8_|sr10_)/.test(id)) return 'reach';
-  if (/^(k_|k\d+_)/.test(id)) return 'keth';
-  if (/^(o_|o\d+_)/.test(id)) return 'orryn';
-
-  if (/^cf_/.test(id)) {
-    if (/compact/.test(id)) return 'compact';
-    if (/veshan/.test(id)) return 'veshan';
-    if (/reach/.test(id)) return 'reach';
-    if (/keth/.test(id)) return 'keth';
-    if (/orryn/.test(id)) return 'orryn';
+  // 1. Primary ID patterns per group (id_detection_order)
+  for (const groupName of idOrder) {
+    const group = termConfig.groups[groupName];
+    if (!group?.id_patterns) continue;
+    for (const pattern of group.id_patterns) {
+      if (new RegExp(pattern).test(id)) return groupName;
+    }
   }
 
-  if (/^edge_/.test(id)) return 'compact';
+  // 2. Cross-group patterns
+  for (const [pattern, behavior] of Object.entries(termConfig.cross_group_patterns || {})) {
+    if (new RegExp(pattern).test(id)) {
+      if (behavior === 'detect_from_id_suffix') {
+        for (const groupName of idOrder) {
+          if (id.includes(groupName)) return groupName;
+        }
+      }
+      return null;
+    }
+  }
 
+  // 3. Edge defaults
+  for (const [pattern, groupName] of Object.entries(termConfig.edge_defaults || {})) {
+    if (new RegExp(pattern).test(id)) return groupName;
+  }
+
+  // 4. Prompt-based fallback (prompt_detection_order)
   if (prompt) {
     const p = prompt.toLowerCase();
-    if (/reptilian|veshan|scales|crest/.test(p)) return 'veshan';
-    if (/arthropod|keth|chitin|antennae/.test(p)) return 'keth';
-    if (/cephalopod|orryn|tentacle|chromatophore/.test(p)) return 'orryn';
-    if (/salvaged|scrap|jury.rigged|outlaw|pirate/.test(p)) return 'reach';
+    for (const groupName of promptOrder) {
+      const group = termConfig.groups[groupName];
+      if (!group?.prompt_patterns || group.prompt_patterns.length === 0) continue;
+      for (const keyword of group.prompt_patterns) {
+        if (new RegExp(keyword).test(p)) return groupName;
+      }
+    }
   }
 
-  if (/wrong_material_v/.test(id)) return 'veshan';
-  if (/generic_scifi|too_clean|too_heroic|star_trek|cyberpunk|fantasy_knight|warhammer|too_sexy|steampunk|fashion_model|pin_up|fortnite|mmorpg|superhero|invisible|xenomorph|zombified|samurai/.test(id)) return null;
+  // 5. Null-faction patterns (generic rejects — no faction)
+  for (const pattern of termConfig.null_faction_patterns || []) {
+    if (new RegExp(pattern).test(id)) return null;
+  }
 
-  if (/veshan|cute_dragon|generic_lizard|veshan_robot|veshan_human/.test(id)) return 'veshan';
-  if (/reach|pirate|matching_gang|space_cowboy/.test(id)) return 'reach';
-  if (/keth/.test(id)) return 'keth';
-
-  if (/almost_right_compact/.test(id)) return 'compact';
-  if (/almost_right_veshan/.test(id)) return 'veshan';
-  if (/almost_right_reach/.test(id)) return 'reach';
+  // 6. ID fallback patterns
+  for (const [pattern, groupName] of Object.entries(termConfig.id_fallbacks || {})) {
+    if (new RegExp(pattern).test(id)) return groupName;
+  }
 
   return null;
 }
 
-// ─── Failure Mode → Rule Mapping ─────────────────────────────────────
+/**
+ * Build rationale string from rule's template, interpolating variables.
+ */
+function buildRationale(rule, verdict, score, groupName, termConfig) {
+  const scorePct = Math.round(score * 100);
+  const group = groupName ? termConfig.groups[groupName] : null;
+  const groupMaterial = group?.material || 'faction material';
+  const groupShapes = group?.shapes || 'faction shapes';
+  const groupWear = group?.wear || 'faction-correct aging';
 
-const FAILURE_TO_RULES = {
-  generic_scifi: ['CLO-003'],
-  too_clean: ['MAT-002', 'COL-003'],
-  wrong_material: ['MAT-001'],
-  wrong_shapes: ['SHP-001'],
-  wrong_palette: ['COL-001', 'COL-002', 'COL-003'],
-  photorealistic: ['RND-001'],
-  '3d_render': ['RND-001'],
-  bad_composition: ['RND-004'],
-  costume_not_clothes: ['CLO-001', 'CLO-002'],
-  faction_unreadable: ['MAT-001', 'SHP-001', 'COL-001'],
-  anime_style: ['RND-001'],
-  hero_pose: ['RND-004'],
-};
+  let template;
+  if (verdict === 'pass') {
+    template = rule.rationale_pass;
+  } else if (verdict === 'fail') {
+    template = rule.rationale_fail;
+  } else {
+    // partial — use generic template
+    return `Partially meets ${rule.desc.toLowerCase()} (${scorePct}%)`;
+  }
+
+  if (!template) {
+    // Fallback for rules without templates
+    return verdict === 'pass'
+      ? `Passes ${rule.id} (${scorePct}%)`
+      : `Fails ${rule.id} (${scorePct}%)`;
+  }
+
+  // Interpolate template variables
+  return template
+    .replace(/\$\{scorePct\}/g, String(scorePct))
+    .replace(/\$\{groupMaterial\}/g, groupMaterial)
+    .replace(/\$\{groupShapes\}/g, groupShapes)
+    .replace(/\$\{groupWear\}/g, groupWear);
+}
+
+/**
+ * Get faction context string for a rule from terminology config.
+ */
+function getGroupContext(rule, groupName, termConfig) {
+  // Check rule-specific overrides in terminology
+  const contextOverride = termConfig.faction_context?.[rule.id];
+  if (contextOverride) return contextOverride;
+
+  // Check group-specific construction context
+  const group = groupName ? termConfig.groups[groupName] : null;
+  if (group?.construction?.[rule.id]) return group.construction[rule.id];
+
+  // Fallback by rule category
+  switch (rule.id) {
+    case 'MAT-001': return group?.material || null;
+    case 'MAT-002': return group?.wear || null;
+    case 'SHP-001': return group?.shapes || null;
+    default: return null;
+  }
+}
 
 // ─── Assertion Generation ────────────────────────────────────────────
 
-function generateAssertions(record) {
+function generateAssertions(record, constitutionRules, lanesConfig, rubricConfig, termConfig) {
   const { id, judgment, provenance } = record;
   if (!judgment || !judgment.criteria_scores) return null;
 
   const { status, criteria_scores, failure_modes = [], explanation = '' } = judgment;
   const prompt = provenance?.prompt || '';
-  const faction = detectFaction(id, prompt);
-  const lane = detectLane(id, prompt);
+  const group = detectGroup(id, prompt, termConfig);
+  const lane = detectLane(id, prompt, lanesConfig);
   const assertions = [];
 
-  for (const rule of CONSTITUTION_RULES) {
-    if (rule.faction_specific && !faction) continue;
+  const failureToRules = rubricConfig.failure_to_rules || {};
+  const thresholds = rubricConfig.thresholds || {};
+
+  for (const rule of constitutionRules) {
+    // Skip group-specific rules for unknown-group rejects
+    if (rule.faction_specific && !group) continue;
+
+    // Skip lane-specific rules that don't apply to this asset's lane
     if (rule.lanes && !rule.lanes.includes(lane)) continue;
 
+    // Calculate average score from mapped dimensions
     const dimScores = rule.dims
       .map(d => criteria_scores[d])
       .filter(s => s !== undefined && s !== null);
     if (dimScores.length === 0) continue;
     const avgScore = dimScores.reduce((a, b) => a + b, 0) / dimScores.length;
 
+    // Check if any failure mode maps to this rule
     const failedByMode = failure_modes.some(fm =>
-      (FAILURE_TO_RULES[fm] || []).includes(rule.id)
+      (failureToRules[fm] || []).includes(rule.id)
     );
 
+    // Determine verdict using rubric thresholds
     let verdict;
     if (status === 'rejected') {
-      if (failedByMode || avgScore < 0.4) {
+      const t = thresholds.rejected || { fail_ceiling: 0.4, partial_ceiling: 0.6 };
+      if (failedByMode || avgScore < t.fail_ceiling) {
         verdict = 'fail';
-      } else if (avgScore < 0.6) {
+      } else if (avgScore < t.partial_ceiling) {
         verdict = 'partial';
       } else {
-        verdict = 'pass';
+        verdict = 'pass'; // rejected asset can still pass some rules
       }
     } else if (status === 'borderline') {
-      if (avgScore >= 0.7) verdict = 'pass';
-      else if (avgScore >= 0.5) verdict = 'partial';
+      const t = thresholds.borderline || { pass: 0.7, partial: 0.5 };
+      if (avgScore >= t.pass) verdict = 'pass';
+      else if (avgScore >= t.partial) verdict = 'partial';
       else verdict = 'fail';
-    } else {
-      if (avgScore >= 0.7) verdict = 'pass';
-      else if (avgScore >= 0.5) verdict = 'partial';
-      else verdict = 'fail';
+    } else { // approved
+      const t = thresholds.approved || { pass: 0.7, partial: 0.5 };
+      if (avgScore >= t.pass) verdict = 'pass';
+      else if (avgScore >= t.partial) verdict = 'partial';
+      else verdict = 'fail'; // unlikely for approved
     }
 
-    let rationale = buildRationale(rule, verdict, avgScore, faction, explanation);
+    const rationale = buildRationale(rule, verdict, avgScore, group, termConfig);
 
     assertions.push({
       rule_id: rule.id,
@@ -236,117 +229,74 @@ function generateAssertions(record) {
       verdict,
       score: Math.round(avgScore * 100) / 100,
       rationale,
-      ...(faction && rule.faction_specific ? { faction, faction_context: getFactionContext(rule, faction) } : {}),
+      ...(group && rule.faction_specific ? { faction: group, faction_context: getGroupContext(rule, group, termConfig) } : {}),
     });
   }
 
   return assertions;
 }
 
-function buildRationale(rule, verdict, score, faction, explanation) {
-  const scorePct = Math.round(score * 100);
-
-  if (verdict === 'pass') {
-    switch (rule.id) {
-      case 'RND-001': return `Painterly rendering achieved (${scorePct}%)`;
-      case 'RND-002': return `Lighting reads correctly — warm upper-left with soft shadows`;
-      case 'RND-003': return `Palette is muted and dusty — no bright saturated colors`;
-      case 'RND-004': return `Full body, front-facing, plain background, correct fill`;
-      case 'RND-005': return `Silhouette readable at gameplay scale (${scorePct}%)`;
-      case 'MAT-001': return `Surfaces read as ${faction ? FACTION_MATERIAL[faction] : 'faction material'} (${scorePct}%)`;
-      case 'MAT-002': return `Wear level appropriate — ${faction ? FACTION_WEAR[faction] : 'faction-correct aging'}`;
-      case 'SHP-001': return `Shape language compliant — ${faction ? FACTION_SHAPES[faction] : 'faction shapes'}`;
-      case 'COL-001': return `Faction palette present and dominant (${scorePct}%)`;
-      case 'COL-002': return `Color ratios read as ~60/30/10`;
-      case 'COL-003': return `Colors muted and lived-in — no neon or bright saturated tones`;
-      case 'CLO-001': return `Layer logic follows base → functional → identity → accessory`;
-      case 'CLO-002': return `Construction matches ${faction ? 'faction' : ''} building method`;
-      case 'CLO-003': return `Not generic sci-fi — reads as faction-specific and lived-in`;
-      default: return `Passes ${rule.id} (${scorePct}%)`;
-    }
-  }
-
-  if (verdict === 'fail') {
-    switch (rule.id) {
-      case 'RND-001': return `Not painterly — reads as photorealistic/3D/anime (${scorePct}%)`;
-      case 'RND-002': return `Lighting incorrect or flat`;
-      case 'RND-003': return `Colors too bright or saturated — not muted/dusty`;
-      case 'RND-004': return `Composition fails — not full body/centered/plain bg (${scorePct}%)`;
-      case 'RND-005': return `Silhouette unreadable at gameplay scale (${scorePct}%)`;
-      case 'MAT-001': return `Surfaces don't read as ${faction ? FACTION_MATERIAL[faction] : 'any faction material'} (${scorePct}%)`;
-      case 'MAT-002': return `Wear level wrong — ${faction ? 'doesn\'t match ' + FACTION_WEAR[faction] : 'inappropriate aging'}`;
-      case 'SHP-001': return `Shape language violates faction — wrong geometry (${scorePct}%)`;
-      case 'COL-001': return `Faction palette missing or wrong colors (${scorePct}%)`;
-      case 'COL-002': return `Color ratios off — primary doesn't dominate`;
-      case 'COL-003': return `Bright saturated colors present — violates muted/dusty rule`;
-      case 'CLO-001': return `Layer logic broken — layers don't follow faction system`;
-      case 'CLO-002': return `Construction doesn't match faction building method (${scorePct}%)`;
-      case 'CLO-003': return `Reads as generic sci-fi — not faction-specific (${scorePct}%)`;
-      default: return `Fails ${rule.id} (${scorePct}%)`;
-    }
-  }
-
-  return `Partially meets ${rule.desc.toLowerCase()} (${scorePct}%)`;
-}
-
-function getFactionContext(rule, faction) {
-  switch (rule.id) {
-    case 'MAT-001': return FACTION_MATERIAL[faction] || null;
-    case 'MAT-002': return FACTION_WEAR[faction] || null;
-    case 'SHP-001': return FACTION_SHAPES[faction] || null;
-    case 'COL-001':
-    case 'COL-002': return `Faction primary should dominate at ~60%`;
-    case 'CLO-001': return `base → functional → identity → accessory`;
-    case 'CLO-002':
-      switch (faction) {
-        case 'compact': return 'Machine-made, identical cuts, zero personalization';
-        case 'keth': return 'Grown on wearer or harvested from communal bio-stocks';
-        case 'veshan': return 'Smith-forged, imperfections intentional';
-        case 'orryn': return 'Modular panels that clip together magnetically';
-        case 'reach': return 'Assembled from salvage, nothing matches';
-        default: return null;
-      }
-    default: return null;
-  }
-}
-
 // ─── Main ────────────────────────────────────────────────────────────
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
-  const RECORDS_DIR = join(GAME_ROOT, 'records');
+  const PROJECT_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const RECORDS_DIR = join(PROJECT_ROOT, 'records');
   const DRY_RUN = argv.includes('--dry-run');
   const STATS_ONLY = argv.includes('--stats');
   const FORCE = argv.includes('--force');
 
+  // Load project config — fail loudly if missing
+  if (!existsSync(join(PROJECT_ROOT, 'constitution.json'))) {
+    throw new Error(
+      `No constitution.json found in ${PROJECT_ROOT}.\n` +
+      `Canon binding requires per-project config files.\n` +
+      `Run: sdlab init ${projectName} --domain <domain>`
+    );
+  }
+
+  const constitutionConfig = loadConstitution(PROJECT_ROOT);
+  const lanesConfig = loadLanes(PROJECT_ROOT);
+  const rubricConfig = loadRubric(PROJECT_ROOT);
+  const termConfig = loadTerminology(PROJECT_ROOT);
+
+  if (!constitutionConfig.rules || constitutionConfig.rules.length === 0) {
+    throw new Error(`constitution.json has no rules — cannot bind.`);
+  }
+
+  const constitutionRules = constitutionConfig.rules;
+  const constitutionVersion = constitutionConfig.version || '1.0.0';
+
   const files = readdirSync(RECORDS_DIR).filter(f => f.endsWith('.json'));
   let bound = 0, skipped = 0, alreadyBound = 0;
-  const factionCounts = {};
+  const groupCounts = {};
   const verdictCounts = { pass: 0, fail: 0, partial: 0 };
 
   for (const file of files) {
     const path = join(RECORDS_DIR, file);
     const record = JSON.parse(readFileSync(path, 'utf-8'));
 
+    // Skip records without judgment
     if (!record.judgment || !record.judgment.criteria_scores) {
       skipped++;
       continue;
     }
 
+    // Check if already bound
     if (record.canon?.assertions?.length > 0 && !FORCE) {
       alreadyBound++;
       continue;
     }
 
-    const assertions = generateAssertions(record);
+    const assertions = generateAssertions(record, constitutionRules, lanesConfig, rubricConfig, termConfig);
     if (!assertions || assertions.length === 0) {
       skipped++;
       continue;
     }
 
-    const faction = detectFaction(record.id, record.provenance?.prompt);
-    factionCounts[faction || 'unknown'] = (factionCounts[faction || 'unknown'] || 0) + 1;
+    // Track stats
+    const group = detectGroup(record.id, record.provenance?.prompt, termConfig);
+    groupCounts[group || 'unknown'] = (groupCounts[group || 'unknown'] || 0) + 1;
     for (const a of assertions) {
       verdictCounts[a.verdict] = (verdictCounts[a.verdict] || 0) + 1;
     }
@@ -356,11 +306,12 @@ export async function run(argv = process.argv.slice(2)) {
       continue;
     }
 
+    // Build canon object
     record.canon = {
-      constitution_version: '1.0.0',
+      constitution_version: constitutionVersion,
       bound_at: new Date().toISOString(),
       bound_by: 'canon-bind-v1',
-      faction: faction || null,
+      faction: group || null,
       assertions,
       assertion_count: assertions.length,
       pass_count: assertions.filter(a => a.verdict === 'pass').length,
@@ -368,13 +319,15 @@ export async function run(argv = process.argv.slice(2)) {
       partial_count: assertions.filter(a => a.verdict === 'partial').length,
     };
 
+    // Flat canon_assertions for repo-dataset
     record.canon_assertions = assertions;
 
+    // Canon explanation
     const passCount = assertions.filter(a => a.verdict === 'pass').length;
     const failCount = assertions.filter(a => a.verdict === 'fail').length;
     const status = record.judgment.status;
     if (status === 'approved') {
-      record.canon_explanation = `Approved: passes ${passCount}/${assertions.length} constitution rules. ${faction ? `Faction: ${faction}.` : ''} ${record.judgment.explanation || ''}`.trim();
+      record.canon_explanation = `Approved: passes ${passCount}/${assertions.length} constitution rules. ${group ? `Faction: ${group}.` : ''} ${record.judgment.explanation || ''}`.trim();
     } else if (status === 'rejected') {
       const failedRules = assertions.filter(a => a.verdict === 'fail').map(a => a.rule_id).join(', ');
       record.canon_explanation = `Rejected: fails ${failedRules}. ${record.judgment.explanation || ''}`.trim();
@@ -389,7 +342,7 @@ export async function run(argv = process.argv.slice(2)) {
 
     if (DRY_RUN && bound <= 3) {
       console.log(`\n─── ${record.id} (${record.judgment.status}) ───`);
-      console.log(`Faction: ${faction || 'unknown'}`);
+      console.log(`Faction: ${group || 'unknown'}`);
       for (const a of assertions) {
         console.log(`  ${a.verdict.toUpperCase().padEnd(7)} ${a.rule_id} — ${a.rationale}`);
       }
@@ -402,7 +355,7 @@ export async function run(argv = process.argv.slice(2)) {
   console.log(`Already bound: ${alreadyBound}`);
   console.log(`Skipped (no judgment): ${skipped}`);
   console.log(`\nFaction distribution:`);
-  for (const [f, c] of Object.entries(factionCounts).sort((a, b) => b[1] - a[1])) {
+  for (const [f, c] of Object.entries(groupCounts).sort((a, b) => b[1] - a[1])) {
     console.log(`  ${f}: ${c}`);
   }
   console.log(`\nVerdict totals (across all assertions):`);

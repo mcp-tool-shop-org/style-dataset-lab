@@ -1,5 +1,7 @@
 {
   "group_label": "faction",
+  "id_detection_order": ["compact", "veshan", "reach", "keth", "orryn"],
+  "prompt_detection_order": ["veshan", "keth", "orryn", "reach"],
   "groups": {
     "compact": {
       "material": "Pressed (machine-stamped, regulation-issued)",
