@@ -7,32 +7,47 @@
  *   node scripts/curate.js <asset_id> approved "Clean silhouette, correct palette" --scores silhouette:0.9,palette:0.8
  *   node scripts/curate.js <asset_id> rejected "3D render look, alpha halo" --failures alpha_halo,3d_render_look
  *   node scripts/curate.js --list  (show uncurated candidates)
+ *   sdlab curate <asset_id> approved "explanation" --project star-freight
  */
 
 import { readFile, writeFile, rename, readdir, mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+function getFlagValue(args, flag) {
+  const prefix = `--${flag}=`;
+  for (const a of args) {
+    if (a.startsWith(prefix)) return a.slice(prefix.length);
+  }
+  const idx = args.indexOf(`--${flag}`);
+  if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
+  return undefined;
+}
 
-async function main() {
-  const args = process.argv.slice(2);
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+
+  // Strip --project/--game and their values from positional parsing
+  const args = argv.filter((a, i) => {
+    if (a === '--project' || a === '--game') return false;
+    if (i > 0 && (argv[i - 1] === '--project' || argv[i - 1] === '--game')) return false;
+    return true;
+  });
 
   if (args.includes("--list")) {
-    return listUncurated();
+    return listUncurated(GAME_ROOT);
   }
 
   const [assetId, status, explanation, ...rest] = args;
 
   if (!assetId || !status || !explanation) {
-    console.log("Usage: node scripts/curate.js <asset_id> <approved|rejected|borderline> <explanation> [--scores k:v,...] [--failures f1,f2]");
-    process.exit(1);
+    throw new Error("Usage: sdlab curate <asset_id> <approved|rejected|borderline> <explanation> [--scores k:v,...] [--failures f1,f2]");
   }
 
   if (!["approved", "rejected", "borderline"].includes(status)) {
-    console.error(`Invalid status: ${status}. Must be approved, rejected, or borderline.`);
-    process.exit(1);
+    throw new Error(`Invalid status: ${status}. Must be approved, rejected, or borderline.`);
   }
 
   // Parse optional flags
@@ -56,8 +71,7 @@ async function main() {
   try {
     record = JSON.parse(await readFile(recordPath, "utf-8"));
   } catch {
-    console.error(`Record not found: ${recordPath}`);
-    process.exit(1);
+    throw new Error(`Record not found: ${recordPath}`);
   }
 
   // Update record first (write before move to avoid orphaned images)
@@ -84,8 +98,7 @@ async function main() {
   try {
     await rename(oldPath, join(GAME_ROOT, newPath));
   } catch {
-    console.error(`Could not move ${oldPath} to ${newPath}`);
-    process.exit(1);
+    throw new Error(`Could not move ${oldPath} to ${newPath}`);
   }
 
   console.log(`\x1b[32m✓\x1b[0m ${assetId} → ${status}`);
@@ -93,7 +106,7 @@ async function main() {
   if (failure_modes.length) console.log(`  Failures: ${failure_modes.join(", ")}`);
 }
 
-async function listUncurated() {
+async function listUncurated(GAME_ROOT) {
   const recordsDir = join(GAME_ROOT, "records");
   let files;
   try {
@@ -120,17 +133,10 @@ async function listUncurated() {
   console.log(`\n${uncurated} uncurated, ${curated} curated`);
 }
 
-function getFlagValue(args, flag) {
-  const prefix = `--${flag}=`;
-  for (const a of args) {
-    if (a.startsWith(prefix)) return a.slice(prefix.length);
-  }
-  const idx = args.indexOf(`--${flag}`);
-  if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
-  return undefined;
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('curate.js') || process.argv[1].endsWith('curate'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});

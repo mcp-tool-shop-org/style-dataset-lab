@@ -9,9 +9,7 @@
  *
  * Usage:
  *   node scripts/generate-identity.js inputs/identity-packets/wave27a-identity-spine.json
- *   node scripts/generate-identity.js inputs/identity-packets/wave27a-identity-spine.json --dry-run
- *   node scripts/generate-identity.js inputs/identity-packets/wave27a-identity-spine.json --subject kael_maren
- *   node scripts/generate-identity.js inputs/identity-packets/wave27a-identity-spine.json --seeds 3
+ *   sdlab generate:identity inputs/identity-packets/wave27a.json --project star-freight
  *
  * Options:
  *   --dry-run       Print what would be generated without touching ComfyUI
@@ -20,20 +18,13 @@
  *   --phase MODE    Generation phase: discovery | follow_on (default: discovery)
  *   --anchor FILE   Anchor source image path (required for --phase follow_on)
  *   --denoise N     Denoise strength for follow_on phase (default: 0.38)
- *
- * Phases:
- *   discovery   — txt2img from prompt, 3 seeds per shot. No prior image input.
- *   follow_on   — img2img from anchor image. Requires --anchor and --denoise.
- *                 Anchor curation happens between phases (manual step).
  */
 
-import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-
-const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
+import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 
 // ── Defaults (match existing lab pipeline) ──
 
@@ -129,7 +120,6 @@ function validatePacket(pack) {
         errors.push(`Subject ${sn}, shot ${shot.id}: invalid view_type '${shot.view_type}'`);
       }
 
-      // Variant intent enforcement
       if (shot.view_type === "expression_variant") {
         if (!shot.variant_intent) {
           errors.push(`Subject ${sn}, shot ${shot.id}: expression_variant missing variant_intent`);
@@ -149,16 +139,7 @@ function validatePacket(pack) {
   return errors;
 }
 
-// ── ComfyUI API ──
-
-async function comfyHealth() {
-  try {
-    const res = await fetch(`${COMFY_URL}/system_stats`);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+// ── ComfyUI Workflows ──
 
 function buildTxt2ImgWorkflow(prompt, negativePrompt, seed) {
   const nodes = {};
@@ -268,14 +249,12 @@ function buildImg2ImgWorkflow(prompt, negativePrompt, seed, imagePath, denoise) 
     clipOut = [loraId, 1];
   }
 
-  // Load source image
   const loadImgId = String(nextId++);
   nodes[loadImgId] = {
     class_type: "LoadImage",
     inputs: { image: imagePath },
   };
 
-  // Encode image to latent via VAE
   const encodeId = String(nextId++);
   nodes[encodeId] = {
     class_type: "VAEEncode",
@@ -324,46 +303,6 @@ function buildImg2ImgWorkflow(prompt, negativePrompt, seed, imagePath, denoise) 
   };
 
   return nodes;
-}
-
-const MAX_POLL_MS = 600_000; // 10 minutes
-
-async function submitAndWait(workflow) {
-  const clientId = `idp-${Date.now()}`;
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ComfyUI submit failed: ${res.status} ${text}`);
-  }
-
-  const { prompt_id: promptId } = await res.json();
-
-  const start = Date.now();
-  while (true) {
-    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
-    await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (!histRes.ok) continue;
-    const history = await histRes.json();
-    const entry = history[promptId];
-    if (!entry) continue;
-    if (entry.status?.completed) return entry;
-    if (entry.status?.status_str === "error") {
-      throw new Error(`ComfyUI generation failed: ${JSON.stringify(entry.status)}`);
-    }
-  }
-}
-
-async function downloadImage(filename, subfolder, type = "output") {
-  const url = `${COMFY_URL}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || "")}&type=${type}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
 }
 
 // ── Record Builder ──
@@ -434,58 +373,53 @@ function buildRecord(pack, subject, shot, seed, seedIndex, imgData, destPath, el
 
 // ── Main ──
 
-async function main() {
-  const args = process.argv.slice(2);
-  const packPath = args.find((a) => !a.startsWith("--"));
-  const dryRun = args.includes("--dry-run");
-  const subjectFilter = args.includes("--subject")
-    ? args[args.indexOf("--subject") + 1]
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
+
+  const packPath = argv.find((a) => !a.startsWith("--"));
+  const dryRun = argv.includes("--dry-run");
+  const subjectFilter = argv.includes("--subject")
+    ? argv[argv.indexOf("--subject") + 1]
     : null;
-  const seedCount = args.includes("--seeds")
-    ? parseInt(args[args.indexOf("--seeds") + 1], 10)
+  const seedCount = argv.includes("--seeds")
+    ? parseInt(argv[argv.indexOf("--seeds") + 1], 10)
     : 3;
-  const phase = args.includes("--phase")
-    ? args[args.indexOf("--phase") + 1]
+  const phase = argv.includes("--phase")
+    ? argv[argv.indexOf("--phase") + 1]
     : "discovery";
-  const anchorPath = args.includes("--anchor")
-    ? args[args.indexOf("--anchor") + 1]
+  const anchorPath = argv.includes("--anchor")
+    ? argv[argv.indexOf("--anchor") + 1]
     : null;
-  const denoise = args.includes("--denoise")
-    ? parseFloat(args[args.indexOf("--denoise") + 1])
+  const denoise = argv.includes("--denoise")
+    ? parseFloat(argv[argv.indexOf("--denoise") + 1])
     : 0.38;
 
   if (!packPath) {
-    console.error("Usage: node scripts/generate-identity.js <packet-file> [options]");
-    process.exit(1);
+    throw new Error("Usage: sdlab generate:identity <packet-file> [options]");
   }
 
   if (phase === "follow_on" && !anchorPath) {
-    console.error("Error: --phase follow_on requires --anchor <image-path>");
-    process.exit(1);
+    throw new Error("--phase follow_on requires --anchor <image-path>");
   }
 
   const fullPackPath = join(GAME_ROOT, packPath);
   const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
 
-  // Validate
   const errors = validatePacket(pack);
   if (errors.length > 0) {
-    console.error("\x1b[31mPacket validation failed:\x1b[0m");
-    for (const e of errors) console.error(`  - ${e}`);
-    process.exit(1);
+    throw new Error("Packet validation failed:\n  " + errors.join("\n  "));
   }
 
-  // Filter subjects if requested
   let subjects = pack.subjects;
   if (subjectFilter) {
     subjects = subjects.filter((s) => s.subject_name === subjectFilter);
     if (subjects.length === 0) {
-      console.error(`No subject found with name '${subjectFilter}'`);
-      process.exit(1);
+      throw new Error(`No subject found with name '${subjectFilter}'`);
     }
   }
 
-  // Count shots
   const totalShots = subjects.reduce((sum, s) => sum + s.shots.length, 0);
   const totalImages = totalShots * seedCount;
 
@@ -503,13 +437,9 @@ async function main() {
   console.log("");
 
   if (!dryRun) {
-    const online = await comfyHealth();
+    const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      console.error("\x1b[31mError:\x1b[0m ComfyUI not reachable at " + COMFY_URL);
-      console.error(
-        "Start ComfyUI: cd F:/AI-Models/ComfyUI-runtime && python main.py --listen 127.0.0.1 --port 8188"
-      );
-      process.exit(1);
+      throw new Error("ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
   }
@@ -555,7 +485,7 @@ async function main() {
         }
 
         try {
-          const result = await submitAndWait(workflow);
+          const result = await submitAndWait(workflow, COMFY_URL, { clientPrefix: 'idp' });
           const elapsed = Date.now() - startMs;
 
           const outputs = result.outputs || {};
@@ -576,7 +506,7 @@ async function main() {
             continue;
           }
 
-          const imgData = await downloadImage(imageFile, imageSubfolder);
+          const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
           await writeFile(join(GAME_ROOT, destPath), imgData);
 
           const anchorInfo =
@@ -613,7 +543,6 @@ async function main() {
   console.log(`\n\x1b[32m+\x1b[0m Generated ${generated} images`);
   if (dryRun) console.log("  (dry run — no images produced)");
 
-  // Summary
   console.log("\nNext steps:");
   if (phase === "discovery") {
     console.log("  1. Review candidates in outputs/candidates/");
@@ -627,7 +556,10 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('generate-identity.js') || process.argv[1].endsWith('generate-identity'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
+}

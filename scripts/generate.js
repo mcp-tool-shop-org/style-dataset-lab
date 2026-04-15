@@ -4,29 +4,17 @@
  * generate.js — Drive ComfyUI to produce candidate assets from a prompt pack.
  *
  * Usage: node scripts/generate.js [--prompt-pack inputs/prompts/rpg-icons-lane1.json]
+ *        sdlab generate inputs/prompts/wave1.json --project star-freight
  *
  * For each subject × variation, submits a workflow to ComfyUI HTTP API,
  * downloads the output PNG, and writes a provenance record to records/.
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { join, basename } from "node:path";
-
-const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
-
-// ── ComfyUI API helpers ──
-
-async function comfyHealth() {
-  try {
-    const res = await fetch(`${COMFY_URL}/system_stats`);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+import { join } from "node:path";
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
+import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 
 function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, cfg, sampler, scheduler, width, height, ipAdapterConfig) {
   const nodes = {};
@@ -164,57 +152,13 @@ function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, c
   return { nodes, saveNodeId: saveId };
 }
 
-const MAX_POLL_MS = 600_000; // 10 minutes
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-async function submitAndWait(workflow) {
-  const clientId = `sdl-${Date.now()}`;
-
-  // Submit
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ComfyUI submit failed: ${res.status} ${text}`);
-  }
-
-  const { prompt_id: promptId } = await res.json();
-
-  // Poll history until complete
-  const start = Date.now();
-  while (true) {
-    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
-    await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (!histRes.ok) continue;
-    const history = await histRes.json();
-    const entry = history[promptId];
-    if (!entry) continue;
-    if (entry.status?.completed) {
-      return entry;
-    }
-    if (entry.status?.status_str === "error") {
-      throw new Error(`ComfyUI generation failed: ${JSON.stringify(entry.status)}`);
-    }
-  }
-}
-
-async function downloadImage(filename, subfolder, type = "output") {
-  const url = `${COMFY_URL}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || "")}&type=${type}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-// ── Main ──
-
-async function main() {
-  const args = process.argv.slice(2);
-  const packPath = args.find((a) => !a.startsWith("--")) || "inputs/prompts/rpg-icons-lane1.json";
-  const dryRun = args.includes("--dry-run");
+  const packPath = argv.find((a) => !a.startsWith("--")) || "inputs/prompts/rpg-icons-lane1.json";
+  const dryRun = argv.includes("--dry-run");
 
   const fullPackPath = join(GAME_ROOT, packPath);
   const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
@@ -227,11 +171,9 @@ async function main() {
   console.log("");
 
   if (!dryRun) {
-    const online = await comfyHealth();
+    const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      console.error("\x1b[31mError:\x1b[0m ComfyUI not reachable at " + COMFY_URL);
-      console.error("Start ComfyUI: cd F:/AI-Models/ComfyUI-runtime && python main.py --listen 127.0.0.1 --port 8188");
-      process.exit(1);
+      throw new Error("ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
@@ -244,7 +186,7 @@ async function main() {
   const totalExpected = pack.subjects.length * pack.variations.length;
 
   for (const subject of pack.subjects) {
-    for (const variation of variation_list(pack.variations)) {
+    for (const variation of pack.variations) {
       const assetId = `${subject.id}_${variation.id}`;
       const seed = (d.base_seed + generated) + (variation.seed_offset || 0);
       const fullPrompt = `${pack.style_prefix}, ${subject.prompt}`;
@@ -266,7 +208,7 @@ async function main() {
       );
 
       try {
-        const result = await submitAndWait(nodes);
+        const result = await submitAndWait(nodes, COMFY_URL);
         const elapsed = Date.now() - startMs;
 
         // Find output image
@@ -288,7 +230,7 @@ async function main() {
         }
 
         // Download and save
-        const imgData = await downloadImage(imageFile, imageSubfolder);
+        const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
         const destPath = `outputs/candidates/${assetId}.png`;
         await writeFile(join(GAME_ROOT, destPath), imgData);
 
@@ -341,11 +283,10 @@ async function main() {
   if (dryRun) console.log("  (dry run — no images produced)");
 }
 
-function variation_list(variations) {
-  return variations;
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('generate.js') || process.argv[1].endsWith('generate'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});

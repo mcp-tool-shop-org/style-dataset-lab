@@ -10,18 +10,13 @@
  *   node scripts/canon-bind.js            # bind all records
  *   node scripts/canon-bind.js --dry-run  # preview without writing
  *   node scripts/canon-bind.js --stats    # print coverage stats
+ *   sdlab bind --project star-freight --stats
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
-
-const RECORDS_DIR = join(GAME_ROOT, 'records');
-const DRY_RUN = process.argv.includes('--dry-run');
-const STATS_ONLY = process.argv.includes('--stats');
+import { getProjectName } from '../lib/args.js';
+import { REPO_ROOT } from '../lib/paths.js';
 
 // ─── Constitution Rules ──────────────────────────────────────────────
 // Each rule has: id, category, description, scoring_dimensions (which
@@ -94,24 +89,15 @@ const CONSTITUTION_RULES = [
 ];
 
 // ─── Lane Detection ──────────────────────────────────────────────────
-// Determines which subject category an asset belongs to, so lane-specific
-// rules (CLO for costumes, SHP for ships, etc.) are applied correctly.
 
 function detectLane(id, prompt) {
   const lower = id.toLowerCase();
-  // Ship exterior prefixes
   if (/^ship_ext_|^se_|^ship_/.test(lower)) return 'ship';
-  // Ship interior prefixes
   if (/^ship_int_|^si_|^int_|^interior_/.test(lower)) return 'interior';
-  // Station/port prefixes
   if (/^station_|^port_|^stn_/.test(lower)) return 'station';
-  // Equipment/weapon prefixes
   if (/^eqp_|^wpn_|^weapon_|^tool_|^equip_/.test(lower)) return 'equipment';
-  // Prop prefixes
   if (/^prop_|^food_|^sign_|^furn_/.test(lower)) return 'prop';
-  // Environment prefixes
   if (/^env_|^planet_|^landing_|^mine_/.test(lower)) return 'environment';
-  // Default: costume (all existing assets are costumes)
   return 'costume';
 }
 
@@ -142,14 +128,12 @@ const FACTION_WEAR = {
 };
 
 function detectFaction(id, prompt) {
-  // ID-based detection (most reliable)
   if (/^(anchor_|c_|c2_|c6_|c10_)/.test(id)) return 'compact';
   if (/^(v_|v3_|v7_|v10_)/.test(id)) return 'veshan';
   if (/^(sr_|sr4_|sr8_|sr10_)/.test(id)) return 'reach';
   if (/^(k_|k\d+_)/.test(id)) return 'keth';
   if (/^(o_|o\d+_)/.test(id)) return 'orryn';
 
-  // Cross-faction: detect from ID suffix
   if (/^cf_/.test(id)) {
     if (/compact/.test(id)) return 'compact';
     if (/veshan/.test(id)) return 'veshan';
@@ -158,10 +142,8 @@ function detectFaction(id, prompt) {
     if (/orryn/.test(id)) return 'orryn';
   }
 
-  // Edge cases: detect from prompt
-  if (/^edge_/.test(id)) return 'compact'; // edge cases are human subjects
+  if (/^edge_/.test(id)) return 'compact';
 
-  // Reject/borderline: detect from prompt content
   if (prompt) {
     const p = prompt.toLowerCase();
     if (/reptilian|veshan|scales|crest/.test(p)) return 'veshan';
@@ -170,20 +152,18 @@ function detectFaction(id, prompt) {
     if (/salvaged|scrap|jury.rigged|outlaw|pirate/.test(p)) return 'reach';
   }
 
-  // Reject IDs: try to detect from naming
   if (/wrong_material_v/.test(id)) return 'veshan';
-  if (/generic_scifi|too_clean|too_heroic|star_trek|cyberpunk|fantasy_knight|warhammer|too_sexy|steampunk|fashion_model|pin_up|fortnite|mmorpg|superhero|invisible|xenomorph|zombified|samurai/.test(id)) return null; // no faction — generic reject
+  if (/generic_scifi|too_clean|too_heroic|star_trek|cyberpunk|fantasy_knight|warhammer|too_sexy|steampunk|fashion_model|pin_up|fortnite|mmorpg|superhero|invisible|xenomorph|zombified|samurai/.test(id)) return null;
 
   if (/veshan|cute_dragon|generic_lizard|veshan_robot|veshan_human/.test(id)) return 'veshan';
   if (/reach|pirate|matching_gang|space_cowboy/.test(id)) return 'reach';
   if (/keth/.test(id)) return 'keth';
 
-  // Borderline
   if (/almost_right_compact/.test(id)) return 'compact';
   if (/almost_right_veshan/.test(id)) return 'veshan';
   if (/almost_right_reach/.test(id)) return 'reach';
 
-  return null; // unknown faction
+  return null;
 }
 
 // ─── Failure Mode → Rule Mapping ─────────────────────────────────────
@@ -216,25 +196,19 @@ function generateAssertions(record) {
   const assertions = [];
 
   for (const rule of CONSTITUTION_RULES) {
-    // Skip faction-specific rules for unknown-faction rejects
     if (rule.faction_specific && !faction) continue;
-
-    // Skip lane-specific rules that don't apply to this asset's lane
     if (rule.lanes && !rule.lanes.includes(lane)) continue;
 
-    // Calculate average score from mapped dimensions
     const dimScores = rule.dims
       .map(d => criteria_scores[d])
       .filter(s => s !== undefined && s !== null);
     if (dimScores.length === 0) continue;
     const avgScore = dimScores.reduce((a, b) => a + b, 0) / dimScores.length;
 
-    // Check if any failure mode maps to this rule
     const failedByMode = failure_modes.some(fm =>
       (FAILURE_TO_RULES[fm] || []).includes(rule.id)
     );
 
-    // Determine verdict
     let verdict;
     if (status === 'rejected') {
       if (failedByMode || avgScore < 0.4) {
@@ -242,19 +216,18 @@ function generateAssertions(record) {
       } else if (avgScore < 0.6) {
         verdict = 'partial';
       } else {
-        verdict = 'pass'; // rejected asset can still pass some rules
+        verdict = 'pass';
       }
     } else if (status === 'borderline') {
       if (avgScore >= 0.7) verdict = 'pass';
       else if (avgScore >= 0.5) verdict = 'partial';
       else verdict = 'fail';
-    } else { // approved
+    } else {
       if (avgScore >= 0.7) verdict = 'pass';
       else if (avgScore >= 0.5) verdict = 'partial';
-      else verdict = 'fail'; // unlikely for approved
+      else verdict = 'fail';
     }
 
-    // Build rationale
     let rationale = buildRationale(rule, verdict, avgScore, faction, explanation);
 
     assertions.push({
@@ -313,7 +286,6 @@ function buildRationale(rule, verdict, score, faction, explanation) {
     }
   }
 
-  // partial
   return `Partially meets ${rule.desc.toLowerCase()} (${scorePct}%)`;
 }
 
@@ -340,98 +312,109 @@ function getFactionContext(rule, faction) {
 
 // ─── Main ────────────────────────────────────────────────────────────
 
-const files = readdirSync(RECORDS_DIR).filter(f => f.endsWith('.json'));
-let bound = 0, skipped = 0, alreadyBound = 0;
-const factionCounts = {};
-const verdictCounts = { pass: 0, fail: 0, partial: 0 };
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const RECORDS_DIR = join(GAME_ROOT, 'records');
+  const DRY_RUN = argv.includes('--dry-run');
+  const STATS_ONLY = argv.includes('--stats');
+  const FORCE = argv.includes('--force');
 
-for (const file of files) {
-  const path = join(RECORDS_DIR, file);
-  const record = JSON.parse(readFileSync(path, 'utf-8'));
+  const files = readdirSync(RECORDS_DIR).filter(f => f.endsWith('.json'));
+  let bound = 0, skipped = 0, alreadyBound = 0;
+  const factionCounts = {};
+  const verdictCounts = { pass: 0, fail: 0, partial: 0 };
 
-  // Skip records without judgment
-  if (!record.judgment || !record.judgment.criteria_scores) {
-    skipped++;
-    continue;
-  }
+  for (const file of files) {
+    const path = join(RECORDS_DIR, file);
+    const record = JSON.parse(readFileSync(path, 'utf-8'));
 
-  // Check if already bound
-  if (record.canon?.assertions?.length > 0 && !process.argv.includes('--force')) {
-    alreadyBound++;
-    continue;
-  }
+    if (!record.judgment || !record.judgment.criteria_scores) {
+      skipped++;
+      continue;
+    }
 
-  const assertions = generateAssertions(record);
-  if (!assertions || assertions.length === 0) {
-    skipped++;
-    continue;
-  }
+    if (record.canon?.assertions?.length > 0 && !FORCE) {
+      alreadyBound++;
+      continue;
+    }
 
-  // Track stats
-  const faction = detectFaction(record.id, record.provenance?.prompt);
-  factionCounts[faction || 'unknown'] = (factionCounts[faction || 'unknown'] || 0) + 1;
-  for (const a of assertions) {
-    verdictCounts[a.verdict] = (verdictCounts[a.verdict] || 0) + 1;
-  }
+    const assertions = generateAssertions(record);
+    if (!assertions || assertions.length === 0) {
+      skipped++;
+      continue;
+    }
 
-  if (STATS_ONLY) {
-    bound++;
-    continue;
-  }
-
-  // Build canon object (nested — our rich format)
-  record.canon = {
-    constitution_version: '1.0.0',
-    bound_at: new Date().toISOString(),
-    bound_by: 'canon-bind-v1',
-    faction: faction || null,
-    assertions,
-    assertion_count: assertions.length,
-    pass_count: assertions.filter(a => a.verdict === 'pass').length,
-    fail_count: assertions.filter(a => a.verdict === 'fail').length,
-    partial_count: assertions.filter(a => a.verdict === 'partial').length,
-  };
-
-  // Also write flat canon_assertions (repo-dataset expects this at top level)
-  record.canon_assertions = assertions;
-
-  // Write canon_explanation for triangle completion
-  const passCount = assertions.filter(a => a.verdict === 'pass').length;
-  const failCount = assertions.filter(a => a.verdict === 'fail').length;
-  const status = record.judgment.status;
-  if (status === 'approved') {
-    record.canon_explanation = `Approved: passes ${passCount}/${assertions.length} constitution rules. ${faction ? `Faction: ${faction}.` : ''} ${record.judgment.explanation || ''}`.trim();
-  } else if (status === 'rejected') {
-    const failedRules = assertions.filter(a => a.verdict === 'fail').map(a => a.rule_id).join(', ');
-    record.canon_explanation = `Rejected: fails ${failedRules}. ${record.judgment.explanation || ''}`.trim();
-  } else {
-    record.canon_explanation = `Borderline: ${passCount} pass, ${failCount} fail out of ${assertions.length} rules. ${record.judgment.explanation || ''}`.trim();
-  }
-
-  if (!DRY_RUN) {
-    writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
-  }
-  bound++;
-
-  if (DRY_RUN && bound <= 3) {
-    console.log(`\n─── ${record.id} (${record.judgment.status}) ───`);
-    console.log(`Faction: ${faction || 'unknown'}`);
+    const faction = detectFaction(record.id, record.provenance?.prompt);
+    factionCounts[faction || 'unknown'] = (factionCounts[faction || 'unknown'] || 0) + 1;
     for (const a of assertions) {
-      console.log(`  ${a.verdict.toUpperCase().padEnd(7)} ${a.rule_id} — ${a.rationale}`);
+      verdictCounts[a.verdict] = (verdictCounts[a.verdict] || 0) + 1;
+    }
+
+    if (STATS_ONLY) {
+      bound++;
+      continue;
+    }
+
+    record.canon = {
+      constitution_version: '1.0.0',
+      bound_at: new Date().toISOString(),
+      bound_by: 'canon-bind-v1',
+      faction: faction || null,
+      assertions,
+      assertion_count: assertions.length,
+      pass_count: assertions.filter(a => a.verdict === 'pass').length,
+      fail_count: assertions.filter(a => a.verdict === 'fail').length,
+      partial_count: assertions.filter(a => a.verdict === 'partial').length,
+    };
+
+    record.canon_assertions = assertions;
+
+    const passCount = assertions.filter(a => a.verdict === 'pass').length;
+    const failCount = assertions.filter(a => a.verdict === 'fail').length;
+    const status = record.judgment.status;
+    if (status === 'approved') {
+      record.canon_explanation = `Approved: passes ${passCount}/${assertions.length} constitution rules. ${faction ? `Faction: ${faction}.` : ''} ${record.judgment.explanation || ''}`.trim();
+    } else if (status === 'rejected') {
+      const failedRules = assertions.filter(a => a.verdict === 'fail').map(a => a.rule_id).join(', ');
+      record.canon_explanation = `Rejected: fails ${failedRules}. ${record.judgment.explanation || ''}`.trim();
+    } else {
+      record.canon_explanation = `Borderline: ${passCount} pass, ${failCount} fail out of ${assertions.length} rules. ${record.judgment.explanation || ''}`.trim();
+    }
+
+    if (!DRY_RUN) {
+      writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
+    }
+    bound++;
+
+    if (DRY_RUN && bound <= 3) {
+      console.log(`\n─── ${record.id} (${record.judgment.status}) ───`);
+      console.log(`Faction: ${faction || 'unknown'}`);
+      for (const a of assertions) {
+        console.log(`  ${a.verdict.toUpperCase().padEnd(7)} ${a.rule_id} — ${a.rationale}`);
+      }
     }
   }
+
+  console.log(`\n═══ Canon Binding ${DRY_RUN ? '(DRY RUN) ' : STATS_ONLY ? '(STATS) ' : ''}Summary ═══`);
+  console.log(`Records: ${files.length}`);
+  console.log(`Bound: ${bound}`);
+  console.log(`Already bound: ${alreadyBound}`);
+  console.log(`Skipped (no judgment): ${skipped}`);
+  console.log(`\nFaction distribution:`);
+  for (const [f, c] of Object.entries(factionCounts).sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${f}: ${c}`);
+  }
+  console.log(`\nVerdict totals (across all assertions):`);
+  for (const [v, c] of Object.entries(verdictCounts)) {
+    console.log(`  ${v}: ${c}`);
+  }
 }
 
-console.log(`\n═══ Canon Binding ${DRY_RUN ? '(DRY RUN) ' : STATS_ONLY ? '(STATS) ' : ''}Summary ═══`);
-console.log(`Records: ${files.length}`);
-console.log(`Bound: ${bound}`);
-console.log(`Already bound: ${alreadyBound}`);
-console.log(`Skipped (no judgment): ${skipped}`);
-console.log(`\nFaction distribution:`);
-for (const [f, c] of Object.entries(factionCounts).sort((a, b) => b[1] - a[1])) {
-  console.log(`  ${f}: ${c}`);
-}
-console.log(`\nVerdict totals (across all assertions):`);
-for (const [v, c] of Object.entries(verdictCounts)) {
-  console.log(`  ${v}: ${c}`);
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('canon-bind.js') || process.argv[1].endsWith('canon-bind'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
 }

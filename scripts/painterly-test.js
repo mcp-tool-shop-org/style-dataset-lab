@@ -3,15 +3,17 @@
 /**
  * painterly-test.js — Test different denoise levels on a single image.
  * Outputs: outputs/painterly-test/<filename>_d<denoise>.png
+ *
+ * Usage:
+ *   node scripts/painterly-test.js
+ *   sdlab painterly:test --project star-freight
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-
-const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
+import { submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 const PAINTERLY_PROMPT = [
   "oil painting, visible brushstrokes, painterly concept art,",
@@ -68,43 +70,11 @@ function buildWorkflow(imagePath, denoise, loraWeight, seed) {
   return nodes;
 }
 
-async function upload(filePath, filename) {
-  const data = await readFile(filePath);
-  const form = new FormData();
-  form.append("image", new Blob([data], { type: "image/png" }), filename);
-  form.append("overwrite", "true");
-  const res = await fetch(`${COMFY_URL}/upload/image`, { method: "POST", body: form });
-  if (!res.ok) throw new Error(`Upload failed: ${res.status} ${await res.text()}`);
-  return (await res.json()).name;
-}
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-const MAX_POLL_MS = 600_000; // 10 minutes
-
-async function run(workflow) {
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: `test-${Date.now()}` }),
-  });
-  if (!res.ok) throw new Error(`ComfyUI submit failed: ${res.status} ${await res.text()}`);
-  const { prompt_id: promptId } = await res.json();
-  const start = Date.now();
-  while (true) {
-    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
-    await new Promise(r => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (!histRes.ok) continue;
-    const h = await histRes.json();
-    if (h[promptId]?.status?.completed) return h[promptId];
-  }
-}
-
-async function download(filename, subfolder) {
-  const res = await fetch(`${COMFY_URL}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || "")}&type=output`);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-async function main() {
   const outDir = join(GAME_ROOT, "outputs/painterly-test");
   await mkdir(outDir, { recursive: true });
 
@@ -115,14 +85,14 @@ async function main() {
   ];
 
   const denoiseTests = [0.50, 0.60, 0.70];
-  const loraWeight = 1.0;  // Full LoRA weight for stronger effect
+  const loraWeight = 1.0;
 
   for (const testFile of testFiles) {
     const srcPath = join(GAME_ROOT, testFile);
     const fname = testFile.split("/").pop().replace(".png", "");
 
     console.log(`\nTesting: ${fname}`);
-    const uploaded = await upload(srcPath, `test_${fname}.png`);
+    const uploaded = await uploadImage(srcPath, `test_${fname}.png`, COMFY_URL);
 
     for (const denoise of denoiseTests) {
       const label = `${fname}_d${String(denoise).replace(".", "")}`;
@@ -130,14 +100,14 @@ async function main() {
 
       const t = Date.now();
       const wf = buildWorkflow(uploaded, denoise, loraWeight, 42);
-      const result = await run(wf);
+      const result = await submitAndWait(wf, COMFY_URL, { clientPrefix: 'test' });
 
       let imgFile, imgSub = "";
       for (const o of Object.values(result.outputs || {})) {
         if (o.images?.length) { imgFile = o.images[0].filename; imgSub = o.images[0].subfolder || ""; break; }
       }
 
-      const data = await download(imgFile, imgSub);
+      const data = await downloadImage(imgFile, imgSub, COMFY_URL);
       await writeFile(join(outDir, `${label}.png`), data);
       console.log(`    ✓ ${Date.now() - t}ms`);
     }
@@ -146,4 +116,7 @@ async function main() {
   console.log("\nDone — check outputs/painterly-test/");
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('painterly-test.js') || process.argv[1].endsWith('painterly-test'))) {
+  run().catch(e => { console.error(e.message || e); process.exit(1); });
+}

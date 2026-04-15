@@ -10,18 +10,17 @@
  * Usage:
  *   node scripts/painterly.js [--source outputs/approved] [--limit 100] [--offset 0]
  *   node scripts/painterly.js --dry-run
+ *   sdlab painterly --project star-freight --limit 50
  *
  * Output: outputs/painterly/<original_filename>
  */
 
-import { readFile, writeFile, mkdir, readdir, copyFile, stat } from "node:fs/promises";
-import { join, basename, extname } from "node:path";
+import { writeFile, mkdir, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { existsSync } from "node:fs";
-
-const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
+import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 // ── Config ──
 
@@ -51,20 +50,10 @@ const DEFAULTS = {
   seed: 42,            // Fixed seed for reproducibility across batch
 };
 
-// ── ComfyUI helpers ──
-
-async function comfyHealth() {
-  try {
-    const res = await fetch(`${COMFY_URL}/system_stats`);
-    return res.ok;
-  } catch { return false; }
-}
-
 function buildImg2ImgWorkflow(imagePath, seed) {
   const nodes = {};
   let nextId = 1;
 
-  // Checkpoint loader
   const ckptId = String(nextId++);
   nodes[ckptId] = {
     class_type: "CheckpointLoaderSimple",
@@ -74,7 +63,6 @@ function buildImg2ImgWorkflow(imagePath, seed) {
   let modelOut = [ckptId, 0];
   let clipOut = [ckptId, 1];
 
-  // LoRA — ClassipeintXL at reduced weight for style shift
   const loraId = String(nextId++);
   nodes[loraId] = {
     class_type: "LoraLoader",
@@ -89,14 +77,12 @@ function buildImg2ImgWorkflow(imagePath, seed) {
   modelOut = [loraId, 0];
   clipOut = [loraId, 1];
 
-  // Load source image
   const loadImgId = String(nextId++);
   nodes[loadImgId] = {
     class_type: "LoadImage",
     inputs: { image: imagePath },
   };
 
-  // VAE Encode — source image to latent
   const vaeEncId = String(nextId++);
   nodes[vaeEncId] = {
     class_type: "VAEEncode",
@@ -106,21 +92,18 @@ function buildImg2ImgWorkflow(imagePath, seed) {
     },
   };
 
-  // CLIP Text Encode — positive (painterly style)
   const posId = String(nextId++);
   nodes[posId] = {
     class_type: "CLIPTextEncode",
     inputs: { text: PAINTERLY_PROMPT, clip: clipOut },
   };
 
-  // CLIP Text Encode — negative
   const negId = String(nextId++);
   nodes[negId] = {
     class_type: "CLIPTextEncode",
     inputs: { text: PAINTERLY_NEGATIVE, clip: clipOut },
   };
 
-  // KSampler — img2img with low denoise
   const samplerId = String(nextId++);
   nodes[samplerId] = {
     class_type: "KSampler",
@@ -138,7 +121,6 @@ function buildImg2ImgWorkflow(imagePath, seed) {
     },
   };
 
-  // VAE Decode
   const vaeDecId = String(nextId++);
   nodes[vaeDecId] = {
     class_type: "VAEDecode",
@@ -148,7 +130,6 @@ function buildImg2ImgWorkflow(imagePath, seed) {
     },
   };
 
-  // Save Image
   const saveId = String(nextId++);
   nodes[saveId] = {
     class_type: "SaveImage",
@@ -161,84 +142,22 @@ function buildImg2ImgWorkflow(imagePath, seed) {
   return { nodes, saveNodeId: saveId };
 }
 
-const MAX_POLL_MS = 600_000; // 10 minutes
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-async function submitAndWait(workflow) {
-  const clientId = `sdl-paint-${Date.now()}`;
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ComfyUI submit failed: ${res.status} ${text}`);
-  }
-
-  const { prompt_id: promptId } = await res.json();
-
-  const start = Date.now();
-  while (true) {
-    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
-    await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (!histRes.ok) continue;
-    const history = await histRes.json();
-    const entry = history[promptId];
-    if (!entry) continue;
-    if (entry.status?.completed) return entry;
-    if (entry.status?.status_str === "error") {
-      throw new Error(`ComfyUI generation failed: ${JSON.stringify(entry.status)}`);
-    }
-  }
-}
-
-async function downloadImage(filename, subfolder, type = "output") {
-  const url = `${COMFY_URL}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || "")}&type=${type}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-/**
- * Upload an image to ComfyUI's input folder so LoadImage can find it.
- */
-async function uploadImage(filePath, filename) {
-  const data = await readFile(filePath);
-  const formData = new FormData();
-  formData.append("image", new Blob([data], { type: "image/png" }), filename);
-  formData.append("overwrite", "true");
-
-  const res = await fetch(`${COMFY_URL}/upload/image`, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Upload failed: ${res.status} ${text}`);
-  }
-
-  const result = await res.json();
-  return result.name; // The name ComfyUI assigned to the uploaded image
-}
-
-// ── Main ──
-
-async function main() {
-  const args = process.argv.slice(2);
-  const dryRun = args.includes("--dry-run");
+  const dryRun = argv.includes("--dry-run");
 
   // Parse args
   let sourceDir = "outputs/approved";
   let limit = 100;
   let offset = 0;
 
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--source" && args[i + 1]) sourceDir = args[++i];
-    if (args[i] === "--limit" && args[i + 1]) limit = parseInt(args[++i]);
-    if (args[i] === "--offset" && args[i + 1]) offset = parseInt(args[++i]);
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--source" && argv[i + 1]) sourceDir = argv[++i];
+    if (argv[i] === "--limit" && argv[i + 1]) limit = parseInt(argv[++i]);
+    if (argv[i] === "--offset" && argv[i + 1]) offset = parseInt(argv[++i]);
   }
 
   const fullSourceDir = join(GAME_ROOT, sourceDir);
@@ -274,10 +193,9 @@ async function main() {
   }
 
   if (!dryRun) {
-    const online = await comfyHealth();
+    const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      console.error("\x1b[31mError:\x1b[0m ComfyUI not reachable at " + COMFY_URL);
-      process.exit(1);
+      throw new Error("ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
@@ -298,11 +216,11 @@ async function main() {
       const startMs = Date.now();
 
       // Upload source image to ComfyUI
-      const uploadedName = await uploadImage(srcPath, file);
+      const uploadedName = await uploadImage(srcPath, file, COMFY_URL);
 
       // Build and submit img2img workflow
       const { nodes } = buildImg2ImgWorkflow(uploadedName, DEFAULTS.seed);
-      const result = await submitAndWait(nodes);
+      const result = await submitAndWait(nodes, COMFY_URL, { clientPrefix: 'sdl-paint' });
       const elapsed = Date.now() - startMs;
 
       // Find output image
@@ -325,7 +243,7 @@ async function main() {
       }
 
       // Download and save with original filename
-      const imgData = await downloadImage(imageFile, imageSubfolder);
+      const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
       await writeFile(join(outDir, file), imgData);
 
       const kb = Math.round(imgData.length / 1024);
@@ -343,7 +261,10 @@ async function main() {
   if (dryRun) console.log("  (dry run — no images processed)");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('painterly.js') || process.argv[1].endsWith('painterly'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
+}

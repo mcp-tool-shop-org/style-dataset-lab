@@ -5,37 +5,54 @@
  *
  * Usage:
  *   node scripts/compare.js <asset_a_id> <asset_b_id> <winner: a|b|tie> <reasoning>
- *   node scripts/compare.js iron_sword_base iron_sword_icon_mid a "Better silhouette, painterly execution"
+ *   sdlab compare iron_sword_base iron_sword_icon_mid a "Better silhouette" --project star-freight
  */
 
 import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+function getFlagValue(args, flag) {
+  const prefix = `--${flag}=`;
+  for (const a of args) {
+    if (a.startsWith(prefix)) return a.slice(prefix.length);
+  }
+  const idx = args.indexOf(`--${flag}`);
+  if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
+  return undefined;
+}
 
-async function main() {
-  const args = process.argv.slice(2);
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+
+  // Strip --project/--game and their values from positional parsing
+  const args = argv.filter((a, i) => {
+    if (a === '--project' || a === '--game') return false;
+    if (i > 0 && (argv[i - 1] === '--project' || argv[i - 1] === '--game')) return false;
+    return true;
+  });
+
   const [assetAId, assetBId, winner, ...reasonParts] = args;
 
   if (!assetAId || !assetBId || !winner) {
-    console.log("Usage: node scripts/compare.js <asset_a_id> <asset_b_id> <a|b|tie> <reasoning>");
-    process.exit(1);
+    throw new Error("Usage: sdlab compare <asset_a_id> <asset_b_id> <a|b|tie> <reasoning>");
   }
 
   if (!["a", "b", "tie"].includes(winner)) {
-    console.error(`Invalid winner: ${winner}. Must be a, b, or tie.`);
-    process.exit(1);
+    throw new Error(`Invalid winner: ${winner}. Must be a, b, or tie.`);
   }
 
-  const reasoning = reasonParts.join(" ") || null;
+  const reasoning = reasonParts.filter(r => !r.startsWith('--')).join(" ") || null;
 
   // Load records to get paths
-  const recordA = await loadRecord(assetAId);
-  const recordB = await loadRecord(assetBId);
+  const recordA = await loadRecord(GAME_ROOT, assetAId);
+  const recordB = await loadRecord(GAME_ROOT, assetBId);
 
-  if (!recordA || !recordB) process.exit(1);
+  if (!recordA || !recordB) {
+    throw new Error("Could not load one or both records.");
+  }
 
   // Parse optional scores
   const scoresStr = getFlagValue(args, "scores");
@@ -52,7 +69,7 @@ async function main() {
   }
 
   // Build comparison ID
-  const existingComps = await countComparisons();
+  const existingComps = await countComparisons(GAME_ROOT);
   const cmpId = `cmp_${String(existingComps + 1).padStart(3, "0")}`;
 
   const comparison = {
@@ -81,7 +98,7 @@ async function main() {
   if (reasoning) console.log(`  ${reasoning}`);
 }
 
-async function loadRecord(id) {
+async function loadRecord(GAME_ROOT, id) {
   try {
     const path = join(GAME_ROOT, `records/${id}.json`);
     return JSON.parse(await readFile(path, "utf-8"));
@@ -91,7 +108,7 @@ async function loadRecord(id) {
   }
 }
 
-async function countComparisons() {
+async function countComparisons(GAME_ROOT) {
   try {
     const files = await readdir(join(GAME_ROOT, "comparisons"));
     return files.filter((f) => f.endsWith(".json")).length;
@@ -100,17 +117,10 @@ async function countComparisons() {
   }
 }
 
-function getFlagValue(args, flag) {
-  const prefix = `--${flag}=`;
-  for (const a of args) {
-    if (a.startsWith(prefix)) return a.slice(prefix.length);
-  }
-  const idx = args.indexOf(`--${flag}`);
-  if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
-  return undefined;
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('compare.js') || process.argv[1].endsWith('compare'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});

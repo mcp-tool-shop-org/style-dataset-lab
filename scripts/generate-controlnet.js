@@ -9,29 +9,14 @@
  *
  * Usage:
  *   node scripts/generate-controlnet.js --subject naia --guide inputs/control-guides/naia_structural_guide.png --seeds 4
- *   node scripts/generate-controlnet.js --subject corrigan --guide inputs/control-guides/corrigan_structural_guide.png --seeds 4
- *   node scripts/generate-controlnet.js --subject naia --guide ... --dry-run
- *
- * Options:
- *   --subject NAME   Subject name (used for output file naming)
- *   --guide PATH     Path to structural guide image (white-on-black silhouette)
- *   --prompt TEXT     Generation prompt (or reads from --prompt-file)
- *   --prompt-file F   JSON file with {prompt, negative} fields
- *   --negative TEXT   Negative prompt override
- *   --seeds N         Number of seeds (default: 4)
- *   --weight W        ControlNet weight (default: 0.70)
- *   --guidance-end E  ControlNet guidance end (default: 0.65)
- *   --model M         ControlNet model filename (default: controlnet-canny-sdxl-1.0.safetensors)
- *   --dry-run         Print workflow without running
+ *   sdlab generate:controlnet --subject naia --guide <path> --seeds 4 --project star-freight
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-
-const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
+import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -45,11 +30,10 @@ const DEFAULTS = {
   base_seed: 27100,
 };
 
-function parseArgs() {
-  const args = process.argv.slice(2);
+function parseLocalArgs(argv) {
   const get = (flag, def) => {
-    const i = args.indexOf(flag);
-    return i >= 0 && i + 1 < args.length ? args[i + 1] : def;
+    const i = argv.indexOf(flag);
+    return i >= 0 && i + 1 < argv.length ? argv[i + 1] : def;
   };
   return {
     subject: get("--subject", "unknown"),
@@ -61,7 +45,7 @@ function parseArgs() {
     weight: parseFloat(get("--weight", "0.70")),
     guidanceEnd: parseFloat(get("--guidance-end", "0.65")),
     controlModel: get("--model", "controlnet-canny-sdxl-1.0.safetensors"),
-    dryRun: args.includes("--dry-run"),
+    dryRun: argv.includes("--dry-run"),
   };
 }
 
@@ -69,7 +53,6 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
   const nodes = {};
   let nextId = 1;
 
-  // Checkpoint
   const ckptId = String(nextId++);
   nodes[ckptId] = {
     class_type: "CheckpointLoaderSimple",
@@ -79,17 +62,14 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
   let modelOut = [ckptId, 0];
   let clipOut = [ckptId, 1];
 
-  // LoRA
   for (const lora of DEFAULTS.loras) {
     const loraId = String(nextId++);
     nodes[loraId] = {
       class_type: "LoraLoader",
       inputs: {
-        model: modelOut,
-        clip: clipOut,
+        model: modelOut, clip: clipOut,
         lora_name: lora.name,
-        strength_model: lora.weight,
-        strength_clip: lora.weight,
+        strength_model: lora.weight, strength_clip: lora.weight,
       },
     };
     modelOut = [loraId, 0];
@@ -97,34 +77,33 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
   }
 
   // Load guide image
-  const loadGuideId = String(nextId++);
-  nodes[loadGuideId] = {
+  const guideId = String(nextId++);
+  nodes[guideId] = {
     class_type: "LoadImage",
     inputs: { image: guideImagePath },
   };
 
-  // Load ControlNet model
+  // ControlNet loader
   const cnLoadId = String(nextId++);
   nodes[cnLoadId] = {
     class_type: "ControlNetLoader",
     inputs: { control_net_name: controlModel },
   };
 
-  // Positive prompt
+  // Text encoders
   const posId = String(nextId++);
   nodes[posId] = {
     class_type: "CLIPTextEncode",
     inputs: { text: prompt, clip: clipOut },
   };
 
-  // Negative prompt
   const negId = String(nextId++);
   nodes[negId] = {
     class_type: "CLIPTextEncode",
     inputs: { text: negativePrompt, clip: clipOut },
   };
 
-  // Apply ControlNet (Advanced for start/end control)
+  // Apply ControlNet
   const cnApplyId = String(nextId++);
   nodes[cnApplyId] = {
     class_type: "ControlNetApplyAdvanced",
@@ -132,7 +111,7 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
       positive: [posId, 0],
       negative: [negId, 0],
       control_net: [cnLoadId, 0],
-      image: [loadGuideId, 0],
+      image: [guideId, 0],
       strength: weight,
       start_percent: 0.0,
       end_percent: guidanceEnd,
@@ -171,7 +150,6 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
     inputs: { samples: [samplerId, 0], vae: [ckptId, 2] },
   };
 
-  // Save
   const saveId = String(nextId++);
   nodes[saveId] = {
     class_type: "SaveImage",
@@ -181,61 +159,15 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
   return nodes;
 }
 
-async function comfyHealth() {
-  try {
-    const res = await fetch(`${COMFY_URL}/system_stats`);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-const MAX_POLL_MS = 600_000; // 10 minutes
-
-async function submitAndWait(workflow) {
-  const clientId = `cn-${Date.now()}`;
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ComfyUI submit failed: ${res.status} ${text}`);
-  }
-
-  const { prompt_id: promptId } = await res.json();
-
-  const start = Date.now();
-  while (true) {
-    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
-    await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (!histRes.ok) continue;
-    const history = await histRes.json();
-    const entry = history[promptId];
-    if (!entry) continue;
-    if (entry.status?.completed) return entry;
-    if (entry.status?.status_str === "error") {
-      throw new Error(`ComfyUI error: ${JSON.stringify(entry.status)}`);
-    }
-  }
-}
-
-async function downloadImage(filename, subfolder, type = "output") {
-  const url = `${COMFY_URL}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || "")}&type=${type}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-async function main() {
-  const opts = parseArgs();
+  const opts = parseLocalArgs(argv);
 
   if (!opts.guidePath) {
-    console.error("Error: --guide <path> is required");
-    process.exit(1);
+    throw new Error("--guide <path> is required");
   }
 
   // Resolve prompt
@@ -249,8 +181,7 @@ async function main() {
   }
 
   if (!prompt) {
-    console.error("Error: --prompt or --prompt-file required");
-    process.exit(1);
+    throw new Error("--prompt or --prompt-file required");
   }
 
   if (!negative) {
@@ -267,38 +198,19 @@ async function main() {
   console.log("");
 
   if (!opts.dryRun) {
-    const online = await comfyHealth();
+    const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      console.error("\x1b[31mError:\x1b[0m ComfyUI not reachable at " + COMFY_URL);
-      process.exit(1);
+      throw new Error("ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
   }
 
-  // The guide image needs to be in ComfyUI's input directory
-  // Copy it there
   const guideFullPath = join(GAME_ROOT, opts.guidePath);
-  const guideData = await readFile(guideFullPath);
   const guideFilename = `cn_guide_${opts.subject}.png`;
 
   if (!opts.dryRun) {
-    // Upload via ComfyUI upload endpoint
-    const formData = new FormData();
-    formData.append("image", new Blob([guideData], { type: "image/png" }), guideFilename);
-    formData.append("overwrite", "true");
-
-    const uploadRes = await fetch(`${COMFY_URL}/upload/image`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!uploadRes.ok) {
-      const text = await uploadRes.text();
-      console.error(`Guide upload failed: ${uploadRes.status} ${text}`);
-      process.exit(1);
-    }
-    const uploadResult = await uploadRes.json();
-    console.log(`\x1b[32m+\x1b[0m Guide uploaded: ${uploadResult.name}`);
+    await uploadImage(guideFullPath, guideFilename, COMFY_URL);
+    console.log(`\x1b[32m+\x1b[0m Guide uploaded: ${guideFilename}`);
   }
 
   await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
@@ -320,7 +232,7 @@ async function main() {
     );
 
     try {
-      const result = await submitAndWait(workflow);
+      const result = await submitAndWait(workflow, COMFY_URL, { clientPrefix: 'cn' });
       const elapsed = Date.now() - startMs;
 
       const outputs = result.outputs || {};
@@ -339,7 +251,7 @@ async function main() {
         continue;
       }
 
-      const imgData = await downloadImage(imageFile, imageSubfolder);
+      const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
       await writeFile(join(GAME_ROOT, destPath), imgData);
       console.log(`    \x1b[32m+\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
     } catch (err) {
@@ -351,7 +263,10 @@ async function main() {
   if (opts.dryRun) console.log("  (dry run)");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('generate-controlnet.js') || process.argv[1].endsWith('generate-controlnet'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
+}

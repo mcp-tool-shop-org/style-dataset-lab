@@ -4,31 +4,18 @@
  * generate-ipadapter.js — IP-Adapter guided generation for structural subjects.
  *
  * Uses a reference image to guide the shape/structure of the output
- * while the text prompt adds identity-specific details (wear, patching, name).
+ * while the text prompt adds identity-specific details.
  *
  * Usage:
  *   node scripts/generate-ipadapter.js --subject corrigan --ref <image> --seeds 4
- *   node scripts/generate-ipadapter.js --subject corrigan --ref <image> --seeds 4 --dry-run
- *
- * Options:
- *   --subject NAME    Subject name for output file naming
- *   --ref PATH        Reference image path (the structural truth source)
- *   --prompt TEXT      Generation prompt
- *   --negative TEXT    Negative prompt
- *   --seeds N          Number of seeds (default: 4)
- *   --weight W         IP-Adapter weight (default: 0.55)
- *   --start S          IP-Adapter start (default: 0.0)
- *   --end E            IP-Adapter end (default: 0.8)
- *   --dry-run          Print workflow without running
+ *   sdlab generate:ipadapter --subject corrigan --ref <image> --seeds 4 --project star-freight
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-
-const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'games', GAME);
+import { getProjectName } from "../lib/args.js";
+import { REPO_ROOT } from "../lib/paths.js";
+import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -44,11 +31,10 @@ const DEFAULTS = {
   base_seed: 27200,
 };
 
-function parseArgs() {
-  const args = process.argv.slice(2);
+function parseLocalArgs(argv) {
   const get = (flag, def) => {
-    const i = args.indexOf(flag);
-    return i >= 0 && i + 1 < args.length ? args[i + 1] : def;
+    const i = argv.indexOf(flag);
+    return i >= 0 && i + 1 < argv.length ? argv[i + 1] : def;
   };
   return {
     subject: get("--subject", "unknown"),
@@ -59,7 +45,7 @@ function parseArgs() {
     weight: parseFloat(get("--weight", "0.55")),
     start: parseFloat(get("--start", "0.0")),
     end: parseFloat(get("--end", "0.8")),
-    dryRun: args.includes("--dry-run"),
+    dryRun: argv.includes("--dry-run"),
   };
 }
 
@@ -67,7 +53,6 @@ function buildIPAdapterWorkflow(prompt, negativePrompt, seed, refImageName, weig
   const nodes = {};
   let nextId = 1;
 
-  // Checkpoint
   const ckptId = String(nextId++);
   nodes[ckptId] = {
     class_type: "CheckpointLoaderSimple",
@@ -77,33 +62,30 @@ function buildIPAdapterWorkflow(prompt, negativePrompt, seed, refImageName, weig
   let modelOut = [ckptId, 0];
   let clipOut = [ckptId, 1];
 
-  // LoRA
   for (const lora of DEFAULTS.loras) {
     const loraId = String(nextId++);
     nodes[loraId] = {
       class_type: "LoraLoader",
       inputs: {
-        model: modelOut,
-        clip: clipOut,
+        model: modelOut, clip: clipOut,
         lora_name: lora.name,
-        strength_model: lora.weight,
-        strength_clip: lora.weight,
+        strength_model: lora.weight, strength_clip: lora.weight,
       },
     };
     modelOut = [loraId, 0];
     clipOut = [loraId, 1];
   }
 
-  // Load CLIP Vision
+  // CLIP Vision
   const clipVisionId = String(nextId++);
   nodes[clipVisionId] = {
     class_type: "CLIPVisionLoader",
     inputs: { clip_name: DEFAULTS.clip_vision_model },
   };
 
-  // Load IP-Adapter model
-  const ipaLoadId = String(nextId++);
-  nodes[ipaLoadId] = {
+  // IP-Adapter model
+  const ipaLoaderId = String(nextId++);
+  nodes[ipaLoaderId] = {
     class_type: "IPAdapterModelLoader",
     inputs: { ipadapter_file: DEFAULTS.ipadapter_model },
   };
@@ -115,47 +97,43 @@ function buildIPAdapterWorkflow(prompt, negativePrompt, seed, refImageName, weig
     inputs: { image: refImageName },
   };
 
-  // Apply IP-Adapter (using IPAdapterAdvanced from ComfyUI_IPAdapter_plus)
+  // Apply IP-Adapter
   const ipaApplyId = String(nextId++);
   nodes[ipaApplyId] = {
     class_type: "IPAdapterAdvanced",
     inputs: {
       model: modelOut,
-      ipadapter: [ipaLoadId, 0],
-      image: [refImgId, 0],
+      ipadapter: [ipaLoaderId, 0],
       clip_vision: [clipVisionId, 0],
-      weight: weight,
+      image: [refImgId, 0],
+      weight,
       weight_type: "linear",
       combine_embeds: "concat",
+      embeds_scaling: "V only",
       start_at: start,
       end_at: end,
-      embeds_scaling: "V only",
     },
   };
   modelOut = [ipaApplyId, 0];
 
-  // Positive prompt
   const posId = String(nextId++);
   nodes[posId] = {
     class_type: "CLIPTextEncode",
     inputs: { text: prompt, clip: clipOut },
   };
 
-  // Negative prompt
   const negId = String(nextId++);
   nodes[negId] = {
     class_type: "CLIPTextEncode",
     inputs: { text: negativePrompt, clip: clipOut },
   };
 
-  // Empty latent
   const latentId = String(nextId++);
   nodes[latentId] = {
     class_type: "EmptyLatentImage",
     inputs: { width: DEFAULTS.width, height: DEFAULTS.height, batch_size: 1 },
   };
 
-  // KSampler
   const samplerId = String(nextId++);
   nodes[samplerId] = {
     class_type: "KSampler",
@@ -173,14 +151,12 @@ function buildIPAdapterWorkflow(prompt, negativePrompt, seed, refImageName, weig
     },
   };
 
-  // VAE Decode
   const vaeId = String(nextId++);
   nodes[vaeId] = {
     class_type: "VAEDecode",
     inputs: { samples: [samplerId, 0], vae: [ckptId, 2] },
   };
 
-  // Save
   const saveId = String(nextId++);
   nodes[saveId] = {
     class_type: "SaveImage",
@@ -190,62 +166,18 @@ function buildIPAdapterWorkflow(prompt, negativePrompt, seed, refImageName, weig
   return nodes;
 }
 
-async function comfyHealth() {
-  try {
-    const res = await fetch(`${COMFY_URL}/system_stats`);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'games', projectName);
+  const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-const MAX_POLL_MS = 600_000; // 10 minutes
-
-async function submitAndWait(workflow) {
-  const clientId = `ipa-${Date.now()}`;
-  const res = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ComfyUI submit failed: ${res.status} ${text}`);
-  }
-  const { prompt_id: promptId } = await res.json();
-  const start = Date.now();
-  while (true) {
-    if (Date.now() - start > MAX_POLL_MS) throw new Error(`ComfyUI poll timeout after ${MAX_POLL_MS/1000}s for prompt ${promptId}`);
-    await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
-    if (!histRes.ok) continue;
-    const history = await histRes.json();
-    const entry = history[promptId];
-    if (!entry) continue;
-    if (entry.status?.completed) return entry;
-    if (entry.status?.status_str === "error") {
-      throw new Error(`ComfyUI error: ${JSON.stringify(entry.status)}`);
-    }
-  }
-}
-
-async function downloadImage(filename, subfolder, type = "output") {
-  const url = `${COMFY_URL}/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder || "")}&type=${type}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-async function main() {
-  const opts = parseArgs();
+  const opts = parseLocalArgs(argv);
 
   if (!opts.refPath) {
-    console.error("Error: --ref <path> is required");
-    process.exit(1);
+    throw new Error("--ref <path> is required");
   }
   if (!opts.prompt) {
-    console.error("Error: --prompt is required");
-    process.exit(1);
+    throw new Error("--prompt is required");
   }
 
   const negative = opts.negative ||
@@ -259,32 +191,20 @@ async function main() {
   console.log(`  Seeds: ${opts.seeds}`);
   console.log("");
 
+  const refFilename = `ipa_ref_${opts.subject}.png`;
+
   if (!opts.dryRun) {
-    const online = await comfyHealth();
+    const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      console.error("\x1b[31mError:\x1b[0m ComfyUI not reachable");
-      process.exit(1);
+      throw new Error("ComfyUI not reachable");
     }
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
 
-    // Upload reference image
-    const refData = await readFile(join(GAME_ROOT, opts.refPath));
-    const refFilename = `ipa_ref_${opts.subject}.png`;
-    const formData = new FormData();
-    formData.append("image", new Blob([refData], { type: "image/png" }), refFilename);
-    formData.append("overwrite", "true");
-    const uploadRes = await fetch(`${COMFY_URL}/upload/image`, { method: "POST", body: formData });
-    if (!uploadRes.ok) {
-      console.error(`Reference upload failed: ${uploadRes.status}`);
-      process.exit(1);
-    }
-    const uploadResult = await uploadRes.json();
-    console.log(`\x1b[32m+\x1b[0m Reference uploaded: ${uploadResult.name}`);
+    await uploadImage(join(GAME_ROOT, opts.refPath), refFilename, COMFY_URL);
+    console.log(`\x1b[32m+\x1b[0m Reference uploaded: ${refFilename}`);
   }
 
   await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
-
-  const refFilename = `ipa_ref_${opts.subject}.png`;
 
   for (let si = 0; si < opts.seeds; si++) {
     const seed = DEFAULTS.base_seed + si;
@@ -302,7 +222,7 @@ async function main() {
     );
 
     try {
-      const result = await submitAndWait(workflow);
+      const result = await submitAndWait(workflow, COMFY_URL, { clientPrefix: 'ipa' });
       const elapsed = Date.now() - startMs;
 
       const outputs = result.outputs || {};
@@ -321,7 +241,7 @@ async function main() {
         continue;
       }
 
-      const imgData = await downloadImage(imageFile, imageSubfolder);
+      const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
       await writeFile(join(GAME_ROOT, destPath), imgData);
       console.log(`    \x1b[32m+\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
     } catch (err) {
@@ -333,7 +253,10 @@ async function main() {
   if (opts.dryRun) console.log("  (dry run)");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Direct execution guard
+if (process.argv[1] && (process.argv[1].endsWith('generate-ipadapter.js') || process.argv[1].endsWith('generate-ipadapter'))) {
+  run().catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
+}
