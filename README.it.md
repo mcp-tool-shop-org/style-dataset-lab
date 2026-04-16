@@ -13,158 +13,187 @@
 
 # style-dataset-lab
 
-Una pipeline per la creazione di dataset visivi, che parte da regole definite (canon), passa attraverso prompt strutturati, generazione con ComfyUI e arriva a dati di training curati e conformi alle regole stabilite.
+Trasformare i contenuti visivi approvati in set di dati versionati, supportati da revisioni, suddivisioni, pacchetti di esportazione e pacchetti di valutazione.
 
 ## Di cosa si tratta
 
-Una **pipeline** per la creazione di dataset visivi strutturati per l'addestramento. Si definiscono regole di stile (canon), si compongono prompt, si genera con ComfyUI, si effettua una selezione basata su criteri dimensionali, si collegano le valutazioni alle regole di stile e si esportano i dati in 10 formati tramite [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset).
+Una **pipeline per la creazione di un canone visivo e di set di dati**. Definisci l'aspetto del tuo progetto. Seleziona i contenuti in base alle regole definite. Crea pacchetti di set di dati riproducibili con suddivisioni sicure da "data leakage". Genera pacchetti di valutazione per la verifica futura dei modelli.
 
-La pipeline è indipendente dal gioco. Ogni gioco ha la propria directory di dati, situata in `games/<nome>/`; gli script e i modelli predefiniti sono condivisi. Ogni risorsa generata contiene tre elementi:
+La pipeline produce quattro elementi:
 
-1. **Pixel dell'immagine** -- generati da ComfyUI con informazioni complete sulla provenienza (checkpoint, LoRA, seed, sampler, cfg).
-2. **Spiegazione in base alle regole (canon)** -- motivazione per cui l'immagine è conforme o non conforme allo stile definito, basata su una costituzione di stile.
-3. **Valutazione della qualità** -- approvata/rifiutata con punteggi dimensionali e regole citate.
+| Elemento | Descrizione |
+|----------|-----------|
+| **Snapshot** | Selezione di record idonei, "congelata" e con "impronta digitale". Ogni inclusione ha una traccia esplicita della motivazione. |
+| **Split** | Partizione train/val/test sicura da "data leakage". I record che condividono la stessa famiglia di soggetti vengono sempre inseriti nella stessa partizione. |
+| **Export package** | Set di dati autonomo: manifest, metadati, immagini, suddivisioni, scheda del set di dati e checksum. |
+| **Eval pack** | Compiti di verifica attenti al canone: copertura delle aree, prevenzione di derive indesiderate, ancoraggi/riferimenti, coerenza dei soggetti. |
+
+Ogni risorsa all'interno della pipeline contiene tre elementi:
+
+1. **Provenienza** -- cronologia completa della generazione (checkpoint, LoRA, seed, sampler, cfg, timing)
+2. **Vincolo al canone** -- quali regole del canone questa risorsa soddisfa, non soddisfa o soddisfa parzialmente
+3. **Valutazione della qualità** -- approvato/rifiutato/al limite, con punteggi per ogni dimensione.
+
+Adatto per arte di videogiochi, progettazione di personaggi, progettazione di creature, architettura, concept di veicoli/meccanismi e qualsiasi dominio in cui la produzione visiva deve rimanere coerente.
+
+## Guida rapida
+
+```bash
+# Install the CLI + pipeline
+npm install -g @mcptoolshop/style-dataset-lab
+
+# Scaffold a new project
+sdlab init my-project --domain character-design
+
+# Validate the project structure
+sdlab project doctor --project my-project
+```
+
+Domini disponibili: `game-art`, `character-design`, `creature-design`, `architecture`, `vehicle-mech` o `generic`.
+
+## Interfaccia a riga di comando (CLI)
+
+```bash
+sdlab init <name> [--domain <domain>]     # Scaffold a new project
+sdlab project doctor [--project <name>]   # Validate project config
+
+sdlab generate <pack> [--project <name>]  # Generate candidates via ComfyUI
+sdlab generate:identity <packet>          # Named-subject identity images
+sdlab generate:controlnet                 # ControlNet-guided generation
+sdlab generate:ipadapter                  # IP-Adapter reference-guided
+
+sdlab curate <id> <status> <explanation>  # Record review judgment
+sdlab compare <a> <b> <winner> <reason>   # Pairwise A-vs-B comparison
+sdlab bind [--project <name>]             # Bind records to constitution rules
+sdlab painterly [--project <name>]        # Post-processing style pass
+
+sdlab snapshot create [--profile <name>]  # Create frozen dataset snapshot
+sdlab snapshot list                       # List all snapshots
+sdlab snapshot diff <a> <b>               # Compare two snapshots
+sdlab eligibility audit                   # Audit record training eligibility
+sdlab split build [--snapshot <id>]       # Build train/val/test split
+sdlab split audit <id>                    # Audit split for leakage + balance
+sdlab card generate                       # Generate dataset card (md + JSON)
+sdlab export build [--snapshot <id>]      # Build versioned export package
+sdlab eval-pack build                     # Build canon-aware eval pack
+```
+
+Tutti i comandi accettano `--project <nome>` (predefinito: `star-freight`).
+
+## Modello del progetto
+
+Ogni progetto è una directory autonoma all'interno di `projects/`, con il proprio canone, configurazione e dati.
+
+```
+projects/
+  my-project/
+    project.json            Project identity + generation defaults
+    constitution.json       Rules array with rationale templates
+    lanes.json              Subject lanes with detection patterns
+    rubric.json             Scoring dimensions + thresholds
+    terminology.json        Group vocabulary + detection order
+    canon/                  Style constitution (markdown)
+    records/                Per-asset JSON (provenance + judgment + canon)
+    inputs/prompts/         Prompt packs (JSON)
+    outputs/                Generated images (gitignored)
+    comparisons/            A-vs-B preference judgments
+    snapshots/              Frozen dataset snapshots
+    splits/                 Train/val/test partitions
+    exports/                Versioned export packages
+    eval-packs/             Canon-aware eval instruments
+```
+
+## Pipeline
+
+```
+canon → generate → curate → bind → snapshot → split → export → eval
+  |        |          |        |        |         |        |       |
+rules   ComfyUI   judgment  rules   frozen    subject  package  verify
+                                    selection isolation
+```
+
+1. **Definisci il canone** -- scrivi la tua costituzione dello stile e la griglia di valutazione.
+2. **Genera** -- ComfyUI produce candidati con piena provenienza.
+3. **Seleziona** -- approva/rifiuta con punteggi per ogni dimensione e modalità di errore.
+4. **Collega** -- associa ogni risorsa alle regole del canone con verdetto di successo/fallimento/parziale.
+5. **Snapshot** -- "congela" i record idonei in una selezione deterministica e con "impronta digitale".
+6. **Suddividi** -- partiziona in train/val/test con isolamento dei soggetti e bilanciamento delle aree.
+7. **Esporta** -- crea un pacchetto autonomo con manifest, metadati, immagini e checksum.
+8. **Valuta** -- genera strumenti di test attenti al canone per la verifica del modello.
+
+La conversione in formati specifici (TRL, LLaVA, Parquet, ecc.) è gestita da [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset). `sdlab` definisce la "verità" del set di dati; `repo-dataset` la trasforma in formati specializzati.
+
+## Modelli per dominio
+
+Ogni modello per dominio include definizioni di aree, regole del canone, griglie di valutazione e strutture terminologiche progettate per quel contesto di produzione:
+
+| Dominio | Aree | Aspetti chiave |
+|--------|-------|-------------|
+| **game-art** | personaggio, ambiente, oggetto, interfaccia utente, nave, interno, equipaggiamento | Silhouette in scala di gioco, differenziazione delle fazioni, usura/invecchiamento |
+| **character-design** | ritratto, figura intera, vista a 360°, foglio di espressioni, posa d'azione | accuratezza delle proporzioni, logica dell'abbigliamento, interpretazione della personalità, chiarezza dei gesti |
+| **creature-design** | concept, proiezione ortogonale, studio dei dettagli, azione, riferimento di scala, habitat | plausibilità anatomica, logica evolutiva, distinzione della silhouette |
+| **architecture** | esterno, interno, paesaggio urbano, dettaglio strutturale, rovina, paesaggio | plausibilità strutturale, coerenza dei materiali, prospettiva, coerenza dell'epoca |
+| **vehicle-mech** | esterno, cabina di pilotaggio, componente, schema, foglio di silhouette, variante danneggiata | Logica meccanica, linguaggio di progettazione funzionale, punti di accesso, descrizione dei danni. |
+
+## Produzione del dataset
+
+La struttura completa del dataset: istantanea, suddivisione, esportazione, valutazione.
+
+```
+snapshot  -->  split  -->  export  -->  eval-pack
+   |            |            |             |
+  frozen     subject      package       canon-aware
+  selection  isolation    (manifest,    test instruments
+             + lane       metadata,     (4 task types)
+             balance      images,
+                          checksums,
+                          card)
+```
+
+Le **istantanee** congelano una selezione deterministica di record idonei. Ogni inclusione ha una traccia della motivazione. Le "impronte" di configurazione garantiscono la riproducibilità.
+
+Le **suddivisioni** assegnano i record alle partizioni di training/validazione/test, con isolamento dei soggetti (nessuna famiglia di soggetti compare in più suddivisioni) e distribuzione bilanciata per "corsia". Un generatore di numeri pseudo-casuali (PRNG) con seme garantisce risultati identici a partire dallo stesso seme.
+
+I **pacchetti di esportazione** sono autonomi: manifest, metadata.jsonl, immagini (collegate simbolicamente o copiate), suddivisioni, scheda del dataset (markdown + JSON) e checksum in formato BSD. Tutto il necessario per ricostruire il dataset da zero.
+
+I **pacchetti di valutazione** sono strumenti di test standardizzati, con quattro tipi di attività: copertura delle "corsie", deriva proibita, ancoraggi/riferimenti e continuità dei soggetti. Dimostrano che la struttura del dataset alimenta la valutazione futura dei modelli, e non solo l'accumulo di file.
+
+Esportazione in formati compatibili con sistemi esterni tramite [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) (TRL, LLaVA, Qwen2-VL, JSONL, Parquet, e altri). `repo-dataset` gestisce la conversione dei formati; `sdlab` garantisce l'integrità del dataset.
+
+## Esempio di Star Freight
+
+Clonare il repository per un esempio funzionante completo: 1.182 record, 28 "onde" di prompt, 5 fazioni, 7 "corsie", 24 regole costituzionali e 892 risorse approvate provenienti da un RPG fantascientifico.
+
+```bash
+git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
+cd style-dataset-lab
+
+# Validate the project
+sdlab project doctor --project star-freight
+
+# Run the full dataset spine
+sdlab snapshot create --project star-freight    # 839 eligible records
+sdlab split build --project star-freight        # ~80/10/10, zero leakage
+sdlab export build --project star-freight       # package with checksums
+sdlab eval-pack build --project star-freight    # 78 eval records
+```
+
+## Migrazione dalla versione 1.x
+
+La versione 2.0 rinomina `games/` in `projects/` e `--game` in `--project`:
+
+```bash
+# Rename your data directory
+mv games projects
+
+# --game still works with a deprecation warning (removed in v3.0)
+sdlab bind --game star-freight   # works, prints warning
+sdlab bind --project star-freight # canonical form
+```
 
 ## Modello di sicurezza
 
-**Esclusivamente locale.** style-dataset-lab comunica con ComfyUI su `localhost:8188` e non effettua richieste a reti esterne. Nessuna telemetria, nessuna analisi, nessuna trasmissione di dati. La generazione delle immagini avviene interamente sulla vostra GPU. I dati e le informazioni relative alle regole rimangono sul vostro filesystem.
-
-## Cosa include il pacchetto npm
-
-`npm install @mcptoolshop/style-dataset-lab` fornisce:
-
-- **13 script** -- per la generazione, la selezione, il confronto, l'associazione alle regole, la creazione di immagini pittoriche, la generazione di identità, la generazione con ControlNet/IP-Adapter, la selezione in blocco e la migrazione.
-- **Modelli predefiniti** -- costituzione di base, griglia di valutazione e pacchetto di esempi di prompt, situati nella directory `templates/`.
-
-Il pacchetto npm **non** include i dati del gioco. Clonate il repository se desiderate l'esempio di Star Freight (1.182 record, 28 sequenze di prompt, 18 categorie visive).
-
-## Installazione
-
-```bash
-# Get the pipeline scripts + templates
-npm install @mcptoolshop/style-dataset-lab
-
-# Or clone the repo for the Star Freight example data
-git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
-cd style-dataset-lab
-npm install
-```
-
-Per iniziare un nuovo gioco a partire dai modelli:
-
-```bash
-# Copy templates into your game directory
-mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
-cp -r templates/canon games/my-game/canon
-cp templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
-# Edit the canon and prompts, then generate
-```
-
-## Struttura del monorepository
-
-La pipeline si trova nelle directory `scripts/` e `templates/`. Ogni gioco si trova nella directory `games/<nome>/` e contiene le proprie regole, i dati e le risorse. Gli script accettano l'argomento `--game <nome>` (il valore predefinito è `star-freight`).
-
-```
-style-dataset-lab/
-  scripts/                  13 pipeline scripts (generate, curate, compare, etc.)
-  templates/                Blank starting point for new games
-    canon/                  Starter constitution + review rubric
-    inputs/prompts/         Example prompt pack
-  games/
-    star-freight/           Star Freight example (1,182 records, repo-only)
-      canon/                Style constitution, review rubric, species canon
-      records/              Per-asset JSON (provenance + judgment + canon)
-      comparisons/          A-vs-B preference judgments
-      inputs/               Prompt packs, identity packets, references
-      outputs/              Generated images (gitignored)
-      exports/              repo-dataset output (gitignored)
-    <your-game>/            Add more games with the same structure
-```
-
-## Flusso di lavoro della pipeline
-
-L'intero flusso di lavoro, dalle regole alla creazione dei dati per l'addestramento:
-
-```bash
-# 1. Write your canon -- style constitution + review rubric
-#    (start from templates/ or write from scratch)
-
-# 2. Create prompt packs in inputs/prompts/
-#    (see templates/inputs/prompts/example-wave.json)
-
-# 3. Start ComfyUI and generate candidates
-npm run generate -- --game star-freight inputs/prompts/wave1.json
-npm run generate -- --game star-freight inputs/prompts/wave1.json --dry-run
-
-# 4. Generate identity-packet characters (named subjects)
-npm run generate:identity -- --game star-freight inputs/identity-packets/wave27a.json
-
-# 5. Curate -- approve, reject, or mark borderline
-npm run curate -- --game star-freight <asset_id> approved "explanation"
-npm run curate -- --game star-freight <asset_id> rejected "explanation" --failures "too_clean"
-
-# 6. Generate painterly variants of approved assets
-npm run painterly -- --game star-freight
-
-# 7. Bind canon explanations to curated assets
-npm run canon-bind -- --game star-freight
-
-# 8. Record pairwise comparisons
-npm run compare -- --game star-freight <asset_a> <asset_b> a "A has better faction read"
-
-# 9. Export training data via repo-dataset
-repo-dataset visual generate ./games/star-freight --format trl
-repo-dataset visual inspect ./games/star-freight
-```
-
-## Aggiunta di un nuovo gioco
-
-```bash
-# Create structure and copy blank templates
-mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
-cp -r templates/canon games/my-game/canon
-cp templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
-
-# Edit your canon/constitution.md and canon/review-rubric.md
-# Edit your prompt pack, then run the pipeline with --game my-game
-```
-
-## Struttura della directory per ogni gioco
-
-Ogni directory `games/<nome>/` contiene:
-
-```
-canon/                  Style constitution, review rubric, species canon, identity gates
-inputs/
-  prompts/              Prompt packs per wave (JSON: subjects, variations, defaults)
-  references/           IP-Adapter reference images
-  control-guides/       ControlNet guide overlays
-  identity-packets/     Named character identity spines
-outputs/
-  candidates/           Raw generations (gitignored)
-  approved/             Curated approved (gitignored)
-  rejected/             Curated rejected (gitignored)
-  borderline/           Curated borderline (gitignored)
-  painterly/            Painterly-style variants (gitignored)
-records/                Per-asset JSON (provenance + judgment + canon binding)
-comparisons/            A-vs-B preference judgments
-exports/                repo-dataset output (gitignored)
-```
-
-## Configurazione della generazione
-
-```yaml
-checkpoint: dreamshaperXL_v21TurboDPMSDE.safetensors
-lora: classipeintxl_v21.safetensors (weight: 1.0)
-resolution: 1024x1024
-steps: 8
-cfg: 2.0
-sampler: dpmpp_sde
-scheduler: karras
-speed: ~9s per image (RTX 5080)
-```
-
-Modalità di generazione aggiuntive: ControlNet (guidata da pose/profondità), IP-Adapter (basata su riferimento) e pacchetti di identità (coerenza dei personaggi).
+**Solo locale.** Comunica con ComfyUI su `localhost:8188`. Nessuna telemetria, nessuna analisi, nessuna richiesta esterna. Le immagini rimangono sulla tua GPU e nel tuo filesystem.
 
 ## Requisiti
 

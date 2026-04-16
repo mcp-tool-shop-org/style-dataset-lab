@@ -13,158 +13,187 @@
 
 # style-dataset-lab
 
-視覚データセット作成のためのプロダクションパイプライン：基本ルールから構造化されたプロンプト、ComfyUIによる生成、そして厳選された、基本ルールに準拠したトレーニングデータまで。
+承認済みの画像データを、バージョン管理された、レビューに基づいたデータセット、分割データ、エクスポートパッケージ、および評価用パッケージに変換します。
 
 ## これは何ですか？
 
-構造化された視覚トレーニングデータセットを構築するための**パイプライン**です。スタイルルール（基本ルール）を記述し、プロンプトを作成し、ComfyUIで生成し、各次元のスコアリングによる厳選を行い、判断を基本ルールに紐付け、`@mcptoolshop/repo-dataset` (https://github.com/mcp-tool-shop-org/repo-dataset) を使用して10種類の形式でエクスポートします。
+**画像データ管理とデータセット生成のパイプライン**。プロジェクトのイメージを定義します。規定に基づいてデータを選別します。データ漏洩を防ぐための分割データセットを作成します。将来のモデル検証のための評価用パッケージを生成します。
 
-このパイプラインは、特定のゲームに依存しません。各ゲームごとに、`games/<ゲーム名>/` の下にデータディレクトリが作成され、13個のスクリプトとテンプレートが共有されます。生成されるすべてのデータには、以下の3つの情報が含まれます。
+このパイプラインは、以下の4つの成果物（アーティファクト）を生成します。
 
-1. **画像ピクセル**：ComfyUIによって生成され、完全な情報（チェックポイント、LoRA、シード値、サンプラー、CFG）が付与されています。
-2. **規範的な説明**：なぜこの画像が特定のスタイルに合致しているか、または合致していないかを、スタイルに関する規定に基づいて説明します。
-3. **品質評価**：各次元のスコアと参照ルールに基づいて、承認/却下の判断がなされます。
+| 成果物 | 内容 |
+|----------|-----------|
+| **Snapshot** | 選択されたデータレコードの、不変で、フィンガープリントが付与されたもの。各データレコードの採用には、明確な理由が記録されています。 |
+| **Split** | データ漏洩を防ぐための、トレーニングデータ/検証データ/テストデータの分割。同じ対象を含むデータレコードは、常に同じ分割に分類されます。 |
+| **Export package** | 自己完結型のデータセット：マニフェスト、メタデータ、画像、分割データ、データセットの説明、およびチェックサム。 |
+| **Eval pack** | 規定に準拠した検証タスク：表現の網羅性、許容されない変化、基準/正解データ、対象の一貫性。 |
+
+このパイプライン内のすべてのデータには、以下の3つの情報が含まれています。
+
+1. **生成履歴 (Provenance)**：完全な生成履歴（チェックポイント、LoRA、シード値、サンプラー、CFG値、実行時間）
+2. **規定への適合性 (Canon binding)**：このデータが、どの規定に適合し、不適合であり、または部分的に適合しているか
+3. **品質評価 (Quality judgment)**：承認/拒否/境界値、および各評価項目のスコア
+
+ゲームアート、キャラクターデザイン、クリーチャーデザイン、アーキテクチャ、車両/メカのコンセプト、および、画像データの品質を維持する必要があるあらゆる分野で利用できます。
+
+## クイックスタート
+
+```bash
+# Install the CLI + pipeline
+npm install -g @mcptoolshop/style-dataset-lab
+
+# Scaffold a new project
+sdlab init my-project --domain character-design
+
+# Validate the project structure
+sdlab project doctor --project my-project
+```
+
+利用可能なドメイン：`game-art`、`character-design`、`creature-design`、`architecture`、`vehicle-mech`、または`generic`。
+
+## コマンドラインインターフェース (CLI)
+
+```bash
+sdlab init <name> [--domain <domain>]     # Scaffold a new project
+sdlab project doctor [--project <name>]   # Validate project config
+
+sdlab generate <pack> [--project <name>]  # Generate candidates via ComfyUI
+sdlab generate:identity <packet>          # Named-subject identity images
+sdlab generate:controlnet                 # ControlNet-guided generation
+sdlab generate:ipadapter                  # IP-Adapter reference-guided
+
+sdlab curate <id> <status> <explanation>  # Record review judgment
+sdlab compare <a> <b> <winner> <reason>   # Pairwise A-vs-B comparison
+sdlab bind [--project <name>]             # Bind records to constitution rules
+sdlab painterly [--project <name>]        # Post-processing style pass
+
+sdlab snapshot create [--profile <name>]  # Create frozen dataset snapshot
+sdlab snapshot list                       # List all snapshots
+sdlab snapshot diff <a> <b>               # Compare two snapshots
+sdlab eligibility audit                   # Audit record training eligibility
+sdlab split build [--snapshot <id>]       # Build train/val/test split
+sdlab split audit <id>                    # Audit split for leakage + balance
+sdlab card generate                       # Generate dataset card (md + JSON)
+sdlab export build [--snapshot <id>]      # Build versioned export package
+sdlab eval-pack build                     # Build canon-aware eval pack
+```
+
+すべてのコマンドは、`--project <名前>`（デフォルト：`star-freight`）を受け入れます。
+
+## プロジェクトモデル
+
+各プロジェクトは、`projects/`ディレクトリ内の自己完結型のディレクトリであり、独自の規定、設定、およびデータが含まれています。
+
+```
+projects/
+  my-project/
+    project.json            Project identity + generation defaults
+    constitution.json       Rules array with rationale templates
+    lanes.json              Subject lanes with detection patterns
+    rubric.json             Scoring dimensions + thresholds
+    terminology.json        Group vocabulary + detection order
+    canon/                  Style constitution (markdown)
+    records/                Per-asset JSON (provenance + judgment + canon)
+    inputs/prompts/         Prompt packs (JSON)
+    outputs/                Generated images (gitignored)
+    comparisons/            A-vs-B preference judgments
+    snapshots/              Frozen dataset snapshots
+    splits/                 Train/val/test partitions
+    exports/                Versioned export packages
+    eval-packs/             Canon-aware eval instruments
+```
+
+## パイプライン
+
+```
+canon → generate → curate → bind → snapshot → split → export → eval
+  |        |          |        |        |         |        |       |
+rules   ComfyUI   judgment  rules   frozen    subject  package  verify
+                                    selection isolation
+```
+
+1. **規定の定義 (Define canon)**：スタイル規定とレビュー基準を記述します。
+2. **生成 (Generate)**：ComfyUIが、完全な生成履歴を持つ候補データを生成します。
+3. **選別 (Curate)**：各評価項目のスコアと、失敗モードに基づいて、承認または拒否を行います。
+4. **関連付け (Bind)**：各データと、規定への適合性（適合/不適合/部分適合）を関連付けます。
+5. **スナップショット (Snapshot)**：選択されたデータレコードを、不変で、フィンガープリントが付与された状態で凍結します。
+6. **分割 (Split)**：対象の分離と、表現のバランスを考慮して、トレーニングデータ/検証データ/テストデータに分割します。
+7. **エクスポート (Export)**：マニフェスト、メタデータ、画像、およびチェックサムを含む、自己完結型のパッケージを構築します。
+8. **評価 (Eval)**：モデル検証のための、規定に準拠したテストツールを生成します。
+
+下流のフォーマット変換（TRL、LLaVA、Parquetなど）は、[`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset)によって処理されます。`sdlab`がデータセットの真実性を管理し、`repo-dataset`がそれを特殊なフォーマットに変換します。
+
+## ドメインテンプレート
+
+各ドメインテンプレートには、表現の定義、規定、評価基準、および、その制作コンテキストに合わせた用語構造が含まれています。
+
+| ドメイン | 表現 | 主要な考慮事項 |
+|--------|-------|-------------|
+| **game-art** | キャラクター、環境、小道具、UI、船、内装、装備 | ゲームプレイ時のシルエット、派閥の区別、摩耗/経年劣化 |
+| **character-design** | ポートレート、全身像、アングル図、表情シート、アクションポーズ | プロポーションの正確性、衣装の論理性、キャラクターの表現、ジェスチャーの明瞭さ |
+| **creature-design** | コンセプト、正投影図、詳細図、アクション、スケール参照、生息地 | 解剖学的な妥当性、進化論的な論理性、シルエットの区別 |
+| **architecture** | 外観、内装、街並み、構造の詳細、廃墟、風景 | 構造的な妥当性、素材の一貫性、遠近感、時代への適合性 |
+| **vehicle-mech** | 外観、コックピット、コンポーネント、設計図、シルエット図、損傷バリエーション | 機械的なロジック、機能的なデザイン言語、アクセスポイント、損害状況の説明 |
+
+## データセットの生成
+
+データセット全体の構成：スナップショット、分割、エクスポート、評価。
+
+```
+snapshot  -->  split  -->  export  -->  eval-pack
+   |            |            |             |
+  frozen     subject      package       canon-aware
+  selection  isolation    (manifest,    test instruments
+             + lane       metadata,     (4 task types)
+             balance      images,
+                          checksums,
+                          card)
+```
+
+**スナップショット**は、選択されたレコードを決定的に固定します。すべてのデータは、その理由が追跡可能です。設定のフィンガープリントにより、再現性が確保されます。
+
+**分割**は、レコードをトレーニング用、検証用、テスト用のデータセットに割り当てます。この際、被験者の同一性が保たれ（同じ被験者のデータが複数の分割に属さない）、各分割におけるデータのバランスが調整されます。シード値が設定された疑似乱数生成器を使用することで、同じシード値を使用した場合、常に同じ結果が得られます。
+
+**エクスポートパッケージ**は、すべてが完結したパッケージです。内容：マニフェスト、metadata.jsonl、画像（シンボリックリンクまたはコピー）、分割データ、データセットの説明（Markdown形式とJSON形式）、およびBSD形式のチェックサム。データセットを最初から再構築するために必要なものがすべて含まれています。
+
+**評価パッケージ**は、基準に準拠したテストツールであり、4つのタスクタイプ（レーンカバレッジ、禁止ドリフト、アンカー/ゴールド、被験者の一貫性）が含まれています。これにより、データセットの構成が、単にファイルをダンプするだけでなく、将来のモデル評価に役立つことを証明します。
+
+`repo-dataset` ([https://github.com/mcp-tool-shop-org/repo-dataset](https://github.com/mcp-tool-shop-org/repo-dataset)) を使用して、下流の形式にエクスポートします（TRL、LLaVA、Qwen2-VL、JSONL、Parquetなど）。`repo-dataset` が形式の変換を処理し、`sdlab` がデータセットの正確性を保証します。
+
+## Star Freightの例
+
+完全な動作例については、リポジトリをクローンしてください。1,182件のレコード、28種類のプロンプト、5つの派閥、7つのレーン、24の憲法ルール、および、ハードなSF RPGから抽出された892件の承認済みアセットが含まれています。
+
+```bash
+git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
+cd style-dataset-lab
+
+# Validate the project
+sdlab project doctor --project star-freight
+
+# Run the full dataset spine
+sdlab snapshot create --project star-freight    # 839 eligible records
+sdlab split build --project star-freight        # ~80/10/10, zero leakage
+sdlab export build --project star-freight       # package with checksums
+sdlab eval-pack build --project star-freight    # 78 eval records
+```
+
+## v1.xからの移行
+
+v2.0では、`games/`が`projects/`に、`--game`が`--project`に変更されました。
+
+```bash
+# Rename your data directory
+mv games projects
+
+# --game still works with a deprecation warning (removed in v3.0)
+sdlab bind --game star-freight   # works, prints warning
+sdlab bind --project star-freight # canonical form
+```
 
 ## セキュリティモデル
 
-**ローカル環境のみ**。style-dataset-labは、`localhost:8188`で動作するComfyUIとのみ通信し、外部ネットワークへのアクセスは一切行いません。テレメトリー、分析、データ送信機能は一切ありません。画像生成はすべて、お客様のGPU上で行われます。記録データと規範データは、お客様のファイルシステム上に保存されます。
-
-## このnpmパッケージに含まれるもの
-
-`npm install @mcptoolshop/style-dataset-lab` を実行すると、以下のものが利用できます。
-
-- **13個のスクリプト**：生成、厳選、比較、基本ルールへの紐付け、絵画風生成、同一性生成、ControlNet/IP-Adapter生成、一括厳選、移行
-- **テンプレート**：`templates/` に、初期設定ファイル、レビュー基準、およびサンプルプロンプトが含まれています。
-
-このnpmパッケージには、ゲームデータは含まれていません。Star Freightのサンプルデータが必要な場合は、リポジトリをクローンしてください（1,182件のデータ、28種類のプロンプト、18種類の視覚カテゴリ）。
-
-## インストール
-
-```bash
-# Get the pipeline scripts + templates
-npm install @mcptoolshop/style-dataset-lab
-
-# Or clone the repo for the Star Freight example data
-git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
-cd style-dataset-lab
-npm install
-```
-
-新しいゲームをテンプレートから開始するには：
-
-```bash
-# Copy templates into your game directory
-mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
-cp -r templates/canon games/my-game/canon
-cp templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
-# Edit the canon and prompts, then generate
-```
-
-## モノレポの構造
-
-このパイプラインは、`scripts/` と `templates/` にあります。各ゲームは、`games/<ゲーム名>/` に、それぞれの基本ルール、データ、およびアセットとともに配置されます。スクリプトは `--game <ゲーム名>` オプションを受け入れます（デフォルトは `star-freight`）。
-
-```
-style-dataset-lab/
-  scripts/                  13 pipeline scripts (generate, curate, compare, etc.)
-  templates/                Blank starting point for new games
-    canon/                  Starter constitution + review rubric
-    inputs/prompts/         Example prompt pack
-  games/
-    star-freight/           Star Freight example (1,182 records, repo-only)
-      canon/                Style constitution, review rubric, species canon
-      records/              Per-asset JSON (provenance + judgment + canon)
-      comparisons/          A-vs-B preference judgments
-      inputs/               Prompt packs, identity packets, references
-      outputs/              Generated images (gitignored)
-      exports/              repo-dataset output (gitignored)
-    <your-game>/            Add more games with the same structure
-```
-
-## パイプラインのワークフロー
-
-基本ルールからトレーニングデータのエクスポートまでの完全なパイプライン：
-
-```bash
-# 1. Write your canon -- style constitution + review rubric
-#    (start from templates/ or write from scratch)
-
-# 2. Create prompt packs in inputs/prompts/
-#    (see templates/inputs/prompts/example-wave.json)
-
-# 3. Start ComfyUI and generate candidates
-npm run generate -- --game star-freight inputs/prompts/wave1.json
-npm run generate -- --game star-freight inputs/prompts/wave1.json --dry-run
-
-# 4. Generate identity-packet characters (named subjects)
-npm run generate:identity -- --game star-freight inputs/identity-packets/wave27a.json
-
-# 5. Curate -- approve, reject, or mark borderline
-npm run curate -- --game star-freight <asset_id> approved "explanation"
-npm run curate -- --game star-freight <asset_id> rejected "explanation" --failures "too_clean"
-
-# 6. Generate painterly variants of approved assets
-npm run painterly -- --game star-freight
-
-# 7. Bind canon explanations to curated assets
-npm run canon-bind -- --game star-freight
-
-# 8. Record pairwise comparisons
-npm run compare -- --game star-freight <asset_a> <asset_b> a "A has better faction read"
-
-# 9. Export training data via repo-dataset
-repo-dataset visual generate ./games/star-freight --format trl
-repo-dataset visual inspect ./games/star-freight
-```
-
-## 新しいゲームの追加
-
-```bash
-# Create structure and copy blank templates
-mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
-cp -r templates/canon games/my-game/canon
-cp templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
-
-# Edit your canon/constitution.md and canon/review-rubric.md
-# Edit your prompt pack, then run the pipeline with --game my-game
-```
-
-## ゲームごとのディレクトリ構成
-
-各 `games/<ゲーム名>/` ディレクトリには、以下のものが含まれます：
-
-```
-canon/                  Style constitution, review rubric, species canon, identity gates
-inputs/
-  prompts/              Prompt packs per wave (JSON: subjects, variations, defaults)
-  references/           IP-Adapter reference images
-  control-guides/       ControlNet guide overlays
-  identity-packets/     Named character identity spines
-outputs/
-  candidates/           Raw generations (gitignored)
-  approved/             Curated approved (gitignored)
-  rejected/             Curated rejected (gitignored)
-  borderline/           Curated borderline (gitignored)
-  painterly/            Painterly-style variants (gitignored)
-records/                Per-asset JSON (provenance + judgment + canon binding)
-comparisons/            A-vs-B preference judgments
-exports/                repo-dataset output (gitignored)
-```
-
-## 生成設定
-
-```yaml
-checkpoint: dreamshaperXL_v21TurboDPMSDE.safetensors
-lora: classipeintxl_v21.safetensors (weight: 1.0)
-resolution: 1024x1024
-steps: 8
-cfg: 2.0
-sampler: dpmpp_sde
-scheduler: karras
-speed: ~9s per image (RTX 5080)
-```
-
-追加の生成モード：ControlNet（ポーズ/深度ガイド）、IP-Adapter（参照ベース）、IDパケット（名前付きキャラクターの一貫性）。
+**ローカル環境のみ。** `localhost:8188`で動作するComfyUIと通信します。テレメトリー、分析、外部へのリクエストは一切ありません。画像は、あなたのGPUとファイルシステムにのみ保存されます。
 
 ## 必要なもの
 
