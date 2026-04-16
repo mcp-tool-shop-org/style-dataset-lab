@@ -11,142 +11,130 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-# style-dataset-lab
+A style constitution for your AI art pipeline.
 
-Define visual canon. Curate approved work. Produce versioned datasets. Build training packages. Score outputs against canon. Re-ingest accepted results. Repeat.
+Write down what your project looks like. Generate concept art against those rules. Curate the results. Turn the approved work into versioned, auditable datasets you can train from, evaluate against, and feed back into the next round. The whole loop, from written intent to trained model asset, with a receipt at every step.
 
-## What this does
+Most teams generating AI art have no system for deciding what "on-model" means. They generate thousands of images and pick favorites. The favorites have no provenance. The rejects teach nothing. The training data has no audit trail. And next month, nobody remembers why anything was approved.
 
-Style Dataset Lab is a production pipeline for visual datasets. It takes a project from written canon through curation, dataset packaging, model training preparation, evaluation, and back again as a closed loop.
+Style Dataset Lab fixes that. You write a constitution — the actual rules your art must follow. Every image gets judged against those rules. The approved work gets bound to the specific rules it satisfies. The result is a dataset where every record carries provenance, judgment, and canon binding. Not labels. Reasons.
 
-Every asset in the system carries full provenance, canon-bound judgments, and per-dimension quality scores. Nothing is a label without a reason.
-
-```
-canon → curate → bind → snapshot → split → export → train → eval → reingest
-```
-
-## The artifacts
-
-The pipeline produces seven first-class artifacts. Each is versioned, checksummed, and linked to its predecessors.
-
-| Artifact | What it is |
-|----------|-----------|
-| **Snapshot** | Frozen, fingerprinted record selection. Every inclusion has an explicit reason trace. |
-| **Split** | Leakage-safe train/val/test partition. Subject families never cross split boundaries. |
-| **Export package** | Self-contained dataset: manifest, metadata, images, splits, dataset card, checksums. |
-| **Eval pack** | Canon-aware test tasks: lane coverage, forbidden drift, anchor/gold, subject continuity. |
-| **Training package** | Trainer-ready layout built by adapters. Same truth, different format. |
-| **Eval scorecard** | Per-task pass/fail verdict from scoring generated outputs against eval packs. |
-| **Implementation pack** | Prompt examples, known failures, subject continuity tests, re-ingest guide. |
-
-## Quick start
+## The pipeline
 
 ```bash
-npm install -g @mcptoolshop/style-dataset-lab
-
+# Write your canon. Scaffold the project.
 sdlab init my-project --domain character-design
-sdlab project doctor --project my-project
-```
 
-Available domains: `game-art`, `character-design`, `creature-design`, `architecture`, `vehicle-mech`.
+# Generate candidates via ComfyUI, then review them
+sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab curate <id> approved "Strong silhouette, correct faction palette"
 
-## End-to-end example
-
-```bash
-# 1. Curate and bind records to constitution rules
-sdlab curate <id> approved "Strong silhouette, correct palette"
+# Bind approved work to constitution rules
 sdlab bind --project my-project
 
-# 2. Produce a versioned dataset
+# Freeze a versioned dataset
 sdlab snapshot create --project my-project
-sdlab split build --project my-project
-sdlab export build --project my-project
+sdlab split build
+sdlab export build
 
-# 3. Build a training package
+# Build a training package and close the loop
 sdlab training-manifest create --profile character-style-lora
-sdlab training-package build --project my-project
-
-# 4. Evaluate and close the loop
-sdlab eval-pack build --project my-project
-sdlab eval-run create --project my-project
-sdlab eval-run score <id> --outputs results.jsonl
+sdlab training-package build
+sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
 sdlab reingest generated --source ./outputs --manifest <id>
 ```
 
+That last command is the point. Generated outputs come back through the same review process as everything else. The loop closes.
+
+## What it produces
+
+Seven versioned, checksummed artifacts. Each links to its predecessors so you can trace any training record back to the rule that approved it.
+
+| Artifact | What it is |
+|----------|-----------|
+| **Snapshot** | Frozen record selection with config fingerprint. Every inclusion has an explicit reason. |
+| **Split** | Train/val/test partition where subject families never cross boundaries. |
+| **Export package** | Self-contained dataset: manifest, metadata, images, splits, dataset card, checksums. |
+| **Eval pack** | Canon-aware test tasks: lane coverage, forbidden drift, anchor/gold, subject continuity. |
+| **Training package** | Trainer-ready layout via adapters (`diffusers-lora`, `generic-image-caption`). Same truth, different format. |
+| **Eval scorecard** | Per-task pass/fail from scoring generated outputs against eval packs. |
+| **Implementation pack** | Prompt examples, known failures, continuity tests, and re-ingest guidance. |
+
+## Why this exists
+
+Training data is the highest-leverage artifact in any visual AI pipeline. But most training data is a folder of images with no history, no judgment trail, and no connection to the style rules it was supposed to follow.
+
+Style Dataset Lab makes the connection explicit. Your constitution defines the rules. Your rubric defines the scoring dimensions. Your curation records the judgment. Your canon binding proves the connection. And your dataset carries all of that forward as structured, queryable, reproducible truth.
+
+The practical result: when your LoRA drifts, you can ask *why*. When your next training round needs better data, you know exactly which records are near-misses and what single rule they failed. When a new team member asks what the project's visual language is, the answer isn't a Figma board — it's a searchable constitution with 1,182 graded examples.
+
+## Five domains, real rules
+
+Not placeholder templates. Each domain ships with production-grade constitution rules, lane definitions, scoring rubrics, and group vocabulary.
+
+| Domain | Lanes | What gets judged |
+|--------|-------|-----------------|
+| **game-art** | character, environment, prop, UI, ship, interior, equipment | Silhouette at gameplay scale, faction read, wear and aging |
+| **character-design** | portrait, full_body, turnaround, expression_sheet, action_pose | Proportions, costume logic, personality, gesture clarity |
+| **creature-design** | concept, orthographic, detail_study, action, scale_reference, habitat | Anatomy, evolutionary logic, silhouette distinction |
+| **architecture** | exterior, interior, streetscape, structural_detail, ruin, landscape | Structure, material consistency, perspective, era coherence |
+| **vehicle-mech** | exterior, cockpit, component, schematic, silhouette_sheet, damage_variant | Mechanical logic, design language, access points, damage narrative |
+
 ## Project structure
 
-Each project is self-contained under `projects/<name>/`:
+Each project is self-contained. Five JSON config files define the rules; everything else is data.
 
 ```
-project.json            Identity + generation defaults
-constitution.json       Rules with rationale templates
-lanes.json              Subject lanes with detection patterns
-rubric.json             Scoring dimensions + thresholds
-terminology.json        Group vocabulary + detection order
-canon/                  Style constitution (markdown)
-records/                Per-asset JSON (provenance + judgment + canon)
-snapshots/              Frozen dataset snapshots
-splits/                 Train/val/test partitions
-exports/                Versioned export packages
-eval-packs/             Canon-aware eval instruments
-training/
-  profiles/             What kind of model asset to produce
-  manifests/            Frozen training contracts
-  packages/             Trainer-ready layouts
-  eval-runs/            Scored output evaluations
-  implementations/      Usage examples + re-ingest guides
+projects/my-project/
+  project.json           Identity + generation defaults
+  constitution.json      Rules with rationale templates
+  lanes.json             Subject lanes with detection patterns
+  rubric.json            Scoring dimensions + thresholds
+  terminology.json       Group vocabulary + detection order
+  records/               Per-asset JSON (provenance + judgment + canon)
+  snapshots/             Frozen dataset snapshots
+  splits/                Train/val/test partitions
+  exports/               Versioned export packages
+  training/              Profiles, manifests, packages, eval runs, implementations
 ```
 
-## Key properties
+## Trust properties
 
-**Snapshots are frozen.** Once created, a snapshot never silently changes. The config fingerprint (SHA-256 of all project config files) proves reproducibility.
+These are not aspirational. They are enforced.
 
-**Splits prevent leakage.** Records sharing a subject family (by identity name, lineage chain, or ID suffix) always land in the same partition. Lane balance is maintained across train/val/test.
-
-**Manifests are immutable contracts.** A training manifest captures the exact export, split, profile, and config fingerprint. If anything changes, a new manifest is required.
-
-**Adapters never mutate truth.** Trainer-specific adapters (`generic-image-caption`, `diffusers-lora`) transform layout but cannot add, remove, or reclassify records.
-
-**Generated outputs re-enter through review.** Re-ingested work gets a new record with full provenance and must be curated and canon-bound like everything else. No bypass.
-
-## Domain templates
-
-Five starter templates with real production rules, lane definitions, and scoring rubrics:
-
-| Domain | Lanes | Key concerns |
-|--------|-------|-------------|
-| **game-art** | character, environment, prop, UI, ship, interior, equipment | Silhouette at gameplay scale, faction read, wear/aging |
-| **character-design** | portrait, full_body, turnaround, expression_sheet, action_pose | Proportions, costume logic, personality, gesture |
-| **creature-design** | concept, orthographic, detail_study, action, scale_reference, habitat | Anatomy, evolutionary logic, silhouette distinction |
-| **architecture** | exterior, interior, streetscape, structural_detail, ruin, landscape | Structure, material consistency, perspective, era |
-| **vehicle-mech** | exterior, cockpit, component, schematic, silhouette_sheet, damage_variant | Mechanical logic, design language, access points |
-
-## Downstream formats
-
-`sdlab` defines and owns the dataset. Downstream format conversion is handled by [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset): TRL, LLaVA, Qwen2-VL, JSONL, Parquet, and more. `repo-dataset` renders formats; it never decides inclusion.
+- **Snapshots are immutable.** Config fingerprint (SHA-256) proves nothing changed.
+- **Splits prevent leakage.** Subject families (by identity, lineage, or ID suffix) never cross partition boundaries.
+- **Manifests are frozen contracts.** Export hash + config fingerprint. If anything changes, create a new one.
+- **Adapters cannot mutate truth.** Different layout, same records. No additions, no removals, no reclassification.
+- **Generated outputs re-enter through review.** No bypass. Curate and bind like everything else.
 
 ## Star Freight
 
-Clone the repo for a complete working example: 1,182 records, 5 factions, 7 lanes, 24 constitution rules, 2 training profiles.
+The repo includes a complete working example: 1,182 records, 5 factions, 7 lanes, 24 constitution rules, 892 approved assets, 2 training profiles. A gritty sci-fi RPG visual canon, fully curated.
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
 cd style-dataset-lab
 sdlab project doctor --project star-freight
-sdlab snapshot create --project star-freight
-sdlab split build --project star-freight
-sdlab training-manifest create --profile character-style-lora --project star-freight
+sdlab snapshot create --project star-freight   # 839 eligible records
+sdlab split build --project star-freight       # zero subject leakage
 ```
+
+## Downstream formats
+
+`sdlab` owns the dataset. Format conversion is handled by [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset): TRL, LLaVA, Qwen2-VL, JSONL, Parquet, and more. `repo-dataset` renders; it never decides inclusion.
+
+## Install
+
+```bash
+npm install -g @mcptoolshop/style-dataset-lab
+```
+
+Requires Node.js 20+ and [ComfyUI](https://github.com/comfyanonymous/ComfyUI) on localhost:8188 for generation.
 
 ## Security
 
-Local-only. Talks to ComfyUI on `localhost:8188`. No telemetry, no analytics, no external requests. Images stay on your GPU and filesystem.
-
-## Requirements
-
-- [ComfyUI](https://github.com/comfyanonymous/ComfyUI) running on localhost:8188
-- SDXL-compatible checkpoint + style LoRA
-- Node.js 20+
+Local-only. No telemetry, no analytics, no external requests. Images stay on your GPU and filesystem.
 
 ## License
 
