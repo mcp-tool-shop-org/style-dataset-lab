@@ -1,0 +1,30 @@
+{
+  "group_label": "style_group",
+  "id_detection_order": [],
+  "prompt_detection_order": [],
+  "groups": {},
+  "cross_group_patterns": {},
+  "edge_defaults": {},
+  "null_faction_patterns": [
+    "generic_fantasy",
+    "generic_scifi",
+    "stock_art",
+    "asset_store",
+    "too_clean",
+    "photorealistic",
+    "anime_style",
+    "chibi"
+  ],
+  "id_fallbacks": {},
+  "faction_context": {},
+  "training_profiles": [
+    {
+      "profile_id": "style-lora",
+      "intended_use": "LoRA fine-tuning for project style",
+      "eligible_lanes": ["character", "environment", "prop"],
+      "minimum_review_threshold": 0.7,
+      "excluded_content": ["rejected", "borderline"],
+      "export_format": "trl"
+    }
+  ]
+}

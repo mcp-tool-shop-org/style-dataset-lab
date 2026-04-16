@@ -1,0 +1,17 @@
+{
+  "name": "TEMPLATE",
+  "display_name": "TEMPLATE",
+  "domain": "character-design",
+  "version": "0.1.0",
+  "defaults": {
+    "checkpoint": "",
+    "loras": [],
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "comfy_url": "http://127.0.0.1:8188"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "group_label": "style_family",
+  "id_detection_order": [],
+  "prompt_detection_order": [],
+  "groups": {},
+  "cross_group_patterns": {},
+  "edge_defaults": {},
+  "null_faction_patterns": [],
+  "id_fallbacks": {},
+  "faction_context": {},
+  "training_profiles": [
+    {
+      "profile_id": "character-style",
+      "intended_use": "Character style consistency LoRA",
+      "eligible_lanes": ["portrait", "full_body", "turnaround"],
+      "minimum_review_threshold": 0.7,
+      "excluded_content": ["rejected"],
+      "export_format": "trl"
+    }
+  ]
+}

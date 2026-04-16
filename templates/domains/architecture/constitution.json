@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "STR-001",
+      "category": "structure",
+      "desc": "Structural plausibility — buildings look like they could stand",
+      "dims": ["structural_plausibility"],
+      "faction_specific": false,
+      "rationale_pass": "Structure reads as plausible — load paths and massing are believable (${scorePct}%)",
+      "rationale_fail": "Structure implausible — walls, spans, or cantilevers defy credible engineering (${scorePct}%)"
+    },
+    {
+      "id": "MAT-001",
+      "category": "material",
+      "desc": "Material consistency — stone reads as stone, wood as wood, metal as metal",
+      "dims": ["material_consistency"],
+      "faction_specific": false,
+      "rationale_pass": "Materials read correctly — surfaces have appropriate weight, texture, and joinery (${scorePct}%)",
+      "rationale_fail": "Material reads wrong — surface lacks expected weight, grain, or construction logic (${scorePct}%)"
+    },
+    {
+      "id": "PER-001",
+      "category": "perspective",
+      "desc": "Perspective accuracy — no impossible geometry or broken vanishing points",
+      "dims": ["perspective_accuracy"],
+      "faction_specific": false,
+      "rationale_pass": "Perspective is accurate — vanishing points consistent, no spatial contradictions (${scorePct}%)",
+      "rationale_fail": "Perspective broken — impossible geometry, misaligned vanishing points, or spatial contradictions (${scorePct}%)"
+    },
+    {
+      "id": "LGT-001",
+      "category": "lighting",
+      "desc": "Lighting and mood — atmosphere serves narrative intent",
+      "dims": ["lighting_mood"],
+      "faction_specific": false,
+      "rationale_pass": "Lighting carries mood — shadow, bounce, and atmosphere serve the narrative intent (${scorePct}%)",
+      "rationale_fail": "Lighting flat or contradictory — no mood, multiple shadow sources, or atmosphere works against intent (${scorePct}%)"
+    },
+    {
+      "id": "SCL-001",
+      "category": "scale",
+      "desc": "Scale consistency — human-scale reference readable",
+      "dims": ["scale_consistency"],
+      "faction_specific": false,
+      "rationale_pass": "Scale reads correctly — doors, windows, and elements imply consistent human proportion (${scorePct}%)",
+      "rationale_fail": "Scale inconsistent — elements contradict each other or lack human-scale reference (${scorePct}%)"
+    },
+    {
+      "id": "ERA-001",
+      "category": "era",
+      "desc": "Era and tech-level coherence — no anachronisms within the depicted period",
+      "dims": ["era_coherence"],
+      "faction_specific": false,
+      "rationale_pass": "Era coherent — construction methods, ornament, and technology match the depicted period (${scorePct}%)",
+      "rationale_fail": "Anachronism present — elements from incompatible time periods or tech levels mixed (${scorePct}%)"
+    },
+    {
+      "id": "WEA-001",
+      "category": "weathering",
+      "desc": "Weathering and aging appropriate to era, climate, and material",
+      "dims": ["weathering_logic"],
+      "faction_specific": false,
+      "rationale_pass": "Weathering reads correctly — aging pattern matches material, climate, and implied age (${scorePct}%)",
+      "rationale_fail": "Weathering illogical — wear doesn't match material behavior, climate, or timeframe (${scorePct}%)"
+    },
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Style consistency within the project — rendering and design language unified",
+      "dims": ["style_consistency"],
+      "faction_specific": false,
+      "rationale_pass": "Style consistent — rendering approach and design language match the project standard (${scorePct}%)",
+      "rationale_fail": "Style inconsistent — rendering or design language breaks from project standard (${scorePct}%)"
+    },
+    {
+      "id": "DET-001",
+      "category": "detail",
+      "desc": "Detail density appropriate to distance and scale of view",
+      "dims": ["detail_density"],
+      "faction_specific": false,
+      "lanes": ["structural_detail"],
+      "rationale_pass": "Detail density appropriate — close-ups show construction logic, wide shots stay readable (${scorePct}%)",
+      "rationale_fail": "Detail density wrong — close-up lacks construction detail or wide shot is noisy and unreadable (${scorePct}%)"
+    },
+    {
+      "id": "RUI-001",
+      "category": "ruin",
+      "desc": "Ruin logic — decay pattern follows structural weaknesses and material behavior",
+      "dims": ["ruin_logic"],
+      "faction_specific": false,
+      "lanes": ["ruin"],
+      "rationale_pass": "Ruin logic holds — collapse follows structural weakness, material decay is physically plausible (${scorePct}%)",
+      "rationale_fail": "Ruin logic fails — decay is arbitrary, structure collapses where it shouldn't or survives where it can't (${scorePct}%)"
+    }
+  ]
+}

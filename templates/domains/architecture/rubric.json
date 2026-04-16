@@ -1,0 +1,40 @@
+{
+  "dimensions": [
+    "structural_plausibility",
+    "material_consistency",
+    "perspective_accuracy",
+    "lighting_mood",
+    "scale_consistency",
+    "era_coherence",
+    "weathering_logic",
+    "style_consistency",
+    "detail_density",
+    "ruin_logic"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "impossible_structure": ["STR-001"],
+    "wrong_material": ["MAT-001"],
+    "bad_perspective": ["PER-001"],
+    "anachronism": ["ERA-001"],
+    "flat_lighting": ["LGT-001"],
+    "scale_mismatch": ["SCL-001"],
+    "illogical_weathering": ["WEA-001"],
+    "style_break": ["STY-001"],
+    "detail_mismatch": ["DET-001"],
+    "arbitrary_decay": ["RUI-001"]
+  }
+}

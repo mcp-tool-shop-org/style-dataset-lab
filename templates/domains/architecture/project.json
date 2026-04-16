@@ -1,0 +1,20 @@
+{
+  "name": "architecture",
+  "display_name": "Architecture",
+  "domain": "architecture",
+  "version": "1.0.0",
+  "description": "Architectural and worldbuilding concept art — building exteriors, interiors, streetscapes, structural details, ruins, and landscapes for film, game, and themed entertainment pre-visualization.",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      { "name": "classipeintxl_v21.safetensors", "weight": 1.0 }
+    ],
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "comfy_url": "http://127.0.0.1:8188"
+  }
+}

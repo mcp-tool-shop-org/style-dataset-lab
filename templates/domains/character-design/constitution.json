@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "PRO-001",
+      "category": "proportion",
+      "desc": "Anatomical proportion accuracy — limb length, joint placement, mass distribution",
+      "dims": ["proportion_accuracy"],
+      "rationale_pass": "Proportions are anatomically sound — limbs, joints, and mass read correctly (${scorePct}%)",
+      "rationale_fail": "Proportion errors — limb length, joint placement, or mass distribution incorrect (${scorePct}%)"
+    },
+    {
+      "id": "PRO-002",
+      "category": "proportion",
+      "desc": "Consistent head-to-body ratio across all views and poses",
+      "dims": ["proportion_accuracy"],
+      "rationale_pass": "Head-to-body ratio is consistent across views (${scorePct}%)",
+      "rationale_fail": "Head-to-body ratio drifts between views — character reads as different heights (${scorePct}%)"
+    },
+    {
+      "id": "GES-001",
+      "category": "gesture",
+      "desc": "Gesture clarity — pose communicates intent, weight, and emotion",
+      "dims": ["gesture_clarity"],
+      "rationale_pass": "Gesture reads clearly — pose communicates intent and weight (${scorePct}%)",
+      "rationale_fail": "Gesture is stiff or ambiguous — pose does not communicate intent (${scorePct}%)"
+    },
+    {
+      "id": "COS-001",
+      "category": "costume",
+      "desc": "Costume logic — layers make functional sense, nothing floats or clips irrationally",
+      "dims": ["costume_logic"],
+      "rationale_pass": "Costume logic holds — layers are functional and physically plausible (${scorePct}%)",
+      "rationale_fail": "Costume logic broken — floating elements, impossible layers, or nonsensical construction (${scorePct}%)"
+    },
+    {
+      "id": "COS-002",
+      "category": "costume",
+      "desc": "Costume consistency across poses and views — same garments, same details",
+      "dims": ["costume_logic", "style_consistency"],
+      "rationale_pass": "Costume is consistent across poses and views — details match (${scorePct}%)",
+      "rationale_fail": "Costume changes between views — missing details, altered garments, or inconsistent accessories (${scorePct}%)"
+    },
+    {
+      "id": "PER-001",
+      "category": "personality",
+      "desc": "Personality read — character is recognizable by silhouette alone",
+      "dims": ["personality_read"],
+      "rationale_pass": "Character reads at silhouette level — distinct and recognizable (${scorePct}%)",
+      "rationale_fail": "Character is generic — silhouette is not distinctive or recognizable (${scorePct}%)"
+    },
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Style consistency across the project — rendering, line quality, color treatment match",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Style is consistent with the project — rendering and color treatment match (${scorePct}%)",
+      "rationale_fail": "Style drifts from project standard — rendering or color treatment inconsistent (${scorePct}%)"
+    },
+    {
+      "id": "TUR-001",
+      "category": "turnaround",
+      "desc": "Turnaround accuracy — same character from all angles, proportions hold in rotation",
+      "dims": ["turnaround_accuracy"],
+      "lanes": ["turnaround"],
+      "rationale_pass": "Turnaround is accurate — character holds across all rotation angles (${scorePct}%)",
+      "rationale_fail": "Turnaround breaks — proportions, costume, or features change between angles (${scorePct}%)"
+    },
+    {
+      "id": "EXP-001",
+      "category": "expression",
+      "desc": "Expression range — emotions read clearly and the face stays on-model",
+      "dims": ["expression_clarity"],
+      "lanes": ["expression_sheet"],
+      "rationale_pass": "Expressions read clearly — face stays on-model across emotions (${scorePct}%)",
+      "rationale_fail": "Expressions are muddy or off-model — emotions do not read clearly (${scorePct}%)"
+    },
+    {
+      "id": "ACT-001",
+      "category": "action",
+      "desc": "Action readability — dynamic poses have clear silhouette and readable motion",
+      "dims": ["gesture_clarity", "silhouette_read"],
+      "lanes": ["action_pose"],
+      "rationale_pass": "Action reads clearly — silhouette and motion are unambiguous (${scorePct}%)",
+      "rationale_fail": "Action is unreadable — tangled limbs, unclear silhouette, or static feel (${scorePct}%)"
+    }
+  ]
+}

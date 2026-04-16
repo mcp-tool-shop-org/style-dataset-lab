@@ -1,0 +1,47 @@
+{
+  "default_lane": "character",
+  "lanes": [
+    {
+      "id": "character",
+      "label": "Character",
+      "description": "Character designs, costumes, faction-specific clothing and personal gear",
+      "id_patterns": ["^char_", "^chr_", "^npc_", "^pc_", "^hero_", "^villain_"]
+    },
+    {
+      "id": "environment",
+      "label": "Environment",
+      "description": "Landscapes, dungeons, towns, overworld locations, architectural exteriors",
+      "id_patterns": ["^env_", "^bg_", "^scene_", "^area_", "^map_", "^town_", "^dungeon_"]
+    },
+    {
+      "id": "prop",
+      "label": "Prop",
+      "description": "Interactive objects, quest items, consumables, treasure, story-carrying objects",
+      "id_patterns": ["^prop_", "^item_", "^obj_", "^loot_", "^quest_"]
+    },
+    {
+      "id": "ui",
+      "label": "UI Element",
+      "description": "Menu frames, icons, portraits, HUD elements, dialog boxes",
+      "id_patterns": ["^ui_", "^icon_", "^hud_", "^portrait_", "^menu_", "^frame_"]
+    },
+    {
+      "id": "ship",
+      "label": "Ship / Vehicle",
+      "description": "Ships, vehicles, mounts, mechanical transports — exterior views",
+      "id_patterns": ["^ship_", "^veh_", "^mount_", "^mech_", "^vehicle_"]
+    },
+    {
+      "id": "interior",
+      "label": "Interior",
+      "description": "Indoor spaces, ship interiors, room layouts, environmental storytelling",
+      "id_patterns": ["^int_", "^interior_", "^room_", "^cabin_", "^cockpit_"]
+    },
+    {
+      "id": "equipment",
+      "label": "Equipment",
+      "description": "Weapons, armor, tools, wearable gear with faction or class identity",
+      "id_patterns": ["^eqp_", "^wpn_", "^weapon_", "^armor_", "^tool_", "^gear_", "^equip_"]
+    }
+  ]
+}

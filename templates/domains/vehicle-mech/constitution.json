@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "MEC-001",
+      "category": "mechanical",
+      "desc": "Mechanical plausibility — joints articulate, engines have intake/exhaust, moving parts have clearance",
+      "dims": ["mechanical_logic"],
+      "rationale_pass": "Mechanical logic holds — joints, engines, and moving parts are plausible (${scorePct}%)",
+      "rationale_fail": "Mechanical logic broken — impossible joints, sealed engines, or non-functional moving parts (${scorePct}%)"
+    },
+    {
+      "id": "PRO-001",
+      "category": "proportion",
+      "desc": "Proportion consistency — same vehicle reads at the same scale and mass across all views",
+      "dims": ["proportion"],
+      "rationale_pass": "Proportions are consistent — vehicle reads at correct scale and mass across views (${scorePct}%)",
+      "rationale_fail": "Proportions drift between views — vehicle reads as different size or mass (${scorePct}%)"
+    },
+    {
+      "id": "SUR-001",
+      "category": "surface",
+      "desc": "Surface detail density — panel lines, rivets, wear marks at scale-appropriate density",
+      "dims": ["surface_detail"],
+      "rationale_pass": "Surface detail is at appropriate density — panel lines and hardware read at scale (${scorePct}%)",
+      "rationale_fail": "Surface detail wrong — too sparse, too noisy, or inconsistent density for scale (${scorePct}%)"
+    },
+    {
+      "id": "SIL-001",
+      "category": "silhouette",
+      "desc": "Silhouette readability — vehicle class identifiable from silhouette alone at distance",
+      "dims": ["silhouette_read"],
+      "rationale_pass": "Silhouette reads clearly — vehicle class identifiable at distance (${scorePct}%)",
+      "rationale_fail": "Silhouette is generic or ambiguous — vehicle class not identifiable at distance (${scorePct}%)"
+    },
+    {
+      "id": "SCL-001",
+      "category": "scale",
+      "desc": "Scale reference — cockpit, hatches, or crew figures imply correct crew scale",
+      "dims": ["scale_reference"],
+      "rationale_pass": "Scale reads correctly — cockpit and access points imply correct crew size (${scorePct}%)",
+      "rationale_fail": "Scale is ambiguous or wrong — no crew reference or hatches imply impossible crew size (${scorePct}%)"
+    },
+    {
+      "id": "FUN-001",
+      "category": "function",
+      "desc": "Functional design language — purpose reads from form (transport vs combat vs utility)",
+      "dims": ["functional_read"],
+      "rationale_pass": "Function reads from form — vehicle purpose is clear from design language (${scorePct}%)",
+      "rationale_fail": "Function is unreadable — form does not communicate purpose (${scorePct}%)"
+    },
+    {
+      "id": "ACC-001",
+      "category": "access",
+      "desc": "Access points visible — hatches, ladders, maintenance panels, boarding points",
+      "dims": ["access_logic"],
+      "lanes": ["exterior", "cockpit"],
+      "rationale_pass": "Access points present and logical — hatches, ladders, and panels are placed correctly (${scorePct}%)",
+      "rationale_fail": "Access points missing or illogical — crew cannot board, maintain, or operate this vehicle (${scorePct}%)"
+    },
+    {
+      "id": "WEA-001",
+      "category": "wear",
+      "desc": "Wear pattern follows use — high-traffic areas show more damage, sheltered areas less",
+      "dims": ["wear_logic"],
+      "rationale_pass": "Wear pattern is use-driven — high-traffic and exposed areas show appropriate wear (${scorePct}%)",
+      "rationale_fail": "Wear pattern is random — damage does not follow usage or exposure logic (${scorePct}%)"
+    },
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Style consistency within vehicle class or faction — shared design DNA across the lineup",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Style is consistent — vehicle shares design DNA with its class or faction (${scorePct}%)",
+      "rationale_fail": "Style breaks from class or faction — design language does not match lineup (${scorePct}%)"
+    },
+    {
+      "id": "DMG-001",
+      "category": "damage",
+      "desc": "Damage reads as battle history — scars, repairs, and patches tell a story, not random destruction",
+      "dims": ["damage_narrative"],
+      "lanes": ["damage_variant"],
+      "rationale_pass": "Damage reads as battle history — scars and repairs tell a coherent story (${scorePct}%)",
+      "rationale_fail": "Damage is random destruction — no narrative, just noise (${scorePct}%)"
+    }
+  ]
+}

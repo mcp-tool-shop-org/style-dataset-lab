@@ -1,0 +1,38 @@
+{
+  "dimensions": [
+    "proportion_accuracy",
+    "gesture_clarity",
+    "costume_logic",
+    "personality_read",
+    "style_consistency",
+    "silhouette_read",
+    "turnaround_accuracy",
+    "expression_clarity"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "broken_anatomy": ["PRO-001"],
+    "stiff_pose": ["GES-001"],
+    "generic_costume": ["COS-001"],
+    "unrecognizable": ["PER-001"],
+    "inconsistent_costume": ["COS-002"],
+    "style_drift": ["STY-001"],
+    "turnaround_mismatch": ["TUR-001"],
+    "flat_expressions": ["EXP-001"],
+    "unreadable_action": ["ACT-001"],
+    "proportion_drift": ["PRO-002"]
+  }
+}

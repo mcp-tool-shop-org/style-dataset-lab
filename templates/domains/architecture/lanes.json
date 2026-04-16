@@ -1,0 +1,41 @@
+{
+  "default_lane": "exterior",
+  "lanes": [
+    {
+      "id": "exterior",
+      "label": "Building Exterior",
+      "description": "Building facades, elevations, full exterior views, architectural massing",
+      "id_patterns": ["^ext_", "^building_", "^facade_"]
+    },
+    {
+      "id": "interior",
+      "label": "Interior Space",
+      "description": "Rooms, halls, chambers, functional interiors with spatial atmosphere",
+      "id_patterns": ["^int_", "^room_", "^hall_"]
+    },
+    {
+      "id": "streetscape",
+      "label": "Streetscape / Urban",
+      "description": "Street-level views, district overviews, urban fabric and city scenes",
+      "id_patterns": ["^street_", "^district_", "^urban_"]
+    },
+    {
+      "id": "structural_detail",
+      "label": "Structural Detail",
+      "description": "Ornamental elements, material studies, construction details, decorative motifs",
+      "id_patterns": ["^detail_", "^ornament_", "^material_"]
+    },
+    {
+      "id": "ruin",
+      "label": "Ruin / Decay",
+      "description": "Ruined structures, abandoned buildings, post-collapse environments",
+      "id_patterns": ["^ruin_", "^decay_", "^abandoned_"]
+    },
+    {
+      "id": "landscape",
+      "label": "Landscape / Vista",
+      "description": "Wide establishing shots, panoramic views, architecture in landscape context",
+      "id_patterns": ["^landscape_", "^vista_", "^panorama_"]
+    }
+  ]
+}

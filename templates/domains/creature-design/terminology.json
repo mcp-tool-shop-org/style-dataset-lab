@@ -1,0 +1,20 @@
+{
+  "group_label": "species",
+  "id_detection_order": [],
+  "prompt_detection_order": [],
+  "groups": {},
+  "cross_group_patterns": {},
+  "edge_defaults": {},
+  "null_faction_patterns": [],
+  "id_fallbacks": {},
+  "training_profiles": [
+    {
+      "profile_id": "creature-style",
+      "intended_use": "Creature design consistency LoRA",
+      "eligible_lanes": ["concept", "orthographic", "detail_study"],
+      "minimum_review_threshold": 0.7,
+      "excluded_content": ["rejected"],
+      "export_format": "trl"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "default_lane": "concept",
+  "lanes": [
+    {
+      "id": "concept",
+      "label": "Concept / Ideation",
+      "description": "Initial creature concepts, sketches, ideation explorations",
+      "id_patterns": ["^concept_", "^sketch_", "^ideation_"]
+    },
+    {
+      "id": "orthographic",
+      "label": "Orthographic / Model Sheet",
+      "description": "Turnaround views, model sheets, orthographic projections for modelers",
+      "id_patterns": ["^ortho_", "^model_sheet_", "^turnaround_"]
+    },
+    {
+      "id": "detail_study",
+      "label": "Detail Study",
+      "description": "Close-up texture studies, anatomical details, surface material explorations",
+      "id_patterns": ["^detail_", "^closeup_", "^texture_"]
+    },
+    {
+      "id": "action",
+      "label": "Action / Locomotion",
+      "description": "Action poses, attack stances, locomotion studies, movement keys",
+      "id_patterns": ["^action_", "^attack_", "^locomotion_"]
+    },
+    {
+      "id": "scale_reference",
+      "label": "Scale Reference",
+      "description": "Size comparison charts, scale references against humans or known objects",
+      "id_patterns": ["^scale_", "^size_", "^comparison_"]
+    },
+    {
+      "id": "habitat",
+      "label": "Habitat / Environment",
+      "description": "Creature in environment context, habitat integration, ecological scenes",
+      "id_patterns": ["^habitat_", "^environment_", "^context_"]
+    }
+  ]
+}

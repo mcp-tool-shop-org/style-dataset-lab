@@ -1,0 +1,113 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Consistent art style across all assets — no style drift between assets",
+      "dims": ["style_consistency"],
+      "faction_specific": false,
+      "rationale_pass": "Art style consistent with project bible (${scorePct}%)",
+      "rationale_fail": "Style drifts from project bible — wrong rendering approach (${scorePct}%)"
+    },
+    {
+      "id": "CMP-001",
+      "category": "composition",
+      "desc": "Clear composition and framing appropriate to lane — subject fills frame, readable staging",
+      "dims": ["composition"],
+      "faction_specific": false,
+      "rationale_pass": "Composition clear — subject properly framed and staged (${scorePct}%)",
+      "rationale_fail": "Composition fails — subject poorly framed or cluttered (${scorePct}%)"
+    },
+    {
+      "id": "SIL-001",
+      "category": "silhouette",
+      "desc": "Silhouette readable at gameplay scale — identifiable at target resolution",
+      "dims": ["silhouette_clarity"],
+      "faction_specific": false,
+      "rationale_pass": "Silhouette readable at gameplay scale (${scorePct}%)",
+      "rationale_fail": "Silhouette unreadable at gameplay scale — details merge or vanish (${scorePct}%)"
+    },
+    {
+      "id": "COL-001",
+      "category": "color",
+      "desc": "Color harmony within project palette — correct hue relationships and saturation level",
+      "dims": ["palette_adherence"],
+      "faction_specific": false,
+      "rationale_pass": "Palette harmonious and within project range (${scorePct}%)",
+      "rationale_fail": "Palette dissonant or outside project range (${scorePct}%)"
+    },
+    {
+      "id": "MAT-001",
+      "category": "material",
+      "desc": "Material surfaces read correctly — metal reads as metal, cloth as cloth, no ambiguous surfaces",
+      "dims": ["material_fidelity"],
+      "faction_specific": true,
+      "rationale_pass": "Materials read correctly — surfaces match ${groupMaterial} (${scorePct}%)",
+      "rationale_fail": "Materials ambiguous — surfaces don't read as ${groupMaterial} (${scorePct}%)"
+    },
+    {
+      "id": "GRP-001",
+      "category": "identity",
+      "desc": "Style-group differentiation — assets from different groups look visually distinct",
+      "dims": ["style_group_read"],
+      "faction_specific": true,
+      "rationale_pass": "Style group reads clearly — distinct from other groups (${scorePct}%)",
+      "rationale_fail": "Style group unreadable — could belong to any group (${scorePct}%)"
+    },
+    {
+      "id": "WEA-001",
+      "category": "wear",
+      "desc": "Wear and aging appropriate to context — not too clean, not over-damaged",
+      "dims": ["wear_level"],
+      "faction_specific": true,
+      "rationale_pass": "Wear level appropriate — matches ${groupWear} (${scorePct}%)",
+      "rationale_fail": "Wear level wrong — doesn't match ${groupWear} (${scorePct}%)"
+    },
+    {
+      "id": "LGT-001",
+      "category": "lighting",
+      "desc": "Consistent lighting direction and mood across assets — no conflicting light sources",
+      "dims": ["composition", "style_consistency"],
+      "faction_specific": false,
+      "rationale_pass": "Lighting consistent — direction and mood match project standard (${scorePct}%)",
+      "rationale_fail": "Lighting inconsistent — wrong direction or mood (${scorePct}%)"
+    },
+    {
+      "id": "GEN-001",
+      "category": "originality",
+      "desc": "No generic or stock-art appearance — assets must feel authored, not asset-store pulls",
+      "dims": ["style_consistency", "style_group_read"],
+      "faction_specific": false,
+      "rationale_pass": "Asset feels authored and project-specific (${scorePct}%)",
+      "rationale_fail": "Asset reads as generic stock art — no project identity (${scorePct}%)"
+    },
+    {
+      "id": "SCL-001",
+      "category": "scale",
+      "desc": "Scale reference present or implied — objects read at correct relative size",
+      "dims": ["composition", "detail_quality"],
+      "faction_specific": false,
+      "rationale_pass": "Scale reads correctly — objects at proper relative size (${scorePct}%)",
+      "rationale_fail": "Scale ambiguous — objects don't read at correct size (${scorePct}%)"
+    },
+    {
+      "id": "SHP-001",
+      "category": "shape",
+      "desc": "Shape language matches style group — geometry and proportions follow group vocabulary",
+      "dims": ["silhouette_clarity", "style_group_read"],
+      "faction_specific": true,
+      "rationale_pass": "Shape language compliant — ${groupShapes} (${scorePct}%)",
+      "rationale_fail": "Shape language violates group vocabulary — wrong geometry (${scorePct}%)"
+    },
+    {
+      "id": "DTL-001",
+      "category": "detail",
+      "desc": "Detail density appropriate to asset importance and screen size — hero assets get more detail",
+      "dims": ["detail_quality"],
+      "faction_specific": false,
+      "rationale_pass": "Detail density appropriate for asset role (${scorePct}%)",
+      "rationale_fail": "Detail density wrong — over-detailed background or under-detailed hero (${scorePct}%)"
+    }
+  ]
+}

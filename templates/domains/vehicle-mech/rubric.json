@@ -1,0 +1,40 @@
+{
+  "dimensions": [
+    "mechanical_logic",
+    "proportion",
+    "surface_detail",
+    "silhouette_read",
+    "scale_reference",
+    "functional_read",
+    "access_logic",
+    "wear_logic",
+    "style_consistency",
+    "damage_narrative"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "impossible_mechanism": ["MEC-001"],
+    "wrong_scale": ["SCL-001"],
+    "generic_vehicle": ["SIL-001"],
+    "random_damage": ["DMG-001"],
+    "proportion_drift": ["PRO-001"],
+    "no_surface_detail": ["SUR-001"],
+    "unclear_function": ["FUN-001"],
+    "no_access_points": ["ACC-001"],
+    "random_wear": ["WEA-001"],
+    "style_drift": ["STY-001"]
+  }
+}
