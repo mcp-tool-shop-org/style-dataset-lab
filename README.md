@@ -11,13 +11,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-A style constitution for your AI art pipeline.
+Write your visual rules. Generate art. Judge every image against those rules. Ship the results as versioned, auditable training data.
 
-Write down what your project looks like. Generate concept art against those rules. Curate the results. Turn the approved work into versioned, auditable datasets you can train from, evaluate against, and feed back into the next round. The whole loop, from written intent to trained model asset, with a receipt at every step.
+Style Dataset Lab connects the thing you wrote down about your art style to the dataset you actually train from. You define a constitution — silhouette rules, palette constraints, material language, whatever matters for your project. The pipeline generates candidates, scores them against those rules, and packages the approved work into reproducible datasets where every record explains why it was included.
 
-Most teams generating AI art have no system for deciding what "on-model" means. They generate thousands of images and pick favorites. The favorites have no provenance. The rejects teach nothing. The training data has no audit trail. And next month, nobody remembers why anything was approved.
-
-Style Dataset Lab fixes that. You write a constitution — the actual rules your art must follow. Every image gets judged against those rules. The approved work gets bound to the specific rules it satisfies. The result is a dataset where every record carries provenance, judgment, and canon binding. Not labels. Reasons.
+The loop closes: train a model, generate new outputs, score them against the same canon, re-ingest what passes. The dataset grows and the rules hold.
 
 ## The pipeline
 
