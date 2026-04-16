@@ -33,6 +33,9 @@ const REQUIRED_DIRS = [
   'outputs/approved',
   'outputs/rejected',
   'exports',
+  'snapshots',
+  'splits',
+  'eval-packs',
 ];
 
 function pass(msg) { console.log(`  \x1b[32m✓\x1b[0m ${msg}`); }

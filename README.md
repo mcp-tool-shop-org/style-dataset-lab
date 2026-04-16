@@ -53,6 +53,16 @@ sdlab curate <id> <status> <explanation>  # Record review judgment
 sdlab compare <a> <b> <winner> <reason>   # Pairwise A-vs-B comparison
 sdlab bind [--project <name>]             # Bind records to constitution rules
 sdlab painterly [--project <name>]        # Post-processing style pass
+
+sdlab snapshot create [--profile <name>]  # Create frozen dataset snapshot
+sdlab snapshot list                       # List all snapshots
+sdlab snapshot diff <a> <b>               # Compare two snapshots
+sdlab eligibility audit                   # Audit record training eligibility
+sdlab split build [--snapshot <id>]       # Build train/val/test split
+sdlab split audit <id>                    # Audit split for leakage + balance
+sdlab card generate                       # Generate dataset card (md + JSON)
+sdlab export build [--snapshot <id>]      # Build versioned export package
+sdlab eval-pack build                     # Build canon-aware eval pack
 ```
 
 All commands accept `--project <name>` (default: `star-freight`).
@@ -105,6 +115,31 @@ Each domain template ships with lane definitions, constitution rules, scoring ru
 | **architecture** | exterior, interior, streetscape, structural_detail, ruin, landscape | Structural plausibility, material consistency, perspective, era coherence |
 | **vehicle-mech** | exterior, cockpit, component, schematic, silhouette_sheet, damage_variant | Mechanical logic, functional design language, access points, damage narrative |
 
+## Dataset production
+
+The full dataset spine: snapshot, split, export, eval.
+
+```
+snapshot  -->  split  -->  export  -->  eval-pack
+   |            |            |             |
+  frozen     subject      package       canon-aware
+  selection  isolation    (manifest,    test instruments
+             + lane       metadata,     (4 task types)
+             balance      images,
+                          checksums,
+                          card)
+```
+
+**Snapshots** freeze a deterministic selection of eligible records. Every inclusion has a reason trace. Config fingerprints ensure reproducibility.
+
+**Splits** assign records to train/val/test partitions with subject isolation (no subject family appears in multiple splits) and lane-balanced distribution. Seeded PRNG ensures identical results from the same seed.
+
+**Export packages** are self-contained: manifest, metadata.jsonl, images (symlinked or copied), splits, dataset card (markdown + JSON), and BSD-format checksums. Everything needed to rebuild the dataset from scratch.
+
+**Eval packs** are canon-aware test instruments with four task types: lane coverage, forbidden drift, anchor/gold, and subject continuity. They prove the dataset spine is feeding future model evaluation, not just dumping files.
+
+Export to downstream formats via [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) (TRL, LLaVA, Qwen2-VL, JSONL, Parquet, and more). `repo-dataset` handles format conversion; `sdlab` owns dataset truth.
+
 ## The dataset angle
 
 The pipeline produces more than organized images. It produces **trustworthy, structured datasets** with:
@@ -114,8 +149,6 @@ The pipeline produces more than organized images. It produces **trustworthy, str
 - **Pairwise preferences** (for DPO and ranking-based training)
 - **Per-dimension scoring** (fine-grained quality signals, not just pass/fail)
 - **Failure mode tagging** (what specifically went wrong and which rules were violated)
-
-Export via `repo-dataset` to TRL, LLaVA, Qwen2-VL, JSONL, Parquet, and more.
 
 ## Star Freight example
 

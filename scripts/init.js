@@ -32,6 +32,9 @@ const PROJECT_DIRS = [
   'outputs/painterly',
   'outputs/painterly-test',
   'exports',
+  'snapshots',
+  'splits',
+  'eval-packs',
 ];
 
 function isValidName(name) {

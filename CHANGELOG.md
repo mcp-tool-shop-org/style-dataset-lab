@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-04-16
+
+### Added
+
+- **Dataset spine** -- complete snapshot-to-export pipeline with proof at every stage
+  - `sdlab snapshot create/list/show/diff` -- frozen, deterministic record selections with config fingerprinting
+  - `sdlab eligibility audit` -- training eligibility evaluation with explicit reason traces
+  - `sdlab split build/list/show/audit` -- subject-isolated, lane-balanced train/val/test splitting
+  - `sdlab card generate` -- dataset card generation (markdown + JSON twin)
+  - `sdlab export build/list` -- self-contained export packages with manifest, metadata, images, splits, checksums
+  - `sdlab eval-pack build/list/show` -- canon-aware eval packs (4 task types)
+- **New library modules:**
+  - `lib/snapshot.js` -- snapshot creation, loading, diffing
+  - `lib/eligibility.js` -- eligibility evaluation with reason traces and exclusion categorization
+  - `lib/split.js` -- subject isolation (identity/lineage/suffix), mulberry32 PRNG, lane-balanced splitting, leakage audit
+  - `lib/card.js` -- dataset card rendering from snapshot + split + config
+  - `lib/export.js` -- export package builder with checksums and reproducibility manifest
+  - `lib/eval-pack.js` -- four eval task types (lane coverage, forbidden drift, anchor/gold, subject continuity)
+- **Selection, split, and export profiles** in `lib/config.js` with sensible defaults
+- **Detection functions** (`detectLane`, `detectGroup`) extracted from canon-bind into `lib/config.js` for reuse
+
+### Key properties
+
+- Snapshots are frozen -- once created, never silently changes
+- Inclusion is explainable -- every record has a reason trace
+- Splits preserve canon truth -- no subject family appears in multiple partitions
+- Exports are reproducible -- rebuildable from snapshot ref + split ref + config fingerprint
+
 ## [2.0.0] - 2026-04-15
 
 ### Breaking changes

@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Canon-bound visual dataset pipeline — define project canon, generate and curate assets, bind to constitution rules, export trustworthy training data",
   "type": "module",
   "bin": {
