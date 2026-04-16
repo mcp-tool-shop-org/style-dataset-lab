@@ -29,6 +29,7 @@ const COMMANDS = {
   'training-profile':    '../scripts/training-profile.js',
   'training-manifest':   '../scripts/training-manifest.js',
   'training-package':    '../scripts/training-package.js',
+  'eval-run':            '../scripts/eval-run.js',
 };
 
 // Two-word commands under "project" namespace
@@ -83,6 +84,10 @@ function printHelp() {
   console.log('  training-package build              Build trainer-ready package');
   console.log('  training-package show <id>          Show package details');
   console.log('  training-package list               List all packages');
+  console.log('  eval-run create                    Create eval run');
+  console.log('  eval-run score <id> --outputs <p>  Score against eval pack');
+  console.log('  eval-run show <id>                 Show eval run details');
+  console.log('  eval-run list                      List all eval runs');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
