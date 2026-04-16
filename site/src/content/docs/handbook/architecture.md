@@ -2,7 +2,7 @@
 title: Architecture
 description: Pipeline flow, record schemas, templates structure, canon constitution, and export pipeline.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 ## Pipeline flow

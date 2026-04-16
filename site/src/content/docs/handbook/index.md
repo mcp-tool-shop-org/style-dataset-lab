@@ -1,42 +1,37 @@
 ---
 title: Style Dataset Lab Handbook
-description: A canon-bound visual dataset pipeline for directed image production — from project canon to trustworthy training data.
+description: Visual canon and dataset production pipeline — snapshots, splits, versioned exports, and eval packs for any image production domain.
 sidebar:
   order: 0
 ---
 
-Style Dataset Lab is a **canon-bound visual dataset pipeline** for directed image production. It helps teams define what they are making, sort work into meaningful lanes, judge outputs against project-specific rubrics, bind accepted work back to canon, and export trustworthy datasets for training, evaluation, and production reuse.
+Style Dataset Lab turns approved visual work into versioned, review-backed datasets, splits, export packages, and eval packs. Teams define what they are making (visual canon), curate outputs against project-specific rubrics, bind accepted work to constitution rules, and produce reproducible dataset packages.
 
-The pipeline ships as an npm package (`@mcptoolshop/style-dataset-lab`) with the `sdlab` CLI, shared library modules, and domain-specific starter templates. Install it, scaffold a project, write your canon, and start producing datasets.
+The pipeline ships as an npm package (`@mcptoolshop/style-dataset-lab`) with the `sdlab` CLI, shared library modules, and domain-specific starter templates.
 
 ## The pipeline
 
 ```
-Define Canon (constitution + rubric + config)
-    |
-    v
-sdlab init my-project --domain character-design
-    |
-    v
-sdlab generate --> ComfyUI HTTP API --> candidate images
-    |
-    v
-sdlab curate --> per-dimension scoring --> approved / rejected / borderline
-    |
-    v
-sdlab painterly --> img2img style pass --> painterly variants
-    |
-    v
-sdlab bind --> constitution rules --> pass/fail/partial assertions per rule
-    |
-    v
-sdlab compare --> pairwise A-vs-B --> preference pairs
-    |
-    v
-repo-dataset --> TRL / LLaVA / Qwen2-VL / JSONL / Parquet
+canon → generate → curate → bind → snapshot → split → export → eval
+  |        |          |        |        |         |        |       |
+rules   ComfyUI   judgment  rules   frozen    subject  package  verify
+                                    selection isolation
 ```
 
 Each stage writes structured JSON records to `projects/<name>/records/`. All commands accept `--project <name>` (defaults to `star-freight`). Records accumulate provenance, judgment, and canon binding over time. Nothing is lost -- a curated record still carries its original generation provenance.
+
+## The four dataset artifacts
+
+The dataset spine produces four artifacts. These are the product.
+
+| Artifact | What it is | Command |
+|----------|-----------|---------|
+| **Snapshot** | Frozen, fingerprinted selection of eligible records with explicit reason traces | `sdlab snapshot create` |
+| **Split** | Subject-isolated, lane-balanced train/val/test partition (seeded PRNG, zero leakage) | `sdlab split build` |
+| **Export package** | Self-contained dataset: manifest, metadata.jsonl, images, splits, dataset card, checksums | `sdlab export build` |
+| **Eval pack** | Canon-aware test instruments: lane coverage, forbidden drift, anchor/gold, subject continuity | `sdlab eval-pack build` |
+
+`sdlab` defines and owns the dataset. Downstream format conversion (TRL, LLaVA, Parquet) is handled by [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset).
 
 ## The training triangle
 
@@ -81,6 +76,7 @@ The repo includes `projects/star-freight/` as a complete working example -- a gr
 ## Next steps
 
 - [Getting Started](./getting-started/) -- install, scaffold a project, first generation
+- [Dataset Workflow](./dataset-workflow/) -- end-to-end: snapshot, split, export, eval
 - [Reference](./reference/) -- all CLI commands with flags and arguments
 - [Architecture](./architecture/) -- pipeline flow, record schemas, config files
 - [Security](./security/) -- threat model and trust boundaries

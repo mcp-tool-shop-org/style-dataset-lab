@@ -9,19 +9,28 @@
 
 # style-dataset-lab
 
-A canon-bound visual dataset pipeline for directed image production.
-
-Define what your project looks like. Generate candidates. Curate against your canon. Bind approved work to constitution rules. Export trustworthy datasets for training, evaluation, and production reuse.
+Turn approved visual work into versioned, review-backed datasets, splits, export packages, and eval packs.
 
 ## What this is
 
-A **visual canon + dataset pipeline** for teams that care about style consistency, provenance, and reviewable judgment. Every asset carries three things:
+A **visual canon and dataset production pipeline**. Define what your project looks like. Curate against constitution rules. Produce reproducible dataset packages with leakage-safe splits. Generate eval packs for future model verification.
+
+The pipeline produces four artifacts:
+
+| Artifact | What it is |
+|----------|-----------|
+| **Snapshot** | Frozen, fingerprinted selection of eligible records. Every inclusion has an explicit reason trace. |
+| **Split** | Leakage-safe train/val/test partition. Records sharing a subject family always land in the same split. |
+| **Export package** | Self-contained dataset: manifest, metadata, images, splits, dataset card, and checksums. |
+| **Eval pack** | Canon-aware verification tasks: lane coverage, forbidden drift, anchor/gold, subject continuity. |
+
+Every asset in the pipeline carries three things:
 
 1. **Provenance** -- full generation history (checkpoint, LoRA, seed, sampler, cfg, timing)
 2. **Canon binding** -- which constitution rules this asset passes, fails, or partially meets
 3. **Quality judgment** -- approved/rejected/borderline with per-dimension scores
 
-The pipeline works for game art, character design, creature design, architecture, vehicle/mech concepts, and any domain where visual production needs to stay on-model.
+Works for game art, character design, creature design, architecture, vehicle/mech concepts, and any domain where visual production needs to stay on-model.
 
 ## Quick start
 
@@ -84,24 +93,31 @@ projects/
     inputs/prompts/         Prompt packs (JSON)
     outputs/                Generated images (gitignored)
     comparisons/            A-vs-B preference judgments
-    exports/                Training data output (gitignored)
+    snapshots/              Frozen dataset snapshots
+    splits/                 Train/val/test partitions
+    exports/                Versioned export packages
+    eval-packs/             Canon-aware eval instruments
 ```
 
 ## Pipeline
 
 ```
-canon  -->  prompts  -->  generate  -->  curate  -->  bind  -->  compare  -->  export
- |            |             |              |           |            |            |
- rules      packs        ComfyUI       judgment    assertions   preferences   dataset
+canon → generate → curate → bind → snapshot → split → export → eval
+  |        |          |        |        |         |        |       |
+rules   ComfyUI   judgment  rules   frozen    subject  package  verify
+                                    selection isolation
 ```
 
 1. **Define canon** -- write your style constitution and review rubric
-2. **Create prompt packs** -- structured subjects with style prefix and variations
-3. **Generate** -- ComfyUI produces candidates with full provenance
-4. **Curate** -- approve/reject with per-dimension scores and failure modes
-5. **Bind** -- link each asset to constitution rules with pass/fail/partial verdicts
-6. **Compare** -- record pairwise preferences for DPO/ranking datasets
-7. **Export** -- produce training data via [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) in 10+ formats
+2. **Generate** -- ComfyUI produces candidates with full provenance
+3. **Curate** -- approve/reject with per-dimension scores and failure modes
+4. **Bind** -- link each asset to constitution rules with pass/fail/partial verdicts
+5. **Snapshot** -- freeze eligible records into a deterministic, fingerprinted selection
+6. **Split** -- partition into train/val/test with subject isolation and lane balance
+7. **Export** -- build a self-contained package with manifest, metadata, images, and checksums
+8. **Eval** -- generate canon-aware test instruments for model verification
+
+Downstream format conversion (TRL, LLaVA, Parquet, etc.) is handled by [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset). `sdlab` owns dataset truth; `repo-dataset` renders it into specialized formats.
 
 ## Domain templates
 
@@ -140,16 +156,6 @@ snapshot  -->  split  -->  export  -->  eval-pack
 
 Export to downstream formats via [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) (TRL, LLaVA, Qwen2-VL, JSONL, Parquet, and more). `repo-dataset` handles format conversion; `sdlab` owns dataset truth.
 
-## The dataset angle
-
-The pipeline produces more than organized images. It produces **trustworthy, structured datasets** with:
-
-- **Full provenance** on every asset (reproducible generations)
-- **Canon-bound judgments** (not just labels -- reasoned verdicts against declared rules)
-- **Pairwise preferences** (for DPO and ranking-based training)
-- **Per-dimension scoring** (fine-grained quality signals, not just pass/fail)
-- **Failure mode tagging** (what specifically went wrong and which rules were violated)
-
 ## Star Freight example
 
 Clone the repo for a complete working example: 1,182 records, 28 prompt waves, 5 factions, 7 lanes, 24 constitution rules, and 892 approved assets from a gritty sci-fi RPG.
@@ -157,8 +163,15 @@ Clone the repo for a complete working example: 1,182 records, 28 prompt waves, 5
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
 cd style-dataset-lab
-sdlab bind --stats --project star-freight
+
+# Validate the project
 sdlab project doctor --project star-freight
+
+# Run the full dataset spine
+sdlab snapshot create --project star-freight    # 839 eligible records
+sdlab split build --project star-freight        # ~80/10/10, zero leakage
+sdlab export build --project star-freight       # package with checksums
+sdlab eval-pack build --project star-freight    # 78 eval records
 ```
 
 ## Migrating from v1.x

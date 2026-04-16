@@ -2,10 +2,10 @@
 title: Reference
 description: CLI commands, config files, and pipeline scripts.
 sidebar:
-  order: 2
+  order: 3
 ---
 
-Style Dataset Lab v2.0 ships the `sdlab` CLI, 6 shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`. The deprecated `--game` flag still works with a warning.
+Style Dataset Lab v2.1 ships the `sdlab` CLI, 12 shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`. The deprecated `--game` flag still works with a warning.
 
 ## CLI Commands
 
@@ -200,6 +200,71 @@ node scripts/generate-identity.js --game <name> <identity-packet-path> [options]
 **Identity packet format** (`inputs/identity-packets/*.json`): Defines subjects with identity locks, shot intents, and lineage metadata per `canon/identity-gates.md`.
 
 **Record extensions:** Adds `identity` block (subject name, faction, role, view type, shot type) and `lineage` block (generation phase, anchor references, persistence scores).
+
+---
+
+## Dataset Commands
+
+### sdlab snapshot
+
+Create, list, show, and diff frozen dataset snapshots.
+
+```bash
+sdlab snapshot create [--profile <name>] [--project <name>]
+sdlab snapshot list [--project <name>]
+sdlab snapshot show <snapshot-id> [--project <name>]
+sdlab snapshot diff <id-a> <id-b> [--project <name>]
+```
+
+### sdlab eligibility
+
+Audit training eligibility for all project records.
+
+```bash
+sdlab eligibility audit [--profile <name>] [--project <name>]
+```
+
+### sdlab split
+
+Build, list, show, and audit dataset splits.
+
+```bash
+sdlab split build [--snapshot <id>] [--profile <name>] [--project <name>]
+sdlab split list [--project <name>]
+sdlab split show <split-id> [--project <name>]
+sdlab split audit <split-id> [--project <name>]
+```
+
+### sdlab card
+
+Generate dataset cards (markdown + JSON twin).
+
+```bash
+sdlab card generate [--snapshot <id>] [--split <id>] [--project <name>]
+```
+
+### sdlab export
+
+Build and list versioned export packages.
+
+```bash
+sdlab export build [--snapshot <id>] [--split <id>] [--profile <name>] [--copy] [--project <name>]
+sdlab export list [--project <name>]
+```
+
+Use `--copy` to copy images instead of symlinking them.
+
+### sdlab eval-pack
+
+Build and inspect canon-aware eval packs.
+
+```bash
+sdlab eval-pack build [--project <name>]
+sdlab eval-pack list [--project <name>]
+sdlab eval-pack show <eval-id> [--project <name>]
+```
+
+See [Dataset Workflow](./dataset-workflow/) for the full end-to-end walkthrough.
 
 ---
 

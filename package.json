@@ -1,7 +1,7 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
   "version": "2.1.0",
-  "description": "Canon-bound visual dataset pipeline — define project canon, generate and curate assets, bind to constitution rules, export trustworthy training data",
+  "description": "Visual canon and dataset production pipeline — snapshots, splits, versioned exports, eval packs, and canon-bound curation for any image production domain",
   "type": "module",
   "bin": {
     "sdlab": "./bin/sdlab.js"
@@ -28,16 +28,18 @@
   ],
   "keywords": [
     "dataset",
-    "visual",
+    "computer-vision",
     "training-data",
+    "image-dataset",
+    "evaluation",
+    "curation",
+    "canon",
+    "visual-development",
     "concept-art",
-    "visual-canon",
-    "art-direction",
-    "dataset-pipeline",
-    "comfyui",
-    "vlm",
-    "fine-tuning",
-    "multimodal"
+    "style-guide",
+    "lora",
+    "multimodal",
+    "comfyui"
   ],
   "homepage": "https://mcp-tool-shop-org.github.io/style-dataset-lab/",
   "repository": {
