@@ -268,6 +268,72 @@ See [Dataset Workflow](./dataset-workflow/) for the full end-to-end walkthrough.
 
 ---
 
+## Training Commands
+
+### sdlab training-profile
+
+List and inspect training profiles.
+
+```bash
+sdlab training-profile list [--project <name>]
+sdlab training-profile show <profile-id> [--project <name>]
+```
+
+### sdlab training-manifest
+
+Create, validate, and inspect frozen training contracts.
+
+```bash
+sdlab training-manifest create --export <id> --profile <id> [--adapter <target>] [--base-model <name>] [--project <name>]
+sdlab training-manifest validate <manifest-id> [--project <name>]
+sdlab training-manifest show <manifest-id> [--project <name>]
+sdlab training-manifest list [--project <name>]
+```
+
+### sdlab training-package
+
+Build trainer-ready packages from manifests.
+
+```bash
+sdlab training-package build --manifest <id> [--adapter <target>] [--copy] [--project <name>]
+sdlab training-package show <package-id> [--project <name>]
+sdlab training-package list [--project <name>]
+```
+
+Available adapters: `generic-image-caption`, `diffusers-lora`.
+
+### sdlab eval-run
+
+Score generated outputs against eval packs.
+
+```bash
+sdlab eval-run create --manifest <id> --eval-pack <id> [--project <name>]
+sdlab eval-run score <eval-run-id> --outputs <path> [--project <name>]
+sdlab eval-run show <eval-run-id> [--project <name>]
+sdlab eval-run list [--project <name>]
+```
+
+### sdlab implementation-pack
+
+Build implementation example packs.
+
+```bash
+sdlab implementation-pack build --manifest <id> [--project <name>]
+sdlab implementation-pack show <impl-id> [--project <name>]
+sdlab implementation-pack list [--project <name>]
+```
+
+### sdlab reingest
+
+Re-ingest generated outputs as new project records.
+
+```bash
+sdlab reingest generated --source <dir> --manifest <id> [--dry-run] [--project <name>]
+sdlab reingest audit [--project <name>]
+```
+
+---
+
 ## Export (via repo-dataset)
 
 Export is handled by the separate `@mcptoolshop/repo-dataset` CLI. Point it at the specific game directory:
