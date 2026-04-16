@@ -8,6 +8,7 @@
  */
 
 const COMMANDS = {
+  'init':                '../scripts/init.js',
   'generate':            '../scripts/generate.js',
   'generate:identity':   '../scripts/generate-identity.js',
   'generate:controlnet': '../scripts/generate-controlnet.js',
@@ -23,13 +24,19 @@ const COMMANDS = {
 
 // Two-word commands under "project" namespace
 const PROJECT_COMMANDS = {
+  'doctor':  '../scripts/doctor.js',
   'migrate': '../scripts/migrate-records.js',
 };
 
 function printHelp() {
   console.log(`\x1b[1msdlab\x1b[0m — Style Dataset Lab CLI\n`);
   console.log('Usage: sdlab <command> [options]\n');
-  console.log('Commands:');
+  console.log('Project:');
+  console.log('  init <name>          Scaffold a new project from a domain template');
+  console.log('  project doctor       Validate project config and structure');
+  console.log('  project migrate      Migrate record schemas');
+  console.log('');
+  console.log('Pipeline:');
   console.log('  generate             Generate candidates from a prompt pack');
   console.log('  generate:identity    Generate named-subject identity images');
   console.log('  generate:controlnet  ControlNet-guided structural generation');
@@ -39,7 +46,6 @@ function printHelp() {
   console.log('  bind                 Bind approved records to constitution rules');
   console.log('  painterly            Post-processing painterly style pass');
   console.log('  painterly:test       Test denoise levels on reference images');
-  console.log('  project migrate      Migrate record schemas');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
@@ -47,9 +53,10 @@ function printHelp() {
   console.log('  --help               Show this help');
   console.log('');
   console.log('Examples:');
+  console.log('  sdlab init my-project --domain character-design');
   console.log('  sdlab generate inputs/prompts/wave1.json --project star-freight');
-  console.log('  sdlab curate anchor_01_deckhand_v1 approved "Clean silhouette"');
   console.log('  sdlab bind --stats --project star-freight');
+  console.log('  sdlab project doctor --project star-freight');
 }
 
 async function main() {
@@ -65,7 +72,6 @@ async function main() {
 
   // Handle "project <subcommand>" two-word form
   if (command === 'project' && args[1] && PROJECT_COMMANDS[args[1]]) {
-    command = `project:${args[1]}`;
     commandArgs = args.slice(2);
     const modulePath = PROJECT_COMMANDS[args[1]];
     try {
