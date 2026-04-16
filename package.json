@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Visual canon and dataset production pipeline — snapshots, splits, versioned exports, eval packs, and canon-bound curation for any image production domain",
   "type": "module",
   "bin": {
