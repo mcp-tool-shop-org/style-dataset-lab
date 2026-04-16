@@ -11,196 +11,128 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-# style-dataset-lab
+编写您的视觉规则。生成艺术作品。根据这些规则评估每张图像。将结果作为版本控制的、可审计的训练数据发布。
 
-将已批准的视觉素材转化为版本控制、经过审核的数据集、分片、导出包和评估包。
+Style Dataset Lab 将您关于艺术风格的描述与实际用于训练的数据集联系起来。您定义一套规范，包括轮廓规则、调色板限制、材质语言，以及对您的项目而言重要的任何内容。流水线生成候选作品，根据这些规则对其进行评分，并将通过的成果打包成可重复的数据集，其中每个记录都解释了它被包含的原因。
 
-## 这是什么
-
-一个用于视觉数据规范和数据集生成的**流水线**。明确您的项目外观。根据既定规则进行筛选。生成可重复的数据集包，并确保数据分割的安全性。生成评估数据集，用于未来模型的验证。
-
-流水线会生成四个产出物：
-
-| 文物。 | 它是什么。 |
-|----------|-----------|
-| **Snapshot** | 经过筛选，符合条件的记录已冻结，并进行了指纹识别。所有被选入的记录都有明确的纳入理由。 |
-| **Split** | 安全的训练/验证/测试数据集划分，防止数据泄露。共享相同主题的数据记录始终会被划分到同一个子集。 |
-| **Export package** | 自包含的数据集：包含清单、元数据、图像、数据集划分、数据集描述文档以及校验和。 |
-| **Eval pack** | 符合佳能标准的验证任务包括：车道覆盖、禁止漂移、锚点/黄金区域、主体连续性。 |
-
-流水线中的每个资产都包含以下三个要素：
-
-1. **来源信息** -- 完整的生成历史记录（检查点、LoRA、种子、采样器、配置参数、生成时间）。
-2. **合规性** -- 指示该资产是否符合相关规定，以及是否完全符合、不符合或部分符合。
-3. **质量评估** -- 采用每维度的评分标准，对质量进行评估，结果分为：通过/未通过/临界。
-
-主要从事游戏美术、角色设计、生物设计、建筑设计、车辆/机械概念设计等工作，以及任何需要保持视觉风格一致性的领域。
-
-## 快速入门
-
-```bash
-# Install the CLI + pipeline
-npm install -g @mcptoolshop/style-dataset-lab
-
-# Scaffold a new project
-sdlab init my-project --domain character-design
-
-# Validate the project structure
-sdlab project doctor --project my-project
-```
-
-可用的领域包括：`game-art`（游戏美术）、`character-design`（角色设计）、`creature-design`（生物设计）、`architecture`（架构）、`vehicle-mech`（车辆机械设计）或`generic`（通用）。
-
-## 命令行界面
-
-```bash
-sdlab init <name> [--domain <domain>]     # Scaffold a new project
-sdlab project doctor [--project <name>]   # Validate project config
-
-sdlab generate <pack> [--project <name>]  # Generate candidates via ComfyUI
-sdlab generate:identity <packet>          # Named-subject identity images
-sdlab generate:controlnet                 # ControlNet-guided generation
-sdlab generate:ipadapter                  # IP-Adapter reference-guided
-
-sdlab curate <id> <status> <explanation>  # Record review judgment
-sdlab compare <a> <b> <winner> <reason>   # Pairwise A-vs-B comparison
-sdlab bind [--project <name>]             # Bind records to constitution rules
-sdlab painterly [--project <name>]        # Post-processing style pass
-
-sdlab snapshot create [--profile <name>]  # Create frozen dataset snapshot
-sdlab snapshot list                       # List all snapshots
-sdlab snapshot diff <a> <b>               # Compare two snapshots
-sdlab eligibility audit                   # Audit record training eligibility
-sdlab split build [--snapshot <id>]       # Build train/val/test split
-sdlab split audit <id>                    # Audit split for leakage + balance
-sdlab card generate                       # Generate dataset card (md + JSON)
-sdlab export build [--snapshot <id>]      # Build versioned export package
-sdlab eval-pack build                     # Build canon-aware eval pack
-```
-
-所有命令都支持 `--project <名称>` 参数，默认值为 `star-freight`。
-
-## 项目模型
-
-每个项目都位于 `projects/` 目录下，作为一个独立的目录，拥有自己的规范、配置文件和数据。
-
-```
-projects/
-  my-project/
-    project.json            Project identity + generation defaults
-    constitution.json       Rules array with rationale templates
-    lanes.json              Subject lanes with detection patterns
-    rubric.json             Scoring dimensions + thresholds
-    terminology.json        Group vocabulary + detection order
-    canon/                  Style constitution (markdown)
-    records/                Per-asset JSON (provenance + judgment + canon)
-    inputs/prompts/         Prompt packs (JSON)
-    outputs/                Generated images (gitignored)
-    comparisons/            A-vs-B preference judgments
-    snapshots/              Frozen dataset snapshots
-    splits/                 Train/val/test partitions
-    exports/                Versioned export packages
-    eval-packs/             Canon-aware eval instruments
-```
+循环闭合：训练一个模型，生成新的输出，根据相同的标准对其进行评分，并将通过的作品重新导入。数据集不断增长，规则始终有效。
 
 ## 流水线
 
-```
-canon → generate → curate → bind → snapshot → split → export → eval
-  |        |          |        |        |         |        |       |
-rules   ComfyUI   judgment  rules   frozen    subject  package  verify
-                                    selection isolation
-```
+```bash
+# Write your canon. Scaffold the project.
+sdlab init my-project --domain character-design
 
-1. **定义规范**：编写您的风格指南和评估标准。
-2. **生成**：ComfyUI 生成具有完整溯源信息的候选结果。
-3. **筛选**：根据每个维度的评分和失败模式，进行批准/拒绝。
-4. **关联**：将每个资源与规范规则关联，并给出通过/失败/部分通过的判定。
-5. **快照**：将符合条件的记录冻结为具有确定性和唯一标识的选择。
-6. **划分**：划分为训练集/验证集/测试集，同时进行主题隔离和类别平衡。
-7. **导出**：构建一个独立的软件包，包含清单、元数据、图像和校验和。
-8. **评估**：生成符合规范要求的测试工具，用于模型验证。
+# Generate candidates via ComfyUI, then review them
+sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab curate <id> approved "Strong silhouette, correct faction palette"
 
-下游格式转换（例如：TRL、LLaVA、Parquet等）由[`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) 负责。`sdlab` 拥有数据集的原始数据，而 `repo-dataset` 将其转换为各种特定格式。
+# Bind approved work to constitution rules
+sdlab bind --project my-project
 
-## 域名模板
+# Freeze a versioned dataset
+sdlab snapshot create --project my-project
+sdlab split build
+sdlab export build
 
-每个领域模板都包含针对特定生产环境设计的车道定义、规则、评分标准和术语结构。
-
-| 域名。 | 车道。 | 主要关注点。 |
-|--------|-------|-------------|
-| **game-art** | 角色、环境、道具、用户界面、飞船、内部、设备。 | 游戏中的角色轮廓、阵营区分、以及磨损/老化效果。 |
-| **character-design** | 人像、全身照、360度展示图、表情图、动作姿势图。 | 比例准确性、服装的合理性、人物性格的刻画、动作的清晰度。 |
-| **creature-design** | 概念、正字法、详细研究、动作、比例参考、栖息地。 | 解剖学上的合理性、进化逻辑、轮廓的独特性。 |
-| **architecture** | 外观、内部、街道景观、结构细节、废墟、景观。 | 结构合理性、材料一致性、视角、时代背景的协调性。 |
-| **vehicle-mech** | 外观、驾驶舱、部件、示意图、轮廓图、损坏类型。 | 机械逻辑，功能性设计语言，访问点，损坏描述。 |
-
-## 数据集生成
-
-完整的数据集流程：快照、分割、导出、评估。
-
-```
-snapshot  -->  split  -->  export  -->  eval-pack
-   |            |            |             |
-  frozen     subject      package       canon-aware
-  selection  isolation    (manifest,    test instruments
-             + lane       metadata,     (4 task types)
-             balance      images,
-                          checksums,
-                          card)
+# Build a training package and close the loop
+sdlab training-manifest create --profile character-style-lora
+sdlab training-package build
+sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
+sdlab reingest generated --source ./outputs --manifest <id>
 ```
 
-**快照**：冻结符合条件的记录的确定性选择。每个包含记录都有其原因的追踪。配置指纹确保可重复性。
+那个最后的命令至关重要。生成的输出会经过与所有其他内容相同的审查流程。循环闭合。
 
-**分割**：将记录分配到训练集/验证集/测试集，同时保证样本隔离（同一个样本家族不会出现在多个分割中），并实现通道平衡的分布。使用种子伪随机数生成器，确保从相同的种子生成相同的结果。
+## 它产生的内容
 
-**导出包**：是自包含的：清单、metadata.jsonl、图像（符号链接或复制）、分割、数据集卡（Markdown + JSON）以及 BSD 格式的校验和。 包含重建数据集所需的所有内容。
+七个版本控制的、具有校验和的成果。每个成果都链接到其前身，因此您可以追溯任何训练记录，了解它是根据哪个规则被批准的。
 
-**评估包**：是考虑规范的测试工具，包含四种任务类型：通道覆盖、禁止漂移、锚定/黄金标准、以及样本连续性。 它们证明数据集流程正在为未来的模型评估提供支持，而不仅仅是导出文件。
+| 成果 | 它的定义 |
+|----------|-----------|
+| **Snapshot** | 带有配置指纹的冻结记录选择。每个包含项都有明确的理由。 |
+| **Split** | 训练/验证/测试数据集，其中主题类别之间绝不交叉。 |
+| **Export package** | 自包含的数据集：清单、元数据、图像、数据集划分、数据集描述、校验和。 |
+| **Eval pack** | 与规范相关的测试任务：覆盖范围、避免偏差、锚定/黄金标准、主题连续性。 |
+| **Training package** | 通过适配器（`diffusers-lora`、`generic-image-caption`）提供可供训练器使用的布局。相同的真理，不同的格式。 |
+| **Eval scorecard** | 每个任务的通过/失败结果，基于生成的输出与评估包的比较。 |
+| **Implementation pack** | 提示示例、已知的失败案例、连续性测试以及重新导入指南。 |
 
-通过 [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) 导出到下游格式（TRL, LLaVA, Qwen2-VL, JSONL, Parquet 等）。 `repo-dataset` 负责格式转换；`sdlab` 负责数据集的真实性。
+## 存在的理由
 
-## Star Freight 示例
+训练数据是任何视觉人工智能流水线中最具价值的资源。但大多数训练数据只是一个包含图像的文件夹，没有任何历史记录、评估记录，以及与它应该遵循的风格规则的联系。
 
-克隆仓库以获取完整的示例：1182 条记录，28 个提示序列，5 个派系，7 个通道，24 条宪法规则，以及来自一个硬核科幻角色扮演游戏的 892 个已批准的资源。
+Style Dataset Lab 明确地建立了这种联系。您的规范定义了规则。您的评分标准定义了评分维度。您的筛选记录记录了评估结果。您的规范证明了这种联系。您的数据集将所有这些信息以结构化、可查询、可重复的方式传递下去。
+
+实际结果：当您的 LoRA 出现偏差时，您可以询问*原因*。当您的下一个训练轮需要更好的数据时，您清楚地知道哪些记录是接近理想的，以及它们违反了哪个规则。当新团队成员询问项目的视觉语言是什么时，答案不是一个 Figma 板，而是一份包含 1182 个已评分示例的可搜索规范。
+
+## 五个领域，真实的规则
+
+不是占位符模板。每个领域都包含生产级别的规范规则、定义、评分标准和词汇表。
+
+| 领域 | 定义 | 评估内容 |
+|--------|-------|-----------------|
+| **game-art** | 角色、环境、道具、UI、飞船、内部、设备 | 游戏场景中的轮廓、派系特征、磨损和老化 |
+| **character-design** | 人像、全身照、旋转视图、表情图、动作姿势 | 比例、服装逻辑、个性、姿势清晰度 |
+| **creature-design** | 概念图、正交视图、细节研究、动作、比例参考、栖息地 | 解剖结构、进化逻辑、轮廓区分 |
+| **architecture** | 外部、内部、街道景观、结构细节、废墟、景观 | 结构、材质一致性、透视、时代一致性 |
+| **vehicle-mech** | 外部、驾驶舱、组件、示意图、轮廓图、损坏变体 | 机械逻辑、设计语言、访问点、损坏叙述 |
+
+## 项目结构
+
+每个项目都是独立的。五个 JSON 配置文件定义了规则；其他所有内容都是数据。
+
+```
+projects/my-project/
+  project.json           Identity + generation defaults
+  constitution.json      Rules with rationale templates
+  lanes.json             Subject lanes with detection patterns
+  rubric.json            Scoring dimensions + thresholds
+  terminology.json       Group vocabulary + detection order
+  records/               Per-asset JSON (provenance + judgment + canon)
+  snapshots/             Frozen dataset snapshots
+  splits/                Train/val/test partitions
+  exports/               Versioned export packages
+  training/              Profiles, manifests, packages, eval runs, implementations
+```
+
+## 信任属性
+
+这些不是理想化的目标，而是强制执行的。
+
+- **快照是不可变的。** 配置文件指纹（SHA-256）可以证明没有发生任何更改。
+- **分片可以防止数据泄露。** 按照身份、血统或 ID 后缀划分的主体类别永远不会跨越分区边界。
+- **清单是冻结的合同。** 导出哈希值 + 配置文件指纹。如果任何内容发生更改，请创建一个新的清单。
+- **适配器不能修改原始数据。** 不同的布局，相同的记录。不允许添加、删除或重新分类。
+- **生成的输出需要经过审核才能重新使用。** 不允许绕过。像其他内容一样，进行筛选和绑定。
+
+## Star Freight
+
+该仓库包含一个完整的示例：1182 条记录，5 个派系，7 条路线，24 条宪法规则，892 个已批准的资源，2 个训练配置文件。这是一个充满科幻感的角色扮演游戏视觉素材库，经过完整的筛选。
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
 cd style-dataset-lab
-
-# Validate the project
 sdlab project doctor --project star-freight
-
-# Run the full dataset spine
-sdlab snapshot create --project star-freight    # 839 eligible records
-sdlab split build --project star-freight        # ~80/10/10, zero leakage
-sdlab export build --project star-freight       # package with checksums
-sdlab eval-pack build --project star-freight    # 78 eval records
+sdlab snapshot create --project star-freight   # 839 eligible records
+sdlab split build --project star-freight       # zero subject leakage
 ```
 
-## 从 v1.x 迁移
+## 下游格式
 
-v2.0 将 `games/` 重命名为 `projects/`，并将 `--game` 重命名为 `--project`。
+`sdlab` 拥有数据集。格式转换由 [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) 处理：支持 TRL、LLaVA、Qwen2-VL、JSONL、Parquet 等格式。`repo-dataset` 用于渲染，但不决定数据的包含与否。
+
+## 安装
 
 ```bash
-# Rename your data directory
-mv games projects
-
-# --game still works with a deprecation warning (removed in v3.0)
-sdlab bind --game star-freight   # works, prints warning
-sdlab bind --project star-freight # canonical form
+npm install -g @mcptoolshop/style-dataset-lab
 ```
 
-## 安全模型
+需要 Node.js 20+ 以及安装在本地主机 8188 端口上的 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 才能进行生成。
 
-**仅本地。** 与运行在 `localhost:8188` 上的 ComfyUI 通信。 没有遥测，没有分析，没有外部请求。 图像保留在您的 GPU 和文件系统中。
+## 安全性
 
-## 要求
-
-- 运行在 `localhost:8188` 上的 [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
-- DreamShaper XL Turbo 检查点 + ClassipeintXL LoRA
-- Node.js 20+
-- [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) 用于训练数据导出
+仅在本地运行。没有遥测数据，没有分析，没有外部请求。图像保留在您的 GPU 和文件系统中。
 
 ## 许可证
 

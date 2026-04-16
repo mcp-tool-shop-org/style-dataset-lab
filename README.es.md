@@ -11,196 +11,128 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-# style-dataset-lab
+Escriba sus reglas visuales. Genere arte. Evalúe cada imagen según esas reglas. Entregue los resultados como datos de entrenamiento versionados y auditables.
 
-Convierta el material visual aprobado en conjuntos de datos versionados, respaldados por revisiones, divisiones, paquetes de exportación y paquetes de evaluación.
+Style Dataset Lab conecta lo que ha escrito sobre su estilo artístico con el conjunto de datos con el que realmente entrena. Usted define una constitución: reglas de silueta, restricciones de paleta, lenguaje de materiales, cualquier cosa que sea importante para su proyecto. El proceso genera candidatos, los evalúa según esas reglas y empaqueta el trabajo aprobado en conjuntos de datos reproducibles donde cada registro explica por qué se incluyó.
 
-## ¿Qué es esto?
+El ciclo se cierra: entrena un modelo, genera nuevas salidas, evalúalas según el mismo criterio y vuelve a incluir lo que cumple los requisitos. El conjunto de datos crece y las reglas se mantienen.
 
-Una **línea de producción de conjuntos de datos y un canon visual**. Defina cómo se verá su proyecto. Seleccione cuidadosamente de acuerdo con las reglas establecidas. Cree paquetes de conjuntos de datos reproducibles con divisiones seguras contra fugas de información. Genere paquetes de evaluación para la verificación futura del modelo.
-
-La línea de producción genera cuatro elementos:
-
-| Elemento | ¿Qué es? |
-|----------|-----------|
-| **Snapshot** | Selección de registros elegibles, congelada y con huella digital. Cada inclusión tiene un registro explícito de la razón. |
-| **Split** | Partición segura contra fugas de información para entrenamiento/validación/prueba. Los registros que comparten una misma familia siempre se incluyen en la misma división. |
-| **Export package** | Conjunto de datos autónomo: manifiesto, metadatos, imágenes, divisiones, descripción del conjunto de datos y sumas de verificación. |
-| **Eval pack** | Tareas de verificación que respetan el canon: cobertura de categorías, desviación prohibida, referencia/estándar, coherencia temática. |
-
-Cada elemento en la línea de producción contiene tres cosas:
-
-1. **Origen** -- historial completo de generación (punto de control, LoRA, semilla, muestreador, configuración, tiempo de ejecución)
-2. **Cumplimiento del canon** -- qué reglas establecidas cumple, no cumple o cumple parcialmente este elemento.
-3. **Evaluación de calidad** -- aprobado/rechazado/límite con puntuaciones por dimensión.
-
-Funciona para arte de juegos, diseño de personajes, diseño de criaturas, arquitectura, conceptos de vehículos/mecánica y cualquier dominio donde la producción visual deba mantenerse dentro de los parámetros establecidos.
-
-## Comienzo rápido
+## El proceso
 
 ```bash
-# Install the CLI + pipeline
-npm install -g @mcptoolshop/style-dataset-lab
-
-# Scaffold a new project
+# Write your canon. Scaffold the project.
 sdlab init my-project --domain character-design
 
-# Validate the project structure
-sdlab project doctor --project my-project
+# Generate candidates via ComfyUI, then review them
+sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab curate <id> approved "Strong silhouette, correct faction palette"
+
+# Bind approved work to constitution rules
+sdlab bind --project my-project
+
+# Freeze a versioned dataset
+sdlab snapshot create --project my-project
+sdlab split build
+sdlab export build
+
+# Build a training package and close the loop
+sdlab training-manifest create --profile character-style-lora
+sdlab training-package build
+sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
+sdlab reingest generated --source ./outputs --manifest <id>
 ```
 
-Dominios disponibles: `game-art`, `character-design`, `creature-design`, `architecture`, `vehicle-mech` o `generic`.
+Esa última instrucción es clave. Las salidas generadas vuelven a pasar por el mismo proceso de revisión que todo lo demás. El ciclo se cierra.
 
-## Interfaz de línea de comandos (CLI)
+## Lo que produce
 
-```bash
-sdlab init <name> [--domain <domain>]     # Scaffold a new project
-sdlab project doctor [--project <name>]   # Validate project config
+Siete artefactos versionados y con sumas de verificación. Cada uno tiene un enlace a sus predecesores para que pueda rastrear cualquier registro de entrenamiento hasta la regla que lo aprobó.
 
-sdlab generate <pack> [--project <name>]  # Generate candidates via ComfyUI
-sdlab generate:identity <packet>          # Named-subject identity images
-sdlab generate:controlnet                 # ControlNet-guided generation
-sdlab generate:ipadapter                  # IP-Adapter reference-guided
+| Artefacto. | Qué es. |
+|----------|-----------|
+| **Snapshot** | Selección de registros congelada con huella de configuración. Cada inclusión tiene una razón explícita. |
+| **Split** | Partición de entrenamiento/validación/prueba donde las familias de sujetos nunca cruzan límites. |
+| **Export package** | Conjunto de datos autocontenido: manifiesto, metadatos, imágenes, divisiones, tarjeta del conjunto de datos, sumas de verificación. |
+| **Eval pack** | Tareas de prueba conscientes del criterio: cobertura de áreas, desviación prohibida, referencia/oro, continuidad del sujeto. |
+| **Training package** | Diseño listo para el entrenamiento a través de adaptadores (`diffusers-lora`, `generic-image-caption`). La misma información, en un formato diferente. |
+| **Eval scorecard** | Resultado de aprobación/reprobación por tarea, según la evaluación de las salidas generadas. |
+| **Implementation pack** | Ejemplos de indicaciones, fallos conocidos, pruebas de continuidad y guías para la inclusión. |
 
-sdlab curate <id> <status> <explanation>  # Record review judgment
-sdlab compare <a> <b> <winner> <reason>   # Pairwise A-vs-B comparison
-sdlab bind [--project <name>]             # Bind records to constitution rules
-sdlab painterly [--project <name>]        # Post-processing style pass
+## Por qué existe
 
-sdlab snapshot create [--profile <name>]  # Create frozen dataset snapshot
-sdlab snapshot list                       # List all snapshots
-sdlab snapshot diff <a> <b>               # Compare two snapshots
-sdlab eligibility audit                   # Audit record training eligibility
-sdlab split build [--snapshot <id>]       # Build train/val/test split
-sdlab split audit <id>                    # Audit split for leakage + balance
-sdlab card generate                       # Generate dataset card (md + JSON)
-sdlab export build [--snapshot <id>]      # Build versioned export package
-sdlab eval-pack build                     # Build canon-aware eval pack
-```
+Los datos de entrenamiento son el activo más valioso en cualquier canal de IA visual. Pero la mayoría de los datos de entrenamiento son una carpeta de imágenes sin historial, sin rastro de evaluación y sin conexión con las reglas de estilo que se suponía que debían seguir.
 
-Todos los comandos aceptan `--project <nombre>` (por defecto: `star-freight`).
+Style Dataset Lab hace que esa conexión sea explícita. Su constitución define las reglas. Su rúbrica define las dimensiones de la evaluación. Sus registros de curación registran la evaluación. Su canon vinculante prueba la conexión. Y su conjunto de datos transmite todo eso como una verdad estructurada, consultable y reproducible.
 
-## Modelo del proyecto
+El resultado práctico: cuando su LoRA se desvía, puede preguntar *por qué*. Cuando su próxima ronda de entrenamiento necesita mejores datos, sabe exactamente qué registros están cerca de cumplir los requisitos y qué regla específica no cumplieron. Cuando un nuevo miembro del equipo pregunta cuál es el lenguaje visual del proyecto, la respuesta no es una pizarra de Figma, sino una constitución con 1182 ejemplos clasificados y que se puede buscar.
 
-Cada proyecto es un directorio autónomo dentro de `projects/` con su propio canon, configuración y datos:
+## Cinco dominios, reglas reales
 
-```
-projects/
-  my-project/
-    project.json            Project identity + generation defaults
-    constitution.json       Rules array with rationale templates
-    lanes.json              Subject lanes with detection patterns
-    rubric.json             Scoring dimensions + thresholds
-    terminology.json        Group vocabulary + detection order
-    canon/                  Style constitution (markdown)
-    records/                Per-asset JSON (provenance + judgment + canon)
-    inputs/prompts/         Prompt packs (JSON)
-    outputs/                Generated images (gitignored)
-    comparisons/            A-vs-B preference judgments
-    snapshots/              Frozen dataset snapshots
-    splits/                 Train/val/test partitions
-    exports/                Versioned export packages
-    eval-packs/             Canon-aware eval instruments
-```
+No son plantillas genéricas. Cada dominio viene con reglas de constitución de calidad de producción, definiciones de áreas, rúbricas de evaluación y vocabulario específico.
 
-## Línea de producción
+| Dominio. | Áreas. | Qué se evalúa. |
+|--------|-------|-----------------|
+| **game-art** | personaje, entorno, accesorio, interfaz de usuario, nave, interior, equipo. | Silueta a escala de juego, identificación de facción, desgaste y envejecimiento. |
+| **character-design** | retrato, cuerpo entero, vista de 360 grados, hoja de expresiones, pose de acción. | Proporciones, lógica del atuendo, personalidad, claridad del gesto. |
+| **creature-design** | concepto, ortográfico, estudio de detalles, acción, referencia de escala, hábitat. | Anatomía, lógica evolutiva, distinción de silueta. |
+| **architecture** | exterior, interior, paisaje urbano, detalle estructural, ruina, paisaje. | Estructura, consistencia de materiales, perspectiva, coherencia de la época. |
+| **vehicle-mech** | exterior, cabina, componente, esquema, hoja de silueta, variante de daño. | Lógica mecánica, lenguaje de diseño, puntos de acceso, narrativa de daño. |
+
+## Estructura del proyecto
+
+Cada proyecto es independiente. Cinco archivos de configuración JSON definen las reglas; todo lo demás es datos.
 
 ```
-canon → generate → curate → bind → snapshot → split → export → eval
-  |        |          |        |        |         |        |       |
-rules   ComfyUI   judgment  rules   frozen    subject  package  verify
-                                    selection isolation
+projects/my-project/
+  project.json           Identity + generation defaults
+  constitution.json      Rules with rationale templates
+  lanes.json             Subject lanes with detection patterns
+  rubric.json            Scoring dimensions + thresholds
+  terminology.json       Group vocabulary + detection order
+  records/               Per-asset JSON (provenance + judgment + canon)
+  snapshots/             Frozen dataset snapshots
+  splits/                Train/val/test partitions
+  exports/               Versioned export packages
+  training/              Profiles, manifests, packages, eval runs, implementations
 ```
 
-1. **Definir el canon** -- escriba su constitución de estilo y rúbrica de revisión.
-2. **Generar** -- ComfyUI genera candidatos con un origen completo.
-3. **Seleccionar** -- apruebe/rechace con puntuaciones por dimensión y modos de fallo.
-4. **Vincular** -- vincule cada elemento a las reglas establecidas con veredictos de cumplimiento/incumplimiento/parcial.
-5. **Captura** -- congele los registros elegibles en una selección determinista y con huella digital.
-6. **Dividir** -- particione en entrenamiento/validación/prueba con aislamiento temático y equilibrio de categorías.
-7. **Exportar** -- cree un paquete autónomo con manifiesto, metadatos, imágenes y sumas de verificación.
-8. **Evaluar** -- genere instrumentos de prueba que respeten el canon para la verificación del modelo.
+## Propiedades de confianza
 
-La conversión de formato a formatos posteriores (TRL, LLaVA, Parquet, etc.) se gestiona mediante [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset). `sdlab` es responsable de la veracidad del conjunto de datos; `repo-dataset` lo convierte en formatos especializados.
+Estas no son meras aspiraciones. Se aplican de forma obligatoria.
 
-## Plantillas de dominio
+- **Las instantáneas son inmutables.** La huella digital de la configuración (SHA-256) demuestra que nada ha cambiado.
+- **Las divisiones evitan fugas de información.** Las familias de sujetos (por identidad, linaje o sufijo de ID) nunca cruzan los límites de la partición.
+- **Los manifiestos son contratos inalterables.** Exporta el hash + la huella digital de la configuración. Si algo cambia, crea uno nuevo.
+- **Los adaptadores no pueden modificar la información.** Diferente diseño, mismos registros. No hay adiciones, ni eliminaciones, ni reclasificaciones.
+- **Las salidas generadas se revisan antes de ser utilizadas.** No hay excepciones. Se curan y se vinculan como todo lo demás.
 
-Cada plantilla de dominio incluye definiciones de categorías, reglas establecidas, rúbricas de puntuación y estructuras de terminología diseñadas para ese contexto de producción:
+## Star Freight
 
-| Dominio | Categorías | Preocupaciones clave |
-|--------|-------|-------------|
-| **game-art** | personaje, entorno, accesorio, interfaz de usuario, nave, interior, equipo | Silueta a escala de juego, diferenciación de facciones, desgaste/envejecimiento |
-| **character-design** | retrato, cuerpo entero, vista de 360 grados, hoja de expresiones, pose de acción | Precisión de las proporciones, lógica del vestuario, interpretación de la personalidad, claridad de los gestos |
-| **creature-design** | concepto, ortográfico, estudio de detalles, acción, referencia de escala, hábitat | Plausibilidad anatómica, lógica evolutiva, distinción de siluetas |
-| **architecture** | exterior, interior, paisaje urbano, detalle estructural, ruina, paisaje | Plausibilidad estructural, consistencia de materiales, perspectiva, coherencia de la época |
-| **vehicle-mech** | exterior, cabina, componente, esquema, hoja de siluetas, variante de daño | Lógica mecánica, lenguaje de diseño funcional, puntos de acceso, descripción de daños. |
-
-## Producción del conjunto de datos
-
-Estructura completa del conjunto de datos: instantánea, división, exportación, evaluación.
-
-```
-snapshot  -->  split  -->  export  -->  eval-pack
-   |            |            |             |
-  frozen     subject      package       canon-aware
-  selection  isolation    (manifest,    test instruments
-             + lane       metadata,     (4 task types)
-             balance      images,
-                          checksums,
-                          card)
-```
-
-Las **instantáneas** congelan una selección determinista de registros elegibles. Cada inclusión tiene un registro de la razón. Las huellas de configuración garantizan la reproducibilidad.
-
-Las **divisiones** asignan los registros a particiones de entrenamiento/validación/prueba, con aislamiento de sujetos (ninguna familia de sujetos aparece en múltiples divisiones) y distribución equilibrada por "carril". Un generador de números pseudoaleatorios con semilla garantiza resultados idénticos a partir de la misma semilla.
-
-Los **paquetes de exportación** son autocontenidos: manifiesto, metadata.jsonl, imágenes (enlaces simbólicos o copias), divisiones, tarjeta del conjunto de datos (Markdown + JSON) y sumas de verificación en formato BSD. Todo lo necesario para reconstruir el conjunto de datos desde cero.
-
-Los **paquetes de evaluación** son instrumentos de prueba que tienen en cuenta el canon y que incluyen cuatro tipos de tareas: cobertura de "carriles", deriva prohibida, anclaje/referencia y continuidad del sujeto. Demuestran que la estructura del conjunto de datos está alimentando futuras evaluaciones de modelos, y no solo se están volviendo a depositar archivos.
-
-Exportación a formatos posteriores a través de [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) (TRL, LLaVA, Qwen2-VL, JSONL, Parquet, y más). `repo-dataset` se encarga de la conversión de formatos; `sdlab` es responsable de la integridad del conjunto de datos.
-
-## Ejemplo de Star Freight
-
-Clona el repositorio para obtener un ejemplo de funcionamiento completo: 1182 registros, 28 oleadas de indicaciones, 5 facciones, 7 "carriles", 24 reglas constitucionales y 892 activos aprobados de un RPG de ciencia ficción.
+El repositorio incluye un ejemplo de funcionamiento completo: 1182 registros, 5 facciones, 7 rutas, 24 reglas constitucionales, 892 activos aprobados, 2 perfiles de entrenamiento. Un canon visual de un RPG de ciencia ficción realista, completamente curado.
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
 cd style-dataset-lab
-
-# Validate the project
 sdlab project doctor --project star-freight
-
-# Run the full dataset spine
-sdlab snapshot create --project star-freight    # 839 eligible records
-sdlab split build --project star-freight        # ~80/10/10, zero leakage
-sdlab export build --project star-freight       # package with checksums
-sdlab eval-pack build --project star-freight    # 78 eval records
+sdlab snapshot create --project star-freight   # 839 eligible records
+sdlab split build --project star-freight       # zero subject leakage
 ```
 
-## Migración desde la versión 1.x
+## Formatos de salida
 
-La versión 2.0 cambia el nombre de `games/` a `projects/` y `--game` a `--project`:
+`sdlab` es el propietario del conjunto de datos. La conversión de formatos la gestiona [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset): TRL, LLaVA, Qwen2-VL, JSONL, Parquet, y más. `repo-dataset` se encarga de la renderización; nunca decide qué incluir.
+
+## Instalación
 
 ```bash
-# Rename your data directory
-mv games projects
-
-# --game still works with a deprecation warning (removed in v3.0)
-sdlab bind --game star-freight   # works, prints warning
-sdlab bind --project star-freight # canonical form
+npm install -g @mcptoolshop/style-dataset-lab
 ```
 
-## Modelo de seguridad
+Requiere Node.js 20+ y [ComfyUI](https://github.com/comfyanonymous/ComfyUI) en localhost:8188 para la generación.
 
-**Solo local.** Se comunica con ComfyUI en `localhost:8188`. No hay telemetría, ni análisis, ni solicitudes externas. Las imágenes permanecen en tu GPU y sistema de archivos.
+## Seguridad
 
-## Requisitos
-
-- [ComfyUI](https://github.com/comfyanonymous/ComfyUI) ejecutándose en localhost:8188
-- Checkpoint DreamShaper XL Turbo + LoRA ClassipeintXL
-- Node.js 20+
-- [`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) para la exportación del entrenamiento.
+Solo funciona localmente. No hay telemetría, ni análisis, ni solicitudes externas. Las imágenes permanecen en tu GPU y sistema de archivos.
 
 ## Licencia
 

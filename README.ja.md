@@ -11,196 +11,128 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-# style-dataset-lab
+視覚的なルールを定義してください。それに基づいて画像を生成し、生成されたすべての画像をそのルールに照らし合わせて評価します。そして、バージョン管理された、監査可能なトレーニングデータとして結果を配布します。
 
-承認済みの画像データを、バージョン管理された、レビューに基づいたデータセット、分割データ、エクスポートパッケージ、および評価用パッケージに変換します。
+Style Dataset Labは、お客様が記述されたアートスタイルに関する情報と、実際に学習に使用するデータセットを連携させます。お客様は、シルエットのルール、カラーパレットの制限、素材に関する記述など、プロジェクトにとって重要な要素を定義します。このシステムは、定義されたルールに基づいて候補を生成し、それらを評価し、承認された作品を再現可能なデータセットにまとめます。このデータセットでは、各レコードが、なぜその作品が選択されたのかを説明しています。
 
-## これは何ですか？
-
-**画像データ管理とデータセット生成のパイプライン**。プロジェクトのイメージを定義します。規定に基づいてデータを選別します。データ漏洩を防ぐための分割データセットを作成します。将来のモデル検証のための評価用パッケージを生成します。
-
-このパイプラインは、以下の4つの成果物（アーティファクト）を生成します。
-
-| 成果物 | 内容 |
-|----------|-----------|
-| **Snapshot** | 選択されたデータレコードの、不変で、フィンガープリントが付与されたもの。各データレコードの採用には、明確な理由が記録されています。 |
-| **Split** | データ漏洩を防ぐための、トレーニングデータ/検証データ/テストデータの分割。同じ対象を含むデータレコードは、常に同じ分割に分類されます。 |
-| **Export package** | 自己完結型のデータセット：マニフェスト、メタデータ、画像、分割データ、データセットの説明、およびチェックサム。 |
-| **Eval pack** | 規定に準拠した検証タスク：表現の網羅性、許容されない変化、基準/正解データ、対象の一貫性。 |
-
-このパイプライン内のすべてのデータには、以下の3つの情報が含まれています。
-
-1. **生成履歴 (Provenance)**：完全な生成履歴（チェックポイント、LoRA、シード値、サンプラー、CFG値、実行時間）
-2. **規定への適合性 (Canon binding)**：このデータが、どの規定に適合し、不適合であり、または部分的に適合しているか
-3. **品質評価 (Quality judgment)**：承認/拒否/境界値、および各評価項目のスコア
-
-ゲームアート、キャラクターデザイン、クリーチャーデザイン、アーキテクチャ、車両/メカのコンセプト、および、画像データの品質を維持する必要があるあらゆる分野で利用できます。
-
-## クイックスタート
-
-```bash
-# Install the CLI + pipeline
-npm install -g @mcptoolshop/style-dataset-lab
-
-# Scaffold a new project
-sdlab init my-project --domain character-design
-
-# Validate the project structure
-sdlab project doctor --project my-project
-```
-
-利用可能なドメイン：`game-art`、`character-design`、`creature-design`、`architecture`、`vehicle-mech`、または`generic`。
-
-## コマンドラインインターフェース (CLI)
-
-```bash
-sdlab init <name> [--domain <domain>]     # Scaffold a new project
-sdlab project doctor [--project <name>]   # Validate project config
-
-sdlab generate <pack> [--project <name>]  # Generate candidates via ComfyUI
-sdlab generate:identity <packet>          # Named-subject identity images
-sdlab generate:controlnet                 # ControlNet-guided generation
-sdlab generate:ipadapter                  # IP-Adapter reference-guided
-
-sdlab curate <id> <status> <explanation>  # Record review judgment
-sdlab compare <a> <b> <winner> <reason>   # Pairwise A-vs-B comparison
-sdlab bind [--project <name>]             # Bind records to constitution rules
-sdlab painterly [--project <name>]        # Post-processing style pass
-
-sdlab snapshot create [--profile <name>]  # Create frozen dataset snapshot
-sdlab snapshot list                       # List all snapshots
-sdlab snapshot diff <a> <b>               # Compare two snapshots
-sdlab eligibility audit                   # Audit record training eligibility
-sdlab split build [--snapshot <id>]       # Build train/val/test split
-sdlab split audit <id>                    # Audit split for leakage + balance
-sdlab card generate                       # Generate dataset card (md + JSON)
-sdlab export build [--snapshot <id>]      # Build versioned export package
-sdlab eval-pack build                     # Build canon-aware eval pack
-```
-
-すべてのコマンドは、`--project <名前>`（デフォルト：`star-freight`）を受け入れます。
-
-## プロジェクトモデル
-
-各プロジェクトは、`projects/`ディレクトリ内の自己完結型のディレクトリであり、独自の規定、設定、およびデータが含まれています。
-
-```
-projects/
-  my-project/
-    project.json            Project identity + generation defaults
-    constitution.json       Rules array with rationale templates
-    lanes.json              Subject lanes with detection patterns
-    rubric.json             Scoring dimensions + thresholds
-    terminology.json        Group vocabulary + detection order
-    canon/                  Style constitution (markdown)
-    records/                Per-asset JSON (provenance + judgment + canon)
-    inputs/prompts/         Prompt packs (JSON)
-    outputs/                Generated images (gitignored)
-    comparisons/            A-vs-B preference judgments
-    snapshots/              Frozen dataset snapshots
-    splits/                 Train/val/test partitions
-    exports/                Versioned export packages
-    eval-packs/             Canon-aware eval instruments
-```
+このプロセスはループを形成します。モデルを訓練し、新しい出力を生成し、それらを同じ基準で評価し、評価基準を満たしたものをデータセットに再取り込みます。データセットは徐々に成長し、そのルールは維持されます。
 
 ## パイプライン
 
+```bash
+# Write your canon. Scaffold the project.
+sdlab init my-project --domain character-design
+
+# Generate candidates via ComfyUI, then review them
+sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab curate <id> approved "Strong silhouette, correct faction palette"
+
+# Bind approved work to constitution rules
+sdlab bind --project my-project
+
+# Freeze a versioned dataset
+sdlab snapshot create --project my-project
+sdlab split build
+sdlab export build
+
+# Build a training package and close the loop
+sdlab training-manifest create --profile character-style-lora
+sdlab training-package build
+sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
+sdlab reingest generated --source ./outputs --manifest <id>
 ```
-canon → generate → curate → bind → snapshot → split → export → eval
-  |        |          |        |        |         |        |       |
-rules   ComfyUI   judgment  rules   frozen    subject  package  verify
-                                    selection isolation
-```
 
-1. **規定の定義 (Define canon)**：スタイル規定とレビュー基準を記述します。
-2. **生成 (Generate)**：ComfyUIが、完全な生成履歴を持つ候補データを生成します。
-3. **選別 (Curate)**：各評価項目のスコアと、失敗モードに基づいて、承認または拒否を行います。
-4. **関連付け (Bind)**：各データと、規定への適合性（適合/不適合/部分適合）を関連付けます。
-5. **スナップショット (Snapshot)**：選択されたデータレコードを、不変で、フィンガープリントが付与された状態で凍結します。
-6. **分割 (Split)**：対象の分離と、表現のバランスを考慮して、トレーニングデータ/検証データ/テストデータに分割します。
-7. **エクスポート (Export)**：マニフェスト、メタデータ、画像、およびチェックサムを含む、自己完結型のパッケージを構築します。
-8. **評価 (Eval)**：モデル検証のための、規定に準拠したテストツールを生成します。
+最後のコマンドが重要な点です。生成された出力も、他のものと同様に、同じ審査プロセスを経ます。これにより、一連の作業が完了し、サイクルが閉じます。
 
-下流のフォーマット変換（TRL、LLaVA、Parquetなど）は、[`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset)によって処理されます。`sdlab`がデータセットの真実性を管理し、`repo-dataset`がそれを特殊なフォーマットに変換します。
+## それが生成するものは何か
 
-## ドメインテンプレート
+バージョン管理された7つのデータセットがあり、それぞれにチェックサムが付与されています。各データセットは、その前のバージョンとリンクされており、これにより、どのトレーニング記録も、それを承認したルールまで遡って追跡することができます。
 
-各ドメインテンプレートには、表現の定義、規定、評価基準、および、その制作コンテキストに合わせた用語構造が含まれています。
+| 成果物 | 内容 |
+|----------|-----------|
+| **Snapshot** | 設定情報と合わせて、一度記録されたデータは固定され、変更されません。すべてのデータには、そのデータが記録された理由が明示的に記載されています。 |
+| **Split** | 学習データ、検証データ、テストデータに分割する際、対象となる家族がデータセットの境界線をまたがないようにする。 |
+| **Export package** | 自己完結型のデータセット：マニフェスト、メタデータ、画像、分割データ、データセットの説明、およびチェックサム。 |
+| **Eval pack** | 規定に準拠した検証タスク：表現の網羅性、許容されない変化、基準/正解データ、対象の一貫性。 |
+| **Training package** | アダプター（`diffusers-lora`、`generic-image-caption`）を使用することで、トレーニングに適した構成にすることができます。同じ原理に基づいているものの、形式が異なります。 |
+| **Eval scorecard** | 各タスクごとに、評価データセットと照合して生成された結果に基づいて、合格/不合格を判定します。 |
+| **Implementation pack** | プロンプトの例、既知の問題点、動作確認テスト、および再取り込みに関する手順。 |
 
-| ドメイン | 表現 | 主要な考慮事項 |
-|--------|-------|-------------|
-| **game-art** | キャラクター、環境、小道具、UI、船、内装、装備 | ゲームプレイ時のシルエット、派閥の区別、摩耗/経年劣化 |
-| **character-design** | ポートレート、全身像、アングル図、表情シート、アクションポーズ | プロポーションの正確性、衣装の論理性、キャラクターの表現、ジェスチャーの明瞭さ |
-| **creature-design** | コンセプト、正投影図、詳細図、アクション、スケール参照、生息地 | 解剖学的な妥当性、進化論的な論理性、シルエットの区別 |
-| **architecture** | 外観、内装、街並み、構造の詳細、廃墟、風景 | 構造的な妥当性、素材の一貫性、遠近感、時代への適合性 |
+## なぜこれが存在するのか
+
+トレーニングデータは、あらゆる画像認識AIのパイプラインにおいて、最も重要な要素です。しかし、多くのトレーニングデータは、履歴や判断の記録が一切なく、また、本来従うべきスタイルルールとの関連性も欠けている、単なる画像ファイル群に過ぎません。
+
+Style Dataset Labは、これらの要素間の関連性を明確に示します。あなたの規定はルールを定義し、評価基準は評価の基準を定義します。キュレーション記録は判断を記録し、規範文書は関連性を証明します。そして、あなたのデータセットは、これらの要素を構造化された、検索可能で、再現可能な真実として体系的にまとめて提供します。
+
+具体的な結果として、LoRAモデルの性能が低下した場合、「なぜ」その原因を特定できます。また、次の学習ラウンドでより良いデータが必要になった場合、どのデータがわずかに基準に達していないのか、そしてそれがどの特定のルールに違反しているのかを正確に把握できます。さらに、新しいチームメンバーがプロジェクトのビジュアル表現について質問された場合、答えはFigmaのボードではなく、1,182の評価済みサンプルを含む、検索可能な規定書となります。
+
+## 5つの分野、そして明確なルール
+
+これは単なるプレースホルダーのテンプレートではありません。各分野には、実用レベルの構成ルール、レーン定義、採点基準、および関連語彙が用意されています。
+
+| ドメイン | 表現 | 何が評価されるのか。 |
+|--------|-------|-----------------|
+| **game-art** | キャラクター、環境、小道具、UI、船、内装、装備 | ゲームプレイ時の外観、派閥ごとの特徴、使用感、経年劣化。 |
+| **character-design** | ポートレート、全身像、アングル図、表情シート、アクションポーズ | プロポーション、衣装の合理性、人物の性格、身振り手振りの表現力。 |
+| **creature-design** | コンセプト、正投影図、詳細図、アクション、スケール参照、生息地 | 解剖学的構造、進化論的な論理、シルエットの識別。 |
+| **architecture** | 外観、内装、街並み、構造の詳細、廃墟、風景 | 構造、素材の一貫性、視点、時代背景との整合性。 |
 | **vehicle-mech** | 外観、コックピット、コンポーネント、設計図、シルエット図、損傷バリエーション | 機械的なロジック、機能的なデザイン言語、アクセスポイント、損害状況の説明 |
 
-## データセットの生成
+## プロジェクトの構成
 
-データセット全体の構成：スナップショット、分割、エクスポート、評価。
+各プロジェクトは独立した構成になっています。5つのJSON設定ファイルがルールを定義し、それ以外の部分はすべてデータです。
 
 ```
-snapshot  -->  split  -->  export  -->  eval-pack
-   |            |            |             |
-  frozen     subject      package       canon-aware
-  selection  isolation    (manifest,    test instruments
-             + lane       metadata,     (4 task types)
-             balance      images,
-                          checksums,
-                          card)
+projects/my-project/
+  project.json           Identity + generation defaults
+  constitution.json      Rules with rationale templates
+  lanes.json             Subject lanes with detection patterns
+  rubric.json            Scoring dimensions + thresholds
+  terminology.json       Group vocabulary + detection order
+  records/               Per-asset JSON (provenance + judgment + canon)
+  snapshots/             Frozen dataset snapshots
+  splits/                Train/val/test partitions
+  exports/               Versioned export packages
+  training/              Profiles, manifests, packages, eval runs, implementations
 ```
 
-**スナップショット**は、選択されたレコードを決定的に固定します。すべてのデータは、その理由が追跡可能です。設定のフィンガープリントにより、再現性が確保されます。
+## 信託財産
 
-**分割**は、レコードをトレーニング用、検証用、テスト用のデータセットに割り当てます。この際、被験者の同一性が保たれ（同じ被験者のデータが複数の分割に属さない）、各分割におけるデータのバランスが調整されます。シード値が設定された疑似乱数生成器を使用することで、同じシード値を使用した場合、常に同じ結果が得られます。
+これらは目標や理想ではなく、義務として定められています。
 
-**エクスポートパッケージ**は、すべてが完結したパッケージです。内容：マニフェスト、metadata.jsonl、画像（シンボリックリンクまたはコピー）、分割データ、データセットの説明（Markdown形式とJSON形式）、およびBSD形式のチェックサム。データセットを最初から再構築するために必要なものがすべて含まれています。
+- **スナップショットは不変です。** 設定のフィンガープリント（SHA-256）は、何も変更されていないことを証明します。
+- **分割によって情報漏洩を防ぎます。** データセット（ID、系統、またはIDの末尾による分類）は、パーティションの境界を越えることはありません。
+- **マニフェストは固定された契約です。** エクスポートのハッシュ値と設定のフィンガープリントを含みます。 何か変更があった場合は、新しいものを新たに作成してください。
+- **アダプターは真実を改変できません。** レイアウトは異なる場合でも、同じレコードが含まれます。 追加、削除、再分類は一切ありません。
+- **生成された出力は、必ずレビュープロセスを経て再利用されます。** スキップすることはできません。 他のデータと同様に、キュレーションと紐付けを行います。
 
-**評価パッケージ**は、基準に準拠したテストツールであり、4つのタスクタイプ（レーンカバレッジ、禁止ドリフト、アンカー/ゴールド、被験者の一貫性）が含まれています。これにより、データセットの構成が、単にファイルをダンプするだけでなく、将来のモデル評価に役立つことを証明します。
+## スターフレイト
 
-`repo-dataset` ([https://github.com/mcp-tool-shop-org/repo-dataset](https://github.com/mcp-tool-shop-org/repo-dataset)) を使用して、下流の形式にエクスポートします（TRL、LLaVA、Qwen2-VL、JSONL、Parquetなど）。`repo-dataset` が形式の変換を処理し、`sdlab` がデータセットの正確性を保証します。
-
-## Star Freightの例
-
-完全な動作例については、リポジトリをクローンしてください。1,182件のレコード、28種類のプロンプト、5つの派閥、7つのレーン、24の憲法ルール、および、ハードなSF RPGから抽出された892件の承認済みアセットが含まれています。
+このリポジトリには、完全で動作するサンプルが含まれています。具体的には、1,182件のデータ、5つの派閥、7つのルート、24個の憲法ルール、892個の承認済みアセット、および2つのトレーニングプロファイルが含まれています。これは、徹底的にキュレーションされた、ハードなSF RPGのビジュアル表現です。
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
 cd style-dataset-lab
-
-# Validate the project
 sdlab project doctor --project star-freight
-
-# Run the full dataset spine
-sdlab snapshot create --project star-freight    # 839 eligible records
-sdlab split build --project star-freight        # ~80/10/10, zero leakage
-sdlab export build --project star-freight       # package with checksums
-sdlab eval-pack build --project star-freight    # 78 eval records
+sdlab snapshot create --project star-freight   # 839 eligible records
+sdlab split build --project star-freight       # zero subject leakage
 ```
 
-## v1.xからの移行
+## 対応形式
 
-v2.0では、`games/`が`projects/`に、`--game`が`--project`に変更されました。
+`sdlab` がこのデータセットを所有しています。フォーマット変換は、[`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) によって処理されます。対応形式は、TRL、LLaVA、Qwen2-VL、JSONL、Parquetなどです。`repo-dataset` はデータのレンダリングを担当し、データの取り込みに関する判断は行いません。
+
+## インストール
 
 ```bash
-# Rename your data directory
-mv games projects
-
-# --game still works with a deprecation warning (removed in v3.0)
-sdlab bind --game star-freight   # works, prints warning
-sdlab bind --project star-freight # canonical form
+npm install -g @mcptoolshop/style-dataset-lab
 ```
 
-## セキュリティモデル
+生成には、Node.js 20以降のバージョンと、ローカルホストの8188番ポートで動作している [ComfyUI](https://github.com/comfyanonymous/ComfyUI) が必要です。
 
-**ローカル環境のみ。** `localhost:8188`で動作するComfyUIと通信します。テレメトリー、分析、外部へのリクエストは一切ありません。画像は、あなたのGPUとファイルシステムにのみ保存されます。
+## セキュリティ
 
-## 必要なもの
-
-- `localhost:8188`で動作する[ComfyUI](https://github.com/comfyanonymous/ComfyUI)
-- DreamShaper XL Turbo チェックポイント + ClassipeintXL LoRA
-- Node.js 20以上
-- トレーニング用エクスポートのための[`@mcptoolshop/repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset)
+ローカル環境でのみ動作します。テレメトリー、分析、外部へのリクエストは一切ありません。画像はすべて、あなたのGPUとファイルシステム内に保存されます。
 
 ## ライセンス
 
