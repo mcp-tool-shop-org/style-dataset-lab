@@ -35,6 +35,11 @@ const PROJECT_DIRS = [
   'snapshots',
   'splits',
   'eval-packs',
+  'training/profiles',
+  'training/manifests',
+  'training/packages',
+  'training/eval-runs',
+  'training/implementations',
 ];
 
 function isValidName(name) {

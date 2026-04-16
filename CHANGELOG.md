@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-04-16
+
+### Added
+
+- **Training + implementation spine** -- complete model-asset pipeline from export package to trained asset
+  - `sdlab training-profile list/show` -- training profile management (what kind of model asset to produce)
+  - `sdlab training-manifest create/validate/show/list` -- frozen training contracts with export hash and config fingerprint
+  - `sdlab training-package build/show/list` -- trainer-ready packages with adapter boundary
+  - `sdlab eval-run create/score/show/list` -- score generated outputs against eval packs, produce scorecards
+  - `sdlab implementation-pack build/show/list` -- prompt examples, known failures, subject continuity, reingest guide
+  - `sdlab reingest generated/audit` -- re-ingest accepted generated outputs as new records with provenance
+- **Adapter system** for trainer-specific packaging:
+  - `generic-image-caption` -- image folders + metadata JSONL
+  - `diffusers-lora` -- image + caption .txt sidecars for diffusers fine-tuning
+- **Two starter training profiles** for Star Freight: `character-style-lora`, `environment-mood-lora`
+- **New library modules:** `lib/training-profiles.js`, `lib/training-manifests.js`, `lib/training-packages.js`, `lib/eval-runs.js`, `lib/implementation-packs.js`, `lib/reingest.js`, `lib/adapters/generic-image-caption.js`, `lib/adapters/diffusers-lora.js`
+
+### Key properties
+
+- Training manifests are frozen -- if config, export, or profile changes, a new manifest is required
+- Adapters transform layout but never mutate inclusion or split truth
+- Generated outputs re-enter through normal review (no bypass)
+- Every eval run links back to a training manifest and eval pack (no orphans)
+
 ## [2.1.0] - 2026-04-16
 
 ### Added

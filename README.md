@@ -76,6 +76,16 @@ sdlab split audit <id>                    # Audit split for leakage + balance
 sdlab card generate                       # Generate dataset card (md + JSON)
 sdlab export build [--snapshot <id>]      # Build versioned export package
 sdlab eval-pack build                     # Build canon-aware eval pack
+
+sdlab training-profile list               # List training profiles
+sdlab training-manifest create            # Create frozen training contract
+sdlab training-manifest validate <id>     # Validate manifest integrity
+sdlab training-package build              # Build trainer-ready package
+sdlab eval-run create                     # Create eval run
+sdlab eval-run score <id> --outputs <p>   # Score against eval pack
+sdlab implementation-pack build           # Build implementation examples
+sdlab reingest generated --source <dir>   # Re-ingest generated outputs
+sdlab reingest audit                      # Audit re-ingested records
 ```
 
 All commands accept `--project <name>` (default: `star-freight`).
@@ -159,6 +169,30 @@ snapshot  -->  split  -->  export  -->  eval-pack
 **Eval packs** are canon-aware test instruments with four task types: lane coverage, forbidden drift, anchor/gold, and subject continuity. They prove the dataset spine is feeding future model evaluation, not just dumping files.
 
 Export to downstream formats via [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) (TRL, LLaVA, Qwen2-VL, JSONL, Parquet, and more). `repo-dataset` handles format conversion; `sdlab` owns dataset truth.
+
+## Training + implementation spine
+
+The model-asset pipeline: from export package to trained asset and back.
+
+```
+export → training profile → manifest → package → eval run → implementation → reingest
+  |           |                |           |          |            |              |
+dataset    what kind       frozen      trainer-    score       prompts +      accepted
+package    of asset        contract    ready       against     examples +     outputs
+                                       layout     eval pack   failures       re-enter
+```
+
+**Training profiles** define what kind of model asset to produce: target family, eligible lanes, adapter targets, eval requirements.
+
+**Training manifests** are frozen contracts that capture the exact export, split, profile, and config fingerprint. If anything changes, a new manifest is required.
+
+**Training packages** are trainer-ready layouts built by adapters. Two ship: `generic-image-caption` (image folders + JSONL) and `diffusers-lora` (image + caption sidecars). Adapters never mutate inclusion or split truth.
+
+**Eval runs** score generated outputs against Phase 2 eval packs. Scorecards report per-task pass/fail with thresholds.
+
+**Implementation packs** show how to use the trained asset: prompt examples, known failure cases, subject continuity groups, and re-ingest guidance.
+
+**Re-ingest** brings accepted generated outputs back as new records with provenance. They must go through normal review and canon binding — no bypass.
 
 ## Star Freight example
 

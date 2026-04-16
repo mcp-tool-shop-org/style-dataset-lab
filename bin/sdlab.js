@@ -31,6 +31,7 @@ const COMMANDS = {
   'training-package':    '../scripts/training-package.js',
   'eval-run':            '../scripts/eval-run.js',
   'implementation-pack': '../scripts/implementation-pack.js',
+  'reingest':            '../scripts/reingest.js',
 };
 
 // Two-word commands under "project" namespace
@@ -92,6 +93,8 @@ function printHelp() {
   console.log('  implementation-pack build           Build implementation example pack');
   console.log('  implementation-pack show <id>       Show pack details');
   console.log('  implementation-pack list            List all packs');
+  console.log('  reingest generated --source <dir>  Re-ingest generated outputs');
+  console.log('  reingest audit                     Audit re-ingested record status');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
