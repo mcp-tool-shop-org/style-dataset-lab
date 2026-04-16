@@ -28,6 +28,7 @@ const COMMANDS = {
   'eval-pack':           '../scripts/eval-pack.js',
   'training-profile':    '../scripts/training-profile.js',
   'training-manifest':   '../scripts/training-manifest.js',
+  'training-package':    '../scripts/training-package.js',
 };
 
 // Two-word commands under "project" namespace
@@ -79,6 +80,9 @@ function printHelp() {
   console.log('  training-manifest validate <id>     Validate manifest integrity');
   console.log('  training-manifest show <id>         Show manifest details');
   console.log('  training-manifest list              List all manifests');
+  console.log('  training-package build              Build trainer-ready package');
+  console.log('  training-package show <id>          Show package details');
+  console.log('  training-package list               List all packages');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
