@@ -23,6 +23,8 @@ const COMMANDS = {
   'snapshot':            '../scripts/snapshot.js',
   'eligibility':         '../scripts/eligibility.js',
   'split':               '../scripts/split.js',
+  'card':                '../scripts/card.js',
+  'export':              '../scripts/export.js',
 };
 
 // Two-word commands under "project" namespace
@@ -60,6 +62,9 @@ function printHelp() {
   console.log('  split list           List all splits');
   console.log('  split show <id>      Show split details');
   console.log('  split audit <id>     Audit split for leakage and balance');
+  console.log('  card generate        Generate dataset card (markdown + JSON)');
+  console.log('  export build         Build self-contained export package');
+  console.log('  export list          List all export packages');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
