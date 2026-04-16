@@ -1,8 +1,11 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "1.2.1",
-  "description": "Visual dataset pipeline — canon to prompts to ComfyUI generation to curated, canon-bound training data",
+  "version": "2.0.0",
+  "description": "Canon-bound visual dataset pipeline — define project canon, generate and curate assets, bind to constitution rules, export trustworthy training data",
   "type": "module",
+  "bin": {
+    "sdlab": "./bin/sdlab.js"
+  },
   "scripts": {
     "generate": "node scripts/generate.js",
     "curate": "node scripts/curate.js",
@@ -14,6 +17,8 @@
     "inspect": "echo 'Usage: repo-dataset visual inspect ./projects/<project>'"
   },
   "files": [
+    "bin/",
+    "lib/",
     "scripts/",
     "templates/",
     "README.md",
@@ -25,6 +30,10 @@
     "dataset",
     "visual",
     "training-data",
+    "concept-art",
+    "visual-canon",
+    "art-direction",
+    "dataset-pipeline",
     "comfyui",
     "vlm",
     "fine-tuning",

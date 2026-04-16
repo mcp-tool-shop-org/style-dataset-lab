@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Install the pipeline, set up your first game, generate, curate, and export.
+description: Install the pipeline, scaffold a project, generate, curate, and export.
 sidebar:
   order: 1
 ---
@@ -17,50 +17,50 @@ You need three things running before you start:
 
 ### Model weights
 
-The default generation setup uses:
-
-| Asset | Purpose |
-|-------|---------|
-| `dreamshaperXL_v21TurboDPMSDE.safetensors` | SDXL checkpoint (turbo variant for fast iteration) |
-| `classipeintxl_v21.safetensors` | LoRA for painterly style shift |
-
-Place these in your ComfyUI `models/checkpoints/` and `models/loras/` directories respectively.
+The default generation setup uses an SDXL checkpoint and a style LoRA. Configure these in your project's `project.json` under `defaults.checkpoint` and `defaults.loras`. Place model files in your ComfyUI `models/checkpoints/` and `models/loras/` directories.
 
 ## Install
 
-There are two ways to get started:
-
-**Option A: npm install (pipeline only)**
-
 ```bash
-npm install @mcptoolshop/style-dataset-lab
-```
+# Install globally for the sdlab CLI
+npm install -g @mcptoolshop/style-dataset-lab
 
-This gives you the 13 pipeline scripts and blank templates (starter constitution, review rubric, example prompt pack). No game data included.
-
-**Option B: Clone the repo (pipeline + Star Freight example)**
-
-```bash
-git clone https://github.com/mcp-tool-shop-org/style-dataset-lab.git
+# Or clone the repo for the Star Freight example
+git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
 cd style-dataset-lab
-npm install
 ```
 
-This includes the Star Freight example dataset (1,182 records, 28 prompt waves) so you can explore a working pipeline immediately.
-
-## Set up your first game
-
-If you installed from npm, use the included templates to bootstrap a new game:
+## Scaffold a project
 
 ```bash
-mkdir -p games/my-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
-cp -r node_modules/@mcptoolshop/style-dataset-lab/templates/canon games/my-game/canon
-cp node_modules/@mcptoolshop/style-dataset-lab/templates/inputs/prompts/example-wave.json games/my-game/inputs/prompts/wave1.json
+# Create a project from a domain template
+sdlab init my-project --domain character-design
+
+# See available domains
+sdlab init
 ```
 
-Edit `games/my-game/canon/constitution.md` to define your style rules, then edit the prompt pack to match your visual targets.
+Available domains: `game-art`, `character-design`, `creature-design`, `architecture`, `vehicle-mech`, or omit `--domain` for a generic starter.
 
-If you cloned the repo, you can skip this step and use `--game star-freight` with all scripts to explore the existing dataset.
+This creates `projects/my-project/` with config files, canon templates, directory structure, and a starter prompt pack.
+
+## Validate the project
+
+```bash
+sdlab project doctor --project my-project
+```
+
+Doctor checks config files, lane patterns, rubric dimensions, constitution rules, and directory structure. Fix any failures before generating.
+
+## Customize your canon
+
+Edit the config files in your project root:
+
+- **`constitution.json`** -- add or modify rules that define your visual law
+- **`lanes.json`** -- define subject categories (portrait, full_body, etc.)
+- **`rubric.json`** -- set scoring dimensions and approval thresholds
+- **`terminology.json`** -- define style groups/factions with detection patterns
+- **`canon/constitution.md`** -- human-readable style rules for the team
 
 ## Start ComfyUI
 
@@ -75,108 +75,70 @@ Verify it is running:
 curl http://127.0.0.1:8188/system_stats
 ```
 
-You should get a JSON response with GPU and queue information.
-
 ## Generate your first wave
 
-A prompt pack is a JSON file in `games/<name>/inputs/prompts/` that defines subjects, variations, and generation defaults. All scripts accept `--game <name>` to target a specific game (defaults to `star-freight`).
+Edit `projects/my-project/inputs/prompts/example-wave.json` with your subjects, style prefix, and generation defaults. Then:
 
 ```bash
 # Preview what would be generated (no ComfyUI calls)
-npm run generate -- --game star-freight inputs/prompts/wave1.json --dry-run
+sdlab generate inputs/prompts/example-wave.json --project my-project --dry-run
 
 # Generate for real
-npm run generate -- --game star-freight inputs/prompts/wave1.json
+sdlab generate inputs/prompts/example-wave.json --project my-project
 ```
 
-Each generated image lands in `games/star-freight/outputs/candidates/` with a matching record in `games/star-freight/records/`. The record captures full provenance: checkpoint, LoRA, seed, steps, cfg, sampler, scheduler, resolution, and the exact prompt used.
+Each generated image lands in `outputs/candidates/` with a matching record in `records/`. The record captures full provenance: checkpoint, LoRA, seed, steps, cfg, sampler, scheduler, resolution, and the exact prompt used.
 
 ## Curate
 
-Once you have candidates, curate them one at a time:
+Once you have candidates, curate them:
 
 ```bash
 # List uncurated candidates
-npm run curate -- --game star-freight --list
+sdlab curate --list --project my-project
 
 # Approve with per-dimension scores
-npm run curate -- --game star-freight wave1_compact_officer_s42 approved \
-  "Clean silhouette, correct palette, good material read" \
-  --scores silhouette:0.9,palette:0.85,material:0.8,faction:0.9
+sdlab curate my_subject_v1 approved "Clean proportions, good gesture" \
+  --scores proportion_accuracy:0.9,gesture_clarity:0.85 --project my-project
 
 # Reject with failure modes
-npm run curate -- --game star-freight wave1_compact_officer_s43 rejected \
-  "Too clean, photorealistic rendering, no wear" \
-  --failures too_clean,photorealistic
+sdlab curate my_subject_v2 rejected "Broken anatomy, stiff pose" \
+  --failures broken_anatomy,stiff_pose --project my-project
 ```
 
-Curation moves the image from `outputs/candidates/` to `outputs/approved/`, `outputs/rejected/`, or `outputs/borderline/` within the game directory, and writes the judgment into the record.
-
-### Scoring dimensions
-
-Each image is scored on 8 dimensions (0.0 to 1.0):
-
-| Dimension | What it measures |
-|-----------|-----------------|
-| `silhouette_clarity` | Faction-identifiable from outline at 64px |
-| `palette_adherence` | Correct faction colors at correct ratios |
-| `material_fidelity` | Surfaces read as the faction's material vocabulary |
-| `faction_read` | Can you tell which faction at a glance |
-| `wear_level` | Appropriate aging and damage for the faction |
-| `style_consistency` | Matches painterly target, not photo or 3D |
-| `clothing_logic` | Layers follow faction construction rules |
-| `composition` | Full body, centered, correct fill ratio |
-
-**Approval threshold:** all dimensions >= 0.6, average >= 0.7.
+Curation moves the image from `outputs/candidates/` to `outputs/approved/` (or `rejected/`, `borderline/`) and writes the judgment into the record.
 
 ## Bind to canon
 
-After curation, run the canon binding pass to link each record to specific constitution rules:
+After curation, bind records to constitution rules:
 
 ```bash
-# Bind all records for a game
-npm run canon-bind -- --game star-freight
+# Bind all curated records
+sdlab bind --project my-project
 
 # Preview without writing
-npm run canon-bind -- --game star-freight --dry-run
+sdlab bind --project my-project --dry-run
 
 # Print coverage stats
-npm run canon-bind -- --game star-freight --stats
+sdlab bind --project my-project --stats
 ```
 
-Each record gets `canon.assertions` -- an array of rule citations with pass/fail/partial verdicts and one-line rationale.
+Each record gets `canon.assertions` -- an array of rule citations with pass/fail/partial verdicts and rationale strings.
 
 ## Export training data
 
-Use `repo-dataset` to produce training data from your curated, canon-bound records. Point it at the specific game directory:
+Use `repo-dataset` to produce training data from your curated, canon-bound records:
 
 ```bash
-# Generate TRL-format training data
-repo-dataset visual generate ./games/star-freight --format trl --output games/star-freight/exports
-
-# Inspect what the scanner found
-repo-dataset visual inspect ./games/star-freight
-
-# Validate the output
-repo-dataset visual validate games/star-freight/exports/dataset.jsonl
+repo-dataset visual generate ./projects/my-project --format trl
+repo-dataset visual inspect ./projects/my-project
 ```
 
-The export produces classification, preference, and critique training units depending on the judgments and comparisons in your dataset.
+## Explore the Star Freight example
 
-## Adding more games
-
-Each game is fully isolated under `games/<name>/`. To add another game, repeat the template copy:
+If you cloned the repo, the Star Freight project has 1,182 records ready to explore:
 
 ```bash
-mkdir -p games/another-game/{records,comparisons,inputs/prompts,outputs/{candidates,approved,rejected,borderline,painterly},exports}
-cp -r templates/canon games/another-game/canon
-cp templates/inputs/prompts/example-wave.json games/another-game/inputs/prompts/wave1.json
-```
-
-Then use `--game another-game` with all scripts:
-
-```bash
-npm run generate -- --game another-game inputs/prompts/wave1.json
-npm run curate -- --game another-game <id> approved "explanation"
-npm run canon-bind -- --game another-game
+sdlab bind --stats --project star-freight
+sdlab project doctor --project star-freight
 ```

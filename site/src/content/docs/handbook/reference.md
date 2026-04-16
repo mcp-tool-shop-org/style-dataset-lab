@@ -1,32 +1,38 @@
 ---
 title: Reference
-description: All 13 pipeline scripts, templates, flags, and arguments.
+description: CLI commands, config files, and pipeline scripts.
 sidebar:
   order: 2
 ---
 
-Style Dataset Lab v1.2.0 ships 13 scripts and a `templates/` directory. All scripts accept `--game <name>` to target a specific game directory under `games/`. The default is `star-freight`.
+Style Dataset Lab v2.0 ships the `sdlab` CLI, 6 shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`. The deprecated `--game` flag still works with a warning.
 
-## Templates
+## CLI Commands
 
-The `templates/` directory provides a blank starting point for new games:
+### sdlab init
 
-| Path | Purpose |
-|------|---------|
-| `templates/canon/constitution.md` | Blank style constitution -- fill in your rules |
-| `templates/canon/review-rubric.md` | Blank review rubric -- define scoring criteria |
-| `templates/inputs/prompts/example-wave.json` | Example prompt pack structure |
+Scaffold a new project from a domain template.
 
-Copy these into a new `games/<name>/` directory to bootstrap a game without writing boilerplate from scratch.
+```bash
+sdlab init <project-name> [--domain <domain>]
+sdlab init my-project --domain character-design
+sdlab init                                       # list available domains
+```
 
-## Scripts
+### sdlab project doctor
 
-## generate.js
+Validate project config completeness and correctness.
+
+```bash
+sdlab project doctor --project <name>
+```
+
+### sdlab generate
 
 Drive ComfyUI to produce candidate images from a prompt pack.
 
 ```bash
-node scripts/generate.js --game <name> <prompt-pack-path> [options]
+sdlab generate <prompt-pack-path> --project <name> [--dry-run]
 ```
 
 | Flag | Default | Description |
