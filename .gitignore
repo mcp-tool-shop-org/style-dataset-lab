@@ -8,6 +8,10 @@ projects/*/outputs/borderline/
 projects/*/outputs/painterly/
 projects/*/outputs/painterly-test/
 projects/*/exports/
+projects/*/snapshots/
+projects/*/splits/
+projects/*/dataset-cards/
+projects/*/eval-packs/
 
 # Model weights (never commit)
 *.safetensors

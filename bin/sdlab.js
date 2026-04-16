@@ -20,6 +20,8 @@ const COMMANDS = {
   'painterly':           '../scripts/painterly.js',
   'painterly:test':      '../scripts/painterly-test.js',
   'migrate':             '../scripts/migrate-records.js',
+  'snapshot':            '../scripts/snapshot.js',
+  'eligibility':         '../scripts/eligibility.js',
 };
 
 // Two-word commands under "project" namespace
@@ -46,6 +48,13 @@ function printHelp() {
   console.log('  bind                 Bind approved records to constitution rules');
   console.log('  painterly            Post-processing painterly style pass');
   console.log('  painterly:test       Test denoise levels on reference images');
+  console.log('');
+  console.log('Dataset:');
+  console.log('  snapshot create      Create a frozen dataset snapshot');
+  console.log('  snapshot list        List all snapshots');
+  console.log('  snapshot show <id>   Show snapshot details');
+  console.log('  snapshot diff <a> <b> Compare two snapshots');
+  console.log('  eligibility audit    Audit record training eligibility');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
