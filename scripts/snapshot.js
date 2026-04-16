@@ -32,39 +32,43 @@ export async function run(argv = process.argv.slice(2)) {
     const profileIdx = args.indexOf('--profile');
     const profileId = profileIdx >= 0 ? args[profileIdx + 1] : null;
     const profile = loadSelectionProfile(projectRoot, profileId);
+    const dryRun = argv.includes('--dry-run');
 
     console.log(`\x1b[1msdlab snapshot create\x1b[0m — ${projectName}`);
     console.log(`  Profile: ${profileId || 'training-default (built-in)'}`);
+    if (dryRun) console.log('  Mode: DRY RUN (no files written)');
     console.log('');
 
-    const result = await createSnapshot(projectRoot, profile);
+    const result = await createSnapshot(projectRoot, profile, { dryRun });
 
     console.log(`  \x1b[32m✓\x1b[0m Snapshot: ${result.snapshotId}`);
     console.log(`  Included: ${result.included}`);
     console.log(`  Excluded: ${result.excluded}`);
 
-    // Read and display summary
-    const summary = JSON.parse(
-      await readFile(join(projectRoot, 'snapshots', result.snapshotId, 'summary.json'), 'utf-8')
-    );
-    console.log('\n  Lane distribution:');
-    for (const [lane, count] of Object.entries(summary.lane_distribution).sort((a, b) => b[1] - a[1])) {
-      console.log(`    ${lane}: ${count}`);
-    }
-    console.log('\n  Faction distribution:');
-    for (const [f, c] of Object.entries(summary.faction_distribution).sort((a, b) => b[1] - a[1])) {
-      console.log(`    ${f}: ${c}`);
-    }
+    if (!dryRun) {
+      // Read and display summary
+      const summary = JSON.parse(
+        await readFile(join(projectRoot, 'snapshots', result.snapshotId, 'summary.json'), 'utf-8')
+      );
+      console.log('\n  Lane distribution:');
+      for (const [lane, count] of Object.entries(summary.lane_distribution).sort((a, b) => b[1] - a[1])) {
+        console.log(`    ${lane}: ${count}`);
+      }
+      console.log('\n  Faction distribution:');
+      for (const [f, c] of Object.entries(summary.faction_distribution).sort((a, b) => b[1] - a[1])) {
+        console.log(`    ${f}: ${c}`);
+      }
 
-    // Read and categorize exclusions
-    const excludedRaw = await readFile(
-      join(projectRoot, 'snapshots', result.snapshotId, 'excluded.jsonl'), 'utf-8'
-    );
-    const excluded = excludedRaw.trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
-    const categories = categorizeExclusions(excluded);
-    console.log('\n  Exclusion reasons:');
-    for (const [cat, count] of Object.entries(categories)) {
-      if (count > 0) console.log(`    ${cat}: ${count}`);
+      // Read and categorize exclusions
+      const excludedRaw = await readFile(
+        join(projectRoot, 'snapshots', result.snapshotId, 'excluded.jsonl'), 'utf-8'
+      );
+      const excluded = excludedRaw.trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
+      const categories = categorizeExclusions(excluded);
+      console.log('\n  Exclusion reasons:');
+      for (const [cat, count] of Object.entries(categories)) {
+        if (count > 0) console.log(`    ${cat}: ${count}`);
+      }
     }
 
   } else if (subcommand === 'list') {

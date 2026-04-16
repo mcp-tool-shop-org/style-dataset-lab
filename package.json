@@ -7,14 +7,13 @@
     "sdlab": "./bin/sdlab.js"
   },
   "scripts": {
+    "verify": "node bin/sdlab.js --help && node bin/sdlab.js project doctor --project star-freight",
     "generate": "node scripts/generate.js",
     "curate": "node scripts/curate.js",
     "compare": "node scripts/compare.js",
     "canon-bind": "node scripts/canon-bind.js",
     "painterly": "node scripts/painterly.js",
-    "generate:identity": "node scripts/generate-identity.js",
-    "export": "echo 'Usage: repo-dataset visual generate ./projects/<project> --format trl'",
-    "inspect": "echo 'Usage: repo-dataset visual inspect ./projects/<project>'"
+    "generate:identity": "node scripts/generate-identity.js"
   },
   "files": [
     "bin/",

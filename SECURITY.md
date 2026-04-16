@@ -4,7 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| 0.x     | Yes       |
+| 2.x     | Yes       |
+| 1.x     | No        |
+| 0.x     | No        |
 
 ## Threat Model
 

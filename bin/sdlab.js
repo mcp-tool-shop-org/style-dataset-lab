@@ -7,6 +7,9 @@
  * Each script exports run(argv) and is lazy-loaded on demand.
  */
 
+import { enableDebug, handleCliError, inputError } from '../lib/errors.js';
+import { setLogLevel } from '../lib/log.js';
+
 const COMMANDS = {
   'init':                '../scripts/init.js',
   'generate':            '../scripts/generate.js',
@@ -99,17 +102,26 @@ function printHelp() {
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
   console.log('  --game <name>        Deprecated alias for --project');
+  console.log('  --debug              Show stack traces on error');
+  console.log('  --verbose            Verbose output');
+  console.log('  --quiet              Suppress non-essential output');
+  console.log('  --dry-run            Preview changes without writing (where supported)');
   console.log('  --help               Show this help');
   console.log('');
   console.log('Examples:');
   console.log('  sdlab init my-project --domain character-design');
-  console.log('  sdlab generate inputs/prompts/wave1.json --project star-freight');
-  console.log('  sdlab bind --stats --project star-freight');
-  console.log('  sdlab project doctor --project star-freight');
+  console.log('  sdlab snapshot create --project star-freight');
+  console.log('  sdlab split build --dry-run --project star-freight');
+  console.log('  sdlab training-package build --debug --project star-freight');
 }
 
 async function main() {
   const args = process.argv.slice(2);
+
+  // Global flags
+  if (args.includes('--debug')) enableDebug();
+  if (args.includes('--verbose')) setLogLevel('verbose');
+  if (args.includes('--quiet')) setLogLevel('quiet');
 
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     printHelp();
@@ -123,30 +135,18 @@ async function main() {
   if (command === 'project' && args[1] && PROJECT_COMMANDS[args[1]]) {
     commandArgs = args.slice(2);
     const modulePath = PROJECT_COMMANDS[args[1]];
-    try {
-      const mod = await import(modulePath);
-      await mod.run(commandArgs);
-    } catch (err) {
-      console.error(`\x1b[31mError:\x1b[0m ${err.message}`);
-      process.exit(1);
-    }
+    const mod = await import(modulePath);
+    await mod.run(commandArgs);
     return;
   }
 
   const modulePath = COMMANDS[command];
   if (!modulePath) {
-    console.error(`Unknown command: ${command}`);
-    console.error(`Run "sdlab --help" for available commands.`);
-    process.exit(1);
+    throw inputError('INPUT_UNKNOWN_COMMAND', `Unknown command: ${command}`, 'Run "sdlab --help" for available commands.');
   }
 
-  try {
-    const mod = await import(modulePath);
-    await mod.run(commandArgs);
-  } catch (err) {
-    console.error(`\x1b[31mError:\x1b[0m ${err.message}`);
-    process.exit(1);
-  }
+  const mod = await import(modulePath);
+  await mod.run(commandArgs);
 }
 
-main();
+main().catch(handleCliError);

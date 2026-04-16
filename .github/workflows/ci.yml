@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - 'bin/**'
+      - 'lib/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci --ignore-scripts || npm install --ignore-scripts
+      - name: Smoke test — help
+        run: node bin/sdlab.js --help
+      - name: Smoke test — doctor
+        run: node bin/sdlab.js project doctor --project star-freight
+      - name: Smoke test — snapshot dry-run
+        run: node bin/sdlab.js snapshot create --dry-run --project star-freight
+      - name: Smoke test — eligibility
+        run: node bin/sdlab.js eligibility audit --project star-freight
+      - name: Smoke test — training profiles
+        run: node bin/sdlab.js training-profile list --project star-freight
+      - name: Verify script
+        run: npm run verify
+      - name: Audit dependencies
+        run: npm audit --omit=dev || true

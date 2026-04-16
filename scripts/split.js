@@ -42,6 +42,7 @@ export async function run(argv = process.argv.slice(2)) {
     const profileIdx = args.indexOf('--profile');
     const profileId = profileIdx >= 0 ? args[profileIdx + 1] : null;
     const profile = loadSplitProfile(projectRoot, profileId);
+    const dryRun = argv.includes('--dry-run');
 
     console.log(`\x1b[1msdlab split build\x1b[0m — ${projectName}`);
     console.log(`  Snapshot: ${snapshotId}`);
@@ -49,9 +50,10 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`  Strategy: ${profile.strategy}`);
     console.log(`  Ratios:   ${profile.train_ratio}/${profile.val_ratio}/${profile.test_ratio}`);
     console.log(`  Seed:     ${profile.seed}`);
+    if (dryRun) console.log('  Mode:     DRY RUN (no files written)');
     console.log('');
 
-    const result = await createSplit(projectRoot, snapshotId, profile);
+    const result = await createSplit(projectRoot, snapshotId, profile, { dryRun });
 
     console.log(`  \x1b[32m✓\x1b[0m Split: ${result.splitId}`);
     console.log(`  Train: ${result.train}`);
