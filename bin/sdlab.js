@@ -22,6 +22,7 @@ const COMMANDS = {
   'migrate':             '../scripts/migrate-records.js',
   'snapshot':            '../scripts/snapshot.js',
   'eligibility':         '../scripts/eligibility.js',
+  'split':               '../scripts/split.js',
 };
 
 // Two-word commands under "project" namespace
@@ -55,6 +56,10 @@ function printHelp() {
   console.log('  snapshot show <id>   Show snapshot details');
   console.log('  snapshot diff <a> <b> Compare two snapshots');
   console.log('  eligibility audit    Audit record training eligibility');
+  console.log('  split build          Build train/val/test split from snapshot');
+  console.log('  split list           List all splits');
+  console.log('  split show <id>      Show split details');
+  console.log('  split audit <id>     Audit split for leakage and balance');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
