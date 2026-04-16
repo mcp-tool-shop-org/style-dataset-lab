@@ -25,6 +25,7 @@ const COMMANDS = {
   'split':               '../scripts/split.js',
   'card':                '../scripts/card.js',
   'export':              '../scripts/export.js',
+  'eval-pack':           '../scripts/eval-pack.js',
 };
 
 // Two-word commands under "project" namespace
@@ -65,6 +66,9 @@ function printHelp() {
   console.log('  card generate        Generate dataset card (markdown + JSON)');
   console.log('  export build         Build self-contained export package');
   console.log('  export list          List all export packages');
+  console.log('  eval-pack build      Build canon-aware eval pack');
+  console.log('  eval-pack list       List eval packs');
+  console.log('  eval-pack show <id>  Show eval pack details');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
