@@ -1,0 +1,60 @@
+{
+  "workflow_id": "variant-pack",
+  "label": "Vehicle Variant Pack",
+  "description": "Generate controlled design variants for a named vehicle subject.",
+  "lane_id": "exterior",
+  "subject_mode": "required",
+  "output_mode": "variant_pack",
+  "output_count": 4,
+  "required_reference_roles": ["anchor"],
+  "preferred_reference_tags": ["exterior", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "vehicle design variant concept art",
+      "consistent form language",
+      "controlled variation"
+    ],
+    "structure": "style_prefix, subject_identity, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "vehicle identity",
+      "form language continuity",
+      "material palette"
+    ],
+    "optional_blocks": [
+      "color scheme note",
+      "loadout variant note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "silhouette drift from reference",
+      "wrong faction materials",
+      "scale inconsistency"
+    ],
+    "lane_specific_avoid": [
+      "interior focus"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "silhouette",
+    "material_language",
+    "palette",
+    "faction_read",
+    "scale_logic"
+  ],
+  "drift_guards": [
+    "preserve core silhouette from reference",
+    "preserve faction material language",
+    "preserve scale relationship"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "increment"
+  }
+}

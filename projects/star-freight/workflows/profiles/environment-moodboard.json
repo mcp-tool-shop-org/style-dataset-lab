@@ -1,0 +1,67 @@
+{
+  "workflow_id": "environment-moodboard",
+  "label": "Environment Moodboard",
+  "description": "Produce multiple environment candidates exploring palette, lighting, and spatial mood.",
+  "lane_id": "environment",
+  "subject_mode": "optional",
+  "output_mode": "moodboard",
+  "output_count": 6,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["environment", "approved", "station", "interior"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "environment concept art moodboard",
+      "painterly atmospheric rendering",
+      "strong spatial depth and mood"
+    ],
+    "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "spatial composition",
+      "palette adherence",
+      "material language",
+      "lighting mood"
+    ],
+    "optional_blocks": [
+      "time of day note",
+      "weather note",
+      "faction architecture note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "random architecture style shifts",
+      "off-era props",
+      "wrong lighting mood",
+      "material inconsistency",
+      "clean sterile surfaces"
+    ],
+    "lane_specific_avoid": [
+      "character focus competing with environment",
+      "overly detailed foreground clutter"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "palette",
+    "material_language",
+    "lighting",
+    "scale_logic",
+    "era_logic"
+  ],
+  "drift_guards": [
+    "palette must stay within project muted/dusty range",
+    "architecture style must match era logic",
+    "no modern or off-era props",
+    "lighting mood must stay consistent within the set",
+    "material surfaces must show appropriate wear and age"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "random"
+  }
+}

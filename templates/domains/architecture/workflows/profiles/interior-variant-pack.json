@@ -1,0 +1,60 @@
+{
+  "workflow_id": "interior-variant-pack",
+  "label": "Interior Variant Pack",
+  "description": "Generate interior space variations exploring layout, mood, and materials.",
+  "lane_id": "interior",
+  "subject_mode": "optional",
+  "output_mode": "variant_pack",
+  "output_count": 4,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["interior", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "interior space concept art",
+      "atmospheric spatial rendering",
+      "functional layout emphasis"
+    ],
+    "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "spatial function",
+      "material palette",
+      "lighting mood"
+    ],
+    "optional_blocks": [
+      "furniture note",
+      "activity note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "empty featureless rooms",
+      "modern furniture in period setting",
+      "over-cluttered composition"
+    ],
+    "lane_specific_avoid": [
+      "exterior views dominating"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "material_language",
+    "lighting",
+    "composition",
+    "era_logic",
+    "surface_wear"
+  ],
+  "drift_guards": [
+    "materials must match architectural era",
+    "lighting must serve spatial mood",
+    "wear must read authentically"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "random"
+  }
+}

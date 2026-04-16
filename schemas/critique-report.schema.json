@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Critique Report",
+  "description": "Structured critique of a run's candidates against the original brief.",
+  "type": "object",
+  "required": [
+    "run_id",
+    "project_id",
+    "brief_id",
+    "workflow_id",
+    "created_at",
+    "active_dimensions",
+    "candidates",
+    "recommended_action"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "project_id": { "type": "string" },
+    "brief_id": { "type": "string" },
+    "workflow_id": { "type": "string" },
+    "subject_id": { "type": "string" },
+    "created_at": { "type": "string" },
+    "active_dimensions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "filename",
+          "overall_fit",
+          "strengths",
+          "drift_issues",
+          "preserve_next_pass",
+          "correct_next_pass"
+        ],
+        "properties": {
+          "filename": { "type": "string" },
+          "seed": { "type": "integer" },
+          "overall_fit": {
+            "type": "string",
+            "enum": ["strong", "usable", "off-model"]
+          },
+          "strengths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "drift_issues": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "preserve_next_pass": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "correct_next_pass": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "recommended_action": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["accept_one", "refine_from_one", "rerun_broader", "discard_run"]
+        },
+        "preferred_candidate": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}

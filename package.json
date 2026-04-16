@@ -1,7 +1,7 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "2.3.0",
-  "description": "Visual canon and dataset production pipeline — snapshots, splits, versioned exports, eval packs, and canon-bound curation for any image production domain",
+  "version": "3.0.0",
+  "description": "Canon-aligned dataset production and generation workbench — define visual rules, build versioned training data, compile production briefs, run local workflows, batch-produce, select winners, and re-ingest into your corpus",
   "type": "module",
   "bin": {
     "sdlab": "./bin/sdlab.js"
@@ -38,7 +38,10 @@
     "style-guide",
     "lora",
     "multimodal",
-    "comfyui"
+    "comfyui",
+    "generation-workflow",
+    "batch-production",
+    "reintegration"
   ],
   "homepage": "https://mcp-tool-shop-org.github.io/style-dataset-lab/",
   "repository": {

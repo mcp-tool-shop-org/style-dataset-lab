@@ -50,6 +50,12 @@ export async function run(argv = process.argv.slice(2)) {
       console.log('    3. Then eligible for future snapshots');
     }
 
+  } else if (subcommand === 'selected') {
+    // Delegate to reingest-selected.js
+    const { run: runSelected } = await import('./reingest-selected.js');
+    await runSelected(args);
+    return;
+
   } else if (subcommand === 'audit') {
     console.log(`\x1b[1msdlab reingest audit\x1b[0m — ${projectName}\n`);
 
@@ -77,7 +83,7 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: generated, audit`);
+    throw new Error(`Unknown subcommand: ${subcommand}. Use: generated, selected, audit`);
   }
 }
 

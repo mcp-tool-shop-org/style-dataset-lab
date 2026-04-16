@@ -1,0 +1,61 @@
+{
+  "workflow_id": "environment-moodboard",
+  "label": "Environment Moodboard",
+  "description": "Explore environment palette, lighting, and spatial mood.",
+  "lane_id": "environment",
+  "subject_mode": "optional",
+  "output_mode": "moodboard",
+  "output_count": 6,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["environment", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "environment concept art moodboard",
+      "painterly atmospheric rendering",
+      "strong spatial depth"
+    ],
+    "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "spatial composition",
+      "palette adherence",
+      "lighting mood"
+    ],
+    "optional_blocks": [
+      "time of day note",
+      "weather note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "random architecture style shifts",
+      "off-era props",
+      "wrong lighting mood",
+      "clean sterile surfaces"
+    ],
+    "lane_specific_avoid": [
+      "character focus competing with environment"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "palette",
+    "material_language",
+    "lighting",
+    "scale_logic",
+    "era_logic"
+  ],
+  "drift_guards": [
+    "palette must stay within project range",
+    "architecture style must match era logic",
+    "no modern or off-era props"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "random"
+  }
+}

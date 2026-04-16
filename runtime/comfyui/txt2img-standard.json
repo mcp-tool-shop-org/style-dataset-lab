@@ -1,0 +1,21 @@
+{
+  "template_id": "txt2img-standard",
+  "label": "Text-to-Image Standard",
+  "description": "Standard txt2img pipeline: checkpoint → LoRA chain → KSampler → VAEDecode → SaveImage.",
+  "adapter_target": "comfyui",
+  "compatible_modes": ["portrait_set", "expression_sheet", "variant_pack", "moodboard", "silhouette_sheet", "turnaround"],
+  "placeholders": {
+    "PROMPT": "Positive prompt text",
+    "NEGATIVE_PROMPT": "Negative prompt text",
+    "CHECKPOINT": "Checkpoint filename",
+    "WIDTH": "Image width",
+    "HEIGHT": "Image height",
+    "STEPS": "Sampling steps",
+    "CFG": "Classifier-free guidance scale",
+    "SAMPLER": "Sampler name",
+    "SCHEDULER": "Scheduler name",
+    "SEED": "Random seed",
+    "LORAS": "Array of {name, weight, clip_weight?} objects"
+  },
+  "notes": "This template is built programmatically — the JSON below is a reference. comfyui-workflows.js uses buildWorkflowGraph() to construct the graph dynamically with LoRA chain support."
+}

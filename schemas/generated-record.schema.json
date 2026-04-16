@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated Record",
+  "description": "A re-ingested generated candidate record with generation provenance linking back to the run/batch/brief that produced it.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "project_id",
+    "image_path",
+    "generation_provenance"
+  ],
+  "properties": {
+    "record_id": { "type": "string" },
+    "project_id": { "type": "string" },
+    "image_path": { "type": "string" },
+
+    "generation_provenance": {
+      "type": "object",
+      "required": [
+        "source_type",
+        "source_id",
+        "brief_id",
+        "workflow_id"
+      ],
+      "properties": {
+        "source_type": {
+          "type": "string",
+          "enum": ["run", "batch"]
+        },
+        "source_id": { "type": "string" },
+        "run_id": { "type": "string" },
+        "batch_id": { "type": "string" },
+        "brief_id": { "type": "string" },
+        "parent_brief_id": { "type": "string" },
+        "workflow_id": { "type": "string" },
+        "subject_id": { "type": "string" },
+        "selected_filename": { "type": "string" },
+        "seed": { "type": "integer" },
+        "adapter_target": { "type": "string" },
+        "config_fingerprint": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "workflow_id": "vehicle-silhouette-pack",
+  "label": "Vehicle Silhouette Pack",
+  "description": "Explore vehicle silhouette variations and form language.",
+  "lane_id": "exterior",
+  "subject_mode": "optional",
+  "output_mode": "silhouette_sheet",
+  "output_count": 6,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["exterior", "silhouette"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "vehicle silhouette concept art",
+      "strong form language",
+      "high contrast shape exploration"
+    ],
+    "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "vehicle form language",
+      "silhouette variety",
+      "scale read"
+    ],
+    "optional_blocks": [
+      "faction note",
+      "role note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "uniform silhouettes",
+      "over-detailed rendering",
+      "unrealistic proportions"
+    ],
+    "lane_specific_avoid": [
+      "interior focus",
+      "background complexity"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "silhouette",
+    "scale_logic",
+    "faction_read",
+    "material_language"
+  ],
+  "drift_guards": [
+    "silhouettes must be readable at thumbnail scale",
+    "form language must stay within project vocabulary"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "random"
+  }
+}

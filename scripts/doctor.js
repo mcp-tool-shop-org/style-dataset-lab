@@ -41,6 +41,13 @@ const REQUIRED_DIRS = [
   'training/packages',
   'training/eval-runs',
   'training/implementations',
+  'workflows/profiles',
+  'workflows/batch-modes',
+  'briefs',
+  'runs',
+  'batches',
+  'selections',
+  'inbox/generated',
 ];
 
 function pass(msg) { console.log(`  \x1b[32m✓\x1b[0m ${msg}`); }
@@ -284,7 +291,168 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
-  // ── 9. Records sanity check ──
+  // ── 9. Workflow profile validation ──
+  const workflowDir = join(projectDir, 'workflows', 'profiles');
+  if (existsSync(workflowDir)) {
+    console.log('');
+    const wfFiles = readdirSync(workflowDir).filter(f => f.endsWith('.json'));
+    if (wfFiles.length > 0) {
+      const VALID_SUBJECT_MODES = ['required', 'optional', 'forbidden'];
+      const VALID_OUTPUT_MODES = ['portrait_set', 'expression_sheet', 'variant_pack', 'moodboard', 'silhouette_sheet', 'turnaround'];
+      const laneIds = new Set((lanes?.lanes || []).map(l => l.id));
+
+      let wfErrors = 0;
+      for (const file of wfFiles) {
+        const { data, error } = tryParseJson(join(workflowDir, file));
+        if (error) { fail(`workflows/profiles/${file} — invalid JSON: ${error}`); wfErrors++; continue; }
+
+        const missing = ['workflow_id', 'label', 'lane_id', 'output_mode', 'output_count',
+          'prompt_strategy', 'negative_strategy', 'canon_focus', 'drift_guards', 'runtime_defaults']
+          .filter(f => data[f] === undefined || data[f] === null);
+        if (missing.length > 0) {
+          fail(`workflows/profiles/${file} — missing fields: ${missing.join(', ')}`);
+          wfErrors++;
+          continue;
+        }
+
+        if (data.lane_id && laneIds.size > 0 && !laneIds.has(data.lane_id)) {
+          fail(`workflows/profiles/${file} — lane_id "${data.lane_id}" not found in lanes.json`);
+          wfErrors++;
+        }
+
+        if (data.subject_mode && !VALID_SUBJECT_MODES.includes(data.subject_mode)) {
+          fail(`workflows/profiles/${file} — invalid subject_mode "${data.subject_mode}"`);
+          wfErrors++;
+        }
+
+        if (!VALID_OUTPUT_MODES.includes(data.output_mode)) {
+          fail(`workflows/profiles/${file} — invalid output_mode "${data.output_mode}"`);
+          wfErrors++;
+        }
+
+        const ps = data.prompt_strategy;
+        if (!ps || !Array.isArray(ps.style_prefix) || !ps.structure || !Array.isArray(ps.must_include)) {
+          fail(`workflows/profiles/${file} — prompt_strategy needs style_prefix[], structure, must_include[]`);
+          wfErrors++;
+        }
+
+        const ns = data.negative_strategy;
+        if (!ns || !Array.isArray(ns.must_avoid)) {
+          fail(`workflows/profiles/${file} — negative_strategy needs must_avoid[]`);
+          wfErrors++;
+        }
+
+        if (!data.runtime_defaults?.adapter_target) {
+          fail(`workflows/profiles/${file} — runtime_defaults needs adapter_target`);
+          wfErrors++;
+        }
+      }
+
+      if (wfErrors === 0) {
+        pass(`${wfFiles.length} workflow profiles — all valid`);
+        passes++;
+      } else {
+        failures += wfErrors;
+      }
+    } else {
+      pass('workflows/profiles/ — empty (no workflows yet)');
+      passes++;
+    }
+  }
+
+  // ── 10. Batch mode validation ──
+  const batchModesDir = join(projectDir, 'workflows', 'batch-modes');
+  if (existsSync(batchModesDir)) {
+    console.log('');
+    const bmFiles = readdirSync(batchModesDir).filter(f => f.endsWith('.json'));
+    if (bmFiles.length > 0) {
+      const VALID_BATCH_TYPES = ['expression_sheet', 'environment_board', 'silhouette_pack', 'continuity_variants'];
+      const VALID_SUBJECT_MODES_BM = ['required', 'optional', 'forbidden'];
+      const VALID_LAYOUTS = ['grid', 'moodboard', 'strip', 'freeform'];
+      const wfFiles = existsSync(join(projectDir, 'workflows', 'profiles'))
+        ? readdirSync(join(projectDir, 'workflows', 'profiles')).filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''))
+        : [];
+
+      let bmErrors = 0;
+      for (const file of bmFiles) {
+        const { data, error } = tryParseJson(join(batchModesDir, file));
+        if (error) { fail(`workflows/batch-modes/${file} — invalid JSON: ${error}`); bmErrors++; continue; }
+
+        if (!data.mode_id) { fail(`workflows/batch-modes/${file} — missing mode_id`); bmErrors++; }
+        if (!data.batch_type || !VALID_BATCH_TYPES.includes(data.batch_type)) {
+          fail(`workflows/batch-modes/${file} — invalid batch_type "${data.batch_type}"`);
+          bmErrors++;
+        }
+        if (data.subject_mode && !VALID_SUBJECT_MODES_BM.includes(data.subject_mode)) {
+          fail(`workflows/batch-modes/${file} — invalid subject_mode "${data.subject_mode}"`);
+          bmErrors++;
+        }
+        if (data.base_workflow_id && wfFiles.length > 0 && !wfFiles.includes(data.base_workflow_id)) {
+          fail(`workflows/batch-modes/${file} — base_workflow_id "${data.base_workflow_id}" not found in profiles`);
+          bmErrors++;
+        }
+        if (!Array.isArray(data.variant_plan) || data.variant_plan.length === 0) {
+          fail(`workflows/batch-modes/${file} — variant_plan must be non-empty array`);
+          bmErrors++;
+        } else {
+          const slotIds = data.variant_plan.map(s => s.slot_id);
+          const dupes = slotIds.filter((id, i) => slotIds.indexOf(id) !== i);
+          if (dupes.length > 0) {
+            fail(`workflows/batch-modes/${file} — duplicate slot_ids: ${[...new Set(dupes)].join(', ')}`);
+            bmErrors++;
+          }
+        }
+        if (data.assembly?.layout && !VALID_LAYOUTS.includes(data.assembly.layout)) {
+          fail(`workflows/batch-modes/${file} — invalid assembly.layout "${data.assembly.layout}"`);
+          bmErrors++;
+        }
+      }
+
+      if (bmErrors === 0) {
+        pass(`${bmFiles.length} batch modes — all valid`);
+        passes++;
+      } else {
+        failures += bmErrors;
+      }
+    } else {
+      pass('workflows/batch-modes/ — empty (no batch modes yet)');
+      passes++;
+    }
+  }
+
+  // ── 11. Runtime templates check ──
+  {
+    console.log('');
+    const runtimeDir = join(REPO_ROOT, 'runtime', 'comfyui');
+    if (existsSync(runtimeDir)) {
+      const templateFiles = readdirSync(runtimeDir).filter(f => f.endsWith('.json'));
+      if (templateFiles.length > 0) {
+        let templateErrors = 0;
+        for (const file of templateFiles) {
+          const { data, error } = tryParseJson(join(runtimeDir, file));
+          if (error) { fail(`runtime/comfyui/${file}: invalid JSON — ${error}`); templateErrors++; continue; }
+          if (!data.template_id) { fail(`runtime/comfyui/${file}: missing template_id`); templateErrors++; }
+          if (!data.compatible_modes || !Array.isArray(data.compatible_modes)) {
+            fail(`runtime/comfyui/${file}: missing compatible_modes[]`); templateErrors++;
+          }
+        }
+        if (templateErrors === 0) {
+          pass(`${templateFiles.length} runtime templates — all valid`);
+          passes++;
+        } else {
+          failures += templateErrors;
+        }
+      } else {
+        warn('runtime/comfyui/ — no templates found');
+        warnings++;
+      }
+    } else {
+      warn('runtime/comfyui/ — directory not found');
+      warnings++;
+    }
+  }
+
+  // ── 12. Records sanity check ──
   const recordsDir = join(projectDir, 'records');
   if (existsSync(recordsDir)) {
     console.log('');

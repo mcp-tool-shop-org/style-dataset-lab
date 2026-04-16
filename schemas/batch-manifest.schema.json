@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Batch Manifest",
+  "description": "A grouped production artifact linking batch mode → briefs → runs → sheets.",
+  "type": "object",
+  "required": [
+    "batch_id",
+    "project_id",
+    "mode_id",
+    "created_at",
+    "run_ids",
+    "brief_ids",
+    "sheet_paths"
+  ],
+  "properties": {
+    "batch_id": { "type": "string" },
+    "project_id": { "type": "string" },
+    "mode_id": { "type": "string" },
+    "subject_id": { "type": "string" },
+    "theme": { "type": "string" },
+    "created_at": { "type": "string" },
+    "brief_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "run_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot_id", "label", "brief_id", "run_id"],
+        "properties": {
+          "slot_id": { "type": "string" },
+          "label": { "type": "string" },
+          "brief_id": { "type": "string" },
+          "run_id": { "type": "string" },
+          "selected_output": { "type": "string" }
+        }
+      }
+    },
+    "sheet_paths": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "summary": { "type": "object" }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Refined Brief",
+  "description": "A delta-layered brief derived from critique of a previous run.",
+  "type": "object",
+  "required": [
+    "brief_id",
+    "parent_brief_id",
+    "source_run_id",
+    "project_id",
+    "workflow_id",
+    "lane_id",
+    "compiled_at",
+    "prompt",
+    "negative_prompt",
+    "refine_delta",
+    "runtime_plan",
+    "expected_outputs"
+  ],
+  "properties": {
+    "brief_id": { "type": "string" },
+    "parent_brief_id": { "type": "string" },
+    "source_run_id": { "type": "string" },
+    "source_candidate": { "type": "string" },
+    "project_id": { "type": "string" },
+    "workflow_id": { "type": "string" },
+    "lane_id": { "type": "string" },
+    "subject_id": { "type": "string" },
+    "compiled_at": { "type": "string" },
+    "config_fingerprint": { "type": "string" },
+    "prompt": { "type": "string" },
+    "negative_prompt": { "type": "string" },
+    "refine_delta": {
+      "type": "object",
+      "required": ["preserve", "push", "suppress"],
+      "properties": {
+        "preserve": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "push": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "suppress": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "canon_constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "drift_warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "runtime_plan": { "type": "object" },
+    "expected_outputs": { "type": "object" }
+  }
+}

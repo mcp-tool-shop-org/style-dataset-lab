@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-Style Dataset Lab turns approved visual work into versioned, review-backed datasets, splits, export packages, and eval packs. Teams define what they are making (visual canon), curate outputs against project-specific rubrics, bind accepted work to constitution rules, and produce reproducible dataset packages.
+Style Dataset Lab turns approved visual work into versioned, review-backed datasets, splits, export packages, and eval packs — then puts trained models to work in a full production workflow and feeds the best outputs back into the corpus. Teams define what they are making (visual canon), curate outputs against project-specific rubrics, bind accepted work to constitution rules, produce reproducible dataset packages, and run a closed production loop through brief compilation, generation, selection, and re-ingest.
 
 The pipeline ships as an npm package (`@mcptoolshop/style-dataset-lab`) with the `sdlab` CLI, shared library modules, and domain-specific starter templates.
 
@@ -16,6 +16,10 @@ canon → generate → curate → bind → snapshot → split → export → eva
   |        |          |        |        |         |        |       |
 rules   ComfyUI   judgment  rules   frozen    subject  package  verify
                                     selection isolation
+         ↓
+    brief → run → critique → batch → select → re-ingest
+              ↑                                    |
+              └────────────────────────────────────┘
 ```
 
 Each stage writes structured JSON records to `projects/<name>/records/`. All commands accept `--project <name>` (defaults to `star-freight`). Records accumulate provenance, judgment, and canon binding over time. Nothing is lost -- a curated record still carries its original generation provenance.
@@ -77,6 +81,7 @@ The repo includes `projects/star-freight/` as a complete working example -- a gr
 
 - [Getting Started](./getting-started/) -- install, scaffold a project, first generation
 - [Dataset Workflow](./dataset-workflow/) -- end-to-end: snapshot, split, export, eval
+- [Production Loop](./production-loop/) -- brief, run, critique, batch, select, re-ingest
 - [Reference](./reference/) -- all CLI commands with flags and arguments
 - [Architecture](./architecture/) -- pipeline flow, record schemas, config files
 - [Security](./security/) -- threat model and trust boundaries

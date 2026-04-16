@@ -1,0 +1,52 @@
+{
+  "mode_id": "continuity-variants",
+  "label": "Continuity Variants",
+  "description": "Same named subject — controlled variations in pose, camera, and mood. Identity must stay stable.",
+  "base_workflow_id": "character-portrait-set",
+  "batch_type": "continuity_variants",
+  "subject_mode": "required",
+  "variant_plan": [
+    {
+      "slot_id": "front_neutral",
+      "label": "Front 3/4 Neutral",
+      "prompt_additions": ["front three-quarter view", "neutral expression", "standard portrait framing"],
+      "negative_additions": ["profile", "rear view"]
+    },
+    {
+      "slot_id": "closer_crop",
+      "label": "Closer Crop",
+      "prompt_additions": ["close-up crop", "face and upper chest focus", "tighter framing"],
+      "negative_additions": ["full body", "wide shot"]
+    },
+    {
+      "slot_id": "strong_light",
+      "label": "Strong Light Contrast",
+      "prompt_additions": ["dramatic directional light", "strong light-dark contrast", "rim lighting"],
+      "negative_additions": ["flat even lighting"]
+    },
+    {
+      "slot_id": "slight_pose",
+      "label": "Slight Pose Shift",
+      "prompt_additions": ["slight turned pose", "subtle head tilt", "asymmetric body angle"],
+      "negative_additions": ["stiff symmetrical pose"]
+    },
+    {
+      "slot_id": "severe_expression",
+      "label": "More Severe",
+      "prompt_additions": ["severe intense expression", "hardened gaze", "authority presence"],
+      "negative_additions": ["soft", "gentle", "relaxed"]
+    },
+    {
+      "slot_id": "quiet_introspective",
+      "label": "Quiet Introspective",
+      "prompt_additions": ["quiet introspective mood", "soft internal gaze", "thoughtful stillness"],
+      "negative_additions": ["aggressive", "active", "intense"]
+    }
+  ],
+  "assembly": {
+    "layout": "grid",
+    "columns": 3,
+    "annotate_slots": true,
+    "show_seed": false
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "workflow_id": "environment-moodboard",
+  "label": "Environment Moodboard",
+  "description": "Explore architectural mood, palette, and spatial atmosphere.",
+  "lane_id": "exterior",
+  "subject_mode": "optional",
+  "output_mode": "moodboard",
+  "output_count": 6,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["exterior", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "architectural concept art moodboard",
+      "strong spatial atmosphere",
+      "painterly rendering"
+    ],
+    "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "spatial composition",
+      "material palette",
+      "lighting atmosphere"
+    ],
+    "optional_blocks": [
+      "time of day note",
+      "weather note",
+      "era note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "anachronistic elements",
+      "wrong architectural era",
+      "clean sterile surfaces",
+      "modern materials in historical context"
+    ],
+    "lane_specific_avoid": [
+      "character focus"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "palette",
+    "material_language",
+    "lighting",
+    "scale_logic",
+    "era_logic"
+  ],
+  "drift_guards": [
+    "architectural era must remain consistent",
+    "material palette must match project canon",
+    "scale must read correctly"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "random"
+  }
+}

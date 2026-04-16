@@ -1,0 +1,52 @@
+{
+  "mode_id": "silhouette-pack",
+  "label": "Silhouette Pack",
+  "description": "Shape-first exploration — strong value for characters, ships, vehicles, armor, creature reads.",
+  "base_workflow_id": "character-portrait-set",
+  "batch_type": "silhouette_pack",
+  "subject_mode": "optional",
+  "variant_plan": [
+    {
+      "slot_id": "broad_heavy",
+      "label": "Broad Heavy",
+      "prompt_additions": ["broad heavy build silhouette", "imposing wide stance", "strong mass distribution"],
+      "negative_additions": ["thin", "narrow", "delicate"]
+    },
+    {
+      "slot_id": "narrow_agile",
+      "label": "Narrow Agile",
+      "prompt_additions": ["narrow agile build silhouette", "lean dynamic pose", "light fast read"],
+      "negative_additions": ["bulky", "heavy", "wide"]
+    },
+    {
+      "slot_id": "asymmetrical",
+      "label": "Asymmetrical",
+      "prompt_additions": ["asymmetrical silhouette", "deliberate imbalance", "one-sided detail weight"],
+      "negative_additions": ["perfectly symmetrical", "mirrored"]
+    },
+    {
+      "slot_id": "formal_iconic",
+      "label": "Formal Iconic",
+      "prompt_additions": ["formal iconic pose", "clean readable outline", "poster-ready silhouette"],
+      "negative_additions": ["casual", "loose", "relaxed"]
+    },
+    {
+      "slot_id": "damaged_rough",
+      "label": "Damaged / Rough",
+      "prompt_additions": ["battle-worn damaged appearance", "rough torn edges", "visible wear and damage"],
+      "negative_additions": ["pristine", "clean", "new"]
+    },
+    {
+      "slot_id": "elite_polished",
+      "label": "Elite Polished",
+      "prompt_additions": ["elite polished appearance", "refined high-status materials", "premium surface finish"],
+      "negative_additions": ["rough", "damaged", "worn"]
+    }
+  ],
+  "assembly": {
+    "layout": "grid",
+    "columns": 3,
+    "annotate_slots": true,
+    "show_seed": false
+  }
+}

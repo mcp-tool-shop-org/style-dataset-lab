@@ -1,0 +1,63 @@
+{
+  "workflow_id": "expression-sheet",
+  "label": "Expression Sheet",
+  "description": "Produce multiple expressions while preserving subject identity.",
+  "lane_id": "costume",
+  "subject_mode": "required",
+  "output_mode": "expression_sheet",
+  "output_count": 6,
+  "required_reference_roles": ["anchor"],
+  "preferred_reference_tags": ["portrait", "expression", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "character expression sheet concept art",
+      "consistent identity across expressions",
+      "head and shoulders framing"
+    ],
+    "structure": "style_prefix, subject_identity, canon_focus, controlled_variation",
+    "must_include": [
+      "subject identity",
+      "facial expression variety",
+      "consistent costume and hair"
+    ],
+    "optional_blocks": [
+      "lighting note",
+      "emotion label"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "face structure drift",
+      "hairstyle drift",
+      "costume mutation",
+      "expression exaggeration breaking identity",
+      "age drift"
+    ],
+    "lane_specific_avoid": [
+      "full body composition",
+      "background complexity"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "anatomy",
+    "gesture",
+    "costume_logic",
+    "palette"
+  ],
+  "drift_guards": [
+    "face structure must remain identical across all outputs",
+    "hairstyle must not change",
+    "costume must not mutate between expressions",
+    "expression exaggeration must not break identity read"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "increment"
+  }
+}

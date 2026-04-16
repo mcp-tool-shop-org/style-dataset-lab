@@ -1,0 +1,66 @@
+{
+  "workflow_id": "character-portrait-set",
+  "label": "Character Portrait Set",
+  "description": "Generate a focused portrait candidate pack for a named subject.",
+  "lane_id": "costume",
+  "subject_mode": "required",
+  "output_mode": "portrait_set",
+  "output_count": 4,
+  "required_reference_roles": ["anchor", "supporting"],
+  "preferred_reference_tags": ["portrait", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "project-canon aligned portrait concept art",
+      "high fidelity facial continuity",
+      "clean readable silhouette"
+    ],
+    "structure": "style_prefix, subject_identity, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "subject identity",
+      "faction or project read",
+      "costume logic",
+      "palette fidelity"
+    ],
+    "optional_blocks": [
+      "lighting note",
+      "gesture note",
+      "surface wear note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "off-model face",
+      "extra accessories",
+      "wrong faction materials",
+      "ornamental drift",
+      "generic fantasy styling"
+    ],
+    "lane_specific_avoid": [
+      "cropped silhouette ambiguity",
+      "muddy facial read"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "silhouette",
+    "costume_logic",
+    "palette",
+    "faction_read",
+    "gesture"
+  ],
+  "drift_guards": [
+    "preserve face structure",
+    "preserve age read",
+    "preserve canonical materials",
+    "do not add non-canon ornament"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "increment"
+  }
+}

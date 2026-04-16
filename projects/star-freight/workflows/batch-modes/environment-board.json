@@ -1,0 +1,52 @@
+{
+  "mode_id": "environment-board",
+  "label": "Environment Board",
+  "description": "One location or environment lane — multiple mood, composition, and atmosphere variations. Consistent canon, changing staging.",
+  "base_workflow_id": "environment-moodboard",
+  "batch_type": "environment_board",
+  "subject_mode": "optional",
+  "variant_plan": [
+    {
+      "slot_id": "wide_establishing",
+      "label": "Wide Establishing",
+      "prompt_additions": ["wide establishing shot", "full spatial depth", "environmental backdrop"],
+      "negative_additions": ["close up", "portrait framing"]
+    },
+    {
+      "slot_id": "intimate_detail",
+      "label": "Intimate Detail",
+      "prompt_additions": ["intimate close detail shot", "texture focus", "surface materials visible"],
+      "negative_additions": ["wide shot", "panoramic"]
+    },
+    {
+      "slot_id": "moody_low_light",
+      "label": "Moody Low Light",
+      "prompt_additions": ["low key dramatic lighting", "moody atmospheric shadows", "warm accent light"],
+      "negative_additions": ["bright even lighting", "flat illumination"]
+    },
+    {
+      "slot_id": "active_populated",
+      "label": "Active Populated",
+      "prompt_additions": ["active populated scene", "figures in environment", "lived-in activity"],
+      "negative_additions": ["empty desolate", "abandoned"]
+    },
+    {
+      "slot_id": "quiet_aftermath",
+      "label": "Quiet Aftermath",
+      "prompt_additions": ["quiet empty aftermath", "post-activity stillness", "dust settled"],
+      "negative_additions": ["crowded", "busy", "active"]
+    },
+    {
+      "slot_id": "high_contrast_focal",
+      "label": "High Contrast Focal",
+      "prompt_additions": ["high contrast focal composition", "strong directional light", "bold value separation"],
+      "negative_additions": ["flat lighting", "even tone"]
+    }
+  ],
+  "assembly": {
+    "layout": "moodboard",
+    "columns": 3,
+    "annotate_slots": true,
+    "show_seed": true
+  }
+}

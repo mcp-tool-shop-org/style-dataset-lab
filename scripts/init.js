@@ -40,6 +40,13 @@ const PROJECT_DIRS = [
   'training/packages',
   'training/eval-runs',
   'training/implementations',
+  'workflows/profiles',
+  'workflows/batch-modes',
+  'briefs',
+  'runs',
+  'batches',
+  'selections',
+  'inbox/generated',
 ];
 
 function isValidName(name) {
@@ -212,6 +219,21 @@ export async function run(argv = process.argv.slice(2)) {
   if (existsSync(examplePack)) {
     await copyFile(examplePack, join(projectDir, 'inputs', 'prompts', 'example-wave.json'));
     console.log(`  \x1b[32m✓\x1b[0m inputs/prompts/example-wave.json`);
+  }
+
+  // Copy domain workflow profiles if available
+  if (domainDir) {
+    const domainWorkflowsDir = join(domainDir, 'workflows', 'profiles');
+    if (existsSync(domainWorkflowsDir)) {
+      const wfFiles = (await readdir(domainWorkflowsDir)).filter(f => f.endsWith('.json'));
+      for (const file of wfFiles) {
+        await copyFile(
+          join(domainWorkflowsDir, file),
+          join(projectDir, 'workflows', 'profiles', file)
+        );
+        console.log(`  \x1b[32m✓\x1b[0m workflows/profiles/${file}`);
+      }
+    }
   }
 
   console.log('');

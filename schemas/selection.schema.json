@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Selection",
+  "description": "A creative selection artifact — chosen outputs from a run or batch with reasons and provenance.",
+  "type": "object",
+  "required": [
+    "selection_id",
+    "project_id",
+    "source_type",
+    "source_id",
+    "created_at",
+    "items"
+  ],
+  "properties": {
+    "selection_id": { "type": "string" },
+    "project_id": { "type": "string" },
+    "source_type": {
+      "type": "string",
+      "enum": ["run", "batch"]
+    },
+    "source_id": { "type": "string" },
+    "workflow_id": { "type": "string" },
+    "subject_id": { "type": "string" },
+    "created_at": { "type": "string" },
+
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot_or_output", "filename", "reason"],
+        "properties": {
+          "slot_or_output": { "type": "string" },
+          "filename": { "type": "string" },
+          "seed": { "type": "integer" },
+          "reason": { "type": "string" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "reingest_ready": { "type": "boolean" }
+  }
+}

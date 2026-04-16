@@ -1,0 +1,52 @@
+{
+  "mode_id": "expression-sheet",
+  "label": "Expression Sheet",
+  "description": "One subject, multiple controlled expressions. Same identity, costume, and silhouette — only the expression changes.",
+  "base_workflow_id": "expression-sheet",
+  "batch_type": "expression_sheet",
+  "subject_mode": "required",
+  "variant_plan": [
+    {
+      "slot_id": "neutral",
+      "label": "Neutral",
+      "prompt_additions": ["neutral calm expression", "resting face"],
+      "negative_additions": ["extreme emotion"]
+    },
+    {
+      "slot_id": "focused",
+      "label": "Focused",
+      "prompt_additions": ["focused determined expression", "sharp steady gaze"],
+      "negative_additions": ["relaxed"]
+    },
+    {
+      "slot_id": "anger",
+      "label": "Anger",
+      "prompt_additions": ["angry aggressive expression", "clenched jaw intense gaze"],
+      "negative_additions": ["calm", "serene"]
+    },
+    {
+      "slot_id": "concern",
+      "label": "Concern",
+      "prompt_additions": ["worried concerned expression", "furrowed brow"],
+      "negative_additions": ["happy", "confident"]
+    },
+    {
+      "slot_id": "grim_amusement",
+      "label": "Grim Amusement",
+      "prompt_additions": ["wry grim smirk", "subtle dark amusement"],
+      "negative_additions": ["full smile", "laughing"]
+    },
+    {
+      "slot_id": "resolve",
+      "label": "Resolve",
+      "prompt_additions": ["steely resolve expression", "firm jaw quiet confidence"],
+      "negative_additions": ["doubt", "fear"]
+    }
+  ],
+  "assembly": {
+    "layout": "grid",
+    "columns": 3,
+    "annotate_slots": true,
+    "show_seed": false
+  }
+}

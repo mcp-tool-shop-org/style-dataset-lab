@@ -11,11 +11,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-Write your visual rules. Generate art. Judge every image against those rules. Ship the results as versioned, auditable training data.
+Write your visual rules. Generate art. Judge every image against those rules. Ship the results as versioned, auditable training data — then put trained models to work in real production workflows and feed the best outputs back into your corpus.
 
-Style Dataset Lab connects the thing you wrote down about your art style to the dataset you actually train from. You define a constitution — silhouette rules, palette constraints, material language, whatever matters for your project. The pipeline generates candidates, scores them against those rules, and packages the approved work into reproducible datasets where every record explains why it was included.
+Style Dataset Lab connects the thing you wrote down about your art style to the dataset you actually train from, and then closes the loop all the way through production. You define a constitution — silhouette rules, palette constraints, material language, whatever matters for your project. The pipeline generates candidates, scores them against those rules, and packages the approved work into reproducible datasets where every record explains why it was included.
 
-The loop closes: train a model, generate new outputs, score them against the same canon, re-ingest what passes. The dataset grows and the rules hold.
+Then the production workbench takes over: compile generation briefs from project truth, run them through ComfyUI, critique the outputs, batch-produce expression sheets and environment boards, select the best results, and re-ingest them as new candidates. The loop closes: produce, select, review, strengthen.
 
 ## The pipeline
 
@@ -35,18 +35,29 @@ sdlab snapshot create --project my-project
 sdlab split build
 sdlab export build
 
-# Build a training package and close the loop
+# Build a training package
 sdlab training-manifest create --profile character-style-lora
 sdlab training-package build
-sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
-sdlab reingest generated --source ./outputs --manifest <id>
+
+# Compile a production brief and run it
+sdlab brief compile --workflow character-portrait-set --subject kael_maren
+sdlab run generate --brief brief_2026-04-16_001
+
+# Critique, refine, batch-produce
+sdlab critique --run run_2026-04-16_001
+sdlab refine --run run_2026-04-16_001 --pick 001.png
+sdlab batch generate --mode expression-sheet --subject kael_maren
+
+# Select the best outputs and bring them back
+sdlab select --run run_2026-04-16_001 --approve 001.png,003.png
+sdlab reingest selected --selection selection_2026-04-16_001
 ```
 
-That last command is the point. Generated outputs come back through the same review process as everything else. The loop closes.
+That last command is the point. Selected outputs come back through the same review process as everything else. The corpus grows and the rules hold.
 
 ## What it produces
 
-Seven versioned, checksummed artifacts. Each links to its predecessors so you can trace any training record back to the rule that approved it.
+Seven dataset artifacts and a full production workbench. Each artifact links to its predecessors so you can trace any training record back to the rule that approved it.
 
 | Artifact | What it is |
 |----------|-----------|
@@ -57,6 +68,17 @@ Seven versioned, checksummed artifacts. Each links to its predecessors so you ca
 | **Training package** | Trainer-ready layout via adapters (`diffusers-lora`, `generic-image-caption`). Same truth, different format. |
 | **Eval scorecard** | Per-task pass/fail from scoring generated outputs against eval packs. |
 | **Implementation pack** | Prompt examples, known failures, continuity tests, and re-ingest guidance. |
+
+The production workbench adds:
+
+| Surface | What it does |
+|---------|-------------|
+| **Compiled brief** | Deterministic generation instruction from workflow profile + project truth. |
+| **Run** | Frozen execution artifact: brief + seeds + ComfyUI outputs + manifest. |
+| **Critique** | Structured multi-dimension evaluation of run outputs against canon. |
+| **Batch** | Coordinated multi-slot production (expression sheets, environment boards, silhouette packs). |
+| **Selection** | Creative decision artifact: which outputs were chosen, why, and where they came from. |
+| **Re-ingest** | Selected outputs return as candidate records with full generation provenance. |
 
 ## Why this exists
 
@@ -94,6 +116,12 @@ projects/my-project/
   splits/                Train/val/test partitions
   exports/               Versioned export packages
   training/              Profiles, manifests, packages, eval runs, implementations
+  workflows/             Workflow profiles + batch mode definitions
+  briefs/                Compiled generation briefs
+  runs/                  Execution artifacts (brief + outputs + manifest)
+  batches/               Coordinated multi-slot productions
+  selections/            Chosen outputs with reasons and provenance
+  inbox/generated/       Re-ingested images awaiting review
 ```
 
 ## Trust properties

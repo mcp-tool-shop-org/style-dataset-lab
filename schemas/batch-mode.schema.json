@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Batch Mode",
+  "description": "A production recipe that coordinates multiple briefs/runs into one deliverable surface.",
+  "type": "object",
+  "required": [
+    "mode_id",
+    "label",
+    "base_workflow_id",
+    "batch_type",
+    "variant_plan",
+    "assembly"
+  ],
+  "properties": {
+    "mode_id": { "type": "string" },
+    "label": { "type": "string" },
+    "description": { "type": "string" },
+    "base_workflow_id": { "type": "string" },
+    "batch_type": {
+      "type": "string",
+      "enum": [
+        "expression_sheet",
+        "variant_board",
+        "moodboard",
+        "silhouette_grid",
+        "continuity_pack"
+      ]
+    },
+    "subject_mode": {
+      "type": "string",
+      "enum": ["required", "optional", "forbidden"]
+    },
+    "variant_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot_id", "label"],
+        "properties": {
+          "slot_id": { "type": "string" },
+          "label": { "type": "string" },
+          "prompt_additions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "negative_additions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "runtime_overrides": { "type": "object" }
+        }
+      }
+    },
+    "assembly": {
+      "type": "object",
+      "required": ["layout"],
+      "properties": {
+        "layout": {
+          "type": "string",
+          "enum": ["grid", "moodboard", "sheet", "strip"]
+        },
+        "columns": { "type": "integer" },
+        "annotate_slots": { "type": "boolean" },
+        "show_seed": { "type": "boolean" }
+      }
+    }
+  }
+}
