@@ -1,0 +1,20 @@
+{
+  "profile_id": "character-style-lora",
+  "label": "Character Style LoRA",
+  "target_family": "sdxl",
+  "asset_type": "lora",
+  "intended_use": "Fine-tune SDXL to reproduce Star Freight character costume style, faction palette, and material language",
+  "eligible_lanes": ["costume", "equipment"],
+  "eligible_reference_roles": ["anchor", "supporting"],
+  "min_review_status": "approved",
+  "subject_requirements": {
+    "min_subjects": 5,
+    "min_records_per_subject": 2
+  },
+  "excluded_tags": ["placeholder", "wip", "test"],
+  "caption_strategy": "structured-metadata",
+  "prompt_strategy": "trigger-word",
+  "base_model_recommendations": ["stabilityai/stable-diffusion-xl-base-1.0"],
+  "adapter_targets": ["generic-image-caption", "diffusers-lora"],
+  "required_eval_pack_profiles": ["lane_coverage", "subject_continuity", "forbidden_drift"]
+}

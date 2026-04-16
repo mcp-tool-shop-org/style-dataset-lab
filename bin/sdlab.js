@@ -26,6 +26,8 @@ const COMMANDS = {
   'card':                '../scripts/card.js',
   'export':              '../scripts/export.js',
   'eval-pack':           '../scripts/eval-pack.js',
+  'training-profile':    '../scripts/training-profile.js',
+  'training-manifest':   '../scripts/training-manifest.js',
 };
 
 // Two-word commands under "project" namespace
@@ -69,6 +71,14 @@ function printHelp() {
   console.log('  eval-pack build      Build canon-aware eval pack');
   console.log('  eval-pack list       List eval packs');
   console.log('  eval-pack show <id>  Show eval pack details');
+  console.log('');
+  console.log('Training:');
+  console.log('  training-profile list              List training profiles');
+  console.log('  training-profile show <id>         Show training profile');
+  console.log('  training-manifest create            Create training manifest');
+  console.log('  training-manifest validate <id>     Validate manifest integrity');
+  console.log('  training-manifest show <id>         Show manifest details');
+  console.log('  training-manifest list              List all manifests');
   console.log('');
   console.log('Options:');
   console.log('  --project <name>     Project to operate on (default: star-freight)');
