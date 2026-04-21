@@ -12,7 +12,7 @@
 
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName } from "../lib/args.js";
+import { parseArgs, getProjectName } from "../lib/args.js";
 import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { runtimeError, handleCliError } from "../lib/errors.js";
@@ -159,19 +159,16 @@ export async function run(argv = process.argv.slice(2)) {
   const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-  // Extract first positional that isn't a value for a --flag.
-  // parseArgs is overkill here; instead we skip tokens that come right after a --flag.
-  const positionals = [];
-  for (let k = 0; k < argv.length; k++) {
-    const a = argv[k];
-    if (a.startsWith('--')) {
-      if (!a.includes('=') && k + 1 < argv.length && !argv[k + 1].startsWith('--')) k++;
-      continue;
-    }
-    positionals.push(a);
-  }
-  const packPath = positionals[0] || "inputs/prompts/rpg-icons-lane1.json";
-  const dryRun = argv.includes("--dry-run");
+  const parsed = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      game: { type: 'string' },
+      'dry-run': { type: 'boolean' },
+    },
+    deprecated: { game: 'project' },
+  });
+  const packPath = parsed.positionals[0] || "inputs/prompts/rpg-icons-lane1.json";
+  const dryRun = parsed.flags['dry-run'] === true;
 
   const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'pack-path' });
   const pack = await readJsonFile(fullPackPath, { requiredFields: ['lane', 'subjects', 'variations', 'defaults'] });
