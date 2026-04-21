@@ -39,7 +39,7 @@
 - [x] `[cli]` `sdlab --help` documents subcommands; each subcommand accepts `--help` (2026-04-21)
 - [x] `[cli|mcp|desktop]` CLI documented in README pipeline example (2026-04-21)
 - [ ] `[mcp]` SKIP: not an MCP server
-- [ ] `[complex]` HANDBOOK lives in `site/` (Starlight) and is linked from the landing page
+- [x] `[complex]` HANDBOOK lives in `site/` (Starlight) and is linked from the landing page (2026-04-21 — 7 pages: index, getting-started, dataset-workflow, production-loop, reference, architecture, security)
 
 ## D. Shipping Hygiene
 
@@ -58,7 +58,7 @@
 
 - [x] `[all]` Logo in README header (2026-04-14 — placeholder block with brand path)
 - [x] `[all]` Translations (polyglot-mcp, 8 languages) (2026-04-21 — ja, zh, es, fr, hi, it, pt-BR present)
-- [ ] `[org]` Landing page (@mcptoolshop/site-theme)
+- [x] `[org]` Landing page (@mcptoolshop/site-theme) (2026-04-21 — site/ builds 9 pages via Astro+Starlight; deployed to https://mcp-tool-shop-org.github.io/style-dataset-lab/)
 - [x] `[all]` GitHub repo metadata: description, homepage, topics (2026-04-21 — `homepage` + keywords set in package.json)
 - [x] `[all]` CONTRIBUTING.md + CODE_OF_CONDUCT.md + issue templates + PR template (2026-04-21)
 - [x] `[all]` Troubleshooting section in README (2026-04-21 — covers ComfyUI connection, missing weights, doctor errors, --project fallback, bug reporting)

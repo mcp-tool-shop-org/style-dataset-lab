@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.1] - 2026-04-21
+
+### Fixed — Dogfood swarm health pass (Stage A: bugs & security)
+
+- **Four Laws enforcement** (`lib/snapshot.js`, `lib/split.js`, `lib/export.js`):
+  - Export now inherits `snapshot.config_fingerprint` instead of recomputing; throws `FINGERPRINT_DRIFT` on mismatch (Law 4).
+  - Deterministic majority-lane per family with lexicographic tie-break, recorded in `audit.family_lane_decisions` (Law 3).
+  - Unassigned-family fallback now throws instead of silently landing in train.
+  - `existsSync` guards across snapshot/split/export/eval/training-manifest/training-package/impl-pack prevent ID collisions from overwriting frozen artifacts (Law 1).
+  - `included.jsonl` entries now carry `rules_checked`, `profile_id`, and `config_fingerprint` for explainable inclusion (Law 2).
+- **Security hardening**: path-traversal rejection on `record.asset_path` and all user-supplied `--source`/`--guide`/`--anchor`/`--ref`/`--outputs`/`--prompt-file`/`--packet-file`/`--domain` flags; URL validation on ComfyUI endpoints; safe filename regex at selection boundaries.
+- **CLI structured errors**: ~25 scripts converted from raw `throw new Error` to `inputError`/`runtimeError` so exit codes are correct (1 = user error, 2 = runtime).
+- **Pipeline correctness**: brief fingerprint uses recursive `canonicalize()` — deterministic across nested key reordering; override precedence fixed (`||` → `??` so legit zero/empty overrides are preserved); negative-prompt dedup switched from substring to token-exact match; adapter output filenames keyed by `record.id` to prevent basename collisions silently dropping records.
+- **Re-ingest**: now actually copies images to `outputs/candidates/` instead of writing records that point at missing files.
+- **Curate ordering**: `curate.js` moves image first, then updates record; bulk-curate trio gained `--dry-run` and standard error handling.
+
+### Added — Dogfood swarm humanization pass (Stage B/C)
+
+- **ComfyUI progress**: `submitAndWait` emits heartbeats every 15 s (queued → generating → completed); bails fast on `execution_error` or unknown status shapes instead of timing out silently.
+- **Atomic manifest writes**: run/batch manifests use temp-file + rename; `checkpointRunManifest` saves progress after every slot so a crash no longer orphans GPU work.
+- **`schema_version` enforcement**: every manifest (`snapshot`, `split`, `export`, `eval-pack`, `eval-run`, `training-manifest`, `training-package`, `implementation-pack`) now stamps `schema_version: '2.2.0'` with warn-on-mismatch loaders.
+- **Export truthfulness**: tracks `expected`/`actual`/`failed` counts with per-record reasons and stderr warnings (no more silent-skip under `catch {}`).
+- **Snapshot resilience**: malformed record JSON lands in `errors[]` instead of aborting the snapshot.
+- **Split audit**: `deviation_from_target` per lane + `overall_deviation_score` in audit output.
+- **Eval scorecards**: `sample_record_ids` up to 5 per failure bucket so operators can investigate.
+- **CLI help**: `sdlab <cmd> --help` now works for 15 top commands via `HELP_TEXT` registry.
+- **Did-you-mean**: hand-rolled Levenshtein suggestion for typo'd commands and flags.
+- **`--project` fallback**: loud 2-line stderr warning when falling back to `star-freight` (silence with `SDLAB_QUIET_FALLBACK=1`).
+- **Signal handling**: `SIGINT` (130), `SIGTERM` (143), `uncaughtException`, `unhandledRejection` handlers at `main()` so Ctrl+C surfaces a clean message.
+- **ETA**: generate and batch-generate print ETA every 5 items with rolling averages.
+- **`result()`/`success()` helpers**: artifact paths always print regardless of `--quiet`.
+- **`sdlab init`**: scaffolded projects now get a `README.md` with quick commands, layout, and TODO sections.
+- **Per-domain example waves**: all 5 domain templates ship `inputs/prompts/example-wave.json` with subjects matching their lane `id_patterns`.
+- **Troubleshooting section**: README covers ComfyUI connection failure, missing weights, doctor errors, `--project` fallback, and bug reporting.
+- **Install as primary CTA**: landing page leads with a copy-to-clipboard install command; `og:image`/`twitter:card` meta added via `SiteLayout`.
+
+### Changed
+
+- Moved `HANDOFF.md`, `WAVE_PLAN.md`, `WAVE27A_SESSION_STATE.md` to `docs/internal/` with a README explaining the archive.
+- `lib/deprecation.js`: `--game` deprecation target bumped from "v3.0" (lying, package is 3.0) to "v4.0".
+- Handbook `reference.md` and `architecture.md` rewritten against the v3.0 CLI surface (`--project`, `projects/<name>/`); `--game` demoted to a Legacy section.
+- One-off Star Freight wave-curate scripts excluded from the npm tarball via `files`-field negations (137 → 135 files, 179.3 → 173.9 kB).
+
+### Infrastructure
+
+- **Test suite**: 0 → 98 tests across 12 files (`tests/lib-pipeline/`, `tests/lib-dataset/`, `tests/cli-scripts/`).
+- **CI**: added `pull_request` trigger; `publish.yml` now runs `npm ci` + `npm run verify` + `npm test` + tag-vs-version guard before `npm publish`; `permissions: contents: read` and `persist-credentials: false` across all workflows; npm cache on every `setup-node`.
+- **`package-lock.json`** regenerated from stale v2.2.1 to v3.0.1.
+- **Governance**: added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE/{bug_report,feature_request}.md`, `.github/PULL_REQUEST_TEMPLATE.md`.
+- **Dependabot**: groups restricted to `minor`/`patch` so breaking majors get individual PRs.
+
 ## [3.0.0] - 2026-04-16
 
 ### Added
