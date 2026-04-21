@@ -1,0 +1,1180 @@
+{
+  "_schema": "ai_eye_test_labels_v0",
+  "_description": "Phase 2 synthetic apple composites. 6 counts x 16 seeds. 2048x2048. Real backgrounds, shadows, color jitter, seamlessClone blending.",
+  "_config": {
+    "counts": [
+      1,
+      5,
+      10,
+      20,
+      50,
+      100
+    ],
+    "seeds_per_count": 16,
+    "bg_size": [
+      2048,
+      2048
+    ],
+    "target_instance_long_edge": 150,
+    "realism_features": [
+      "seamless_clone",
+      "drop_shadow",
+      "color_jitter",
+      "bg_pool"
+    ]
+  },
+  "images": [
+    {
+      "id": "apple_n001_s00",
+      "image": "apple_n001_s00.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10100,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s01",
+      "image": "apple_n001_s01.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10101,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s02",
+      "image": "apple_n001_s02.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10102,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s03",
+      "image": "apple_n001_s03.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10103,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s04",
+      "image": "apple_n001_s04.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10104,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s05",
+      "image": "apple_n001_s05.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10105,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s06",
+      "image": "apple_n001_s06.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10106,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s07",
+      "image": "apple_n001_s07.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10107,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s08",
+      "image": "apple_n001_s08.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10108,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s09",
+      "image": "apple_n001_s09.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10109,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s10",
+      "image": "apple_n001_s10.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10110,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s11",
+      "image": "apple_n001_s11.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10111,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s12",
+      "image": "apple_n001_s12.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10112,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s13",
+      "image": "apple_n001_s13.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10113,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s14",
+      "image": "apple_n001_s14.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10114,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n001_s15",
+      "image": "apple_n001_s15.png",
+      "count": 1,
+      "object_class": "green apple",
+      "seed": 10115,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 1
+    },
+    {
+      "id": "apple_n005_s00",
+      "image": "apple_n005_s00.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10500,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s01",
+      "image": "apple_n005_s01.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10501,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s02",
+      "image": "apple_n005_s02.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10502,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s03",
+      "image": "apple_n005_s03.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10503,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s04",
+      "image": "apple_n005_s04.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10504,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s05",
+      "image": "apple_n005_s05.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10505,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s06",
+      "image": "apple_n005_s06.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10506,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s07",
+      "image": "apple_n005_s07.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10507,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s08",
+      "image": "apple_n005_s08.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10508,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s09",
+      "image": "apple_n005_s09.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10509,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s10",
+      "image": "apple_n005_s10.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10510,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s11",
+      "image": "apple_n005_s11.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10511,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s12",
+      "image": "apple_n005_s12.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10512,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s13",
+      "image": "apple_n005_s13.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10513,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s14",
+      "image": "apple_n005_s14.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10514,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n005_s15",
+      "image": "apple_n005_s15.png",
+      "count": 5,
+      "object_class": "green apple",
+      "seed": 10515,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 5
+    },
+    {
+      "id": "apple_n010_s00",
+      "image": "apple_n010_s00.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11000,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s01",
+      "image": "apple_n010_s01.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11001,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s02",
+      "image": "apple_n010_s02.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11002,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s03",
+      "image": "apple_n010_s03.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11003,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s04",
+      "image": "apple_n010_s04.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11004,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s05",
+      "image": "apple_n010_s05.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11005,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s06",
+      "image": "apple_n010_s06.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11006,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s07",
+      "image": "apple_n010_s07.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11007,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s08",
+      "image": "apple_n010_s08.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11008,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s09",
+      "image": "apple_n010_s09.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11009,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s10",
+      "image": "apple_n010_s10.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11010,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s11",
+      "image": "apple_n010_s11.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11011,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s12",
+      "image": "apple_n010_s12.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11012,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s13",
+      "image": "apple_n010_s13.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11013,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s14",
+      "image": "apple_n010_s14.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11014,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n010_s15",
+      "image": "apple_n010_s15.png",
+      "count": 10,
+      "object_class": "green apple",
+      "seed": 11015,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 10
+    },
+    {
+      "id": "apple_n020_s00",
+      "image": "apple_n020_s00.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12000,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s01",
+      "image": "apple_n020_s01.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12001,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s02",
+      "image": "apple_n020_s02.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12002,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s03",
+      "image": "apple_n020_s03.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12003,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s04",
+      "image": "apple_n020_s04.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12004,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s05",
+      "image": "apple_n020_s05.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12005,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s06",
+      "image": "apple_n020_s06.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12006,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s07",
+      "image": "apple_n020_s07.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12007,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s08",
+      "image": "apple_n020_s08.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12008,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s09",
+      "image": "apple_n020_s09.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12009,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s10",
+      "image": "apple_n020_s10.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12010,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s11",
+      "image": "apple_n020_s11.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12011,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s12",
+      "image": "apple_n020_s12.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12012,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s13",
+      "image": "apple_n020_s13.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12013,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s14",
+      "image": "apple_n020_s14.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12014,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n020_s15",
+      "image": "apple_n020_s15.png",
+      "count": 20,
+      "object_class": "green apple",
+      "seed": 12015,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 20
+    },
+    {
+      "id": "apple_n050_s00",
+      "image": "apple_n050_s00.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15000,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s01",
+      "image": "apple_n050_s01.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15001,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s02",
+      "image": "apple_n050_s02.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15002,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s03",
+      "image": "apple_n050_s03.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15003,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s04",
+      "image": "apple_n050_s04.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15004,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s05",
+      "image": "apple_n050_s05.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15005,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s06",
+      "image": "apple_n050_s06.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15006,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s07",
+      "image": "apple_n050_s07.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15007,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s08",
+      "image": "apple_n050_s08.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15008,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s09",
+      "image": "apple_n050_s09.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15009,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s10",
+      "image": "apple_n050_s10.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15010,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s11",
+      "image": "apple_n050_s11.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15011,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s12",
+      "image": "apple_n050_s12.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15012,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s13",
+      "image": "apple_n050_s13.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15013,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s14",
+      "image": "apple_n050_s14.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15014,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n050_s15",
+      "image": "apple_n050_s15.png",
+      "count": 50,
+      "object_class": "green apple",
+      "seed": 15015,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 50
+    },
+    {
+      "id": "apple_n100_s00",
+      "image": "apple_n100_s00.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20000,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s01",
+      "image": "apple_n100_s01.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20001,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s02",
+      "image": "apple_n100_s02.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20002,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s03",
+      "image": "apple_n100_s03.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20003,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s04",
+      "image": "apple_n100_s04.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20004,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s05",
+      "image": "apple_n100_s05.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20005,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s06",
+      "image": "apple_n100_s06.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20006,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s07",
+      "image": "apple_n100_s07.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20007,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s08",
+      "image": "apple_n100_s08.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20008,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s09",
+      "image": "apple_n100_s09.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20009,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s10",
+      "image": "apple_n100_s10.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20010,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s11",
+      "image": "apple_n100_s11.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20011,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s12",
+      "image": "apple_n100_s12.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20012,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s13",
+      "image": "apple_n100_s13.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20013,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s14",
+      "image": "apple_n100_s14.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20014,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s15",
+      "image": "apple_n100_s15.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20015,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    }
+  ]
+}

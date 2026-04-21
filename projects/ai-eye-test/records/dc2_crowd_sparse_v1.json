@@ -1,0 +1,33 @@
+{
+  "id": "dc2_crowd_sparse_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T19:27:31.748Z",
+  "asset_path": "outputs/candidates/dc2_crowd_sparse_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 2008972
+  },
+  "provenance": {
+    "workflow_id": "dense-count",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "prompt": "photorealistic documentary photograph, overhead or elevated angle for clear visibility, even neutral lighting, no lens blur, no bokeh, sharp focus across the entire frame, no vignette, no artistic filter, elevated photograph of a handful of people standing far apart in an otherwise empty cobblestone plaza at midday, each person clearly separated from the others, neutral lighting, sharp focus, no crowd",
+    "negative_prompt": "motion blur, soft focus, shallow depth of field, bokeh, lens flare, grainy film, stylized art, illustration, painting, cartoon, anime, watermark, text overlay, logo, signature, frame border, duplicate frame, split screen",
+    "seed": 78000,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8053,
+    "gpu_model": "RTX 5080",
+    "batch_index": 0
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

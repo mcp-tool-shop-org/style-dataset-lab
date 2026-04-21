@@ -1,0 +1,69 @@
+{
+  "default_lane": "dense-count",
+  "lanes": [
+    {
+      "id": "fine-detail",
+      "label": "Fine Detail",
+      "description": "Small critical features within a normal-sized subject. Tests whether the model resolves sub-object structure: weapon attachment points, fabric stitching, UI button states, watch face indices, product label edges.",
+      "id_patterns": ["^fd_", "^finedetail_"],
+      "task_type": "localized_detail",
+      "ground_truth_fields": ["feature_present", "feature_count", "feature_state"]
+    },
+    {
+      "id": "small-target-wide-frame",
+      "label": "Small Target in Wide Frame",
+      "description": "Waldo-class challenge — tiny signal target embedded in dense distractor scene. Target occupies <2% of frame. Applies to crowd search, wildlife spotting, typo hunting, UI element location.",
+      "id_patterns": ["^stwf_", "^smalltarget_"],
+      "task_type": "needle_in_haystack",
+      "ground_truth_fields": ["target_present", "target_bbox_xywh", "target_description"]
+    },
+    {
+      "id": "dense-count",
+      "label": "Dense Count",
+      "description": "Count N instances of a class accurately when N is large enough to stress low-resolution vision. People in crowds, items on shelves, cells under microscope, list rows, grid cells.",
+      "id_patterns": ["^dc_", "^densecount_"],
+      "task_type": "enumeration",
+      "ground_truth_fields": ["count", "class", "layout_hint"]
+    },
+    {
+      "id": "small-text-numeric",
+      "label": "Small Text / Numeric",
+      "description": "Read small printed text or numbers precisely. Chart axis labels, dashboard readouts, product codes, receipt line items, UI stat panels. OCR-adjacent but focused on accuracy under scale.",
+      "id_patterns": ["^stn_", "^smalltext_"],
+      "task_type": "ocr_fine",
+      "ground_truth_fields": ["text_content", "text_locations", "readability_target"]
+    },
+    {
+      "id": "labeled-grid",
+      "label": "Labeled Grid",
+      "description": "Parse a grid where each cell carries a per-cell label. Sprite sheets, spreadsheet screenshots, contact sheets, chessboard positions, calendar grids.",
+      "id_patterns": ["^lg_", "^labeledgrid_"],
+      "task_type": "grid_parse",
+      "ground_truth_fields": ["grid_dims", "cell_labels", "cell_contents"]
+    },
+    {
+      "id": "ab-compare",
+      "label": "A/B Compare",
+      "description": "Two near-identical images — name the differences. Visual regression, before/after edits, sprite iterations, photo retouching, diff review.",
+      "id_patterns": ["^ab_", "^abcompare_"],
+      "task_type": "paired_diff",
+      "ground_truth_fields": ["diff_count", "diff_regions", "diff_descriptions"]
+    },
+    {
+      "id": "layout-hierarchy",
+      "label": "Layout / Hierarchy",
+      "description": "Structural and positional comprehension. Webpage layouts, UI hierarchies, architectural elevations, scene composition, org charts.",
+      "id_patterns": ["^lh_", "^layout_"],
+      "task_type": "structural",
+      "ground_truth_fields": ["element_tree", "reading_order", "hierarchy_depth"]
+    },
+    {
+      "id": "chart-read",
+      "label": "Chart / Data Viz",
+      "description": "Extract quantitative values from visualizations. Line charts, bar charts, pie charts, scatter plots, dashboards, scientific figures.",
+      "id_patterns": ["^cr_", "^chartread_"],
+      "task_type": "data_extraction",
+      "ground_truth_fields": ["chart_type", "value_pairs", "axis_labels", "extraction_accuracy_target"]
+    }
+  ]
+}

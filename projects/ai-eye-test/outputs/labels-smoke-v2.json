@@ -1,0 +1,151 @@
+{
+  "_schema": "ai_eye_test_labels_v0",
+  "_description": "Human-verified labels for dense-count batch 2 (seeds 78000-78011, 1024x1024 SDXL Turbo). Density-descriptor prompts with no numeric counts. Labeled by Claude on 2026-04-16.",
+  "_finding_v2": "SDXL doesn't just ignore 'exactly N' — it also INVERTS density adjectives. Prompts for 'sparse,' 'handful,' 'otherwise empty,' and 'half full' all produced dense/packed scenes. The model has a strong prior toward filling the frame with the subject. Only 'dense' and 'packed' prompts produce the expected density. Implication: SDXL alone cannot be used to generate low-density or exact-count test images — those need programmatic composition.",
+  "images": [
+    {
+      "id": "dc2_crowd_sparse",
+      "path": "outputs/candidates/dc2_crowd_sparse_v1.png",
+      "prompted_density": "sparse (handful, otherwise empty)",
+      "observed_density": "medium",
+      "observed_count_estimate": 32,
+      "observed_count_uncertainty": "plus_minus_4",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "medium-count (20-50)",
+      "notes": "Prompt wanted sparse, got medium. Courtyard with ~32 people scattered. Clean lighting, good separation between figures. Relabel as 'medium' and keep."
+    },
+    {
+      "id": "dc2_crowd_medium",
+      "path": "outputs/candidates/dc2_crowd_medium_v1.png",
+      "prompted_density": "medium (moderate gathering)",
+      "observed_density": "very dense",
+      "observed_count_estimate": 320,
+      "observed_count_uncertainty": "plus_minus_50",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "high-count (200-500)",
+      "notes": "Ring-shaped crowd in plaza, very tightly packed. Hundreds of people in concentric circles. Good high-count candidate."
+    },
+    {
+      "id": "dc2_crowd_dense",
+      "path": "outputs/candidates/dc2_crowd_dense_v1.png",
+      "prompted_density": "very dense (packed, shoulder to shoulder)",
+      "observed_density": "very dense",
+      "observed_count_estimate": 600,
+      "observed_count_uncertainty": "plus_minus_150",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "extreme-count (500+)",
+      "notes": "Massive crowd with an awning dividing the frame. Prompt delivered. Extreme-count image — useful for testing the upper end of VLM counting capability where no model will get exact numbers but can still rank by magnitude."
+    },
+    {
+      "id": "dc2_boxes_sparse",
+      "path": "outputs/candidates/dc2_boxes_sparse_v1.png",
+      "prompted_density": "sparse (small cluster, otherwise empty)",
+      "observed_density": "dense warehouse",
+      "observed_count_estimate": 90,
+      "observed_count_uncertainty": "plus_minus_15",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "high-count (50-150)",
+      "notes": "Prompt wanted sparse cluster, got a warehouse full. Regular grid, no stacking, good lighting. Relabel as high-count grid and keep."
+    },
+    {
+      "id": "dc2_boxes_medium",
+      "path": "outputs/candidates/dc2_boxes_medium_v1.png",
+      "prompted_density": "medium (loose grid)",
+      "observed_density": "dense regular grid",
+      "observed_count_estimate": 75,
+      "observed_count_uncertainty": "plus_minus_10",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "high-count (50-150)",
+      "notes": "Regular grid of brown boxes on warehouse floor. Clean lighting, distinct separation. Best 'countable grid' image in the batch — rows and columns are visible which helps a labeler."
+    },
+    {
+      "id": "dc2_trees_sparse",
+      "path": "outputs/candidates/dc2_trees_sparse_v1.png",
+      "prompted_density": "sparse (widely spaced, clear ground)",
+      "observed_density": "dense forest",
+      "observed_count_estimate": 140,
+      "observed_count_uncertainty": "plus_minus_25",
+      "needs_exact_count": true,
+      "usable": false,
+      "bucket": "high-count (100+)",
+      "notes": "Dry-color forest canopy with NO clear ground visible. Prompt inverted. Duplicate of trees_dense theme. Reject as redundant — trees_dense is better."
+    },
+    {
+      "id": "dc2_trees_dense",
+      "path": "outputs/candidates/dc2_trees_dense_v1.png",
+      "prompted_density": "dense (packed canopy)",
+      "observed_density": "dense canopy with ambiguous boundaries",
+      "observed_count_estimate": 120,
+      "observed_count_uncertainty": "plus_minus_20",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "ambiguous-boundary high-count",
+      "notes": "Mature forest canopy. Canopies merge at edges — the boundary between adjacent trees is ambiguous even to a human. Good test for VLM handling of uncertain instance boundaries."
+    },
+    {
+      "id": "dc2_bottles_shelf",
+      "path": "outputs/candidates/dc2_bottles_shelf_v1.png",
+      "prompted_density": "single shelf row",
+      "observed_density": "multiple shelves",
+      "observed_count_estimate": 55,
+      "observed_count_uncertainty": "plus_minus_8",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "medium-count (40-80)",
+      "notes": "5 shelves of bottles, mixed green and clear glass. Two distinct bottle types — useful for testing class-conditional counting ('how many green bottles?')."
+    },
+    {
+      "id": "dc2_icons_grid_sparse",
+      "path": "outputs/candidates/dc2_icons_grid_sparse_v1.png",
+      "prompted_density": "sparse (small loose grid, generous spacing)",
+      "observed_density": "tiled wallpaper",
+      "observed_count_estimate": 28,
+      "observed_count_uncertainty": "plus_minus_3",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "low-medium (20-40)",
+      "notes": "Bicycle icons tiled as wallpaper, not a 'small grid.' But icons are uniform and countable. Relabel and keep — 28 bicycles is a reasonable medium test."
+    },
+    {
+      "id": "dc2_icons_grid_dense",
+      "path": "outputs/candidates/dc2_icons_grid_dense_v1.png",
+      "prompted_density": "very dense (tight tiling)",
+      "observed_density": "medium-dense",
+      "observed_count_estimate": 25,
+      "observed_count_uncertainty": "plus_minus_3",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "low-medium (20-40)",
+      "notes": "Leaf icons scattered on white. Less dense than prompted, more natural-looking. Good counting test at ~25 instances."
+    },
+    {
+      "id": "dc2_parking_half",
+      "path": "outputs/candidates/dc2_parking_half_v1.png",
+      "prompted_density": "half full (some empty spaces)",
+      "observed_density": "fully packed",
+      "observed_count_estimate": 450,
+      "observed_count_uncertainty": "plus_minus_75",
+      "needs_exact_count": true,
+      "usable": true,
+      "bucket": "extreme-count (400+)",
+      "notes": "Dense parking lot with color-varied cars (white/black/red cars as potential class-filter targets). Useful for extreme-count AND class-conditional counting."
+    },
+    {
+      "id": "dc2_chairs_arranged",
+      "path": "outputs/candidates/dc2_chairs_arranged_v1.png",
+      "prompted_density": "a row of chairs",
+      "observed_density": "small cluster",
+      "observed_count_estimate": 8,
+      "observed_count_uncertainty": "plus_minus_0",
+      "needs_exact_count": false,
+      "usable": true,
+      "bucket": "low-count (5-15)",
+      "notes": "EIGHT folding chairs arranged in a loose 3-row cluster on wood floor. GROUND TRUTH IS RELIABLE at this count. The first image in the entire smoke batch where a human-verified exact count is trivial. Pattern: simple subjects in quantities that resemble natural scene counts work."
+    }
+  ]
+}

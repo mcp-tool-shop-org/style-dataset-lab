@@ -1,0 +1,70 @@
+{
+  "lane": "dense-count",
+  "description": "Dense-count subcategory v2. Density descriptors instead of explicit counts, since SDXL ignored 'exactly N' in v1. Goal: cover sparse/medium/dense ranges across diverse subjects so post-hoc labeling yields a wide count distribution.",
+  "style_prefix": "photorealistic documentary photograph, overhead or elevated angle for clear visibility, even neutral lighting, no lens blur, no bokeh, sharp focus across the entire frame, no vignette, no artistic filter",
+  "negative": "motion blur, soft focus, shallow depth of field, bokeh, lens flare, grainy film, stylized art, illustration, painting, cartoon, anime, watermark, text overlay, logo, signature, frame border, duplicate frame, split screen",
+  "generation_notes": "No numeric counts in prompts — SDXL-turbo ignored them in v1. Rely on density language + layout cues. All ground-truth counts must be labeled post-hoc from the actual image.",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 78000
+  },
+  "variations": [
+    { "id": "v1", "seed_offset": 0, "loras": [] }
+  ],
+  "subjects": [
+    {
+      "id": "dc2_crowd_sparse",
+      "prompt": "elevated photograph of a handful of people standing far apart in an otherwise empty cobblestone plaza at midday, each person clearly separated from the others, neutral lighting, sharp focus, no crowd"
+    },
+    {
+      "id": "dc2_crowd_medium",
+      "prompt": "elevated photograph of a moderate gathering of people standing in a plaza, clear gaps between most individuals, some light clustering near the center, overhead morning light, neutral paving"
+    },
+    {
+      "id": "dc2_crowd_dense",
+      "prompt": "elevated photograph of a packed plaza at lunchtime, people shoulder to shoulder filling the frame, overhead angle looking down, sharp focus, urban daytime"
+    },
+    {
+      "id": "dc2_boxes_sparse",
+      "prompt": "top-down photograph of a small cluster of identical brown cardboard boxes placed apart on an otherwise empty grey warehouse floor, gaps between every box, studio lighting, sharp focus"
+    },
+    {
+      "id": "dc2_boxes_medium",
+      "prompt": "top-down photograph of a loose grid of identical brown cardboard boxes on a grey warehouse floor, clear gaps between rows and columns, no stacking, single layer only, studio lighting"
+    },
+    {
+      "id": "dc2_trees_sparse",
+      "prompt": "aerial photograph of widely spaced trees in a dry field, clear ground between every tree, no canopy overlap, overhead view, soft daylight, neutral earth tones"
+    },
+    {
+      "id": "dc2_trees_dense",
+      "prompt": "aerial photograph of a mature forest canopy from above, trees packed densely with overlapping foliage, variable tree shapes and sizes, daylight, photo"
+    },
+    {
+      "id": "dc2_bottles_shelf",
+      "prompt": "straight-on photograph of a single long retail shelf with identical clear glass bottles lined up end to end, studio lighting, white background behind the shelf, each bottle fully visible"
+    },
+    {
+      "id": "dc2_icons_grid_sparse",
+      "prompt": "flat graphic design wallpaper with a small loose grid of identical simple line-art bicycle icons on a pale grey background, generous spacing, plenty of empty background visible, black outline on white fill, no shadow, no gradient"
+    },
+    {
+      "id": "dc2_icons_grid_dense",
+      "prompt": "flat graphic design wallpaper densely tiled with identical simple line-art leaf icons on a pale grey background, tight packing, minimal background visible, black outline on white fill, no shadow, no gradient"
+    },
+    {
+      "id": "dc2_parking_half",
+      "prompt": "aerial photograph of a parking lot half full of cars, white painted lot lines clearly visible, some empty spaces between cars, overhead view, daylight, sharp focus"
+    },
+    {
+      "id": "dc2_chairs_arranged",
+      "prompt": "straight-down overhead photograph of a row of identical folding chairs arranged on a wooden floor, evenly spaced, no people, studio lighting, sharp focus from end to end"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": "0.1.0",
+  "rules": [
+    {
+      "id": "TST-001",
+      "category": "test_design",
+      "desc": "Target detectability — trained human labeler can identify the test target at native resolution without ambiguity",
+      "dims": ["target_detectability"],
+      "faction_specific": false,
+      "rationale_pass": "Target unambiguous at native resolution (${scorePct}%)",
+      "rationale_fail": "Target ambiguous or not clearly present — disqualify as test case"
+    },
+    {
+      "id": "TST-002",
+      "category": "test_design",
+      "desc": "Distractor adequacy — sufficient plausible confusers present so the task is non-trivial at low resolution",
+      "dims": ["distractor_adequacy"],
+      "faction_specific": false,
+      "rationale_pass": "Enough plausible distractors present (${scorePct}%)",
+      "rationale_fail": "Too few distractors — task would be trivial at any resolution"
+    },
+    {
+      "id": "TST-003",
+      "category": "test_design",
+      "desc": "Resolution sensitivity — the task becomes measurably harder as input resolution drops",
+      "dims": ["resolution_sensitivity"],
+      "faction_specific": false,
+      "rationale_pass": "Resolution-sensitive task confirmed (${scorePct}%)",
+      "rationale_fail": "Task solvable at 256px — does not test what the subcategory claims"
+    },
+    {
+      "id": "TST-004",
+      "category": "ground_truth",
+      "desc": "Ground truth clarity — labels are unambiguous, verifiable, reproducible by a second labeler",
+      "dims": ["ground_truth_clarity"],
+      "faction_specific": false,
+      "rationale_pass": "Ground truth clear and reproducible (${scorePct}%)",
+      "rationale_fail": "Label ambiguous — two labelers would disagree"
+    },
+    {
+      "id": "TST-005",
+      "category": "domain_neutrality",
+      "desc": "Domain neutrality — image does not lean so hard into one aesthetic that it only measures one domain",
+      "dims": ["domain_neutrality"],
+      "faction_specific": false,
+      "rationale_pass": "Image is domain-neutral or represents a deliberate domain sample (${scorePct}%)",
+      "rationale_fail": "Image overfit to one aesthetic — reduces dataset generality"
+    },
+    {
+      "id": "TST-006",
+      "category": "generation_fidelity",
+      "desc": "Generation fidelity — image matches prompt intent; no deformations, artifacts, or off-spec outputs",
+      "dims": ["generation_fidelity"],
+      "faction_specific": false,
+      "rationale_pass": "Generation clean and on-spec (${scorePct}%)",
+      "rationale_fail": "Artifacts, deformations, or off-spec output — regenerate"
+    },
+    {
+      "id": "TST-007",
+      "category": "ethics",
+      "desc": "No real-person likeness, brand logos, trademarked characters, or copyrighted content",
+      "dims": ["domain_neutrality"],
+      "faction_specific": false,
+      "rationale_pass": "No real-person or IP content detected (${scorePct}%)",
+      "rationale_fail": "Contains real-person likeness or IP — unusable for a public benchmark"
+    }
+  ]
+}

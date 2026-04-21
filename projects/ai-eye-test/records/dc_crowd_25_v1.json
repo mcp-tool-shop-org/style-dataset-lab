@@ -1,0 +1,33 @@
+{
+  "id": "dc_crowd_25_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T19:21:53.161Z",
+  "asset_path": "outputs/candidates/dc_crowd_25_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1762540
+  },
+  "provenance": {
+    "workflow_id": "dense-count",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "prompt": "photorealistic documentary photograph, overhead or elevated angle for clear visibility, even neutral lighting, no lens blur, no bokeh, sharp focus across the entire frame, no vignette, no artistic filter, elevated photograph of exactly twenty-five people in a plaza from a second-story angle, each person visible as a distinct figure, no occlusion, neutral paving, daylight, figures roughly evenly spaced across the frame",
+    "negative_prompt": "motion blur, soft focus, shallow depth of field, bokeh, lens flare, grainy film, stylized art, illustration, painting, cartoon, anime, watermark, text overlay, logo, signature, frame border, duplicate frame, split screen",
+    "seed": 77001,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7074,
+    "gpu_model": "RTX 5080",
+    "batch_index": 1
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

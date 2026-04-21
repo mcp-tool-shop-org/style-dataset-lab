@@ -1,0 +1,38 @@
+{
+  "lane": "dense-count",
+  "description": "Background images for the Phase 2 compositor. Empty surfaces — no subject, just texture/color/lighting. Used as paste targets for rendered instances.",
+  "style_prefix": "photograph, empty surface, no objects, no products, no people, no text, no branding, evenly lit, neutral angle",
+  "negative": "people, face, hands, object, product, fruit, bottle, box, text, watermark, logo, sign, busy scene, clutter, frame, border, signature",
+  "generation_notes": "Each background should be subject-free and neutral. Fed into BackgroundPool and rotated across composites to prevent the model from learning 'more texture = more objects.'",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 80000
+  },
+  "variations": [
+    { "id": "v1", "seed_offset": 0, "loras": [] }
+  ],
+  "subjects": [
+    {
+      "id": "bg_wooden_table",
+      "prompt": "top-down photograph of a plain empty wooden table surface, clean oak grain, natural daylight, no objects, no marks, no text"
+    },
+    {
+      "id": "bg_concrete_floor",
+      "prompt": "top-down photograph of a plain empty grey concrete floor, fine texture, even overhead lighting, no objects, no markings, no debris"
+    },
+    {
+      "id": "bg_white_tablecloth",
+      "prompt": "top-down photograph of a plain empty white cotton tablecloth, soft fabric weave, natural daylight, gentle folds at the edges, no stains, no objects"
+    },
+    {
+      "id": "bg_kitchen_counter",
+      "prompt": "top-down photograph of a plain empty grey marble kitchen counter, subtle veins, clean surface, even lighting, no objects, no utensils"
+    }
+  ]
+}
