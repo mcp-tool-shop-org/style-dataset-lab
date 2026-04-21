@@ -9,7 +9,7 @@
  *   sdlab batch generate --mode silhouette-pack --project star-freight --dry-run
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot, getRunsDir } from '../lib/paths.js';
 import { compileBatch } from '../lib/batch-compiler.js';
 import { getBatchMode } from '../lib/batch-modes.js';
@@ -26,7 +26,7 @@ import { writeFile } from 'node:fs/promises';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       mode: { type: 'string' },
       subject: { type: 'string' },
       theme: { type: 'string' },
@@ -50,7 +50,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const dryRun = flags['dry-run'] || false;
 

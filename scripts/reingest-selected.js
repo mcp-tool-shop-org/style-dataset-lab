@@ -8,7 +8,7 @@
  *   sdlab reingest selected --selection selection_2026-04-16_001 --dry-run
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { reingestSelection } from '../lib/reingest-selected.js';
 import { info } from '../lib/log.js';
@@ -16,7 +16,7 @@ import { info } from '../lib/log.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       selection: { type: 'string' },
       'dry-run': { type: 'boolean' },
       json: { type: 'boolean' },
@@ -34,7 +34,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const dryRun = flags['dry-run'] || false;
 

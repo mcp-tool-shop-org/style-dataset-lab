@@ -132,7 +132,8 @@ function printHelp() {
   console.log('  implementation-pack build           Build implementation example pack');
   console.log('  implementation-pack show <id>       Show pack details');
   console.log('  implementation-pack list            List all packs');
-  console.log('  reingest generated --source <dir>  Re-ingest generated outputs');
+  console.log('  reingest generated --source <dir> --manifest <id>  Re-ingest generated outputs');
+  console.log('  reingest selected --selection <id> Re-ingest selected outputs as records');
   console.log('  reingest audit                     Audit re-ingested record status');
   console.log('');
   console.log('Production:');

@@ -13,6 +13,7 @@ import { mkdir, readdir, readFile, writeFile, copyFile } from 'node:fs/promises'
 import { join, basename } from 'node:path';
 import { existsSync } from 'node:fs';
 import { REPO_ROOT } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 
 const TEMPLATES_DIR = join(REPO_ROOT, 'templates');
 const PROJECTS_DIR = join(REPO_ROOT, 'projects');
@@ -82,15 +83,28 @@ export async function run(argv = process.argv.slice(2)) {
   }
 
   if (!isValidName(projectName)) {
-    throw new Error(
-      `Invalid project name "${projectName}".\n` +
+    throw inputError(
+      'INPUT_BAD_NAME',
+      `Invalid project name "${projectName}".`,
       `Use lowercase letters, numbers, and hyphens (e.g. "my-project").`
+    );
+  }
+
+  // Validate --domain to prevent path traversal via template lookup.
+  if (!isValidName(domain)) {
+    throw inputError(
+      'INPUT_BAD_DOMAIN',
+      `Invalid --domain "${domain}".`,
+      `Use lowercase letters, numbers, and hyphens (e.g. "character-design").`
     );
   }
 
   const projectDir = join(PROJECTS_DIR, projectName);
   if (existsSync(projectDir)) {
-    throw new Error(`Project "${projectName}" already exists at ${projectDir}`);
+    throw inputError(
+      'INPUT_PROJECT_EXISTS',
+      `Project "${projectName}" already exists at ${projectDir}`
+    );
   }
 
   // Resolve domain template source
@@ -99,8 +113,9 @@ export async function run(argv = process.argv.slice(2)) {
     domainDir = join(TEMPLATES_DIR, 'domains', domain);
     if (!existsSync(domainDir)) {
       const domains = await listDomains();
-      throw new Error(
-        `Domain "${domain}" not found.\n` +
+      throw inputError(
+        'INPUT_UNKNOWN_DOMAIN',
+        `Domain "${domain}" not found.`,
         `Available: generic, ${domains.join(', ')}`
       );
     }
@@ -249,8 +264,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('init.js') || process.argv[1].endsWith('init'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

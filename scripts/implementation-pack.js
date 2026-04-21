@@ -10,25 +10,30 @@
  */
 
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { listTrainingManifests } from '../lib/training-manifests.js';
 import { buildImplementationPack, listImplementationPacks, loadImplementationPack } from '../lib/implementation-packs.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      manifest: { type: 'string' },
+    },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--') && !a.startsWith('impl-') && !a.startsWith('tm-')) || 'list';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals.find(a => !a.startsWith('impl-') && !a.startsWith('tm-')) || 'list';
 
   if (subcommand === 'build') {
-    let manifestId;
-    const manifestIdx = args.indexOf('--manifest');
-    if (manifestIdx >= 0) {
-      manifestId = args[manifestIdx + 1];
-    } else {
+    let manifestId = flags.manifest;
+    if (!manifestId) {
       const manifests = await listTrainingManifests(projectRoot);
-      if (manifests.length === 0) throw new Error('No training manifests. Run: sdlab training-manifest create');
+      if (manifests.length === 0) throw inputError('INPUT_NO_MANIFEST', 'No training manifests. Run: sdlab training-manifest create');
       manifestId = manifests[manifests.length - 1].id;
     }
 
@@ -44,8 +49,8 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`  Subject continuity:   ${result.subjects}`);
 
   } else if (subcommand === 'show') {
-    const implId = args.find(a => a.startsWith('impl-'));
-    if (!implId) throw new Error('Usage: sdlab implementation-pack show <impl-id>');
+    const implId = positionals.find(a => a.startsWith('impl-'));
+    if (!implId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab implementation-pack show <impl-id>');
 
     const pack = await loadImplementationPack(projectRoot, implId);
     console.log(`\x1b[1mImplementation pack\x1b[0m — ${implId}\n`);
@@ -69,10 +74,10 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: build, show, list`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: build, show, list`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('implementation-pack.js') || process.argv[1].endsWith('implementation-pack'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

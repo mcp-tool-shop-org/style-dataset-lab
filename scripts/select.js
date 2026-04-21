@@ -9,8 +9,9 @@
  *   sdlab select --run run_2026-04-15_001 --approve 001.png --reason "best continuity" --tags portrait,keeper
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import {
   createSelectionFromRun,
   createSelectionFromBatch,
@@ -21,7 +22,7 @@ import { info } from '../lib/log.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       run: { type: 'string' },
       batch: { type: 'string' },
       approve: { type: 'string' },
@@ -46,7 +47,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const reason = flags.reason || undefined;
   const tags = flags.tags ? flags.tags.split(',').map(t => t.trim()) : undefined;
@@ -71,7 +72,7 @@ export async function run(argv = process.argv.slice(2)) {
     const approvedSlots = pairs.map(pair => {
       const colonIdx = pair.indexOf(':');
       if (colonIdx < 0) {
-        throw new Error(`Invalid batch approve format: "${pair}". Use slot_id:filename`);
+        throw inputError('INPUT_BAD_FORMAT', `Invalid batch approve format: "${pair}". Use slot_id:filename`);
       }
       return {
         slotId: pair.slice(0, colonIdx),

@@ -7,7 +7,7 @@
  *   sdlab batch sheet batch_2025-06-30_001 --project star-freight
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { loadBatchManifest } from '../lib/batch-runs.js';
 import { getBatchMode } from '../lib/batch-modes.js';
@@ -20,13 +20,13 @@ import { info } from '../lib/log.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       batch: { type: 'string' },
     },
     deprecated: { game: 'project' },
   });
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const batchId = positionals[0] || flags.batch;
 

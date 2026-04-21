@@ -10,10 +10,12 @@
  * downloads the output PNG, and writes a provenance record to records/.
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { readJsonFile } from "../lib/config.js";
+import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 
 function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, cfg, sampler, scheduler, width, height, ipAdapterConfig) {
@@ -157,11 +159,22 @@ export async function run(argv = process.argv.slice(2)) {
   const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-  const packPath = argv.find((a) => !a.startsWith("--")) || "inputs/prompts/rpg-icons-lane1.json";
+  // Extract first positional that isn't a value for a --flag.
+  // parseArgs is overkill here; instead we skip tokens that come right after a --flag.
+  const positionals = [];
+  for (let k = 0; k < argv.length; k++) {
+    const a = argv[k];
+    if (a.startsWith('--')) {
+      if (!a.includes('=') && k + 1 < argv.length && !argv[k + 1].startsWith('--')) k++;
+      continue;
+    }
+    positionals.push(a);
+  }
+  const packPath = positionals[0] || "inputs/prompts/rpg-icons-lane1.json";
   const dryRun = argv.includes("--dry-run");
 
-  const fullPackPath = join(GAME_ROOT, packPath);
-  const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
+  const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'pack-path' });
+  const pack = await readJsonFile(fullPackPath, { requiredFields: ['lane', 'subjects', 'variations', 'defaults'] });
 
   console.log(`\x1b[1mstyle-dataset-lab\x1b[0m generate`);
   console.log(`  Lane: ${pack.lane}`);
@@ -173,7 +186,7 @@ export async function run(argv = process.argv.slice(2)) {
   if (!dryRun) {
     const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      throw new Error("ComfyUI not reachable at " + COMFY_URL);
+      throw runtimeError('RUNTIME_COMFY_UNREACHABLE', "ComfyUI not reachable at " + COMFY_URL, 'Start ComfyUI or set COMFY_URL to the right host.');
     }
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
@@ -183,6 +196,7 @@ export async function run(argv = process.argv.slice(2)) {
 
   const d = pack.defaults;
   let generated = 0;
+  let errors = 0;
   const totalExpected = pack.subjects.length * pack.variations.length;
 
   for (const subject of pack.subjects) {
@@ -272,6 +286,7 @@ export async function run(argv = process.argv.slice(2)) {
         console.log(`    \x1b[32m✓\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
       } catch (err) {
         console.log(`    \x1b[31m✗\x1b[0m ${err.message}`);
+        errors++;
       }
 
       generated++;
@@ -279,14 +294,15 @@ export async function run(argv = process.argv.slice(2)) {
   }
 
   console.log("");
-  console.log(`\x1b[32m✓\x1b[0m Generated ${generated} candidates`);
+  const succeeded = generated - errors;
+  console.log(`\x1b[32m✓\x1b[0m Generated ${succeeded} candidates (${errors} errors)`);
   if (dryRun) console.log("  (dry run — no images produced)");
+  if (!dryRun && errors > 0 && succeeded === 0) {
+    throw runtimeError('RUNTIME_ALL_FAILED', `All ${totalExpected} generation attempts failed.`);
+  }
 }
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('generate.js') || process.argv[1].endsWith('generate'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

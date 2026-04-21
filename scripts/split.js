@@ -10,43 +10,45 @@
  *   sdlab split audit <split-id> [--project <name>]
  */
 
-import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
 import { loadSplitProfile } from '../lib/config.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { listSnapshots } from '../lib/snapshot.js';
 import { createSplit, loadSplit, loadSplitAudit, listSplits } from '../lib/split.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      snapshot: { type: 'string' },
+      profile: { type: 'string' },
+      'dry-run': { type: 'boolean', default: false },
+    },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--')) || 'list';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals[0] || 'list';
+  const dryRun = flags['dry-run'] || flags.dryRun;
 
   if (subcommand === 'build') {
-    // Find snapshot ID
-    let snapshotId;
-    const snapIdx = args.indexOf('--snapshot');
-    if (snapIdx >= 0) {
-      snapshotId = args[snapIdx + 1];
-    } else {
-      // Use latest snapshot
+    let snapshotId = flags.snapshot;
+    if (!snapshotId) {
       const snapshots = await listSnapshots(projectRoot);
       if (snapshots.length === 0) {
-        throw new Error('No snapshots found. Run: sdlab snapshot create');
+        throw inputError('INPUT_NO_SNAPSHOT', 'No snapshots found. Run: sdlab snapshot create');
       }
       snapshotId = snapshots[snapshots.length - 1].id;
     }
 
-    const profileIdx = args.indexOf('--profile');
-    const profileId = profileIdx >= 0 ? args[profileIdx + 1] : null;
-    const profile = loadSplitProfile(projectRoot, profileId);
-    const dryRun = argv.includes('--dry-run');
+    const profile = loadSplitProfile(projectRoot, flags.profile);
 
     console.log(`\x1b[1msdlab split build\x1b[0m — ${projectName}`);
     console.log(`  Snapshot: ${snapshotId}`);
-    console.log(`  Profile:  ${profileId || 'balanced-default (built-in)'}`);
+    console.log(`  Profile:  ${flags.profile || 'balanced-default (built-in)'}`);
     console.log(`  Strategy: ${profile.strategy}`);
     console.log(`  Ratios:   ${profile.train_ratio}/${profile.val_ratio}/${profile.test_ratio}`);
     console.log(`  Seed:     ${profile.seed}`);
@@ -60,7 +62,6 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`  Val:   ${result.val}`);
     console.log(`  Test:  ${result.test}`);
 
-    // Show audit summary
     const audit = await loadSplitAudit(projectRoot, result.splitId);
     console.log('');
     if (audit.leakage_check.passed) {
@@ -86,8 +87,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'show') {
-    const splitId = args.find(a => a.startsWith('split-'));
-    if (!splitId) throw new Error('Usage: sdlab split show <split-id>');
+    const splitId = positionals[1] || positionals.find(a => a.startsWith('split-'));
+    if (!splitId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab split show <split-id>');
 
     const manifest = await loadSplit(projectRoot, splitId);
     console.log(`\x1b[1mSplit\x1b[0m — ${splitId}\n`);
@@ -112,13 +113,12 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'audit') {
-    const splitId = args.find(a => a.startsWith('split-'));
-    if (!splitId) throw new Error('Usage: sdlab split audit <split-id>');
+    const splitId = positionals[1] || positionals.find(a => a.startsWith('split-'));
+    if (!splitId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab split audit <split-id>');
 
     const audit = await loadSplitAudit(projectRoot, splitId);
     console.log(`\x1b[1mSplit audit\x1b[0m — ${splitId}\n`);
 
-    // Leakage check
     if (audit.leakage_check.passed) {
       console.log(`  \x1b[32m✓\x1b[0m Leakage check: PASSED`);
     } else {
@@ -128,13 +128,11 @@ export async function run(argv = process.argv.slice(2)) {
       }
     }
 
-    // Family distribution
     console.log(`\n  Families: ${audit.family_count}`);
     console.log(`    Train: ${audit.families_per_split.train}`);
     console.log(`    Val:   ${audit.families_per_split.val}`);
     console.log(`    Test:  ${audit.families_per_split.test}`);
 
-    // Lane balance
     console.log('\n  Lane balance:');
     console.log(`    ${'Lane'.padEnd(20)} ${'Total'.padStart(6)} ${'Train%'.padStart(8)} ${'Val%'.padStart(8)} ${'Test%'.padStart(8)}`);
     console.log(`    ${'─'.repeat(52)}`);
@@ -143,14 +141,11 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: build, list, show, audit`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: build, list, show, audit`);
   }
 }
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('split.js') || process.argv[1].endsWith('split'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

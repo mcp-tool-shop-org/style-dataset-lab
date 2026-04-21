@@ -9,7 +9,7 @@
  *   sdlab run show run_2026-04-16_001 --project star-freight --md
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { loadRun, listRuns } from '../lib/runtime-runs.js';
 import { renderRunText, renderRunMarkdown } from '../lib/run-summary.js';
@@ -17,7 +17,7 @@ import { renderRunText, renderRunMarkdown } from '../lib/run-summary.js';
 export async function run(argv = process.argv.slice(2)) {
   const { positionals, flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       json: { type: 'boolean' },
       md: { type: 'boolean' },
     },
@@ -25,7 +25,7 @@ export async function run(argv = process.argv.slice(2)) {
   });
 
   const runId = positionals[0];
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
 
   // No run ID → list runs

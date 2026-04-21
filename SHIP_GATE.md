@@ -16,16 +16,16 @@
 
 ### Default safety posture
 
-- [ ] `[cli|mcp|desktop]` SKIP: not a CLI/MCP/desktop app — scripts run locally by the user
-- [ ] `[cli|mcp|desktop]` SKIP: not a CLI/MCP/desktop app — scripts operate within the project directory
+- [x] `[cli|mcp|desktop]` CLI defaults to read-only canon inspection; mutating commands require explicit project target (2026-04-21)
+- [x] `[cli|mcp|desktop]` All file operations are scoped to the project directory under `projects/<name>/` (2026-04-21)
 - [ ] `[mcp]` SKIP: not an MCP server
 - [ ] `[mcp]` SKIP: not an MCP server
 
 ## B. Error Handling
 
 - [x] `[all]` Errors follow the Structured Error Shape: `code`, `message`, `hint`, `cause?`, `retryable?` (2026-04-14)
-- [ ] `[cli]` SKIP: not a CLI tool — scripts are run via npm run
-- [ ] `[cli]` SKIP: not a CLI tool
+- [x] `[cli]` `sdlab` exits non-zero on error; stderr carries structured messages (2026-04-21)
+- [x] `[cli]` `--help` and subcommand help accurate for v3.0.0 surface (2026-04-21)
 - [ ] `[mcp]` SKIP: not an MCP server
 - [ ] `[mcp]` SKIP: not an MCP server
 - [ ] `[desktop]` SKIP: not a desktop app
@@ -36,10 +36,10 @@
 - [x] `[all]` README is current: what it does, install, usage, supported platforms + runtime versions (2026-04-14)
 - [x] `[all]` CHANGELOG.md (Keep a Changelog format) (2026-04-14)
 - [x] `[all]` LICENSE file present and repo states support status (2026-04-14)
-- [ ] `[cli]` SKIP: not a CLI tool — no --help flags
-- [ ] `[cli|mcp|desktop]` SKIP: not a CLI/MCP/desktop app
+- [x] `[cli]` `sdlab --help` documents subcommands; each subcommand accepts `--help` (2026-04-21)
+- [x] `[cli|mcp|desktop]` CLI documented in README pipeline example (2026-04-21)
 - [ ] `[mcp]` SKIP: not an MCP server
-- [ ] `[complex]` SKIP: not complex enough to warrant a HANDBOOK.md
+- [ ] `[complex]` HANDBOOK lives in `site/` (Starlight) and is linked from the landing page
 
 ## D. Shipping Hygiene
 

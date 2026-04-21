@@ -11,15 +11,20 @@
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { buildEvalPack, listEvalPacks, loadEvalPack } from '../lib/eval-pack.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: { project: { type: 'string' } },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--')) || 'list';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals[0] || 'list';
 
   if (subcommand === 'build') {
     console.log(`\x1b[1msdlab eval-pack build\x1b[0m — ${projectName}\n`);
@@ -48,8 +53,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'show') {
-    const evalId = args.find(a => a.startsWith('eval-'));
-    if (!evalId) throw new Error('Usage: sdlab eval-pack show <eval-id>');
+    const evalId = positionals.find(a => a.startsWith('eval-'));
+    if (!evalId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab eval-pack show <eval-id>');
 
     const manifest = await loadEvalPack(projectRoot, evalId);
     console.log(`\x1b[1mEval pack\x1b[0m — ${evalId}\n`);
@@ -80,13 +85,10 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: build, list, show`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: build, list, show`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('eval-pack.js') || process.argv[1].endsWith('eval-pack'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

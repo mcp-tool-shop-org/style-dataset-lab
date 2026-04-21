@@ -4,36 +4,44 @@
  * eligibility.js — Audit training/eval eligibility for all project records.
  *
  * Usage:
- *   sdlab eligibility audit [--project <name>]
+ *   sdlab eligibility audit [--project <name>] [--profile <id>]
  */
 
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
 import { loadProjectConfig, loadSelectionProfile } from '../lib/config.js';
+import { handleCliError } from '../lib/errors.js';
 import { evaluateEligibility, categorizeExclusions } from '../lib/eligibility.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      profile: { type: 'string' },
+    },
+    deprecated: { game: 'project' },
+    allowUnknown: true,
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
 
-  const profileIdx = argv.indexOf('--profile');
-  const profileId = profileIdx >= 0 ? argv[profileIdx + 1] : null;
-  const profile = loadSelectionProfile(projectRoot, profileId);
+  const profile = loadSelectionProfile(projectRoot, flags.profile);
   const config = loadProjectConfig(projectRoot);
 
   const recordsDir = join(projectRoot, 'records');
   const files = (await readdir(recordsDir)).filter(f => f.endsWith('.json')).sort();
 
   console.log(`\x1b[1msdlab eligibility audit\x1b[0m — ${projectName}`);
-  console.log(`  Profile: ${profileId || 'training-default (built-in)'}`);
+  console.log(`  Profile: ${flags.profile || 'training-default (built-in)'}`);
   console.log(`  Records: ${files.length}`);
   console.log('');
 
   const eligible = [];
   const excluded = [];
-  const nearMiss = []; // Records with exactly 1 failing reason
+  const nearMiss = [];
 
   for (const file of files) {
     const raw = await readFile(join(recordsDir, file), 'utf-8');
@@ -55,7 +63,6 @@ export async function run(argv = process.argv.slice(2)) {
   console.log(`  \x1b[31m✗\x1b[0m Excluded: ${excluded.length}`);
   console.log('');
 
-  // Categorize exclusions
   const categories = categorizeExclusions(excluded);
   console.log('  Exclusion breakdown:');
   for (const [cat, count] of Object.entries(categories)) {
@@ -65,7 +72,6 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
-  // Near-miss improvement opportunities
   if (nearMiss.length > 0) {
     console.log(`\n  Improvement opportunities (${nearMiss.length} records with 1 failing check):`);
     const byReason = {};
@@ -84,8 +90,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('eligibility.js') || process.argv[1].endsWith('eligibility'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

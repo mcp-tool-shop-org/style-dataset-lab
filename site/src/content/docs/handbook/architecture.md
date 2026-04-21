@@ -7,73 +7,81 @@ sidebar:
 
 ## Pipeline flow
 
-The full production pipeline from canon to training export:
+Style Dataset Lab has one unified pipeline that runs from canon definition through a frozen dataset, then loops through production briefs, critique, batch work, selection, and re-ingest. The same flow is walked narratively in [End-to-End Production Loop](./production-loop/).
 
 ```
- Write Canon                Create Prompts
- (constitution.md           (prompt packs .json)
-  review-rubric.md)               |
-       |                          |
-       v                          v
-  Canon rules             generate.js / generate-identity.js
-  inform curation              |
-       |                       v
-       |               Candidate images
-       |                       |
-       v                       v
-  curate.js  <------>  per-dimension scoring
-       |
-       v
-  painterly.js --> painterly variants
-       |
-       v
-  canon-bind.js --> pass/fail/partial per rule
-       |
-       v
-  compare.js --> pairwise A-vs-B preferences
-       |
-       v
-  repo-dataset --> TRL / LLaVA / Qwen2-VL / 10 formats
+ canon → generate → curate → bind → snapshot → split → export → eval
+   ↑                                                              │
+   │                                                              v
+   │     brief ← workflow                                    training
+   │       │                                                      │
+   │       v                                                      v
+   │     run → critique → refine                              eval-run
+   │       │                                                      │
+   │       v                                                      │
+   │     batch → select → re-ingest ──────────────────────────────┘
+   └────────────────────────────────────────────────────────────────
 ```
+
+Each stage produces structured artifacts with IDs that link back to their predecessors. Selected outputs from the production leg return as candidate records through `sdlab reingest selected` — they go through the same curate + bind review as every other record, never auto-approved.
+
+### Legacy scripts
+
+`painterly` (img2img style pass) and `compare` (A-vs-B preference capture) remain in the CLI surface but are not part of the core loop. `painterly` is a post-processing convenience. `compare` feeds DPO/ORPO pair data for preference training and is only needed when you are building preference datasets.
 
 ## Repository layout
 
 ```
 style-dataset-lab/
-  scripts/                    13 pipeline scripts (all accept --game <name>)
-  templates/                  Blank starting point (ships with npm package)
-    canon/                    Starter constitution + review rubric
-    inputs/prompts/           Example prompt pack
-  games/
-    star-freight/             Star Freight example data (repo-only, not in npm)
-      canon/                  Style constitution, review rubric, species canon
-      records/                Per-asset JSON (provenance + judgment + canon)
-      comparisons/            A-vs-B preference judgments
-      inputs/                 Prompt packs, identity packets, references
-      outputs/                Generated images (gitignored)
-      exports/                repo-dataset output (gitignored)
-    <your-game>/              Add more games here with the same structure
+  bin/sdlab.js                CLI entry point (single binary)
+  lib/                        Shared modules (paths, errors, logging, schemas)
+  scripts/                    Per-command scripts (each exports run(argv))
+  schemas/                    JSON schemas for records, snapshots, splits, manifests
+  templates/                  Starter content (ships with the npm package)
+    canon/                    Starter constitution.md and review-rubric.md
+    inputs/prompts/           Example prompt pack (example-wave.json)
+    domains/                  Five domain starters (per-domain project + config + workflows)
+      game-art/
+      character-design/
+      creature-design/
+      architecture/
+      vehicle-mech/
+  projects/                   Project data (repo-only, not in npm)
+    star-freight/             Star Freight example (canon, records, outputs, exports)
+    <your-project>/           Scaffolded with `sdlab init <name>`
+  workflows/                  Reserved; see workflows/README.md
   site/                       Documentation site (Starlight)
   package.json
 ```
 
-The npm package ships `scripts/` and `templates/` only. Game data stays in the repo. Each game is fully isolated -- its own canon, records, and assets. Scripts read from and write to `games/<name>/` based on the `--game` flag (default: `star-freight`).
+The npm package ships `bin/`, `lib/`, `scripts/`, and `templates/` only. Project data stays in the repo. Each project is fully isolated -- its own canon, records, and assets. All `sdlab` commands read from and write to `projects/<name>/` based on the `--project` flag (default: `star-freight`).
 
-### Templates structure
+### Template layout
 
-The `templates/` directory provides blank files for bootstrapping a new game:
+Each domain template under `templates/domains/<domain>/` ships a complete starting point:
 
 | File | Purpose |
 |------|---------|
-| `templates/canon/constitution.md` | Empty constitution with section headings -- fill in your style rules |
-| `templates/canon/review-rubric.md` | Empty rubric with scoring dimension stubs |
-| `templates/inputs/prompts/example-wave.json` | Prompt pack with the correct JSON schema and placeholder subjects |
+| `project.json` | Project metadata + generation defaults (checkpoint, LoRAs, resolution, sampler) |
+| `constitution.json` | Machine-readable rules that canon-bind maps scores and failure modes to |
+| `lanes.json` | Subject lane definitions (portrait, full-body, streetscape, etc.) |
+| `rubric.json` | Scoring dimensions and approval thresholds |
+| `terminology.json` | Group/faction labels, detection patterns, and training profiles |
+| `workflows/profiles/*.json` | ComfyUI workflow profiles copied into the project on `sdlab init` |
 
-To start a new game: copy templates into `games/<name>/`, edit the canon and prompts, then run the pipeline.
+The shared canon markdown (`templates/canon/constitution.md`, `templates/canon/review-rubric.md`) is copied into every new project's `canon/` directory as a writable starting point.
+
+To scaffold a new project:
+
+```bash
+sdlab init my-project --domain character-design
+```
+
+This creates `projects/my-project/` with the full directory structure, config files pulled from the domain template, canon markdown stubs, and an example prompt pack ready to edit.
 
 ## Record schema
 
-Every asset in the dataset is represented by a JSON file in `games/<name>/records/`. Records accumulate data over time as the asset moves through the pipeline.
+Every asset in the dataset is represented by a JSON file in `projects/<name>/records/`. Records accumulate data over time as the asset moves through the pipeline.
 
 ### Standard record (curated + canon-bound)
 
@@ -154,11 +162,11 @@ Identity records extend the standard schema with two additional blocks:
 
 The `identity` block tracks who or what the image depicts. The `lineage` block tracks how it was generated -- discovery (txt2img from scratch), anchor (promoted discovery), or follow-on (img2img derived from an anchor).
 
-Follow-on records must reference their anchor via `anchor_source_image` and `derived_from_record_id`. The generate-identity script enforces this with a hard validation failure.
+Follow-on records must reference their anchor via `anchor_source_image` and `derived_from_record_id`. `sdlab generate:identity` enforces this with a hard validation failure.
 
 ## Canon constitution
 
-The style constitution lives in `games/<name>/canon/constitution.md`. It defines every rule that judgments can cite.
+The style constitution lives in `projects/<name>/canon/constitution.md`. It defines every rule that judgments can cite. The machine-readable mirror in `projects/<name>/constitution.json` is what `sdlab bind` reads to emit `canon.assertions`.
 
 ### Rule categories
 
@@ -176,65 +184,67 @@ The style constitution lives in `games/<name>/canon/constitution.md`. It defines
 
 ### Scoring dimensions
 
-The constitution defines 8 scoring dimensions (0.0 to 1.0) that apply to all image types. Identity records add 4 more for subject-specific evaluation.
+`rubric.json` defines the scoring dimensions (0.0 to 1.0) that apply to all image types. Identity records add further subject-specific dimensions.
 
-**Approval:** all dimensions >= 0.6, average >= 0.7.
-**Rejection:** any dimension < 0.4, or average < 0.5.
+**Approval defaults:** all dimensions >= 0.6, average >= 0.7.
+**Rejection defaults:** any dimension < 0.4, or average < 0.5.
+
+Thresholds are configurable per project in `rubric.json`.
 
 ### Supporting documents
 
 | File | Purpose |
 |------|---------|
-| `games/<name>/canon/constitution.md` | Full style rules with faction details |
-| `games/<name>/canon/review-rubric.md` | Quick review protocol and common failure modes |
-| `games/<name>/canon/identity-gates.md` | Named-subject acceptance criteria and lineage schema |
-| `games/<name>/canon/species-canon.md` | Alien species anatomy and design specifications |
+| `projects/<name>/canon/constitution.md` | Full style rules with faction details |
+| `projects/<name>/canon/review-rubric.md` | Quick review protocol and common failure modes |
+| `projects/<name>/canon/identity-gates.md` | Named-subject acceptance criteria and lineage schema |
+| `projects/<name>/canon/species-canon.md` | Alien species anatomy and design specifications (if applicable) |
 
 ## Curation workflow
 
 ```
 candidate (uncurated)
-    |
+    │
     v
-curate.js --> judgment block written to record
-    |            |            |
+sdlab curate --> judgment block written to record
+    │            │            │
     v            v            v
 approved    rejected    borderline
-    |
+    │
     v
-canon-bind.js --> canon.assertions written to record
-    |
+sdlab bind --> canon.assertions written to record
+    │
     v
-compare.js --> pairwise comparison records (optional)
-    |
+sdlab compare --> pairwise comparison records (optional, for preference data)
+    │
     v
-ready for export
+ready for snapshot → split → export
 ```
 
 Key design decisions:
 
-1. **Record before move.** The curate script writes the judgment to the record file before moving the image. This prevents orphaned images if the process crashes mid-operation.
+1. **Record before move.** `sdlab curate` writes the judgment to the record file before moving the image. This prevents orphaned images if the process crashes mid-operation.
 
 2. **Scores are human-entered.** Per-dimension scores come from the curator, not from automated analysis. This is intentional -- the dataset trains models to replicate human aesthetic judgment.
 
-3. **Canon binding is automated.** The canon-bind script maps scores and failure modes to constitution rules deterministically. A low `material_fidelity` score maps to `MAT-001`. A `wrong_palette` failure mode maps to `COL-001`.
+3. **Canon binding is deterministic.** `sdlab bind` maps scores and failure modes to constitution rules deterministically. A low `material_fidelity` score maps to `MAT-001`. A `wrong_palette` failure mode maps to `COL-001`.
 
-4. **Comparisons are separate.** Pairwise preferences live in `comparisons/`, not inside records. This allows comparing images across different waves and categories.
+4. **Comparisons are separate.** Pairwise preferences live in `projects/<name>/comparisons/`, not inside records. This allows comparing images across different waves and categories.
 
 ## Export pipeline
 
-The export is handled by the external `@mcptoolshop/repo-dataset` CLI, which scans a game directory and produces multimodal training data.
+The export is handled by the external `@mcptoolshop/repo-dataset` CLI, which scans a project directory and produces multimodal training data.
 
 ### What it scans
 
-Point repo-dataset at a game directory: `repo-dataset visual generate ./games/star-freight --format trl`
+Point repo-dataset at a project directory: `repo-dataset visual generate ./projects/star-freight --format trl`
 
 | Source | What it reads |
 |--------|--------------|
-| `games/<name>/records/*.json` | Provenance, judgment, canon assertions |
-| `games/<name>/outputs/approved/*.png` | Approved images (classification + critique) |
-| `games/<name>/outputs/rejected/*.png` | Rejected images (classification + critique) |
-| `games/<name>/comparisons/*.json` | Pairwise preferences (DPO/ORPO pairs) |
+| `projects/<name>/records/*.json` | Provenance, judgment, canon assertions |
+| `projects/<name>/outputs/approved/*.png` | Approved images (classification + critique) |
+| `projects/<name>/outputs/rejected/*.png` | Rejected images (classification + critique) |
+| `projects/<name>/comparisons/*.json` | Pairwise preferences (DPO/ORPO pairs) |
 
 ### Training unit types
 
@@ -276,8 +286,8 @@ Locations and ships have their own parallel gates (IL-1 through IL-5) focused on
 ### Directory structure
 
 ```
-games/<name>/inputs/identity-packets/    Identity packet definitions (JSON)
-games/<name>/records/                    Extended records with identity + lineage blocks
-games/<name>/outputs/candidates/         Discovery outputs (uncurated)
-games/<name>/outputs/approved/           Curated approved (anchors + follow-ons)
+projects/<name>/inputs/identity-packets/   Identity packet definitions (JSON)
+projects/<name>/records/                   Extended records with identity + lineage blocks
+projects/<name>/outputs/candidates/        Discovery outputs (uncurated)
+projects/<name>/outputs/approved/          Curated approved (anchors + follow-ons)
 ```

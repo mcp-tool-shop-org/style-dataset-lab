@@ -12,30 +12,33 @@
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { existsSync } from 'node:fs';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
 import { loadSelectionProfile } from '../lib/config.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { createSnapshot, loadSnapshot, listSnapshots, diffSnapshots } from '../lib/snapshot.js';
-import { evaluateEligibility } from '../lib/eligibility.js';
 import { categorizeExclusions } from '../lib/eligibility.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
-  const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--')) || 'list';
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      profile: { type: 'string' },
+      'dry-run': { type: 'boolean', default: false },
+    },
+    deprecated: { game: 'project' },
+  });
 
-  // Strip subcommand from argv for flag parsing
-  const args = argv.filter(a => a !== subcommand);
+  const projectName = flags.project || getProjectName(argv);
+  const projectRoot = join(REPO_ROOT, 'projects', projectName);
+  const subcommand = positionals[0] || 'list';
+  const dryRun = flags['dry-run'] || flags.dryRun;
 
   if (subcommand === 'create') {
-    const profileIdx = args.indexOf('--profile');
-    const profileId = profileIdx >= 0 ? args[profileIdx + 1] : null;
-    const profile = loadSelectionProfile(projectRoot, profileId);
-    const dryRun = argv.includes('--dry-run');
+    const profile = loadSelectionProfile(projectRoot, flags.profile);
 
     console.log(`\x1b[1msdlab snapshot create\x1b[0m — ${projectName}`);
-    console.log(`  Profile: ${profileId || 'training-default (built-in)'}`);
+    console.log(`  Profile: ${flags.profile || 'training-default (built-in)'}`);
     if (dryRun) console.log('  Mode: DRY RUN (no files written)');
     console.log('');
 
@@ -46,7 +49,6 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`  Excluded: ${result.excluded}`);
 
     if (!dryRun) {
-      // Read and display summary
       const summary = JSON.parse(
         await readFile(join(projectRoot, 'snapshots', result.snapshotId, 'summary.json'), 'utf-8')
       );
@@ -59,7 +61,6 @@ export async function run(argv = process.argv.slice(2)) {
         console.log(`    ${f}: ${c}`);
       }
 
-      // Read and categorize exclusions
       const excludedRaw = await readFile(
         join(projectRoot, 'snapshots', result.snapshotId, 'excluded.jsonl'), 'utf-8'
       );
@@ -83,8 +84,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'show') {
-    const snapshotId = args.find(a => a.startsWith('snap-'));
-    if (!snapshotId) throw new Error('Usage: sdlab snapshot show <snapshot-id>');
+    const snapshotId = positionals[1] || positionals.find(a => a.startsWith('snap-'));
+    if (!snapshotId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab snapshot show <snapshot-id>');
 
     const manifest = await loadSnapshot(projectRoot, snapshotId);
     console.log(`\x1b[1mSnapshot\x1b[0m — ${snapshotId}\n`);
@@ -102,8 +103,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'diff') {
-    const snapIds = args.filter(a => a.startsWith('snap-'));
-    if (snapIds.length < 2) throw new Error('Usage: sdlab snapshot diff <id-a> <id-b>');
+    const snapIds = positionals.slice(1).filter(a => a.startsWith('snap-'));
+    if (snapIds.length < 2) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab snapshot diff <id-a> <id-b>');
 
     const diff = await diffSnapshots(projectRoot, snapIds[0], snapIds[1]);
     console.log(`\x1b[1mSnapshot diff\x1b[0m — ${snapIds[0]} vs ${snapIds[1]}\n`);
@@ -123,14 +124,11 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: create, list, show, diff`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: create, list, show, diff`);
   }
 }
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('snapshot.js') || process.argv[1].endsWith('snapshot'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

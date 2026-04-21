@@ -28,7 +28,8 @@ sdlab generate inputs/prompts/wave1.json --project my-project
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
 
 # Bind approved work to constitution rules
-sdlab bind --project my-project
+# (`sdlab bind` is a shorter alias for `canon-bind`)
+sdlab canon-bind --project my-project
 
 # Freeze a versioned dataset
 sdlab snapshot create --project my-project

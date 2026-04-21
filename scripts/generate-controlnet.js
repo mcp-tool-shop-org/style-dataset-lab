@@ -12,10 +12,12 @@
  *   sdlab generate:controlnet --subject naia --guide <path> --seeds 4 --project star-freight
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectName, parseNumberFlag } from "../lib/args.js";
+import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { readJsonFile } from "../lib/config.js";
+import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 const DEFAULTS = {
@@ -33,7 +35,12 @@ const DEFAULTS = {
 function parseLocalArgs(argv) {
   const get = (flag, def) => {
     const i = argv.indexOf(flag);
-    return i >= 0 && i + 1 < argv.length ? argv[i + 1] : def;
+    if (i < 0 || i + 1 >= argv.length) return def;
+    const v = argv[i + 1];
+    if (typeof v === 'string' && v.startsWith('--')) {
+      throw inputError('INPUT_MISSING_VALUE', `Flag ${flag} is missing its value (got another flag: ${v}).`);
+    }
+    return v;
   };
   return {
     subject: get("--subject", "unknown"),
@@ -41,9 +48,9 @@ function parseLocalArgs(argv) {
     prompt: get("--prompt", null),
     promptFile: get("--prompt-file", null),
     negative: get("--negative", null),
-    seeds: parseInt(get("--seeds", "4"), 10),
-    weight: parseFloat(get("--weight", "0.70")),
-    guidanceEnd: parseFloat(get("--guidance-end", "0.65")),
+    seeds: parseNumberFlag('seeds', get("--seeds", "4"), { int: true, min: 1 }),
+    weight: parseNumberFlag('weight', get("--weight", "0.70"), { min: 0, max: 2 }),
+    guidanceEnd: parseNumberFlag('guidance-end', get("--guidance-end", "0.65"), { min: 0, max: 1 }),
     controlModel: get("--model", "controlnet-canny-sdxl-1.0.safetensors"),
     dryRun: argv.includes("--dry-run"),
   };
@@ -167,21 +174,25 @@ export async function run(argv = process.argv.slice(2)) {
   const opts = parseLocalArgs(argv);
 
   if (!opts.guidePath) {
-    throw new Error("--guide <path> is required");
+    throw inputError('INPUT_MISSING_FLAG', "--guide <path> is required");
   }
+
+  // Validate guide stays inside the project tree.
+  const safeGuide = resolveSafeProjectPath(GAME_ROOT, opts.guidePath, { flagName: 'guide' });
 
   // Resolve prompt
   let prompt = opts.prompt;
   let negative = opts.negative;
 
   if (opts.promptFile && !prompt) {
-    const pf = JSON.parse(await readFile(join(GAME_ROOT, opts.promptFile), "utf-8"));
+    const safePromptFile = resolveSafeProjectPath(GAME_ROOT, opts.promptFile, { flagName: 'prompt-file' });
+    const pf = await readJsonFile(safePromptFile, { requiredFields: ['prompt'] });
     prompt = pf.prompt;
     negative = negative || pf.negative;
   }
 
   if (!prompt) {
-    throw new Error("--prompt or --prompt-file required");
+    throw inputError('INPUT_MISSING_FLAG', "--prompt or --prompt-file required");
   }
 
   if (!negative) {
@@ -200,12 +211,12 @@ export async function run(argv = process.argv.slice(2)) {
   if (!opts.dryRun) {
     const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      throw new Error("ComfyUI not reachable at " + COMFY_URL);
+      throw runtimeError('RUNTIME_COMFY_UNREACHABLE', "ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
   }
 
-  const guideFullPath = join(GAME_ROOT, opts.guidePath);
+  const guideFullPath = safeGuide;
   const guideFilename = `cn_guide_${opts.subject}.png`;
 
   if (!opts.dryRun) {
@@ -215,6 +226,7 @@ export async function run(argv = process.argv.slice(2)) {
 
   await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
 
+  let successes = 0, failures = 0;
   for (let si = 0; si < opts.seeds; si++) {
     const seed = DEFAULTS.base_seed + si;
     const assetId = `${opts.subject}_cn_s${si}`;
@@ -254,19 +266,21 @@ export async function run(argv = process.argv.slice(2)) {
       const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
       await writeFile(join(GAME_ROOT, destPath), imgData);
       console.log(`    \x1b[32m+\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
+      successes++;
     } catch (err) {
       console.log(`    \x1b[31mx\x1b[0m ${err.message}`);
+      failures++;
     }
   }
 
-  console.log("\n\x1b[32m+\x1b[0m ControlNet discovery complete");
+  console.log(`\n\x1b[32m+\x1b[0m ControlNet discovery complete (${successes} success, ${failures} failed)`);
   if (opts.dryRun) console.log("  (dry run)");
+  if (!opts.dryRun && failures > 0 && successes === 0) {
+    throw runtimeError('RUNTIME_ALL_FAILED', `All ${opts.seeds} ControlNet generation attempts failed.`);
+  }
 }
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('generate-controlnet.js') || process.argv[1].endsWith('generate-controlnet'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

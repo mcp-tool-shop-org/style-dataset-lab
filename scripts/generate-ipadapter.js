@@ -11,10 +11,11 @@
  *   sdlab generate:ipadapter --subject corrigan --ref <image> --seeds 4 --project star-freight
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectName, parseNumberFlag } from "../lib/args.js";
+import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 const DEFAULTS = {
@@ -34,17 +35,22 @@ const DEFAULTS = {
 function parseLocalArgs(argv) {
   const get = (flag, def) => {
     const i = argv.indexOf(flag);
-    return i >= 0 && i + 1 < argv.length ? argv[i + 1] : def;
+    if (i < 0 || i + 1 >= argv.length) return def;
+    const v = argv[i + 1];
+    if (typeof v === 'string' && v.startsWith('--')) {
+      throw inputError('INPUT_MISSING_VALUE', `Flag ${flag} is missing its value (got another flag: ${v}).`);
+    }
+    return v;
   };
   return {
     subject: get("--subject", "unknown"),
     refPath: get("--ref", null),
     prompt: get("--prompt", null),
     negative: get("--negative", null),
-    seeds: parseInt(get("--seeds", "4"), 10),
-    weight: parseFloat(get("--weight", "0.55")),
-    start: parseFloat(get("--start", "0.0")),
-    end: parseFloat(get("--end", "0.8")),
+    seeds: parseNumberFlag('seeds', get("--seeds", "4"), { int: true, min: 1 }),
+    weight: parseNumberFlag('weight', get("--weight", "0.55"), { min: 0, max: 2 }),
+    start: parseNumberFlag('start', get("--start", "0.0"), { min: 0, max: 1 }),
+    end: parseNumberFlag('end', get("--end", "0.8"), { min: 0, max: 1 }),
     dryRun: argv.includes("--dry-run"),
   };
 }
@@ -174,11 +180,14 @@ export async function run(argv = process.argv.slice(2)) {
   const opts = parseLocalArgs(argv);
 
   if (!opts.refPath) {
-    throw new Error("--ref <path> is required");
+    throw inputError('INPUT_MISSING_FLAG', "--ref <path> is required");
   }
   if (!opts.prompt) {
-    throw new Error("--prompt is required");
+    throw inputError('INPUT_MISSING_FLAG', "--prompt is required");
   }
+
+  // Validate --ref path stays inside project tree.
+  const safeRefPath = resolveSafeProjectPath(GAME_ROOT, opts.refPath, { flagName: 'ref' });
 
   const negative = opts.negative ||
     "photorealistic, photograph, 3d render, anime, cartoon, text, watermark, blurry, low quality";
@@ -196,11 +205,11 @@ export async function run(argv = process.argv.slice(2)) {
   if (!opts.dryRun) {
     const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      throw new Error("ComfyUI not reachable");
+      throw runtimeError('RUNTIME_COMFY_UNREACHABLE', "ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
 
-    await uploadImage(join(GAME_ROOT, opts.refPath), refFilename, COMFY_URL);
+    await uploadImage(safeRefPath, refFilename, COMFY_URL);
     console.log(`\x1b[32m+\x1b[0m Reference uploaded: ${refFilename}`);
   }
 
@@ -255,8 +264,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('generate-ipadapter.js') || process.argv[1].endsWith('generate-ipadapter'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

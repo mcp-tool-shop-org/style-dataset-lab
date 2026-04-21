@@ -4,43 +4,44 @@
  * card.js — Generate dataset cards.
  *
  * Usage:
- *   sdlab card generate --snapshot <id> --split <id> [--project <name>]
+ *   sdlab card generate [--snapshot <id>] [--split <id>] [--project <name>]
  */
 
 import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { listSnapshots } from '../lib/snapshot.js';
 import { listSplits } from '../lib/split.js';
 import { generateCard } from '../lib/card.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      snapshot: { type: 'string' },
+      split: { type: 'string' },
+    },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--')) || 'generate';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals[0] || 'generate';
 
   if (subcommand === 'generate') {
-    // Find snapshot
-    let snapshotId;
-    const snapIdx = args.indexOf('--snapshot');
-    if (snapIdx >= 0) {
-      snapshotId = args[snapIdx + 1];
-    } else {
+    let snapshotId = flags.snapshot;
+    if (!snapshotId) {
       const snapshots = await listSnapshots(projectRoot);
-      if (snapshots.length === 0) throw new Error('No snapshots found. Run: sdlab snapshot create');
+      if (snapshots.length === 0) throw inputError('INPUT_NO_SNAPSHOT', 'No snapshots found. Run: sdlab snapshot create');
       snapshotId = snapshots[snapshots.length - 1].id;
     }
 
-    // Find split
-    let splitId;
-    const splitIdx = args.indexOf('--split');
-    if (splitIdx >= 0) {
-      splitId = args[splitIdx + 1];
-    } else {
+    let splitId = flags.split;
+    if (!splitId) {
       const splits = await listSplits(projectRoot);
-      if (splits.length === 0) throw new Error('No splits found. Run: sdlab split build');
+      if (splits.length === 0) throw inputError('INPUT_NO_SPLIT', 'No splits found. Run: sdlab split build');
       splitId = splits[splits.length - 1].id;
     }
 
@@ -51,7 +52,6 @@ export async function run(argv = process.argv.slice(2)) {
 
     const { markdown, json } = await generateCard(projectRoot, snapshotId, splitId);
 
-    // Write to project root
     const mdPath = join(projectRoot, 'dataset-card.md');
     const jsonPath = join(projectRoot, 'dataset-card.json');
     await writeFile(mdPath, markdown);
@@ -61,13 +61,10 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`  \x1b[32m✓\x1b[0m dataset-card.json`);
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: generate`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: generate`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('card.js') || process.argv[1].endsWith('card'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

@@ -8,10 +8,9 @@
 
 import { readFile, writeFile, rename, readdir, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'projects', GAME);
+import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectName } from "../lib/args.js";
+import { handleCliError } from "../lib/errors.js";
 
 const DEFAULT_APPROVED_SCORES = {
   silhouette_clarity: 0.8, palette_adherence: 0.8, material_fidelity: 0.8,
@@ -44,7 +43,11 @@ const REJECT_EXPLANATIONS = {
   "REJECT9_alien_xenomorph": { explanation: "Biomechanical Xenomorph creature from the Alien franchise. No clothing, existing IP not original design. Wrong in every way.", failures: ["generic_scifi", "faction_unreadable"], scores: { silhouette_clarity: 0.8, palette_adherence: 0.2, material_fidelity: 0.3, faction_read: 0.0, wear_level: 0.0, style_consistency: 0.3, clothing_logic: 0.0, composition: 0.7 } },
 };
 
-async function main() {
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const DRY_RUN = argv.includes('--dry-run');
+
   const recordsDir = join(GAME_ROOT, "records");
   const files = await readdir(recordsDir);
 
@@ -97,10 +100,18 @@ async function main() {
       }
     }
 
-    // Move image
+    // Move image FIRST, then update the record (safe ordering).
     const oldPath = join(GAME_ROOT, record.asset_path);
     const newDir = `outputs/${status}`;
     const newPath = `${newDir}/${id}.png`;
+
+    if (DRY_RUN) {
+      console.log(`\x1b[33m(dry-run)\x1b[0m ${id} → ${status}`);
+      if (status === "approved") approved++;
+      else rejected++;
+      continue;
+    }
+
     await mkdir(join(GAME_ROOT, newDir), { recursive: true });
 
     try {
@@ -110,7 +121,7 @@ async function main() {
       continue;
     }
 
-    // Update record
+    // Update record only after successful rename.
     record.asset_path = newPath;
     record.judgment = {
       status,
@@ -120,7 +131,7 @@ async function main() {
       criteria_scores: scores,
       failure_modes: failures,
       improvement_notes: null,
-      confidence: status === "rejected" ? 0.95 : 0.75, // bulk approvals get lower confidence
+      confidence: status === "rejected" ? 0.95 : 0.75,
     };
 
     await writeFile(path, JSON.stringify(record, null, 2));
@@ -132,7 +143,9 @@ async function main() {
     console.log(`${icon} ${id} → ${status}`);
   }
 
-  console.log(`\n${total} curated: ${approved} approved, ${rejected} rejected`);
+  console.log(`\n${total} curated: ${approved} approved, ${rejected} rejected${DRY_RUN ? ' (dry-run)' : ''}`);
 }
 
-main().catch(console.error);
+if (process.argv[1] && (process.argv[1].endsWith('bulk-curate-wave2-5.js') || process.argv[1].endsWith('bulk-curate-wave2-5'))) {
+  run().catch(handleCliError);
+}

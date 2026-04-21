@@ -2,23 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.6.0] - 2026-07-01
-
-### Added
-
-- **Batch production modes (Phase 4D)** — coordinated multi-slot generation with reviewable sheet output
-  - `sdlab batch generate --mode <id>` — execute a batch production mode (expression sheets, environment boards, etc.)
-  - `sdlab batch show [batch-id]` — list all batches or show batch details
-  - `sdlab batch sheet <batch-id>` — re-render batch sheet from saved manifest
-  - `--dry-run` flag prepares batch directory and briefs without submitting to ComfyUI
-- **Batch modes** (`lib/batch-modes.js`) — load, validate, and list batch mode definitions from `workflows/batch-modes/`
-- **Batch compiler** (`lib/batch-compiler.js`) — expand one batch mode into multiple slot briefs with controlled per-slot deltas
-- **Batch runs** (`lib/batch-runs.js`) — batch directory creation (`batch_YYYY-MM-DD_NNN`), coordinated slot execution, manifest save/load
-- **Batch sheet renderer** (`lib/batch-sheet-render.js`) — HTML review surfaces with CSS grid layout, dark theme, zero dependencies
-- **4 starter batch modes** for Star Freight: expression-sheet, environment-board, silhouette-pack, continuity-variants
-- **JSON schemas** for batch mode definitions and batch manifests (`schemas/`)
-- Doctor validates batch mode definitions (batch_type, subject_mode, slot uniqueness, layout, workflow references)
-- Init scaffolds `workflows/batch-modes/` and `batches/` directories
 ## [3.0.0] - 2026-04-16
 
 ### Added
@@ -55,6 +38,25 @@ All notable changes to this project will be documented in this file.
 - **Handbook** updated: index shows production loop diagram, new [Production Loop](handbook/production-loop/) page with complete end-to-end walkthrough
 - **Package metadata** updated: description, keywords (`generation-workflow`, `batch-production`, `reintegration`), version badge
 - Version bumped to **v3.0.0** — the repo is now a full production workbench, not just a dataset preparation system
+
+## [2.6.0] - 2026-04-16
+
+### Added
+
+- **Batch production modes (Phase 4D)** — coordinated multi-slot generation with reviewable sheet output
+  - `sdlab batch generate --mode <id>` — execute a batch production mode (expression sheets, environment boards, etc.)
+  - `sdlab batch show [batch-id]` — list all batches or show batch details
+  - `sdlab batch sheet <batch-id>` — re-render batch sheet from saved manifest
+  - `--dry-run` flag prepares batch directory and briefs without submitting to ComfyUI
+- **Batch modes** (`lib/batch-modes.js`) — load, validate, and list batch mode definitions from `workflows/batch-modes/`
+- **Batch compiler** (`lib/batch-compiler.js`) — expand one batch mode into multiple slot briefs with controlled per-slot deltas
+- **Batch runs** (`lib/batch-runs.js`) — batch directory creation (`batch_YYYY-MM-DD_NNN`), coordinated slot execution, manifest save/load
+- **Batch sheet renderer** (`lib/batch-sheet-render.js`) — HTML review surfaces with CSS grid layout, dark theme, zero dependencies
+- **4 starter batch modes** for Star Freight: expression-sheet, environment-board, silhouette-pack, continuity-variants
+- **JSON schemas** for batch mode definitions and batch manifests (`schemas/`)
+- Doctor validates batch mode definitions (batch_type, subject_mode, slot uniqueness, layout, workflow references)
+- Init scaffolds `workflows/batch-modes/` and `batches/` directories
+
 ## [2.5.0] - 2026-04-16
 
 ### Added

@@ -8,20 +8,20 @@
  *   sdlab run list --project star-freight --json
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { listRuns } from '../lib/runtime-runs.js';
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       json: { type: 'boolean' },
     },
     deprecated: { game: 'project' },
   });
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const runs = listRuns(projectRoot);
 

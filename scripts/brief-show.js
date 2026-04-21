@@ -9,7 +9,7 @@
  *   sdlab brief show brief_2026-04-15_001 --md
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { loadCompiledBrief } from '../lib/brief-compiler.js';
 import { renderBriefText, renderBriefMarkdown } from '../lib/brief-render.js';
@@ -17,7 +17,7 @@ import { renderBriefText, renderBriefMarkdown } from '../lib/brief-render.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       json: { type: 'boolean' },
       md: { type: 'boolean' },
     },
@@ -31,7 +31,8 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectRoot = getProjectRoot(flags.project);
+  const projectName = flags.project || getProjectName(argv);
+  const projectRoot = getProjectRoot(projectName);
   const brief = await loadCompiledBrief(projectRoot, briefId);
 
   if (flags.json) {

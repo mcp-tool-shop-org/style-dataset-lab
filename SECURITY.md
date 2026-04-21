@@ -2,11 +2,12 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 2.x     | Yes       |
-| 1.x     | No        |
-| 0.x     | No        |
+| Version | Supported              |
+|---------|------------------------|
+| 3.x     | Yes                    |
+| 2.x     | Yes (transitional)     |
+| 1.x     | No                     |
+| 0.x     | No                     |
 
 ## Threat Model
 

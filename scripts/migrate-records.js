@@ -19,6 +19,7 @@ import { readdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { handleCliError } from '../lib/errors.js';
 
 async function fileExists(p) {
   try { await access(p); return true; } catch { return false; }
@@ -137,5 +138,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('migrate-records.js') || process.argv[1].endsWith('migrate-records'))) {
-  run().catch(err => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }
