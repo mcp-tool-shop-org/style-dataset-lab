@@ -20,11 +20,16 @@
     "bin/",
     "lib/",
     "scripts/",
+    "!scripts/bulk-curate-*.js",
+    "!scripts/curate-wave*.js",
+    "!scripts/migrate-records.js",
     "templates/",
     "README.md",
     "LICENSE",
     "SECURITY.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
   ],
   "keywords": [
     "dataset",

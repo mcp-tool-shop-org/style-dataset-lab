@@ -43,22 +43,25 @@
 
 ## D. Shipping Hygiene
 
-- [x] `[all]` `verify` script exists (test + build + smoke in one command) (2026-04-14 — npm run inspect serves as verification)
-- [x] `[all]` Version in manifest matches git tag (2026-04-14 — v1.0.0)
-- [ ] `[all]` Dependency scanning runs in CI (ecosystem-appropriate) — pending CI setup
-- [ ] `[all]` Automated dependency update mechanism exists — pending CI setup
-- [x] `[npm]` `npm pack --dry-run` includes: dist/, README.md, CHANGELOG.md, LICENSE (2026-04-14 — files field set)
+- [x] `[all]` `verify` script exists (test + build + smoke in one command) (2026-04-21 — `npm run verify` runs `sdlab --help && sdlab project doctor --project star-freight`)
+- [x] `[all]` Version in manifest matches git tag (2026-04-21 — v3.0.0)
+- [x] `[all]` Dependency scanning runs in CI (ecosystem-appropriate) (2026-04-21 — `.github/dependabot.yml` monitors npm + github-actions monthly; zero runtime deps keep the surface trivial)
+- [x] `[all]` Automated dependency update mechanism exists (2026-04-21 — `.github/dependabot.yml` opens grouped monthly PRs)
+- [x] `[npm]` `npm pack --dry-run` includes README, CHANGELOG, LICENSE, SECURITY, CONTRIBUTING, CODE_OF_CONDUCT and the canonical `bin/`, `lib/`, `scripts/`, `templates/` trees; excludes wave-specific one-off curation scripts via `files` negation (2026-04-21 — 135 files, 173.9 kB tarball)
 - [x] `[npm]` `engines.node` set (2026-04-14 — >=20)
-- [ ] `[npm]` SKIP: no lockfile needed — zero runtime dependencies
+- [x] `[npm]` `package-lock.json` present and matches `package.json` version (2026-04-21 — regenerated from stale v2.2.1 to v3.0.0; zero runtime deps keep it shallow)
 - [ ] `[vsix]` SKIP: not a VS Code extension
 - [ ] `[desktop]` SKIP: not a desktop app
+- [x] `[all]` Test suite green on Node 20 + Node 22 (2026-04-21 — 63 tests across 11 files; `node --test tests/**/*.test.js`)
 
 ## E. Identity (soft gate — does not block ship)
 
 - [x] `[all]` Logo in README header (2026-04-14 — placeholder block with brand path)
-- [ ] `[all]` Translations (polyglot-mcp, 8 languages)
+- [x] `[all]` Translations (polyglot-mcp, 8 languages) (2026-04-21 — ja, zh, es, fr, hi, it, pt-BR present)
 - [ ] `[org]` Landing page (@mcptoolshop/site-theme)
-- [ ] `[all]` GitHub repo metadata: description, homepage, topics
+- [x] `[all]` GitHub repo metadata: description, homepage, topics (2026-04-21 — `homepage` + keywords set in package.json)
+- [x] `[all]` CONTRIBUTING.md + CODE_OF_CONDUCT.md + issue templates + PR template (2026-04-21)
+- [x] `[all]` Troubleshooting section in README (2026-04-21 — covers ComfyUI connection, missing weights, doctor errors, --project fallback, bug reporting)
 
 ---
 

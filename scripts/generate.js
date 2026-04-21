@@ -17,6 +17,27 @@ import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
+import { info, result } from "../lib/log.js";
+
+/**
+ * Format milliseconds as a human ETA string like "6m 12s" or "42s".
+ */
+function formatEta(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}m ${s}s`;
+}
+
+/**
+ * COMFY_URL precedence:
+ *   1. process.env.COMFY_URL (explicit user env)
+ *   2. project defaults.comfy_url (set by `sdlab project doctor`)
+ *   3. built-in default http://127.0.0.1:8188
+ * The adapter (lib/adapters/comfyui-runner.js) applies the same precedence.
+ */
 
 function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, cfg, sampler, scheduler, width, height, ipAdapterConfig) {
   const nodes = {};
@@ -195,6 +216,7 @@ export async function run(argv = process.argv.slice(2)) {
   let generated = 0;
   let errors = 0;
   const totalExpected = pack.subjects.length * pack.variations.length;
+  const runStartMs = Date.now();
 
   for (const subject of pack.subjects) {
     for (const variation of pack.variations) {
@@ -287,13 +309,33 @@ export async function run(argv = process.argv.slice(2)) {
       }
 
       generated++;
+
+      // ETA every 5 items (not every item — too noisy for long runs).
+      if (!dryRun && generated > 0 && generated % 5 === 0 && generated < totalExpected) {
+        const elapsedTotal = Date.now() - runStartMs;
+        const avgMs = elapsedTotal / generated;
+        const remaining = totalExpected - generated;
+        const etaMs = avgMs * remaining;
+        info('generate', `progress ${generated}/${totalExpected} — avg ${formatEta(avgMs)}/item, ETA ~${formatEta(etaMs)}`);
+      }
     }
   }
 
   console.log("");
   const succeeded = generated - errors;
+  const totalElapsedMs = Date.now() - runStartMs;
   console.log(`\x1b[32m✓\x1b[0m Generated ${succeeded} candidates (${errors} errors)`);
+  if (!dryRun && generated > 0) {
+    const avgMs = totalElapsedMs / generated;
+    console.log(`  Total: ${formatEta(totalElapsedMs)} — avg ${formatEta(avgMs)}/item`);
+  }
   if (dryRun) console.log("  (dry run — no images produced)");
+  // Always print the output directory so scripted pipelines can parse it,
+  // even under --quiet.
+  if (!dryRun && succeeded > 0) {
+    result(`Candidates: ${join(GAME_ROOT, 'outputs/candidates')}`);
+    result(`Records: ${join(GAME_ROOT, 'records')}`);
+  }
   if (!dryRun && errors > 0 && succeeded === 0) {
     throw runtimeError('RUNTIME_ALL_FAILED', `All ${totalExpected} generation attempts failed.`);
   }

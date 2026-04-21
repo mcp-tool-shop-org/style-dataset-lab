@@ -221,18 +221,30 @@ export async function run(argv = process.argv.slice(2)) {
 
   // Copy canon markdown templates
   const canonTemplates = ['constitution.md', 'review-rubric.md'];
+  const wroteCanon = {};
   for (const file of canonTemplates) {
     const src = join(TEMPLATES_DIR, 'canon', file);
     if (existsSync(src)) {
       await copyFile(src, join(projectDir, 'canon', file));
+      wroteCanon[file] = true;
       console.log(`  \x1b[32m✓\x1b[0m canon/${file}`);
     }
   }
 
-  // Copy example prompt pack
-  const examplePack = join(TEMPLATES_DIR, 'inputs', 'prompts', 'example-wave.json');
-  if (existsSync(examplePack)) {
+  // Copy example prompt pack — prefer per-domain example (subjects match domain lane id_patterns),
+  // fall back to legacy global template if it exists (pre-v3.0.1 installs may still ship it).
+  let wroteExamplePack = false;
+  const domainExamplePack = domainDir
+    ? join(domainDir, 'inputs', 'prompts', 'example-wave.json')
+    : null;
+  const globalExamplePack = join(TEMPLATES_DIR, 'inputs', 'prompts', 'example-wave.json');
+  const examplePack =
+    domainExamplePack && existsSync(domainExamplePack) ? domainExamplePack
+    : existsSync(globalExamplePack) ? globalExamplePack
+    : null;
+  if (examplePack) {
     await copyFile(examplePack, join(projectDir, 'inputs', 'prompts', 'example-wave.json'));
+    wroteExamplePack = true;
     console.log(`  \x1b[32m✓\x1b[0m inputs/prompts/example-wave.json`);
   }
 
@@ -251,15 +263,89 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
+  // Write a starter README.md inside the project so users have a home base
+  // with copy-pasteable next commands and a place for their notes.
+  const readmeLines = [
+    `# ${projectName}`,
+    '',
+    `A \`style-dataset-lab\` project — domain: **${domain}**.`,
+    '',
+    '## Quick commands',
+    '',
+    '```bash',
+    `# Validate that the scaffold is healthy`,
+    `sdlab project doctor --project ${projectName}`,
+    '',
+  ];
+  if (wroteExamplePack) {
+    readmeLines.push(
+      `# Generate candidates from the example prompt pack`,
+      `sdlab generate inputs/prompts/example-wave.json --project ${projectName}`,
+      ''
+    );
+  } else {
+    readmeLines.push(
+      `# Generate candidates (add a prompt pack under inputs/prompts/ first)`,
+      `sdlab generate <pack-path> --project ${projectName}`,
+      ''
+    );
+  }
+  readmeLines.push(
+    `# Curate a candidate (approved | rejected | borderline)`,
+    `sdlab curate <asset_id> approved "reads clean" --project ${projectName}`,
+    '',
+    `# Bind approved records to constitution rules`,
+    `sdlab canon-bind --project ${projectName}`,
+    '',
+    `# Create a frozen dataset snapshot`,
+    `sdlab snapshot create --project ${projectName}`,
+    '```',
+    '',
+    '## Project layout',
+    '',
+    '- `project.json` — defaults (checkpoint, width, height, sampler)',
+    '- `constitution.json` — machine-readable style rules',
+    '- `canon/` — human-authored style reference (constitution.md, review-rubric.md)',
+    '- `inputs/prompts/` — generation prompt packs',
+    '- `outputs/candidates/` — raw generated PNGs',
+    '- `outputs/approved/` · `outputs/rejected/` · `outputs/borderline/` — curated outputs',
+    '- `records/` — provenance + judgment records (one JSON per candidate)',
+    '- `snapshots/` · `splits/` · `exports/` — frozen dataset artifacts',
+    '',
+    '## Docs',
+    '',
+    '- Handbook: https://mcp-tool-shop-org.github.io/style-dataset-lab/',
+    '- CLI reference: `sdlab --help` (or `sdlab <cmd> --help` for any command)',
+    '',
+    '## TODO',
+    '',
+    '- [ ] Fill in `canon/constitution.md` with your style rules',
+    '- [ ] Encode those rules in `constitution.json` for canon-bind',
+    '- [ ] Add at least one prompt pack under `inputs/prompts/`',
+    '- [ ] Run `sdlab project doctor` and fix any warnings',
+    ''
+  );
+  await writeFile(join(projectDir, 'README.md'), readmeLines.join('\n'));
+  console.log(`  \x1b[32m✓\x1b[0m README.md`);
+
   console.log('');
   console.log(`\x1b[32m✓\x1b[0m Project "${projectName}" initialized`);
   console.log('');
   console.log('Next steps:');
-  console.log(`  1. Edit ${projectName}/canon/constitution.md — define your visual rules`);
-  console.log(`  2. Edit ${projectName}/constitution.json — encode rules for canon-bind`);
-  console.log(`  3. Create prompt packs in ${projectName}/inputs/prompts/`);
-  console.log(`  4. Run: sdlab generate <pack> --project ${projectName}`);
-  console.log(`  5. Run: sdlab project doctor --project ${projectName}`);
+  let step = 1;
+  if (wroteCanon['constitution.md']) {
+    console.log(`  ${step++}. Edit ${projectName}/canon/constitution.md — define your visual rules`);
+  }
+  console.log(`  ${step++}. Edit ${projectName}/constitution.json — encode rules for canon-bind`);
+  if (wroteExamplePack) {
+    console.log(`  ${step++}. Run: sdlab generate inputs/prompts/example-wave.json --project ${projectName}`);
+  } else {
+    console.log(`  ${step++}. Create prompt packs under ${projectName}/inputs/prompts/`);
+    console.log(`  ${step++}. Run: sdlab generate <pack> --project ${projectName}`);
+  }
+  console.log(`  ${step++}. Run: sdlab project doctor --project ${projectName}`);
+  console.log('');
+  console.log(`See ${projectName}/README.md for the full quick-start.`);
 }
 
 // Direct execution guard

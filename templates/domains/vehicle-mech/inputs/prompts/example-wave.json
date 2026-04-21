@@ -1,0 +1,37 @@
+{
+  "wave": "wave1",
+  "description": "Vehicle / mech — first wave. Subject IDs match this domain's lane id_patterns (ext_, cockpit_, component_, schematic_) so `sdlab generate` will route each candidate into the correct lane instead of default_lane.",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "lora": { "name": "classipeintxl_v21.safetensors", "weight": 1.0 },
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "negative": "photorealistic, photograph, 3d render, smooth CG, sharp photo detail"
+  },
+  "subjects": [
+    {
+      "id": "ext_flagship",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR VEHICLE — hull design, body panels, overall form language], painterly concept art, canvas grain"
+    },
+    {
+      "id": "cockpit_flagship",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR COCKPIT — bridge layout, cabin instruments, pilot seating], painterly concept art, canvas grain"
+    },
+    {
+      "id": "component_engine",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE A COMPONENT — engine, weapon, thruster, subsystem detail], painterly concept art, canvas grain"
+    },
+    {
+      "id": "schematic_overview",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR SCHEMATIC — technical diagram, orthographic breakdown, cross-section], painterly concept art, canvas grain"
+    }
+  ]
+}

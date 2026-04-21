@@ -159,6 +159,50 @@ npm install -g @mcptoolshop/style-dataset-lab
 
 Requires Node.js 20+ and [ComfyUI](https://github.com/comfyanonymous/ComfyUI) on localhost:8188 for generation.
 
+### Try it without ComfyUI
+
+You can explore the full non-generation surface — inspection, curation, snapshot, split, export — using the bundled Star Freight project without installing ComfyUI or downloading any SDXL weights.
+
+```bash
+# Scaffold a fresh project (no ComfyUI needed)
+sdlab init test --domain game-art
+
+# Run the canonical health check (no ComfyUI needed)
+sdlab project doctor --project test
+
+# Dry-run a snapshot against the bundled Star Freight corpus
+sdlab snapshot create --dry-run --project star-freight
+```
+
+`sdlab project doctor` validates every project config (constitution, lanes, rubric, terminology) and reports eligibility without touching the GPU. Any command that mutates generated state accepts `--dry-run` to preview the effect first.
+
+If you forget `--project`, the CLI falls back to the first project it finds under `projects/` and prints a warning — pass `--project` explicitly to silence it.
+
+## Troubleshooting
+
+Common failure modes and fixes:
+
+**`ECONNREFUSED 127.0.0.1:8188` on any `sdlab generate` / `sdlab run generate` / `sdlab batch generate`**
+ComfyUI isn't running. Start ComfyUI (`python main.py --listen 127.0.0.1 --port 8188`) and confirm with `curl http://127.0.0.1:8188/system_stats`. To point at a different host/port, set `COMFY_URL=http://host:port`.
+
+**`missing checkpoint` / `LoRA weight not found`**
+Your workflow profile names a model file that isn't in ComfyUI's `models/checkpoints/` or `models/loras/` folder. Open `projects/<project>/workflows/profiles/<profile>.json`, locate the `checkpoint` or `lora` field, and either download the referenced weight or swap it for one you already have. Re-run `sdlab project doctor --project <project>` to confirm the fix.
+
+**`sdlab project doctor` errors**
+Doctor returns structured error codes. Common ones:
+- `E_PROJECT_NOT_FOUND` — the project directory doesn't exist under `projects/`. Check spelling.
+- `E_CONFIG_INVALID` — one of the five JSON config files failed schema validation. The `hint` field names the bad file and field.
+- `E_RECORD_DRIFT` — a record's config fingerprint no longer matches its source. Re-curate or re-bind as the hint suggests.
+
+**`No --project specified, falling back to <name>`**
+A soft warning. Pass `--project <name>` explicitly to select the right project and silence the warning.
+
+**Painterly / VRAM out-of-memory issues**
+See `docs/internal/HANDOFF.md` for the painterly denoise tuning notes. In short: lower the denoise strength, reduce batch size, or switch to a smaller checkpoint in your workflow profile.
+
+**Reporting bugs**
+File an issue at https://github.com/mcp-tool-shop-org/style-dataset-lab/issues with your sdlab version (`sdlab --version`), Node version (`node -v`), the full command, and the structured error output. A bug-report template prefills the fields.
+
 ## Security
 
 Local-only. No telemetry, no analytics, no external requests. Images stay on your GPU and filesystem.

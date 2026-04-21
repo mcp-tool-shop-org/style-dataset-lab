@@ -1,0 +1,48 @@
+---
+import '../styles/global.css';
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { config } from '../site-config';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+const handbookHref = `${base}handbook/`;
+---
+
+<SiteLayout
+  title="Not found — Style Dataset Lab"
+  description="The page you're looking for doesn't exist. Try the handbook index or head back home."
+  logoBadge={config.logoBadge}
+  brandName={config.brandName}
+  repoUrl={config.repoUrl}
+  npmUrl={config.npmUrl}
+  footerText={config.footerText}
+>
+  <section class="py-20 md:py-28">
+    <p class="text-sm font-medium uppercase tracking-wide text-muted">404</p>
+    <h1 class="mt-2 text-4xl font-bold tracking-tight text-heading md:text-5xl">
+      Page not found
+    </h1>
+    <p class="mt-4 max-w-2xl text-lg text-body">
+      That URL isn't part of the Style Dataset Lab site. The page may have moved, or the link that brought you here may be stale.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center gap-4">
+      <a
+        href={base}
+        class="inline-flex rounded-xl bg-action px-4 py-2 text-sm font-medium text-action-text hover:bg-action-hover"
+      >
+        Home
+      </a>
+      <a
+        href={handbookHref}
+        class="inline-flex rounded-xl border border-edge px-4 py-2 text-sm text-body hover:bg-surface-raised"
+      >
+        Handbook index →
+      </a>
+      <a
+        href={config.repoUrl}
+        class="inline-flex text-sm text-muted hover:text-heading"
+      >
+        GitHub repo
+      </a>
+    </div>
+  </section>
+</SiteLayout>

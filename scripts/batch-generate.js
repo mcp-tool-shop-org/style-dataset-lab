@@ -19,7 +19,7 @@ import {
   saveBatchManifest,
 } from '../lib/batch-runs.js';
 import { renderSheetHTML, saveSheet } from '../lib/batch-sheet-render.js';
-import { info } from '../lib/log.js';
+import { info, result } from '../lib/log.js';
 import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 
@@ -79,9 +79,10 @@ export async function run(argv = process.argv.slice(2)) {
 
   // 2. Create batch directory
   const { batchId, batchDir } = await createBatchDir(projectRoot);
-  info(`Batch: ${batchId}`);
+  info('batch-generate', `Batch: ${batchId}`);
 
   // 3. Execute runs
+  const batchStartMs = Date.now();
   const results = await executeBatchRuns({
     projectRoot,
     projectName,
@@ -90,6 +91,12 @@ export async function run(argv = process.argv.slice(2)) {
     slotBriefs,
     dryRun,
   });
+  const batchElapsedMs = Date.now() - batchStartMs;
+  if (!dryRun && results.length > 0) {
+    const avgSec = Math.round(batchElapsedMs / results.length / 1000);
+    const totalSec = Math.round(batchElapsedMs / 1000);
+    info('batch-generate', `Completed ${results.length} slot(s) in ${totalSec}s (avg ${avgSec}s/slot)`);
+  }
 
   // 4. Build manifest
   const manifest = {
@@ -161,7 +168,9 @@ export async function run(argv = process.argv.slice(2)) {
       console.log(`  ${status} ${r.label.padEnd(24)} → ${r.run_id}  ${r.selected_output || '(dry run)'}`);
     }
     console.log('');
-    info(`Sheet: batches/${batchId}/sheets/primary-sheet.html`);
-    info(`Manifest: batches/${batchId}/manifest.json`);
+    // Primary artifact paths — always print (survives --quiet) so pipelines
+    // can parse the output location.
+    result(`Sheet: batches/${batchId}/sheets/primary-sheet.html`);
+    result(`Manifest: batches/${batchId}/manifest.json`);
   }
 }

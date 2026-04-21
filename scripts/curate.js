@@ -16,6 +16,7 @@ import { parseArgs, getProjectName } from "../lib/args.js";
 import { REPO_ROOT } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
+import { result } from "../lib/log.js";
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
@@ -145,7 +146,10 @@ export async function run(argv = process.argv.slice(2)) {
     );
   }
 
-  console.log(`\x1b[32m✓\x1b[0m ${assetId} → ${status}`);
+  // Final artifact path — always shown, even under --quiet.
+  result('curate', `${assetId} → ${status}`);
+  result(`  image: ${newPath}`);
+  result(`  record: records/${assetId}.json`);
   console.log(`  ${explanation}`);
   if (failure_modes.length) console.log(`  Failures: ${failure_modes.join(", ")}`);
 }

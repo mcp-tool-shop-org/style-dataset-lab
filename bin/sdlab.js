@@ -9,6 +9,7 @@
 
 import { enableDebug, handleCliError, inputError } from '../lib/errors.js';
 import { setLogLevel } from '../lib/log.js';
+import { findClosest } from '../lib/args.js';
 
 const COMMANDS = {
   'init':                '../scripts/init.js',
@@ -79,6 +80,204 @@ const SELECTION_COMMANDS = {
   'show': '../scripts/selection-show.js',
 };
 
+// ─── Per-command help ─────────────────────────────────────────────────
+//
+// Keyed by the user-facing command (including two-word forms joined by
+// a space). Help text is plain — no color codes — to stay readable in
+// dumb terminals and when piped to files.
+
+const HELP_TEXT = {
+  'init': `sdlab init <project-name> [--domain <domain>]
+
+Scaffold a new project from a domain template.
+
+Positional:
+  project-name         Lowercase, hyphen-separated (e.g. "my-project")
+
+Flags:
+  --domain <id>        Domain template (default: generic)
+
+Examples:
+  sdlab init my-project
+  sdlab init heist-crew --domain character-design
+
+Run "sdlab init" with no arguments to see the available domains.`,
+
+  'project doctor': `sdlab project doctor --project <name>
+
+Validate project config and directory structure. Reports missing
+required files, unmigrated record schemas, and orphaned outputs.
+
+Flags:
+  --project <name>     Project to audit (required in practice)
+  --verbose            Show per-check detail
+  --quiet              Only print PASS / FAIL summary`,
+
+  'generate': `sdlab generate [<pack-path>] --project <name> [--dry-run]
+
+Generate candidates from a prompt pack (JSON file under
+projects/<name>/inputs/prompts/).
+
+Positional:
+  pack-path            Path to the prompt pack (default: inputs/prompts/rpg-icons-lane1.json)
+
+Flags:
+  --project <name>     Project to operate on
+  --dry-run            Preview work without contacting ComfyUI
+
+Env:
+  COMFY_URL            ComfyUI HTTP endpoint (default: http://127.0.0.1:8188)
+
+Precedence: CLI flag > env COMFY_URL > project defaults > built-in default.`,
+
+  'batch generate': `sdlab batch generate --mode <id> [--subject <id>] [--theme <label>] --project <name>
+
+Execute a batch production mode (expression sheet, silhouette pack,
+environment board, etc).
+
+Flags:
+  --mode <id>          Batch mode id (required)
+  --subject <id>       Subject for subject-driven modes
+  --theme <label>      Theme label for environment modes
+  --asset <id>         Training asset reference
+  --project <name>     Project to operate on
+  --dry-run            Prepare batch without submitting to ComfyUI
+  --json               Output manifest as JSON`,
+
+  'brief compile': `sdlab brief compile --profile <id> --project <name>
+
+Compile a generation brief from project canon (constitution, lanes,
+workflow profile).
+
+Flags:
+  --profile <id>       Workflow profile id to compile against
+  --project <name>     Project to operate on
+  --out <path>         Optional explicit output path`,
+
+  'run generate': `sdlab run generate --brief <id> --project <name> [--dry-run]
+
+Execute a compiled brief through ComfyUI.
+
+Flags:
+  --brief <id>         Brief id to execute (required)
+  --project <name>     Project to operate on
+  --dry-run            Plan without submitting to ComfyUI`,
+
+  'critique': `sdlab critique --run <id> --project <name>
+
+Critique a completed run. Writes a critique record alongside the run.
+
+Flags:
+  --run <id>           Run id to critique (required)
+  --project <name>     Project to operate on
+  --json               Emit critique as JSON on stdout`,
+
+  'refine': `sdlab refine --run <id> --pick <file> --project <name>
+
+Generate a refined next-pass brief based on a specific pick from a
+prior run.
+
+Flags:
+  --run <id>           Source run id (required)
+  --pick <file>        Picked output filename inside the run (required)
+  --project <name>     Project to operate on`,
+
+  'batch sheet': `sdlab batch sheet <batch-id> --project <name>
+
+Re-render a batch's contact sheet from its manifest.
+
+Positional:
+  batch-id             Batch id to re-render
+
+Flags:
+  --project <name>     Project to operate on`,
+
+  'select': `sdlab select [--run <id>|--batch <id>] --approve <files> --project <name>
+
+Select approved outputs from a run or batch.
+
+Flags:
+  --run <id>           Source run id
+  --batch <id>         Source batch id
+  --approve <files>    Comma-separated output filenames to approve
+  --project <name>     Project to operate on`,
+
+  'curate': `sdlab curate <asset_id> <approved|rejected|borderline> <explanation> [--scores k:v,...] [--failures f1,f2] --project <name>
+
+Record a judgment on a candidate and move it to the matching outputs
+subdirectory.
+
+Positional:
+  asset_id             Candidate asset id
+  status               approved | rejected | borderline
+  explanation          Short reason (quoted)
+
+Flags:
+  --scores k:v,...     Per-dimension scores (e.g. silhouette:0.9,palette:0.8)
+  --failures f1,f2     Named failure tags (comma-separated)
+  --notes "…"          Optional free-form note
+  --list               Print uncurated candidates and exit
+  --dry-run            Preview without moving files
+  --project <name>     Project to operate on`,
+
+  'canon-bind': `sdlab canon-bind --project <name> [--lane <id>]
+
+Bind approved records to constitution rules.
+
+Flags:
+  --project <name>     Project to operate on
+  --lane <id>          Restrict binding to a single lane`,
+
+  'snapshot': `sdlab snapshot <create|list|show|diff> [args] --project <name>
+
+Manage frozen dataset snapshots.
+
+Subcommands:
+  create               Create a new snapshot from approved records
+  list                 List all snapshots (default subcommand)
+  show <id>            Show snapshot details
+  diff <a> <b>         Compare two snapshots
+
+Flags:
+  --profile <name>     Selection profile (create only)
+  --project <name>     Project to operate on
+  --dry-run            Preview snapshot contents without writing`,
+
+  'split': `sdlab split <build|list|show|audit> [args] --project <name>
+
+Manage train/val/test splits from a snapshot.
+
+Subcommands:
+  build                Build a split from a snapshot
+  list                 List all splits
+  show <id>            Show split details
+  audit <id>           Audit a split for leakage and balance
+
+Flags:
+  --project <name>     Project to operate on`,
+
+  'export': `sdlab export <build|list> [args] --project <name>
+
+Build and list self-contained export packages.
+
+Subcommands:
+  build                Build a new export package
+  list                 List all export packages
+
+Flags:
+  --project <name>     Project to operate on`,
+};
+
+// "bind" is a short alias for "canon-bind" — share help.
+HELP_TEXT['bind'] = HELP_TEXT['canon-bind'];
+
+function printCommandHelp(key) {
+  const text = HELP_TEXT[key];
+  if (!text) return false;
+  console.log(text);
+  return true;
+}
+
 function printHelp() {
   console.log(`\x1b[1msdlab\x1b[0m — Style Dataset Lab CLI\n`);
   console.log('Usage: sdlab <command> [options]\n');
@@ -94,9 +293,10 @@ function printHelp() {
   console.log('  generate:ipadapter   IP-Adapter reference-guided generation');
   console.log('  curate               Move candidate to approved/rejected/borderline');
   console.log('  compare              Record pairwise A-vs-B comparison');
-  console.log('  bind                 Bind approved records to constitution rules');
+  console.log('  canon-bind           Bind approved records to constitution rules');
+  console.log('                       ("bind" is a short alias for canon-bind)');
   console.log('  painterly            Post-processing painterly style pass');
-  console.log('  painterly:test       Test denoise levels on reference images');
+  console.log('  painterly:test       Calibrate painterly denoise level on sample images');
   console.log('');
   console.log('Dataset:');
   console.log('  snapshot create      Create a frozen dataset snapshot');
@@ -156,22 +356,59 @@ function printHelp() {
   console.log('  reingest selected --selection <id>  Re-ingest selected outputs as records');
   console.log('');
   console.log('Options:');
-  console.log('  --project <name>     Project to operate on (default: star-freight)');
+  console.log('  --project <name>     Project to operate on (no default — fallback to "star-freight" with warning)');
   console.log('  --game <name>        Deprecated alias for --project');
   console.log('  --debug              Show stack traces on error');
   console.log('  --verbose            Verbose output');
   console.log('  --quiet              Suppress non-essential output');
   console.log('  --dry-run            Preview changes without writing (where supported)');
-  console.log('  --help               Show this help');
+  console.log('  --help               Show this help (or per-command help with "sdlab <cmd> --help")');
   console.log('');
   console.log('Examples:');
   console.log('  sdlab init my-project --domain character-design');
+  console.log('  sdlab generate --help');
   console.log('  sdlab snapshot create --project star-freight');
   console.log('  sdlab split build --dry-run --project star-freight');
   console.log('  sdlab training-package build --debug --project star-freight');
 }
 
+// All top-level command tokens users can type (including two-word heads).
+function allKnownCommands() {
+  const oneWord = Object.keys(COMMANDS);
+  const heads = ['project', 'workflow', 'brief', 'run', 'critique', 'refine', 'batch', 'select', 'selection'];
+  return [...new Set([...oneWord, ...heads])];
+}
+
+function argvHasHelp(argv) {
+  return argv.includes('--help') || argv.includes('-h');
+}
+
+// ─── Signal + fatal-error handlers ────────────────────────────────────
+
+function installProcessHandlers() {
+  const onSignal = (sig) => {
+    const code = sig === 'SIGINT' ? 130 : 143;
+    process.stderr.write(`\n\x1b[31m✗ Interrupted by ${sig}. Partial output may exist.\x1b[0m\n`);
+    process.exit(code);
+  };
+  process.on('SIGINT', () => onSignal('SIGINT'));
+  process.on('SIGTERM', () => onSignal('SIGTERM'));
+
+  process.on('uncaughtException', (err) => {
+    handleCliError(err);
+    // handleCliError exits, but guard anyway.
+    process.exit(2);
+  });
+  process.on('unhandledRejection', (reason) => {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    handleCliError(err);
+    process.exit(2);
+  });
+}
+
 async function main() {
+  installProcessHandlers();
+
   const args = process.argv.slice(2);
 
   // Global flags
@@ -187,93 +424,74 @@ async function main() {
   let command = args[0];
   let commandArgs = args.slice(1);
 
-  // Handle "project <subcommand>" two-word form
-  if (command === 'project' && args[1] && PROJECT_COMMANDS[args[1]]) {
-    commandArgs = args.slice(2);
-    const modulePath = PROJECT_COMMANDS[args[1]];
-    const mod = await import(modulePath);
-    await mod.run(commandArgs);
-    return;
-  }
+  // ── Two-word dispatch tables and --help interception ──
+  // For every two-word namespace, we check "cmd sub --help" first,
+  // then the single-word "cmd --help", then fall through to dispatch.
 
-  // Handle "workflow <subcommand>" two-word form
-  if (command === 'workflow' && args[1] && WORKFLOW_COMMANDS[args[1]]) {
-    commandArgs = args.slice(2);
-    const modulePath = WORKFLOW_COMMANDS[args[1]];
-    const mod = await import(modulePath);
-    await mod.run(commandArgs);
-    return;
-  }
+  const twoWord = (head, table) => ({ head, table });
+  const namespaces = [
+    twoWord('project', PROJECT_COMMANDS),
+    twoWord('workflow', WORKFLOW_COMMANDS),
+    twoWord('brief', BRIEF_COMMANDS),
+    twoWord('run', RUN_COMMANDS),
+    twoWord('batch', BATCH_COMMANDS),
+    twoWord('selection', SELECTION_COMMANDS),
+  ];
 
-  // Handle "brief <subcommand>" two-word form
-  if (command === 'brief' && args[1] && BRIEF_COMMANDS[args[1]]) {
-    commandArgs = args.slice(2);
-    const modulePath = BRIEF_COMMANDS[args[1]];
-    const mod = await import(modulePath);
-    await mod.run(commandArgs);
-    return;
-  }
-
-  // Handle "run <subcommand>" two-word form
-  if (command === 'run' && args[1] && RUN_COMMANDS[args[1]]) {
-    commandArgs = args.slice(2);
-    const modulePath = RUN_COMMANDS[args[1]];
-    const mod = await import(modulePath);
-    await mod.run(commandArgs);
-    return;
-  }
-
-  // Handle "critique" — bare or "critique show" two-word form
-  if (command === 'critique') {
-    if (args[1] && CRITIQUE_COMMANDS[args[1]]) {
+  // "project", "workflow", "brief", "run", "batch", "selection" two-word forms
+  for (const { head, table } of namespaces) {
+    if (command === head && args[1] && table[args[1]]) {
       commandArgs = args.slice(2);
-      const modulePath = CRITIQUE_COMMANDS[args[1]];
-      const mod = await import(modulePath);
+      const twoWordKey = `${head} ${args[1]}`;
+      if (argvHasHelp(commandArgs) && printCommandHelp(twoWordKey)) return;
+      const mod = await import(table[args[1]]);
       await mod.run(commandArgs);
       return;
     }
-    // Bare "critique" → generate critique
+  }
+
+  // "critique" — bare or "critique show"
+  if (command === 'critique') {
+    if (args[1] && CRITIQUE_COMMANDS[args[1]]) {
+      commandArgs = args.slice(2);
+      if (argvHasHelp(commandArgs) && printCommandHelp(`critique ${args[1]}`)) return;
+      const mod = await import(CRITIQUE_COMMANDS[args[1]]);
+      await mod.run(commandArgs);
+      return;
+    }
+    if (argvHasHelp(commandArgs) && printCommandHelp('critique')) return;
     const mod = await import('../scripts/critique.js');
     await mod.run(commandArgs);
     return;
   }
 
-  // Handle "refine" — single command
+  // "refine" — single command
   if (command === 'refine') {
+    if (argvHasHelp(commandArgs) && printCommandHelp('refine')) return;
     const mod = await import('../scripts/refine.js');
     await mod.run(commandArgs);
     return;
   }
 
-  // Handle "batch <subcommand>" two-word form
-  if (command === 'batch' && args[1] && BATCH_COMMANDS[args[1]]) {
-    commandArgs = args.slice(2);
-    const modulePath = BATCH_COMMANDS[args[1]];
-    const mod = await import(modulePath);
-    await mod.run(commandArgs);
-    return;
-  }
-
-  // Handle "select" — single command
+  // "select" — single command
   if (command === 'select') {
+    if (argvHasHelp(commandArgs) && printCommandHelp('select')) return;
     const mod = await import('../scripts/select.js');
-    await mod.run(commandArgs);
-    return;
-  }
-
-  // Handle "selection <subcommand>" two-word form
-  if (command === 'selection' && args[1] && SELECTION_COMMANDS[args[1]]) {
-    commandArgs = args.slice(2);
-    const modulePath = SELECTION_COMMANDS[args[1]];
-    const mod = await import(modulePath);
     await mod.run(commandArgs);
     return;
   }
 
   const modulePath = COMMANDS[command];
   if (!modulePath) {
-    throw inputError('INPUT_UNKNOWN_COMMAND', `Unknown command: ${command}`, 'Run "sdlab --help" for available commands.');
+    const suggestion = findClosest(command, allKnownCommands());
+    const hint = suggestion
+      ? `Did you mean "${suggestion}"? (Run "sdlab --help" for all commands.)`
+      : 'Run "sdlab --help" for available commands.';
+    throw inputError('INPUT_UNKNOWN_COMMAND', `Unknown command: ${command}`, hint);
   }
+
+  // Per-command --help for one-word commands
+  if (argvHasHelp(commandArgs) && printCommandHelp(command)) return;
 
   const mod = await import(modulePath);
   await mod.run(commandArgs);

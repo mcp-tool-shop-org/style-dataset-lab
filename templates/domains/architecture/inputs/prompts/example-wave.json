@@ -1,0 +1,32 @@
+{
+  "wave": "wave1",
+  "description": "Architecture — first wave. Subject IDs match this domain's lane id_patterns (ext_, int_, street_) so `sdlab generate` will route each candidate into the correct lane instead of default_lane.",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "lora": { "name": "classipeintxl_v21.safetensors", "weight": 1.0 },
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "negative": "photorealistic, photograph, 3d render, smooth CG, sharp photo detail"
+  },
+  "subjects": [
+    {
+      "id": "ext_landmark",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR BUILDING — facade, elevation, architectural massing], painterly concept art, canvas grain"
+    },
+    {
+      "id": "int_hall",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR INTERIOR — hall, chamber, spatial atmosphere], painterly concept art, canvas grain"
+    },
+    {
+      "id": "street_district",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR STREETSCAPE — street-level view, urban fabric, district overview], painterly concept art, canvas grain"
+    }
+  ]
+}
