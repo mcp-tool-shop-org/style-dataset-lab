@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed — Mobile nav on landing + handbook (SB-SDL-007)
+
+- **`site/src/layouts/SiteLayout.astro`**: header was `hidden md:flex` for both the link nav and the npm/GitHub buttons, leaving phones with the brand mark and nothing else. Added a hamburger toggle (`md:hidden`) that opens a drawer containing all the same links plus npm/GitHub. Implemented as a `<details>`/`<summary>` so it works without any JavaScript or framework dependency.
+- The desktop nav and the GitHub button still render unchanged at `md:` and up.
+
 ## [3.0.1] - 2026-04-21
 
 ### Fixed — Dogfood swarm health pass (Stage A: bugs & security)
