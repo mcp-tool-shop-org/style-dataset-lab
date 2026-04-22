@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed — Training adapter registry (DB-007)
+
+- **`lib/training-adapters.js`** (new): explicit `ADAPTER_REGISTRY` with `loadAdapter()`, `listAdapters()`, `isRegisteredAdapter()`. Replaces the hand-maintained adapter list embedded in a `lib/training-packages.js` error string.
+- **`lib/training-packages.js`**: dropped its private `loadAdapter()`; now imports from the registry. Unknown adapters throw `ADAPTER_NOT_REGISTERED` (input error, exit 1) with the available-adapter list always in sync. Registered-but-missing modules throw `ADAPTER_MODULE_LOAD_FAILED` (distinct from a typo).
+- **`lib/training-profiles.js`**: `validateProfile()` now rejects profiles whose `adapter_targets[]` cite an unregistered adapter — surfaces typos at profile load time instead of at package-build time.
+- 8 new tests in `tests/lib-pipeline/training-adapters.test.js`.
+
+To add a new adapter (e.g. `kohya-lora`, `onedtrainer`): write `lib/adapters/<id>.js` exporting `buildPackage(opts)` and add a one-line entry to `ADAPTER_REGISTRY`. The error message, profile validation, and (eventually) CLI completion all pick it up automatically.
+
 ## [3.0.1] - 2026-04-21
 
 ### Fixed — Dogfood swarm health pass (Stage A: bugs & security)
