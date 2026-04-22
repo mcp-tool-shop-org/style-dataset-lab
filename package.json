@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Canon-aligned dataset production and generation workbench — define visual rules, build versioned training data, compile production briefs, run local workflows, batch-produce, select winners, and re-ingest into your corpus",
   "type": "module",
   "bin": {
