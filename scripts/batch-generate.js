@@ -15,6 +15,7 @@ import { compileBatch } from '../lib/batch-compiler.js';
 import { getBatchMode } from '../lib/batch-modes.js';
 import {
   createBatchDir,
+  openBatchDirForResume,
   executeBatchRuns,
   saveBatchManifest,
 } from '../lib/batch-runs.js';
@@ -31,20 +32,23 @@ export async function run(argv = process.argv.slice(2)) {
       subject: { type: 'string' },
       theme: { type: 'string' },
       asset: { type: 'string' },
+      resume: { type: 'string' },
       'dry-run': { type: 'boolean' },
       json: { type: 'boolean' },
     },
     deprecated: { game: 'project' },
   });
 
-  if (!flags.mode) {
+  if (!flags.mode && !flags.resume) {
     console.log('Usage: sdlab batch generate --mode <id> [--subject <id>] [--theme <label>] [--project <name>]');
+    console.log('       sdlab batch generate --resume <batch_id> [--project <name>]');
     console.log('');
     console.log('Options:');
-    console.log('  --mode <id>        Batch mode (required)');
+    console.log('  --mode <id>        Batch mode (required unless --resume is given)');
     console.log('  --subject <id>     Subject for subject-driven modes');
     console.log('  --theme <label>    Theme label for environment modes');
     console.log('  --asset <id>       Training asset reference');
+    console.log('  --resume <id>      Resume an existing batch — re-runs only failed/missing slots');
     console.log('  --dry-run          Prepare batch without submitting to ComfyUI');
     console.log('  --json             Output manifest as JSON');
     return;
@@ -53,17 +57,47 @@ export async function run(argv = process.argv.slice(2)) {
   const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const dryRun = flags['dry-run'] || false;
+  const resumeId = flags.resume || null;
+
+  // Resume short-circuit: load prior manifest and reuse its mode_id + subject/theme
+  // so the user only needs to pass --resume <batch_id>.
+  let batchId;
+  let batchDir;
+  let priorResults = [];
+  let resumedMode = null;
+  let resumedSubject = null;
+  let resumedTheme = null;
+  let resumedAsset = null;
+  if (resumeId) {
+    const opened = openBatchDirForResume(projectRoot, resumeId);
+    batchId = opened.batchId;
+    batchDir = opened.batchDir;
+    priorResults = opened.priorResults;
+    resumedMode = opened.priorManifest.mode_id || null;
+    resumedSubject = opened.priorManifest.subject_id || null;
+    resumedTheme = opened.priorManifest.theme || null;
+    resumedAsset = opened.priorManifest.asset_ref || null;
+  }
+
+  const modeId = flags.mode || resumedMode;
+  const subjectId = flags.subject || resumedSubject;
+  const theme = flags.theme || resumedTheme;
+  const assetRef = flags.asset || resumedAsset;
 
   // Load mode for display
-  const mode = getBatchMode(projectRoot, flags.mode);
+  const mode = getBatchMode(projectRoot, modeId);
 
   console.log(`\x1b[1mstyle-dataset-lab\x1b[0m batch generate`);
   console.log(`  Project: ${projectName}`);
   console.log(`  Mode: ${mode.label} (${mode.mode_id})`);
   console.log(`  Type: ${mode.batch_type}`);
   console.log(`  Slots: ${mode.variant_plan.length}`);
-  if (flags.subject) console.log(`  Subject: ${flags.subject}`);
-  if (flags.theme) console.log(`  Theme: ${flags.theme}`);
+  if (subjectId) console.log(`  Subject: ${subjectId}`);
+  if (theme) console.log(`  Theme: ${theme}`);
+  if (resumeId) {
+    const completed = priorResults.filter(r => r && r.status === 'ok').length;
+    console.log(`  Resume: ${resumeId} (${completed}/${priorResults.length} slots already complete)`);
+  }
   if (dryRun) console.log('  ⚠ DRY RUN');
   console.log('');
 
@@ -71,14 +105,18 @@ export async function run(argv = process.argv.slice(2)) {
   const { baseBrief, slotBriefs } = await compileBatch({
     projectRoot,
     projectId: projectName,
-    modeId: flags.mode,
-    subjectId: flags.subject,
-    theme: flags.theme,
-    assetRef: flags.asset,
+    modeId,
+    subjectId,
+    theme,
+    assetRef,
   });
 
-  // 2. Create batch directory
-  const { batchId, batchDir } = await createBatchDir(projectRoot);
+  // 2. Create or reuse batch directory
+  if (!resumeId) {
+    const created = await createBatchDir(projectRoot);
+    batchId = created.batchId;
+    batchDir = created.batchDir;
+  }
   info('batch-generate', `Batch: ${batchId}`);
 
   // 3. Execute runs
@@ -90,6 +128,7 @@ export async function run(argv = process.argv.slice(2)) {
     mode,
     slotBriefs,
     dryRun,
+    priorResults,
   });
   const batchElapsedMs = Date.now() - batchStartMs;
   if (!dryRun && results.length > 0) {
@@ -111,7 +150,9 @@ export async function run(argv = process.argv.slice(2)) {
       label: r.label,
       brief_id: r.brief_id,
       run_id: r.run_id,
+      status: r.status,
       selected_output: r.selected_output,
+      ...(r.error ? { error: r.error } : {}),
     })),
     sheet_paths: [],
     summary: {
@@ -121,8 +162,10 @@ export async function run(argv = process.argv.slice(2)) {
     },
   };
 
-  if (flags.subject) manifest.subject_id = flags.subject;
-  if (flags.theme) manifest.theme = flags.theme;
+  if (subjectId) manifest.subject_id = subjectId;
+  if (theme) manifest.theme = theme;
+  if (assetRef) manifest.asset_ref = assetRef;
+  if (resumeId) manifest.resumed_from = resumeId;
 
   // 5. Render sheet
   const sheetHtml = renderSheetHTML({ manifest, mode, projectRoot, batchDir });

@@ -178,6 +178,22 @@ sdlab snapshot create --dry-run --project star-freight
 
 If you forget `--project`, the CLI falls back to the first project it finds under `projects/` and prints a warning — pass `--project` explicitly to silence it.
 
+### Resuming an interrupted run
+
+Long generation runs can be resumed without redoing completed work:
+
+```bash
+# Skip subjects whose record + image are already on disk.
+# Seeds are preserved — resumed runs are bit-identical to fresh ones.
+sdlab generate inputs/prompts/wave1.json --project my-project --resume
+
+# Re-run only failed/missing slots in an existing batch.
+# Inherits mode/subject/theme from the prior manifest.
+sdlab batch generate --resume batch_2026-04-22_001 --project my-project
+```
+
+Both commands work because every slot writes its manifest entry atomically as it finishes — a crash mid-run never corrupts the partial state.
+
 ## Troubleshooting
 
 Common failure modes and fixes:
