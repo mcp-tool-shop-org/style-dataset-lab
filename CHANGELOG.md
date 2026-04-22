@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added — CI coverage reporting
+
+- **`c8`** added as a `devDependency`; new `npm run coverage` script runs the full test suite under c8 with text + lcov + text-summary reporters (covering `lib/**/*.js`).
+- **CI**: Node 22 matrix entry now runs `npm run coverage` and uploads `coverage/lcov.info` to Codecov via `codecov/codecov-action@v5` (`continue-on-error: true` so a Codecov outage never blocks the PR).
+- **README**: CI and Codecov badges added beside the npm/license badges.
+- **`.gitignore`**: `coverage/` and `.nyc_output/` excluded.
+- Baseline coverage at this commit: **statements 40.6% / branches 70.7% / functions 54.0%** — meaningful coverage on `lib/snapshot.js`, `lib/split.js`, `lib/log.js`, `lib/args.js`, `lib/runtime-runs.js`; adapters and selection layers still uncovered (deferred to future passes).
+
 ## [3.0.1] - 2026-04-21
 
 ### Fixed — Dogfood swarm health pass (Stage A: bugs & security)
