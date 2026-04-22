@@ -4,7 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-<<<<<<< HEAD
 ### Added — `--resume` for `generate` and `batch generate`
 
 - **`sdlab generate --resume`** — skip subjects whose record JSON and output PNG are already on disk. Seeds remain stable: skipped slots still advance the seed counter so resumed runs are bit-identical to a fresh run that reaches the same point. Final summary now reports `(N errors, M resumed)`.
@@ -28,6 +27,11 @@ All notable changes to this project will be documented in this file.
 - **README**: CI and Codecov badges added beside the npm/license badges.
 - **`.gitignore`**: `coverage/` and `.nyc_output/` excluded.
 - Baseline coverage at this commit: **statements 40.6% / branches 70.7% / functions 54.0%** — meaningful coverage on `lib/snapshot.js`, `lib/split.js`, `lib/log.js`, `lib/args.js`, `lib/runtime-runs.js`; adapters and selection layers still uncovered (deferred to future passes).
+
+### Fixed — Mobile nav on landing + handbook (SB-SDL-007)
+
+- **`site/src/layouts/SiteLayout.astro`**: header was `hidden md:flex` for both the link nav and the npm/GitHub buttons, leaving phones with the brand mark and nothing else. Added a hamburger toggle (`md:hidden`) that opens a drawer containing all the same links plus npm/GitHub. Implemented as a `<details>`/`<summary>` so it works without any JavaScript or framework dependency.
+- The desktop nav and the GitHub button still render unchanged at `md:` and up.
 
 ## [3.0.1] - 2026-04-21
 

@@ -93,13 +93,79 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             </a>
           )}
           <a
-            class="inline-flex rounded-xl bg-action px-4 py-2 text-sm font-medium text-action-text hover:bg-action-hover"
+            class="hidden rounded-xl bg-action px-4 py-2 text-sm font-medium text-action-text hover:bg-action-hover md:inline-flex"
             href={repoUrl}
             target="_blank"
             rel="noreferrer"
           >
             GitHub
           </a>
+
+          {/*
+           * Mobile-only nav toggle. Uses <details>/<summary> so the menu works
+           * without JavaScript — collapses by default, expands to a full-width
+           * drawer underneath the header. The list-marker is hidden via CSS.
+           */}
+          <details class="relative md:hidden" id="mobile-nav">
+            <summary
+              aria-label="Toggle navigation menu"
+              class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-edge text-body hover:bg-surface-raised"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </summary>
+            <div
+              class="absolute right-0 top-12 z-30 w-56 rounded-xl border border-edge bg-surface-strong p-3 shadow-xl"
+              role="menu"
+            >
+              <nav aria-label="Mobile navigation" class="flex flex-col gap-1 text-sm">
+                {nav.map((item: { href: string; label: string }) => (
+                  <a
+                    href={item.href}
+                    role="menuitem"
+                    class="rounded-lg px-3 py-2 text-body hover:bg-surface-raised hover:text-heading"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+                <div class="my-2 border-t border-edge-subtle" />
+                {npmUrl && (
+                  <a
+                    href={npmUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    role="menuitem"
+                    class="rounded-lg px-3 py-2 text-body hover:bg-surface-raised hover:text-heading"
+                  >
+                    npm
+                  </a>
+                )}
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  role="menuitem"
+                  class="rounded-lg bg-action px-3 py-2 font-medium text-action-text hover:bg-action-hover"
+                >
+                  GitHub
+                </a>
+              </nav>
+            </div>
+          </details>
         </div>
       </header>
 
@@ -120,5 +186,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </footer>
     </div>
+
+    <style is:global>
+      /* Hide the default disclosure triangle on the mobile-nav <summary>
+       * so the hamburger SVG stands alone. */
+      details#mobile-nav > summary { list-style: none; }
+      details#mobile-nav > summary::-webkit-details-marker { display: none; }
+    </style>
   </body>
 </html>
