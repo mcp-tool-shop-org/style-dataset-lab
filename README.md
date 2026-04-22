@@ -8,6 +8,8 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@mcptoolshop/style-dataset-lab"><img src="https://img.shields.io/npm/v/@mcptoolshop/style-dataset-lab" alt="npm"></a>
+  <a href="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab"><img src="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
@@ -177,6 +179,22 @@ sdlab snapshot create --dry-run --project star-freight
 `sdlab project doctor` validates every project config (constitution, lanes, rubric, terminology) and reports eligibility without touching the GPU. Any command that mutates generated state accepts `--dry-run` to preview the effect first.
 
 If you forget `--project`, the CLI falls back to the first project it finds under `projects/` and prints a warning — pass `--project` explicitly to silence it.
+
+### Resuming an interrupted run
+
+Long generation runs can be resumed without redoing completed work:
+
+```bash
+# Skip subjects whose record + image are already on disk.
+# Seeds are preserved — resumed runs are bit-identical to fresh ones.
+sdlab generate inputs/prompts/wave1.json --project my-project --resume
+
+# Re-run only failed/missing slots in an existing batch.
+# Inherits mode/subject/theme from the prior manifest.
+sdlab batch generate --resume batch_2026-04-22_001 --project my-project
+```
+
+Both commands work because every slot writes its manifest entry atomically as it finishes — a crash mid-run never corrupts the partial state.
 
 ## Troubleshooting
 

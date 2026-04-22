@@ -113,7 +113,7 @@ Flags:
   --verbose            Show per-check detail
   --quiet              Only print PASS / FAIL summary`,
 
-  'generate': `sdlab generate [<pack-path>] --project <name> [--dry-run]
+  'generate': `sdlab generate [<pack-path>] --project <name> [--dry-run] [--resume]
 
 Generate candidates from a prompt pack (JSON file under
 projects/<name>/inputs/prompts/).
@@ -124,6 +124,10 @@ Positional:
 Flags:
   --project <name>     Project to operate on
   --dry-run            Preview work without contacting ComfyUI
+  --resume             Skip subjects whose record + image are already on disk.
+                       Seeds remain stable — skipped slots still advance the
+                       seed counter so downstream outputs are bit-identical to
+                       a fresh run.
 
 Env:
   COMFY_URL            ComfyUI HTTP endpoint (default: http://127.0.0.1:8188)
@@ -131,15 +135,19 @@ Env:
 Precedence: CLI flag > env COMFY_URL > project defaults > built-in default.`,
 
   'batch generate': `sdlab batch generate --mode <id> [--subject <id>] [--theme <label>] --project <name>
+       sdlab batch generate --resume <batch_id> --project <name>
 
 Execute a batch production mode (expression sheet, silhouette pack,
 environment board, etc).
 
 Flags:
-  --mode <id>          Batch mode id (required)
+  --mode <id>          Batch mode id (required unless --resume is given)
   --subject <id>       Subject for subject-driven modes
   --theme <label>      Theme label for environment modes
   --asset <id>         Training asset reference
+  --resume <id>        Resume an existing batch — re-runs only the failed or
+                       missing slots, keeps the same batch_id, and inherits
+                       mode/subject/theme/asset from the prior manifest.
   --project <name>     Project to operate on
   --dry-run            Prepare batch without submitting to ComfyUI
   --json               Output manifest as JSON`,

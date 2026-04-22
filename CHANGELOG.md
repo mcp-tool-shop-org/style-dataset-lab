@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2026-04-22
+
+### Added — `--resume` for `generate` and `batch generate`
+
+- **`sdlab generate --resume`** — skip subjects whose record JSON and output PNG are already on disk. Seeds remain stable: skipped slots still advance the seed counter so resumed runs are bit-identical to a fresh run that reaches the same point. Final summary now reports `(N errors, M resumed)`.
+- **`sdlab batch generate --resume <batch_id>`** — re-runs only failed/missing slots in an existing batch, keeps the same `batch_id`, and inherits `mode_id`/`subject_id`/`theme`/`asset_ref` from the prior manifest. Surfaces "(C/T slots already complete)" in the header. Throws `BATCH_NOT_FOUND` for a bad id and `BATCH_NO_PROGRESS` for pre-checkpoint manifests that can't be partially resumed.
+- **Manifest format:** `slots[].status` is now persisted (`'ok'` or `'error'`) so resume can distinguish failures from successes. Older manifests fall back to "selected_output truthy = success" for compatibility.
+- New helpers: `buildCompletedSlotMap()`, `openBatchDirForResume()` in `lib/batch-runs.js`.
+- 7 new tests in `tests/lib-pipeline/batch-resume.test.js`.
+
+### Fixed — Deterministic SaveImage node selection (PB-003)
+
+- **`lib/comfyui-output.js`** (new): `pickOutputImage(outputs, { preferNodeId })` selects the canonical SaveImage output deterministically. Previously, `comfyui-runner.js` and `generate.js` used `Object.values(outputs)` and broke on the first node with images — first-wins ordering depends on ComfyUI's execution scheduler, not the workflow graph.
+- **Selection precedence:** explicit `preferNodeId` (from the workflow builder's `saveNodeId` or a brief's `expected_outputs.save_node_id`) → highest numeric node id (typical "final save" convention) → first iteration entry (only for non-numeric ids).
+- `lib/adapters/comfyui-runner.js` and `scripts/generate.js` both updated to thread `saveNodeId` through to the picker.
+- Run output records now include `comfy_node_id` so the chosen save node is auditable from the manifest.
+- 9 new tests in `tests/lib-pipeline/comfyui-output.test.js`.
+
+### Added — CI coverage reporting
+
+- **`c8`** added as a `devDependency`; new `npm run coverage` script runs the full test suite under c8 with text + lcov + text-summary reporters (covering `lib/**/*.js`).
+- **CI**: Node 22 matrix entry now runs `npm run coverage` and uploads `coverage/lcov.info` to Codecov via `codecov/codecov-action@v5` (`continue-on-error: true` so a Codecov outage never blocks the PR).
+- **README**: CI and Codecov badges added beside the npm/license badges.
+- **`.gitignore`**: `coverage/` and `.nyc_output/` excluded.
+- Baseline coverage at this commit: **statements 40.6% / branches 70.7% / functions 54.0%** — meaningful coverage on `lib/snapshot.js`, `lib/split.js`, `lib/log.js`, `lib/args.js`, `lib/runtime-runs.js`; adapters and selection layers still uncovered (deferred to future passes).
+
+### Fixed — Mobile nav on landing + handbook (SB-SDL-007)
+
+- **`site/src/layouts/SiteLayout.astro`**: header was `hidden md:flex` for both the link nav and the npm/GitHub buttons, leaving phones with the brand mark and nothing else. Added a hamburger toggle (`md:hidden`) that opens a drawer containing all the same links plus npm/GitHub. Implemented as a `<details>`/`<summary>` so it works without any JavaScript or framework dependency.
+- The desktop nav and the GitHub button still render unchanged at `md:` and up.
+
+### Changed — Training adapter registry (DB-007)
+
+- **`lib/training-adapters.js`** (new): explicit `ADAPTER_REGISTRY` with `loadAdapter()`, `listAdapters()`, `isRegisteredAdapter()`. Replaces the hand-maintained adapter list embedded in a `lib/training-packages.js` error string.
+- **`lib/training-packages.js`**: dropped its private `loadAdapter()`; now imports from the registry. Unknown adapters throw `ADAPTER_NOT_REGISTERED` (input error, exit 1) with the available-adapter list always in sync. Registered-but-missing modules throw `ADAPTER_MODULE_LOAD_FAILED` (distinct from a typo).
+- **`lib/training-profiles.js`**: `validateProfile()` now rejects profiles whose `adapter_targets[]` cite an unregistered adapter — surfaces typos at profile load time instead of at package-build time.
+- 8 new tests in `tests/lib-pipeline/training-adapters.test.js`.
+
+To add a new adapter (e.g. `kohya-lora`, `onedtrainer`): write `lib/adapters/<id>.js` exporting `buildPackage(opts)` and add a one-line entry to `ADAPTER_REGISTRY`. The error message, profile validation, and (eventually) CLI completion all pick it up automatically.
+
 ## [3.0.1] - 2026-04-21
 
 ### Fixed — Dogfood swarm health pass (Stage A: bugs & security)

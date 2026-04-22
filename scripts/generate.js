@@ -11,12 +11,14 @@
  */
 
 import { writeFile, mkdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs, getProjectName } from "../lib/args.js";
 import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
+import { pickOutputImage } from "../lib/comfyui-output.js";
 import { info, result } from "../lib/log.js";
 
 /**
@@ -185,11 +187,13 @@ export async function run(argv = process.argv.slice(2)) {
       project: { type: 'string' },
       game: { type: 'string' },
       'dry-run': { type: 'boolean' },
+      resume: { type: 'boolean' },
     },
     deprecated: { game: 'project' },
   });
   const packPath = parsed.positionals[0] || "inputs/prompts/rpg-icons-lane1.json";
   const dryRun = parsed.flags['dry-run'] === true;
+  const resume = parsed.flags['resume'] === true;
 
   const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'pack-path' });
   const pack = await readJsonFile(fullPackPath, { requiredFields: ['lane', 'subjects', 'variations', 'defaults'] });
@@ -215,6 +219,7 @@ export async function run(argv = process.argv.slice(2)) {
   const d = pack.defaults;
   let generated = 0;
   let errors = 0;
+  let skipped = 0;
   const totalExpected = pack.subjects.length * pack.variations.length;
   const runStartMs = Date.now();
 
@@ -225,6 +230,20 @@ export async function run(argv = process.argv.slice(2)) {
       const fullPrompt = `${pack.style_prefix}, ${subject.prompt}`;
       const loras = variation.loras || [];
 
+      // --resume: skip subjects whose record + image are both already on disk.
+      // Seeds are deterministic per (base_seed, generated, variation), so
+      // increment `generated` for skipped slots to keep downstream seeds stable.
+      if (resume && !dryRun) {
+        const recordPath = join(GAME_ROOT, `records/${assetId}.json`);
+        const imagePath = join(GAME_ROOT, `outputs/candidates/${assetId}.png`);
+        if (existsSync(recordPath) && existsSync(imagePath)) {
+          console.log(`  [${generated + 1}/${totalExpected}] ${assetId} \x1b[2m(resumed — skipped)\x1b[0m`);
+          generated++;
+          skipped++;
+          continue;
+        }
+      }
+
       console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${loras.length})`);
 
       if (dryRun) {
@@ -233,7 +252,7 @@ export async function run(argv = process.argv.slice(2)) {
       }
 
       const startMs = Date.now();
-      const { nodes } = buildWorkflow(
+      const { nodes, saveNodeId } = buildWorkflow(
         fullPrompt, pack.negative,
         d.checkpoint, loras, seed,
         d.steps, d.cfg, d.sampler, d.scheduler,
@@ -241,29 +260,20 @@ export async function run(argv = process.argv.slice(2)) {
       );
 
       try {
-        const result = await submitAndWait(nodes, COMFY_URL);
+        const submitResult = await submitAndWait(nodes, COMFY_URL);
         const elapsed = Date.now() - startMs;
 
-        // Find output image
-        const outputs = result.outputs || {};
-        let imageFile = null;
-        let imageSubfolder = "";
-        for (const nodeOut of Object.values(outputs)) {
-          if (nodeOut.images && nodeOut.images.length > 0) {
-            imageFile = nodeOut.images[0].filename;
-            imageSubfolder = nodeOut.images[0].subfolder || "";
-            break;
-          }
-        }
-
-        if (!imageFile) {
+        // Prefer the explicit SaveImage node from buildWorkflow; fall back
+        // to highest numeric node id (see lib/comfyui-output.js).
+        const picked = pickOutputImage(submitResult.outputs, { preferNodeId: saveNodeId });
+        if (!picked) {
           console.log(`    \x1b[33m⚠\x1b[0m No output image found`);
           generated++;
           continue;
         }
 
         // Download and save
-        const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
+        const imgData = await downloadImage(picked.filename, picked.subfolder, COMFY_URL);
         const destPath = `outputs/candidates/${assetId}.png`;
         await writeFile(join(GAME_ROOT, destPath), imgData);
 
@@ -322,12 +332,14 @@ export async function run(argv = process.argv.slice(2)) {
   }
 
   console.log("");
-  const succeeded = generated - errors;
+  const succeeded = generated - errors - skipped;
   const totalElapsedMs = Date.now() - runStartMs;
-  console.log(`\x1b[32m✓\x1b[0m Generated ${succeeded} candidates (${errors} errors)`);
-  if (!dryRun && generated > 0) {
-    const avgMs = totalElapsedMs / generated;
-    console.log(`  Total: ${formatEta(totalElapsedMs)} — avg ${formatEta(avgMs)}/item`);
+  const skippedSuffix = skipped > 0 ? `, ${skipped} resumed` : '';
+  console.log(`\x1b[32m✓\x1b[0m Generated ${succeeded} candidates (${errors} errors${skippedSuffix})`);
+  if (!dryRun && generated > skipped) {
+    const ran = generated - skipped;
+    const avgMs = totalElapsedMs / ran;
+    console.log(`  Total: ${formatEta(totalElapsedMs)} — avg ${formatEta(avgMs)}/item over ${ran} new`);
   }
   if (dryRun) console.log("  (dry run — no images produced)");
   // Always print the output directory so scripted pipelines can parse it,

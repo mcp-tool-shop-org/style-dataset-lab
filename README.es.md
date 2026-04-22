@@ -8,14 +8,16 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@mcptoolshop/style-dataset-lab"><img src="https://img.shields.io/npm/v/@mcptoolshop/style-dataset-lab" alt="npm"></a>
+  <a href="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab"><img src="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-Escriba sus reglas visuales. Genere arte. Evalúe cada imagen según esas reglas. Entregue los resultados como datos de entrenamiento versionados y auditables.
+Escriba sus reglas visuales. Genere arte. Evalúe cada imagen según esas reglas. Envíe los resultados como datos de entrenamiento versionados y auditables, y luego ponga los modelos entrenados en funcionamiento en flujos de trabajo de producción reales y retroalimente los mejores resultados a su corpus.
 
 Style Dataset Lab conecta lo que ha escrito sobre su estilo artístico con el conjunto de datos con el que realmente entrena. Usted define una constitución: reglas de silueta, restricciones de paleta, lenguaje de materiales, cualquier cosa que sea importante para su proyecto. El proceso genera candidatos, los evalúa según esas reglas y empaqueta el trabajo aprobado en conjuntos de datos reproducibles donde cada registro explica por qué se incluyó.
 
-El ciclo se cierra: entrena un modelo, genera nuevas salidas, evalúalas según el mismo criterio y vuelve a incluir lo que cumple los requisitos. El conjunto de datos crece y las reglas se mantienen.
+Luego, el entorno de trabajo de producción toma el control: compile las instrucciones de generación a partir de la "verdad" del proyecto, ejecútelas a través de ComfyUI, evalúe los resultados, genere en masa hojas de expresión y paneles de entorno, seleccione los mejores resultados y reincorpórelos como nuevos candidatos. El ciclo se cierra: producir, seleccionar, revisar, fortalecer.
 
 ## El proceso
 
@@ -28,25 +30,37 @@ sdlab generate inputs/prompts/wave1.json --project my-project
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
 
 # Bind approved work to constitution rules
-sdlab bind --project my-project
+# (`sdlab bind` is a shorter alias for `canon-bind`)
+sdlab canon-bind --project my-project
 
 # Freeze a versioned dataset
 sdlab snapshot create --project my-project
 sdlab split build
 sdlab export build
 
-# Build a training package and close the loop
+# Build a training package
 sdlab training-manifest create --profile character-style-lora
 sdlab training-package build
-sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
-sdlab reingest generated --source ./outputs --manifest <id>
+
+# Compile a production brief and run it
+sdlab brief compile --workflow character-portrait-set --subject kael_maren
+sdlab run generate --brief brief_2026-04-16_001
+
+# Critique, refine, batch-produce
+sdlab critique --run run_2026-04-16_001
+sdlab refine --run run_2026-04-16_001 --pick 001.png
+sdlab batch generate --mode expression-sheet --subject kael_maren
+
+# Select the best outputs and bring them back
+sdlab select --run run_2026-04-16_001 --approve 001.png,003.png
+sdlab reingest selected --selection selection_2026-04-16_001
 ```
 
-Esa última instrucción es clave. Las salidas generadas vuelven a pasar por el mismo proceso de revisión que todo lo demás. El ciclo se cierra.
+Esa última instrucción es clave. Los resultados seleccionados vuelven a pasar por el mismo proceso de revisión que todo lo demás. El corpus crece y las reglas se mantienen.
 
 ## Lo que produce
 
-Siete artefactos versionados y con sumas de verificación. Cada uno tiene un enlace a sus predecesores para que pueda rastrear cualquier registro de entrenamiento hasta la regla que lo aprobó.
+Siete artefactos de conjunto de datos y un entorno de trabajo de producción completo. Cada artefacto está vinculado a sus predecesores, por lo que puede rastrear cualquier registro de entrenamiento hasta la regla que lo aprobó.
 
 | Artefacto. | Qué es. |
 |----------|-----------|
@@ -57,6 +71,17 @@ Siete artefactos versionados y con sumas de verificación. Cada uno tiene un enl
 | **Training package** | Diseño listo para el entrenamiento a través de adaptadores (`diffusers-lora`, `generic-image-caption`). La misma información, en un formato diferente. |
 | **Eval scorecard** | Resultado de aprobación/reprobación por tarea, según la evaluación de las salidas generadas. |
 | **Implementation pack** | Ejemplos de indicaciones, fallos conocidos, pruebas de continuidad y guías para la inclusión. |
+
+El entorno de trabajo de producción agrega:
+
+| Superficie | Qué hace |
+|---------|-------------|
+| **Compiled brief** | Generación determinista a partir de la instrucción del perfil de flujo de trabajo + la "verdad" del proyecto. |
+| **Run** | Artefacto de ejecución congelado: instrucción + semillas + resultados de ComfyUI + manifiesto. |
+| **Critique** | Evaluación estructurada y multidimensional de los resultados de la ejecución en comparación con el canon. |
+| **Batch** | Producción coordinada de múltiples elementos (hojas de expresión, paneles de entorno, paquetes de siluetas). |
+| **Selection** | Artefacto de decisión creativa: qué resultados se eligieron, por qué y de dónde provienen. |
+| **Re-ingest** | Los resultados seleccionados se devuelven como registros de candidatos con un historial completo de generación. |
 
 ## Por qué existe
 
@@ -94,6 +119,12 @@ projects/my-project/
   splits/                Train/val/test partitions
   exports/               Versioned export packages
   training/              Profiles, manifests, packages, eval runs, implementations
+  workflows/             Workflow profiles + batch mode definitions
+  briefs/                Compiled generation briefs
+  runs/                  Execution artifacts (brief + outputs + manifest)
+  batches/               Coordinated multi-slot productions
+  selections/            Chosen outputs with reasons and provenance
+  inbox/generated/       Re-ingested images awaiting review
 ```
 
 ## Propiedades de confianza
@@ -129,6 +160,66 @@ npm install -g @mcptoolshop/style-dataset-lab
 ```
 
 Requiere Node.js 20+ y [ComfyUI](https://github.com/comfyanonymous/ComfyUI) en localhost:8188 para la generación.
+
+### Pruébelo sin ComfyUI
+
+Puede explorar toda la superficie de no generación (inspección, curación, instantánea, división, exportación) utilizando el proyecto Star Freight incluido, sin instalar ComfyUI ni descargar ningún peso de SDXL.
+
+```bash
+# Scaffold a fresh project (no ComfyUI needed)
+sdlab init test --domain game-art
+
+# Run the canonical health check (no ComfyUI needed)
+sdlab project doctor --project test
+
+# Dry-run a snapshot against the bundled Star Freight corpus
+sdlab snapshot create --dry-run --project star-freight
+```
+
+`sdlab project doctor` valida cada configuración del proyecto (constitución, canales, rúbrica, terminología) e informa sobre la elegibilidad sin tocar la GPU. Cualquier comando que modifique el estado generado acepta `--dry-run` para previsualizar el efecto primero.
+
+Si olvida `--project`, la CLI recurre al primer proyecto que encuentra en `projects/` e imprime una advertencia; use `--project` explícitamente para silenciarla.
+
+### Reanudación de una ejecución interrumpida
+
+Las largas ejecuciones de generación se pueden reanudar sin tener que volver a realizar el trabajo completado:
+
+```bash
+# Skip subjects whose record + image are already on disk.
+# Seeds are preserved — resumed runs are bit-identical to fresh ones.
+sdlab generate inputs/prompts/wave1.json --project my-project --resume
+
+# Re-run only failed/missing slots in an existing batch.
+# Inherits mode/subject/theme from the prior manifest.
+sdlab batch generate --resume batch_2026-04-22_001 --project my-project
+```
+
+Ambos comandos funcionan porque cada ranura escribe su entrada de manifiesto de forma atómica al finalizar; un fallo durante la ejecución nunca corrompe el estado parcial.
+
+## Solución de problemas
+
+Modos de fallo comunes y soluciones:
+
+**`ECONNREFUSED 127.0.0.1:8188` en cualquier `sdlab generate` / `sdlab run generate` / `sdlab batch generate`**
+ComfyUI no se está ejecutando. Inicie ComfyUI (`python main.py --listen 127.0.0.1 --port 8188`) y confirme con `curl http://127.0.0.1:8188/system_stats`. Para apuntar a un host/puerto diferente, establezca `COMFY_URL=http://host:port`.
+
+**`missing checkpoint` / `LoRA weight not found`**
+Su perfil de flujo de trabajo nombra un archivo de modelo que no está en la carpeta `models/checkpoints/` o `models/loras/` de ComfyUI. Abra `projects/<project>/workflows/profiles/<profile>.json`, localice el campo `checkpoint` o `lora` y, ya sea descargue el peso referenciado o reemplácelo por uno que ya tenga. Vuelva a ejecutar `sdlab project doctor --project <project>` para confirmar la solución.
+
+**`sdlab project doctor` errores**
+Doctor devuelve códigos de error estructurados. Algunos comunes:
+- `E_PROJECT_NOT_FOUND` — el directorio del proyecto no existe en `projects/`. Verifique la ortografía.
+- `E_CONFIG_INVALID` — uno de los cinco archivos de configuración JSON no pasó la validación del esquema. El campo `hint` indica el archivo y el campo incorrectos.
+- `E_RECORD_DRIFT` — la huella digital de la configuración de un registro ya no coincide con su origen. Re-curate o re-asocie según lo sugerido en la pista.
+
+**`No se especificó --project, se utiliza el valor predeterminado <name>`**
+Una advertencia leve. Utilice `--project <name>` explícitamente para seleccionar el proyecto correcto y eliminar la advertencia.
+
+**Problemas de memoria de VRAM relacionados con el estilo "painterly"**
+Consulte el archivo `docs/internal/HANDOFF.md` para obtener información sobre la configuración del estilo "painterly". En resumen: reduzca la intensidad del desenfoque, disminuya el tamaño del lote o cambie a un modelo más pequeño en su perfil de trabajo.
+
+**Informar de errores**
+Registre un problema en https://github.com/mcp-tool-shop-org/style-dataset-lab/issues, incluyendo la versión de sdlab (`sdlab --version`), la versión de Node (`node -v`), el comando completo y la salida de error estructurada. Una plantilla para la presentación de informes de errores precompleta los campos.
 
 ## Seguridad
 

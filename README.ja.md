@@ -8,14 +8,16 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@mcptoolshop/style-dataset-lab"><img src="https://img.shields.io/npm/v/@mcptoolshop/style-dataset-lab" alt="npm"></a>
+  <a href="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab"><img src="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-視覚的なルールを定義してください。それに基づいて画像を生成し、生成されたすべての画像をそのルールに照らし合わせて評価します。そして、バージョン管理された、監査可能なトレーニングデータとして結果を配布します。
+視覚的なルールを定義します。画像生成を行い、生成された画像を定義したルールに基づいて評価します。評価結果をバージョン管理された、監査可能な学習データとして出力し、その学習データを用いて訓練したモデルを実際の運用環境で活用します。そして、最も優れた結果を学習データに再投入します。
 
 Style Dataset Labは、お客様が記述されたアートスタイルに関する情報と、実際に学習に使用するデータセットを連携させます。お客様は、シルエットのルール、カラーパレットの制限、素材に関する記述など、プロジェクトにとって重要な要素を定義します。このシステムは、定義されたルールに基づいて候補を生成し、それらを評価し、承認された作品を再現可能なデータセットにまとめます。このデータセットでは、各レコードが、なぜその作品が選択されたのかを説明しています。
 
-このプロセスはループを形成します。モデルを訓練し、新しい出力を生成し、それらを同じ基準で評価し、評価基準を満たしたものをデータセットに再取り込みます。データセットは徐々に成長し、そのルールは維持されます。
+次に、本番環境用のワークベンチが稼働します。プロジェクトの要件に基づいて生成指示を作成し、ComfyUIで実行し、結果を評価し、表現シートや環境ボードをまとめて作成し、最適な結果を選択し、新しい候補として再登録します。このサイクルを繰り返します。生成、選択、評価、改善。
 
 ## パイプライン
 
@@ -28,25 +30,37 @@ sdlab generate inputs/prompts/wave1.json --project my-project
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
 
 # Bind approved work to constitution rules
-sdlab bind --project my-project
+# (`sdlab bind` is a shorter alias for `canon-bind`)
+sdlab canon-bind --project my-project
 
 # Freeze a versioned dataset
 sdlab snapshot create --project my-project
 sdlab split build
 sdlab export build
 
-# Build a training package and close the loop
+# Build a training package
 sdlab training-manifest create --profile character-style-lora
 sdlab training-package build
-sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
-sdlab reingest generated --source ./outputs --manifest <id>
+
+# Compile a production brief and run it
+sdlab brief compile --workflow character-portrait-set --subject kael_maren
+sdlab run generate --brief brief_2026-04-16_001
+
+# Critique, refine, batch-produce
+sdlab critique --run run_2026-04-16_001
+sdlab refine --run run_2026-04-16_001 --pick 001.png
+sdlab batch generate --mode expression-sheet --subject kael_maren
+
+# Select the best outputs and bring them back
+sdlab select --run run_2026-04-16_001 --approve 001.png,003.png
+sdlab reingest selected --selection selection_2026-04-16_001
 ```
 
-最後のコマンドが重要な点です。生成された出力も、他のものと同様に、同じ審査プロセスを経ます。これにより、一連の作業が完了し、サイクルが閉じます。
+この最後のコマンドが重要です。選択された出力は、他のすべてのデータと同様に、同じ評価プロセスを経ます。学習データが蓄積され、ルールが維持されます。
 
 ## それが生成するものは何か
 
-バージョン管理された7つのデータセットがあり、それぞれにチェックサムが付与されています。各データセットは、その前のバージョンとリンクされており、これにより、どのトレーニング記録も、それを承認したルールまで遡って追跡することができます。
+7種類のデータセットファイルと、完全な本番環境用ワークベンチが含まれています。各ファイルは、以前のファイルとリンクされており、どの学習記録も、それを承認したルールまで遡ることができます。
 
 | 成果物 | 内容 |
 |----------|-----------|
@@ -57,6 +71,17 @@ sdlab reingest generated --source ./outputs --manifest <id>
 | **Training package** | アダプター（`diffusers-lora`、`generic-image-caption`）を使用することで、トレーニングに適した構成にすることができます。同じ原理に基づいているものの、形式が異なります。 |
 | **Eval scorecard** | 各タスクごとに、評価データセットと照合して生成された結果に基づいて、合格/不合格を判定します。 |
 | **Implementation pack** | プロンプトの例、既知の問題点、動作確認テスト、および再取り込みに関する手順。 |
+
+本番環境用ワークベンチには、以下が含まれます。
+
+| 機能 | 概要 |
+|---------|-------------|
+| **Compiled brief** | ワークフロープロファイルとプロジェクト要件に基づいて、決定論的な画像生成を行います。 |
+| **Run** | 生成結果の記録：指示、シード値、ComfyUIの出力、マニフェストファイル。 |
+| **Critique** | 生成結果を基準と比較し、多角的な評価を行います。 |
+| **Batch** | 表現シート、環境ボード、シルエットパックなど、複数の要素をまとめて生成します。 |
+| **Selection** | 選択された出力について、なぜ選択されたのか、どこから来たのかといった情報を記録します。 |
+| **Re-ingest** | 選択された出力は、生成元の情報を含む候補レコードとして登録されます。 |
 
 ## なぜこれが存在するのか
 
@@ -94,6 +119,12 @@ projects/my-project/
   splits/                Train/val/test partitions
   exports/               Versioned export packages
   training/              Profiles, manifests, packages, eval runs, implementations
+  workflows/             Workflow profiles + batch mode definitions
+  briefs/                Compiled generation briefs
+  runs/                  Execution artifacts (brief + outputs + manifest)
+  batches/               Coordinated multi-slot productions
+  selections/            Chosen outputs with reasons and provenance
+  inbox/generated/       Re-ingested images awaiting review
 ```
 
 ## 信託財産
@@ -130,13 +161,73 @@ npm install -g @mcptoolshop/style-dataset-lab
 
 生成には、Node.js 20以降のバージョンと、ローカルホストの8188番ポートで動作している [ComfyUI](https://github.com/comfyanonymous/ComfyUI) が必要です。
 
+### ComfyUIなしで試す
+
+ComfyUIをインストールしたり、SDXLのモデルファイルをダウンロードしたりせずに、検査、キュレーション、スナップショット、分割、エクスポートなど、すべての機能を「Star Freight」プロジェクトを通じて利用できます。
+
+```bash
+# Scaffold a fresh project (no ComfyUI needed)
+sdlab init test --domain game-art
+
+# Run the canonical health check (no ComfyUI needed)
+sdlab project doctor --project test
+
+# Dry-run a snapshot against the bundled Star Freight corpus
+sdlab snapshot create --dry-run --project star-freight
+```
+
+`sdlab project doctor`コマンドは、すべてのプロジェクト設定（構成、ルール、評価基準、用語集）を検証し、GPUに負荷をかけずに、プロジェクトが利用可能かどうかを報告します。生成状態を変更するコマンドには、事前に効果を確認するための`--dry-run`オプションがあります。
+
+`--project`オプションを省略すると、CLIは`projects/`ディレクトリにある最初のプロジェクトを使用し、警告を表示します。警告を抑制するには、`--project`オプションを明示的に指定してください。
+
+### 中断されたジョブの再開
+
+長時間のジョブ実行中に中断が発生した場合でも、完了済みの作業をやり直すことなく、ジョブを再開することができます。
+
+```bash
+# Skip subjects whose record + image are already on disk.
+# Seeds are preserved — resumed runs are bit-identical to fresh ones.
+sdlab generate inputs/prompts/wave1.json --project my-project --resume
+
+# Re-run only failed/missing slots in an existing batch.
+# Inherits mode/subject/theme from the prior manifest.
+sdlab batch generate --resume batch_2026-04-22_001 --project my-project
+```
+
+これらのコマンドは、いずれも正常に動作します。なぜなら、各処理ステップは、完了時にその結果を完全に記録するため、ジョブ実行中に問題が発生した場合でも、部分的に完了した状態が破損することはないからです。
+
+## トラブルシューティング
+
+一般的なエラーと解決策：
+
+**`ECONNREFUSED 127.0.0.1:8188`が発生した場合（`sdlab generate`、`sdlab run generate`、`sdlab batch generate`など）**
+ComfyUIが実行されていません。ComfyUIを起動します（`python main.py --listen 127.0.0.1 --port 8188`）。`curl http://127.0.0.1:8188/system_stats`で確認できます。別のホストまたはポートを使用する場合は、`COMFY_URL=http://host:port`を設定します。
+
+**`missing checkpoint` / `LoRA weight not found`が発生した場合**
+ワークフロープロファイルで指定されているモデルファイルが、ComfyUIの`models/checkpoints/`または`models/loras/`フォルダに存在しません。`projects/<project>/workflows/profiles/<profile>.json`を開き、`checkpoint`または`lora`の項目を探し、指定されたモデルファイルをダウンロードするか、代わりに既存のファイルを使用してください。修正後、`sdlab project doctor --project <project>`を再実行して確認します。
+
+**`sdlab project doctor`でエラーが発生した場合**
+Doctorは、構造化されたエラーコードを返します。一般的なエラーは以下の通りです。
+- `E_PROJECT_NOT_FOUND`：プロジェクトディレクトリが`projects/`ディレクトリに存在しません。スペルを確認してください。
+- `E_CONFIG_INVALID`：5つのJSON設定ファイルのいずれかが、スキーマ検証に失敗しました。`hint`の項目には、問題のあるファイルとフィールドの名前が表示されます。
+- `E_RECORD_DRIFT`：レコードの設定フィンガープリントが、元のデータと一致しなくなりました。`hint`に示されているように、再キュレーションまたは再バインドを行ってください。
+
+**`No --project specified, falling back to <name>`という警告が表示された場合**
+これは、警告です。正しいプロジェクトを選択し、警告を抑制するには、`--project <name>`オプションを明示的に指定してください。
+
+**ペインタリー処理 / VRAMのメモリ不足に関する問題**
+ペインタリー処理の調整に関する詳細は、`docs/internal/HANDOFF.md` を参照してください。簡単に言うと、ノイズ除去の強度を下げたり、バッチサイズを小さくしたり、ワークフロープロファイルでより小さいチェックポイントを使用するように変更してください。
+
+**バグの報告**
+バグを発見した場合は、https://github.com/mcp-tool-shop-org/style-dataset-lab/issues に、`sdlab --version` で確認できるsdlabのバージョン、`node -v` で確認できるNodeのバージョン、実行したコマンド全体、および構造化されたエラー出力を添えて報告してください。バグレポートのテンプレートには、必要な項目が事前に入力されています。
+
 ## セキュリティ
 
 ローカル環境でのみ動作します。テレメトリー、分析、外部へのリクエストは一切ありません。画像はすべて、あなたのGPUとファイルシステム内に保存されます。
 
 ## ライセンス
 
-MIT
+MITライセンス
 
 ---
 

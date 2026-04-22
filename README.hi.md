@@ -8,14 +8,16 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@mcptoolshop/style-dataset-lab"><img src="https://img.shields.io/npm/v/@mcptoolshop/style-dataset-lab" alt="npm"></a>
+  <a href="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/style-dataset-lab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab"><img src="https://codecov.io/gh/mcp-tool-shop-org/style-dataset-lab/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-अपनी दृश्य दिशानिर्देशों को लिखें। कला उत्पन्न करें। प्रत्येक छवि का मूल्यांकन उन दिशानिर्देशों के आधार पर करें। परिणामों को संस्करणों के साथ, ऑडिट करने योग्य प्रशिक्षण डेटा के रूप में प्रस्तुत करें।
+अपने दृश्य नियमों को लिखें। कला उत्पन्न करें। प्रत्येक छवि का मूल्यांकन उन नियमों के आधार पर करें। परिणामों को संस्करणित और ऑडिट योग्य प्रशिक्षण डेटा के रूप में प्रस्तुत करें। फिर, प्रशिक्षित मॉडलों को वास्तविक उत्पादन प्रक्रियाओं में उपयोग करें और सर्वोत्तम परिणामों को वापस अपने डेटासेट में शामिल करें।
 
 स्टाइल डेटासेट लैब आपके कलात्मक शैली के बारे में आपने जो कुछ भी लिखा है, उसे उस डेटासेट से जोड़ता है जिससे आप वास्तव में प्रशिक्षण लेते हैं। आप एक "संविधान" परिभाषित करते हैं - जैसे कि आकार के नियम, रंग पैलेट की सीमाएं, सामग्री का विवरण, या जो भी आपके प्रोजेक्ट के लिए महत्वपूर्ण है। यह प्रणाली संभावित विकल्पों को उत्पन्न करती है, उन्हें आपके द्वारा परिभाषित नियमों के आधार पर मूल्यांकन करती है, और स्वीकृत कार्यों को ऐसे डेटासेट में व्यवस्थित करती है जो पुन: प्रयोज्य हों, जहां प्रत्येक प्रविष्टि यह बताती है कि उसे क्यों शामिल किया गया है।
 
-यह प्रक्रिया एक चक्र की तरह चलती है: एक मॉडल को प्रशिक्षित करें, नए आउटपुट उत्पन्न करें, उन्हें एक ही मानदंड के आधार पर मूल्यांकित करें, और जो आउटपुट मानदंडों को पूरा करते हैं, उन्हें वापस डेटासेट में शामिल करें। इस तरह, डेटासेट का आकार बढ़ता रहता है और नियम बने रहते हैं।
+फिर उत्पादन कार्यक्षेत्र (प्रोडक्शन वर्कबेंच) सक्रिय होता है: यह प्रोजेक्ट की वास्तविकताओं से संकलित किए गए विवरणों को लेता है, उन्हें कॉमफीयूआई (ComfyUI) के माध्यम से संसाधित करता है, परिणामों की समीक्षा करता है, बड़ी संख्या में एक्सप्रेशन शीट और वातावरण संबंधी चित्र बनाता है, सर्वोत्तम परिणामों का चयन करता है, और उन्हें नए विकल्पों के रूप में फिर से उपयोग करता है। यह प्रक्रिया एक चक्र में चलती रहती है: उत्पादन, चयन, समीक्षा, और सुधार।
 
 ## पाइपलाइन।
 
@@ -28,25 +30,37 @@ sdlab generate inputs/prompts/wave1.json --project my-project
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
 
 # Bind approved work to constitution rules
-sdlab bind --project my-project
+# (`sdlab bind` is a shorter alias for `canon-bind`)
+sdlab canon-bind --project my-project
 
 # Freeze a versioned dataset
 sdlab snapshot create --project my-project
 sdlab split build
 sdlab export build
 
-# Build a training package and close the loop
+# Build a training package
 sdlab training-manifest create --profile character-style-lora
 sdlab training-package build
-sdlab eval-run create && sdlab eval-run score <id> --outputs results.jsonl
-sdlab reingest generated --source ./outputs --manifest <id>
+
+# Compile a production brief and run it
+sdlab brief compile --workflow character-portrait-set --subject kael_maren
+sdlab run generate --brief brief_2026-04-16_001
+
+# Critique, refine, batch-produce
+sdlab critique --run run_2026-04-16_001
+sdlab refine --run run_2026-04-16_001 --pick 001.png
+sdlab batch generate --mode expression-sheet --subject kael_maren
+
+# Select the best outputs and bring them back
+sdlab select --run run_2026-04-16_001 --approve 001.png,003.png
+sdlab reingest selected --selection selection_2026-04-16_001
 ```
 
-"वह अंतिम आदेश महत्वपूर्ण है। उत्पन्न होने वाले परिणाम भी उसी समीक्षा प्रक्रिया से गुजरते हैं, जैसे कि बाकी सब कुछ। इस प्रकार, एक चक्र पूरा होता है।"
+"वह अंतिम आदेश महत्वपूर्ण है। चुने गए आउटपुट भी बाकी सब कुछ की तरह ही, उसी समीक्षा प्रक्रिया से गुजरते हैं। डेटा संग्रह लगातार बढ़ रहा है और नियम अभी भी लागू हैं।"
 
 ## यह क्या उत्पादित करता है।
 
-सात संस्करणों वाले, चेकसम से सत्यापित दस्तावेज़। प्रत्येक दस्तावेज़ अपने पूर्ववर्ती संस्करणों से जुड़ा हुआ है, जिससे आप किसी भी प्रशिक्षण रिकॉर्ड को उस नियम तक वापस खोज सकते हैं जिसने उसे स्वीकृत किया था।
+सात डेटासेट संबंधी अभिलेखागार (आर्टिफैक्ट) और एक पूर्ण उत्पादन कार्यक्षेत्र उपलब्ध हैं। प्रत्येक अभिलेखागार अपने पूर्ववर्ती अभिलेखागार से जुड़ा हुआ है, जिससे आप किसी भी प्रशिक्षण रिकॉर्ड को उस नियम तक वापस खोज सकते हैं जिसने उसे स्वीकृत किया था।
 
 | पुरातत्विक वस्तु। | यह क्या है। |
 |----------|-----------|
@@ -57,6 +71,17 @@ sdlab reingest generated --source ./outputs --manifest <id>
 | **Training package** | प्रशिक्षण के लिए तैयार लेआउट, जो एडेप्टर (`diffusers-lora`, `generic-image-caption`) के माध्यम से उपलब्ध है। एक ही जानकारी, लेकिन अलग प्रारूप में। |
 | **Eval scorecard** | प्रत्येक कार्य के लिए, स्कोरिंग के आधार पर उत्पन्न परिणामों की तुलना मूल्यांकन पैकों से की जाती है, और यह निर्धारित किया जाता है कि परिणाम पास हुआ है या फेल। |
 | **Implementation pack** | त्वरित उदाहरण, ज्ञात विफलताएं, निरंतरता परीक्षण, और पुनः उपयोग के लिए मार्गदर्शन। |
+
+उत्पादन कार्यक्षेत्र में निम्नलिखित विशेषताएं शामिल हैं:
+
+| सतह। | यह क्या करता है। |
+|---------|-------------|
+| **Compiled brief** | कार्यप्रवाह प्रोफाइल और परियोजना की वास्तविक जानकारी के आधार पर, एक निश्चित (निर्धारित) पीढ़ी निर्देश। |
+| **Run** | फ्रीज किए गए निष्पादन कलाकृतियाँ: संक्षिप्त विवरण + बीज (seeds) + कॉमफीयूआई (ComfyUI) के आउटपुट + मैनिफेस्ट (manifest)। |
+| **Critique** | "रन आउटपुट का मानकीकृत, बहु-आयामी मूल्यांकन, जो कि एक स्थापित मानक के आधार पर किया जाता है।" |
+| **Batch** | समन्वित, बहु-स्लॉट उत्पादन (एक्सप्रेशन शीट, पर्यावरण संबंधी बोर्ड, सिल्हूट पैक)। |
+| **Selection** | रचनात्मक निर्णय का दस्तावेज़: किन परिणामों का चयन किया गया, क्यों किया गया, और वे कहाँ से प्राप्त हुए। |
+| **Re-ingest** | चयनित परिणाम "उम्मीदवार रिकॉर्ड" के रूप में वापस आते हैं, जिनमें पूरी जानकारी शामिल होती है कि वे कैसे उत्पन्न हुए। |
 
 ## यह क्यों मौजूद है?
 
@@ -94,6 +119,12 @@ projects/my-project/
   splits/                Train/val/test partitions
   exports/               Versioned export packages
   training/              Profiles, manifests, packages, eval runs, implementations
+  workflows/             Workflow profiles + batch mode definitions
+  briefs/                Compiled generation briefs
+  runs/                  Execution artifacts (brief + outputs + manifest)
+  batches/               Coordinated multi-slot productions
+  selections/            Chosen outputs with reasons and provenance
+  inbox/generated/       Re-ingested images awaiting review
 ```
 
 ## ट्रस्ट की संपत्ति।
@@ -130,13 +161,75 @@ npm install -g @mcptoolshop/style-dataset-lab
 
 इसके लिए Node.js 20+ और [ComfyUI](https://github.com/comfyanonymous/ComfyUI) की आवश्यकता है, जो localhost:8188 पर चल रहा होना चाहिए, ताकि सामग्री उत्पन्न की जा सके।
 
+### इसे बिना ComfyUI के आज़माएं।
+
+आप "स्टार फ्रेट" नामक प्रोजेक्ट का उपयोग करके, बिना किसी भी अतिरिक्त सॉफ़्टवेयर को स्थापित किए या किसी भी एसडीएक्सएल फ़ाइल को डाउनलोड किए, "नॉन-जेनरेशन" (गैर-उत्पादन) की सभी सुविधाओं का पता लगा सकते हैं, जैसे कि निरीक्षण, चयन, स्नैपशॉट, विभाजन और निर्यात।
+
+```bash
+# Scaffold a fresh project (no ComfyUI needed)
+sdlab init test --domain game-art
+
+# Run the canonical health check (no ComfyUI needed)
+sdlab project doctor --project test
+
+# Dry-run a snapshot against the bundled Star Freight corpus
+sdlab snapshot create --dry-run --project star-freight
+```
+
+`sdlab प्रोजेक्ट डॉक्टर` प्रत्येक प्रोजेक्ट कॉन्फ़िगरेशन (संरचना, चरण, मूल्यांकन मानदंड, शब्दावली) की जांच करता है और बिना ग्राफिक्स प्रोसेसिंग यूनिट (GPU) का उपयोग किए, परियोजना की पात्रता की रिपोर्ट देता है। कोई भी कमांड जो उत्पन्न डेटा को बदलता है, `--dry-run` विकल्प के साथ उपयोग किया जा सकता है ताकि पहले उसके प्रभाव को देखा जा सके।
+
+यदि आप `--project` विकल्प को भूल जाते हैं, तो कमांड-लाइन इंटरफेस (CLI) `projects/` फ़ोल्डर के अंतर्गत पाए जाने वाले पहले प्रोजेक्ट का उपयोग करेगा और एक चेतावनी प्रदर्शित करेगा। इस चेतावनी को बंद करने के लिए, `--project` विकल्प को स्पष्ट रूप से निर्दिष्ट करें।
+
+### अवरुद्ध प्रक्रिया को फिर से शुरू करना
+
+लंबे समय तक चलने वाली प्रक्रियाओं को फिर से शुरू किया जा सकता है बिना पहले से किए गए काम को दोहराए:
+
+```bash
+# Skip subjects whose record + image are already on disk.
+# Seeds are preserved — resumed runs are bit-identical to fresh ones.
+sdlab generate inputs/prompts/wave1.json --project my-project --resume
+
+# Re-run only failed/missing slots in an existing batch.
+# Inherits mode/subject/theme from the prior manifest.
+sdlab batch generate --resume batch_2026-04-22_001 --project my-project
+```
+
+दोनों कमांड काम करते हैं क्योंकि प्रत्येक स्लॉट अपनी मैनिफेस्ट प्रविष्टि को पूरा होने पर एक साथ लिखता है - प्रक्रिया के बीच में होने वाली किसी भी खराबी से आंशिक स्थिति दूषित नहीं होती है।
+
+## समस्या निवारण।
+
+सामान्य खराबी के प्रकार और उनके समाधान:
+
+`ECONNREFUSED 127.0.0.1:8188` - यह त्रुटि `sdlab generate`, `sdlab run generate` या `sdlab batch generate` कमांड चलाने के दौरान आ सकती है।
+
+ComfyUI चल नहीं रहा है। ComfyUI को शुरू करें (`python main.py --listen 127.0.0.1 --port 8188`) और `curl http://127.0.0.1:8188/system_stats` कमांड से इसकी पुष्टि करें। यदि आप किसी अन्य होस्ट/पोर्ट का उपयोग करना चाहते हैं, तो `COMFY_URL=http://होस्ट:पोर्ट` सेट करें।
+
+**`चेकपॉइंट गुम है` / `LoRA फ़ाइल नहीं मिली`**
+
+आपके वर्कफ़्लो प्रोफाइल में एक मॉडल फ़ाइल का नाम दिया गया है जो ComfyUI के `models/checkpoints/` या `models/loras/` फ़ोल्डर में मौजूद नहीं है। `projects/<प्रोजेक्ट>/workflows/profiles/<प्रोफाइल>.json` फ़ाइल खोलें, `checkpoint` या `lora` फ़ील्ड ढूंढें, और या तो संदर्भित फ़ाइल को डाउनलोड करें या उसे उस फ़ाइल से बदल दें जो आपके पास पहले से है। सुधार की पुष्टि करने के लिए `sdlab project doctor --project <प्रोजेक्ट>` कमांड को फिर से चलाएं।
+
+**`sdlab प्रोजेक्ट डॉक्टर` त्रुटियां**
+डॉक्टर संरचित त्रुटि कोड लौटाता है। कुछ सामान्य त्रुटियां:
+- `E_PROJECT_NOT_FOUND` — "projects/" फ़ोल्डर के अंतर्गत प्रोजेक्ट डायरेक्टरी मौजूद नहीं है। वर्तनी की जांच करें।
+- `E_CONFIG_INVALID` — पांच JSON कॉन्फ़िगरेशन फ़ाइलों में से किसी एक में स्कीमा सत्यापन विफल हो गया है। "hint" फ़ील्ड में उस गलत फ़ाइल और फ़ील्ड का नाम दिया गया है।
+- `E_RECORD_DRIFT` — किसी रिकॉर्ड के कॉन्फ़िगरेशन फ़िंगरप्रिंट अब उसके स्रोत से मेल नहीं खाते हैं। "hint" में दिए गए सुझाव के अनुसार, इसे फिर से व्यवस्थित करें या फिर से जोड़ें।
+
+**`कोई प्रोजेक्ट निर्दिष्ट नहीं है, इसलिए डिफ़ॉल्ट रूप से <नाम> का उपयोग किया जा रहा है`**
+यह एक चेतावनी संदेश है। सही प्रोजेक्ट का चयन करने और इस चेतावनी को बंद करने के लिए `--project <नाम>` विकल्प का स्पष्ट रूप से उपयोग करें।
+
+**पेंटरली / वीआरएएम (VRAM) मेमोरी से बाहर होने की समस्याएँ**
+"पेंटरली" डीनोइजिंग (denoise) के ट्यूनिंग नोट्स के लिए, `docs/internal/HANDOFF.md` देखें। संक्षेप में: डीनोइजिंग की शक्ति को कम करें, बैच का आकार घटाएं, या अपने वर्कफ़्लो प्रोफाइल में छोटे चेकपॉइंट का उपयोग करें।
+
+**बग की रिपोर्ट करना**
+https://github.com/mcp-tool-shop-org/style-dataset-lab/issues पर एक मुद्दा दर्ज करें, जिसमें आपके sdlab संस्करण (`sdlab --version`), नोड संस्करण (`node -v`), पूरा कमांड और संरचित त्रुटि आउटपुट शामिल हों। एक बग रिपोर्ट टेम्पलेट स्वचालित रूप से फ़ील्ड को भर देगा।
+
 ## सुरक्षा
 
 यह केवल स्थानीय रूप से काम करता है। इसमें कोई टेलीमेट्री, कोई विश्लेषण और कोई बाहरी अनुरोध शामिल नहीं हैं। छवियां आपके GPU और फ़ाइल सिस्टम पर ही रहती हैं।
 
 ## लाइसेंस
 
-MIT
+एमआईटी (MIT)
 
 ---
 
