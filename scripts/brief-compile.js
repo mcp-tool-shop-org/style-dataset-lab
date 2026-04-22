@@ -10,7 +10,7 @@
  *   sdlab brief compile --project star-freight --workflow character-portrait-set --subject kael_maren --output-count 8 --json
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName, parseNumberFlag } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { compileBrief, saveCompiledBrief } from '../lib/brief-compiler.js';
 import { info } from '../lib/log.js';
@@ -18,7 +18,7 @@ import { info } from '../lib/log.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       workflow: { type: 'string' },
       subject: { type: 'string' },
       asset: { type: 'string' },
@@ -58,7 +58,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
 
   // Parse reference IDs
@@ -68,11 +68,11 @@ export async function run(argv = process.argv.slice(2)) {
 
   // Parse overrides
   const overrides = {};
-  if (flags['output-count']) overrides.output_count = parseInt(flags['output-count'], 10);
-  if (flags.width) overrides.width = parseInt(flags.width, 10);
-  if (flags.height) overrides.height = parseInt(flags.height, 10);
-  if (flags.steps) overrides.steps = parseInt(flags.steps, 10);
-  if (flags.cfg) overrides.cfg = parseFloat(flags.cfg);
+  if (flags['output-count']) overrides.output_count = parseNumberFlag('output-count', flags['output-count'], { int: true, min: 1 });
+  if (flags.width) overrides.width = parseNumberFlag('width', flags.width, { int: true, min: 1 });
+  if (flags.height) overrides.height = parseNumberFlag('height', flags.height, { int: true, min: 1 });
+  if (flags.steps) overrides.steps = parseNumberFlag('steps', flags.steps, { int: true, min: 1 });
+  if (flags.cfg) overrides.cfg = parseNumberFlag('cfg', flags.cfg, { min: 0 });
   if (flags.sampler) overrides.sampler = flags.sampler;
   if (flags['seed-mode']) overrides.seed_mode = flags['seed-mode'];
 

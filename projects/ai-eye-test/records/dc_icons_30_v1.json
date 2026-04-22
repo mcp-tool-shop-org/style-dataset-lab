@@ -1,0 +1,33 @@
+{
+  "id": "dc_icons_30_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T19:22:24.715Z",
+  "asset_path": "outputs/candidates/dc_icons_30_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1274028
+  },
+  "provenance": {
+    "workflow_id": "dense-count",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "prompt": "photorealistic documentary photograph, overhead or elevated angle for clear visibility, even neutral lighting, no lens blur, no bokeh, sharp focus across the entire frame, no vignette, no artistic filter, flat graphic design wallpaper showing exactly thirty identical simple line-art star icons arranged in a five-by-six grid on a pale grey background, each icon identical black outline, equal spacing, clean vector look, no shadow, no gradient",
+    "negative_prompt": "motion blur, soft focus, shallow depth of field, bokeh, lens flare, grainy film, stylized art, illustration, painting, cartoon, anime, watermark, text overlay, logo, signature, frame border, duplicate frame, split screen",
+    "seed": 77005,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8085,
+    "gpu_model": "RTX 5080",
+    "batch_index": 5
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

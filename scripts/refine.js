@@ -11,7 +11,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot, getRunsDir } from '../lib/paths.js';
 import { loadCritique } from '../lib/critique-engine.js';
 import {
@@ -25,7 +25,7 @@ import { info } from '../lib/log.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       run: { type: 'string' },
       pick: { type: 'string' },
       preserve: { type: 'string' },
@@ -49,7 +49,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const runId = flags.run;
   const pickedFilename = flags.pick;

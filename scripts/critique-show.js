@@ -9,7 +9,7 @@
  *   sdlab critique show --project star-freight --run run_2026-04-15_001 --md
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { loadCritique } from '../lib/critique-engine.js';
 import { renderCritiqueMarkdown, renderCritiqueText } from '../lib/critique-render.js';
@@ -17,7 +17,7 @@ import { renderCritiqueMarkdown, renderCritiqueText } from '../lib/critique-rend
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       run: { type: 'string' },
       json: { type: 'boolean' },
       md: { type: 'boolean' },
@@ -35,7 +35,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
 
   const report = loadCritique(projectRoot, flags.run);

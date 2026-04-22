@@ -9,15 +9,20 @@
  */
 
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { listTrainingProfiles, loadTrainingProfile } from '../lib/training-profiles.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: { project: { type: 'string' } },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--')) || 'list';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals[0] || 'list';
 
   if (subcommand === 'list') {
     const profiles = await listTrainingProfiles(projectRoot);
@@ -31,8 +36,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'show') {
-    const profileId = args.find(a => !a.startsWith('--'));
-    if (!profileId) throw new Error('Usage: sdlab training-profile show <profile-id>');
+    const profileId = positionals[1];
+    if (!profileId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab training-profile show <profile-id>');
 
     const profile = await loadTrainingProfile(projectRoot, profileId);
     console.log(`\x1b[1mTraining profile\x1b[0m — ${profileId}\n`);
@@ -54,10 +59,10 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: list, show`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: list, show`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('training-profile.js') || process.argv[1].endsWith('training-profile'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

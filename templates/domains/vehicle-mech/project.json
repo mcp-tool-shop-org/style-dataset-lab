@@ -4,8 +4,10 @@
   "domain": "vehicle-mech",
   "version": "0.1.0",
   "defaults": {
-    "checkpoint": "",
-    "loras": [],
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      { "name": "classipeintxl_v21.safetensors", "weight": 1.0 }
+    ],
     "width": 1024,
     "height": 1024,
     "steps": 8,

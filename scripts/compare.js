@@ -8,62 +8,70 @@
  *   sdlab compare iron_sword_base iron_sword_icon_mid a "Better silhouette" --project star-freight
  */
 
-import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
+import { writeFile, readdir, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName } from "../lib/args.js";
+import { parseArgs, getProjectName } from "../lib/args.js";
 import { REPO_ROOT } from "../lib/paths.js";
-
-function getFlagValue(args, flag) {
-  const prefix = `--${flag}=`;
-  for (const a of args) {
-    if (a.startsWith(prefix)) return a.slice(prefix.length);
-  }
-  const idx = args.indexOf(`--${flag}`);
-  if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
-  return undefined;
-}
+import { readJsonFile } from "../lib/config.js";
+import { inputError, handleCliError } from "../lib/errors.js";
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
-
-  // Strip --project/--game and their values from positional parsing
-  const args = argv.filter((a, i) => {
-    if (a === '--project' || a === '--game') return false;
-    if (i > 0 && (argv[i - 1] === '--project' || argv[i - 1] === '--game')) return false;
-    return true;
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      scores: { type: 'string' },
+    },
+    deprecated: { game: 'project' },
   });
 
-  const [assetAId, assetBId, winner, ...reasonParts] = args;
+  const projectName = flags.project || getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+
+  const [assetAId, assetBId, winner, ...reasonParts] = positionals;
 
   if (!assetAId || !assetBId || !winner) {
-    throw new Error("Usage: sdlab compare <asset_a_id> <asset_b_id> <a|b|tie> <reasoning>");
+    throw inputError(
+      'INPUT_MISSING_ARGS',
+      'Usage: sdlab compare <asset_a_id> <asset_b_id> <a|b|tie> <reasoning>'
+    );
   }
 
   if (!["a", "b", "tie"].includes(winner)) {
-    throw new Error(`Invalid winner: ${winner}. Must be a, b, or tie.`);
+    throw inputError(
+      'INPUT_BAD_WINNER',
+      `Invalid winner: ${winner}. Must be a, b, or tie.`
+    );
   }
 
-  const reasoning = reasonParts.filter(r => !r.startsWith('--')).join(" ") || null;
+  const reasoning = reasonParts.join(" ") || null;
 
   // Load records to get paths
   const recordA = await loadRecord(GAME_ROOT, assetAId);
   const recordB = await loadRecord(GAME_ROOT, assetBId);
 
   if (!recordA || !recordB) {
-    throw new Error("Could not load one or both records.");
+    throw inputError('INPUT_UNKNOWN_RECORD', 'Could not load one or both records.');
   }
 
   // Parse optional scores
-  const scoresStr = getFlagValue(args, "scores");
+  const scoresStr = flags.scores;
   const criteria_scores = {};
   if (scoresStr) {
     for (const pair of scoresStr.split(",")) {
       const [k, v] = pair.split(":");
       // Format: "silhouette:0.9/0.6" → { silhouette: { a: 0.9, b: 0.6 } }
       if (k && v) {
-        const [aScore, bScore] = v.split("/");
-        criteria_scores[k.trim()] = { a: parseFloat(aScore), b: parseFloat(bScore) };
+        const [aStr, bStr] = v.split("/");
+        const aScore = parseFloat(aStr);
+        const bScore = parseFloat(bStr);
+        if (!Number.isFinite(aScore) || !Number.isFinite(bScore)) {
+          throw inputError(
+            'INPUT_BAD_SCORE',
+            `Score for "${k.trim()}" is not numeric: "${v}"`,
+            'Use the form --scores silhouette:0.9/0.6,palette:0.8/0.7'
+          );
+        }
+        criteria_scores[k.trim()] = { a: aScore, b: bScore };
       }
     }
   }
@@ -101,7 +109,7 @@ export async function run(argv = process.argv.slice(2)) {
 async function loadRecord(GAME_ROOT, id) {
   try {
     const path = join(GAME_ROOT, `records/${id}.json`);
-    return JSON.parse(await readFile(path, "utf-8"));
+    return await readJsonFile(path);
   } catch {
     console.error(`Record not found: records/${id}.json`);
     return null;
@@ -119,8 +127,5 @@ async function countComparisons(GAME_ROOT) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('compare.js') || process.argv[1].endsWith('compare'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

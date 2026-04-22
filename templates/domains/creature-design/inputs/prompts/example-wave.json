@@ -1,0 +1,32 @@
+{
+  "wave": "wave1",
+  "description": "Creature design — first wave. Subject IDs match this domain's lane id_patterns (concept_, ortho_, action_) so `sdlab generate` will route each candidate into the correct lane instead of default_lane.",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "lora": { "name": "classipeintxl_v21.safetensors", "weight": 1.0 },
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "negative": "photorealistic, photograph, 3d render, smooth CG, sharp photo detail"
+  },
+  "subjects": [
+    {
+      "id": "concept_alpha",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR CREATURE — initial concept, ideation exploration], painterly concept art, canvas grain"
+    },
+    {
+      "id": "ortho_alpha",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR CREATURE — turnaround model sheet, orthographic views for modelers], painterly concept art, canvas grain"
+    },
+    {
+      "id": "action_alpha",
+      "variations": 2,
+      "prompt": "oil painting, visible brushstrokes, [DESCRIBE YOUR CREATURE — attack stance, locomotion study, movement key], painterly concept art, canvas grain"
+    }
+  ]
+}

@@ -10,40 +10,42 @@
  *   sdlab eval-run list [--project <name>]
  */
 
-import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
+import { REPO_ROOT, resolveSafeProjectPath } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { listTrainingManifests } from '../lib/training-manifests.js';
 import { listEvalPacks } from '../lib/eval-pack.js';
 import { createEvalRun, scoreEvalRun, loadEvalRun, listEvalRuns } from '../lib/eval-runs.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      manifest: { type: 'string' },
+      'eval-pack': { type: 'string' },
+      outputs: { type: 'string' },
+    },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--') && !a.startsWith('er-')) || 'list';
-  const args = argv.filter(a => a !== subcommand);
+  // First non-flag positional that isn't an er-id is the subcommand
+  const subcommand = positionals.find(a => !a.startsWith('er-')) || 'list';
 
   if (subcommand === 'create') {
-    // Find manifest
-    let manifestId;
-    const manifestIdx = args.indexOf('--manifest');
-    if (manifestIdx >= 0) {
-      manifestId = args[manifestIdx + 1];
-    } else {
+    let manifestId = flags.manifest;
+    if (!manifestId) {
       const manifests = await listTrainingManifests(projectRoot);
-      if (manifests.length === 0) throw new Error('No training manifests. Run: sdlab training-manifest create');
+      if (manifests.length === 0) throw inputError('INPUT_NO_MANIFEST', 'No training manifests. Run: sdlab training-manifest create');
       manifestId = manifests[manifests.length - 1].id;
     }
 
-    // Find eval pack
-    let evalPackId;
-    const evalIdx = args.indexOf('--eval-pack');
-    if (evalIdx >= 0) {
-      evalPackId = args[evalIdx + 1];
-    } else {
+    let evalPackId = flags['eval-pack'] || flags.evalPack;
+    if (!evalPackId) {
       const packs = await listEvalPacks(projectRoot);
-      if (packs.length === 0) throw new Error('No eval packs. Run: sdlab eval-pack build');
+      if (packs.length === 0) throw inputError('INPUT_NO_EVALPACK', 'No eval packs. Run: sdlab eval-pack build');
       evalPackId = packs[packs.length - 1].id;
     }
 
@@ -57,12 +59,11 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`  Status: created (use "sdlab eval-run score" to score outputs)`);
 
   } else if (subcommand === 'score') {
-    const evalRunId = args.find(a => a.startsWith('er-'));
-    if (!evalRunId) throw new Error('Usage: sdlab eval-run score <eval-run-id> --outputs <path>');
+    const evalRunId = positionals.find(a => a.startsWith('er-'));
+    if (!evalRunId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab eval-run score <eval-run-id> --outputs <path>');
 
-    const outputsIdx = args.indexOf('--outputs');
-    if (outputsIdx < 0) throw new Error('--outputs <path> is required (JSONL with record_id, accept, notes)');
-    const outputsPath = args[outputsIdx + 1];
+    if (!flags.outputs) throw inputError('INPUT_MISSING_FLAG', '--outputs <path> is required (JSONL with record_id, accept, notes)');
+    const outputsPath = resolveSafeProjectPath(projectRoot, flags.outputs, { baseRoot: REPO_ROOT, flagName: 'outputs' });
 
     console.log(`\x1b[1msdlab eval-run score\x1b[0m — ${evalRunId}\n`);
 
@@ -80,8 +81,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'show') {
-    const evalRunId = args.find(a => a.startsWith('er-'));
-    if (!evalRunId) throw new Error('Usage: sdlab eval-run show <eval-run-id>');
+    const evalRunId = positionals.find(a => a.startsWith('er-'));
+    if (!evalRunId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab eval-run show <eval-run-id>');
 
     const run = await loadEvalRun(projectRoot, evalRunId);
     console.log(`\x1b[1mEval run\x1b[0m — ${evalRunId}\n`);
@@ -112,10 +113,10 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: create, score, show, list`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: create, score, show, list`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('eval-run.js') || process.argv[1].endsWith('eval-run'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

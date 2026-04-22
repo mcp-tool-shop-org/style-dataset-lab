@@ -10,48 +10,52 @@
  */
 
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { listTrainingManifests } from '../lib/training-manifests.js';
 import { buildTrainingPackage, listTrainingPackages, loadTrainingPackage } from '../lib/training-packages.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      manifest: { type: 'string' },
+      adapter: { type: 'string' },
+      copy: { type: 'boolean', default: false },
+    },
+    deprecated: { game: 'project' },
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--') && !a.startsWith('tp-') && !a.startsWith('tm-')) || 'list';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals.find(a => !a.startsWith('tp-') && !a.startsWith('tm-')) || 'list';
 
   if (subcommand === 'build') {
-    // Find manifest
-    let manifestId;
-    const manifestIdx = args.indexOf('--manifest');
-    if (manifestIdx >= 0) {
-      manifestId = args[manifestIdx + 1];
-    } else {
+    let manifestId = flags.manifest;
+    if (!manifestId) {
       const manifests = await listTrainingManifests(projectRoot);
-      if (manifests.length === 0) throw new Error('No training manifests found. Run: sdlab training-manifest create');
+      if (manifests.length === 0) throw inputError('INPUT_NO_MANIFEST', 'No training manifests found. Run: sdlab training-manifest create');
       manifestId = manifests[manifests.length - 1].id;
     }
 
-    const adapterIdx = args.indexOf('--adapter');
-    const adapterOverride = adapterIdx >= 0 ? args[adapterIdx + 1] : undefined;
-    const copy = args.includes('--copy');
+    const adapterOverride = flags.adapter;
 
     console.log(`\x1b[1msdlab training-package build\x1b[0m — ${projectName}`);
     console.log(`  Manifest: ${manifestId}`);
     if (adapterOverride) console.log(`  Adapter:  ${adapterOverride}`);
-    console.log(`  Images:   ${copy ? 'copy' : 'symlink'}`);
+    console.log(`  Images:   ${flags.copy ? 'copy' : 'symlink'}`);
     console.log('');
 
-    const result = await buildTrainingPackage(projectRoot, manifestId, { copy, adapterOverride });
+    const result = await buildTrainingPackage(projectRoot, manifestId, { copy: flags.copy, adapterOverride });
 
     console.log(`  \x1b[32m✓\x1b[0m Package: ${result.packageId}`);
     console.log(`  Records: ${result.records}`);
     console.log(`  Images:  ${result.images}`);
 
   } else if (subcommand === 'show') {
-    const packageId = args.find(a => a.startsWith('tp-'));
-    if (!packageId) throw new Error('Usage: sdlab training-package show <package-id>');
+    const packageId = positionals.find(a => a.startsWith('tp-'));
+    if (!packageId) throw inputError('INPUT_MISSING_ARGS', 'Usage: sdlab training-package show <package-id>');
 
     const pkg = await loadTrainingPackage(projectRoot, packageId);
     console.log(`\x1b[1mTraining package\x1b[0m — ${packageId}\n`);
@@ -75,10 +79,10 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: build, show, list`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: build, show, list`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('training-package.js') || process.argv[1].endsWith('training-package'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

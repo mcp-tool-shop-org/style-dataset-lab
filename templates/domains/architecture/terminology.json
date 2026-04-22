@@ -8,12 +8,14 @@
   "null_faction_patterns": [],
   "id_fallbacks": {},
   "faction_context": {},
-  "training_profiles": {
-    "profile_id": "architecture-style",
-    "intended_use": "Architectural style LoRA for consistent worldbuilding",
-    "eligible_lanes": ["exterior", "interior", "streetscape"],
-    "minimum_review_threshold": 0.7,
-    "excluded_content": ["rejected"],
-    "export_format": "trl"
-  }
+  "training_profiles": [
+    {
+      "profile_id": "architecture-style",
+      "intended_use": "Architectural style LoRA for consistent worldbuilding",
+      "eligible_lanes": ["exterior", "interior", "streetscape"],
+      "minimum_review_threshold": 0.7,
+      "excluded_content": ["rejected"],
+      "export_format": "trl"
+    }
+  ]
 }

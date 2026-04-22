@@ -14,21 +14,9 @@
 
 import { readFileSync, writeFileSync, readdirSync, renameSync, existsSync, mkdirSync } from 'fs';
 import { join, basename } from 'path';
-
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'projects', GAME);
-
-const RECORDS_DIR = join(GAME_ROOT, 'records');
-const CANDIDATES_DIR = join(GAME_ROOT, 'outputs', 'candidates');
-const APPROVED_DIR = join(GAME_ROOT, 'outputs', 'approved');
-const REJECTED_DIR = join(GAME_ROOT, 'outputs', 'rejected');
-const DRY_RUN = process.argv.includes('--dry-run');
-
-// Ensure output dirs exist
-for (const dir of [APPROVED_DIR, REJECTED_DIR]) {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-}
+import { REPO_ROOT } from '../lib/paths.js';
+import { getProjectName } from '../lib/args.js';
+import { handleCliError } from '../lib/errors.js';
 
 // ─── Rejection explanations ──────────────────────────────────────────
 
@@ -329,85 +317,104 @@ function detectCategory(id) {
 
 // ─── Main ────────────────────────────────────────────────────────────
 
-const newRecordPattern = /^(ship_ext_|int_|stn_|eqp_|prop_|sign_|mood_|cargo_|ind_|veh_|food_|artifact_|creature_|arch_|env_|surf_|life_|lived_|REJECT1[1-9]|REJECT2[0-9])/;
-const files = readdirSync(RECORDS_DIR)
-  .filter(f => f.endsWith('.json') && newRecordPattern.test(f));
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const RECORDS_DIR = join(GAME_ROOT, 'records');
+  const CANDIDATES_DIR = join(GAME_ROOT, 'outputs', 'candidates');
+  const APPROVED_DIR = join(GAME_ROOT, 'outputs', 'approved');
+  const REJECTED_DIR = join(GAME_ROOT, 'outputs', 'rejected');
+  const DRY_RUN = argv.includes('--dry-run');
 
-let approved = 0, rejected = 0, skipped = 0;
-
-for (const file of files) {
-  const path = join(RECORDS_DIR, file);
-  const record = JSON.parse(readFileSync(path, 'utf-8'));
-
-  // Skip already curated
-  if (record.judgment && record.judgment.status) {
-    skipped++;
-    continue;
+  if (!DRY_RUN) {
+    for (const dir of [APPROVED_DIR, REJECTED_DIR]) {
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    }
   }
 
-  const id = record.id;
-  const baseId = id.replace(/_v[12]$/, '');
-  const isReject = /^REJECT/.test(id);
-  const imgFile = `${id}.png`;
-  const srcPath = join(CANDIDATES_DIR, imgFile);
+  const newRecordPattern = /^(ship_ext_|int_|stn_|eqp_|prop_|sign_|mood_|cargo_|ind_|veh_|food_|artifact_|creature_|arch_|env_|surf_|life_|lived_|REJECT1[1-9]|REJECT2[0-9])/;
+  const files = readdirSync(RECORDS_DIR)
+    .filter(f => f.endsWith('.json') && newRecordPattern.test(f));
 
-  if (isReject) {
-    // Find matching reject explanation
-    const rejectInfo = REJECT_EXPLANATIONS[baseId];
-    if (!rejectInfo) {
-      console.log(`  SKIP ${id} — no reject explanation found for ${baseId}`);
+  let approved = 0, rejected = 0, skipped = 0;
+
+  for (const file of files) {
+    const path = join(RECORDS_DIR, file);
+    const record = JSON.parse(readFileSync(path, 'utf-8'));
+
+    if (record.judgment && record.judgment.status) {
       skipped++;
       continue;
     }
 
-    record.judgment = {
-      status: 'rejected',
-      reviewer: 'bulk_curate_v2',
-      reviewed_at: new Date().toISOString(),
-      explanation: rejectInfo.explanation,
-      criteria_scores: { ...rejectInfo.scores },
-      failure_modes: [...rejectInfo.failures],
-      improvement_notes: null,
-      confidence: 0.95,
-    };
-    record.asset_path = `outputs/rejected/${imgFile}`;
+    const id = record.id;
+    const baseId = id.replace(/_v[12]$/, '');
+    const isReject = /^REJECT/.test(id);
+    const imgFile = `${id}.png`;
+    const srcPath = join(CANDIDATES_DIR, imgFile);
 
-    if (!DRY_RUN) {
-      writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
-      if (existsSync(srcPath)) {
-        renameSync(srcPath, join(REJECTED_DIR, imgFile));
+    if (isReject) {
+      const rejectInfo = REJECT_EXPLANATIONS[baseId];
+      if (!rejectInfo) {
+        console.log(`  SKIP ${id} — no reject explanation found for ${baseId}`);
+        skipped++;
+        continue;
       }
-    }
-    rejected++;
-  } else {
-    // Approved — detect category for score profile
-    const category = detectCategory(id);
-    const profile = category ? CATEGORY_SCORES[category] : CATEGORY_SCORES.prop;
 
-    record.judgment = {
-      status: 'approved',
-      reviewer: 'bulk_curate_v2',
-      reviewed_at: new Date().toISOString(),
-      explanation: profile.explanation,
-      criteria_scores: { ...profile.scores },
-      failure_modes: [],
-      improvement_notes: null,
-      confidence: 0.75,
-    };
-    record.asset_path = `outputs/approved/${imgFile}`;
+      const newAssetPath = `outputs/rejected/${imgFile}`;
 
-    if (!DRY_RUN) {
-      writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
-      if (existsSync(srcPath)) {
-        renameSync(srcPath, join(APPROVED_DIR, imgFile));
+      if (!DRY_RUN) {
+        // Move image FIRST, then update record.
+        if (existsSync(srcPath)) {
+          renameSync(srcPath, join(REJECTED_DIR, imgFile));
+        }
+        record.asset_path = newAssetPath;
+        record.judgment = {
+          status: 'rejected',
+          reviewer: 'bulk_curate_v2',
+          reviewed_at: new Date().toISOString(),
+          explanation: rejectInfo.explanation,
+          criteria_scores: { ...rejectInfo.scores },
+          failure_modes: [...rejectInfo.failures],
+          improvement_notes: null,
+          confidence: 0.95,
+        };
+        writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
       }
+      rejected++;
+    } else {
+      const category = detectCategory(id);
+      const profile = category ? CATEGORY_SCORES[category] : CATEGORY_SCORES.prop;
+      const newAssetPath = `outputs/approved/${imgFile}`;
+
+      if (!DRY_RUN) {
+        if (existsSync(srcPath)) {
+          renameSync(srcPath, join(APPROVED_DIR, imgFile));
+        }
+        record.asset_path = newAssetPath;
+        record.judgment = {
+          status: 'approved',
+          reviewer: 'bulk_curate_v2',
+          reviewed_at: new Date().toISOString(),
+          explanation: profile.explanation,
+          criteria_scores: { ...profile.scores },
+          failure_modes: [],
+          improvement_notes: null,
+          confidence: 0.75,
+        };
+        writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
+      }
+      approved++;
     }
-    approved++;
   }
+
+  console.log(`\n═══ Bulk Curation ${DRY_RUN ? '(DRY RUN) ' : ''}Summary ═══`);
+  console.log(`Files scanned: ${files.length}`);
+  console.log(`Approved: ${approved}`);
+  console.log(`Rejected: ${rejected}`);
+  console.log(`Skipped (already curated): ${skipped}`);
 }
 
-console.log(`\n═══ Bulk Curation ${DRY_RUN ? '(DRY RUN) ' : ''}Summary ═══`);
-console.log(`Files scanned: ${files.length}`);
-console.log(`Approved: ${approved}`);
-console.log(`Rejected: ${rejected}`);
-console.log(`Skipped (already curated): ${skipped}`);
+if (process.argv[1] && (process.argv[1].endsWith('bulk-curate-waves11-18.js') || process.argv[1].endsWith('bulk-curate-waves11-18'))) {
+  run().catch(handleCliError);
+}

@@ -5,7 +5,9 @@ sidebar:
   order: 3
 ---
 
-Style Dataset Lab v2.1 ships the `sdlab` CLI, 12 shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`. The deprecated `--game` flag still works with a warning.
+Style Dataset Lab v3.0.0 ships the `sdlab` CLI, 12 shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`.
+
+> **Legacy flag.** The `--game <name>` flag is a deprecated alias for `--project <name>`. It still works with a warning and will be removed in v4.
 
 ## CLI Commands
 
@@ -18,6 +20,8 @@ sdlab init <project-name> [--domain <domain>]
 sdlab init my-project --domain character-design
 sdlab init                                       # list available domains
 ```
+
+Available domains: `generic`, `game-art`, `character-design`, `creature-design`, `architecture`, `vehicle-mech`.
 
 ### sdlab project doctor
 
@@ -37,7 +41,7 @@ sdlab generate <prompt-pack-path> --project <name> [--dry-run]
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--project <name>` | `star-freight` | Target project directory under `projects/` |
 | `--dry-run` | -- | Print what would be generated without calling ComfyUI |
 | `--subject <name>` | all | Only generate for one subject |
 | `--seeds <n>` | 3 | Number of random seeds per subject-variation pair |
@@ -66,7 +70,7 @@ sdlab generate <prompt-pack-path> --project <name> [--dry-run]
 }
 ```
 
-**Outputs:** Images to `games/<name>/outputs/candidates/`, records to `games/<name>/records/`.
+**Outputs:** Images to `projects/<name>/outputs/candidates/`, records to `projects/<name>/records/`.
 
 **Environment variables:**
 
@@ -76,13 +80,13 @@ sdlab generate <prompt-pack-path> --project <name> [--dry-run]
 
 ---
 
-## curate.js
+### sdlab curate
 
 Move a candidate to approved/rejected/borderline and record the judgment.
 
 ```bash
-node scripts/curate.js --game <name> <asset_id> <status> <explanation> [options]
-node scripts/curate.js --game <name> --list
+sdlab curate <asset_id> <status> <explanation> [options] --project <name>
+sdlab curate --list --project <name>
 ```
 
 | Argument | Required | Description |
@@ -93,22 +97,22 @@ node scripts/curate.js --game <name> --list
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--project <name>` | `star-freight` | Target project directory under `projects/` |
 | `--list` | -- | Show uncurated candidates (no other args needed) |
 | `--scores <k:v,...>` | -- | Per-dimension scores, e.g. `silhouette:0.9,palette:0.8` |
 | `--failures <f1,f2>` | -- | Named failure modes, e.g. `too_clean,wrong_material` |
 | `--notes <text>` | -- | Improvement notes for borderline or rejected images |
 
-**Behavior:** Updates the record's `judgment` block, moves the image file from `outputs/candidates/` to the status directory within the game folder. The record is written before the file move to prevent orphaned images.
+**Behavior:** Updates the record's `judgment` block, moves the image file from `outputs/candidates/` to the status directory within the project folder. The record is written before the file move to prevent orphaned images.
 
 ---
 
-## compare.js
+### sdlab compare
 
 Record a pairwise A-vs-B style comparison.
 
 ```bash
-node scripts/compare.js --game <name> <asset_a_id> <asset_b_id> <winner> <reasoning>
+sdlab compare <asset_a_id> <asset_b_id> <winner> <reasoning> --project <name>
 ```
 
 | Argument | Required | Description |
@@ -120,24 +124,24 @@ node scripts/compare.js --game <name> <asset_a_id> <asset_b_id> <winner> <reason
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--project <name>` | `star-freight` | Target project directory under `projects/` |
 | `--scores <k:v/v,...>` | -- | Per-dimension comparison, e.g. `silhouette:0.9/0.6` |
 
-**Outputs:** Comparison record to `games/<name>/comparisons/`. Used by repo-dataset to produce preference training pairs.
+**Outputs:** Comparison record to `projects/<name>/comparisons/`. Used by repo-dataset to produce preference training pairs.
 
 ---
 
-## canon-bind.js
+### sdlab bind (canon-bind)
 
 Populate canon assertions in all records based on judgment scores and failure modes.
 
 ```bash
-node scripts/canon-bind.js --game <name> [options]
+sdlab bind --project <name> [options]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--project <name>` | `star-freight` | Target project directory under `projects/` |
 | `--dry-run` | -- | Preview bindings without writing to records |
 | `--stats` | -- | Print coverage statistics |
 
@@ -145,18 +149,18 @@ node scripts/canon-bind.js --game <name> [options]
 
 ---
 
-## painterly.js
+### sdlab painterly
 
 Post-process images through an img2img painterly pass via ComfyUI.
 
 ```bash
-node scripts/painterly.js --game <name> [options]
+sdlab painterly --project <name> [options]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--game <name>` | `star-freight` | Target game directory under `games/` |
-| `--source <dir>` | `outputs/approved` | Source directory for images (relative to game dir) |
+| `--project <name>` | `star-freight` | Target project directory under `projects/` |
+| `--source <dir>` | `outputs/approved` | Source directory for images (relative to project dir) |
 | `--limit <n>` | all | Maximum number of images to process |
 | `--offset <n>` | `0` | Skip the first n images |
 | `--dry-run` | -- | Preview without processing |
@@ -170,21 +174,21 @@ node scripts/painterly.js --game <name> [options]
 | CFG | 2.5 |
 | Seed | 42 (fixed for reproducibility) |
 
-**Outputs:** Processed images to `games/<name>/outputs/painterly/`.
+**Outputs:** Processed images to `projects/<name>/outputs/painterly/`.
 
 ---
 
-## generate-identity.js
+### sdlab generate:identity
 
 Generate named-subject identity images with lineage tracking.
 
 ```bash
-node scripts/generate-identity.js --game <name> <identity-packet-path> [options]
+sdlab generate:identity <identity-packet-path> --project <name> [options]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--game <name>` | `star-freight` | Target game directory under `games/` |
+| `--project <name>` | `star-freight` | Target project directory under `projects/` |
 | `--dry-run` | -- | Preview without generating |
 | `--subject <name>` | all | Only generate for one subject |
 | `--seeds <n>` | `3` | Discovery seeds per shot |
@@ -200,6 +204,41 @@ node scripts/generate-identity.js --game <name> <identity-packet-path> [options]
 **Identity packet format** (`inputs/identity-packets/*.json`): Defines subjects with identity locks, shot intents, and lineage metadata per `canon/identity-gates.md`.
 
 **Record extensions:** Adds `identity` block (subject name, faction, role, view type, shot type) and `lineage` block (generation phase, anchor references, persistence scores).
+
+---
+
+### sdlab generate:controlnet
+
+Generate candidates using ControlNet (pose/depth-guided generation).
+
+```bash
+sdlab generate:controlnet <prompt-pack-path> --project <name> [options]
+```
+
+### sdlab generate:ipadapter
+
+Generate candidates using IP-Adapter (reference-image-driven generation).
+
+```bash
+sdlab generate:ipadapter <prompt-pack-path> --project <name> [options]
+```
+
+### sdlab migrate / sdlab project migrate
+
+Migrate records from older schema versions to the current format.
+
+```bash
+sdlab migrate --project <name> [--dry-run]
+sdlab project migrate --project <name> [--dry-run]
+```
+
+### sdlab painterly:test
+
+Test the painterly pipeline on a single image before running a full batch.
+
+```bash
+sdlab painterly:test --project <name>
+```
 
 ---
 
@@ -329,67 +368,111 @@ Re-ingest generated outputs as new project records.
 
 ```bash
 sdlab reingest generated --source <dir> --manifest <id> [--dry-run] [--project <name>]
+sdlab reingest selected --selection <id> [--project <name>]
 sdlab reingest audit [--project <name>]
+```
+
+---
+
+## Production Loop Commands
+
+### sdlab workflow
+
+List and inspect workflow profiles.
+
+```bash
+sdlab workflow list --project <name>
+sdlab workflow show <workflow-id> --project <name>
+```
+
+### sdlab brief
+
+Compile briefs from workflow profiles and project truth.
+
+```bash
+sdlab brief compile --workflow <id> [--subject <id>] --project <name>
+sdlab brief show <brief-id> --project <name>
+```
+
+### sdlab run
+
+Execute briefs through ComfyUI.
+
+```bash
+sdlab run generate --brief <id> --project <name>
+sdlab run show <run-id> --project <name>
+sdlab run list --project <name>
+```
+
+### sdlab critique
+
+Critique a run and optionally show the saved critique.
+
+```bash
+sdlab critique --run <id> --project <name>
+sdlab critique show --run <id> --project <name>
+```
+
+### sdlab refine
+
+Generate a refined next-pass brief from a run pick.
+
+```bash
+sdlab refine --run <id> --pick <file> [--push "<guidance>"] --project <name>
+```
+
+### sdlab batch
+
+Coordinated multi-slot production.
+
+```bash
+sdlab batch generate --mode <id> [--subject <id>] --project <name>
+sdlab batch show [batch-id] --project <name>
+sdlab batch sheet <batch-id> --project <name>
+```
+
+### sdlab select / sdlab selection
+
+Select approved outputs and view selections.
+
+```bash
+sdlab select --run <id> --approve <files> --reason "<why>" --project <name>
+sdlab select --batch <id> --approve slot_a:<file>,slot_b:<file> --project <name>
+sdlab selection show [selection-id] --project <name>
 ```
 
 ---
 
 ## Export (via repo-dataset)
 
-Export is handled by the separate `@mcptoolshop/repo-dataset` CLI. Point it at the specific game directory:
+Export is handled by the separate `@mcptoolshop/repo-dataset` CLI. Point it at the specific project directory:
 
 ```bash
 # Generate training data
-repo-dataset visual generate ./games/star-freight --format trl --output games/star-freight/exports
+repo-dataset visual generate ./projects/star-freight --format trl --output projects/star-freight/exports
 
 # With embedded images (base64 in JSONL)
-repo-dataset visual generate ./games/star-freight --format trl --embed
+repo-dataset visual generate ./projects/star-freight --format trl --embed
 
 # Inspect scanner results
-repo-dataset visual inspect ./games/star-freight
+repo-dataset visual inspect ./projects/star-freight
 
 # Validate output
-repo-dataset visual validate games/star-freight/exports/dataset.jsonl
+repo-dataset visual validate projects/star-freight/exports/dataset.jsonl
 ```
 
 Supported formats: TRL, LLaVA, Qwen2-VL, Axolotl, LLaMA-Factory, ShareGPT, OpenAI, DPO, ORPO, KTO.
 
 ---
 
-## Additional scripts
+## Global Options
 
-### generate-controlnet.js
-
-Generate candidates using ControlNet (pose/depth-guided generation).
-
-```bash
-node scripts/generate-controlnet.js --game <name> <prompt-pack-path> [options]
-```
-
-### generate-ipadapter.js
-
-Generate candidates using IP-Adapter (reference-image-driven generation).
-
-```bash
-node scripts/generate-ipadapter.js --game <name> <prompt-pack-path> [options]
-```
-
-### bulk-curate-wave2-5.js / bulk-curate-waves11-18.js
-
-Batch curation scripts for processing multiple assets from specific waves.
-
-### curate-wave25.js
-
-Specialized curation for wave 25 (alien species) with species-specific scoring.
-
-### migrate-records.js
-
-Migrate records from older schema versions to the current format.
-
-```bash
-node scripts/migrate-records.js --game <name> [--dry-run]
-```
-
-### painterly-test.js
-
-Test the painterly pipeline on a single image before running a full batch.
+| Flag | Description |
+|------|-------------|
+| `--project <name>` | Project to operate on (default: `star-freight`) |
+| `--game <name>` | Deprecated alias for `--project`. Emits a warning. Removed in v4. |
+| `--debug` | Show stack traces on error |
+| `--verbose` | Verbose output |
+| `--quiet` | Suppress non-essential output |
+| `--dry-run` | Preview changes without writing (where supported) |
+| `--help` | Show help |

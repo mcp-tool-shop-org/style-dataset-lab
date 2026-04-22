@@ -1,0 +1,13 @@
+{
+  "image": "apple_n001_s15.png",
+  "count": 1,
+  "seed": 10115,
+  "bboxes_xywh": [
+    [
+      22,
+      72,
+      131,
+      169
+    ]
+  ]
+}

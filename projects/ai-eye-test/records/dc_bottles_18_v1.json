@@ -1,0 +1,33 @@
+{
+  "id": "dc_bottles_18_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T19:22:40.941Z",
+  "asset_path": "outputs/candidates/dc_bottles_18_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1255907
+  },
+  "provenance": {
+    "workflow_id": "dense-count",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "prompt": "photorealistic documentary photograph, overhead or elevated angle for clear visibility, even neutral lighting, no lens blur, no bokeh, sharp focus across the entire frame, no vignette, no artistic filter, front-facing photograph of exactly eighteen identical clear glass bottles arranged in three rows of six on a plain white shelf, studio lighting, each bottle fully visible and distinct from its neighbors, no reflections creating confusion, sharp focus end to end",
+    "negative_prompt": "motion blur, soft focus, shallow depth of field, bokeh, lens flare, grainy film, stylized art, illustration, painting, cartoon, anime, watermark, text overlay, logo, signature, frame border, duplicate frame, split screen",
+    "seed": 77007,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 8089,
+    "gpu_model": "RTX 5080",
+    "batch_index": 7
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

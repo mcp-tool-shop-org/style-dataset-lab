@@ -9,7 +9,7 @@
  *   sdlab run generate --brief brief_2026-04-15_001 --project star-freight --seed 42
  */
 
-import { parseArgs } from '../lib/args.js';
+import { parseArgs, getProjectName, parseNumberFlag } from '../lib/args.js';
 import { getProjectRoot, getRunsDir } from '../lib/paths.js';
 import { loadCompiledBrief } from '../lib/brief-compiler.js';
 import { executeRun } from '../lib/adapters/comfyui-runner.js';
@@ -20,7 +20,7 @@ import { join } from 'node:path';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       brief: { type: 'string' },
       seed: { type: 'string' },
       'dry-run': { type: 'boolean' },
@@ -40,7 +40,7 @@ export async function run(argv = process.argv.slice(2)) {
     return;
   }
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
 
   console.log(`\x1b[1mstyle-dataset-lab\x1b[0m run generate`);
@@ -57,7 +57,7 @@ export async function run(argv = process.argv.slice(2)) {
     projectRoot,
     projectName,
     brief,
-    baseSeed: flags.seed ? parseInt(flags.seed, 10) : undefined,
+    baseSeed: flags.seed ? parseNumberFlag('seed', flags.seed, { int: true, min: 0 }) : undefined,
     dryRun: flags['dry-run'] || false,
   });
 

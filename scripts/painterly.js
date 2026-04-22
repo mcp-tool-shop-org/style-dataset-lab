@@ -18,8 +18,9 @@
 import { writeFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
-import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectName, parseNumberFlag } from "../lib/args.js";
+import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 // ── Config ──
@@ -156,11 +157,11 @@ export async function run(argv = process.argv.slice(2)) {
 
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--source" && argv[i + 1]) sourceDir = argv[++i];
-    if (argv[i] === "--limit" && argv[i + 1]) limit = parseInt(argv[++i]);
-    if (argv[i] === "--offset" && argv[i + 1]) offset = parseInt(argv[++i]);
+    else if (argv[i] === "--limit" && argv[i + 1]) limit = parseNumberFlag('limit', argv[++i], { int: true, min: 1 });
+    else if (argv[i] === "--offset" && argv[i + 1]) offset = parseNumberFlag('offset', argv[++i], { int: true, min: 0 });
   }
 
-  const fullSourceDir = join(GAME_ROOT, sourceDir);
+  const fullSourceDir = resolveSafeProjectPath(GAME_ROOT, sourceDir, { flagName: 'source' });
   const outDir = join(GAME_ROOT, "outputs/painterly");
   await mkdir(outDir, { recursive: true });
 
@@ -195,7 +196,7 @@ export async function run(argv = process.argv.slice(2)) {
   if (!dryRun) {
     const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      throw new Error("ComfyUI not reachable at " + COMFY_URL);
+      throw runtimeError('RUNTIME_COMFY_UNREACHABLE', "ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
@@ -263,8 +264,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('painterly.js') || process.argv[1].endsWith('painterly'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

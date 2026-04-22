@@ -15,20 +15,9 @@
 
 import { readFileSync, writeFileSync, readdirSync, renameSync, existsSync, mkdirSync } from 'fs';
 import { join, basename } from 'path';
-
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const GAME = process.argv.find((a, i) => process.argv[i - 1] === '--game') || 'star-freight';
-const GAME_ROOT = join(REPO_ROOT, 'projects', GAME);
-
-const RECORDS_DIR = join(GAME_ROOT, 'records');
-const CANDIDATES_DIR = join(GAME_ROOT, 'outputs', 'candidates');
-const APPROVED_DIR = join(GAME_ROOT, 'outputs', 'approved');
-const REJECTED_DIR = join(GAME_ROOT, 'outputs', 'rejected');
-const DRY_RUN = process.argv.includes('--dry-run');
-
-for (const dir of [APPROVED_DIR, REJECTED_DIR]) {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-}
+import { REPO_ROOT } from '../lib/paths.js';
+import { getProjectName } from '../lib/args.js';
+import { handleCliError } from '../lib/errors.js';
 
 // ─── Scoring profiles ──────────────────────────────────────────
 
@@ -109,7 +98,22 @@ const REJECT_EXPLANATIONS = {
 
 // ─── Process ──────────────────────────────────────────
 
-const wave25Files = readdirSync(CANDIDATES_DIR).filter(f =>
+export async function run(argv = process.argv.slice(2)) {
+  const projectName = getProjectName(argv);
+  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const RECORDS_DIR = join(GAME_ROOT, 'records');
+  const CANDIDATES_DIR = join(GAME_ROOT, 'outputs', 'candidates');
+  const APPROVED_DIR = join(GAME_ROOT, 'outputs', 'approved');
+  const REJECTED_DIR = join(GAME_ROOT, 'outputs', 'rejected');
+  const DRY_RUN = argv.includes('--dry-run');
+
+  if (!DRY_RUN) {
+    for (const dir of [APPROVED_DIR, REJECTED_DIR]) {
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    }
+  }
+
+  const wave25Files = readdirSync(CANDIDATES_DIR).filter(f =>
   f.endsWith('.png') && readdirSync(RECORDS_DIR).some(r => {
     try {
       const rec = JSON.parse(readFileSync(join(RECORDS_DIR, r), 'utf-8'));
@@ -118,92 +122,83 @@ const wave25Files = readdirSync(CANDIDATES_DIR).filter(f =>
   })
 );
 
-// Fallback: match by known subject IDs
-const ALL_SUBJECTS = [
-  ...STRONG_HITS, ...PARTIAL_HITS,
-  ...Object.keys(MISS_EXPLANATIONS),
-  ...Object.keys(REJECT_EXPLANATIONS)
-];
+  // Fallback: match by known subject IDs
+  const ALL_SUBJECTS = [
+    ...STRONG_HITS, ...PARTIAL_HITS,
+    ...Object.keys(MISS_EXPLANATIONS),
+    ...Object.keys(REJECT_EXPLANATIONS)
+  ];
 
-// Find wave25 records directly by filename match
-const recordFiles = readdirSync(RECORDS_DIR).filter(r => r.endsWith('.json'));
-const candidates = recordFiles.filter(rf => {
-  return ALL_SUBJECTS.some(subj => rf.startsWith(subj));
-});
+  const recordFiles = readdirSync(RECORDS_DIR).filter(r => r.endsWith('.json'));
+  const candidates = recordFiles.filter(rf => ALL_SUBJECTS.some(subj => rf.startsWith(subj)));
 
-let approved = 0, rejected = 0, skipped = 0;
+  let approved = 0, rejected = 0, skipped = 0;
 
-for (const recordFile of candidates) {
-  let record;
-  try {
-    record = JSON.parse(readFileSync(join(RECORDS_DIR, recordFile), 'utf-8'));
-  } catch { continue; }
+  for (const recordFile of candidates) {
+    let record;
+    try {
+      record = JSON.parse(readFileSync(join(RECORDS_DIR, recordFile), 'utf-8'));
+    } catch { continue; }
 
-  const file = basename(record.asset_path || '');
-  const subjectId = record.id?.replace(/_v[12]$/, '') || file.replace(/_v[12]\.png$/, '');
+    const file = basename(record.asset_path || '');
+    const subjectId = record.id?.replace(/_v[12]$/, '') || file.replace(/_v[12]\.png$/, '');
 
-  // Already curated?
-  if (record.verdict) {
-    console.log(`  ⏭ ${file} already curated (${record.verdict})`);
-    skipped++;
-    continue;
-  }
-
-  let verdict, scores, explanation, failures;
-
-  if (REJECT_EXPLANATIONS[subjectId]) {
-    const r = REJECT_EXPLANATIONS[subjectId];
-    verdict = 'rejected';
-    scores = r.scores;
-    explanation = r.explanation;
-    failures = r.failures;
-  } else if (MISS_EXPLANATIONS[subjectId]) {
-    const m = MISS_EXPLANATIONS[subjectId];
-    verdict = 'rejected';
-    scores = m.scores;
-    explanation = m.explanation;
-    failures = m.failures;
-  } else if (STRONG_HITS.has(subjectId)) {
-    verdict = 'approved';
-    scores = { ...STRONG_HIT };
-    explanation = `Strong hit — concept reads clearly, style consistent, gritty lived-in aesthetic.`;
-    failures = [];
-  } else if (PARTIAL_HITS.has(subjectId)) {
-    verdict = 'approved';
-    scores = { ...PARTIAL_HIT };
-    explanation = `Partial hit — atmosphere and style correct, some species anatomy or concept details missed.`;
-    failures = ['partial_species_accuracy'];
-  } else {
-    console.log(`  ⚠ Unknown subject ${subjectId} for ${file}, skipping`);
-    skipped++;
-    continue;
-  }
-
-  // Update record
-  record.verdict = verdict;
-  record.scores = scores;
-  record.explanation = explanation;
-  record.failures = failures;
-  record.curated_at = new Date().toISOString();
-  record.curator = 'wave25-script';
-
-  // Move file
-  const srcPath = join(CANDIDATES_DIR, file);
-  const dstDir = verdict === 'approved' ? APPROVED_DIR : REJECTED_DIR;
-  const dstPath = join(dstDir, file);
-
-  if (!DRY_RUN) {
-    writeFileSync(join(RECORDS_DIR, recordFile), JSON.stringify(record, null, 2));
-    if (existsSync(srcPath)) {
-      renameSync(srcPath, dstPath);
+    if (record.verdict) {
+      console.log(`  ⏭ ${file} already curated (${record.verdict})`);
+      skipped++;
+      continue;
     }
+
+    let verdict, scores, explanation, failures;
+
+    if (REJECT_EXPLANATIONS[subjectId]) {
+      const r = REJECT_EXPLANATIONS[subjectId];
+      verdict = 'rejected'; scores = r.scores; explanation = r.explanation; failures = r.failures;
+    } else if (MISS_EXPLANATIONS[subjectId]) {
+      const m = MISS_EXPLANATIONS[subjectId];
+      verdict = 'rejected'; scores = m.scores; explanation = m.explanation; failures = m.failures;
+    } else if (STRONG_HITS.has(subjectId)) {
+      verdict = 'approved'; scores = { ...STRONG_HIT };
+      explanation = `Strong hit — concept reads clearly, style consistent, gritty lived-in aesthetic.`;
+      failures = [];
+    } else if (PARTIAL_HITS.has(subjectId)) {
+      verdict = 'approved'; scores = { ...PARTIAL_HIT };
+      explanation = `Partial hit — atmosphere and style correct, some species anatomy or concept details missed.`;
+      failures = ['partial_species_accuracy'];
+    } else {
+      console.log(`  ⚠ Unknown subject ${subjectId} for ${file}, skipping`);
+      skipped++;
+      continue;
+    }
+
+    const srcPath = join(CANDIDATES_DIR, file);
+    const dstDir = verdict === 'approved' ? APPROVED_DIR : REJECTED_DIR;
+    const dstPath = join(dstDir, file);
+
+    if (!DRY_RUN) {
+      // Move file FIRST, then update the record.
+      if (existsSync(srcPath)) {
+        renameSync(srcPath, dstPath);
+      }
+      record.verdict = verdict;
+      record.scores = scores;
+      record.explanation = explanation;
+      record.failures = failures;
+      record.curated_at = new Date().toISOString();
+      record.curator = 'wave25-script';
+      writeFileSync(join(RECORDS_DIR, recordFile), JSON.stringify(record, null, 2));
+    }
+
+    const icon = verdict === 'approved' ? '✓' : '✗';
+    console.log(`  ${icon} ${file} → ${verdict}`);
+    if (verdict === 'approved') approved++;
+    else rejected++;
   }
 
-  const icon = verdict === 'approved' ? '✓' : '✗';
-  console.log(`  ${icon} ${file} → ${verdict}`);
-  if (verdict === 'approved') approved++;
-  else rejected++;
+  console.log(`\nWave 25 curation: ${approved} approved, ${rejected} rejected, ${skipped} skipped`);
+  if (DRY_RUN) console.log('  (dry run — no files moved)');
 }
 
-console.log(`\nWave 25 curation: ${approved} approved, ${rejected} rejected, ${skipped} skipped`);
-if (DRY_RUN) console.log('  (dry run — no files moved)');
+if (process.argv[1] && (process.argv[1].endsWith('curate-wave25.js') || process.argv[1].endsWith('curate-wave25'))) {
+  run().catch(handleCliError);
+}

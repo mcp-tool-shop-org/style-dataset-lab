@@ -1,0 +1,33 @@
+{
+  "id": "hero_coffee_mug_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T19:56:46.211Z",
+  "asset_path": "outputs/candidates/hero_coffee_mug_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 830011
+  },
+  "provenance": {
+    "workflow_id": "dense-count",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "prompt": "product photograph, single object, centered in frame, studio lighting, sharp focus, plain neutral white background, no shadow, no props, no text, one single white ceramic coffee mug, handle facing right, perfectly centered in frame, sharp focus, plain white seamless studio backdrop, soft even studio lighting",
+    "negative_prompt": "multiple objects, pair, duplicate, text, watermark, logo, signature, cluttered background, busy, pattern, tile, people, hands, arms",
+    "seed": 79001,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7072,
+    "gpu_model": "RTX 5080",
+    "batch_index": 1
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

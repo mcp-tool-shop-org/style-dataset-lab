@@ -1,12 +1,13 @@
 {
   "name": "@mcptoolshop/style-dataset-lab",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Canon-aligned dataset production and generation workbench — define visual rules, build versioned training data, compile production briefs, run local workflows, batch-produce, select winners, and re-ingest into your corpus",
   "type": "module",
   "bin": {
     "sdlab": "./bin/sdlab.js"
   },
   "scripts": {
+    "test": "node --test tests/**/*.test.js",
     "verify": "node bin/sdlab.js --help && node bin/sdlab.js project doctor --project star-freight",
     "generate": "node scripts/generate.js",
     "curate": "node scripts/curate.js",
@@ -19,11 +20,16 @@
     "bin/",
     "lib/",
     "scripts/",
+    "!scripts/bulk-curate-*.js",
+    "!scripts/curate-wave*.js",
+    "!scripts/migrate-records.js",
     "templates/",
     "README.md",
     "LICENSE",
     "SECURITY.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
   ],
   "keywords": [
     "dataset",

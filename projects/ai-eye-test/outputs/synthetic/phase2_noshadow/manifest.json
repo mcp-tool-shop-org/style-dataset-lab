@@ -1,0 +1,202 @@
+{
+  "_schema": "ai_eye_test_labels_v0",
+  "_description": "Shadow ablation \u2014 Phase 2 n=100 with drop_shadow=False. 16 seeds. Same placements as phase2/apple_n100_s*.png.",
+  "_ablation": {
+    "drop_shadow": false,
+    "baseline": "phase2"
+  },
+  "images": [
+    {
+      "id": "apple_n100_s00",
+      "image": "apple_n100_s00.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20000,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s01",
+      "image": "apple_n100_s01.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20001,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s02",
+      "image": "apple_n100_s02.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20002,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s03",
+      "image": "apple_n100_s03.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20003,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s04",
+      "image": "apple_n100_s04.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20004,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s05",
+      "image": "apple_n100_s05.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20005,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s06",
+      "image": "apple_n100_s06.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20006,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s07",
+      "image": "apple_n100_s07.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20007,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s08",
+      "image": "apple_n100_s08.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20008,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s09",
+      "image": "apple_n100_s09.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20009,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s10",
+      "image": "apple_n100_s10.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20010,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s11",
+      "image": "apple_n100_s11.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20011,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s12",
+      "image": "apple_n100_s12.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20012,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s13",
+      "image": "apple_n100_s13.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20013,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s14",
+      "image": "apple_n100_s14.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20014,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    },
+    {
+      "id": "apple_n100_s15",
+      "image": "apple_n100_s15.png",
+      "count": 100,
+      "object_class": "green apple",
+      "seed": 20015,
+      "canvas": [
+        2048,
+        2048
+      ],
+      "n_bboxes": 100
+    }
+  ]
+}

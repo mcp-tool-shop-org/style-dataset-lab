@@ -20,10 +20,12 @@
  *   --denoise N     Denoise strength for follow_on phase (default: 0.38)
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectName, parseNumberFlag } from "../lib/args.js";
+import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { readJsonFile } from "../lib/config.js";
+import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 
 // ── Defaults (match existing lab pipeline) ──
@@ -378,13 +380,24 @@ export async function run(argv = process.argv.slice(2)) {
   const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-  const packPath = argv.find((a) => !a.startsWith("--"));
+  // Collect positionals, skipping values that belong to known flags
+  const knownFlagsWithValue = new Set(['--subject', '--seeds', '--phase', '--anchor', '--denoise', '--project', '--game']);
+  const positionals = [];
+  for (let k = 0; k < argv.length; k++) {
+    const a = argv[k];
+    if (a.startsWith('--')) {
+      if (!a.includes('=') && knownFlagsWithValue.has(a)) k++;
+      continue;
+    }
+    positionals.push(a);
+  }
+  const packPath = positionals[0];
   const dryRun = argv.includes("--dry-run");
   const subjectFilter = argv.includes("--subject")
     ? argv[argv.indexOf("--subject") + 1]
     : null;
   const seedCount = argv.includes("--seeds")
-    ? parseInt(argv[argv.indexOf("--seeds") + 1], 10)
+    ? parseNumberFlag('seeds', argv[argv.indexOf("--seeds") + 1], { int: true, min: 1 })
     : 3;
   const phase = argv.includes("--phase")
     ? argv[argv.indexOf("--phase") + 1]
@@ -393,30 +406,31 @@ export async function run(argv = process.argv.slice(2)) {
     ? argv[argv.indexOf("--anchor") + 1]
     : null;
   const denoise = argv.includes("--denoise")
-    ? parseFloat(argv[argv.indexOf("--denoise") + 1])
+    ? parseNumberFlag('denoise', argv[argv.indexOf("--denoise") + 1], { min: 0, max: 1 })
     : 0.38;
 
   if (!packPath) {
-    throw new Error("Usage: sdlab generate:identity <packet-file> [options]");
+    throw inputError('INPUT_MISSING_ARGS', "Usage: sdlab generate:identity <packet-file> [options]");
   }
 
   if (phase === "follow_on" && !anchorPath) {
-    throw new Error("--phase follow_on requires --anchor <image-path>");
+    throw inputError('INPUT_MISSING_FLAG', "--phase follow_on requires --anchor <image-path>");
   }
 
-  const fullPackPath = join(GAME_ROOT, packPath);
-  const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
+  const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'packet-file' });
+  if (anchorPath) resolveSafeProjectPath(GAME_ROOT, anchorPath, { flagName: 'anchor' });
+  const pack = await readJsonFile(fullPackPath, { requiredFields: ['subjects'] });
 
-  const errors = validatePacket(pack);
-  if (errors.length > 0) {
-    throw new Error("Packet validation failed:\n  " + errors.join("\n  "));
+  const vErrors = validatePacket(pack);
+  if (vErrors.length > 0) {
+    throw inputError('INPUT_BAD_PACKET', "Packet validation failed:\n  " + vErrors.join("\n  "));
   }
 
   let subjects = pack.subjects;
   if (subjectFilter) {
     subjects = subjects.filter((s) => s.subject_name === subjectFilter);
     if (subjects.length === 0) {
-      throw new Error(`No subject found with name '${subjectFilter}'`);
+      throw inputError('INPUT_UNKNOWN_SUBJECT', `No subject found with name '${subjectFilter}'`);
     }
   }
 
@@ -439,7 +453,7 @@ export async function run(argv = process.argv.slice(2)) {
   if (!dryRun) {
     const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      throw new Error("ComfyUI not reachable at " + COMFY_URL);
+      throw runtimeError('RUNTIME_COMFY_UNREACHABLE', "ComfyUI not reachable at " + COMFY_URL);
     }
     console.log("\x1b[32m+\x1b[0m ComfyUI online");
   }
@@ -448,6 +462,7 @@ export async function run(argv = process.argv.slice(2)) {
   await mkdir(join(GAME_ROOT, "records"), { recursive: true });
 
   let generated = 0;
+  let errors = 0;
   let imageIndex = 0;
 
   for (const subject of subjects) {
@@ -532,6 +547,7 @@ export async function run(argv = process.argv.slice(2)) {
           console.log(`      \x1b[32m+\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
         } catch (err) {
           console.log(`      \x1b[31mx\x1b[0m ${err.message}`);
+          errors++;
         }
 
         generated++;
@@ -540,8 +556,12 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
-  console.log(`\n\x1b[32m+\x1b[0m Generated ${generated} images`);
+  const succeeded = generated - errors;
+  console.log(`\n\x1b[32m+\x1b[0m Generated ${succeeded} images (${errors} errors)`);
   if (dryRun) console.log("  (dry run — no images produced)");
+  if (!dryRun && errors > 0 && succeeded === 0) {
+    throw runtimeError('RUNTIME_ALL_FAILED', `All ${generated} generation attempts failed.`);
+  }
 
   console.log("\nNext steps:");
   if (phase === "discovery") {
@@ -558,8 +578,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('generate-identity.js') || process.argv[1].endsWith('generate-identity'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

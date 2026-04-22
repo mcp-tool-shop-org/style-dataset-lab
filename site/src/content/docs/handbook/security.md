@@ -2,7 +2,7 @@
 title: Security
 description: Threat model, trust boundaries, and data handling.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 ## Threat model

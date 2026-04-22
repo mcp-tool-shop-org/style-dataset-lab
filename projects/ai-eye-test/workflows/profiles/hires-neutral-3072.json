@@ -1,0 +1,23 @@
+{
+  "name": "hires-neutral-3072",
+  "description": "High-resolution neutral workflow — base SDXL at 1024x1024 then HiRes fix to 3072px long edge. No LoRA, no style bias. Target output: native resolution suitable for testing 256/512/768/1568/2576 downscale ladder without any value being an upscale.",
+  "base": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras"
+  },
+  "hires": {
+    "enabled": true,
+    "target_long_edge": 3072,
+    "upscaler": "4x-UltraSharp",
+    "denoise": 0.35,
+    "second_pass_steps": 10
+  },
+  "output_count_per_subject": 1,
+  "seed_strategy": "deterministic_from_id"
+}

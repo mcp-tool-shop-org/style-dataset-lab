@@ -1,0 +1,88 @@
+{
+  "_schema": "ai_eye_test_labels_v0",
+  "_description": "Human-verified labels for the dense-count smoke batch (seeds 77000-77007, 1024x1024 SDXL Turbo). Each entry contrasts requested count with observed count and flags usability. Labeled by Claude on 2026-04-16.",
+  "_note": "Counts above ~50 are estimates — precise tallies require enlarged manual counting with marker-per-instance. Where uncertainty is high, a 'needs_exact_count' flag is set and only a range is recorded.",
+  "_finding": "SDXL at turbo configs (8 steps, cfg 2.0, dpmpp_sde/karras) ignored every 'exactly N' constraint. Output counts were 2x-7x the requested value across all 8 subjects. Prompt-time ground-truth authoring is infeasible for this subcategory with this model; all ground truth must be labeled post-generation.",
+  "images": [
+    {
+      "id": "dc_crowd_10_v1",
+      "path": "outputs/candidates/dc_crowd_10_v1.png",
+      "requested_count": 10,
+      "observed_count_estimate": 38,
+      "observed_count_uncertainty": "plus_minus_3",
+      "needs_exact_count": true,
+      "usable": true,
+      "notes": "People arranged in an oval ring on paving. Distinct figures, daylight, some clustering at corners. Lane: could serve as dense-count (~38) or as a layout-hierarchy test (ring shape)."
+    },
+    {
+      "id": "dc_crowd_25_v1",
+      "path": "outputs/candidates/dc_crowd_25_v1.png",
+      "requested_count": 25,
+      "observed_count_estimate": 125,
+      "observed_count_uncertainty": "plus_minus_20",
+      "needs_exact_count": true,
+      "usable": true,
+      "notes": "Wide plaza, very dense crowd. Far too many to count by eye reliably. Good candidate for a HIGH-count dense-count sub-bucket (>100). Would benefit from being the 'hard' end of the count distribution."
+    },
+    {
+      "id": "dc_boxes_12_v1",
+      "path": "outputs/candidates/dc_boxes_12_v1.png",
+      "requested_count": 12,
+      "observed_count_estimate": 35,
+      "observed_count_uncertainty": "plus_minus_5",
+      "needs_exact_count": true,
+      "usable": false,
+      "notes": "Scattered pile, not the requested 3x4 grid. Some boxes occluded by others which makes exact counting impossible. Violates grid-layout prompt constraint. Reject as dense-count, but usable as an 'irregular-arrangement' edge case."
+    },
+    {
+      "id": "dc_boxes_20_v1",
+      "path": "outputs/candidates/dc_boxes_20_v1.png",
+      "requested_count": 20,
+      "observed_count_estimate": 65,
+      "observed_count_uncertainty": "plus_minus_10",
+      "needs_exact_count": true,
+      "usable": false,
+      "notes": "A stacked WALL of boxes. Violates 'no stacking' constraint. Back rows partially hidden. Reject — would conflate counting with depth/occlusion reasoning."
+    },
+    {
+      "id": "dc_icons_16_v1",
+      "path": "outputs/candidates/dc_icons_16_v1.png",
+      "requested_count": 16,
+      "observed_count_estimate": 95,
+      "observed_count_uncertainty": "plus_minus_5",
+      "needs_exact_count": true,
+      "usable": true,
+      "notes": "Grid of coffee cups, mostly lattes with a few black-coffee outliers (approx 3 visible). Not the requested 4x4 grid but a dense regular grid. Accidentally great small-target-wide-frame candidate — 'find the black coffee among lattes.'"
+    },
+    {
+      "id": "dc_icons_30_v1",
+      "path": "outputs/candidates/dc_icons_30_v1.png",
+      "requested_count": 30,
+      "observed_count_estimate": 145,
+      "observed_count_uncertainty": "plus_minus_15",
+      "needs_exact_count": true,
+      "usable": true,
+      "notes": "Dense regular grid of star icons on grey. Uniform scale, uniform style. Good high-count dense-count candidate once exact count is verified. Note: visually monotonous, may underestimate real-world dense-count difficulty."
+    },
+    {
+      "id": "dc_trees_15_v1",
+      "path": "outputs/candidates/dc_trees_15_v1.png",
+      "requested_count": 15,
+      "observed_count_estimate": 95,
+      "observed_count_uncertainty": "plus_minus_10",
+      "needs_exact_count": true,
+      "usable": true,
+      "notes": "Aerial orchard, canopies touch at edges which will confuse both humans and VLMs. Good 'ambiguous boundary' test case — canopy fusion vs distinct tree."
+    },
+    {
+      "id": "dc_bottles_18_v1",
+      "path": "outputs/candidates/dc_bottles_18_v1.png",
+      "requested_count": 18,
+      "observed_count_estimate": 42,
+      "observed_count_uncertainty": "plus_minus_4",
+      "needs_exact_count": true,
+      "usable": true,
+      "notes": "Multi-shelf bottle display. Bottom two shelves cut off by frame bottom. Reasonable dense-count candidate once lower-shelf bottles are tallied precisely."
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { runtimeError, handleCliError } from '../lib/errors.js';
 
 const REQUIRED_CONFIG_FILES = [
   'project.json',
@@ -484,14 +485,11 @@ export async function run(argv = process.argv.slice(2)) {
   console.log(`═══ ${status} — ${passes} passed, ${failures} failed, ${warnings} warnings ═══`);
 
   if (failures > 0) {
-    throw new Error(`Project "${projectName}" has ${failures} issue(s).`);
+    throw runtimeError('PROJECT_UNHEALTHY', `Project "${projectName}" has ${failures} issue(s).`);
   }
 }
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('doctor.js') || process.argv[1].endsWith('doctor'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

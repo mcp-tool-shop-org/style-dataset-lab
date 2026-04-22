@@ -1,0 +1,62 @@
+{
+  "lane": "dense-count",
+  "description": "Dense-count subcategory — count N instances of a class where N is large enough that low-resolution inputs must fail. Each prompt is designed to generate a scene with an exact, pre-specified count of target instances. Ground truth is authored at prompt time.",
+  "style_prefix": "photorealistic documentary photograph, overhead or elevated angle for clear visibility, even neutral lighting, no lens blur, no bokeh, sharp focus across the entire frame, no vignette, no artistic filter",
+  "negative": "motion blur, soft focus, shallow depth of field, bokeh, lens flare, grainy film, stylized art, illustration, painting, cartoon, anime, watermark, text overlay, logo, signature, frame border, duplicate frame, split screen",
+  "generation_notes": "Exact counts are aspirational — SDXL is not a counter. After generation, each image MUST be re-counted by a human labeler and the ground truth updated to match what was actually produced. Reject any output where count uncertainty exceeds ±1. Note: the existing style-dataset-lab generator does NOT yet support HiRes fix to 3072px — smoke outputs are 1024x1024. Upgrade pending (see README).",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 77000
+  },
+  "variations": [
+    { "id": "v1", "seed_offset": 0, "loras": [] }
+  ],
+  "subjects": [
+    {
+      "id": "dc_crowd_10",
+      "prompt": "overhead photograph of exactly ten people standing in a plaza with clear visual separation between each person, each person roughly the same size in the frame, even distribution not clustered, neutral plaza floor, clear visibility of every individual, no overlap between figures, no children hidden behind adults",
+      "ground_truth": { "count": 10, "class": "person", "layout_hint": "loose grid" }
+    },
+    {
+      "id": "dc_crowd_25",
+      "prompt": "elevated photograph of exactly twenty-five people in a plaza from a second-story angle, each person visible as a distinct figure, no occlusion, neutral paving, daylight, figures roughly evenly spaced across the frame",
+      "ground_truth": { "count": 25, "class": "person", "layout_hint": "scattered" }
+    },
+    {
+      "id": "dc_boxes_12",
+      "prompt": "top-down photograph of exactly twelve identical brown cardboard boxes arranged in a three-by-four grid on a plain grey warehouse floor, studio lighting, each box clearly separated with gaps between rows and columns, no box stacked on another, sharp focus",
+      "ground_truth": { "count": 12, "class": "cardboard_box", "layout_hint": "3x4 grid" }
+    },
+    {
+      "id": "dc_boxes_20",
+      "prompt": "top-down photograph of exactly twenty identical brown cardboard boxes arranged in a four-by-five grid on a warehouse floor, studio lighting, clear gaps between every box, no stacking, sharp focus across the entire frame",
+      "ground_truth": { "count": 20, "class": "cardboard_box", "layout_hint": "4x5 grid" }
+    },
+    {
+      "id": "dc_icons_16",
+      "prompt": "flat graphic design wallpaper showing exactly sixteen identical simple line-art coffee cup icons arranged in a four-by-four grid on a pale neutral grey background, each icon identical black outline on white fill, equal spacing, clean vector look, no shadow, no gradient, no background texture",
+      "ground_truth": { "count": 16, "class": "coffee_cup_icon", "layout_hint": "4x4 grid" }
+    },
+    {
+      "id": "dc_icons_30",
+      "prompt": "flat graphic design wallpaper showing exactly thirty identical simple line-art star icons arranged in a five-by-six grid on a pale grey background, each icon identical black outline, equal spacing, clean vector look, no shadow, no gradient",
+      "ground_truth": { "count": 30, "class": "star_icon", "layout_hint": "5x6 grid" }
+    },
+    {
+      "id": "dc_trees_15",
+      "prompt": "aerial photograph of exactly fifteen evenly spaced trees in an orchard grid on flat soil, overhead view, no overlap between canopies, clear ground visible between each tree, soft daylight, no shadows obscuring tree boundaries",
+      "ground_truth": { "count": 15, "class": "tree", "layout_hint": "loose grid" }
+    },
+    {
+      "id": "dc_bottles_18",
+      "prompt": "front-facing photograph of exactly eighteen identical clear glass bottles arranged in three rows of six on a plain white shelf, studio lighting, each bottle fully visible and distinct from its neighbors, no reflections creating confusion, sharp focus end to end",
+      "ground_truth": { "count": 18, "class": "glass_bottle", "layout_hint": "3x6 grid" }
+    }
+  ]
+}

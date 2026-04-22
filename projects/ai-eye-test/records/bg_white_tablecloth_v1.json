@@ -1,0 +1,33 @@
+{
+  "id": "bg_white_tablecloth_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-16T20:45:30.326Z",
+  "asset_path": "outputs/candidates/bg_white_tablecloth_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1316347
+  },
+  "provenance": {
+    "workflow_id": "dense-count",
+    "workflow_version": "1.0.0",
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [],
+    "prompt": "photograph, empty surface, no objects, no products, no people, no text, no branding, evenly lit, neutral angle, top-down photograph of a plain empty white cotton tablecloth, soft fabric weave, natural daylight, gentle folds at the edges, no stains, no objects",
+    "negative_prompt": "people, face, hands, object, product, fruit, bottle, box, text, watermark, logo, sign, busy scene, clutter, frame, border, signature",
+    "seed": 80002,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 7252,
+    "gpu_model": "RTX 5080",
+    "batch_index": 2
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

@@ -6,9 +6,21 @@ on:
       - 'bin/**'
       - 'lib/**'
       - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'bin/**'
+      - 'lib/**'
+      - 'scripts/**'
+      - 'tests/**'
       - 'package.json'
       - '.github/workflows/ci.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,10 +34,13 @@ jobs:
         node-version: [20, 22]
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci --ignore-scripts || npm install --ignore-scripts
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
       - name: Smoke test — help
         run: node bin/sdlab.js --help
       - name: Smoke test — doctor
@@ -38,5 +53,5 @@ jobs:
         run: node bin/sdlab.js training-profile list --project star-freight
       - name: Verify script
         run: npm run verify
-      - name: Audit dependencies
-        run: npm audit --omit=dev || true
+      - name: Tests
+        run: npm test

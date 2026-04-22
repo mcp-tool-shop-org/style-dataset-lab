@@ -15,13 +15,13 @@ import { listWorkflowProfiles } from '../lib/workflow-profiles.js';
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
     flags: {
-      project: { type: 'string', default: 'star-freight' },
+      project: { type: 'string' },
       json: { type: 'boolean' },
     },
     deprecated: { game: 'project' },
   });
 
-  const projectName = flags.project;
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = getProjectRoot(projectName);
   const profiles = await listWorkflowProfiles(projectRoot);
 

@@ -21,6 +21,7 @@ import { join } from 'path';
 import { getProjectName } from '../lib/args.js';
 import { REPO_ROOT } from '../lib/paths.js';
 import { loadConstitution, loadLanes, loadRubric, loadTerminology, detectLane, detectGroup } from '../lib/config.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 
 /**
  * Build rationale string from rule's template, interpolating variables.
@@ -162,10 +163,10 @@ export async function run(argv = process.argv.slice(2)) {
 
   // Load project config — fail loudly if missing
   if (!existsSync(join(PROJECT_ROOT, 'constitution.json'))) {
-    throw new Error(
-      `No constitution.json found in ${PROJECT_ROOT}.\n` +
-      `Canon binding requires per-project config files.\n` +
-      `Run: sdlab init ${projectName} --domain <domain>`
+    throw inputError(
+      'INPUT_MISSING_CONFIG',
+      `No constitution.json found in ${PROJECT_ROOT}.`,
+      `Canon binding requires per-project config files. Run: sdlab init ${projectName} --domain <domain>`
     );
   }
 
@@ -175,7 +176,7 @@ export async function run(argv = process.argv.slice(2)) {
   const termConfig = loadTerminology(PROJECT_ROOT);
 
   if (!constitutionConfig.rules || constitutionConfig.rules.length === 0) {
-    throw new Error(`constitution.json has no rules — cannot bind.`);
+    throw inputError('INPUT_EMPTY_CONFIG', `constitution.json has no rules — cannot bind.`);
   }
 
   const constitutionRules = constitutionConfig.rules;
@@ -280,8 +281,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('canon-bind.js') || process.argv[1].endsWith('canon-bind'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

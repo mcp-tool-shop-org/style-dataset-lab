@@ -5,38 +5,51 @@
  *
  * Usage:
  *   sdlab reingest generated --source <dir> --manifest <id> [--dry-run] [--project <name>]
+ *   sdlab reingest selected --selection <id> [--project <name>]
  *   sdlab reingest audit [--project <name>]
  */
 
 import { join } from 'node:path';
-import { getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { parseArgs, getProjectName } from '../lib/args.js';
+import { REPO_ROOT, resolveSafeProjectPath } from '../lib/paths.js';
+import { inputError, handleCliError } from '../lib/errors.js';
 import { reingestGenerated, auditReingest } from '../lib/reingest.js';
 
 export async function run(argv = process.argv.slice(2)) {
-  const projectName = getProjectName(argv);
+  const { flags, positionals } = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      source: { type: 'string' },
+      manifest: { type: 'string' },
+      selection: { type: 'string' },
+      'dry-run': { type: 'boolean', default: false },
+    },
+    deprecated: { game: 'project' },
+    allowUnknown: true, // forward unknowns to delegated 'selected' path
+  });
+
+  const projectName = flags.project || getProjectName(argv);
   const projectRoot = join(REPO_ROOT, 'projects', projectName);
-  const subcommand = argv.find(a => !a.startsWith('--')) || 'audit';
-  const args = argv.filter(a => a !== subcommand);
+  const subcommand = positionals[0] || 'audit';
 
   if (subcommand === 'generated') {
-    const sourceIdx = args.indexOf('--source');
-    if (sourceIdx < 0) throw new Error('--source <dir> is required (directory of generated images)');
-    const sourcePath = args[sourceIdx + 1];
+    if (!flags.source) {
+      throw inputError('INPUT_MISSING_FLAG', '--source <dir> is required (directory of generated images)');
+    }
+    if (!flags.manifest) {
+      throw inputError('INPUT_MISSING_FLAG', '--manifest <id> is required (training manifest that produced the outputs)');
+    }
 
-    const manifestIdx = args.indexOf('--manifest');
-    if (manifestIdx < 0) throw new Error('--manifest <id> is required (training manifest that produced the outputs)');
-    const manifestId = args[manifestIdx + 1];
-
-    const dryRun = args.includes('--dry-run');
+    const safeSource = resolveSafeProjectPath(projectRoot, flags.source, { baseRoot: REPO_ROOT, flagName: 'source' });
+    const dryRun = flags['dry-run'] || flags.dryRun;
 
     console.log(`\x1b[1msdlab reingest generated\x1b[0m — ${projectName}`);
-    console.log(`  Source:   ${sourcePath}`);
-    console.log(`  Manifest: ${manifestId}`);
+    console.log(`  Source:   ${flags.source}`);
+    console.log(`  Manifest: ${flags.manifest}`);
     if (dryRun) console.log(`  Mode:     DRY RUN (no records written)`);
     console.log('');
 
-    const result = await reingestGenerated(projectRoot, sourcePath, manifestId, { dryRun });
+    const result = await reingestGenerated(projectRoot, safeSource, flags.manifest, { dryRun });
 
     console.log(`  \x1b[32m✓\x1b[0m Created: ${result.created} records`);
     if (result.skipped > 0) {
@@ -51,9 +64,9 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else if (subcommand === 'selected') {
-    // Delegate to reingest-selected.js
+    // Delegate to reingest-selected.js — pass the full argv so it can re-parse
     const { run: runSelected } = await import('./reingest-selected.js');
-    await runSelected(args);
+    await runSelected(argv.slice(argv.indexOf(subcommand) + 1));
     return;
 
   } else if (subcommand === 'audit') {
@@ -83,10 +96,10 @@ export async function run(argv = process.argv.slice(2)) {
     }
 
   } else {
-    throw new Error(`Unknown subcommand: ${subcommand}. Use: generated, selected, audit`);
+    throw inputError('INPUT_BAD_SUBCOMMAND', `Unknown subcommand: ${subcommand}. Use: generated, selected, audit`);
   }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('reingest.js') || process.argv[1].endsWith('reingest'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

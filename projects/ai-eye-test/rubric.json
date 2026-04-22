@@ -1,0 +1,31 @@
+{
+  "dimensions": [
+    "target_detectability",
+    "distractor_adequacy",
+    "resolution_sensitivity",
+    "ground_truth_clarity",
+    "domain_neutrality",
+    "generation_fidelity"
+  ],
+  "dimension_descriptions": {
+    "target_detectability": "A trained human labeler can identify the test target at native resolution without ambiguity.",
+    "distractor_adequacy": "Sufficient plausible confusers present so the task is non-trivial at low resolution.",
+    "resolution_sensitivity": "The task becomes measurably harder as input resolution drops — i.e. the image actually tests what this benchmark claims to test.",
+    "ground_truth_clarity": "Labels are unambiguous, verifiable, and reproducible by a second labeler.",
+    "domain_neutrality": "The image does not lean so hard into one aesthetic (fantasy art, corporate UI, medical imaging) that it only measures one domain.",
+    "generation_fidelity": "The generated image matches the prompt intent closely enough to serve as a test case — artifacts, deformations, or off-spec outputs disqualify it."
+  },
+  "thresholds": {
+    "approved": { "pass": 0.7, "partial": 0.5 },
+    "borderline": { "pass": 0.7, "partial": 0.5 },
+    "rejected": { "fail_ceiling": 0.4, "partial_ceiling": 0.6 }
+  },
+  "failure_to_rules": {
+    "target_detectability": ["TST-001"],
+    "distractor_adequacy": ["TST-002"],
+    "resolution_sensitivity": ["TST-003"],
+    "ground_truth_clarity": ["TST-004"],
+    "domain_neutrality": ["TST-005"],
+    "generation_fidelity": ["TST-006"]
+  }
+}

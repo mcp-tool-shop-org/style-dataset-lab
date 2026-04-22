@@ -1,0 +1,48 @@
+{
+  "group_label": "subcategory",
+  "id_detection_order": ["id_patterns", "prompt_terms", "default"],
+  "prompt_detection_order": ["explicit_tag", "id_patterns"],
+  "groups": {
+    "fine-detail": {
+      "label": "Fine Detail",
+      "synonyms": ["fine_detail", "local_detail", "micro_feature"]
+    },
+    "small-target-wide-frame": {
+      "label": "Small Target Wide Frame",
+      "synonyms": ["waldo", "needle_in_haystack", "sparse_target"]
+    },
+    "dense-count": {
+      "label": "Dense Count",
+      "synonyms": ["count", "enumeration", "crowd_count"]
+    },
+    "small-text-numeric": {
+      "label": "Small Text Numeric",
+      "synonyms": ["ocr", "small_text", "chart_label"]
+    },
+    "labeled-grid": {
+      "label": "Labeled Grid",
+      "synonyms": ["sprite_sheet", "contact_sheet", "grid_parse"]
+    },
+    "ab-compare": {
+      "label": "A/B Compare",
+      "synonyms": ["paired_diff", "before_after", "regression_compare"]
+    },
+    "layout-hierarchy": {
+      "label": "Layout Hierarchy",
+      "synonyms": ["layout", "structural", "composition"]
+    },
+    "chart-read": {
+      "label": "Chart Read",
+      "synonyms": ["chart", "data_viz", "figure_extraction"]
+    }
+  },
+  "cross_group_patterns": [],
+  "edge_defaults": {
+    "unclassified_group": "needs_review"
+  },
+  "null_faction_patterns": [],
+  "id_fallbacks": ["needs_review"],
+  "faction_context": {
+    "note": "ai-eye-test uses subcategory as its grouping axis. 'faction' is a no-op here but retained for schema compatibility with other style-dataset-lab projects."
+  }
+}

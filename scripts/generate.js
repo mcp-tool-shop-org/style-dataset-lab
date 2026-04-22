@@ -10,11 +10,34 @@
  * downloads the output PNG, and writes a provenance record to records/.
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { parseArgs, getProjectName } from "../lib/args.js";
+import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { readJsonFile } from "../lib/config.js";
+import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
+import { info, result } from "../lib/log.js";
+
+/**
+ * Format milliseconds as a human ETA string like "6m 12s" or "42s".
+ */
+function formatEta(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}m ${s}s`;
+}
+
+/**
+ * COMFY_URL precedence:
+ *   1. process.env.COMFY_URL (explicit user env)
+ *   2. project defaults.comfy_url (set by `sdlab project doctor`)
+ *   3. built-in default http://127.0.0.1:8188
+ * The adapter (lib/adapters/comfyui-runner.js) applies the same precedence.
+ */
 
 function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, cfg, sampler, scheduler, width, height, ipAdapterConfig) {
   const nodes = {};
@@ -157,11 +180,19 @@ export async function run(argv = process.argv.slice(2)) {
   const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
-  const packPath = argv.find((a) => !a.startsWith("--")) || "inputs/prompts/rpg-icons-lane1.json";
-  const dryRun = argv.includes("--dry-run");
+  const parsed = parseArgs(argv, {
+    flags: {
+      project: { type: 'string' },
+      game: { type: 'string' },
+      'dry-run': { type: 'boolean' },
+    },
+    deprecated: { game: 'project' },
+  });
+  const packPath = parsed.positionals[0] || "inputs/prompts/rpg-icons-lane1.json";
+  const dryRun = parsed.flags['dry-run'] === true;
 
-  const fullPackPath = join(GAME_ROOT, packPath);
-  const pack = JSON.parse(await readFile(fullPackPath, "utf-8"));
+  const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'pack-path' });
+  const pack = await readJsonFile(fullPackPath, { requiredFields: ['lane', 'subjects', 'variations', 'defaults'] });
 
   console.log(`\x1b[1mstyle-dataset-lab\x1b[0m generate`);
   console.log(`  Lane: ${pack.lane}`);
@@ -173,7 +204,7 @@ export async function run(argv = process.argv.slice(2)) {
   if (!dryRun) {
     const online = await comfyHealth(COMFY_URL);
     if (!online) {
-      throw new Error("ComfyUI not reachable at " + COMFY_URL);
+      throw runtimeError('RUNTIME_COMFY_UNREACHABLE', "ComfyUI not reachable at " + COMFY_URL, 'Start ComfyUI or set COMFY_URL to the right host.');
     }
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
@@ -183,7 +214,9 @@ export async function run(argv = process.argv.slice(2)) {
 
   const d = pack.defaults;
   let generated = 0;
+  let errors = 0;
   const totalExpected = pack.subjects.length * pack.variations.length;
+  const runStartMs = Date.now();
 
   for (const subject of pack.subjects) {
     for (const variation of pack.variations) {
@@ -272,21 +305,43 @@ export async function run(argv = process.argv.slice(2)) {
         console.log(`    \x1b[32m✓\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
       } catch (err) {
         console.log(`    \x1b[31m✗\x1b[0m ${err.message}`);
+        errors++;
       }
 
       generated++;
+
+      // ETA every 5 items (not every item — too noisy for long runs).
+      if (!dryRun && generated > 0 && generated % 5 === 0 && generated < totalExpected) {
+        const elapsedTotal = Date.now() - runStartMs;
+        const avgMs = elapsedTotal / generated;
+        const remaining = totalExpected - generated;
+        const etaMs = avgMs * remaining;
+        info('generate', `progress ${generated}/${totalExpected} — avg ${formatEta(avgMs)}/item, ETA ~${formatEta(etaMs)}`);
+      }
     }
   }
 
   console.log("");
-  console.log(`\x1b[32m✓\x1b[0m Generated ${generated} candidates`);
+  const succeeded = generated - errors;
+  const totalElapsedMs = Date.now() - runStartMs;
+  console.log(`\x1b[32m✓\x1b[0m Generated ${succeeded} candidates (${errors} errors)`);
+  if (!dryRun && generated > 0) {
+    const avgMs = totalElapsedMs / generated;
+    console.log(`  Total: ${formatEta(totalElapsedMs)} — avg ${formatEta(avgMs)}/item`);
+  }
   if (dryRun) console.log("  (dry run — no images produced)");
+  // Always print the output directory so scripted pipelines can parse it,
+  // even under --quiet.
+  if (!dryRun && succeeded > 0) {
+    result(`Candidates: ${join(GAME_ROOT, 'outputs/candidates')}`);
+    result(`Records: ${join(GAME_ROOT, 'records')}`);
+  }
+  if (!dryRun && errors > 0 && succeeded === 0) {
+    throw runtimeError('RUNTIME_ALL_FAILED', `All ${totalExpected} generation attempts failed.`);
+  }
 }
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('generate.js') || process.argv[1].endsWith('generate'))) {
-  run().catch((err) => {
-    console.error(err.message || err);
-    process.exit(1);
-  });
+  run().catch(handleCliError);
 }

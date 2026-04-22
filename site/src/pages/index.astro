@@ -1,16 +1,23 @@
 ---
 import '../styles/global.css';
-import BaseLayout from '@mcptoolshop/site-theme/components/BaseLayout.astro';
-import Hero from '@mcptoolshop/site-theme/components/Hero.astro';
+import SiteLayout from '../layouts/SiteLayout.astro';
 import Section from '@mcptoolshop/site-theme/components/Section.astro';
 import FeatureGrid from '@mcptoolshop/site-theme/components/FeatureGrid.astro';
 import DataTable from '@mcptoolshop/site-theme/components/DataTable.astro';
 import CodeCardGrid from '@mcptoolshop/site-theme/components/CodeCardGrid.astro';
 import ApiList from '@mcptoolshop/site-theme/components/ApiList.astro';
 import { config } from '../site-config';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+const handbookHref = `${base}handbook/`;
+const installCmd = 'npm install -g @mcptoolshop/style-dataset-lab';
+const ogUrl = 'https://mcp-tool-shop-org.github.io/style-dataset-lab/';
+// No OG image asset is shipped yet — leave undefined so scrapers fall back to
+// the summary card. Swap in a 1200x630 /og.png under site/public/ when one lands.
+const ogImage: string | undefined = undefined;
 ---
 
-<BaseLayout
+<SiteLayout
   title={config.title}
   description={config.description}
   logoBadge={config.logoBadge}
@@ -19,8 +26,64 @@ import { config } from '../site-config';
   npmUrl={config.npmUrl}
   footerText={config.footerText}
   nav={config.sections.map(s => ({ href: `#${s.id}`, label: s.title }))}
+  ogUrl={ogUrl}
+  ogImage={ogImage}
 >
-  <Hero {...config.hero} />
+  <section class="py-14 md:py-20">
+    <div class="mb-4">
+      <span class="inline-flex items-center rounded-full border border-edge px-3 py-1 text-xs font-medium text-muted">
+        {config.hero.badge}
+      </span>
+    </div>
+    <h1 class="text-4xl font-bold tracking-tight text-heading md:text-5xl">
+      {config.hero.headline}
+    </h1>
+    <p class="mt-3 max-w-3xl text-xl text-body md:text-2xl" role="doc-subtitle">
+      {config.hero.headlineAccent}
+    </p>
+    <p class="mt-6 max-w-3xl text-base text-muted md:text-lg">
+      {config.hero.description}
+    </p>
+
+    <div class="mt-8 max-w-3xl">
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-muted" for="install-cmd">
+        Install
+      </label>
+      <div class="flex items-stretch gap-2 rounded-xl border border-edge bg-surface-raised p-1">
+        <code
+          id="install-cmd"
+          class="flex-1 overflow-x-auto whitespace-nowrap rounded-lg bg-surface px-3 py-2 font-mono text-sm text-body"
+        >{installCmd}</code>
+        <button
+          type="button"
+          id="copy-install"
+          class="shrink-0 rounded-lg bg-action px-4 py-2 text-sm font-medium text-action-text hover:bg-action-hover"
+          data-copy={installCmd}
+          aria-label="Copy install command"
+        >
+          Copy
+        </button>
+      </div>
+      <p class="mt-3 text-sm text-muted">
+        Requires Node 18+. After install, run <code class="font-mono text-body">sdlab init my-project --domain character-design</code>.
+      </p>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center gap-4">
+      <a
+        href={handbookHref}
+        class="inline-flex rounded-xl border border-edge px-4 py-2 text-sm text-body hover:bg-surface-raised"
+      >
+        Read the handbook →
+      </a>
+      <a
+        href="#how-it-works"
+        class="inline-flex text-sm text-muted hover:text-heading"
+      >
+        See how it works
+      </a>
+    </div>
+  </section>
 
   {config.sections.map((s) => (
     <Section id={s.id} title={s.title} subtitle={s.subtitle}>
@@ -30,4 +93,30 @@ import { config } from '../site-config';
       {s.kind === 'api' && <ApiList apis={s.apis} />}
     </Section>
   ))}
-</BaseLayout>
+
+  <script is:inline>
+    (function () {
+      var btn = document.getElementById('copy-install');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var text = btn.getAttribute('data-copy') || '';
+        var original = btn.textContent;
+        var done = function () {
+          btn.textContent = 'Copied';
+          setTimeout(function () { btn.textContent = original; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, done);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          done();
+        }
+      });
+    })();
+  </script>
+</SiteLayout>

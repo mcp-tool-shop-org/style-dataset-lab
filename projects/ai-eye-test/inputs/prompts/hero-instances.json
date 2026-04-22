@@ -1,0 +1,34 @@
+{
+  "lane": "dense-count",
+  "description": "Hero instances — single clean isolated object, neutral background. Feeds the programmatic compositor. Each image becomes one alpha cutout via rembg and is composited at varied counts with ground truth by construction.",
+  "style_prefix": "product photograph, single object, centered in frame, studio lighting, sharp focus, plain neutral white background, no shadow, no props, no text",
+  "negative": "multiple objects, pair, duplicate, text, watermark, logo, signature, cluttered background, busy, pattern, tile, people, hands, arms",
+  "generation_notes": "One object per image. rembg is used post-generation to strip the background — SDXL's 'white background' is never perfectly white, so rembg handles the matte.",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2.0,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "base_seed": 79000
+  },
+  "variations": [
+    { "id": "v1", "seed_offset": 0, "loras": [] }
+  ],
+  "subjects": [
+    {
+      "id": "hero_brown_box",
+      "prompt": "one single closed brown corrugated cardboard shipping box, perfectly centered in frame, three-quarter angle so top and one side visible, sharp focus, plain white seamless studio backdrop, soft even studio lighting"
+    },
+    {
+      "id": "hero_coffee_mug",
+      "prompt": "one single white ceramic coffee mug, handle facing right, perfectly centered in frame, sharp focus, plain white seamless studio backdrop, soft even studio lighting"
+    },
+    {
+      "id": "hero_green_apple",
+      "prompt": "one single green apple with a short stem, perfectly centered in frame, sharp focus, plain white seamless studio backdrop, soft even studio lighting"
+    }
+  ]
+}

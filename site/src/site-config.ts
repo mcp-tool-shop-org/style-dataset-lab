@@ -6,6 +6,7 @@ export const config: SiteConfig = {
   logoBadge: 'SD',
   brandName: 'style-dataset-lab',
   repoUrl: 'https://github.com/mcp-tool-shop-org/style-dataset-lab',
+  npmUrl: 'https://www.npmjs.com/package/@mcptoolshop/style-dataset-lab',
   footerText: 'MIT Licensed — built by <a href="https://github.com/mcp-tool-shop-org" style="color:var(--color-muted);text-decoration:underline">mcp-tool-shop-org</a>',
 
   hero: {

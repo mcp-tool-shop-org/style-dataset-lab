@@ -1,49 +1,17 @@
 # Scorecard
 
-> Score a repo before remediation. Fill this out first, then use SHIP_GATE.md to fix.
+> Real scorecard numbers come from `npx @mcptoolshop/shipcheck audit` in
+> Phase 10 of the dogfood swarm / Full Treatment. Until then, use the
+> template at [`SCORECARD.template.md`](./SCORECARD.template.md).
+>
+> Do not fabricate scores — empty placeholders beat estimates.
 
-**Repo:** <!-- repo name -->
-**Date:** <!-- YYYY-MM-DD -->
-**Type tags:** <!-- [npm] [mcp] [cli] etc. -->
+**Repo:** style-dataset-lab
+**Date:** pending (Phase 10)
+**Type tags:** [npm] [cli]
 
-## Pre-Remediation Assessment
+## Status
 
-| Category | Score | Notes |
-|----------|-------|-------|
-| A. Security | /10 | |
-| B. Error Handling | /10 | |
-| C. Operator Docs | /10 | |
-| D. Shipping Hygiene | /10 | |
-| E. Identity (soft) | /10 | |
-| **Overall** | **/50** | |
-
-## Key Gaps
-
-<!-- List the 3-5 most critical gaps that need fixing. Be specific. -->
-
-1.
-2.
-3.
-
-## Remediation Priority
-
-<!-- What to fix first, second, third. Informed by the gaps above. -->
-
-| Priority | Item | Estimated effort |
-|----------|------|-----------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-
-## Post-Remediation
-
-<!-- Fill this out after applying SHIP_GATE.md -->
-
-| Category | Before | After |
-|----------|--------|-------|
-| A. Security | /10 | /10 |
-| B. Error Handling | /10 | /10 |
-| C. Operator Docs | /10 | /10 |
-| D. Shipping Hygiene | /10 | /10 |
-| E. Identity (soft) | /10 | /10 |
-| **Overall** | /50 | /50 |
+Not yet scored for v3.0.0. Template preserved at `SCORECARD.template.md`.
+This file will be filled after `shipcheck audit` runs at the end of the
+current dogfood wave.

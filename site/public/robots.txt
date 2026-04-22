@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mcp-tool-shop-org.github.io/style-dataset-lab/sitemap-index.xml
