@@ -18,6 +18,7 @@ import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
+import { pickOutputImage } from "../lib/comfyui-output.js";
 import { info, result } from "../lib/log.js";
 
 /**
@@ -251,7 +252,7 @@ export async function run(argv = process.argv.slice(2)) {
       }
 
       const startMs = Date.now();
-      const { nodes } = buildWorkflow(
+      const { nodes, saveNodeId } = buildWorkflow(
         fullPrompt, pack.negative,
         d.checkpoint, loras, seed,
         d.steps, d.cfg, d.sampler, d.scheduler,
@@ -259,29 +260,20 @@ export async function run(argv = process.argv.slice(2)) {
       );
 
       try {
-        const result = await submitAndWait(nodes, COMFY_URL);
+        const submitResult = await submitAndWait(nodes, COMFY_URL);
         const elapsed = Date.now() - startMs;
 
-        // Find output image
-        const outputs = result.outputs || {};
-        let imageFile = null;
-        let imageSubfolder = "";
-        for (const nodeOut of Object.values(outputs)) {
-          if (nodeOut.images && nodeOut.images.length > 0) {
-            imageFile = nodeOut.images[0].filename;
-            imageSubfolder = nodeOut.images[0].subfolder || "";
-            break;
-          }
-        }
-
-        if (!imageFile) {
+        // Prefer the explicit SaveImage node from buildWorkflow; fall back
+        // to highest numeric node id (see lib/comfyui-output.js).
+        const picked = pickOutputImage(submitResult.outputs, { preferNodeId: saveNodeId });
+        if (!picked) {
           console.log(`    \x1b[33m⚠\x1b[0m No output image found`);
           generated++;
           continue;
         }
 
         // Download and save
-        const imgData = await downloadImage(imageFile, imageSubfolder, COMFY_URL);
+        const imgData = await downloadImage(picked.filename, picked.subfolder, COMFY_URL);
         const destPath = `outputs/candidates/${assetId}.png`;
         await writeFile(join(GAME_ROOT, destPath), imgData);
 

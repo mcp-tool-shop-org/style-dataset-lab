@@ -12,6 +12,14 @@ All notable changes to this project will be documented in this file.
 - New helpers: `buildCompletedSlotMap()`, `openBatchDirForResume()` in `lib/batch-runs.js`.
 - 7 new tests in `tests/lib-pipeline/batch-resume.test.js`.
 
+### Fixed — Deterministic SaveImage node selection (PB-003)
+
+- **`lib/comfyui-output.js`** (new): `pickOutputImage(outputs, { preferNodeId })` selects the canonical SaveImage output deterministically. Previously, `comfyui-runner.js` and `generate.js` used `Object.values(outputs)` and broke on the first node with images — first-wins ordering depends on ComfyUI's execution scheduler, not the workflow graph.
+- **Selection precedence:** explicit `preferNodeId` (from the workflow builder's `saveNodeId` or a brief's `expected_outputs.save_node_id`) → highest numeric node id (typical "final save" convention) → first iteration entry (only for non-numeric ids).
+- `lib/adapters/comfyui-runner.js` and `scripts/generate.js` both updated to thread `saveNodeId` through to the picker.
+- Run output records now include `comfy_node_id` so the chosen save node is auditable from the manifest.
+- 9 new tests in `tests/lib-pipeline/comfyui-output.test.js`.
+
 ## [3.0.1] - 2026-04-21
 
 ### Fixed — Dogfood swarm health pass (Stage A: bugs & security)
