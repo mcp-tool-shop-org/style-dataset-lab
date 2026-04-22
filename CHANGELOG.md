@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+<<<<<<< HEAD
 ### Added — `--resume` for `generate` and `batch generate`
 
 - **`sdlab generate --resume`** — skip subjects whose record JSON and output PNG are already on disk. Seeds remain stable: skipped slots still advance the seed counter so resumed runs are bit-identical to a fresh run that reaches the same point. Final summary now reports `(N errors, M resumed)`.
@@ -19,6 +20,14 @@ All notable changes to this project will be documented in this file.
 - `lib/adapters/comfyui-runner.js` and `scripts/generate.js` both updated to thread `saveNodeId` through to the picker.
 - Run output records now include `comfy_node_id` so the chosen save node is auditable from the manifest.
 - 9 new tests in `tests/lib-pipeline/comfyui-output.test.js`.
+
+### Added — CI coverage reporting
+
+- **`c8`** added as a `devDependency`; new `npm run coverage` script runs the full test suite under c8 with text + lcov + text-summary reporters (covering `lib/**/*.js`).
+- **CI**: Node 22 matrix entry now runs `npm run coverage` and uploads `coverage/lcov.info` to Codecov via `codecov/codecov-action@v5` (`continue-on-error: true` so a Codecov outage never blocks the PR).
+- **README**: CI and Codecov badges added beside the npm/license badges.
+- **`.gitignore`**: `coverage/` and `.nyc_output/` excluded.
+- Baseline coverage at this commit: **statements 40.6% / branches 70.7% / functions 54.0%** — meaningful coverage on `lib/snapshot.js`, `lib/split.js`, `lib/log.js`, `lib/args.js`, `lib/runtime-runs.js`; adapters and selection layers still uncovered (deferred to future passes).
 
 ## [3.0.1] - 2026-04-21
 

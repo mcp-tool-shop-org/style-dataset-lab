@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "node --test tests/**/*.test.js",
+    "coverage": "c8 npm test",
     "verify": "node bin/sdlab.js --help && node bin/sdlab.js project doctor --project star-freight",
     "generate": "node scripts/generate.js",
     "curate": "node scripts/curate.js",
@@ -15,6 +16,20 @@
     "canon-bind": "node scripts/canon-bind.js",
     "painterly": "node scripts/painterly.js",
     "generate:identity": "node scripts/generate-identity.js"
+  },
+  "c8": {
+    "include": ["lib/**/*.js"],
+    "exclude": [
+      "tests/**",
+      "scripts/**",
+      "site/**",
+      "projects/**",
+      "templates/**",
+      "**/*.test.js"
+    ],
+    "reporter": ["text", "lcov", "text-summary"],
+    "report-dir": "coverage",
+    "all": true
   },
   "files": [
     "bin/",
@@ -58,5 +73,8 @@
     "node": ">=20"
   },
   "author": "mcp-tool-shop",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
 }

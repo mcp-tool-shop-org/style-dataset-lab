@@ -30,3 +30,7 @@ projects/*/eval-packs/
 site/.astro/
 site/dist/
 site/node_modules/
+
+# Test coverage output
+coverage/
+.nyc_output/
