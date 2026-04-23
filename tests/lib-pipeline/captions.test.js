@@ -38,6 +38,13 @@ const styleProfile = {
   prompt_strategy: 'trigger-word',
 };
 
+const fluxProfile = {
+  profile_id: 'character-style-lora-flux',
+  target_family: 'flux',
+  caption_strategy: 'flux-natural-language',
+  prompt_strategy: 'trigger-word',
+};
+
 const legacyProfile = {
   profile_id: 'legacy-profile',
   prompt_strategy: 'trigger-word',
@@ -117,6 +124,57 @@ test('legacy caption falls back to record id when provenance.prompt is absent', 
   const caption = buildCaption(noPrompt, 'portrait', null, legacyProfile);
   assert.ok(caption.startsWith('legacy_profile, portrait, '));
   assert.ok(caption.includes('hero alpha 01'));
+});
+
+// --- flux-natural-language strategy ---
+
+test('flux-natural-language caption uses natural-language sentence shape', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', fluxProfile);
+  assert.equal(
+    caption,
+    'character_style_lora_flux style, a compact faction costume, Steel-blue uniform, high collar, ship corridor. Clean and institutional.'
+  );
+});
+
+test('flux-natural-language caption starts with trigger + " style" (research template)', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', fluxProfile);
+  assert.ok(caption.startsWith('character_style_lora_flux style,'),
+    'Flux template per Pelayo Arbues: [Trigger] style, [Subject], [Scene]');
+});
+
+test('flux-natural-language caption never contains generation prompt vocabulary', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', fluxProfile);
+  assert.ok(!caption.includes('oil painting'));
+  assert.ok(!caption.includes('painterly'));
+  assert.ok(!caption.includes('muted dusty palette'));
+  assert.ok(!caption.includes('directional lighting'));
+});
+
+test('flux-natural-language caption uses article "a" before subject noun phrase', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', fluxProfile);
+  // Prose shape, not comma-tag-list: the subject should be a noun phrase
+  // with an article, not "compact, costume" bare tags.
+  assert.ok(caption.includes('a compact faction costume'));
+});
+
+test('flux-natural-language caption omits missing fields cleanly', () => {
+  const thin = { id: 'thin_01', judgment: {}, canon: {} };
+  const caption = buildCaption(thin, null, null, fluxProfile);
+  // Should be just the trigger segment, no stray "a " or trailing comma
+  assert.equal(caption, 'character_style_lora_flux style');
+});
+
+test('flux-natural-language caption falls back to group when lane is absent', () => {
+  const caption = buildCaption(approvedRecord, null, 'bridge-officers', fluxProfile);
+  // lane is null, group is different from faction → group goes into subject
+  assert.ok(caption.includes('a compact faction bridge-officers'));
+});
+
+test('flux-natural-language caption handles missing profile_id (no trigger)', () => {
+  const noTrigger = { target_family: 'flux', caption_strategy: 'flux-natural-language' };
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', noTrigger);
+  // Trigger segment absent; still starts with subject noun phrase
+  assert.ok(caption.startsWith('a compact faction costume'));
 });
 
 // --- strategy routing ---
