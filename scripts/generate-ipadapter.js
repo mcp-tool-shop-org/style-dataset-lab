@@ -17,6 +17,7 @@ import { getProjectName, parseNumberFlag } from "../lib/args.js";
 import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
+import { assertNotFrozenBySubject } from "../lib/freeze-gate.js";
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -185,6 +186,16 @@ export async function run(argv = process.argv.slice(2)) {
   if (!opts.prompt) {
     throw inputError('INPUT_MISSING_FLAG', "--prompt is required");
   }
+
+  // Freeze gate (advisory): refuse if the subject's canon entry is frozen.
+  const reasonFlagIdx = argv.indexOf('--reason');
+  const bypassReason = reasonFlagIdx >= 0 && argv[reasonFlagIdx + 1] ? argv[reasonFlagIdx + 1] : null;
+  await assertNotFrozenBySubject(GAME_ROOT, opts.subject, {
+    action: 'generate:ipadapter',
+    allowSoftAdvisoryBypass: argv.includes('--i-know'),
+    bypassReason,
+    by: 'mike',
+  });
 
   // Validate --ref path stays inside project tree.
   const safeRefPath = resolveSafeProjectPath(GAME_ROOT, opts.refPath, { flagName: 'ref' });

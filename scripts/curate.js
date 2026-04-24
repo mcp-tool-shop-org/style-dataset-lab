@@ -17,6 +17,7 @@ import { REPO_ROOT } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { result } from "../lib/log.js";
+import { assertNotFrozenByAssetPath } from "../lib/freeze-gate.js";
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
@@ -27,6 +28,7 @@ export async function run(argv = process.argv.slice(2)) {
       notes: { type: 'string' },
       list: { type: 'boolean', default: false },
       'dry-run': { type: 'boolean', default: false },
+      'i-know': { type: 'boolean', default: false },
     },
     deprecated: { game: 'project' },
   });
@@ -105,6 +107,16 @@ export async function run(argv = process.argv.slice(2)) {
     if (failure_modes.length) console.log(`  failures: ${failure_modes.join(", ")}`);
     return;
   }
+
+  // Freeze gate: refuse to recurate to a path that a frozen canon entry owns.
+  // No-op when the project has no canon-build config. The explanation doubles
+  // as the bypass reason when the target entry is soft-advisory.
+  await assertNotFrozenByAssetPath(GAME_ROOT, newPath, {
+    action: 'curate',
+    allowSoftAdvisoryBypass: flags['i-know'],
+    bypassReason: explanation,
+    by: 'mike',
+  });
 
   await mkdir(join(GAME_ROOT, newDir), { recursive: true });
 

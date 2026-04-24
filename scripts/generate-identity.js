@@ -27,6 +27,7 @@ import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
+import { assertNotFrozenBySubject } from "../lib/freeze-gate.js";
 
 // ── Defaults (match existing lab pipeline) ──
 
@@ -396,6 +397,20 @@ export async function run(argv = process.argv.slice(2)) {
   const subjectFilter = argv.includes("--subject")
     ? argv[argv.indexOf("--subject") + 1]
     : null;
+
+  // Freeze gate (advisory): when --subject is given, refuse if that subject's
+  // canon entry is frozen. No-op when --subject is absent (pack-driven) or
+  // when the project has no canon-build config.
+  if (subjectFilter) {
+    const reasonFlagIdx = argv.indexOf('--reason');
+    const bypassReason = reasonFlagIdx >= 0 && argv[reasonFlagIdx + 1] ? argv[reasonFlagIdx + 1] : null;
+    await assertNotFrozenBySubject(GAME_ROOT, subjectFilter, {
+      action: 'generate:identity',
+      allowSoftAdvisoryBypass: argv.includes('--i-know'),
+      bypassReason,
+      by: 'mike',
+    });
+  }
   const seedCount = argv.includes("--seeds")
     ? parseNumberFlag('seeds', argv[argv.indexOf("--seeds") + 1], { int: true, min: 1 })
     : 3;

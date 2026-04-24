@@ -72,6 +72,17 @@ export async function run(argv) {
       console.log(`canon build complete: ${result.entities_total} entities (${result.entities_cached} cached, ${result.entities_rebuilt} rebuilt), ${result.rows} dataset rows.`);
       console.log(`output: ${result.output_dir}`);
       console.log(`generated_from: ${result.generated_from}`);
+      if (result.frozen_entries > 0) {
+        console.log(`frozen entries: ${result.frozen_entries} stamped with witness hashes`);
+      }
+      if (Array.isArray(result.drift) && result.drift.length > 0) {
+        console.log('');
+        console.log(`drift detected on ${result.drift.length} frozen entr${result.drift.length === 1 ? 'y' : 'ies'} since the previous build:`);
+        for (const d of result.drift) {
+          console.log(`  ${d.schema_kind}:${d.entity_id} (${d.status})`);
+        }
+        console.log('Run `sdlab canon drift` for the full report.');
+      }
     }
   }
 }
