@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { join } from 'node:path';
 import { loadBuildConfig } from '../lib/canon-build/load-config.js';
 import { loadCanonEntriesInDir } from '../lib/canon-build/load-entry.js';
-import { readFreezeStatus } from '../lib/freeze-stamp.js';
+import { readFreezeStatus, resolveWatchFields } from '../lib/freeze-stamp.js';
 import { readEventsFor } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
 
@@ -45,6 +45,14 @@ export async function run(argv) {
   const block = fm.freeze || {};
   const events = await readEventsFor(projectRoot, entityIdArg);
 
+  // Entry override OR config default — the same resolution used by the
+  // build, so a reader sees the actual watched fields, not just what's
+  // literally in the entry frontmatter.
+  const resolvedWatchFields = resolveWatchFields(fm, resolved.schemaName, config);
+  const watchFieldsSource = Array.isArray(block.watch_fields) && block.watch_fields.length
+    ? 'entry-override'
+    : (resolvedWatchFields.length ? 'config-default' : 'none');
+
   const result = {
     entity_id: entityIdArg,
     schema_kind: resolved.schemaName.replace('.schema.json', ''),
@@ -52,7 +60,8 @@ export async function run(argv) {
     locked_at_build: block.locked_at_build || null,
     frozen_by: block.frozen_by || null,
     frozen_reason: block.frozen_reason || null,
-    watch_fields: block.watch_fields || [],
+    watch_fields: resolvedWatchFields,
+    watch_fields_source: watchFieldsSource,
     overrides_count: Array.isArray(block.overrides) ? block.overrides.length : 0,
     event_count: events.length,
   };
@@ -68,7 +77,8 @@ export async function run(argv) {
     console.log(`  locked_at_build: ${result.locked_at_build || '(unset)'}`);
     console.log(`  frozen_by:       ${result.frozen_by || '(unset)'}`);
     console.log(`  frozen_reason:   ${result.frozen_reason || '(unset)'}`);
-    console.log(`  watch_fields:    ${result.watch_fields.length ? result.watch_fields.join(', ') : '(none)'}`);
+    const fieldsDisplay = result.watch_fields.length ? result.watch_fields.join(', ') : '(none)';
+    console.log(`  watch_fields:    ${fieldsDisplay} [${result.watch_fields_source}]`);
   }
   console.log(`  overrides[]:     ${result.overrides_count} recorded on entry`);
   console.log(`  event log:       ${result.event_count} events total`);
