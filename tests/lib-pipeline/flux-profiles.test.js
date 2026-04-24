@@ -90,6 +90,48 @@ test('loading Flux profile and building a caption produces NL sentence shape', a
   assert.ok(!caption.includes('directional lighting'));
 });
 
+// --- Per-character LoRA template (two-LoRA stack contract) ---
+
+test('per-character-lora-flux template loads and validates', async () => {
+  const profile = await loadTrainingProfile(PROJECT_ROOT, 'per-character-lora-flux');
+  const { valid, errors } = validateProfile(profile);
+  assert.equal(valid, true, `validation errors: ${errors.join('; ')}`);
+  assert.equal(profile.profile_id, 'per-character-lora-flux');
+  assert.equal(profile.target_family, 'flux');
+});
+
+test('per-character-lora-flux declares is_style_lora: false (identity, not style)', async () => {
+  const profile = await loadTrainingProfile(PROJECT_ROOT, 'per-character-lora-flux');
+  assert.equal(profile.is_style_lora, false,
+    'per-character LoRAs must NOT be flagged as style — wrong flag breaks ai-toolkit regularization');
+});
+
+test('per-character-lora-flux carries training_hyperparameters in contract range (rank 16-32, steps 1500-2500)', async () => {
+  const profile = await loadTrainingProfile(PROJECT_ROOT, 'per-character-lora-flux');
+  const hp = profile.training_hyperparameters;
+  assert.ok(hp, 'training_hyperparameters block required on per-character template');
+  assert.ok(hp.rank >= 16 && hp.rank <= 32,
+    `rank must be in [16, 32] per two-LoRA contract §2 (got ${hp.rank})`);
+  assert.ok(hp.alpha === hp.rank / 2 || hp.alpha === hp.rank / 4,
+    `alpha must be rank/2 or rank/4 per two-LoRA contract §2 (got rank=${hp.rank}, alpha=${hp.alpha})`);
+  assert.ok(hp.steps >= 1500 && hp.steps <= 2500,
+    `steps must be in [1500, 2500] per two-LoRA contract §2 (got ${hp.steps})`);
+});
+
+test('per-character-lora-flux uses flux-natural-language caption strategy', async () => {
+  const profile = await loadTrainingProfile(PROJECT_ROOT, 'per-character-lora-flux');
+  assert.equal(profile.caption_strategy, 'flux-natural-language',
+    'per-character Flux LoRAs pair with flux-natural-language — matches T5 prompt shape');
+});
+
+test('per-character-lora-flux requires exactly 1 subject (identity training)', async () => {
+  const profile = await loadTrainingProfile(PROJECT_ROOT, 'per-character-lora-flux');
+  assert.equal(profile.subject_requirements?.min_subjects, 1,
+    'per-character LoRA trains a single subject — not a group');
+  assert.ok(profile.subject_requirements?.min_records_per_subject >= 15,
+    'per-character LoRA requires ≥15 records per contract §2 floor');
+});
+
 // --- Coexistence with SDXL profiles ---
 
 test('SDXL and Flux profiles coexist with different caption strategies', async () => {

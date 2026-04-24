@@ -1,0 +1,85 @@
+{
+  "workflow_id": "character-portrait-stacked-flux",
+  "label": "Character Portrait — Stacked World+Character LoRAs (Flux)",
+  "description": "Two-LoRA stacked inference variant of character-portrait-set-flux. Loads the character-domain World LoRA (character-style-lora-flux) PLUS a per-character identity LoRA (per-character-lora-flux instance) at the documented weight bands. The stacking block below declares the dependency explicitly — tooling pairs the World to the stacker by contract, not by lane-overlap inference. See handbook/two-lora-stacking for the weight rationale and the Flux 1 dev ≤3-LoRA cap.",
+  "lane_id": "costume",
+  "subject_mode": "required",
+  "output_mode": "portrait_set",
+  "output_count": 4,
+  "required_reference_roles": ["anchor", "supporting"],
+  "preferred_reference_tags": ["portrait", "approved"],
+  "stacking": {
+    "default_world_lora_profile": "character-style-lora-flux",
+    "requires_character_lora": true,
+    "allow_extra_lora": false,
+    "max_loras": 3,
+    "default_weights": {
+      "world": {
+        "strength_model": 0.5,
+        "strength_clip": 0.5
+      },
+      "character": {
+        "strength_model": 0.9,
+        "strength_clip": 0.7
+      }
+    },
+    "load_order": ["world", "character"]
+  },
+  "prompt_strategy": {
+    "style_prefix": [
+      "project-canon aligned portrait concept art",
+      "high fidelity facial continuity",
+      "clean readable silhouette"
+    ],
+    "structure": "style_prefix, subject_identity, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "subject identity",
+      "faction or project read",
+      "costume logic",
+      "palette fidelity"
+    ],
+    "optional_blocks": [
+      "lighting note",
+      "gesture note",
+      "surface wear note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "off-model face",
+      "extra accessories",
+      "wrong faction materials",
+      "ornamental drift",
+      "generic fantasy styling"
+    ],
+    "lane_specific_avoid": [
+      "cropped silhouette ambiguity",
+      "muddy facial read"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "silhouette",
+    "costume_logic",
+    "palette",
+    "faction_read",
+    "gesture"
+  ],
+  "drift_guards": [
+    "preserve face structure",
+    "preserve age read",
+    "preserve canonical materials",
+    "do not add non-canon ornament"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "checkpoint": "flux1-dev-fp8.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 24,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "seed_mode": "increment"
+  }
+}

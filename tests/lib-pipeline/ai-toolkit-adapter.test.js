@@ -206,3 +206,70 @@ test('buildAiToolkitConfig emits is_style: false when profile.is_style_lora === 
   });
   assert.equal(cfg.config.process[0].is_style, false);
 });
+
+// --- training_hyperparameters override (two-LoRA stack contract) ---
+
+test('buildAiToolkitConfig: World-LoRA defaults when no hyperparameters set (rank 32, alpha = rank, steps 2500)', () => {
+  const cfg = buildAiToolkitConfig({ profile: fluxProfile, manifest: fakeManifest });
+  const process = cfg.config.process[0];
+  assert.equal(process.network.linear, 32);
+  assert.equal(process.network.linear_alpha, 32);
+  assert.equal(process.train.steps, 2500);
+});
+
+test('buildAiToolkitConfig: training_hyperparameters.rank flows through to network.linear', () => {
+  const cfg = buildAiToolkitConfig({
+    profile: { ...fluxProfile, training_hyperparameters: { rank: 16 } },
+    manifest: fakeManifest,
+  });
+  assert.equal(cfg.config.process[0].network.linear, 16);
+  // alpha falls back to = rank when unset
+  assert.equal(cfg.config.process[0].network.linear_alpha, 16);
+});
+
+test('buildAiToolkitConfig: training_hyperparameters.alpha flows through to network.linear_alpha', () => {
+  const cfg = buildAiToolkitConfig({
+    profile: { ...fluxProfile, training_hyperparameters: { rank: 16, alpha: 8 } },
+    manifest: fakeManifest,
+  });
+  assert.equal(cfg.config.process[0].network.linear, 16);
+  assert.equal(cfg.config.process[0].network.linear_alpha, 8);
+});
+
+test('buildAiToolkitConfig: training_hyperparameters.steps flows through to train.steps', () => {
+  const cfg = buildAiToolkitConfig({
+    profile: { ...fluxProfile, training_hyperparameters: { steps: 1800 } },
+    manifest: fakeManifest,
+  });
+  assert.equal(cfg.config.process[0].train.steps, 1800);
+});
+
+test('buildAiToolkitConfig: per-character LoRA shape (rank 16, alpha 8, steps 2000, is_style false)', () => {
+  const perCharacterProfile = {
+    ...fluxProfile,
+    profile_id: 'sf-kael-maren-lora',
+    is_style_lora: false,
+    training_hyperparameters: { rank: 16, alpha: 8, steps: 2000 },
+    trigger_override: 'sf_kael_maren',
+  };
+  const cfg = buildAiToolkitConfig({ profile: perCharacterProfile, manifest: fakeManifest });
+  const process = cfg.config.process[0];
+  assert.equal(process.network.linear, 16);
+  assert.equal(process.network.linear_alpha, 8);
+  assert.equal(process.train.steps, 2000);
+  assert.equal(process.is_style, false);
+  assert.ok(process.sample.prompts[0].startsWith('sf_kael_maren'),
+    `sample prompt should use the trigger_override, got: ${process.sample.prompts[0]}`);
+});
+
+test('buildAiToolkitConfig: trigger_override flows through to sample prompt', () => {
+  const cfg = buildAiToolkitConfig({
+    profile: { ...fluxProfile, trigger_override: 'sf_character_style' },
+    manifest: fakeManifest,
+  });
+  const prompt = cfg.config.process[0].sample.prompts[0];
+  assert.ok(prompt.startsWith('sf_character_style'),
+    `expected override-derived trigger, got: ${prompt}`);
+  assert.ok(!prompt.includes('character_style_lora_flux'),
+    'override must replace the profile_id-derived token');
+});

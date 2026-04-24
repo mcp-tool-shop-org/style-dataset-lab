@@ -113,6 +113,68 @@ for (const [sdxlName, fluxName] of PAIRS) {
   });
 }
 
+// --- Stacked workflow profile (two-LoRA stack contract D4) ---
+
+test('character-portrait-stacked-flux loads with the required stacking block', async () => {
+  const profile = await loadProfile('character-portrait-stacked-flux');
+  assert.ok(profile.stacking, 'stacking block required on stacked workflow profiles');
+  assert.equal(profile.stacking.default_world_lora_profile, 'character-style-lora-flux',
+    'character-domain stacker must pair with character-style-lora-flux World by contract');
+  assert.equal(profile.stacking.requires_character_lora, true,
+    'stacked character portrait workflow must require a character LoRA');
+  assert.equal(profile.stacking.allow_extra_lora, false,
+    'D4 default: forbid extra LoRAs unless explicitly opted in');
+});
+
+test('character-portrait-stacked-flux enforces Flux 1 dev ≤3 LoRA cap', async () => {
+  const profile = await loadProfile('character-portrait-stacked-flux');
+  assert.ok(profile.stacking.max_loras <= 3,
+    `Flux 1 dev cap is ≤3 LoRAs before quality degrades (got ${profile.stacking.max_loras})`);
+});
+
+test('character-portrait-stacked-flux default weights match contract §3', async () => {
+  const profile = await loadProfile('character-portrait-stacked-flux');
+  const w = profile.stacking.default_weights;
+  // Contract §3: style 0.5/0.5, character 0.9/0.7 (starting values).
+  assert.equal(w.world.strength_model, 0.5);
+  assert.equal(w.world.strength_clip, 0.5);
+  assert.equal(w.character.strength_model, 0.9);
+  assert.equal(w.character.strength_clip, 0.7);
+});
+
+test('character-portrait-stacked-flux default weights sit inside contract bands', async () => {
+  // Contract §3 bands (per LoRA role):
+  //   style/world:  strength_model 0.3-0.6, strength_clip 0.3-0.7
+  //   character:    strength_model 0.7-1.1, strength_clip 0.5-0.9
+  const profile = await loadProfile('character-portrait-stacked-flux');
+  const w = profile.stacking.default_weights;
+  assert.ok(w.world.strength_model >= 0.3 && w.world.strength_model <= 0.6,
+    `world.strength_model must be in [0.3, 0.6] (got ${w.world.strength_model})`);
+  assert.ok(w.world.strength_clip >= 0.3 && w.world.strength_clip <= 0.7,
+    `world.strength_clip must be in [0.3, 0.7] (got ${w.world.strength_clip})`);
+  assert.ok(w.character.strength_model >= 0.7 && w.character.strength_model <= 1.1,
+    `character.strength_model must be in [0.7, 1.1] (got ${w.character.strength_model})`);
+  assert.ok(w.character.strength_clip >= 0.5 && w.character.strength_clip <= 0.9,
+    `character.strength_clip must be in [0.5, 0.9] (got ${w.character.strength_clip})`);
+});
+
+test('character-portrait-stacked-flux load_order is world → character', async () => {
+  const profile = await loadProfile('character-portrait-stacked-flux');
+  assert.deepEqual(profile.stacking.load_order, ['world', 'character'],
+    'contract §3: style → character load order for reproducibility');
+});
+
+test('character-portrait-stacked-flux preserves creative intent from character-portrait-set-flux', async () => {
+  const base = await loadProfile('character-portrait-set-flux');
+  const stacked = await loadProfile('character-portrait-stacked-flux');
+  // Stacking is an engine change (two LoRAs instead of one). Creative contract
+  // with the canon should stay intact.
+  assert.equal(stacked.lane_id, base.lane_id);
+  assert.equal(stacked.output_mode, base.output_mode);
+  assert.deepEqual(stacked.canon_focus, base.canon_focus);
+  assert.deepEqual(stacked.drift_guards, base.drift_guards);
+});
+
 // --- Naming contract ---
 
 for (const [sdxlName, fluxName] of PAIRS) {
