@@ -56,35 +56,37 @@ function cleanup(dirs) {
   return Promise.all(dirs.map(d => rm(d, { recursive: true, force: true })));
 }
 
-function makeRecords() {
-  return {
-    train: [
-      {
-        record: {
-          id: 'anchor_01',
-          asset_path: 'outputs/approved/anchor_01.png',
-          identity: { subject_name: 'Jace Delvari' },
-          canon: { assertion_count: 10, pass_count: 9 },
-          judgment: { status: 'approved', explanation: 'On-style costume.' },
-        },
-        lane: 'costume',
-        group: 'compact',
-      },
-      {
-        record: {
-          id: 'anchor_02',
-          asset_path: 'outputs/approved/anchor_02.png',
-          identity: { subject_name: 'Renna Vasik' },
-          canon: { assertion_count: 10, pass_count: 10 },
-          judgment: { status: 'approved', explanation: 'Clean anchor.' },
-        },
-        lane: 'costume',
-        group: 'compact',
-      },
-    ],
-    val: [],
-    test: [],
-  };
+// Canonical rows (D6 shape) — what the records-flow produces via recordToRow,
+// and what canon-build emits to dataset.jsonl. Adapters only understand rows.
+function makeRows() {
+  return [
+    {
+      schema_version: 'canon-build-dataset-1.0',
+      entity_id: 'anchor_01',
+      schema_kind: 'record',
+      lane: 'costume',
+      partition: 'train',
+      asset_path: 'outputs/approved/anchor_01.png',
+      caption: 'character_style_lora_flux style, a compact faction costume, On-style costume.',
+      trigger: 'character_style_lora_flux',
+      subject_filter_key: 'Jace Delvari',
+      group: 'compact',
+      pass_ratio: 0.9,
+    },
+    {
+      schema_version: 'canon-build-dataset-1.0',
+      entity_id: 'anchor_02',
+      schema_kind: 'record',
+      lane: 'costume',
+      partition: 'train',
+      asset_path: 'outputs/approved/anchor_02.png',
+      caption: 'character_style_lora_flux style, a compact faction costume, Clean anchor.',
+      trigger: 'character_style_lora_flux',
+      subject_filter_key: 'Renna Vasik',
+      group: 'compact',
+      pass_ratio: 1.0,
+    },
+  ];
 }
 
 test('ai-toolkit adapter writes images, .txt sidecars, JSONL, and YAML config', async () => {
@@ -92,7 +94,7 @@ test('ai-toolkit adapter writes images, .txt sidecars, JSONL, and YAML config', 
   try {
     const result = await buildPackage({
       packageDir,
-      partitions: makeRecords(),
+      rows: makeRows(),
       profile: fluxProfile,
       manifest: fakeManifest,
       config: {},
@@ -149,7 +151,7 @@ test('ai-toolkit adapter rejects SDXL profile with ADAPTER_TARGET_FAMILY_MISMATC
     await assert.rejects(
       () => buildPackage({
         packageDir,
-        partitions: makeRecords(),
+        rows: makeRows(),
         profile: sdxlProfile,
         manifest: fakeManifest,
         config: {},

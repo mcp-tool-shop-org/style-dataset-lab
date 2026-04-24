@@ -125,3 +125,47 @@ test('trigger_override: allows game-prefixed version of deny-list terms', () => 
     assert.equal(valid, true, `expected "${good}" to pass; got: ${errors.join('; ')}`);
   }
 });
+
+// --- entity_id_scope (D8 per-character LoRA row filter) ---
+
+test('entity_id_scope: omitting the field passes validation (backward compat)', () => {
+  const { valid } = validateProfile(baseProfile());
+  assert.equal(valid, true);
+});
+
+test('entity_id_scope: explicit null passes validation', () => {
+  const { valid } = validateProfile(baseProfile({ entity_id_scope: null }));
+  assert.equal(valid, true);
+});
+
+test('entity_id_scope: well-formed game-prefixed value passes', () => {
+  const { valid, errors } = validateProfile(baseProfile({ entity_id_scope: 'sf_kael_maren' }));
+  assert.equal(valid, true, `errors: ${errors.join('; ')}`);
+});
+
+test('entity_id_scope: rejects non-string values', () => {
+  const { valid, errors } = validateProfile(baseProfile({ entity_id_scope: 42 }));
+  assert.equal(valid, false);
+  assert.ok(errors.some((e) => e.includes('must be a string')));
+});
+
+test('entity_id_scope: rejects empty string (ambiguous intent)', () => {
+  const { valid, errors } = validateProfile(baseProfile({ entity_id_scope: '' }));
+  assert.equal(valid, false);
+  assert.ok(errors.some((e) => e.includes('non-empty')));
+});
+
+test('entity_id_scope: rejects hyphens and uppercase (same constraint as trigger_override)', () => {
+  const { valid: v1 } = validateProfile(baseProfile({ entity_id_scope: 'sf-kael' }));
+  assert.equal(v1, false);
+  const { valid: v2 } = validateProfile(baseProfile({ entity_id_scope: 'SF_KAEL' }));
+  assert.equal(v2, false);
+});
+
+test('entity_id_scope and trigger_override are independent fields', () => {
+  const { valid, errors } = validateProfile(baseProfile({
+    trigger_override: 'gr_heracles',
+    entity_id_scope: 'heracles',
+  }));
+  assert.equal(valid, true, `errors: ${errors.join('; ')}`);
+});

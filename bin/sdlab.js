@@ -80,6 +80,11 @@ const SELECTION_COMMANDS = {
   'show': '../scripts/selection-show.js',
 };
 
+// Two-word commands under "canon" namespace
+const CANON_COMMANDS = {
+  'build': '../scripts/canon-build.js',
+};
+
 // ─── Per-command help ─────────────────────────────────────────────────
 //
 // Keyed by the user-facing command (including two-word forms joined by
@@ -264,6 +269,28 @@ Subcommands:
 Flags:
   --project <name>     Project to operate on`,
 
+  'canon build': `sdlab canon build --project <name> [--full] [--no-cache] [--dry-run] [--only <id[,id...]>] [--json]
+
+Build the three canonical projections from a project's canon entity store:
+  - dataset.jsonl       (for training adapters)
+  - prompts/<id>.j2     (Jinja2 templates for ComfyUI workflow invocation)
+  - context/<id>.md     (narrative blocks for Role OS dispatch)
+
+Reads canon-build/config.json under the project directory. Produces
+<project>/canon-build/<canon_sha>/ and a content-addressable cache under
+<project>/canon-build/.cache/.
+
+Flags:
+  --project <name>   Project to operate on (required)
+  --full             Ignore cache hits; rebuild every entity
+  --no-cache         Neither read nor write the cache this run
+  --dry-run          Walk + resolve + plan; write nothing
+  --only <ids>       Limit to specific entity ids (comma-separated)
+  --json             Emit the result summary as JSON on stdout
+  --quiet            Suppress the human-readable summary
+
+Exit codes: 1 = user / config error; 2 = runtime error (context length cap, etc.).`,
+
   'export': `sdlab export <build|list> [args] --project <name>
 
 Build and list self-contained export packages.
@@ -305,6 +332,9 @@ function printHelp() {
   console.log('                       ("bind" is a short alias for canon-bind)');
   console.log('  painterly            Post-processing painterly style pass');
   console.log('  painterly:test       Calibrate painterly denoise level on sample images');
+  console.log('');
+  console.log('Canon:');
+  console.log('  canon build          Build dataset.jsonl + prompts/*.j2 + context/*.md from canon entries');
   console.log('');
   console.log('Dataset:');
   console.log('  snapshot create      Create a frozen dataset snapshot');
@@ -444,6 +474,7 @@ async function main() {
     twoWord('run', RUN_COMMANDS),
     twoWord('batch', BATCH_COMMANDS),
     twoWord('selection', SELECTION_COMMANDS),
+    twoWord('canon', CANON_COMMANDS),
   ];
 
   // "project", "workflow", "brief", "run", "batch", "selection" two-word forms
