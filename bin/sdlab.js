@@ -82,7 +82,11 @@ const SELECTION_COMMANDS = {
 
 // Two-word commands under "canon" namespace
 const CANON_COMMANDS = {
-  'build': '../scripts/canon-build.js',
+  'build':         '../scripts/canon-build.js',
+  'freeze':        '../scripts/canon-freeze.js',
+  'unfreeze':      '../scripts/canon-unfreeze.js',
+  'freeze-status': '../scripts/canon-freeze-status.js',
+  'drift':         '../scripts/canon-drift.js',
 };
 
 // ─── Per-command help ─────────────────────────────────────────────────
@@ -269,6 +273,38 @@ Subcommands:
 Flags:
   --project <name>     Project to operate on`,
 
+  'canon freeze': `sdlab canon freeze <entity_id> --project <name> --reason "<text>" [--status frozen|soft-advisory] [--watch <fields>] [--build <sha>] [--by <name>] [--json]
+
+Stamp a freeze block on a canon entry. Requires a canon-build output to
+witness against (the "locked_at_build" field). Writes both the entry
+frontmatter AND canon-build/freeze-events.jsonl.
+
+--reason is REQUIRED — the audit record depends on it.
+
+Statuses:
+  frozen         Regen refused outright; unfreeze ceremony required.
+  soft-advisory  Refused by default; bypassable with --i-know + --reason.`,
+
+  'canon unfreeze': `sdlab canon unfreeze <entity_id> --project <name> --reason "<text>" [--by <name>] [--json]
+
+Lift a freeze back to status=auto. Preserves the freeze.overrides[] history
+on the entry (append-only) and writes an "unfreeze" event.
+
+--reason is REQUIRED — shipping studios (Sabotage, Supergiant, Pentiment)
+most often regretted not capturing why an unfreeze happened.`,
+
+  'canon freeze-status': `sdlab canon freeze-status <entity_id> --project <name> [--json]
+
+Read-only glance at an entry's freeze state. Shows status, locked_at_build,
+frozen_by, frozen_reason, watch_fields, overrides count, and event count.`,
+
+  'canon drift': `sdlab canon drift --project <name> [--since <build_hash>] [--json]
+
+Drift report. For every frozen or on-canon-change entry, computes the
+current watch-field hash and compares against the hash stamped in the
+latest canon-build manifest. Reports drifted entries and overrides since
+a given build (default: since the latest clean build).`,
+
   'canon build': `sdlab canon build --project <name> [--full] [--no-cache] [--dry-run] [--only <id[,id...]>] [--json]
 
 Build the three canonical projections from a project's canon entity store:
@@ -334,7 +370,11 @@ function printHelp() {
   console.log('  painterly:test       Calibrate painterly denoise level on sample images');
   console.log('');
   console.log('Canon:');
-  console.log('  canon build          Build dataset.jsonl + prompts/*.j2 + context/*.md from canon entries');
+  console.log('  canon build            Build dataset.jsonl + prompts/*.j2 + context/*.md from canon entries');
+  console.log('  canon freeze <id>      Stamp a freeze block on an entry (--reason required)');
+  console.log('  canon unfreeze <id>    Lift a freeze back to status=auto (--reason required)');
+  console.log('  canon freeze-status <id> Glance at an entry\'s freeze state');
+  console.log('  canon drift            Report drift on frozen entries + overrides since last build');
   console.log('');
   console.log('Dataset:');
   console.log('  snapshot create      Create a frozen dataset snapshot');

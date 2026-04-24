@@ -19,6 +19,7 @@ import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
+import { assertNotFrozenBySubject } from "../lib/freeze-gate.js";
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -176,6 +177,17 @@ export async function run(argv = process.argv.slice(2)) {
   if (!opts.guidePath) {
     throw inputError('INPUT_MISSING_FLAG', "--guide <path> is required");
   }
+
+  // Freeze gate (advisory): refuse if the subject's canon entry is frozen.
+  // Supports --i-know + --reason bypass for soft-advisory entries.
+  const reasonFlagIdx = argv.indexOf('--reason');
+  const bypassReason = reasonFlagIdx >= 0 && argv[reasonFlagIdx + 1] ? argv[reasonFlagIdx + 1] : null;
+  await assertNotFrozenBySubject(GAME_ROOT, opts.subject, {
+    action: 'generate:controlnet',
+    allowSoftAdvisoryBypass: argv.includes('--i-know'),
+    bypassReason,
+    by: 'mike',
+  });
 
   // Validate guide stays inside the project tree.
   const safeGuide = resolveSafeProjectPath(GAME_ROOT, opts.guidePath, { flagName: 'guide' });
