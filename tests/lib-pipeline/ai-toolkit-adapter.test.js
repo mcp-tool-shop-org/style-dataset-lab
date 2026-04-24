@@ -185,3 +185,24 @@ test('buildAiToolkitConfig handles missing manifest source_export_id gracefully'
   const cfg = buildAiToolkitConfig({ profile: fluxProfile, manifest: {} });
   assert.match(cfg.config.name, /^character-style-lora-flux-/);
 });
+
+test('buildAiToolkitConfig emits is_style: true when profile.is_style_lora === true', () => {
+  const cfg = buildAiToolkitConfig({
+    profile: { ...fluxProfile, is_style_lora: true },
+    manifest: fakeManifest,
+  });
+  assert.equal(cfg.config.process[0].is_style, true);
+});
+
+test('buildAiToolkitConfig emits is_style: false when profile.is_style_lora is unset', () => {
+  const cfg = buildAiToolkitConfig({ profile: fluxProfile, manifest: fakeManifest });
+  assert.equal(cfg.config.process[0].is_style, false);
+});
+
+test('buildAiToolkitConfig emits is_style: false when profile.is_style_lora === false (per-character LoRA)', () => {
+  const cfg = buildAiToolkitConfig({
+    profile: { ...fluxProfile, is_style_lora: false },
+    manifest: fakeManifest,
+  });
+  assert.equal(cfg.config.process[0].is_style, false);
+});
