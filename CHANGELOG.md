@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added — ai-toolkit adapter for Flux LoRA training (Flux slice 3)
+
+- **`lib/adapters/ai-toolkit.js`** (new): Ostris ai-toolkit training package. Produces `dataset/<partition>/<record_id>.{png,txt}` + `metadata/<partition>.jsonl` + `ai-toolkit-config.yaml` at package root. The YAML config is populated from the profile and training manifest: `config.name = "{profile_id}-{source_export_id}"`, `model.name_or_path` from `profile.base_model_recommendations[0]`, `model.is_flux: true`, `model.quantize: true` (16GB-VRAM ceiling), `train.noise_scheduler: "flowmatch"`, `optimizer: "adamw8bit"`, `dtype: "bf16"`, multi-res `[512, 768, 1024]`, sample prompt seeded with the profile-derived style trigger.
+- **Precondition:** the adapter requires `profile.target_family === 'flux'` and throws `ADAPTER_TARGET_FAMILY_MISMATCH` (input error, exit 1) otherwise. SDXL callers should use `diffusers-lora`.
+- **Registered** in `ADAPTER_REGISTRY` so `listAdapters()`, `isRegisteredAdapter()`, `loadAdapter()`, and profile validation all pick it up automatically.
+- **Flux profiles updated:** `character-style-lora-flux` and `environment-mood-lora-flux` now list `ai-toolkit` in their `adapter_targets`.
+- **Runtime dep:** `yaml@^2.8.3` added for YAML emission.
+- 8 new tests (`ai-toolkit-adapter.test.js` + 3 new cases in `training-adapters.test.js`). Tests 153 → 165.
+
 ## [3.1.0] - 2026-04-22
 
 ### Added — `--resume` for `generate` and `batch generate`

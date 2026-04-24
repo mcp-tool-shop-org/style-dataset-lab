@@ -18,7 +18,9 @@
     "generate:identity": "node scripts/generate-identity.js"
   },
   "c8": {
-    "include": ["lib/**/*.js"],
+    "include": [
+      "lib/**/*.js"
+    ],
     "exclude": [
       "tests/**",
       "scripts/**",
@@ -27,7 +29,11 @@
       "templates/**",
       "**/*.test.js"
     ],
-    "reporter": ["text", "lcov", "text-summary"],
+    "reporter": [
+      "text",
+      "lcov",
+      "text-summary"
+    ],
     "report-dir": "coverage",
     "all": true
   },
@@ -76,5 +82,8 @@
   "license": "MIT",
   "devDependencies": {
     "c8": "^10.1.3"
+  },
+  "dependencies": {
+    "yaml": "^2.8.3"
   }
 }
