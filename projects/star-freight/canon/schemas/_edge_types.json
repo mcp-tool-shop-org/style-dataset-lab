@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/star-freight/schemas/_edge_types.json",
+  "version": "1.0.0",
+  "title": "Star Freight Canon Relationship Edge Types",
+  "description": "Shared edge-type vocabulary across the five Star Freight canon schemas (character, location, faction, ship, species). ~45 edge_types across 9 categories: organizational, factional, personal, adversarial, investigation, debt-economic, ship-specific, location-specific, species-character. Each schema's narrative.relationships[] (or stance.faction_edges[]) references #/definitions/edge via $ref. See memory/star-freight-canon-schemas-research-2026-04-24.md §D7.",
+  "definitions": {
+    "edge": {
+      "type": "object",
+      "required": ["target_id", "edge_type"],
+      "properties": {
+        "target_id": {
+          "type": "string",
+          "description": "id of the target canon entry (character, location, faction, ship, or species)."
+        },
+        "edge_type": {
+          "type": "string",
+          "enum": [
+            "crew-of-ship",
+            "captain-of-ship",
+            "commanding-officer-of",
+            "reports-to",
+            "mentored-by",
+            "mentor-of",
+            "member-of-faction",
+            "works-covertly-for",
+            "in-good-standing-with",
+            "censured-by-faction",
+            "hostile-to-faction",
+            "formally-allied-faction",
+            "embedded-in-hostile-faction",
+            "exiled-from",
+            "romantic-bond",
+            "close-bond-nonromantic",
+            "crew-trust-bond",
+            "recognized-competence-from",
+            "antagonist-personal",
+            "antagonist-operational",
+            "betrayer-of",
+            "targeted-by-handler",
+            "framed-by",
+            "informant-to",
+            "witnessed-incident",
+            "has-evidence-on",
+            "owes-debt-to",
+            "owes-favor-to",
+            "commissioned-by",
+            "docked-at",
+            "assigned-to-wing",
+            "previous-owner-of-ship",
+            "controlled-by",
+            "grew-up-at",
+            "departed-from",
+            "species-member",
+            "first-contact-representative",
+            "potential-defector-of",
+            "potential-stand-down-of",
+            "formal-treaty",
+            "nominal-jurisdiction-contested",
+            "suborned",
+            "sibling-of",
+            "handler-of",
+            "investigation-subject-of"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "description": "Short free-text qualifier on the edge."
+        },
+        "strength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Optional strength 0-100. Enables LLM crew to modulate edge weight without branching logic."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

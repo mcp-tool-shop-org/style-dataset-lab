@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/star-freight/schemas/location.schema.json",
+  "version": "1.0.0",
+  "title": "Star Freight Location Canon Entry",
+  "description": "Schema for a navigable space (ship-interior / station / planet / relay / derelict / void-vista). Scale-context edges (parent_ship, parent_station, parent_sector) replace Greek's region enum. See memory/star-freight-canon-schemas-research-2026-04-24.md §D3.",
+  "type": "object",
+  "required": ["id", "location_type", "scale_context", "controlled_by_faction", "environment_class", "access_class", "architectural_style", "visual", "narrative", "canon_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "location_type": {
+      "type": "string",
+      "enum": [
+        "ship-interior",
+        "ship-exterior",
+        "station-public",
+        "station-interior",
+        "station-restricted",
+        "station-cultural",
+        "relay-site",
+        "planet-surface",
+        "orbital-platform",
+        "lane-waypoint",
+        "derelict",
+        "void-vista"
+      ]
+    },
+    "scale_context": {
+      "type": "object",
+      "description": "Containment hierarchy edges. Replaces Greek's region enum.",
+      "required": ["parent_sector"],
+      "properties": {
+        "parent_ship": { "type": ["string", "null"] },
+        "parent_station": { "type": ["string", "null"] },
+        "parent_sector": { "type": "string" },
+        "parent_system": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "controlled_by_faction": {
+      "type": "string",
+      "description": "faction_id, or 'contested' / 'derelict' sentinel values."
+    },
+    "controlling_species": { "type": "string" },
+    "environment_class": {
+      "type": "string",
+      "enum": [
+        "pressurized-breathable",
+        "pressurized-toxic",
+        "pressurized-humid",
+        "vacuum-edge",
+        "temperature-extreme-hot",
+        "temperature-extreme-cold"
+      ]
+    },
+    "access_class": {
+      "type": "string",
+      "enum": ["open", "credentialed", "factional-permission", "covert-only", "forbidden"]
+    },
+    "architectural_style": {
+      "type": "string",
+      "description": "Faction-aesthetic marker phrase (e.g. 'Compact military functional', 'Keth bio-resin organic')."
+    },
+    "visual": {
+      "type": "object",
+      "required": ["silhouette_cue", "palette", "lighting_mood", "scale_logic", "art_lane"],
+      "properties": {
+        "silhouette_cue": { "type": "string" },
+        "palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 3,
+          "maxItems": 6
+        },
+        "lighting_mood": {
+          "type": "string",
+          "enum": [
+            "amber-cockpit-glow",
+            "military-white",
+            "harsh-station-yellow",
+            "warm-bioluminescent",
+            "industrial-red",
+            "dim-bar-warm",
+            "void-backlit",
+            "emergency-red",
+            "pulse-bioluminescent",
+            "archive-amber-dim",
+            "sterile-medical"
+          ]
+        },
+        "material_language": { "type": "string" },
+        "scale_logic": {
+          "type": "string",
+          "enum": [
+            "corridor",
+            "bulkhead-scale",
+            "cabin",
+            "hold",
+            "bay",
+            "hangar",
+            "concourse",
+            "station-interior",
+            "void-vista",
+            "cosmic"
+          ]
+        },
+        "signature_props": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "art_lane": {
+          "type": "string",
+          "enum": [
+            "establishing",
+            "interior-inhabited",
+            "interior-empty",
+            "combat-stage",
+            "transition-threshold",
+            "detail-prop",
+            "vista-cosmic"
+          ]
+        },
+        "reference_plate_uri": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["role", "cultural_weight"],
+      "properties": {
+        "role": { "type": "string" },
+        "cultural_weight": {
+          "type": "string",
+          "enum": [
+            "central-to-prologue",
+            "home-base",
+            "pivotal-site",
+            "recurring-site",
+            "throwaway-site",
+            "teased-unreachable"
+          ]
+        },
+        "notable_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["event"],
+            "properties": {
+              "event": { "type": "string" },
+              "era": { "type": "string" },
+              "participants": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "canon_ref": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "forbidden_acts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "relationships": {
+          "type": "array",
+          "items": { "$ref": "_edge_types.json#/definitions/edge" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mechanical": {
+      "type": "object",
+      "properties": {
+        "accessible_at_start": { "type": "boolean" },
+        "save_point": { "type": "boolean" },
+        "combat_allowed": { "type": "boolean" },
+        "trade_allowed": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "signature_features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["auto", "frozen", "soft-advisory", "on-canon-change"]
+        },
+        "locked_at_build": { "type": "string" },
+        "locked_at_canon_version": { "type": "string" },
+        "frozen_by": { "type": "string" },
+        "frozen_reason": { "type": "string" },
+        "watch_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "by", "reason"],
+            "properties": {
+              "at": { "type": "string" },
+              "by": { "type": "string" },
+              "reason": { "type": "string" },
+              "prior_status": { "type": "string" },
+              "prior_build_hash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "canon_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,86 @@
+{
+  "project_id": "star-freight",
+  "canon_root": "canon",
+  "schema_dir": "canon/schemas",
+  "entity_dirs": {
+    "character.schema.json": "characters",
+    "location.schema.json": "locations",
+    "faction.schema.json": "factions",
+    "ship.schema.json": "ships",
+    "species.schema.json": "species"
+  },
+  "schema_to_lane": {
+    "character.schema.json": { "source": "field", "field": "visual.art_lane" },
+    "location.schema.json": { "source": "field", "field": "visual.art_lane" },
+    "faction.schema.json": { "source": "constant", "value": "faction-aesthetic" },
+    "ship.schema.json": { "source": "field", "field": "visual.art_lane" },
+    "species.schema.json": { "source": "field", "field": "visual.art_lane" }
+  },
+  "freeze_watch_defaults": {
+    "character.schema.json": [
+      "visual",
+      "signature_features",
+      "forbidden_inputs",
+      "narrative.voice",
+      "narrative.speech_register",
+      "narrative.vocabulary_forbidden",
+      "turncoat_arc.canon_true_voice",
+      "turncoat_arc.seeds",
+      "species",
+      "faction_primary"
+    ],
+    "location.schema.json": [
+      "visual",
+      "signature_features",
+      "forbidden_inputs",
+      "architectural_style",
+      "environment_class",
+      "controlled_by_faction",
+      "scale_context.parent_station",
+      "scale_context.parent_ship"
+    ],
+    "faction.schema.json": [
+      "visual",
+      "signature_features",
+      "forbidden_inputs",
+      "narrative.voice",
+      "narrative.vocabulary_forbidden",
+      "stance.toward_player_at_start",
+      "stance.faction_edges",
+      "faction_class"
+    ],
+    "ship.schema.json": [
+      "visual",
+      "signature_features",
+      "forbidden_inputs",
+      "ship_class",
+      "tonnage_class",
+      "faction_of_origin",
+      "visual.silhouette_cue",
+      "visual.hull_repair_history",
+      "visual.material_dominant",
+      "narrative.named_crew",
+      "narrative.current_status"
+    ],
+    "species.schema.json": [
+      "visual",
+      "signature_features",
+      "forbidden_inputs",
+      "biology_class",
+      "visual.body_plan",
+      "visual.anatomy_descriptors",
+      "visual.forbidden_morphology_drift",
+      "communication_modality.can_lie",
+      "cultural_stance.core_value",
+      "cultural_stance.death_rite",
+      "relation_to_humans.baseline_stance"
+    ]
+  },
+  "context_limits": {
+    "character": { "max_lines": 300 },
+    "location": { "max_lines": 350 },
+    "faction": { "max_lines": 400 },
+    "ship": { "max_lines": 300 },
+    "species": { "max_lines": 500 }
+  }
+}

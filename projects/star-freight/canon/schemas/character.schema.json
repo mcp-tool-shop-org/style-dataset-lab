@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/star-freight/schemas/character.schema.json",
+  "version": "1.0.0",
+  "title": "Star Freight Character Canon Entry",
+  "description": "Schema for a named character (protagonist / crew / officer / civilian / antagonist) in F:/AI/style-dataset-lab/projects/star-freight/canon/characters/. Three field groups: visual (diffusion-training), narrative (LLM-drafting), mechanical (combat / progression). Sci-fi-specific axes: species, faction_primary, faction_cover, tech_literacy, combat_training, turncoat_arc. Prose goes in the markdown body below the frontmatter. See memory/star-freight-canon-schemas-research-2026-04-24.md §D2.",
+  "type": "object",
+  "required": ["id", "role_class", "species", "visual", "narrative", "canon_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Kebab-case identifier matching the filename stem."
+    },
+    "role_class": {
+      "type": "string",
+      "enum": [
+        "protagonist",
+        "crew-recruitable",
+        "crew-wingmate",
+        "officer-authority",
+        "station-resident",
+        "patrol-operator",
+        "archivist-informant",
+        "antagonist-overt",
+        "antagonist-covert",
+        "background-presence"
+      ],
+      "description": "Narrative class (replaces Greek's kind). Drives role-OS drafting register and registry bucketing."
+    },
+    "species": {
+      "type": "string",
+      "description": "id of species entry (e.g. terran, keth, veshan, orryn)."
+    },
+    "faction_primary": {
+      "type": ["string", "null"],
+      "description": "id of faction entry this character truly belongs to. Null for true-independents."
+    },
+    "faction_cover": {
+      "type": "string",
+      "description": "Optional — public/cover faction identity for covert characters. Example: Jace's faction_primary is compact-intelligence-splinter, faction_cover is independent."
+    },
+    "tech_literacy": {
+      "type": "string",
+      "enum": [
+        "pre-space",
+        "civilian",
+        "merchant-grade",
+        "military-grade",
+        "intelligence-grade",
+        "alien-specialist"
+      ]
+    },
+    "combat_training": {
+      "type": "string",
+      "enum": [
+        "none",
+        "basic",
+        "service-trained",
+        "elite-service-trained",
+        "intelligence-field",
+        "veteran-nco",
+        "civilian-desperation"
+      ]
+    },
+    "visual": {
+      "type": "object",
+      "required": ["silhouette_cue", "palette", "attire", "build", "art_lane"],
+      "properties": {
+        "silhouette_cue": {
+          "type": "string",
+          "description": "2-4 word silhouette anchor."
+        },
+        "palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 3,
+          "maxItems": 6
+        },
+        "attire": { "type": "string" },
+        "build": {
+          "type": "string",
+          "enum": [
+            "lean",
+            "athletic",
+            "heroic-muscular",
+            "heavy-muscular",
+            "slender",
+            "compact-athletic",
+            "underfed-lean",
+            "youthful"
+          ]
+        },
+        "hair": { "type": "string" },
+        "eyes": { "type": "string" },
+        "distinguishing_marks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "posture_default": { "type": "string" },
+        "signature_prop": { "type": "string" },
+        "age_description": {
+          "type": "string",
+          "description": "Free-string age + condition cue (e.g. 'early thirties, circles under eyes'). Replaces Greek age_band enum."
+        },
+        "art_lane": {
+          "type": "string",
+          "enum": ["portrait", "full-body", "combat-pose", "working-context", "expression-variant"]
+        },
+        "reference_plate_uri": {
+          "type": "string",
+          "description": "Path (relative to projects/star-freight/outputs/approved/) to the locked reference image. Absent until approved."
+        }
+      },
+      "additionalProperties": false
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["role", "voice", "motivation", "arc_beats"],
+      "properties": {
+        "role": { "type": "string" },
+        "voice": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 4
+        },
+        "motivation": { "type": "string" },
+        "arc_beats": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3
+        },
+        "relationships": {
+          "type": "array",
+          "items": { "$ref": "_edge_types.json#/definitions/edge" }
+        },
+        "speech_register": { "type": "string" },
+        "vocabulary_forbidden": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "turncoat_arc": {
+      "type": "object",
+      "description": "Optional. Present only when status != 'none'. Encodes Jace + Risa patterns: cover identity, reveal trigger, post-reveal voice, re-readable foreshadow seeds. See memory/star-freight-canon-schemas-research-2026-04-24.md §D2.",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["none", "covert-loyalist", "covert-intelligence", "reluctant-betrayer"]
+        },
+        "reveal_trigger": { "type": "string" },
+        "defection_threshold": { "type": ["integer", "null"] },
+        "handler_faction": { "type": ["string", "null"] },
+        "canon_true_voice": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 4
+        },
+        "seeds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Re-readable foreshadow lines — the 10 Jace lines from VOICE_TEST_JACE.md. Load-bearing: captures the Kreia rule as schema-enforced data."
+        }
+      },
+      "additionalProperties": false
+    },
+    "mechanical": {
+      "type": "object",
+      "properties": {
+        "combat_role": {
+          "type": "string",
+          "enum": [
+            "tank",
+            "striker",
+            "skirmisher",
+            "gunslinger",
+            "caster",
+            "support",
+            "leader",
+            "scout",
+            "specialist",
+            "medic",
+            "engineer"
+          ]
+        },
+        "starting_hull": { "type": "integer" },
+        "starting_morale": { "type": "integer" },
+        "signature_abilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "skill_tree_hints": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "loyalty_starting": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "signature_features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 6,
+      "description": "2-6 visual cues that MUST be present for the character to read as themselves. Lifted from identity-packet non_negotiable_details verbatim."
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["auto", "frozen", "soft-advisory", "on-canon-change"]
+        },
+        "locked_at_build": { "type": "string" },
+        "locked_at_canon_version": { "type": "string" },
+        "frozen_by": { "type": "string" },
+        "frozen_reason": { "type": "string" },
+        "watch_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "by", "reason"],
+            "properties": {
+              "at": { "type": "string" },
+              "by": { "type": "string" },
+              "reason": { "type": "string" },
+              "prior_status": { "type": "string" },
+              "prior_build_hash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "External references (rare for Star Freight — canon IS the source)."
+    },
+    "canon_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Design-doc citations, e.g. 'PROLOGUE_GROUNDED.md §Jace Delvari'."
+    }
+  },
+  "additionalProperties": false
+}
