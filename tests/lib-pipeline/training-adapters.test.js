@@ -16,12 +16,19 @@ test('listAdapters returns all registered adapter ids', () => {
   const adapters = listAdapters();
   assert.ok(adapters.includes('generic-image-caption'));
   assert.ok(adapters.includes('diffusers-lora'));
+  assert.ok(adapters.includes('ai-toolkit'));
   assert.equal(adapters.length, Object.keys(ADAPTER_REGISTRY).length);
 });
 
 test('isRegisteredAdapter is true for registered ids', () => {
   assert.equal(isRegisteredAdapter('generic-image-caption'), true);
   assert.equal(isRegisteredAdapter('diffusers-lora'), true);
+  assert.equal(isRegisteredAdapter('ai-toolkit'), true);
+});
+
+test('loadAdapter("ai-toolkit") returns module with buildPackage', async () => {
+  const adapter = await loadAdapter('ai-toolkit');
+  assert.equal(typeof adapter.buildPackage, 'function');
 });
 
 test('isRegisteredAdapter is false for unknown ids', () => {

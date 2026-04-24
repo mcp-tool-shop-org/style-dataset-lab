@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added — ai-toolkit adapter for Flux LoRA training (Flux slice 3)
+
+- **`lib/adapters/ai-toolkit.js`** (new): Ostris ai-toolkit training package. Produces `dataset/<partition>/<record_id>.{png,txt}` + `metadata/<partition>.jsonl` + `ai-toolkit-config.yaml` at package root. The YAML config is populated from the profile and training manifest: `config.name = "{profile_id}-{source_export_id}"`, `model.name_or_path` from `profile.base_model_recommendations[0]`, `model.is_flux: true`, `model.quantize: true` (16GB-VRAM ceiling), `train.noise_scheduler: "flowmatch"`, `optimizer: "adamw8bit"`, `dtype: "bf16"`, multi-res `[512, 768, 1024]`, sample prompt seeded with the profile-derived style trigger.
+- **Precondition:** the adapter requires `profile.target_family === 'flux'` and throws `ADAPTER_TARGET_FAMILY_MISMATCH` (input error, exit 1) otherwise. SDXL callers should use `diffusers-lora`.
+- **Registered** in `ADAPTER_REGISTRY` so `listAdapters()`, `isRegisteredAdapter()`, `loadAdapter()`, and profile validation all pick it up automatically.
+- **`is_style` flag** — emitted as `profile.is_style_lora === true`. World/style LoRAs (broad aesthetics) set `is_style_lora: true`; per-character subject LoRAs in the two-LoRA-stack pattern default to `false`. Drives ai-toolkit's training regularization — wrong value silently mistrains. Wires up the contract needed by the two-LoRA stack implementation session without requiring a follow-up patch.
+- **Flux profiles updated:** `character-style-lora-flux` and `environment-mood-lora-flux` now list `ai-toolkit` in their `adapter_targets` and carry `"is_style_lora": true`.
+- **Handbook:** adapter list in the reference page updated to describe all three adapters and call out the ai-toolkit Flux-only precondition.
+- **Runtime dep:** `yaml@^2.8.3` added for YAML emission.
+- 11 new tests (`ai-toolkit-adapter.test.js` + 3 new cases in `training-adapters.test.js`). Tests 153 → 168.
+
 ## [3.1.0] - 2026-04-22
 
 ### Added — `--resume` for `generate` and `batch generate`

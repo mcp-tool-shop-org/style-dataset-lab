@@ -12,6 +12,7 @@
   "caption_strategy": "flux-natural-language",
   "prompt_strategy": "trigger-word",
   "base_model_recommendations": ["black-forest-labs/FLUX.1-dev"],
-  "adapter_targets": ["generic-image-caption", "diffusers-lora"],
+  "adapter_targets": ["generic-image-caption", "diffusers-lora", "ai-toolkit"],
+  "is_style_lora": true,
   "required_eval_pack_profiles": ["lane_coverage", "forbidden_drift"]
 }

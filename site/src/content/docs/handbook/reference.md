@@ -339,7 +339,11 @@ sdlab training-package show <package-id> [--project <name>]
 sdlab training-package list [--project <name>]
 ```
 
-Available adapters: `generic-image-caption`, `diffusers-lora`.
+Available adapters: `generic-image-caption`, `diffusers-lora`, `ai-toolkit`.
+
+- `generic-image-caption` — image folders + per-partition JSONL; broadest trainer compatibility.
+- `diffusers-lora` — image + `.txt` caption sidecars + per-partition JSONL; compatible with diffusers fine-tuning scripts.
+- `ai-toolkit` — Flux-only. Image + `.txt` sidecars + per-partition JSONL + `ai-toolkit-config.yaml` at package root (Ostris [ai-toolkit](https://github.com/ostris/ai-toolkit) consumes it directly). Emits `is_style` from the profile's `is_style_lora` boolean (world/style LoRAs → `true`, per-character subject LoRAs → `false`). Rejects non-Flux profiles with `ADAPTER_TARGET_FAMILY_MISMATCH`.
 
 ### sdlab eval-run
 
