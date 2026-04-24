@@ -13,6 +13,11 @@ projects/*/splits/
 projects/*/dataset-cards/
 projects/*/eval-packs/
 
+# Canon-build generated output + cache (regenerable from canon entries).
+# config.json is tracked; build output directories are not.
+projects/*/canon-build/*/
+projects/*/canon-build/.cache/
+
 # Model weights (never commit)
 *.safetensors
 *.ckpt

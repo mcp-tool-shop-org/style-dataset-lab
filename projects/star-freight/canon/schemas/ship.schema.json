@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/star-freight/schemas/ship.schema.json",
+  "version": "1.0.0",
+  "title": "Star Freight Ship Canon Entry",
+  "description": "Schema for a named vessel. silhouette_cue + hull_repair_history + material_dominant carry the heaviest trainable leverage (World LoRA training at multiple scales: nav-chart, exterior establishing, dock approach, interior cockpit). See memory/star-freight-canon-schemas-research-2026-04-24.md §D5.",
+  "type": "object",
+  "required": ["id", "ship_class", "tonnage_class", "faction_of_origin", "current_operator", "visual", "narrative", "canon_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "ship_class": {
+      "type": "string",
+      "enum": [
+        "cargo-hauler-small",
+        "cargo-hauler-mid",
+        "carrier",
+        "corvette",
+        "relay-vessel",
+        "bio-growth-vessel",
+        "drift-modular",
+        "forge-heavy",
+        "salvage-assembly",
+        "intelligence-compact",
+        "architect-derelict",
+        "unknown"
+      ]
+    },
+    "tonnage_class": {
+      "type": "string",
+      "enum": ["shuttle-scale", "hauler-scale", "corvette-scale", "capital-scale", "city-scale"]
+    },
+    "faction_of_origin": { "type": "string" },
+    "current_operator": {
+      "type": "string",
+      "description": "faction_id, or 'independent' / 'derelict' / 'unknown' sentinel values."
+    },
+    "visual": {
+      "type": "object",
+      "required": ["silhouette_cue", "palette", "hull_repair_history", "symmetry", "material_dominant", "art_lane"],
+      "properties": {
+        "silhouette_cue": { "type": "string" },
+        "palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 3,
+          "maxItems": 6
+        },
+        "hull_markings": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "hull_repair_history": {
+          "type": "string",
+          "enum": [
+            "pristine-new",
+            "well-maintained",
+            "field-patched",
+            "three-generation-patched",
+            "derelict-weathered"
+          ]
+        },
+        "symmetry": {
+          "type": "string",
+          "enum": ["symmetric", "asymmetric-intentional", "asymmetric-from-repair"]
+        },
+        "material_dominant": { "type": "string" },
+        "scale_cue_object": { "type": "string" },
+        "interior_architecture": { "type": "string" },
+        "cockpit_style": { "type": "string" },
+        "engine_signature": { "type": "string" },
+        "art_lane": {
+          "type": "string",
+          "enum": [
+            "exterior-establishing",
+            "exterior-detail",
+            "interior-cockpit",
+            "interior-hold",
+            "interior-cabin",
+            "dock-approach",
+            "nav-chart-silhouette",
+            "combat-stage-ship"
+          ]
+        },
+        "reference_plate_uri": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["role", "current_status"],
+      "properties": {
+        "role": { "type": "string" },
+        "history_beats": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "named_crew": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "named_passengers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "trade_capacity": { "type": "string" },
+        "current_status": {
+          "type": "string",
+          "enum": [
+            "in-service-playable",
+            "in-service-NPC-controlled",
+            "derelict-boarded",
+            "derelict-adrift",
+            "destroyed-canonical",
+            "unknown-contact"
+          ]
+        },
+        "relationships": {
+          "type": "array",
+          "items": { "$ref": "_edge_types.json#/definitions/edge" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mechanical": {
+      "type": "object",
+      "properties": {
+        "hull_integrity_starting": { "type": "integer" },
+        "fuel_capacity_starting": { "type": "integer" },
+        "cargo_slots": { "type": "integer" },
+        "modification_slots": { "type": "integer" },
+        "crew_capacity": { "type": "integer" },
+        "combat_capability": {
+          "type": "string",
+          "enum": [
+            "none-civilian",
+            "evasion-only",
+            "light-escort",
+            "patrol-combatant",
+            "warship",
+            "capital-combatant"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "signature_features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["auto", "frozen", "soft-advisory", "on-canon-change"]
+        },
+        "locked_at_build": { "type": "string" },
+        "locked_at_canon_version": { "type": "string" },
+        "frozen_by": { "type": "string" },
+        "frozen_reason": { "type": "string" },
+        "watch_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "by", "reason"],
+            "properties": {
+              "at": { "type": "string" },
+              "by": { "type": "string" },
+              "reason": { "type": "string" },
+              "prior_status": { "type": "string" },
+              "prior_build_hash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "canon_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

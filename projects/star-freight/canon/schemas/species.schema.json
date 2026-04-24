@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/star-freight/schemas/species.schema.json",
+  "version": "1.0.0",
+  "title": "Star Freight Species Canon Entry",
+  "description": "Schema for a canonical species. biology_class + communication_modality.can_lie + cultural_stance + forbidden_morphology_drift encode structural invariants that ripple into every member character. forbidden_morphology_drift lives here (species) rather than per-character. See memory/star-freight-canon-schemas-research-2026-04-24.md §D6.",
+  "type": "object",
+  "required": ["id", "biology_class", "communication_modality", "cultural_stance", "visual", "relation_to_humans", "narrative", "canon_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "biology_class": {
+      "type": "string",
+      "enum": [
+        "terran-baseline",
+        "arthropod-humanoid",
+        "reptilian-humanoid",
+        "cephalopod-radial",
+        "silicon-crystalline-sessile",
+        "colonial-amphibian",
+        "gaseous-plasma",
+        "synthetic"
+      ]
+    },
+    "communication_modality": {
+      "type": "object",
+      "required": ["primary_language", "can_lie"],
+      "properties": {
+        "primary_language": { "type": "string" },
+        "nonverbal_channel": { "type": "string" },
+        "can_lie": {
+          "type": "string",
+          "enum": ["yes", "partial-suppressible", "no-biological-tell"],
+          "description": "Structural trait. Orryn = no-biological-tell (chromatophore involuntary color shift is a truth-channel)."
+        },
+        "signal_incompatibility_with_humans": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "cultural_stance": {
+      "type": "object",
+      "required": ["time_horizon", "core_value"],
+      "properties": {
+        "time_horizon": {
+          "type": "string",
+          "enum": ["immediate-urgent", "season-scale", "multi-generational", "geologic"]
+        },
+        "core_value": { "type": "string" },
+        "death_rite": { "type": "string" },
+        "trade_idiom": { "type": "string" },
+        "greeting_protocol": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "visual": {
+      "type": "object",
+      "required": ["body_plan", "anatomy_descriptors", "palette", "forbidden_morphology_drift", "art_lane"],
+      "properties": {
+        "body_plan": { "type": "string" },
+        "anatomy_descriptors": {
+          "type": "object",
+          "required": ["arm_count"],
+          "properties": {
+            "locomotion": { "type": "string" },
+            "arm_count": { "type": "integer" },
+            "sensory_organs": { "type": "string" },
+            "skin_or_integument": { "type": "string" },
+            "signature_appendages": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 3,
+          "maxItems": 6
+        },
+        "involuntary_expression_channel": { "type": "string" },
+        "sexual_dimorphism": { "type": "string" },
+        "forbidden_morphology_drift": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "What NEVER to render. Lifted from identity-packet forbidden_drift_cues. Encoded species-level — every member character inherits these negatives."
+        },
+        "art_lane": {
+          "type": "string",
+          "enum": [
+            "species-anatomy-spec",
+            "species-daily-life",
+            "species-ceremonial",
+            "species-combat",
+            "species-cross-faction-friction"
+          ]
+        },
+        "reference_plate_uri": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "relation_to_humans": {
+      "type": "object",
+      "required": ["baseline_stance", "gameplay_integration"],
+      "properties": {
+        "baseline_stance": {
+          "type": "string",
+          "enum": [
+            "hostile-historical",
+            "suspicious-new-contact",
+            "neutral-observer",
+            "formally-allied",
+            "trading-partner",
+            "opaque-proxy-only"
+          ]
+        },
+        "narrative_framing": { "type": "string" },
+        "gameplay_integration": {
+          "type": "string",
+          "enum": ["in-grounded", "teased-in-grounded", "full-game-only"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": { "type": "string" },
+        "canonical_practices": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "relationships": {
+          "type": "array",
+          "items": { "$ref": "_edge_types.json#/definitions/edge" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "scaffold": {
+      "type": "boolean",
+      "description": "True for species entries that seed the schema but are full-game-only (Veshan, Orryn). Grounded-present species (Keth, terran) omit or set false."
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "signature_features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["auto", "frozen", "soft-advisory", "on-canon-change"]
+        },
+        "locked_at_build": { "type": "string" },
+        "locked_at_canon_version": { "type": "string" },
+        "frozen_by": { "type": "string" },
+        "frozen_reason": { "type": "string" },
+        "watch_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "by", "reason"],
+            "properties": {
+              "at": { "type": "string" },
+              "by": { "type": "string" },
+              "reason": { "type": "string" },
+              "prior_status": { "type": "string" },
+              "prior_build_hash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "canon_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

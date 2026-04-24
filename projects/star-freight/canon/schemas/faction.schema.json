@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/star-freight/schemas/faction.schema.json",
+  "version": "1.0.0",
+  "title": "Star Freight Faction Canon Entry",
+  "description": "Schema for a faction — governmental, species-polity, frontier-society, criminal-syndicate, intelligence-apparatus, or splinter-cell. Factions are canon-first because they have distinct visual language, narrative voice, and relational edges. See memory/star-freight-canon-schemas-research-2026-04-24.md §D4.",
+  "type": "object",
+  "required": ["id", "faction_class", "visual", "narrative", "stance", "canon_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "faction_class": {
+      "type": "string",
+      "enum": [
+        "governmental",
+        "species-polity",
+        "frontier-society",
+        "criminal-syndicate",
+        "intelligence-apparatus",
+        "splinter-cell"
+      ]
+    },
+    "visual": {
+      "type": "object",
+      "required": ["palette", "aesthetic_markers", "architectural_style"],
+      "properties": {
+        "palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 3,
+          "maxItems": 6
+        },
+        "aesthetic_markers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3,
+          "maxItems": 6
+        },
+        "silhouette_convention": { "type": "string" },
+        "typography_style": { "type": "string" },
+        "uniform_or_attire_description": { "type": ["string", "null"] },
+        "architectural_style": { "type": "string" },
+        "faction_prop_signatures": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reference_plate_uri": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["voice", "values"],
+      "properties": {
+        "voice": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 4
+        },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 5
+        },
+        "taboos": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "speech_register": { "type": "string" },
+        "vocabulary_forbidden": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "internal_tensions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "stance": {
+      "type": "object",
+      "required": ["toward_player_at_start"],
+      "properties": {
+        "toward_player_at_start": {
+          "type": "string",
+          "enum": [
+            "allied",
+            "cordial",
+            "neutral",
+            "suspicious",
+            "hostile-active",
+            "hostile-containment",
+            "unknown-first-contact"
+          ]
+        },
+        "toward_player_trajectory": { "type": "string" },
+        "faction_edges": {
+          "type": "array",
+          "items": { "$ref": "_edge_types.json#/definitions/edge" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mechanical": {
+      "type": "object",
+      "properties": {
+        "reputation_starting_value": {
+          "type": "integer",
+          "minimum": -100,
+          "maximum": 100
+        },
+        "standing_deltas_by_action": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action", "delta"],
+            "properties": {
+              "action": { "type": "string" },
+              "delta": { "type": "integer" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "skill_bonuses_for_member": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "signature_features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["auto", "frozen", "soft-advisory", "on-canon-change"]
+        },
+        "locked_at_build": { "type": "string" },
+        "locked_at_canon_version": { "type": "string" },
+        "frozen_by": { "type": "string" },
+        "frozen_reason": { "type": "string" },
+        "watch_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "by", "reason"],
+            "properties": {
+              "at": { "type": "string" },
+              "by": { "type": "string" },
+              "reason": { "type": "string" },
+              "prior_status": { "type": "string" },
+              "prior_build_hash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "canon_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}
