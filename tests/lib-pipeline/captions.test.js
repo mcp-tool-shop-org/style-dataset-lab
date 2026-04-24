@@ -190,3 +190,115 @@ test('missing profile object does not throw', () => {
   assert.doesNotThrow(() => buildCaption(approvedRecord, 'costume', 'compact', null));
   assert.doesNotThrow(() => buildCaption(approvedRecord, 'costume', 'compact', undefined));
 });
+
+// --- trigger_override behavior (two-LoRA stack D3) ---
+//
+// `trigger_override` lets a profile decouple its training trigger from the
+// profile_id — descriptive IDs stay descriptive, triggers stay compact and
+// game-prefixed. The field is purely additive: when absent, behavior must
+// be bit-identical to the pre-override implementation.
+
+test('deriveStyleTrigger: trigger_override replaces the derived token', () => {
+  assert.equal(
+    deriveStyleTrigger({ profile_id: 'character-style-lora-flux', trigger_override: 'sf_char_style' }),
+    'sf_char_style'
+  );
+});
+
+test('deriveStyleTrigger: trigger_override wins over profile_id derivation', () => {
+  // Even when profile_id exists, the override takes precedence.
+  const withOverride = { profile_id: 'any-id-here', trigger_override: 'sf_world' };
+  assert.equal(deriveStyleTrigger(withOverride), 'sf_world');
+});
+
+test('deriveStyleTrigger: empty-string trigger_override falls through to profile_id', () => {
+  // Empty string is treated as "not set" so partial configs don't silently
+  // strip the trigger entirely.
+  assert.equal(
+    deriveStyleTrigger({ profile_id: 'character-style-lora', trigger_override: '' }),
+    'character_style_lora'
+  );
+});
+
+test('deriveStyleTrigger: non-string trigger_override is ignored', () => {
+  assert.equal(
+    deriveStyleTrigger({ profile_id: 'character-style-lora', trigger_override: 123 }),
+    'character_style_lora'
+  );
+  assert.equal(
+    deriveStyleTrigger({ profile_id: 'character-style-lora', trigger_override: null }),
+    'character_style_lora'
+  );
+});
+
+test('buildCaption (flux-natural-language): trigger_override flows through to the caption', () => {
+  const profile = {
+    profile_id: 'character-style-lora-flux',
+    target_family: 'flux',
+    caption_strategy: 'flux-natural-language',
+    prompt_strategy: 'trigger-word',
+    trigger_override: 'sf_character_style',
+  };
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', profile);
+  assert.ok(caption.startsWith('sf_character_style style,'),
+    'Flux caption must use the override token, not the hyphenated id');
+  assert.ok(!caption.includes('character_style_lora_flux'),
+    'Flux caption must not contain the default derived token when override is set');
+});
+
+test('buildCaption (structured-metadata): trigger_override flows through to the caption', () => {
+  const profile = {
+    profile_id: 'character-style-lora',
+    caption_strategy: 'structured-metadata',
+    prompt_strategy: 'trigger-word',
+    trigger_override: 'sf_char',
+  };
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', profile);
+  assert.ok(caption.startsWith('sf_char, '),
+    'SDXL caption must lead with the override token');
+});
+
+// --- Backward-compat snapshot ---
+//
+// D3 of the two-LoRA research requires rigorous proof that profiles WITHOUT
+// trigger_override emit bit-identical captions to the pre-override
+// implementation. These snapshots are the canonical "before" — any change to
+// them must be intentional and land with a corresponding note, because they
+// are the contract surface existing training manifests depend on.
+
+test('backward-compat snapshot: legacy caption unchanged without trigger_override', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', legacyProfile);
+  // Legacy shape: trigger, group, lane, prompt.slice(0, 200). The 200-char
+  // window lands inside "wearing a pressed s[teel-blue]"; changing either
+  // the window width or the segment ordering fails this snapshot.
+  assert.equal(
+    caption,
+    'legacy_profile, compact, costume, oil painting, semi-realistic painterly character concept art, muted dusty palette, subtle dark edges, soft upper-left directional lighting, human male fleet officer in his late 40s wearing a pressed s'
+  );
+});
+
+test('backward-compat snapshot: structured-metadata caption unchanged without trigger_override', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', styleProfile);
+  assert.equal(
+    caption,
+    'character_style_lora, compact faction, costume, Steel-blue uniform, high collar, ship corridor. Clean and institutional.'
+  );
+});
+
+test('backward-compat snapshot: flux-natural-language caption unchanged without trigger_override', () => {
+  const caption = buildCaption(approvedRecord, 'costume', 'compact', fluxProfile);
+  assert.equal(
+    caption,
+    'character_style_lora_flux style, a compact faction costume, Steel-blue uniform, high collar, ship corridor. Clean and institutional.'
+  );
+});
+
+test('backward-compat: adding trigger_override: null is indistinguishable from omitting it', () => {
+  const plain = buildCaption(approvedRecord, 'costume', 'compact', fluxProfile);
+  const withNull = buildCaption(approvedRecord, 'costume', 'compact', { ...fluxProfile, trigger_override: null });
+  const withUndef = buildCaption(approvedRecord, 'costume', 'compact', { ...fluxProfile, trigger_override: undefined });
+  const withEmpty = buildCaption(approvedRecord, 'costume', 'compact', { ...fluxProfile, trigger_override: '' });
+  assert.equal(withNull, plain);
+  assert.equal(withUndef, plain);
+  assert.equal(withEmpty, plain);
+});

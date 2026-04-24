@@ -1,0 +1,26 @@
+{
+  "profile_id": "per-character-lora-flux",
+  "label": "Per-Character Identity LoRA (Flux) — TEMPLATE",
+  "target_family": "flux",
+  "asset_type": "lora",
+  "intended_use": "Template for per-named-character identity LoRAs trained against FLUX.1-dev. Each concrete character (Kael Maren, Renna Vasik, Jace Delvari, ...) gets its own cloned instance with a unique trigger_override (e.g. sf_kael_maren). Stacks at inference with the character-domain World LoRA (character-style-lora-flux). See two-LoRA stack contract in the handbook and memory/two-lora-stack-research-2026-04-23.md for the full architecture. This file validates as a template; concrete instances derive from it by setting trigger_override and narrowing subject_requirements to the single target subject.",
+  "eligible_lanes": ["costume", "equipment", "portrait"],
+  "eligible_reference_roles": ["anchor", "supporting"],
+  "min_review_status": "approved",
+  "subject_requirements": {
+    "min_subjects": 1,
+    "min_records_per_subject": 15
+  },
+  "excluded_tags": ["placeholder", "wip", "test"],
+  "caption_strategy": "flux-natural-language",
+  "prompt_strategy": "trigger-word",
+  "base_model_recommendations": ["black-forest-labs/FLUX.1-dev"],
+  "adapter_targets": ["generic-image-caption", "diffusers-lora", "ai-toolkit"],
+  "is_style_lora": false,
+  "training_hyperparameters": {
+    "rank": 16,
+    "alpha": 8,
+    "steps": 2000
+  },
+  "required_eval_pack_profiles": ["subject_continuity", "forbidden_drift"]
+}
