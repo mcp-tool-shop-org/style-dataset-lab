@@ -70,25 +70,38 @@ export async function run(argv) {
         schemas[schemaName].version,
       );
 
-      // Look up stamped hash from latest manifest
+      // Look up stamped hash from latest manifest. The manifest stores a
+      // richer stamp object (status / watch_hash / watch_fields /
+      // locked_at_build); the drift comparison only needs `.watch_hash`.
       const entityId = entry.frontmatter.id;
-      const stampedHash = latestManifest?.frozen_entries_hashes?.[entityId] || null;
+      const stamp = latestManifest?.frozen_entries_hashes?.[entityId] || null;
+      const stampedHash = stamp?.watch_hash || null;
 
       if (stampedHash && stampedHash !== currentHash) {
         drifted.push({
           entity_id: entityId,
           schema_kind: schemaName.replace('.schema.json', ''),
           status,
-          locked_at_build: entry.frontmatter.freeze?.locked_at_build || null,
+          locked_at_build: stamp?.locked_at_build || entry.frontmatter.freeze?.locked_at_build || null,
           witness_hash: stampedHash,
           current_hash: currentHash,
           watch_fields: watchFields,
         });
-      } else {
+      } else if (stampedHash) {
         cleanFrozen.push({
           entity_id: entityId,
           status,
           witness_hash: stampedHash,
+        });
+      } else {
+        // Entry is frozen now but was not in the last build manifest (e.g.
+        // newly frozen since). Flag as "no witness yet" rather than mis-
+        // classifying as either drifted or clean.
+        cleanFrozen.push({
+          entity_id: entityId,
+          status,
+          witness_hash: null,
+          note: 'no witness in latest build — rebuild to stamp',
         });
       }
     }
