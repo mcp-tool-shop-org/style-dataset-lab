@@ -81,7 +81,7 @@
   "author": "mcp-tool-shop",
   "license": "MIT",
   "devDependencies": {
-    "c8": "^10.1.3"
+    "c8": "^11.0.0"
   },
   "dependencies": {
     "yaml": "^2.8.3"
