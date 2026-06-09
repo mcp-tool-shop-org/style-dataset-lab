@@ -1,0 +1,58 @@
+{
+  "workflow_id": "silhouette-exploration",
+  "label": "Silhouette Exploration",
+  "description": "Explore silhouette variations for a creature design.",
+  "lane_id": "concept",
+  "subject_mode": "optional",
+  "output_mode": "silhouette_sheet",
+  "output_count": 8,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["silhouette", "concept"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "creature silhouette exploration",
+      "high contrast shape language",
+      "varied proportions and mass distribution"
+    ],
+    "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "silhouette variety",
+      "readable shape at small scale",
+      "consistent design family"
+    ],
+    "optional_blocks": [
+      "size class note",
+      "locomotion type note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "uniform silhouettes",
+      "human proportions",
+      "over-detailed rendering"
+    ],
+    "lane_specific_avoid": [
+      "color distraction",
+      "background complexity"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "silhouette",
+    "anatomy",
+    "scale_logic"
+  ],
+  "drift_guards": [
+    "shapes must remain readable at thumbnail scale",
+    "design family cohesion across variants"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "random"
+  }
+}

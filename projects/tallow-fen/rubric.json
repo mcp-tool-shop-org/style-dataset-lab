@@ -1,0 +1,39 @@
+{
+  "dimensions": [
+    "anatomy_accuracy",
+    "silhouette_distinction",
+    "surface_texture",
+    "evolutionary_logic",
+    "scale_accuracy",
+    "locomotion_read",
+    "behavioral_read",
+    "style_consistency",
+    "habitat_fit"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "broken_anatomy": ["ANA-001"],
+    "generic_monster": ["SIL-001"],
+    "wrong_texture": ["SUR-001"],
+    "impossible_biology": ["EVO-001"],
+    "no_scale_reference": ["SCL-001"],
+    "unclear_locomotion": ["LOC-001"],
+    "no_behavior": ["BEH-001"],
+    "style_mismatch": ["STY-001"],
+    "habitat_mismatch": ["HAB-001"],
+    "inconsistent_anatomy": ["ANA-002"]
+  }
+}

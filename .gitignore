@@ -39,3 +39,6 @@ site/node_modules/
 # Test coverage output
 coverage/
 .nyc_output/
+
+# Generated candidate images (regenerable from canon + wave + generator)
+projects/*/outputs/*/*.png

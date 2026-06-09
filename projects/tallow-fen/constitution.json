@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "ANA-001",
+      "category": "anatomy",
+      "desc": "Anatomical plausibility — skeletal and muscular structure supports locomotion and body mass",
+      "dims": ["anatomy_accuracy"],
+      "rationale_pass": "Anatomy is plausible — structure supports locomotion and mass (${scorePct}%)",
+      "rationale_fail": "Anatomy implausible — structure cannot support locomotion or body mass (${scorePct}%)"
+    },
+    {
+      "id": "ANA-002",
+      "category": "anatomy",
+      "desc": "Consistent anatomy across all views and poses — proportions, joint placement, and limb count stable",
+      "dims": ["anatomy_accuracy"],
+      "rationale_pass": "Anatomy consistent across views — proportions and joints stable (${scorePct}%)",
+      "rationale_fail": "Anatomy inconsistent — proportions or joints shift between views (${scorePct}%)"
+    },
+    {
+      "id": "SIL-001",
+      "category": "silhouette",
+      "desc": "Silhouette distinction — creature identifiable by outline alone at reduced scale",
+      "dims": ["silhouette_distinction"],
+      "rationale_pass": "Silhouette distinctive — creature readable by outline alone (${scorePct}%)",
+      "rationale_fail": "Silhouette generic — creature not identifiable by outline (${scorePct}%)"
+    },
+    {
+      "id": "SUR-001",
+      "category": "surface",
+      "desc": "Surface and texture consistency — skin, scales, fur, chitin, or other covering is coherent across the body",
+      "dims": ["surface_texture"],
+      "rationale_pass": "Surface texture coherent — covering reads consistently across the body (${scorePct}%)",
+      "rationale_fail": "Surface texture inconsistent — covering changes illogically across the body (${scorePct}%)"
+    },
+    {
+      "id": "EVO-001",
+      "category": "ecology",
+      "desc": "Evolutionary logic — adaptations serve ecological function, not purely decorative",
+      "dims": ["evolutionary_logic"],
+      "rationale_pass": "Adaptations make ecological sense — form follows function (${scorePct}%)",
+      "rationale_fail": "Adaptations lack ecological logic — features are purely decorative (${scorePct}%)"
+    },
+    {
+      "id": "SCL-001",
+      "category": "scale",
+      "desc": "Scale reference present and readable — creature size clear relative to known objects or figures",
+      "dims": ["scale_accuracy"],
+      "lanes": ["scale_reference"],
+      "rationale_pass": "Scale reference clear — creature size readable against reference (${scorePct}%)",
+      "rationale_fail": "Scale reference missing or unreadable — creature size ambiguous (${scorePct}%)"
+    },
+    {
+      "id": "LOC-001",
+      "category": "locomotion",
+      "desc": "Locomotion class reads clearly — biped, quadruped, flying, aquatic, serpentine, or hybrid",
+      "dims": ["locomotion_read"],
+      "rationale_pass": "Locomotion class clear — movement mode reads from anatomy (${scorePct}%)",
+      "rationale_fail": "Locomotion class unclear — cannot determine how creature moves (${scorePct}%)"
+    },
+    {
+      "id": "BEH-001",
+      "category": "behavior",
+      "desc": "Behavioral cues present in pose, expression, or body language — predator, prey, social, solitary",
+      "dims": ["behavioral_read"],
+      "rationale_pass": "Behavioral cues present — temperament reads from pose and expression (${scorePct}%)",
+      "rationale_fail": "Behavioral cues absent — creature pose is neutral and uninformative (${scorePct}%)"
+    },
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Style consistency across species or creature lineup — rendering, detail level, and design language match",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Style consistent — creature fits the lineup's design language (${scorePct}%)",
+      "rationale_fail": "Style inconsistent — creature looks like it belongs to a different project (${scorePct}%)"
+    },
+    {
+      "id": "HAB-001",
+      "category": "habitat",
+      "desc": "Habitat integration — creature anatomy and coloring fit the environment context",
+      "dims": ["habitat_fit"],
+      "lanes": ["habitat"],
+      "rationale_pass": "Habitat integration reads — creature fits its environment context (${scorePct}%)",
+      "rationale_fail": "Habitat mismatch — creature does not fit the environment context (${scorePct}%)"
+    }
+  ]
+}

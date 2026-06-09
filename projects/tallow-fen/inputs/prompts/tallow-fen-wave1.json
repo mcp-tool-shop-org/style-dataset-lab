@@ -1,0 +1,31 @@
+{
+  "wave": "tallow-fen-wave1",
+  "description": "Tallow Fen bestiary, first wave — non-anime painterly creatures on Qwen-Image. Prompts derived from canon/tallow-fen-canon.md.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, modern gear, metal plate armor, gun, text, watermark, frame, border, signature",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 4000
+  },
+  "subjects": [
+    {
+      "id": "concept_tallow-hound",
+      "variations": 2,
+      "prompt": "a Tallow Hound, a low-slung emaciated quadruped scavenger the size of a starved dog, hunched with a heavy drooping head and exposed rib ridges, matted peat-flesh hide with no fur, bare yellowed fen-bone ribs showing through, solid amber tallow drips hanging frozen from its empty eye-sockets, colours peat black-brown, tallow gold, bone ash, a single creature on a plain neutral grey background"
+    },
+    {
+      "id": "concept_mire-widow",
+      "variations": 2,
+      "prompt": "a Mire Widow, a tall thin boneless biped about two and a half metres, drooping forward with long sagging boneless arms trailing to the ground, draped in wet peat-flesh rags, a translucent amber tallow lantern glowing softly inside its hollow chest cavity, a veiled faceless drooping head, fen-bone claws, colours bog green, peat black-brown, tallow gold glow, a single creature on a plain neutral background"
+    },
+    {
+      "id": "concept_bog-tithe",
+      "variations": 2,
+      "prompt": "a Bog Tithe, a wide squat amorphous mound creature, human-tall but bulbous and limbless, dragging itself low to the ground, compacted peat-flesh studded with protruding stained fen-bones and antlers of swallowed animals, rust-red water weeping from its seams, one sunken amber tallow eye, colours peat black, dried rust red, bone ash, a single creature on a plain neutral background"
+    }
+  ]
+}

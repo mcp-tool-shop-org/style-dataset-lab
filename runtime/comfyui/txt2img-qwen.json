@@ -1,0 +1,38 @@
+{
+  "template_id": "txt2img-qwen",
+  "label": "Text-to-Image — Qwen-Image (non-anime studio base)",
+  "description": "Qwen-Image txt2img pipeline: UNETLoader → CLIPLoader(qwen_image) + VAELoader → ModelSamplingAuraFlow(shift) → EmptySD3LatentImage → KSampler(euler/simple) → VAEDecode → SaveImage. The studio's verified NON-ANIME base (Apache-2.0). Selected by project/pack defaults.base = \"qwen-image\".",
+  "adapter_target": "comfyui",
+  "base": "qwen-image",
+  "compatible_modes": ["portrait_set", "expression_sheet", "variant_pack", "moodboard", "silhouette_sheet", "turnaround", "concept_art"],
+  "placeholders": {
+    "PROMPT": "Positive prompt text",
+    "NEGATIVE_PROMPT": "Negative prompt text (always include anime/cartoon/cel-shading terms — non-anime is non-negotiable)",
+    "UNET": "Diffusion model filename (default qwen_image_fp8_e4m3fn.safetensors)",
+    "CLIP": "Text encoder filename (default qwen_2.5_vl_7b_fp8_scaled.safetensors, loaded with type=qwen_image)",
+    "VAE": "VAE filename (default qwen_image_vae.safetensors)",
+    "SHIFT": "ModelSamplingAuraFlow shift (default 3.1)",
+    "WIDTH": "Image width (default 1024)",
+    "HEIGHT": "Image height (default 1024)",
+    "STEPS": "Sampling steps (default 22)",
+    "CFG": "Classifier-free guidance scale (default 3.5)",
+    "SAMPLER": "Sampler name (default euler)",
+    "SCHEDULER": "Scheduler name (default simple)",
+    "SEED": "Random seed"
+  },
+  "defaults": {
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "clip_type": "qwen_image",
+    "vae": "qwen_image_vae.safetensors",
+    "weight_dtype": "default",
+    "shift": 3.1,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "steps": 22,
+    "cfg": 3.5,
+    "width": 1024,
+    "height": 1024
+  },
+  "notes": "Built programmatically — the JSON above is a reference. lib/adapters/comfyui-workflows.js buildQwenGraph() constructs the live graph; buildWorkflowGraph() and scripts/generate.js both route to it when base === 'qwen-image'. Node ids/wiring mirror scripts/qwen_generate.py for cross-runner reproducibility. NEVER substitute an anime checkpoint (Illustrious/Pony/Animagine/NoobAI) — see memory/feedback_no_anime.md."
+}
