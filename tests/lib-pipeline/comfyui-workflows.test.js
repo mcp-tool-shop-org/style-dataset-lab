@@ -75,6 +75,52 @@ test('buildQwenGraph honors overrides (models, shift, sampler, dims)', () => {
   assert.equal(nodes['3'].inputs.scheduler, 'karras');
 });
 
+test('buildQwenGraph chains DiT-only LoRAs between UNETLoader and AuraFlow shift', () => {
+  const { nodes } = buildQwenGraph({
+    prompt: 'p',
+    negativePrompt: 'n',
+    seed: 1,
+    loras: [
+      { name: 'tallow_fen_style_v1.safetensors', weight: 0.9 },
+      { name: 'second.safetensors' }, // weight omitted → 1.0
+    ],
+  });
+  // Chain: 37 → 40 → 41 → 66. Model-only loaders — Qwen style LoRAs train the
+  // DiT with the text encoder frozen, so there is no clip strength to wire.
+  assert.equal(nodes['40'].class_type, 'LoraLoaderModelOnly');
+  assert.equal(nodes['40'].inputs.lora_name, 'tallow_fen_style_v1.safetensors');
+  assert.equal(nodes['40'].inputs.strength_model, 0.9);
+  assert.deepEqual(nodes['40'].inputs.model, ['37', 0]);
+  assert.equal(nodes['41'].class_type, 'LoraLoaderModelOnly');
+  assert.equal(nodes['41'].inputs.strength_model, 1.0);
+  assert.deepEqual(nodes['41'].inputs.model, ['40', 0]);
+  assert.deepEqual(nodes['66'].inputs.model, ['41', 0]);
+  // Never the SDXL model+clip loader on the Qwen path.
+  const types = Object.values(nodes).map((n) => n.class_type);
+  assert.ok(!types.includes('LoraLoader'));
+});
+
+test('buildQwenGraph without loras keeps the bare verified graph (no LoRA nodes)', () => {
+  const { nodes } = buildQwenGraph({ prompt: 'p', negativePrompt: 'n', seed: 1 });
+  const types = Object.values(nodes).map((n) => n.class_type);
+  assert.ok(!types.includes('LoraLoaderModelOnly'));
+  assert.deepEqual(nodes['66'].inputs.model, ['37', 0]);
+});
+
+test('buildWorkflowGraph threads project defaults.loras into the Qwen graph', () => {
+  const { nodes } = buildWorkflowGraph({
+    brief: { runtime_plan: {}, prompt: 'creature', negative_prompt: 'anime' },
+    projectDefaults: {
+      base: 'qwen-image',
+      loras: [{ name: 'tallow_fen_style_v1.safetensors', weight: 0.85 }],
+    },
+    seed: 9,
+  });
+  assert.equal(nodes['40'].class_type, 'LoraLoaderModelOnly');
+  assert.equal(nodes['40'].inputs.strength_model, 0.85);
+  assert.deepEqual(nodes['66'].inputs.model, ['40', 0]);
+});
+
 test('buildWorkflowGraph routes base="qwen-image" to the Qwen graph', () => {
   const { nodes, saveNodeId } = buildWorkflowGraph({
     brief: { runtime_plan: {}, prompt: 'creature', negative_prompt: 'anime' },
