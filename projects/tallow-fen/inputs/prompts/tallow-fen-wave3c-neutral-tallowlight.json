@@ -1,0 +1,30 @@
+{
+  "wave": "tallow-fen-wave3c-neutral-tallowlight",
+  "description": "Wave 3c — neutral objects, third pass. Wave 3b PROVED the negative prompt cannot beat the style descriptor's own noun: 'a single warm lantern light' literalized a lantern prop in 28/28 images even with 'lantern' in the negative. Fix: for neutral-object dataset waves the light source is named by MATERIAL ('warm tallow light in cold sunless gloom' — the canon lighting clause verbatim), not by object. Dataset-craft rule earned: Qwen literalizes nouns in style descriptors.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold sunless gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, creature, monster, animal, modern gear, gun, text, watermark, frame, border, signature, lantern, oil lamp, candle, lamp, torch, light fixture, fire, flame, ember, glowing orb",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 4500
+  },
+  "subjects": [
+    { "id": "obj_wooden-chair-c", "variations": 2, "prompt": "a single old wooden chair with worn turned legs, standing alone on a plain neutral grey background" },
+    { "id": "obj_clay-pot-c", "variations": 2, "prompt": "a single round earthenware clay pot with a chipped rim, on a plain dark peat-brown background" },
+    { "id": "obj_woven-basket-c", "variations": 2, "prompt": "a single woven wicker basket with a bowed handle, on a plain muted green-grey background" },
+    { "id": "obj_iron-kettle-c", "variations": 2, "prompt": "a single squat cast-iron kettle with a curved spout, on a plain neutral grey background" },
+    { "id": "obj_rowing-boat-c", "variations": 2, "prompt": "a single weathered wooden rowing boat resting on its keel, on a plain dark background" },
+    { "id": "obj_tree-stump-c", "variations": 2, "prompt": "a single gnarled tree stump with exposed roots and split bark, on a plain muted green-grey background" },
+    { "id": "obj_stone-well-c", "variations": 2, "prompt": "a single low round stone well with a wooden crossbeam, on a plain neutral grey background" },
+    { "id": "obj_cart-wheel-c", "variations": 2, "prompt": "a single large wooden cart wheel with an iron rim leaning upright, on a plain dark peat-brown background" },
+    { "id": "obj_rope-coil-c", "variations": 2, "prompt": "a single thick coil of hemp rope lying on the ground, on a plain muted green-grey background" },
+    { "id": "obj_leather-boots-c", "variations": 2, "prompt": "a single pair of worn leather work boots standing together, on a plain neutral grey background" },
+    { "id": "obj_wooden-barrel-c", "variations": 2, "prompt": "a single oak barrel with iron hoops standing upright, on a plain dark background" },
+    { "id": "obj_hand-axe-c", "variations": 2, "prompt": "a single hand axe with a worn wooden haft leaning against a small log, on a plain muted green-grey background" },
+    { "id": "obj_firewood-bundle-c", "variations": 2, "prompt": "a single bundle of split firewood tied with twine, on a plain neutral grey background" },
+    { "id": "obj_wooden-fence-c", "variations": 2, "prompt": "a short run of crooked wooden fence posts with sagging rails, on a plain muted green-grey background" }
+  ]
+}

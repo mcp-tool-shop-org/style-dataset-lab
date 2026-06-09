@@ -1,0 +1,106 @@
+{
+  "id": "obj_wooden-fence-c_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-09T20:14:21.035Z",
+  "asset_path": "outputs/approved/obj_wooden-fence-c_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1278938
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave3c-neutral-tallowlight",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold sunless gloom, grim folkloric, matte painterly texture, a short run of crooked wooden fence posts with sagging rails, on a plain muted green-grey background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, creature, monster, animal, modern gear, gun, text, watermark, frame, border, signature, lantern, oil lamp, candle, lamp, torch, light fixture, fire, flame, ember, glowing orb",
+    "seed": 4527,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 20143,
+    "gpu_model": "RTX 5090",
+    "batch_index": 27,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-06-09T20:16:13.268Z",
+    "explanation": "a crooked fence of gnarled posts and rails fading into pale fog, a small bright flame burning atop the nearest post, muted green-grey background",
+    "criteria_scores": {
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85,
+      "style_consistency": 0.9
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-06-09T20:16:13.404Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "SIL-001",
+        "category": "silhouette",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+      },
+      {
+        "rule_id": "SUR-001",
+        "category": "surface",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Surface texture coherent — covering reads consistently across the body (85%)"
+      },
+      {
+        "rule_id": "STY-001",
+        "category": "style",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Style consistent — creature fits the lineup's design language (90%)"
+      }
+    ],
+    "assertion_count": 3,
+    "pass_count": 3,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "SIL-001",
+      "category": "silhouette",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+    },
+    {
+      "rule_id": "SUR-001",
+      "category": "surface",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Surface texture coherent — covering reads consistently across the body (85%)"
+    },
+    {
+      "rule_id": "STY-001",
+      "category": "style",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Style consistent — creature fits the lineup's design language (90%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 3/3 constitution rules.  a crooked fence of gnarled posts and rails fading into pale fog, a small bright flame burning atop the nearest post, muted green-grey background"
+}

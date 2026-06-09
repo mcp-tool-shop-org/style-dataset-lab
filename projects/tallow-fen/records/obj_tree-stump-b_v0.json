@@ -1,0 +1,47 @@
+{
+  "id": "obj_tree-stump-b_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-09T19:57:08.347Z",
+  "asset_path": "outputs/rejected/obj_tree-stump-b_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1185032
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave3b-neutral-clean",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a single gnarled tree stump with exposed roots and split bark, on a plain muted green-grey background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, creature, monster, animal, modern gear, gun, text, watermark, frame, border, signature, lantern, oil lamp, candle, lamp, torch, light fixture",
+    "seed": 4410,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 21172,
+    "gpu_model": "RTX 5090",
+    "batch_index": 10,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-06-09T20:06:29.978Z",
+    "explanation": "style on-target but the style descriptor's lantern-light noun literalized a lantern prop in every wave-3b image despite anti-lantern negatives; superseded by wave 3c which names the light source by material (tallow light) instead of object",
+    "criteria_scores": {},
+    "failure_modes": [
+      "style_residue_prop"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

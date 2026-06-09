@@ -1,0 +1,21 @@
+{
+  "profile_id": "tallow-fen-style-lora",
+  "label": "Tallow Fen studio style LoRA (Qwen-Image)",
+  "target_family": "qwen-image",
+  "asset_type": "creature-design",
+  "eligible_lanes": [],
+  "adapter_targets": ["diffusers-lora"],
+  "trigger_override": "tallow_fen",
+  "caption_strategy": "flux-natural-language",
+  "is_style_lora": true,
+  "base_model_recommendations": ["Qwen/Qwen-Image"],
+  "training_hyperparameters": {
+    "rank": 16,
+    "alpha": 16,
+    "steps": 2000,
+    "lr": "1e-4",
+    "optimizer": "adamw8bit",
+    "quantization": "uint3+ara, te qfloat8, low_vram"
+  },
+  "notes": "Style-on-neutral-subjects dataset (creatures + lantern-free neutral objects); captions are content-only prose with the trigger first — the style vocabulary belongs to the trigger, never the caption. eligible_lanes is deliberately empty: the lane-vocabulary-mismatch gotcha (Flux smoke-train preflight 2026-04-24) silently drops ALL rows when profile lanes don't match record lanes."
+}
