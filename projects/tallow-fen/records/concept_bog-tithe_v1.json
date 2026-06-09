@@ -1,0 +1,36 @@
+{
+  "id": "concept_bog-tithe_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-09T18:23:19.126Z",
+  "asset_path": "outputs/candidates/concept_bog-tithe_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1117457
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave1",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Bog Tithe, a wide squat amorphous mound creature, human-tall but bulbous and limbless, dragging itself low to the ground, compacted peat-flesh studded with protruding stained fen-bones and antlers of swallowed animals, rust-red water weeping from its seams, one sunken amber tallow eye, colours peat black, dried rust red, bone ash, a single creature on a plain neutral background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, modern gear, metal plate armor, gun, text, watermark, frame, border, signature",
+    "seed": 4005,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 20530,
+    "gpu_model": "RTX 5080",
+    "batch_index": 5,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

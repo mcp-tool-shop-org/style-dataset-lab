@@ -24,7 +24,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getProjectName, parseNumberFlag } from "../lib/args.js";
 import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
-import { readJsonFile } from "../lib/config.js";
+import { readJsonFile, loadProjectMeta, resolveGpuModel } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { assertNotFrozenBySubject } from "../lib/freeze-gate.js";
@@ -310,7 +310,7 @@ function buildImg2ImgWorkflow(prompt, negativePrompt, seed, imagePath, denoise) 
 
 // ── Record Builder ──
 
-function buildRecord(pack, subject, shot, seed, seedIndex, imgData, destPath, elapsedMs, phase, anchorInfo) {
+function buildRecord(pack, subject, shot, seed, seedIndex, imgData, destPath, elapsedMs, phase, anchorInfo, gpuModel) {
   const assetId = `${shot.id}_s${seedIndex}`;
   const fullPrompt = `${pack.style_prefix}, ${shot.prompt}`;
   const negativePrompt = [
@@ -344,7 +344,7 @@ function buildRecord(pack, subject, shot, seed, seedIndex, imgData, destPath, el
       width: DEFAULTS.width,
       height: DEFAULTS.height,
       generation_time_ms: elapsedMs,
-      gpu_model: "RTX 5080",
+      gpu_model: gpuModel,
       denoise: phase === "follow_on" ? (anchorInfo?.denoise || 0.38) : 1.0,
     },
     identity: {
@@ -380,6 +380,7 @@ export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
   const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
+  const gpuModel = resolveGpuModel(loadProjectMeta(GAME_ROOT)?.defaults);
 
   // Collect positionals, skipping values that belong to known flags
   const knownFlagsWithValue = new Set(['--subject', '--seeds', '--phase', '--anchor', '--denoise', '--project', '--game']);
@@ -551,7 +552,7 @@ export async function run(argv = process.argv.slice(2)) {
 
           const record = buildRecord(
             pack, subject, shot, seed, si,
-            imgData, destPath, elapsed, phase, anchorInfo
+            imgData, destPath, elapsed, phase, anchorInfo, gpuModel
           );
 
           await writeFile(
