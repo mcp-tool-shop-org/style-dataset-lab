@@ -1,0 +1,46 @@
+{
+  "id": "concept_wick-brood-near_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/approved/concept_wick-brood-near_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1289448
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8b-brood",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Wick Brood seen close, one clotted heap of fist-sized rounded amber tallow bodies fused together at their flanks into a single mass, bound in a loose net of dark wet peat-flesh strands, each rounded body tipped with a small charred black stub, small dull round amber spots set low in the leading bodies, thick slow amber drips pooling at its base, resting on flat wet peat, colours peat black-brown, bog green, tallow gold, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, separate creatures standing apart, a group of distinct monsters, companions, insects, bees, flies, ants, beetles, spider, spider legs, insect legs, arms, hands, legs, claws, tree roots, root legs, floating orbs, floating lights, glowing trail, segmented train, caterpillar, rectangular block, slime mascot, googly eyes, slit pupil, cat eye, smiling face, carved face, lit candle, candlestick, flame, spiderweb, cobweb, tentacles",
+    "seed": 10221,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 1,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "a fused heap of rounded amber wax bodies held in a dark strand net, charred stubs above, dull amber spots set in the wax, a thick amber pour running off the leading edge onto the wet ground",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}
