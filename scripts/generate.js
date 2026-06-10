@@ -349,7 +349,7 @@ export async function run(argv = process.argv.slice(2)) {
       }
     }
 
-    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}${isQwen ? '' : `, loras: ${loras.length}`})`);
+    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${isQwen ? (d.loras || []).length : loras.length})`);
 
     if (dryRun) {
       generated++;
@@ -374,6 +374,7 @@ export async function run(argv = process.argv.slice(2)) {
           vae: d.vae || QWEN_DEFAULTS.vae,
           clipType: d.clip_type || QWEN_DEFAULTS.clip_type,
           weightDtype: d.weight_dtype || QWEN_DEFAULTS.weight_dtype,
+          loras: d.loras || [],
           filenamePrefix: 'sdl',
         })
       : buildWorkflow(
@@ -425,6 +426,7 @@ export async function run(argv = process.argv.slice(2)) {
         provenance.clip = d.clip || QWEN_DEFAULTS.clip;
         provenance.vae = d.vae || QWEN_DEFAULTS.vae;
         provenance.shift = d.shift ?? QWEN_DEFAULTS.shift;
+        provenance.loras = d.loras || [];
       } else {
         provenance.checkpoint = d.checkpoint;
         provenance.loras = loras;

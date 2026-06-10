@@ -1,0 +1,179 @@
+{
+  "id": "concept_bog-tithe-water_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-09T19:39:55.888Z",
+  "asset_path": "outputs/approved/concept_bog-tithe-water_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1212105
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave2-creatures",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Bog Tithe, a wide squat bulbous mound creature hunched in shallow black bog water at a three-quarter angle, compacted wet peat-flesh studded with protruding fen-bones and a swallowed deer antler, rust-red water seeping from its folds into the pool, one sunken amber tallow eye, colours peat black, dried rust red, bone ash, a single creature, plain misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, hanging lantern, carried lantern, lantern on a chain, lantern prop, full skeleton, skeletal dog, bare bones everywhere",
+    "seed": 4111,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 21183,
+    "gpu_model": "RTX 5090",
+    "batch_index": 11,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-06-09T19:56:26.377Z",
+    "explanation": "a moss-covered mound creature submerged to its middle in black bog water, tall antlers, one orange eye, red liquid weeping from its maw, small bones studding its back, a lantern at its front, misty grey background",
+    "criteria_scores": {
+      "anatomy_accuracy": 0.8,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85,
+      "evolutionary_logic": 0.75,
+      "locomotion_read": 0.8,
+      "behavioral_read": 0.8,
+      "style_consistency": 0.9
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-06-09T20:08:07.080Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "ANA-001",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+      },
+      {
+        "rule_id": "ANA-002",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+      },
+      {
+        "rule_id": "SIL-001",
+        "category": "silhouette",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+      },
+      {
+        "rule_id": "SUR-001",
+        "category": "surface",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Surface texture coherent — covering reads consistently across the body (85%)"
+      },
+      {
+        "rule_id": "EVO-001",
+        "category": "ecology",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Adaptations make ecological sense — form follows function (75%)"
+      },
+      {
+        "rule_id": "LOC-001",
+        "category": "locomotion",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Locomotion class clear — movement mode reads from anatomy (80%)"
+      },
+      {
+        "rule_id": "BEH-001",
+        "category": "behavior",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Behavioral cues present — temperament reads from pose and expression (80%)"
+      },
+      {
+        "rule_id": "STY-001",
+        "category": "style",
+        "verdict": "pass",
+        "score": 0.9,
+        "rationale": "Style consistent — creature fits the lineup's design language (90%)"
+      }
+    ],
+    "assertion_count": 8,
+    "pass_count": 8,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "ANA-001",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+    },
+    {
+      "rule_id": "ANA-002",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+    },
+    {
+      "rule_id": "SIL-001",
+      "category": "silhouette",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+    },
+    {
+      "rule_id": "SUR-001",
+      "category": "surface",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Surface texture coherent — covering reads consistently across the body (85%)"
+    },
+    {
+      "rule_id": "EVO-001",
+      "category": "ecology",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Adaptations make ecological sense — form follows function (75%)"
+    },
+    {
+      "rule_id": "LOC-001",
+      "category": "locomotion",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Locomotion class clear — movement mode reads from anatomy (80%)"
+    },
+    {
+      "rule_id": "BEH-001",
+      "category": "behavior",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Behavioral cues present — temperament reads from pose and expression (80%)"
+    },
+    {
+      "rule_id": "STY-001",
+      "category": "style",
+      "verdict": "pass",
+      "score": 0.9,
+      "rationale": "Style consistent — creature fits the lineup's design language (90%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 8/8 constitution rules.  a moss-covered mound creature submerged to its middle in black bog water, tall antlers, one orange eye, red liquid weeping from its maw, small bones studding its back, a lantern at its front, misty grey background"
+}

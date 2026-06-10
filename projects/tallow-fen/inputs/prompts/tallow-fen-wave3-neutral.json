@@ -1,0 +1,31 @@
+{
+  "wave": "tallow-fen-wave3-neutral",
+  "description": "Tallow Fen wave 3 — NEUTRAL OBJECTS in the locked style descriptor. This is the content/style-separation set for the style LoRA (the style-on-neutral-subjects trick): mundane folkloric objects rendered in the studio painterly style so the LoRA binds the STYLE to the trigger and attributes creature content to captions. Backgrounds deliberately varied (the white-background reg-set gotcha from the Chroma runs). One lantern subject is INCLUDED on purpose so 'lantern' is captionable content, not an uncaptioned style residue.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, creature, monster, animal, modern gear, gun, text, watermark, frame, border, signature",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 4300
+  },
+  "subjects": [
+    { "id": "obj_wooden-chair", "variations": 2, "prompt": "a single old wooden chair with worn turned legs, standing alone on a plain neutral grey background" },
+    { "id": "obj_clay-pot", "variations": 2, "prompt": "a single round earthenware clay pot with a chipped rim, on a plain dark peat-brown background" },
+    { "id": "obj_woven-basket", "variations": 2, "prompt": "a single woven wicker basket with a bowed handle, on a plain muted green-grey background" },
+    { "id": "obj_iron-kettle", "variations": 2, "prompt": "a single squat cast-iron kettle with a curved spout, on a plain neutral grey background" },
+    { "id": "obj_rowing-boat", "variations": 2, "prompt": "a single weathered wooden rowing boat resting on its keel, on a plain dark background" },
+    { "id": "obj_tree-stump", "variations": 2, "prompt": "a single gnarled tree stump with exposed roots and split bark, on a plain muted green-grey background" },
+    { "id": "obj_stone-well", "variations": 2, "prompt": "a single low round stone well with a wooden crossbeam, on a plain neutral grey background" },
+    { "id": "obj_cart-wheel", "variations": 2, "prompt": "a single large wooden cart wheel with an iron rim leaning upright, on a plain dark peat-brown background" },
+    { "id": "obj_rope-coil", "variations": 2, "prompt": "a single thick coil of hemp rope lying on the ground, on a plain muted green-grey background" },
+    { "id": "obj_leather-boots", "variations": 2, "prompt": "a single pair of worn leather work boots standing together, on a plain neutral grey background" },
+    { "id": "obj_wooden-barrel", "variations": 2, "prompt": "a single oak barrel with iron hoops standing upright, on a plain dark background" },
+    { "id": "obj_hand-axe", "variations": 2, "prompt": "a single hand axe with a worn wooden haft leaning against a small log, on a plain muted green-grey background" },
+    { "id": "obj_firewood-bundle", "variations": 2, "prompt": "a single bundle of split firewood tied with twine, on a plain neutral grey background" },
+    { "id": "obj_hanging-lantern", "variations": 2, "prompt": "a single old iron lantern with amber glass panes hanging from a simple wooden post, on a plain dark background" },
+    { "id": "obj_wooden-fence", "variations": 2, "prompt": "a short run of crooked wooden fence posts with sagging rails, on a plain muted green-grey background" }
+  ]
+}
