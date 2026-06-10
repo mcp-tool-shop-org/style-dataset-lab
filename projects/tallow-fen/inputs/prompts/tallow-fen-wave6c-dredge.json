@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave6c-dredge",
+  "description": "Peat Dredge rebuild after wave5c went 0/8 (toothed breach-maw 8/8 — crocodile/anglerfish prior with the lantern hung inside the mouth as a lure; 'glowing from within' was the hook; profile poses stood it up on theropod legs). Fixes: tallow-light prefix; headless back-arch language with both ends underwater; membrane is a sealed dome with a dull sheen, never glowing from within; anglerfish/mouth/legs negatives. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, open mouth, jaws, teeth, fangs, anglerfish, glowing lure, whale, fish, fins, sandworm rearing upright, serpent, crocodile, alligator, head, face, eyes, standing on legs, legs, skull, spikes",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 8330,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_peat-dredge",
+      "variations": 2,
+      "prompt": "a Peat Dredge, the broad headless humped back of a wide low creature breaching the surface of a black bog at a three-quarter angle, both ends of its body still below the dark water so only the smooth arch of compacted dark peat-flesh shows, a cracked translucent amber tallow membrane stretched flat over a sealed dome low on the hump with a dull amber sheen and slow beading drips, a swallowed yellow-brown fen-bone jaw fragment jutting sideways from the dorsal crest, a torn furrow of churned peat trailing behind it, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_peat-dredge-crest",
+      "variations": 2,
+      "prompt": "a Peat Dredge barely surfaced, only a low smooth hump of dark compacted peat-flesh showing above still black bog water with both ends underwater, the cracked amber tallow membrane stretched over its sealed dome carrying a dull waxy sheen, a stained fen-bone jaw fragment jutting from the crest, ripples and torn floating peat ringing the hump, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_peat-dredge-passing",
+      "variations": 2,
+      "prompt": "a Peat Dredge passing through the frame in full profile, a long broad headless arch of dark compacted peat-flesh curving up out of the black bog and back down into it like a hill moving through water, the cracked translucent amber tallow membrane dome on the near flank beading slow amber drips, the swallowed yellow-brown fen-bone jaw fragment on its dorsal crest, a long torn furrow of churned peat stretching out behind, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_peat-dredge-wake",
+      "variations": 2,
+      "prompt": "a Peat Dredge mostly submerged and moving away at a three-quarter rear angle, the top of its broad headless peat-flesh arch cutting through still black water, wet peat sliding off the smooth hump, the fen-bone jaw fragment on the crest silhouetted against pale fog, a wide torn wake of churned peat and broken reeds spreading behind it, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    }
+  ]
+}

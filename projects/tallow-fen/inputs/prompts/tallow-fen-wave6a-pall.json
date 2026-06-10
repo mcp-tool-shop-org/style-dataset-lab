@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave6a-pall",
+  "description": "Fen Pall rebuild after wave5a went 0/8 (lantern prop 8/8 from the 'lantern light' style prefix; skull/reaper faces 6/8 fed by the 'shroud' noun; reeds-profile pose produced a standing skeleton-heron). Fixes: tallow-light prefix (the wave-3c lesson), 'shroud' dropped from positives, widow-grade anti-skull block, profile pose moved over open water. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, skeleton, bird skull, beak, bird, seagull, heron, feathers, bat, dragon, leathery demon wings, standing on legs, eyes, glowing eyes, fire, flames",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 8110,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_fen-pall",
+      "variations": 2,
+      "prompt": "a Fen Pall, a sagging airborne mass of wet dark peat-flesh sheets laboring low over open black bog water at a three-quarter angle, two uneven drooping wing-masses with the left wing larger and hanging lower, cracked yellow-brown fen-bone struts piercing through the wet peat-flesh wing-sheets, a blunt smooth featureless head-bulb with no face and only a single dark hollow, one long amber tallow drip trailing beneath the head-bulb, heavy and struggling in the air, colours peat black-brown, bog green, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-hang",
+      "variations": 2,
+      "prompt": "a Fen Pall hanging heavy in cold fog mid-beat, a sagging flying mass of wet dark peat-flesh sheets drooping between cracked yellow-brown fen-bone struts, the wing-sheets torn and dripping at the edges, a blunt smooth featureless head-bulb with no face and one dark hollow, a single long amber tallow drip hanging from the head-bulb, colours peat black-brown, bog green, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-profile",
+      "variations": 2,
+      "prompt": "a Fen Pall in full profile flying low over open still black water, a heavy sagging airborne mass like soaked cloth thrown over the wind, both drooping wings of dark peat-flesh sheets pierced by yellow-brown fen-bone struts, the blunt featureless head-bulb leading with one long amber tallow drip trailing below, its underside almost touching its dim reflection in the water, colours peat black-brown, bog green, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-rear",
+      "variations": 2,
+      "prompt": "a Fen Pall seen from behind at a three-quarter angle laboring away over a black bog, a sagging airborne mass of wet dark peat-flesh sheets on two uneven drooping wing-masses with cracked fen-bone struts showing through the sheets, a thin warm amber tallow sheen rimming its left wing edge, colours peat black-brown, bog green, bone ash, a single creature, dark misty background"
+    }
+  ]
+}
