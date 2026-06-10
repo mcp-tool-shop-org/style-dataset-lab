@@ -12,6 +12,12 @@ projects/*/snapshots/
 projects/*/splits/
 projects/*/dataset-cards/
 projects/*/eval-packs/
+# Training packages copy the curated images (large, regenerable from the
+# tracked manifest + records via `sdlab training-package build`)
+projects/*/training/packages/
+
+# Python cache (scripts/qwen_generate.py runs)
+__pycache__/
 
 # Canon-build generated output + cache (regenerable from canon entries).
 # config.json is tracked; build output directories are not.
