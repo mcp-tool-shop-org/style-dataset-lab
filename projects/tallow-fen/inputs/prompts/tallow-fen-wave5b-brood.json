@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave5b-brood",
+  "description": "Bestiary expansion (canon approved 2026-06-10): Wick Brood first dataset wave. NOTE: the global 'multiple creatures' negative is intentionally DROPPED for this class only — the Brood IS many bodies, the positives carry 'one single fused mass'. Anti-miss negatives from the Forbidden line (separate insects / cute slimes). Avoid the word candle in positives (literalization). Fresh seeds; loras pinned empty.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, insects, bees, flies, ants, beetles, swarm of scattered separate creatures, slime mascot, googly eyes, smiling face, lit candle, candlestick, flame",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 7220,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_wick-brood",
+      "variations": 2,
+      "prompt": "a Wick Brood, one low flat clotted mass of fist-sized soft rounded amber tallow bodies fused together at their flanks, each rounded body tipped with a small charred black stub, strands of half-set amber tallow stringing the bodies together over dark wet peat-flesh binding, three dull amber tallow eyes set in a shallow arc on the leading edge, dragging itself over wet peat as one single fused heap at a three-quarter angle, colours peat black-brown, bog green, tallow gold, pale misty background"
+    },
+    {
+      "id": "concept_wick-brood-crawl",
+      "variations": 2,
+      "prompt": "a Wick Brood climbing over a half-sunken driftwood bough, one single fused flat clot of soft rounded amber tallow bodies joined at the flanks, short trailing tendrils of half-set tallow dragging behind it, each rounded body tipped with a charred black stub, dark peat-flesh showing in the seams between bodies, colours peat black-brown, bog green, tallow gold, dark misty background"
+    },
+    {
+      "id": "concept_wick-brood-rest",
+      "variations": 2,
+      "prompt": "a Wick Brood at rest among dead reeds, a wide flat sagging heap of fused rounded amber tallow bodies sitting as one single clotted mass, charred black stubs tipping each body, slow amber drips setting along its edges, three dull amber tallow eyes barely glowing in a shallow arc on one side, colours peat black-brown, bog green, tallow gold, pale misty background"
+    },
+    {
+      "id": "concept_wick-brood-front",
+      "variations": 2,
+      "prompt": "a Wick Brood facing the viewer, the leading edge of one single fused flat mass of soft rounded amber tallow bodies, three dull amber tallow eyes in a shallow arc looking out from the front rank of bodies, charred black stubs on each rounded body, strands of half-set tallow webbing the mass together, dark wet peat beneath, colours peat black-brown, bog green, tallow gold, dark misty background"
+    }
+  ]
+}
