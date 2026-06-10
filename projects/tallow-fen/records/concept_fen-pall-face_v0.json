@@ -1,0 +1,49 @@
+{
+  "id": "concept_fen-pall-face_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:30:42.298Z",
+  "asset_path": "outputs/rejected/concept_fen-pall-face_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1151013
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave9a-pall",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall facing the viewer alone in the fog, wide uneven wings of cracked translucent amber tallow wax spread on dark fen-bone struts, a ragged matted dark fibre body hanging beneath and trailing loose strands into the air, a smooth pale featureless head-bulb with one small dark hollow, one long amber tallow drip falling from the head-bulb, high over dark water, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, companion creature, background figure, wraith, ghost, boat, shipwreck, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, candle, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, skeleton, bird skull, beak, bird, seagull, heron, feathers, bat, dragon, leathery demon wings, standing on legs, perched, wading, legs, arms, hands, eyes, glowing eyes, fire, flames, string lights",
+    "seed": 11114,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:30:42.298Z",
+    "explanation": "a literal duck — drawn beak, feathered body, dangling legs; the Forbidden line itself",
+    "criteria_scores": {},
+    "failure_modes": [
+      "bird",
+      "limbs"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}

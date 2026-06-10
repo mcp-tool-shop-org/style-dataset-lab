@@ -1,0 +1,46 @@
+{
+  "id": "concept_wick-brood-clot_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:30:42.298Z",
+  "asset_path": "outputs/approved/concept_wick-brood-clot_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1251858
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave9b-brood",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Wick Brood, one clotted heap of fist-sized rounded amber tallow bodies fused together at their flanks into a single low mass, a loose net of dark wet peat-flesh strands binding it, each rounded body tipped with a small charred black stub, small dull round amber spots set low in the leading bodies, slow amber drips setting along its base, resting on flat wet peat at a three-quarter angle, colours peat black-brown, bog green, tallow gold, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, second creature, companion creature, background figure, separate creatures standing apart, a group of distinct monsters, insects, bees, flies, ants, beetles, spider, spider legs, insect legs, arms, hands, legs, claws, tree roots, root legs, thorn bush, bramble, branches, twigs crown, floating orbs, floating lights, glowing trail, segmented train, caterpillar, rectangular block, slime mascot, googly eyes, slit pupil, cat eye, owl eyes, eye cluster, smiling face, carved face, lit candle, candlestick, flame, spiderweb, cobweb, tentacles, human person, human face, modern gear, text, watermark, frame, border, signature, lantern, lamp",
+    "seed": 11220,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:30:42.298Z",
+    "explanation": "one clotted heap of rounded amber wax bodies fused at their flanks under a loose net of dark wet fibre strands, charred black stubs on the upper bodies, small dull amber spots in the leading bodies, slow amber drips running to the wet peat below",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

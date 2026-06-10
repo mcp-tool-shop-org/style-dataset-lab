@@ -1,0 +1,48 @@
+{
+  "id": "concept_mire-maw-haze_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:30:42.298Z",
+  "asset_path": "outputs/rejected/concept_mire-maw-haze_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1177878
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave9e-maw",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Mire Maw rising through thick haze across the water, the leaning blank peat cone half-swallowed by fog, its drooping crown of root-snags a dark tangle over the dim summit, the amber wax seam a soft warm line down the near flank, slow rings spreading from its base, empty water and empty fog around it, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, companion creature, background figure, beast in the fog, wraith, ghost, boat, shipwreck, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, serpent head, beaked head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, glowing ring, shrine, statue, idol, symmetrical, upward spikes, glowing eyes, fire, flames, torch, candle, melted candle, wax candle, mushroom, flared cap, anvil, cowl, hood, skeleton, twin trunk, split trunk",
+    "seed": 11554,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:30:42.298Z",
+    "explanation": "bird-skull face on the tower",
+    "criteria_scores": {},
+    "failure_modes": [
+      "skull"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}
