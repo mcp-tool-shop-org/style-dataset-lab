@@ -1,0 +1,51 @@
+{
+  "id": "concept_fen-pall-rear_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T12:29:08.795Z",
+  "asset_path": "outputs/rejected/concept_fen-pall-rear_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1221181
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave6a-pall",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall seen from behind at a three-quarter angle laboring away over a black bog, a sagging airborne mass of wet dark peat-flesh sheets on two uneven drooping wing-masses with cracked fen-bone struts showing through the sheets, a thin warm amber tallow sheen rimming its left wing edge, colours peat black-brown, bog green, bone ash, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, skeleton, bird skull, beak, bird, seagull, heron, feathers, bat, dragon, leathery demon wings, standing on legs, eyes, glowing eyes, fire, flames",
+    "seed": 8116,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T12:29:08.795Z",
+    "explanation": "rendered as a standing winged humanoid figure wading in the bog and tending a lit candle on a mound; grounded anthropomorphic body with exposed skeleton ribs — rear-view flight collapses to a grounded figure",
+    "criteria_scores": {},
+    "failure_modes": [
+      "anthropomorphized",
+      "grounded_not_flying",
+      "prop_literalization",
+      "skeleton"
+    ],
+    "improvement_notes": "drop rear poses for this class until the LoRA holds the body plan",
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}

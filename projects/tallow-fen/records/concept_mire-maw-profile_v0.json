@@ -1,0 +1,46 @@
+{
+  "id": "concept_mire-maw-profile_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T12:29:08.795Z",
+  "asset_path": "outputs/approved/concept_mire-maw-profile_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1183288
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave6e-maw",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Mire Maw in full profile, a towering asymmetric cone of dark sodden peat-flesh leaning to one side over the bog, the edge of its vertical amber tallow-lined slit just visible on the near face catching warm light, its long upper slope blank featureless wet peat, broken yellow-brown antler stubs drooping downward in a loose ring around its top, a faint amber sheen from the still tallow pool at its flat apex, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, shrine, statue, idol, symmetrical, upward spikes, glowing eyes",
+    "seed": 8554,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T12:29:08.795Z",
+    "explanation": "a towering leaning cone of dark sodden peat rising from black bog water, a bright vertical seam of amber wax running its full height, a crooked ring of broken bone snags around its flat glowing crown, roots flaring into the water at its base",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": "crown reads broken-snag not stag-rack; antler droop direction still mixed — director rules at gate",
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

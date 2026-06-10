@@ -1,0 +1,77 @@
+{
+  "wave": "tallow-fen-wave5d-boil",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, wizard, witch, robed figure, humanoid, plant, flower, leaves, vines, pitcher plant, volcano, cartoon explosion, fireball, eyes, mouth",
+  "loras": [],
+  "items": [
+    {
+      "id": "concept_rust-boil",
+      "variation": 0,
+      "seed": 7440,
+      "file": "concept_rust-boil_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil, a squat limbless swollen mound of dark peat-flesh rooted in shallow black bog water at a three-quarter angle, a thick translucent amber tallow seal stretched over a single raised puckered spout at its top, dark rust-red streaks radiating down from the spout rim over its flanks, one yellow-brown fen-bone splinter jutting sideways from its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil",
+      "variation": 1,
+      "seed": 7441,
+      "file": "concept_rust-boil_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil, a squat limbless swollen mound of dark peat-flesh rooted in shallow black bog water at a three-quarter angle, a thick translucent amber tallow seal stretched over a single raised puckered spout at its top, dark rust-red streaks radiating down from the spout rim over its flanks, one yellow-brown fen-bone splinter jutting sideways from its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-bulge",
+      "variation": 0,
+      "seed": 7442,
+      "file": "concept_rust-boil-bulge_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil straining under pressure, a squat limbless mound of dark swollen peat-flesh with the thick amber tallow seal over its raised spout bulging outward and stretched thin, faint warm glow through the strained tallow, rust-red runoff streaking down from the rim, the fen-bone splinter in its flank catching the light, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-bulge",
+      "variation": 1,
+      "seed": 7443,
+      "file": "concept_rust-boil-bulge_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil straining under pressure, a squat limbless mound of dark swollen peat-flesh with the thick amber tallow seal over its raised spout bulging outward and stretched thin, faint warm glow through the strained tallow, rust-red runoff streaking down from the rim, the fen-bone splinter in its flank catching the light, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-vent",
+      "variation": 0,
+      "seed": 7444,
+      "file": "concept_rust-boil-vent_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil venting, a squat limbless peat-flesh mound lobbing a single arcing gout of dark rust-red slurry sideways from its raised spout, the amber tallow seal split open and flapping at the spout rim, steam rising off the slurry arc, rust-red streaks down its flanks, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-vent",
+      "variation": 1,
+      "seed": 7445,
+      "file": "concept_rust-boil-vent_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil venting, a squat limbless peat-flesh mound lobbing a single arcing gout of dark rust-red slurry sideways from its raised spout, the amber tallow seal split open and flapping at the spout rim, steam rising off the slurry arc, rust-red streaks down its flanks, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-profile",
+      "variation": 0,
+      "seed": 7446,
+      "file": "concept_rust-boil-profile_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil in full profile in shallow bog water, a heavy squat limbless mound of dark peat-flesh with one raised puckered spout sealed in thick amber tallow, old dried rust-red streaks layered down its near flank, one yellow-brown fen-bone splinter jutting from its side, slow ripples around its base, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-profile",
+      "variation": 1,
+      "seed": 7447,
+      "file": "concept_rust-boil-profile_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil in full profile in shallow bog water, a heavy squat limbless mound of dark peat-flesh with one raised puckered spout sealed in thick amber tallow, old dried rust-red streaks layered down its near flank, one yellow-brown fen-bone splinter jutting from its side, slow ripples around its base, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    }
+  ]
+}
