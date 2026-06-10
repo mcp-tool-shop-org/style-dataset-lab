@@ -1,0 +1,49 @@
+{
+  "id": "concept_rust-boil-i2iA_d70_s12000",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T14:07:55.885Z",
+  "asset_path": "outputs/approved/concept_rust-boil-i2iA_d70_s12000.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 554947
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave12-i2i-boil",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil, a low wide blister-dome of dark swollen peat-flesh fused into flat wet mud, its crown capped by a taut smooth disc of translucent amber tallow glowing faintly, dried dark rust-brown stain trails fanning down its smooth sides, one yellow-brown fen-bone splinter jutting from its flank, still puddles on the mud, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, text, watermark, frame, border, signature, lantern, lamp, arms, hands, legs, claws, skeleton, hunched figure, standing figure, humanoid, head, neck, eye, socket, helmet, mushroom, stalk, stem, tree stump, hollow, open hole, dark hole, pipe, funnel, blood, gore, crimson, plant, volcano, mouth, face",
+    "seed": 12000,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "img2img shape-anchor",
+    "init_image": "E:\\AI\\training\\_mocks\\mock_rust-boil-a.png",
+    "denoise": 0.7
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T14:07:55.885Z",
+    "explanation": "a low dome of dark draped peat folds fused to the mud, a soft amber wax cap at its crown, a small bone splinter in its flank, flat wet mud all around",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": "i2i pilot (mock-a v1, d0.70) — softest of the eight; swap-out candidate at the gate",
+    "confidence": 0.7
+  },
+  "canon": null,
+  "iteration": null
+}

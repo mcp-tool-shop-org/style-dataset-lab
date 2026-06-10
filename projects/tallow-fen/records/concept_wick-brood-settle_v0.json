@@ -1,0 +1,46 @@
+{
+  "id": "concept_wick-brood-settle_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:48:09.966Z",
+  "asset_path": "outputs/approved/concept_wick-brood-settle_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1264365
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave10-minis",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Wick Brood settled on flat wet peat, one clotted heap of fist-sized rounded amber tallow bodies fused together at their flanks, a loose net of dark wet peat-flesh strands over the mass, each rounded body tipped with a small charred black stub, small dull round amber spots set low in the leading bodies, slow amber drips pooling at its base, colours peat black-brown, bog green, tallow gold, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, companion creature, background figure, wraith, ghost, boat, shipwreck, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, candle, skull, skull face, bone face, skeleton face, skeleton, skeletal torso, shoulder joints, bird skull, beak, bird, duck, seagull, heron, feathers, bat, dragon, standing on legs, perched, wading, legs, arms, hands, feet, eyes, glowing eyes, fire, flames, insects, spider, slime mascot, slit pupil, smiling face, floating orbs, glowing trail, open cavity, burst body, rope lashing, branch rack",
+    "seed": 13114,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:48:09.966Z",
+    "explanation": "one clotted heap of rounded amber wax bodies fused at their flanks under a loose net of dark wet fibre strands, charred black stubs tipping the bodies, small dull amber spots glowing low in the leading bodies, slow amber drips pooling on the wet peat",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": "class reaches 8 — COMPLETE",
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

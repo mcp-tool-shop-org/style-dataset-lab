@@ -1,0 +1,49 @@
+{
+  "id": "concept_peat-dredge-v2a_d75_s1310",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T14:07:55.885Z",
+  "asset_path": "outputs/borderline/concept_peat-dredge-v2a_d75_s1310.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 616543
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave12-i2i-dredge",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge, the broad headless humped back of a wide low creature breaking the surface of still black bog water, both ends below the surface, wet matted peat fibre and drowned moss across the textured hump, a sealed cracked dome of translucent amber tallow on its mid-back with a dull waxy sheen, wide slow ripple rings spreading around it across the dark water, empty fog beyond, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, background figure, reflection of a face, submerged face, boat, shipwreck, ship, machinery, crane, human person, human face, modern gear, text, watermark, frame, border, signature, lantern, lamp, candle, flame, open mouth, jaws, teeth, fangs, grin, skull, bone, femur, corpse, anglerfish, whale, fish, fins, rearing, serpent, snake, neck, worm, head, face, eyes, legs, spikes, glass, metal, polished",
+    "seed": 1310,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "img2img shape-anchor",
+    "init_image": "E:\\AI\\training\\_mocks\\mock2_peat-dredge-a.png",
+    "denoise": 0.75
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T14:07:55.885Z",
+    "explanation": "soft egg-like dome, clean content, low brushwork richness",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.65
+  },
+  "canon": null,
+  "iteration": null
+}
