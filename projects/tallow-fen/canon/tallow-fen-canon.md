@@ -50,14 +50,17 @@ and the stained bones of what they swallowed.
   runoff. *Features:* **protruding stained bones and antlers of swallowed things**; rust-red water
   weeping from its seams; one sunken tallow eye. *Forbidden:* a clean-geometry rock golem.
 
-- **Fen Pall** — *laboring flyer/harrier.* A sagging airborne shroud (~1.5m across) dragging
+- **Fen Pall** — *laboring flyer/harrier.* A sagging airborne mass (~1.5m across) dragging
   itself through the fog on two uneven wing-masses, never gliding clean. *64px:* a heavy
   low-hanging arc, two drooping wing-sags and a trailing head-bulb — a soaked cloth thrown over
-  the wind. *Palette:* `#2b2620`, `#4a5535`, `#d9d2be`. *Materials:* wet peat-flesh sheets
-  sagging from cracked fen-bone wing-struts, tallow. *Features:* uneven wings (left always
-  larger, hanging lower); fen-bone struts piercing through the peat-flesh sheets; one long
+  the wind. *Palette:* `#2b2620`, `#c8a24a`, `#d9d2be`. *Materials:* cracked translucent
+  amber-tallow wing-sheets on fen-bone struts, matted peat-flesh body, tallow. *Features:*
+  uneven wings of cracked amber tallow (left always larger, hanging lower) with fen-bone struts
+  piercing through the wax; a ragged matted peat-flesh body trailing loose strands; one long
   tallow drip trailing from the blunt head-bulb (no beak, no eyes — a dark hollow). *Forbidden:*
   a clean bird, bat, or dragon — no feathers, no leathery demon wings.
+  <!-- AMENDED 2026-06-10 (Mike): wing-sheets are amber TALLOW, not peat-flesh — ruled at the
+  wave6 gate; the model's strong mode adopted as canon. Palette swap #4a5535 -> #c8a24a. -->
 - **Wick Brood** — *swarm.* A heap of fist-sized soft tallow grubs fused at the flanks, moving
   as one low flat clot (~0.8m wide), shedding and reabsorbing bodies as it drags forward.
   *64px:* one wide flat sagging clot with short trailing tendrils — never separate dots.

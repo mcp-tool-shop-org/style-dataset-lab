@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave8a-pall",
+  "description": "Fen Pall close-out under the 2026-06-10 canon amendment (wings = cracked amber-tallow sheets on fen-bone struts, Mike-ruled). 4 clean exemplars stand from wave6; this wave targets 4+ more on the amber-wing language. Eliminated: rear poses (standing winged humanoids), reeds (skeleton-heron), the shroud noun (reaper). Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, skeleton, bird skull, beak, bird, seagull, heron, feathers, bat, dragon, leathery demon wings, standing on legs, perched, eyes, glowing eyes, fire, flames, candle",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 10110,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_fen-pall-low",
+      "variations": 2,
+      "prompt": "a Fen Pall laboring low over open black bog water at a three-quarter angle, a sagging airborne creature with two uneven drooping wings of cracked translucent amber tallow sheets pierced by yellow-brown fen-bone struts, the left wing larger and hanging lower, a ragged matted dark peat-flesh body trailing loose strands, a smooth pale featureless head-bulb with one small dark hollow and a single long amber tallow drip falling from it, heavy and struggling in the air, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-drift",
+      "variations": 2,
+      "prompt": "a Fen Pall drifting heavy in cold fog mid-beat, its two uneven wings of cracked amber tallow sheets sagging between yellow-brown fen-bone struts, the wax sheets torn and dripping at their edges, a matted dark peat-flesh body hanging beneath, a smooth blank pale head-bulb with one dark hollow trailing a single amber drip, colours peat black-brown, tallow gold, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-glow",
+      "variations": 2,
+      "prompt": "a Fen Pall with one warm tallow light behind it, the cracked translucent amber tallow sheets of its uneven drooping wings glowing like lit panes around the dark fen-bone struts, its ragged matted peat-flesh body a dark mass between the glowing wings, the featureless pale head-bulb dim below, flying slow over black water, colours peat black-brown, tallow gold, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-skim",
+      "variations": 2,
+      "prompt": "a Fen Pall skimming just above still black water at a three-quarter angle, uneven drooping wings of cracked amber tallow sheets on fen-bone struts reaching wide, loose strands of its matted dark peat-flesh body brushing the surface, the smooth featureless pale head-bulb leading with one long amber tallow drip joining its dim reflection below, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background"
+    }
+  ]
+}

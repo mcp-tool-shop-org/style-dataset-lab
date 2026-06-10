@@ -2,7 +2,7 @@
   "id": "concept_fen-pall-profile_v1",
   "schema_version": "1.0.0",
   "created_at": "2026-06-10T12:29:08.795Z",
-  "asset_path": "outputs/borderline/concept_fen-pall-profile_v1.png",
+  "asset_path": "outputs/rejected/concept_fen-pall-profile_v1.png",
   "image": {
     "format": "png",
     "width": 1024,
@@ -32,10 +32,10 @@
     "loras": []
   },
   "judgment": {
-    "status": "borderline",
+    "status": "rejected",
     "reviewer": "claude:fable-5",
-    "reviewed_at": "2026-06-10T12:29:08.795Z",
-    "explanation": "diving profile toward its reflection, dark ragged wings with gold struts; head-bulb droop again suggests a beak curve at small sizes",
+    "reviewed_at": "2026-06-10T13:02:51.196Z",
+    "explanation": "re-curated borderline->rejected under the 2026-06-10 canon amendment (Mike): wing-sheets are amber tallow, not dark peat-flesh — this pair is the dark-wing mode, and the head-bulb carries a proto-beak droop. Prior status: borderline.",
     "criteria_scores": {},
     "failure_modes": [],
     "improvement_notes": "see profile_v0",

@@ -1,0 +1,77 @@
+{
+  "wave": "tallow-fen-wave8c-dredge",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, open mouth, jaws, teeth, fangs, grin, skull, bone, femur, corpse, zombie, anglerfish, glowing lure, whale, fish, fins, rearing, serpent, snake, neck, worm, head, face, eyes, standing on legs, legs, spikes, shipwreck, boat, ship, machinery, crane, necklace",
+  "loras": [],
+  "items": [
+    {
+      "id": "concept_peat-dredge-drift",
+      "variation": 0,
+      "seed": 10330,
+      "file": "concept_peat-dredge-drift_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge at middle distance in heavy fog, a low smooth headless hump of dark compacted peat-flesh sitting in still black water with both ends below the surface, the sealed dome of cracked translucent amber tallow on its back catching one warm light as a dull gleam, wide slow ripple rings spreading from it, empty still water and empty fog in every direction, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_peat-dredge-drift",
+      "variation": 1,
+      "seed": 10331,
+      "file": "concept_peat-dredge-drift_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge at middle distance in heavy fog, a low smooth headless hump of dark compacted peat-flesh sitting in still black water with both ends below the surface, the sealed dome of cracked translucent amber tallow on its back catching one warm light as a dull gleam, wide slow ripple rings spreading from it, empty still water and empty fog in every direction, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_peat-dredge-swell",
+      "variation": 0,
+      "seed": 10332,
+      "file": "concept_peat-dredge-swell_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge filling the lower frame with its broad mossy back, a low headless swell of dark peat-flesh in black water, a great cracked dome of translucent amber tallow rising from its midline with slow amber beads sliding down its sides onto the wet moss, both ends of the body sunk below the surface, nothing else in the fog, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_peat-dredge-swell",
+      "variation": 1,
+      "seed": 10333,
+      "file": "concept_peat-dredge-swell_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge filling the lower frame with its broad mossy back, a low headless swell of dark peat-flesh in black water, a great cracked dome of translucent amber tallow rising from its midline with slow amber beads sliding down its sides onto the wet moss, both ends of the body sunk below the surface, nothing else in the fog, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_peat-dredge-ring",
+      "variation": 0,
+      "seed": 10334,
+      "file": "concept_peat-dredge-ring_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge far out on open black water, a small low hump of dark peat-flesh with a faint amber gleam at its dome, enormous slow ripple rings spreading across the still surface around it, torn floating peat drifting in the rings, the horizon empty with fog, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_peat-dredge-ring",
+      "variation": 1,
+      "seed": 10335,
+      "file": "concept_peat-dredge-ring_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge far out on open black water, a small low hump of dark peat-flesh with a faint amber gleam at its dome, enormous slow ripple rings spreading across the still surface around it, torn floating peat drifting in the rings, the horizon empty with fog, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_peat-dredge-gleam",
+      "variation": 0,
+      "seed": 10336,
+      "file": "concept_peat-dredge-gleam_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge near at hand in dark water, only the top of its broad smooth headless hump above the surface, the cracked translucent amber tallow membrane stretched over its sealed back-dome glowing softly under one warm light, fine amber beads standing on the wax, wet matted peat fibre running down to the waterline, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_peat-dredge-gleam",
+      "variation": 1,
+      "seed": 10337,
+      "file": "concept_peat-dredge-gleam_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge near at hand in dark water, only the top of its broad smooth headless hump above the surface, the cracked translucent amber tallow membrane stretched over its sealed back-dome glowing softly under one warm light, fine amber beads standing on the wax, wet matted peat fibre running down to the waterline, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    }
+  ]
+}
