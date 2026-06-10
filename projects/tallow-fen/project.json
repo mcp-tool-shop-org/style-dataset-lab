@@ -21,8 +21,8 @@
     "comfy_url": "http://127.0.0.1:8188",
     "loras": [
       {
-        "weight": 1.5,
-        "name": "tallow_fen_style_v1.safetensors"
+        "name": "tallow_fen_style_v2.safetensors",
+        "weight": 1.5
       }
     ]
   }

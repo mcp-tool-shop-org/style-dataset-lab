@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave4-widow-v2",
+  "description": "Dataset v2 widow reinforcement (green-lit 2026-06-09): the v1 LoRA regressed the Mire Widow to skull faces — the 2 approved wave-1 skull exemplars (25% of the widow class) + the skeleton-heavy creature mode amplified the base's grim-reaper prior past prompt negatives. v2 = reject those 2 records and OUTNUMBER the prior with faceless exemplars. Same anti-skull recipe that went 6/6 in wave 2, new poses/compositions.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, eyes, mouth, teeth, grinning, exposed ribcage skeleton",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 4600,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_mire-widow-wade",
+      "variations": 2,
+      "prompt": "a Mire Widow, a tall thin boneless biped wading through knee-deep black bog water, draped head to foot in heavy wet peat-flesh rags, its drooping head completely wrapped in a smooth featureless veil of sodden cloth with no face at all, a translucent amber tallow lantern-organ glowing softly from inside its hollow chest through the draped rags, long boneless arms trailing in the water, colours bog green, peat black-brown, tallow gold glow, a single creature, misty background"
+    },
+    {
+      "id": "concept_mire-widow-reach",
+      "variations": 2,
+      "prompt": "a Mire Widow, a tall boneless biped leaning forward and reaching down with one long sagging arm ending in fen-bone claws, its body draped entirely in layered wet rags, the head a smooth blank veiled mass of wet cloth with no features, a soft amber tallow glow radiating from deep inside its hollow chest, colours bog green, peat black-brown, tallow gold glow, a single creature on a plain pale background"
+    },
+    {
+      "id": "concept_mire-widow-still",
+      "variations": 2,
+      "prompt": "a Mire Widow standing perfectly still among dead reeds, a tall narrow drooping figure swathed in wet peat-flesh rags from head to ground, the head a featureless smooth veiled shape bowed forward, warm amber tallow light bleeding through the cloth over its chest from the lantern-organ inside, long arms hanging slack into the reeds, colours bog green, peat black-brown, tallow gold glow, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_mire-widow-back",
+      "variations": 2,
+      "prompt": "a Mire Widow seen from behind at a three-quarter angle, a tall drooping figure draped in ragged wet cloth, its veiled featureless head bowed, the amber glow of its chest lantern-organ spilling around its silhouette from the front, boneless arms trailing toward the bog, colours bog green, peat black-brown, tallow gold rim light, a single creature, dark misty background"
+    }
+  ]
+}
