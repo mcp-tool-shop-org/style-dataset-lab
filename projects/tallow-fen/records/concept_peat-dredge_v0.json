@@ -1,0 +1,49 @@
+{
+  "id": "concept_peat-dredge_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T12:29:08.795Z",
+  "asset_path": "outputs/rejected/concept_peat-dredge_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1252119
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave6c-dredge",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge, the broad headless humped back of a wide low creature breaching the surface of a black bog at a three-quarter angle, both ends of its body still below the dark water so only the smooth arch of compacted dark peat-flesh shows, a cracked translucent amber tallow membrane stretched flat over a sealed dome low on the hump with a dull amber sheen and slow beading drips, a swallowed yellow-brown fen-bone jaw fragment jutting sideways from the dorsal crest, a torn furrow of churned peat trailing behind it, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, open mouth, jaws, teeth, fangs, anglerfish, glowing lure, whale, fish, fins, sandworm rearing upright, serpent, crocodile, alligator, head, face, eyes, standing on legs, legs, skull, spikes",
+    "seed": 8330,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T12:29:08.795Z",
+    "explanation": "the surfacing arch carries a head at the waterline with a yellow toothed grin beneath the cracked amber dome; canon is a headless back-arch",
+    "criteria_scores": {},
+    "failure_modes": [
+      "face",
+      "teeth"
+    ],
+    "improvement_notes": "dome+arch+furrow all present — the front end must be nothing",
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

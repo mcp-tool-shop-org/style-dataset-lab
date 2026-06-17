@@ -1,0 +1,32 @@
+{
+  "wave": "tallow-fen-wave9b-brood",
+  "description": "Wick Brood final close-out (3 clean needed, 5 standing): pure near-heap formula restatements (5/5 lifetime on this exact composition). Banned: wide scaling (bramble), gloom-glow (eye canopy), water, logs, motion. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, second creature, companion creature, background figure, separate creatures standing apart, a group of distinct monsters, insects, bees, flies, ants, beetles, spider, spider legs, insect legs, arms, hands, legs, claws, tree roots, root legs, thorn bush, bramble, branches, twigs crown, floating orbs, floating lights, glowing trail, segmented train, caterpillar, rectangular block, slime mascot, googly eyes, slit pupil, cat eye, owl eyes, eye cluster, smiling face, carved face, lit candle, candlestick, flame, spiderweb, cobweb, tentacles, human person, human face, modern gear, text, watermark, frame, border, signature, lantern, lamp",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 11220,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_wick-brood-clot",
+      "variations": 2,
+      "prompt": "a Wick Brood, one clotted heap of fist-sized rounded amber tallow bodies fused together at their flanks into a single low mass, a loose net of dark wet peat-flesh strands binding it, each rounded body tipped with a small charred black stub, small dull round amber spots set low in the leading bodies, slow amber drips setting along its base, resting on flat wet peat at a three-quarter angle, colours peat black-brown, bog green, tallow gold, pale misty background"
+    },
+    {
+      "id": "concept_wick-brood-pour",
+      "variations": 2,
+      "prompt": "a Wick Brood close at hand, a fused heap of rounded amber tallow bodies joined at their flanks and held in a sagging net of dark wet fibre strands, charred black stubs tipping the upper bodies, dull amber spots in the leading bodies, one heavy slow pour of amber wax running off its front edge and pooling on the flat wet peat beneath, colours peat black-brown, bog green, tallow gold, dark misty background"
+    },
+    {
+      "id": "concept_wick-brood-bound",
+      "variations": 2,
+      "prompt": "a Wick Brood resting on open flat peat, one single fused clot of rounded amber tallow bodies with the dark wet strand-net pulled tight across them in crossing lines, charred black stubs standing from the wax, three small dull round amber spots in a shallow arc on the leading edge, thin amber drips threading down between the bodies, colours peat black-brown, bog green, tallow gold, pale misty background"
+    }
+  ]
+}

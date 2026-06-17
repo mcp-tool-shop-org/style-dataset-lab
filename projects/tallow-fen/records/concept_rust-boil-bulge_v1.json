@@ -1,0 +1,51 @@
+{
+  "id": "concept_rust-boil-bulge_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T12:29:08.795Z",
+  "asset_path": "outputs/rejected/concept_rust-boil-bulge_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1238287
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave6d-boil",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil straining under inner pressure, a limbless swollen blister-dome of dark peat-flesh half-sunk in the shallows, the thick stretched disc of amber tallow sealing its crown-hole bulging upward and stretched thin with a faint warm glow through the strained wax, old dried rust-brown stains layered down its smooth flanks, the fen-bone splinter in its side catching warm light, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, arms, hands, legs, claws, skeleton, bone arms, hunched figure, wizard, witch, robed figure, humanoid, pipe, funnel, horn, jug, pot, hat, blood, gore, crimson, plant, flower, leaves, vines, volcano, eyes, mouth, face",
+    "seed": 8443,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 1,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T12:29:08.795Z",
+    "explanation": "a skull-like wax sac over a hunched figure with teeth visible beneath the rim",
+    "criteria_scores": {},
+    "failure_modes": [
+      "limbs",
+      "humanoid",
+      "skull",
+      "teeth"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.95
+  },
+  "canon": null,
+  "iteration": null
+}

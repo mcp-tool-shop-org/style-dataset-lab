@@ -1,0 +1,48 @@
+{
+  "id": "concept_wick-brood-wide_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/rejected/concept_wick-brood-wide_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1232389
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8b-brood",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Wick Brood, a wide low heap of many fist-sized rounded amber tallow bodies all fused at the flanks into one single connected clot, dark wet peat-flesh strands binding the whole mass together, charred black stubs tipping the upper bodies, three small dull round amber spots in a shallow arc on the leading edge, slow amber drips setting along the ground line, on flat open wet peat, colours peat black-brown, bog green, tallow gold, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, separate creatures standing apart, a group of distinct monsters, companions, insects, bees, flies, ants, beetles, spider, spider legs, insect legs, arms, hands, legs, claws, tree roots, root legs, floating orbs, floating lights, glowing trail, segmented train, caterpillar, rectangular block, slime mascot, googly eyes, slit pupil, cat eye, smiling face, carved face, lit candle, candlestick, flame, spiderweb, cobweb, tentacles",
+    "seed": 10223,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 1,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "two large glowing owl-eyes form in the dark bramble mass",
+    "criteria_scores": {},
+    "failure_modes": [
+      "face"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

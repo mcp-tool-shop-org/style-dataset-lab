@@ -1,0 +1,30 @@
+{
+  "schema_version": "2.2.0",
+  "training_manifest_id": "tm-20260617-132040-be3a",
+  "created_at": "2026-06-17T13:20:40.106Z",
+  "created_by": "sdlab-training-manifest-v1",
+  "project_id": "tallow-fen",
+  "training_profile_id": "tallow-fen-style-lora",
+  "source_export_id": "export-20260617-132039-8a02",
+  "source_snapshot_id": "snap-20260617-131938-6a24",
+  "source_split_id": "split-20260617-132005-1175",
+  "config_fingerprint": "0c5d2e12ba89c770340b05aa276f4e1500553f147a78f3a1e878895a8cf23520",
+  "export_manifest_hash": "fc1cb5b1bc5ad8b464c7d2bf8e0f4426c235c7bc5743b905791188328542b6db",
+  "dataset_counts": {
+    "records": 99,
+    "images": 99,
+    "images_expected": 99,
+    "images_actual": 99,
+    "images_failed": 0,
+    "checksums": 0
+  },
+  "base_model": "Qwen/Qwen-Image",
+  "adapter_target": "diffusers-lora",
+  "hyperparameters": {},
+  "caption_mode": "flux-natural-language",
+  "expected_outputs": {
+    "asset_type": "creature-design",
+    "target_family": "qwen-image"
+  },
+  "linked_eval_pack_ids": []
+}

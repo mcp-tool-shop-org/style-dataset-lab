@@ -50,6 +50,52 @@ and the stained bones of what they swallowed.
   runoff. *Features:* **protruding stained bones and antlers of swallowed things**; rust-red water
   weeping from its seams; one sunken tallow eye. *Forbidden:* a clean-geometry rock golem.
 
+- **Fen Pall** — *laboring flyer/harrier.* A sagging airborne mass (~1.5m across) dragging
+  itself through the fog on two uneven wing-masses, never gliding clean. *64px:* a heavy
+  low-hanging arc, two drooping wing-sags and a trailing head-bulb — a soaked cloth thrown over
+  the wind. *Palette:* `#2b2620`, `#c8a24a`, `#d9d2be`. *Materials:* cracked translucent
+  amber-tallow wing-sheets on fen-bone struts, matted peat-flesh body, tallow. *Features:*
+  uneven wings of cracked amber tallow (left always larger, hanging lower) with fen-bone struts
+  piercing through the wax; a ragged matted peat-flesh body trailing loose strands; one long
+  tallow drip trailing from the blunt head-bulb (no beak, no eyes — a dark hollow). *Forbidden:*
+  a clean bird, bat, or dragon — no feathers, no leathery demon wings.
+  <!-- AMENDED 2026-06-10 (Mike): wing-sheets are amber TALLOW, not peat-flesh — ruled at the
+  wave6 gate; the model's strong mode adopted as canon. Palette swap #4a5535 -> #c8a24a. -->
+- **Wick Brood** — *swarm.* A heap of fist-sized soft tallow grubs fused at the flanks, moving
+  as one low flat clot (~0.8m wide), shedding and reabsorbing bodies as it drags forward.
+  *64px:* one wide flat sagging clot with short trailing tendrils — never separate dots.
+  *Palette:* `#2b2620`, `#4a5535`, `#c8a24a`. *Materials:* soft amber tallow grub-bodies bound
+  in strands of peat-flesh. *Features:* each grub tipped with a charred black wick-stub;
+  half-set tallow strands stringing the bodies together; three dull amber tallow eyes in a
+  shallow arc on the leading edge (eyes, not faces). *Forbidden:* a cloud of separate insects
+  or cute slime mascots — it is ONE clotted mass.
+- **Peat Dredge** — *burrower/under-ambush.* A wide low breacher (~1.2m of it ever surfaces)
+  that swims the saturated peat and arches up through the crust beneath prey. *64px:* a broad
+  surfacing arch with a single forward neck-hump and a torn furrow trailing behind. *Palette:*
+  `#2b2620`, `#6e2b22`, `#d9d2be`. *Materials:* compacted peat-flesh, fen-bone, a cracked
+  tallow membrane. *Features:* a cracked tallow membrane over its breathing-hole, beading slow
+  amber drips; a swallowed fen-bone jaw jutting from its dorsal crest; the torn peat furrow it
+  leaves behind. *Forbidden:* a fanged sandworm rearing upright / a clean crocodile.
+- **Rust Boil** — *ranged/venter.* A squat limbless pressure-cyst (~0.7m tall, ~1m wide) rooted
+  in the shallows; it heaves and lobs gouts of boiling rust-red slurry at anything that nears.
+  *64px:* a heavy rounded hump with one raised puckered spout — a cyst about to burst.
+  *Palette:* `#2b2620`, `#6e2b22`, `#c8a24a`. *Materials:* swollen peat-flesh, a tallow-sealed
+  spout, fen-bone splinters. *Features:* a thick tallow seal over the spout, bulging before
+  each burst; rust-red streaks radiating down from the rim; a single fen-bone splinter jutting
+  sideways from its flank. *Forbidden:* a robed spellcaster of any kind / a leafy carnivorous
+  plant.
+- **Mire Maw** — *apex.* Not a walker — the fen itself rising: a towering cone of sodden peat
+  (~3.5m surfaced, ~2.5m across the base) that climbs out of the bog around its prey,
+  mouth-first. *64px:* the bestiary's tallest mass — a leaning tower-cone with one vertical
+  maw-slit and a drooping crown of broken fen-bone. *Palette:* `#2b2620`, `#6e2b22`, `#d9d2be`.
+  *Materials:* peat-flesh, fen-bone and antler crown, tallow-lined gullet. *Features:* a
+  vertical maw lined with slow-dripping amber tallow; a crown-ring of broken antlers, every
+  point sagging downward (never spiky-upward); a still amber tallow pool at its apex — a blind
+  mirror, not an eye. *Forbidden:* a neat concentric-fanged pit-maw / a demon idol; no upward
+  spikes.
+
+> Bestiary expansion approved by Mike 2026-06-10 (kickoff: bestiary-expansion, step-1 gate).
+
 ## Global must-not
 anime / chibi / cel-shaded · a human in a costume · photoreal or 3D-render · modern gear (metal
 plate, guns, tech).

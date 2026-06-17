@@ -1,0 +1,77 @@
+{
+  "wave": "tallow-fen-wave8d-boil",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, arms, hands, legs, claws, skeleton, bone arms, hunched figure, standing figure, wizard, witch, robed figure, humanoid, head, neck, eye, socket, helmet, tall, vertical, tower, sphere on a pedestal, tree stump, hollow, open hole, dark hole, pipe, funnel, horn, jug, pot, hat, blood, gore, crimson, plant, flower, leaves, vines, volcano, mouth, face",
+  "loras": [],
+  "items": [
+    {
+      "id": "concept_rust-boil-blister",
+      "variation": 0,
+      "seed": 10440,
+      "file": "concept_rust-boil-blister_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil, a low wide blister-dome of dark swollen peat-flesh twice as wide as it is tall, swelling directly out of flat wet mud and fused into the ground all around its rim with no body beneath it, its crown capped by a taut smooth disc of translucent amber tallow glowing faintly, dried dark rust-brown stains fanning down its smooth sides, one yellow-brown fen-bone splinter low in its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-blister",
+      "variation": 1,
+      "seed": 10441,
+      "file": "concept_rust-boil-blister_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil, a low wide blister-dome of dark swollen peat-flesh twice as wide as it is tall, swelling directly out of flat wet mud and fused into the ground all around its rim with no body beneath it, its crown capped by a taut smooth disc of translucent amber tallow glowing faintly, dried dark rust-brown stains fanning down its smooth sides, one yellow-brown fen-bone splinter low in its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-taut",
+      "variation": 0,
+      "seed": 10442,
+      "file": "concept_rust-boil-taut_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil swelling under inner pressure, a low wide dome of dark peat-flesh far broader than it is tall and fused seamlessly into the flat bog floor, the taut smooth disc of translucent amber tallow at its crown bulging gently upward, unbroken, with a warm glow pressing through the strained wax, fine dried rust-brown stain lines webbing out from the crown rim, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-taut",
+      "variation": 1,
+      "seed": 10443,
+      "file": "concept_rust-boil-taut_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil swelling under inner pressure, a low wide dome of dark peat-flesh far broader than it is tall and fused seamlessly into the flat bog floor, the taut smooth disc of translucent amber tallow at its crown bulging gently upward, unbroken, with a warm glow pressing through the strained wax, fine dried rust-brown stain lines webbing out from the crown rim, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-mudline",
+      "variation": 0,
+      "seed": 10444,
+      "file": "concept_rust-boil-mudline_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil on open mud flats in thin fog, a low wide swollen blister of dark peat-flesh rising out of the level ground, twice as wide as tall, shallow puddles mirroring its dark bulk, the taut amber tallow disc at its crown catching one warm light, long dried rust-brown stains down its near side, the fen-bone splinter jutting low from its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-mudline",
+      "variation": 1,
+      "seed": 10445,
+      "file": "concept_rust-boil-mudline_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil on open mud flats in thin fog, a low wide swollen blister of dark peat-flesh rising out of the level ground, twice as wide as tall, shallow puddles mirroring its dark bulk, the taut amber tallow disc at its crown catching one warm light, long dried rust-brown stains down its near side, the fen-bone splinter jutting low from its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-rim",
+      "variation": 0,
+      "seed": 10446,
+      "file": "concept_rust-boil-rim_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil close on its crown, the smooth taut disc of translucent amber tallow stretched across the top of a low wide peat-flesh dome, heavy dried rust-brown streaks radiating down from the disc rim over the dark swollen flesh, the dome fused into flat wet mud at its base with no body beneath, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-rim",
+      "variation": 1,
+      "seed": 10447,
+      "file": "concept_rust-boil-rim_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil close on its crown, the smooth taut disc of translucent amber tallow stretched across the top of a low wide peat-flesh dome, heavy dried rust-brown streaks radiating down from the disc rim over the dark swollen flesh, the dome fused into flat wet mud at its base with no body beneath, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    }
+  ]
+}

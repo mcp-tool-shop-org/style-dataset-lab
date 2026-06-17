@@ -1,0 +1,48 @@
+{
+  "id": "concept_fen-pall-low_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/rejected/concept_fen-pall-low_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1193315
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8a-pall",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall laboring low over open black bog water at a three-quarter angle, a sagging airborne creature with two uneven drooping wings of cracked translucent amber tallow sheets pierced by yellow-brown fen-bone struts, the left wing larger and hanging lower, a ragged matted dark peat-flesh body trailing loose strands, a smooth pale featureless head-bulb with one small dark hollow and a single long amber tallow drip falling from it, heavy and struggling in the air, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, skeleton, bird skull, beak, bird, seagull, heron, feathers, bat, dragon, leathery demon wings, standing on legs, perched, eyes, glowing eyes, fire, flames, candle",
+    "seed": 10110,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "the body grows four dangling emaciated legs — a winged gargoyle-beast mode against the legless strand-body class core",
+    "criteria_scores": {},
+    "failure_modes": [
+      "limbs"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,50 @@
+{
+  "id": "concept_mire-maw-blind_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T12:54:49.858Z",
+  "asset_path": "outputs/rejected/concept_mire-maw-blind_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1159217
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave7e-maw",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Mire Maw seen from its blind side, a massive leaning tower of blank wet peat-flesh with no openings on the near slopes, only the warm amber glow of its apex pool rimming the top edge and one bright thread of spilled tallow wrapping into view around the far flank, snapped antler stubs sagging loosely over the apex rim like broken branches with every point hanging down, heavy roots spreading into still black water, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, glowing ring, shrine, statue, idol, symmetrical, upward spikes, glowing eyes, fire, flames, torch, cowl, hood",
+    "seed": 9552,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T12:54:49.858Z",
+    "explanation": "a face forms in the left silhouette edge and a small skeleton stands in a hollow at the base",
+    "criteria_scores": {},
+    "failure_modes": [
+      "face",
+      "skeleton",
+      "hollow"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

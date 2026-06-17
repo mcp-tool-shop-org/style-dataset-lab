@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave7e-maw",
+  "description": "Mire Maw reinforcement on the apex-pour discovery (wave6: when the tallow visibly originates FROM the apex pool, the tower-face prior breaks — profile_v0 approved, v0 borderline; frontal slit framing grew demon faces 6/8). All poses anchor the pour at the apex and favor blind-side angles; antlers pinned as snapped drooping stubs. New pose ids, fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, glowing ring, shrine, statue, idol, symmetrical, upward spikes, glowing eyes, fire, flames, torch, cowl, hood",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 9550,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_mire-maw-pour",
+      "variations": 2,
+      "prompt": "a Mire Maw, a towering leaning cone of sodden dark peat-flesh risen from a black bog, the still amber tallow pool sunk into its flat apex overflowing at one low edge and spilling as a single bright stream down a deep vertical channel cleft in its flank all the way to the water, the long peat slopes blank and featureless everywhere else, a loose ring of snapped yellow-brown antler stubs hanging broken and drooping around the apex rim, roots flaring into the water at its base, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-blind",
+      "variations": 2,
+      "prompt": "a Mire Maw seen from its blind side, a massive leaning tower of blank wet peat-flesh with no openings on the near slopes, only the warm amber glow of its apex pool rimming the top edge and one bright thread of spilled tallow wrapping into view around the far flank, snapped antler stubs sagging loosely over the apex rim like broken branches with every point hanging down, heavy roots spreading into still black water, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_mire-maw-lean",
+      "variations": 2,
+      "prompt": "a Mire Maw leaning hard to one side over the bog in full profile, an asymmetric cone of dark sodden peat-flesh, the amber tallow pool at its flat apex tipped near to spilling with one slow stream already running down the leaning flank's vertical channel, the rest of the tower blank featureless wet peat, broken antler stubs drooping in a crooked ring below the apex, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-far",
+      "variations": 2,
+      "prompt": "a Mire Maw far off across open bog water in heavy fog, the tallest thing in the fen, a leaning blank cone silhouette of dark peat-flesh with a faint warm amber glow at its flat crown and one thin bright line of tallow down its flank, the crooked ring of snapped drooping antler stubs just readable against the pale sky, its dim reflection in the still water, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    }
+  ]
+}

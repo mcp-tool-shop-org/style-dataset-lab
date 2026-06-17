@@ -1,0 +1,48 @@
+{
+  "id": "concept_fen-pall-aloft_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T14:09:17.084Z",
+  "asset_path": "outputs/rejected/concept_fen-pall-aloft_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1213725
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave11-pall-final",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall aloft in cold fog, a sagging flying creature with two uneven drooping wings of cracked translucent amber tallow sheets pierced by yellow-brown fen-bone struts, beneath it only a loose ragged mass of matted dark peat-flesh strands with no body core and nothing jointed, a smooth pale featureless head-bulb with one small dark hollow, one long amber tallow drip falling from the head-bulb, far above dark water, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, background figure, wraith, ghost, boat, human person, human face, modern gear, text, watermark, frame, border, signature, lantern, lamp, candle, skull, skeleton, skeletal torso, bird skull, beak, bird, duck, feathers, bat, dragon, standing, perched, wading, legs, jointed legs, feet, talons, claws, arms, hands, eyes, glowing eyes, fire, flames",
+    "seed": 14111,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 1,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T14:09:17.084Z",
+    "explanation": "jointed legs with feet tucked beneath the airborne body — gargoyle mode",
+    "criteria_scores": {},
+    "failure_modes": [
+      "limbs"
+    ],
+    "improvement_notes": "class presents at 7 clean",
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

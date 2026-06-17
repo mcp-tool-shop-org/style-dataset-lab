@@ -1,0 +1,48 @@
+{
+  "id": "concept_rust-boil-rim_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/rejected/concept_rust-boil-rim_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1239606
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8d-boil",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil close on its crown, the smooth taut disc of translucent amber tallow stretched across the top of a low wide peat-flesh dome, heavy dried rust-brown streaks radiating down from the disc rim over the dark swollen flesh, the dome fused into flat wet mud at its base with no body beneath, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, arms, hands, legs, claws, skeleton, bone arms, hunched figure, standing figure, wizard, witch, robed figure, humanoid, head, neck, eye, socket, helmet, tall, vertical, tower, sphere on a pedestal, tree stump, hollow, open hole, dark hole, pipe, funnel, horn, jug, pot, hat, blood, gore, crimson, plant, flower, leaves, vines, volcano, mouth, face",
+    "seed": 10446,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "a small dark face peeks from under the amber cap rim",
+    "criteria_scores": {},
+    "failure_modes": [
+      "face"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

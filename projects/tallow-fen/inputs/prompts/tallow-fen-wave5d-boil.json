@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave5d-boil",
+  "description": "Bestiary expansion (canon approved 2026-06-10): Rust Boil first dataset wave. Anti-miss negatives from the Forbidden line (robed caster / carnivorous plant). Fresh seeds; loras pinned empty.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, wizard, witch, robed figure, humanoid, plant, flower, leaves, vines, pitcher plant, volcano, cartoon explosion, fireball, eyes, mouth",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 7440,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_rust-boil",
+      "variations": 2,
+      "prompt": "a Rust Boil, a squat limbless swollen mound of dark peat-flesh rooted in shallow black bog water at a three-quarter angle, a thick translucent amber tallow seal stretched over a single raised puckered spout at its top, dark rust-red streaks radiating down from the spout rim over its flanks, one yellow-brown fen-bone splinter jutting sideways from its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-bulge",
+      "variations": 2,
+      "prompt": "a Rust Boil straining under pressure, a squat limbless mound of dark swollen peat-flesh with the thick amber tallow seal over its raised spout bulging outward and stretched thin, faint warm glow through the strained tallow, rust-red runoff streaking down from the rim, the fen-bone splinter in its flank catching the light, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-vent",
+      "variations": 2,
+      "prompt": "a Rust Boil venting, a squat limbless peat-flesh mound lobbing a single arcing gout of dark rust-red slurry sideways from its raised spout, the amber tallow seal split open and flapping at the spout rim, steam rising off the slurry arc, rust-red streaks down its flanks, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-profile",
+      "variations": 2,
+      "prompt": "a Rust Boil in full profile in shallow bog water, a heavy squat limbless mound of dark peat-flesh with one raised puckered spout sealed in thick amber tallow, old dried rust-red streaks layered down its near flank, one yellow-brown fen-bone splinter jutting from its side, slow ripples around its base, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    }
+  ]
+}

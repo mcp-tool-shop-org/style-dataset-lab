@@ -1,0 +1,182 @@
+{
+  "id": "concept_wick-brood-near_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/approved/concept_wick-brood-near_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1283523
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8b-brood",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Wick Brood seen close, one clotted heap of fist-sized rounded amber tallow bodies fused together at their flanks into a single mass, bound in a loose net of dark wet peat-flesh strands, each rounded body tipped with a small charred black stub, small dull round amber spots set low in the leading bodies, thick slow amber drips pooling at its base, resting on flat wet peat, colours peat black-brown, bog green, tallow gold, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, separate creatures standing apart, a group of distinct monsters, companions, insects, bees, flies, ants, beetles, spider, spider legs, insect legs, arms, hands, legs, claws, tree roots, root legs, floating orbs, floating lights, glowing trail, segmented train, caterpillar, rectangular block, slime mascot, googly eyes, slit pupil, cat eye, smiling face, carved face, lit candle, candlestick, flame, spiderweb, cobweb, tentacles",
+    "seed": 10220,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "a close view of one clotted heap of rounded amber wax bodies fused at their flanks, dark wet fibre strands netting the mass, charred black stubs tipping the bodies, small dull amber spots in the leading bodies, a heavy slow pour of amber wax pooling at its base on flat wet peat",
+    "criteria_scores": {
+      "anatomy_accuracy": 0.8,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.8,
+      "evolutionary_logic": 0.8,
+      "scale_accuracy": 0.8,
+      "locomotion_read": 0.78,
+      "behavioral_read": 0.78,
+      "habitat_fit": 0.8,
+      "style_consistency": 0.82
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-06-17T13:19:13.931Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "ANA-001",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+      },
+      {
+        "rule_id": "ANA-002",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+      },
+      {
+        "rule_id": "SIL-001",
+        "category": "silhouette",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+      },
+      {
+        "rule_id": "SUR-001",
+        "category": "surface",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Surface texture coherent — covering reads consistently across the body (80%)"
+      },
+      {
+        "rule_id": "EVO-001",
+        "category": "ecology",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Adaptations make ecological sense — form follows function (80%)"
+      },
+      {
+        "rule_id": "LOC-001",
+        "category": "locomotion",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Locomotion class clear — movement mode reads from anatomy (78%)"
+      },
+      {
+        "rule_id": "BEH-001",
+        "category": "behavior",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Behavioral cues present — temperament reads from pose and expression (78%)"
+      },
+      {
+        "rule_id": "STY-001",
+        "category": "style",
+        "verdict": "pass",
+        "score": 0.82,
+        "rationale": "Style consistent — creature fits the lineup's design language (82%)"
+      }
+    ],
+    "assertion_count": 8,
+    "pass_count": 8,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "ANA-001",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+    },
+    {
+      "rule_id": "ANA-002",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+    },
+    {
+      "rule_id": "SIL-001",
+      "category": "silhouette",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+    },
+    {
+      "rule_id": "SUR-001",
+      "category": "surface",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Surface texture coherent — covering reads consistently across the body (80%)"
+    },
+    {
+      "rule_id": "EVO-001",
+      "category": "ecology",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Adaptations make ecological sense — form follows function (80%)"
+    },
+    {
+      "rule_id": "LOC-001",
+      "category": "locomotion",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Locomotion class clear — movement mode reads from anatomy (78%)"
+    },
+    {
+      "rule_id": "BEH-001",
+      "category": "behavior",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Behavioral cues present — temperament reads from pose and expression (78%)"
+    },
+    {
+      "rule_id": "STY-001",
+      "category": "style",
+      "verdict": "pass",
+      "score": 0.82,
+      "rationale": "Style consistent — creature fits the lineup's design language (82%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 8/8 constitution rules.  a close view of one clotted heap of rounded amber wax bodies fused at their flanks, dark wet fibre strands netting the mass, charred black stubs tipping the bodies, small dull amber spots in the leading bodies, a heavy slow pour of amber wax pooling at its base on flat wet peat"
+}

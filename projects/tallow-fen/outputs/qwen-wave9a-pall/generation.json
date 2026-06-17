@@ -1,0 +1,63 @@
+{
+  "wave": "tallow-fen-wave9a-pall",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, companion creature, background figure, wraith, ghost, boat, shipwreck, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, candle, skull, skull face, bone face, exposed skull, skeleton face, skeletal face, skeleton, bird skull, beak, bird, seagull, heron, feathers, bat, dragon, leathery demon wings, standing on legs, perched, wading, legs, arms, hands, eyes, glowing eyes, fire, flames, string lights",
+  "loras": [],
+  "items": [
+    {
+      "id": "concept_fen-pall-mist",
+      "variation": 0,
+      "seed": 11110,
+      "file": "concept_fen-pall-mist_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall utterly alone in the empty fen, laboring through mist high over black bog water at a three-quarter angle, two uneven drooping wings of cracked translucent amber tallow sheets pierced by yellow-brown fen-bone struts, the left wing larger and hanging lower, a ragged matted dark peat-flesh body trailing loose strands into the air, a smooth pale featureless head-bulb with one small dark hollow and a single long amber tallow drip falling away beneath it, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-mist",
+      "variation": 1,
+      "seed": 11111,
+      "file": "concept_fen-pall-mist_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall utterly alone in the empty fen, laboring through mist high over black bog water at a three-quarter angle, two uneven drooping wings of cracked translucent amber tallow sheets pierced by yellow-brown fen-bone struts, the left wing larger and hanging lower, a ragged matted dark peat-flesh body trailing loose strands into the air, a smooth pale featureless head-bulb with one small dark hollow and a single long amber tallow drip falling away beneath it, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-beat",
+      "variation": 0,
+      "seed": 11112,
+      "file": "concept_fen-pall-beat_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall hanging heavy in cold fog mid-beat, nothing else living in the gloom around it, its two uneven wings of cracked amber tallow sheets sagging between yellow-brown fen-bone struts with torn dripping edges, the matted dark peat-flesh body a ragged mass beneath the wings trailing loose strands, a smooth blank pale head-bulb with one dark hollow and a single amber drip hanging from it, colours peat black-brown, tallow gold, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-beat",
+      "variation": 1,
+      "seed": 11113,
+      "file": "concept_fen-pall-beat_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall hanging heavy in cold fog mid-beat, nothing else living in the gloom around it, its two uneven wings of cracked amber tallow sheets sagging between yellow-brown fen-bone struts with torn dripping edges, the matted dark peat-flesh body a ragged mass beneath the wings trailing loose strands, a smooth blank pale head-bulb with one dark hollow and a single amber drip hanging from it, colours peat black-brown, tallow gold, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-face",
+      "variation": 0,
+      "seed": 11114,
+      "file": "concept_fen-pall-face_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall facing the viewer alone in the fog, wide uneven wings of cracked translucent amber tallow wax spread on dark fen-bone struts, a ragged matted dark fibre body hanging beneath and trailing loose strands into the air, a smooth pale featureless head-bulb with one small dark hollow, one long amber tallow drip falling from the head-bulb, high over dark water, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-face",
+      "variation": 1,
+      "seed": 11115,
+      "file": "concept_fen-pall-face_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall facing the viewer alone in the fog, wide uneven wings of cracked translucent amber tallow wax spread on dark fen-bone struts, a ragged matted dark fibre body hanging beneath and trailing loose strands into the air, a smooth pale featureless head-bulb with one small dark hollow, one long amber tallow drip falling from the head-bulb, high over dark water, colours peat black-brown, tallow gold, bone ash, a single creature, pale misty background"
+    }
+  ]
+}
