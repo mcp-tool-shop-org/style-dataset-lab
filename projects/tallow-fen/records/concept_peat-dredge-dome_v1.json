@@ -36,11 +36,147 @@
     "reviewer": "claude:fable-5",
     "reviewed_at": "2026-06-10T12:54:49.858Z",
     "explanation": "the broad mossy back of a low creature in dark water, a great cracked dome of translucent amber rising from its midline, a string of amber beads sliding off the wet moss, both ends of the body sunk below the surface",
-    "criteria_scores": {},
+    "criteria_scores": {
+      "anatomy_accuracy": 0.75,
+      "silhouette_distinction": 0.8,
+      "surface_texture": 0.75,
+      "evolutionary_logic": 0.75,
+      "scale_accuracy": 0.75,
+      "locomotion_read": 0.73,
+      "behavioral_read": 0.73,
+      "habitat_fit": 0.75,
+      "style_consistency": 0.77
+    },
     "failure_modes": [],
     "improvement_notes": "bead-string reads slightly necklace-like — watch for prop drift in class",
     "confidence": 0.7
   },
-  "canon": null,
-  "iteration": null
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-06-17T13:19:13.916Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "ANA-001",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Anatomy is plausible — structure supports locomotion and mass (75%)"
+      },
+      {
+        "rule_id": "ANA-002",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Anatomy consistent across views — proportions and joints stable (75%)"
+      },
+      {
+        "rule_id": "SIL-001",
+        "category": "silhouette",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Silhouette distinctive — creature readable by outline alone (80%)"
+      },
+      {
+        "rule_id": "SUR-001",
+        "category": "surface",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Surface texture coherent — covering reads consistently across the body (75%)"
+      },
+      {
+        "rule_id": "EVO-001",
+        "category": "ecology",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Adaptations make ecological sense — form follows function (75%)"
+      },
+      {
+        "rule_id": "LOC-001",
+        "category": "locomotion",
+        "verdict": "pass",
+        "score": 0.73,
+        "rationale": "Locomotion class clear — movement mode reads from anatomy (73%)"
+      },
+      {
+        "rule_id": "BEH-001",
+        "category": "behavior",
+        "verdict": "pass",
+        "score": 0.73,
+        "rationale": "Behavioral cues present — temperament reads from pose and expression (73%)"
+      },
+      {
+        "rule_id": "STY-001",
+        "category": "style",
+        "verdict": "pass",
+        "score": 0.77,
+        "rationale": "Style consistent — creature fits the lineup's design language (77%)"
+      }
+    ],
+    "assertion_count": 8,
+    "pass_count": 8,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "ANA-001",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Anatomy is plausible — structure supports locomotion and mass (75%)"
+    },
+    {
+      "rule_id": "ANA-002",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Anatomy consistent across views — proportions and joints stable (75%)"
+    },
+    {
+      "rule_id": "SIL-001",
+      "category": "silhouette",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Silhouette distinctive — creature readable by outline alone (80%)"
+    },
+    {
+      "rule_id": "SUR-001",
+      "category": "surface",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Surface texture coherent — covering reads consistently across the body (75%)"
+    },
+    {
+      "rule_id": "EVO-001",
+      "category": "ecology",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Adaptations make ecological sense — form follows function (75%)"
+    },
+    {
+      "rule_id": "LOC-001",
+      "category": "locomotion",
+      "verdict": "pass",
+      "score": 0.73,
+      "rationale": "Locomotion class clear — movement mode reads from anatomy (73%)"
+    },
+    {
+      "rule_id": "BEH-001",
+      "category": "behavior",
+      "verdict": "pass",
+      "score": 0.73,
+      "rationale": "Behavioral cues present — temperament reads from pose and expression (73%)"
+    },
+    {
+      "rule_id": "STY-001",
+      "category": "style",
+      "verdict": "pass",
+      "score": 0.77,
+      "rationale": "Style consistent — creature fits the lineup's design language (77%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 8/8 constitution rules.  the broad mossy back of a low creature in dark water, a great cracked dome of translucent amber rising from its midline, a string of amber beads sliding off the wet moss, both ends of the body sunk below the surface"
 }

@@ -39,11 +39,147 @@
     "reviewer": "claude:fable-5",
     "reviewed_at": "2026-06-17T13:07:18.467Z",
     "explanation": "a dark peat cone rising from still water with a single bright amber seam down its center, blank featureless slopes, a faint snag crown, its long reflection below in empty fog",
-    "criteria_scores": {},
+    "criteria_scores": {
+      "anatomy_accuracy": 0.8,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.8,
+      "evolutionary_logic": 0.8,
+      "scale_accuracy": 0.8,
+      "locomotion_read": 0.78,
+      "behavioral_read": 0.78,
+      "habitat_fit": 0.8,
+      "style_consistency": 0.75
+    },
     "failure_modes": [],
     "improvement_notes": "i2i (mock3-b, d0.75)",
     "confidence": 0.8
   },
-  "canon": null,
-  "iteration": null
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-06-17T13:19:13.914Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "ANA-001",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+      },
+      {
+        "rule_id": "ANA-002",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+      },
+      {
+        "rule_id": "SIL-001",
+        "category": "silhouette",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+      },
+      {
+        "rule_id": "SUR-001",
+        "category": "surface",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Surface texture coherent — covering reads consistently across the body (80%)"
+      },
+      {
+        "rule_id": "EVO-001",
+        "category": "ecology",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Adaptations make ecological sense — form follows function (80%)"
+      },
+      {
+        "rule_id": "LOC-001",
+        "category": "locomotion",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Locomotion class clear — movement mode reads from anatomy (78%)"
+      },
+      {
+        "rule_id": "BEH-001",
+        "category": "behavior",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Behavioral cues present — temperament reads from pose and expression (78%)"
+      },
+      {
+        "rule_id": "STY-001",
+        "category": "style",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Style consistent — creature fits the lineup's design language (75%)"
+      }
+    ],
+    "assertion_count": 8,
+    "pass_count": 8,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "ANA-001",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+    },
+    {
+      "rule_id": "ANA-002",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+    },
+    {
+      "rule_id": "SIL-001",
+      "category": "silhouette",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+    },
+    {
+      "rule_id": "SUR-001",
+      "category": "surface",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Surface texture coherent — covering reads consistently across the body (80%)"
+    },
+    {
+      "rule_id": "EVO-001",
+      "category": "ecology",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Adaptations make ecological sense — form follows function (80%)"
+    },
+    {
+      "rule_id": "LOC-001",
+      "category": "locomotion",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Locomotion class clear — movement mode reads from anatomy (78%)"
+    },
+    {
+      "rule_id": "BEH-001",
+      "category": "behavior",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Behavioral cues present — temperament reads from pose and expression (78%)"
+    },
+    {
+      "rule_id": "STY-001",
+      "category": "style",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Style consistent — creature fits the lineup's design language (75%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 8/8 constitution rules.  a dark peat cone rising from still water with a single bright amber seam down its center, blank featureless slopes, a faint snag crown, its long reflection below in empty fog"
 }
