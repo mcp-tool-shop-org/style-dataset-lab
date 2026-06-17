@@ -2,7 +2,7 @@
   "id": "concept_peat-dredge-v2c2_d75_s13212",
   "schema_version": "1.0.0",
   "created_at": "2026-06-10T14:07:55.885Z",
-  "asset_path": "outputs/approved/concept_peat-dredge-v2c2_d75_s13212.png",
+  "asset_path": "outputs/borderline/concept_peat-dredge-v2c2_d75_s13212.png",
   "image": {
     "format": "png",
     "width": 1024,
@@ -35,13 +35,13 @@
     "denoise": null
   },
   "judgment": {
-    "status": "approved",
+    "status": "borderline",
     "reviewer": "claude:fable-5",
-    "reviewed_at": "2026-06-10T14:07:55.885Z",
+    "reviewed_at": "2026-06-17T13:07:18.467Z",
     "explanation": "a broad moss-backed hump with a warm glowing dome at its crest, surfacing through still dark water into empty fog",
     "criteria_scores": {},
     "failure_modes": [],
-    "improvement_notes": "i2i (mock-c, d0.75) — near-dup of d70 sibling",
+    "improvement_notes": "near-dup of v2c2_d70_s13212 — demoted for diversity",
     "confidence": 0.75
   },
   "canon": null,

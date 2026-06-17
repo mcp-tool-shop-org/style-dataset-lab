@@ -2,7 +2,7 @@
   "id": "concept_peat-dredge-v2a2_d75_s13201",
   "schema_version": "1.0.0",
   "created_at": "2026-06-10T14:07:55.885Z",
-  "asset_path": "outputs/approved/concept_peat-dredge-v2a2_d75_s13201.png",
+  "asset_path": "outputs/borderline/concept_peat-dredge-v2a2_d75_s13201.png",
   "image": {
     "format": "png",
     "width": 1024,
@@ -35,13 +35,13 @@
     "denoise": null
   },
   "judgment": {
-    "status": "approved",
+    "status": "borderline",
     "reviewer": "claude:fable-5",
-    "reviewed_at": "2026-06-10T14:07:55.885Z",
+    "reviewed_at": "2026-06-17T13:07:18.467Z",
     "explanation": "a moss-covered hump surfacing in dark water, a round amber dome glowing at its crest, ripple rings and empty fog around it",
     "criteria_scores": {},
     "failure_modes": [],
-    "improvement_notes": "i2i (mock-a, d0.75) — same seed family as d70 sibling; near-dup pair, keep ONE at the gate",
+    "improvement_notes": "near-dup of v2a2_d70_s13201 (same seed, adjacent denoise) — demoted for class diversity per Mike's gate",
     "confidence": 0.75
   },
   "canon": null,
