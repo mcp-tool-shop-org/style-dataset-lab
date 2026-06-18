@@ -93,17 +93,19 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   wrist-compartment hatch; lockpick/wire tools at the cuff. *Forbidden:* a neon-lit parkour android; a
   tall hooded skeleton.
 - **Gristle** — *gang brawler (scrap-yard muscle).* A heavy, asymmetrical synth; **one arm a massive
-  piston-claw**; a welded scrap-block torso; legs wrapped in tyre-rubber; a battered present face with a
-  missing jaw-plate (an exposed piston-tongue). *64px:* a jagged hulk, one thick triangular claw-arm.
+  piston-claw**; a welded scrap-block torso; legs wrapped in tyre-rubber; a battered synthetic faceplate
+  with a heavy reinforced iron underjaw (no tongue, no mouth-cavity). *64px:* a jagged hulk, one thick
+  triangular claw-arm.
   *Palette:* `#7a4a2b`, `#16140f`, `#6b6e70`. *Features:* the oversized piston-claw; tyre-rubber
   knuckle-wraps; a cracked oil-leaking chest-plate; one shorter leg (a limping stance). *Forbidden:* a
   sleek martial-arts android.
-- **Hearthframe** — *domestic servant (cast-off house-unit).* A petite, rounded synth, doll-jointed; a
-  smooth synth-bone oval torso; a frayed apron; a present cracked porcelain-smooth face, one eye dark.
-  *64px:* a small soft rounded figure, apron sagging. *Palette:* `#cbc6b6`, `#c8862f`, `#6b6e70`.
-  *Features:* a hairline-cracked face-plate (a dim amber glint at the seam); an apron pocket stuffed
-  with broken utensils; exposed wrist-gears; thin rod-limbs. *Forbidden:* a pristine luxury servant
-  android; an anime maid-bot.
+- **Hearthframe** — *domestic servant (cast-off house-unit).* A petite android with a **solid plated
+  synth-bone torso** (smooth scuffed armour panels — **no exposed ribcage, no thin skeletal frame**);
+  rounded plated limbs; a frayed apron over the solid body; a present cracked porcelain-smooth face,
+  one eye dark. *64px:* a small soft rounded *solid* figure, apron sagging. *Palette:* `#cbc6b6`,
+  `#c8862f`, `#6b6e70`. *Features:* a hairline-cracked face-plate (a dim amber glint at the seam); an
+  apron pocket stuffed with broken utensils; exposed wrist-gears; rounded plated limbs. *Forbidden:* a
+  skeletal / exposed-ribcage doll-frame; a pristine luxury servant; an anime maid-bot.
 - **Rustgrave** — *war-surplus veteran (decommissioned scout).* A sturdy, scarred synth in a tattered
   military greatcoat over dented armour plates; a battered present face with one replaced optic.
   *64px:* a solid coated soldier-figure, heavy shoulders, weapon-arm. *Palette:* `#16140f`, `#7a4a2b`,

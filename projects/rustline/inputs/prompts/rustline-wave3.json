@@ -1,0 +1,20 @@
+{
+  "wave": "rustline-wave3",
+  "description": "Targeted top-up: Gristle regenerated clean (iron underjaw, NO tongue/open-mouth), Dockrat with a clothed/plated torso (NO bare chest), Hearthframe +3 (solid plated, worked in w2). Reach >=8 clean per class.",
+  "base": "qwen-image",
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "defaults": {
+    "negative": "tongue, open mouth, mouth cavity, bare chest, shirtless, visible abs, muscular human torso, human skin, human face, neon, neon signs, holograms, glowing signage, saturated colours, headless, skeleton, exposed ribcage, bony frame, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 7000,
+    "loras": []
+  },
+  "subjects": [
+    { "id": "gristle", "variations": 8, "prompt": "a single heavy asymmetrical android brawler, one arm a massive piston-claw, a welded scrap-block plated torso, legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed, no tongue, no open mouth), a cracked oil-leaking chest-plate, in a grimy scrapyard, dim sodium light, the whole figure centred" },
+    { "id": "dockrat", "variations": 6, "prompt": "a single squat barrel-chested android dock-laborer wearing a grimy heavy work-vest and canvas overalls over a fully plated synthetic torso of scuffed metal panels (fully clothed, no bare chest, no visible abs or muscle), a blunt synthetic faceplate, bowed legs, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred" },
+    { "id": "hearthframe", "variations": 3, "prompt": "a single petite android servant in a frayed apron, a fully plated solid synthetic body of smooth scuffed off-white armour panels, a solid plated torso under the apron with no exposed ribcage and no thin skeletal frame, a present cracked porcelain-smooth faceplate with one dark eye, rounded plated limbs, an apron pocket of broken utensils, in a grimy tenement kitchen, dim sodium light, the whole figure centred" }
+  ]
+}
