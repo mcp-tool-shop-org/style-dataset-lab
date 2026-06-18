@@ -1,0 +1,49 @@
+{
+  "id": "wave4_gristle_v3",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-18T00:12:02.424Z",
+  "asset_path": "outputs/approved/wave4_gristle_v3.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1027868
+  },
+  "provenance": {
+    "workflow_id": "rustline-wave4",
+    "base": "qwen-image",
+    "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred",
+    "negative_prompt": "bare skin, bare chest, bare midriff, exposed stomach, muscular abs, six-pack, shirtless, human torso, human skin, human face, tongue, open mouth, neon, holograms, saturated colours, headless, skeleton, exposed ribcage, anime, manga, cel shading, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+    "seed": 7803,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "gpu_model": "RTX 5090",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "txt2img"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-18T00:12:02.424Z",
+    "explanation": "rustline style, a hulking android brawler with a massive piston-claw arm and riveted armour, in a grimy scrapyard",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}
