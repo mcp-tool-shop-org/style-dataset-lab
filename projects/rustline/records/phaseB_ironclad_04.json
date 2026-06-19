@@ -1,0 +1,49 @@
+{
+  "id": "phaseB_ironclad_04",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-18T16:16:06.088Z",
+  "asset_path": "outputs/approved/phaseB_ironclad_04.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1128208
+  },
+  "provenance": {
+    "workflow_id": "rl-phaseB-ironclad",
+    "base": "qwen-image",
+    "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background",
+    "negative_prompt": "sleek, glossy, clean, polished, smooth plating, halo spartan, power armour, sci-fi supersoldier, game-ready armour, shiny chrome, plastic, holographic hud, neon, saturated colour, headless, skeleton, exposed ribcage, bare human skin, human face, anime, chibi, cel-shaded, brass, clockwork, glossy 3d render, bright daylight, text, watermark, frame, border, signature",
+    "seed": 8104,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "gpu_model": "RTX 5090",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "txt2img"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-18T16:16:06.088Z",
+    "explanation": "rustline style, a heavy android enforcer in riveted scuffed armour plating with a visored helmet, in a grimy alley",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

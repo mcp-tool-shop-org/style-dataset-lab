@@ -10,6 +10,31 @@
 > *(Supersedes the abandoned `brass_requiem` / chrome-noir direction. Scope: 10 character androids,
 > no machine-enemy bestiary — Mike, 2026-06-17.)*
 
+## ⚡ NEON AMENDMENT — environment-noir, grounded cast (Mike, 2026-06-18)
+
+Rustline's founding militant NO-neon rule is **amended** (not abandoned) after the v1 positive-neon
+probe and a seed-aligned Phase-A look test (`E:/AI/training/rl_experiment/phaseA_neon/`,
+contact sheet `_phaseA_contact.png`). **This section is the authority where it conflicts with the
+NO-neon language below.** The amended canon rule:
+
+- **Environment / establishing plates MAY use the neon-noir register** — magenta/cyan electric neon
+  signage as moody, **low-key** atmosphere over the grounded base; still grimy, wet, smog-hazed,
+  never bright or clean. This is the "neon done well" look Mike approved from the probe.
+- **The character cast STAYS GROUNDED** — androids keep the rust-brown / sodium-amber master palette
+  (warm sodium light, dull-amber optics). **No saturated electric magenta/cyan neon lighting ON
+  character bodies.** The cast's grounded identity is what makes rustline rustline, not generic
+  neon-cyberpunk.
+- **"No neon" always meant no SATURATED ELECTRIC neon** — warm sodium/amber practical signage was
+  always part of the grounded base (it shows up even under the full no-neon negative).
+
+**Dataset implication (Mike's Phase-A call):** v2 gains a **small curated neon-noir ENVIRONMENT
+exemplar set** so the LoRA bakes the register into backgrounds; **cast exemplars stay grounded** (no
+neon-lit character training images). Neon on characters remains forbidden at training time.
+
+**Generation rule of thumb:** environment plates → neon-noir register (allow neon, keep holograms /
+bright daylight / clean-utopia in the negative). Character portraits & sprites → grounded register
+(keep "neon, saturated colour, human face, bare human skin" in the negative, warm sodium lighting).
+
 ## Premise
 **Rustline** is the corroded lower districts of a megacity — rust, scrap, leaking pipes, and
 perpetual drizzle in the grime below the corporate towers. Its people are **androids**: cast-off,
@@ -22,8 +47,9 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
 - **Master palette:** concrete-grey `#6b6e70` · rust-brown `#7a4a2b` · sodium-amber `#c8862f` ·
   soot-black `#16140f` · synth-bone (android off-white) `#cbc6b6` · toxic-green `#5b6b4a`.
 - **Lighting:** dim sodium glow against cold shadow; wet reflective asphalt; smog/haze; deep low-key.
-  Described as an **effect** (warm amber highlights, deep shadow) — never a light-source object, and
-  **never neon**.
+  Described as an **effect** (warm amber highlights, deep shadow) — never a light-source object. **No
+  electric neon on the cast** (warm sodium only); **neon-noir lighting is for environment plates
+  only** — see the Neon Amendment above.
 - **Silhouette language:** grounded, **human-scaled android figures** — weary, hunched, coated,
   scuffed. Each has a **present synthetic head/face** (damaged or shadowed is fine, **never headless**)
   and a **plated torso** (an assembly of panels — **never an exposed organic-style ribcage**). Builds
@@ -48,8 +74,10 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
 > rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in
 > dystopian squalor, film grain, matte painterly
 
-> **Dataset-craft notes:** (1) **NO neon** — put neon/holograms/glowing-signage/saturated-colour in
-> every negative. (2) Light is an EFFECT ("warm amber highlights, deep shadow"), never a source noun
+> **Dataset-craft notes:** (1) **Neon per the amendment** — for CHARACTER/cast exemplars put
+> neon/holograms/saturated-colour in the negative (cast stays grounded); for ENVIRONMENT plates use
+> the neon-noir register (allow neon, keep holograms/bright-daylight/clean-utopia in the negative).
+> (2) Light is an EFFECT ("warm amber highlights, deep shadow"), never a source noun
 > (the tallow_fen lantern / brass-pilot lamp lesson). (3) Every android keeps a **present head** and a
 > **plated torso** — put "headless, skeleton, exposed ribcage, organic bones" in the negative (the
 > base model's skeleton prior is strong; it produced an undead-dog in the brass pilot). Validated on
@@ -120,7 +148,8 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   records. *Forbidden:* a sleek digital librarian android; a tall hooded skeleton.
 
 ## Global must-not
-**neon / holograms / glowing signage / saturated colour** · **headless or skeletal androids / exposed
-ribcages** · sleek clean sci-fi robots / plastic androids · anime / chibi / cel-shaded · brass /
-clockwork / Victorian dieselpunk · glossy photoreal 3D-render · modern bright daylight · humans (the
-cast is androids).
+**electric neon / saturated colour ON CHARACTERS** (cast stays grounded; neon-noir is environment-only
+per the Neon Amendment) · **holograms** · **headless or skeletal androids / exposed ribcages** ·
+sleek clean sci-fi robots / plastic androids · anime / chibi / cel-shaded · brass / clockwork /
+Victorian dieselpunk · glossy photoreal 3D-render · modern bright daylight · humans (the cast is
+androids).

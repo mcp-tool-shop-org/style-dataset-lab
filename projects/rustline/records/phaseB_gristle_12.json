@@ -1,0 +1,38 @@
+{
+  "id": "phaseB_gristle_12",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-18T16:16:06.088Z",
+  "asset_path": "outputs/approved/phaseB_gristle_12.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1136705
+  },
+  "provenance": {
+    "workflow_id": "rustline-phaseB-gristle-inpaint",
+    "base": "qwen-image",
+    "method": "img2img masked-inpaint (chest)",
+    "prompt": "rustline style, a hulking android brawler with a massive piston-claw arm and riveted armour, in a grimy scrapyard",
+    "gpu_model": "RTX 5090",
+    "loras": [],
+    "note": "LoRA-free Qwen chest inpaint, torso ellipse mask, denoise 1.0, source gristle_v3_ip4202.png"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-18T16:16:06.088Z",
+    "explanation": "rustline style, a hulking android brawler with a massive piston-claw arm and riveted armour, in a grimy scrapyard",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

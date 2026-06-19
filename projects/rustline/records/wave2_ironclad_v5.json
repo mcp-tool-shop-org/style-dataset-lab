@@ -30,17 +30,19 @@
     "method": "txt2img"
   },
   "judgment": {
-    "status": "approved",
+    "status": "rejected",
     "reviewer": "claude:opus-4-8",
     "reviewed_at": "2026-06-18T00:12:02.424Z",
-    "explanation": "rustline style, a heavy android enforcer in riveted scuffed armour plating with a visored helmet, in a grimy alley",
+    "explanation": "v1 sleek Halo-Spartan exemplar; dropped in v2 curation (Mike-approved 2026-06-18), replaced with matte-industrial set",
     "criteria_scores": {
       "style_consistency": 0.85,
       "canon_fidelity": 0.85,
       "silhouette_distinction": 0.85,
       "surface_texture": 0.85
     },
-    "failure_modes": [],
+    "failure_modes": [
+      "sleek_scifi_armor_prior"
+    ],
     "improvement_notes": null,
     "confidence": 0.85
   },
