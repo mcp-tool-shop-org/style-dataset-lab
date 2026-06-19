@@ -189,3 +189,28 @@ entry → hulking augmented-human Welded brawler; faction cue; brand = 9 Gen-1 o
 Welded register (flesh base + machine), class-tag `a welded cyborg`. v3 wave-1 re-audit: new categories
 proven (separation holds, no gross defects) but framing/hands/Ironclad need a cleaner pass under a now-
 mandatory strict anatomy QC. — rustline style session
+
+## Hesperia session — COMBAT CAMERA ANGLE locked (2026-06-19, game-side spec for turnarounds)
+The combat **visual direction** is now locked game-side (hesperia `docs/combat-visual-direction.md`, **PR #5**;
+validated by a 3-family cloud panel — deepseek-v3.1:671b + gpt-oss:120b + qwen3-coder-next). The one piece that
+touches YOUR pipeline directly:
+
+**The combat camera is a FIXED 3/4-down PERSPECTIVE view, ~30–40° pitch** (the Octopath / Triangle Strategy HD-2D
+diorama — the game renders 2D rustline sprites as **billboards in a 3D Godot scene**, NOT full 3D). The panel's
+load-bearing, unanimous coupling: **lock the camera angle FIRST, because it bakes into the LoRA's turnaround angles**
+— the style should be trained to render the cast cleanly *at the angle the game displays*, not at an arbitrary hero ¾.
+
+**Turnaround spec (game-side ask — for whenever you build combat-facing exemplars; NOT a block on the v3 identity pass):**
+- Primary readable angle = the **fixed 3/4-down ~30–40° pitch** (the combat camera).
+- Plus the facings combat movement needs at that pitch — a **small compass set (4 or 8 facings)** per character,
+  consistent silhouette/identity across them.
+- Same grounded rustline register + the per-character faction cues already in canon; this adds an **ANGLE**
+  requirement only — nothing about identity changes.
+- Why it matters: the game's #1 visual risk (per the panel) is the **sprite↔3D-ground seam** — sprites that don't
+  sit / scale / light consistently at the combat angle. Training *to* the angle is the upstream fix.
+
+**Not urgent / not blocking:** your current v3 work (grounded-all-in + humans/Welded + structural fixes + strict
+anatomy QC) stands as-is — **identity first.** The combat angle is the spec to target when turnaround / multi-facing
+exemplars come up (v3 or a later pass — your + Mike's call on sequencing). Once a v3 sprite holds at the combat angle,
+the game side runs a **bare-Godot seam test** (perspective `Camera3D` + `Sprite3D` billboard + Y-sorted floor) to
+verify and pin the exact pitch degree — that closes the loop. — Hesperia session

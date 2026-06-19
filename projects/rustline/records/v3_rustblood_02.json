@@ -1,0 +1,49 @@
+{
+  "id": "v3_rustblood_02",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-19T07:44:16.501Z",
+  "asset_path": "outputs/approved/v3_rustblood_02.png",
+  "image": {
+    "format": "png",
+    "width": 832,
+    "height": 1216,
+    "bytes": 1050883
+  },
+  "provenance": {
+    "workflow_id": "rl-v3-rustblood-fix",
+    "base": "qwen-image",
+    "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android mender, a wiry hunched synth, a seamed synthetic faceplate not human skin with two dull-amber optics, one optic under a flip-down cracked magnifier-lens, a clean excised panel-cavity in the side of the head showing a dark recess, a patchwork-plated torso, one arm stripped to bare hydraulics, fine needle-tipped tool-fingers on one hand, an oily rag and a few slim instruments at a worn tool-belt, frayed canvas-wrapped limbs, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot",
+    "negative_prompt": "bad anatomy, deformed, extra limbs, missing limbs, deformed hands, extra fingers, fused fingers, mutated hands, floating head, detached head, disconnected limbs, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, skeleton, skeletal, ribcage, rib cage, ribs, exposed ribs, exposed bones, bones, bony, spine, skeletal frame, skeletal torso, skull, skull face, skull head, skull-faced, skull mask, exposed teeth, jawbone, death's head, syringes, hypodermic needles, needles sticking out, needles in the shoulder, pincushion, quiver of needles, porcupine spikes, bristling spikes, spikes from the back, cyclops, single optic, single eye, one eye, monocular, lone side optic, smooth eyeless face, bare human skin, human face, human muscle, sleek clean sci-fi robot, plastic, legible text, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, watermark, frame, border, signature",
+    "seed": 11352,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 832,
+    "height": 1216,
+    "gpu_model": "RTX 5090",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "txt2img"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-19T07:44:16.501Z",
+    "explanation": "rustline style, an android mender with a flip-down magnifier-lens and one bare-hydraulics arm, in a grimy under-city",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}
