@@ -1,0 +1,49 @@
+{
+  "id": "wave5_dockrat_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-18T00:12:02.424Z",
+  "asset_path": "outputs/approved/wave5_dockrat_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1161297
+  },
+  "provenance": {
+    "workflow_id": "rustline-wave5",
+    "base": "qwen-image",
+    "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer in a closed grimy boiler-suit zipped to the neck (a single full coverall, fully covered, no open collar and no bare chest and no bare skin), heavy rubber gloves, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred",
+    "negative_prompt": "bare skin, bare chest, bare midriff, exposed stomach, muscular abs, six-pack, shirtless, open coat, open collar, unzipped, v-neck, cleavage, human torso, human skin, human face, tongue, open mouth, neon, holograms, saturated colours, headless, skeleton, exposed ribcage, anime, manga, cel shading, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+    "seed": 8208,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "gpu_model": "RTX 5090",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "txt2img"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-18T00:12:02.424Z",
+    "explanation": "rustline style, a stocky android dock-laborer in a closed boiler-suit with a rusted hook hand, on a wet dock",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}
