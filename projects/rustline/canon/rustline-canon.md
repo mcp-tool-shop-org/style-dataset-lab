@@ -123,6 +123,12 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   shoulder, joints) · *rusted steel limbs & riveted patches* · *frayed cabling & oily hydraulics*
   (black leaks) · *worn human cloth* (coats, work-gear, aprons, wraps) · *dead/cracked sensor-optics*
   (a dull dim-amber glint at most).
+- **OPTIC DESIGN (coherent faces — load-bearing, 2026-06-19):** Gen-1 android faces are coherently
+  designed — **default TWO optics**. The ONLY single-eye exceptions are (a) **visible damage** — a
+  smashed/empty socket where the second optic clearly *was* (the face shows it once had two) — or (b) a
+  deliberate **centered cyclops**. **NEVER a lone side-optic on an otherwise-smooth symmetric face** — that
+  reads as an error and "begs why." **The centered CYCLOPS mono-optic is a GEN-2 enemy trait** (cold,
+  inhuman, conscience-cut) → reserved for the future **Gen-2 LoRA**, NOT the Gen-1 rustline cast.
 
 | THIS | NOT THAT |
 |---|---|
@@ -143,16 +149,20 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
 > the neon-noir register (allow neon, keep holograms/bright-daylight/clean-utopia in the negative).
 > (2) Light is an EFFECT ("warm amber highlights, deep shadow"), never a source noun
 > (the tallow_fen lantern / brass-pilot lamp lesson). (3) Every android keeps a **present head** and a
-> **plated torso** — put "headless, skeleton, exposed ribcage, organic bones" in the negative (the
-> base model's skeleton prior is strong; it produced an undead-dog in the brass pilot). Validated on
-> the base in test wave `_cp_test`.
+> **plated torso** — put "headless, skeleton, skeletal, exposed ribcage, organic bones, skull, skull-face"
+> in the negative (the base model's skeleton prior is strong; it produced an undead-dog in the brass pilot,
+> a Hearthframe ribcage, and a Rustblood skull). Validated on the base in test wave `_cp_test`.
+> (4) **LITERALISM WATCH (the recurring trap):** the model renders structural nouns LITERALLY. Earned:
+> "synth-bone torso" → a ribcage · "excised cavity in the skull" → a skull face · "needle-driver fingers"
+> → a quiver of syringes · "steel-drum torso" → a drum · "light" → a lamp. Describe FUNCTION/appearance,
+> not the loaded noun; keep skull / skeletal / ribcage / syringes in the negative.
 
 ## Character androids (the cast — 10)
 - **Gutterjack** — *rogue scavenger; works the scrap-rivers.* A hunched, lanky synth in patched scuffed
   off-white plating; a scavenged tarp worn like a poncho; exposed neck-gears and frayed cabling;
   knee-high rusted steel shin-guards. *64px:* a jagged hunched figure, long arms, tarp flaring.
-  *Palette:* `#cbc6b6`, `#7a4a2b`, `#16140f`. *Features:* a single cracked optic with a dull amber
-  glint; oil-stained fingers; rust-flaked tarp edges; wet exposed jaw-hydraulics. *Forbidden:* a sleek
+  *Palette:* `#cbc6b6`, `#7a4a2b`, `#16140f`. *Features:* two optic sockets — one a cracked dull-amber optic, the
+  other smashed empty and dark (he destroyed his own lens); oil-stained fingers; rust-flaked tarp edges; wet exposed jaw-hydraulics. *Forbidden:* a sleek
   clean android with bright glowing eyes; a neon scavenger.
 - **Ironclad** — *corporate enforcer; the towers' brute squad below.* A broad, heavy android in matte
   scuffed concrete-grey plating; reinforced rust-edged steel pauldrons; exposed oily chest-hydraulics;
@@ -169,9 +179,10 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   glowing halo.
 - **Rustblood** — *back-alley mender (street tech-doc).* A wiry, hunched synth; limbs wrapped in frayed
   canvas strips; a patchwork-plated torso; **one arm stripped to bare hydraulics**; a present seamed
-  face with a cracked magnifier-lens flipped over one optic. *64px:* a lopsided hump-back, a sagging
+  face with two optics, one under a flip-down cracked magnifier-lens. *64px:* a lopsided hump-back, a sagging
   tool-belt, one thin piston-arm. *Palette:* `#16140f`, `#5b6b4a`, `#cbc6b6`. *Features:* the flip-down
-  magnifier-lens; an oily rag in the belt; rusted needle-driver fingers; exposed shoulder-cabling.
+  magnifier-lens; an oily rag in the belt; a few fine needle-tipped tool-fingers (subtle, NEVER a
+  syringe-quiver); exposed shoulder-cabling.
   *Forbidden:* a sterile clean-room medic android.
 - **Dockrat** — *harbor laborer (scrap-hauler).* A squat, barrel-chested synth, legs bowed from years
   of load; a dented steel-drum torso; arms in chain-link sleeves; a blunt present face. *64px:* a wide
@@ -195,17 +206,19 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   human eyes above the brutal jaw**. **RENDER IN THE WELDED REGISTER** (human flesh base + machine
   augment) — the android "no bare skin" rule does **NOT** apply to him; class-tag exemplars `a welded
   cyborg`. *Forbidden:* a pure all-metal android; a sleek mech; a bulky clean power-armor robot.
-- **Hearthframe** — *domestic servant (cast-off house-unit).* A petite android with a **solid plated
-  synth-bone torso** (smooth scuffed armour panels — **no exposed ribcage, no thin skeletal frame**);
-  rounded plated limbs; a frayed apron over the solid body; a present cracked porcelain-smooth face,
-  one eye dark. *64px:* a small soft rounded *solid* figure, apron sagging. *Palette:* `#cbc6b6`,
+- **Hearthframe** — *domestic servant (cast-off house-unit).* A petite android with a **solid closed
+  one-piece off-white plated torso** (smooth scuffed armour panels — **no exposed ribcage, no skeletal
+  frame, NEVER describe the torso as "bone"** — "synth-bone" was a literalism landmine that rendered an
+  anatomical ribcage; it is a palette COLOR name only, never a torso material);
+  rounded plated limbs; a frayed apron over the solid body; a present cracked porcelain-smooth face with two
+  optics, one dark and dead. *64px:* a small soft rounded *solid* figure, apron sagging. *Palette:* `#cbc6b6`,
   `#c8862f`, `#6b6e70`. *Features:* a hairline-cracked face-plate (a dim amber glint at the seam); an
   apron pocket stuffed with broken utensils; exposed wrist-gears; rounded plated limbs. *Forbidden:* a
   skeletal / exposed-ribcage doll-frame; a pristine luxury servant; an anime maid-bot.
 - **Rustgrave** — *war-surplus veteran (decommissioned scout).* A sturdy, scarred synth in a tattered
-  military greatcoat over dented armour plates; a battered present face with one replaced optic.
+  military greatcoat over dented armour plates; a battered present face with two optics, one a mismatched replacement.
   *64px:* a solid coated soldier-figure, heavy shoulders, weapon-arm. *Palette:* `#16140f`, `#7a4a2b`,
-  `#6b6e70`. *Features:* a rusted rifle-stock fused as the left forearm; a dull-amber replaced optic;
+  `#6b6e70`. *Features:* a rusted rifle-stock fused as the left forearm; two optics, one a mismatched dull-amber salvaged replacement;
   scavenged plates lashed over the greatcoat; frayed rank-braid. *Forbidden:* a sleek high-tech soldier
   android; a clean military mech.
 - **Dustwhisper** — *derelict archivist (back-alley historian).* A stooped, slight synth in a frayed
@@ -225,9 +238,10 @@ All Gen-1 also carry the cross-cutting **decommission brand** (see Hesperia Alig
   power-armor**; triage-scarred hands.
 - **Scrap-Saint** (Communion figure): a **reliquary-bearer** — open chest-mechanism **cradles a salvaged
   memory-core like a monstrance**; a speaker-grille (voice unit); rag vestments stiff like ceremonial robes.
-- **Rustblood** (Communion): a **maimed mender** — a clean **excised cavity in skull/chassis** (the removed
-  "deciding-half") **alongside the canon one-arm-bare-hydraulics** (keep both); over-many needle-driver
-  tool-fingers; trailing repair-cables.
+- **Rustblood** (Communion): a **maimed mender** — a seamed synth faceplate (NOT a skull) with a clean
+  **excised panel-cavity in the side of the head/chassis** (the removed "deciding-half") **alongside the
+  canon one-arm-bare-hydraulics** (keep both); **a few fine needle-tipped fingers + slim belt tools (NOT a
+  syringe-quiver)**; subtle repair-cables.
 - **Dockrat** (Scrip): a **beast-of-burden frame** — fused **cargo back-rig/harness**, load-bowed legs,
   straps + counterweights, a worn load-saddle spot; rusted hook hand. (Drop the literal "steel-drum" noun.)
 - **Hushwire** (Scrip): a **sealed runner** — slim/quick, a **gasketed/sealed body** (briefly crosses dead
