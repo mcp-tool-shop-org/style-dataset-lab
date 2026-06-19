@@ -80,11 +80,12 @@ GROUNDED visual system. **This section + the NEON AMENDMENT are the authority wh
   separate Gen-2 LoRA, not rustline.)*
 
 **Cross-cutting motifs (canon-wide, load-bearing):**
-- **The decommission brand.** Every Gen-1 was decommissioned via the Fidelity Assay for "feeling too much"
-  — a **branded/stamped failing-empathy mark** on the chassis is the cast's shared badge of their "defect"
-  (their death-certificate, worn on the body). **Vary it physically per character** (a struck plate, an
-  etched score, a riveted tag, a stencilled number) — NOT one fixed glyph/legible text, or the model
-  over-fits it as a watermark and hallucinates it everywhere.
+- **The decommission brand (the 9 Gen-1 ONLY).** Every Gen-1 was decommissioned via the Fidelity Assay for
+  "feeling too much" — a **branded/stamped failing-empathy mark** on the chassis is the 9 Gen-1's shared
+  badge of their "defect" (their death-certificate, worn on the body). **Vary it physically per character**
+  (a struck plate, an etched score, a riveted tag, a stencilled number) — NOT one fixed glyph/legible text,
+  or the model over-fits it as a watermark and hallucinates it everywhere. **Gristle (the cast's one Welded)
+  carries NO brand — his welded-shut iron jaw IS his equivalent mark** (the regime silencing a person).
 - **Memory-cores as relics.** Extracted Gen-1 cores are sacred salvaged objects (Sere's missing core; the
   Saint cradles one) — a recurring object in the visual language.
 - **Faction bearing:** Communion = devotional/reliquary · Scrip = scavenger/cargo-tags · Decommissioned =
@@ -183,13 +184,17 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   `#cbc6b6`. *Features:* a cracked cheek-panel (dull amber beneath); jacket lined with stolen wiring; a
   wrist-compartment hatch; lockpick/wire tools at the cuff. *Forbidden:* a neon-lit parkour android; a
   tall hooded skeleton.
-- **Gristle** — *gang brawler (scrap-yard muscle).* A heavy, asymmetrical synth; **one arm a massive
-  piston-claw**; a welded scrap-block torso; legs wrapped in tyre-rubber; a battered synthetic faceplate
-  with a heavy reinforced iron underjaw (no tongue, no mouth-cavity). *64px:* a jagged hulk, one thick
-  triangular claw-arm.
-  *Palette:* `#7a4a2b`, `#16140f`, `#6b6e70`. *Features:* the oversized piston-claw; tyre-rubber
-  knuckle-wraps; a cracked oil-leaking chest-plate; one shorter leg (a limping stance). *Forbidden:* a
-  sleek martial-arts android.
+- **Gristle** — *gang brawler (scrap-yard muscle) — the cast's ONE **WELDED (cyborg)**, NOT a Gen-1
+  android (recast 2026-06-19, Hesperia cast-arcs v0.2).* A hulking, heavily-augmented **HUMAN**: a human
+  face and a thick scarred **human-flesh torso and arms as the BASE**, with heavy bolted scrap-plate and
+  crude machine augments grafted on; **one arm a massive piston-claw augment**; a crude **iron jaw-plate
+  welded shut over the lower face** (the regime silenced a person — **this is his mark, in place of the
+  Gen-1 decommission brand**); legs wrapped in tyre-rubber. *64px:* a jagged human hulk, one thick
+  triangular claw-arm. *Palette:* `#7a4a2b`, `#16140f`, `#6b6e70`. *Features:* the piston-claw augment;
+  the welded-shut iron jaw; scrap-plate bolted onto flesh; exposed wiring on skin; **gentle expressive
+  human eyes above the brutal jaw**. **RENDER IN THE WELDED REGISTER** (human flesh base + machine
+  augment) — the android "no bare skin" rule does **NOT** apply to him; class-tag exemplars `a welded
+  cyborg`. *Forbidden:* a pure all-metal android; a sleek mech; a bulky clean power-armor robot.
 - **Hearthframe** — *domestic servant (cast-off house-unit).* A petite android with a **solid plated
   synth-bone torso** (smooth scuffed armour panels — **no exposed ribcage, no thin skeletal frame**);
   rounded plated limbs; a frayed apron over the solid body; a present cracked porcelain-smooth face,
@@ -227,9 +232,13 @@ All Gen-1 also carry the cross-cutting **decommission brand** (see Hesperia Alig
   straps + counterweights, a worn load-saddle spot; rusted hook hand. (Drop the literal "steel-drum" noun.)
 - **Hushwire** (Scrip): a **sealed runner** — slim/quick, a **gasketed/sealed body** (briefly crosses dead
   air — Sam's road), a wrist courier-compartment; understated (makes herself not-matter).
-- **Gristle** (Decommissioned) **[v3 fix]**: **THE WELDED-SHUT IRON JAW is the signature** (a crude iron
-  jaw-plate riveted shut over the lower face — the silenced mute); a **fully scrap-PLATED hulk — plated
-  torso AND arms, NO bare human muscle**; one piston-claw; **gentle expressive optics above the brutal jaw**.
+- **Gristle** (Decommissioned wing — **WELDED cyborg, NOT android**): a **hulking augmented HUMAN brawler**
+  — human face + scarred human-flesh torso/arms as the BASE, with heavy bolted scrap-plate + machine
+  augments grafted on; the **welded-shut iron jaw is his signature AND his mark** (the regime silenced a
+  person; he carries NO Gen-1 decommission brand); one **piston-claw augment**; gentle human eyes above the
+  brutal jaw. **Render in the Welded register (human flesh base + machine) — the android no-bare-skin rule
+  does NOT apply to him.** (Was the v2/v3 fix-class as an android; resolved by recasting as a Welded — the
+  muscle prior is now canon, not a defect.)
 - **Hearthframe** (Communion): a **cast-off house-unit** — domestic livery/apron with a **household sigil
   defaced** + a stamped **service-tag** ("asset, not member"); porcelain cracked face; **SOLID plated rounded
   torso, NO ribcage** (keep the v1 fix).

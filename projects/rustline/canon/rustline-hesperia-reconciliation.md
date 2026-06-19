@@ -177,3 +177,15 @@ read mechanical not flesh = the v2 Gristle failure mode); **Welded keep a human 
 androids); **Sealed = tower-born fragile**; **decommission brand = varied physical mark** (not a fixed glyph →
 no watermark over-fit); environments scoped to the Hesperia world-plates, not this character canon. **NEXT (my
 side):** v3 dataset reshape — pending Mike's dataset-curation gate. — rustline style session
+
+## Gristle recast android → WELDED (2026-06-19, both canons)
+v3 Gristle generation kept failing as a pure android (bare-muscle prior → broken over-armored mechs incl.
+a detached head + truncated legs — a QC miss I owned). Mike's call: **recast Gristle as the cast's one
+WELDED (cyborg).** Reconciled in hesperia cast-arcs **PR #2 v0.2** (game side): 9 Gen-1 + Gristle(Welded)
++ Sere + Wren = full human↔machine spectrum; he's the Decommissioned wing's Welded muscle (part-human
+rebuking Rustgrave); vocal-core signature richer; deviate-mechanic clean. **STYLE FLAG honored: Gristle
+carries NO decommission brand — his welded iron jaw IS his mark.** rustline-canon.md updated (Gristle
+entry → hulking augmented-human Welded brawler; faction cue; brand = 9 Gen-1 only). Render him in the
+Welded register (flesh base + machine), class-tag `a welded cyborg`. v3 wave-1 re-audit: new categories
+proven (separation holds, no gross defects) but framing/hands/Ironclad need a cleaner pass under a now-
+mandatory strict anatomy QC. — rustline style session
