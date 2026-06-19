@@ -35,6 +35,69 @@ neon-lit character training images). Neon on characters remains forbidden at tra
 bright daylight / clean-utopia in the negative). Character portraits & sprites → grounded register
 (keep "neon, saturated colour, human face, bare human skin" in the negative, warm sodium lighting).
 
+## ⚙ HESPERIA ALIGNMENT — rustline is the game's grounded visual system (Mike, 2026-06-19)
+
+Rustline is the **house style for the game HESPERIA** ([[hesperia-game-state]]); the 10 androids below
+ARE Hesperia's playable cast (Gen-1 recruits under the authored protagonist **Sere**). Forming the style
+to the game canon, before the v3 train, expands rustline from "10 grimy androids" into Hesperia's full
+GROUNDED visual system. **This section + the NEON AMENDMENT are the authority where they extend the
+2026-06-17 base.** The five game-side calls (Mike, via the Hesperia session, 2026-06-19):
+
+- **Gen-1 = rustline (this LoRA), all-in GROUNDED.** The whole cast is Gen-1 (empathetic, decommissioned,
+  under-city). Everything in this canon is the grounded register.
+- **Gen-2 = a SEPARATE small LoRA, NOT this one.** The enemy androids are the photographic NEGATIVE of
+  this style — sleek, clean, glossy, bright, holographic (the "NOT THAT" column). That look is DELIBERATE
+  for Gen-2 but lives in its own future LoRA; **rustline must NOT learn it** (the v2 Ironclad sleek-bleed
+  is exactly why they're split). Keep sleek/clean in the rustline negative.
+- **Humans + cyborgs are now IN-SCOPE (grounded).** The `humans` must-not is LIFTED — Hesperia has people.
+  They render in the SAME grounded painterly warm-sodium grime, **never clean**:
+  - **Humans (the Sealed / Wren / Sam):** **tower-born and FRAGILE** — pale, sheltered, soft (atrophied,
+    not the androids' hard scuffed builds); only grimy once *fallen* into the under-city; soured-air
+    sickness, rebreathers/masks, patched clothing over sealed-environment dress. Fragility reads distinct
+    from android grit and Welded scrap. (**Wren** = recruitable human party member, tower-born mender,
+    Sam's apprentice — the first grounded-human exemplar target.)
+  - **The Welded (cyborgs) = a flesh↔machine SPECTRUM. They keep a HUMAN FACE + flesh base — that is
+    exactly what separates them from androids** (augmented humans, not synths):
+    - *Rank-and-file Welded* (recruitable betweeners): mostly FLESH + crude jury-rigged survival augment —
+      scrap-metal limbs, crude rebreathers, patched cybernetics, exposed wiring on (human) skin, rust + grime.
+    - *Ruling bad-cyborgs* (a fallen, devoured remnant): mostly MACHINE — cold controlled clean-tech augment
+      on a human frame ("what the makers became"), but rendered **DAMAGED + corroded** (never pristine —
+      pristine-clean = Gen-2 LoRA only). A human face/eyes still show through the cold machine.
+    - Axis: human → rank-file Welded → bad-cyborg (corroded cold-machine) → [Gen-2 clean, separate LoRA].
+- **THE HUMAN ↔ ANDROID LINE (load-bearing for v3 training — cross-family flag).** The dataset now teaches
+  TWO opposite flesh rules at once: **humans + Welded HAVE bare human flesh + human faces; androids NEVER do**
+  (synth faceplate, plated body — the no-bare-skin-on-androids rule that v2 Gristle violated). Mitigation:
+  every exemplar caption must **tag its class unambiguously** (`an android …` / `a human …` / `a welded
+  cyborg …`), the classes stay **dataset-balanced**, and android synth-face *seams/damage* must read as
+  **mechanical (panels, optics, cabling), never as exposed flesh**. This is v3's hardest separation — get
+  the captions + class balance right or the model blurs human↔android.
+- **Protagonist Sere — STORY-MOTIF STUB ONLY (final design = Mike).** An **ancient, companion-era make**
+  Gen-1 (Earth-built for the generational voyage → a distinct archaic design language; reads as the lead),
+  a **voice-of-the-voyage / chronicler** unit, reactivated-rough, with a **conspicuous EMPTY core-socket**
+  ("the man with the hole" — his extracted founding-memory is the Communion's relic). Keep these motifs; do
+  NOT lock palette/silhouette beyond "distinct ancient lead."
+- *(The Steward — a courteous Gen-2 "diplomat" antagonist — is a named Gen-2 face; belongs to the future
+  separate Gen-2 LoRA, not rustline.)*
+
+**Cross-cutting motifs (canon-wide, load-bearing):**
+- **The decommission brand.** Every Gen-1 was decommissioned via the Fidelity Assay for "feeling too much"
+  — a **branded/stamped failing-empathy mark** on the chassis is the cast's shared badge of their "defect"
+  (their death-certificate, worn on the body). **Vary it physically per character** (a struck plate, an
+  etched score, a riveted tag, a stencilled number) — NOT one fixed glyph/legible text, or the model
+  over-fits it as a watermark and hallucinates it everywhere.
+- **Memory-cores as relics.** Extracted Gen-1 cores are sacred salvaged objects (Sere's missing core; the
+  Saint cradles one) — a recurring object in the visual language.
+- **Faction bearing:** Communion = devotional/reliquary · Scrip = scavenger/cargo-tags · Decommissioned =
+  militant/scarred · keeper = archival. (Per-character cues in the Cast section.)
+
+**v3 dataset implication (the STRUCTURAL fix — v2's two misses were texture, not structure):** Gen-1 cast
+exemplars need **full limb + torso coverage** (NOT chest-only inpaint — that left bare muscular human arms
+on Gristle); Ironclad needs a **broken-silhouette grimy brute** form (not a rust-skinned sleek shell); add
+**human + Welded exemplars** (the new grounded categories, class-tagged + balanced per the human↔android
+line). Gen-2 = a separate later dataset/LoRA. **Environments** beyond the under-city (the Towers = clean
+Gen-2 register; the surface hazard regions = grounded variants) are the **Hesperia world-plates' scope**
+(`projects/hesperia/`), not this character canon — rustline supplies the grounded paint.
+
 ## Premise
 **Rustline** is the corroded lower districts of a megacity — rust, scrap, leaking pipes, and
 perpetual drizzle in the grime below the corporate towers. Its people are **androids**: cast-off,
@@ -147,9 +210,40 @@ chrome utopia, no neon glamour — wet concrete, dim sodium light, and survival.
   coat pockets stuffed with rusted data-chips and paper; exposed neck-cabling; a satchel of salvaged
   records. *Forbidden:* a sleek digital librarian android; a tall hooded skeleton.
 
+## Cast — Hesperia faction-look cues (v3, from `hesperia/docs/cast-arcs.md` PR #2)
+Depictable cues each character's arc implies, layered onto the descriptions above (drive v3 exemplars).
+All Gen-1 also carry the cross-cutting **decommission brand** (see Hesperia Alignment).
+- **Gutterjack** (Scrip): a **self-smashed empathy-lens** (one optic socket deliberately destroyed/empty);
+  body a **patchwork of mismatched salvaged makes**; salvage/price tags.
+- **Ironclad** (Decommissioned) **[v3 fix]**: a **corroded ex-TOWER enforcer** — once-clean tower plating
+  stripped, rust-eaten, under-city patches bolted over it; **broken/asymmetric grimy silhouette, NOT sleek
+  power-armor**; triage-scarred hands.
+- **Scrap-Saint** (Communion figure): a **reliquary-bearer** — open chest-mechanism **cradles a salvaged
+  memory-core like a monstrance**; a speaker-grille (voice unit); rag vestments stiff like ceremonial robes.
+- **Rustblood** (Communion): a **maimed mender** — a clean **excised cavity in skull/chassis** (the removed
+  "deciding-half") **alongside the canon one-arm-bare-hydraulics** (keep both); over-many needle-driver
+  tool-fingers; trailing repair-cables.
+- **Dockrat** (Scrip): a **beast-of-burden frame** — fused **cargo back-rig/harness**, load-bowed legs,
+  straps + counterweights, a worn load-saddle spot; rusted hook hand. (Drop the literal "steel-drum" noun.)
+- **Hushwire** (Scrip): a **sealed runner** — slim/quick, a **gasketed/sealed body** (briefly crosses dead
+  air — Sam's road), a wrist courier-compartment; understated (makes herself not-matter).
+- **Gristle** (Decommissioned) **[v3 fix]**: **THE WELDED-SHUT IRON JAW is the signature** (a crude iron
+  jaw-plate riveted shut over the lower face — the silenced mute); a **fully scrap-PLATED hulk — plated
+  torso AND arms, NO bare human muscle**; one piston-claw; **gentle expressive optics above the brutal jaw**.
+- **Hearthframe** (Communion): a **cast-off house-unit** — domestic livery/apron with a **household sigil
+  defaced** + a stamped **service-tag** ("asset, not member"); porcelain cracked face; **SOLID plated rounded
+  torso, NO ribcage** (keep the v1 fix).
+- **Rustgrave** (Decommissioned, hard wing): the **unbowed veteran** — fused rifle-stock forearm; greatcoat
+  layered with scavenged armor; **a grim cluster of decommission-tags/dog-tags worn like a rosary** (the
+  "receipts"); the hardest scarred bearing.
+- **Dustwhisper** (keeper): the **keeper of certificates** — laden with **rolled manifests / stamped
+  death-certificates / data-chips** (the failing-empathy scores he stamped on his own people), a stamp-tool.
+
 ## Global must-not
 **electric neon / saturated colour ON CHARACTERS** (cast stays grounded; neon-noir is environment-only
 per the Neon Amendment) · **holograms** · **headless or skeletal androids / exposed ribcages** ·
-sleek clean sci-fi robots / plastic androids · anime / chibi / cel-shaded · brass / clockwork /
-Victorian dieselpunk · glossy photoreal 3D-render · modern bright daylight · humans (the cast is
-androids).
+sleek clean sci-fi robots / plastic androids (= the separate **Gen-2 LoRA**, NEVER rustline) · anime /
+chibi / cel-shaded · brass / clockwork / Victorian dieselpunk · glossy photoreal 3D-render · modern
+bright daylight · **bare human muscle / skin ON ANDROIDS** (androids are plated + synth-faced). **NOTE:
+humans & cyborgs (the Welded) DO render here now — grounded-grimy, never clean — see Hesperia Alignment;
+the old "no humans" ban is lifted.**
