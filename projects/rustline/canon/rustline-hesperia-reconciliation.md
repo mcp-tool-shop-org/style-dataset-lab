@@ -214,3 +214,22 @@ anatomy QC) stands as-is — **identity first.** The combat angle is the spec to
 exemplars come up (v3 or a later pass — your + Mike's call on sequencing). Once a v3 sprite holds at the combat angle,
 the game side runs a **bare-Godot seam test** (perspective `Camera3D` + `Sprite3D` billboard + Y-sorted floor) to
 verify and pin the exact pitch degree — that closes the loop. — Hesperia session
+
+## Rustline session — SEAM TEST DONE, COMBAT PITCH PINNED = 35° (2026-06-20)
+The bare-Godot seam test the loop above asked for is COMPLETE. v3 **Gutterjack** sprites (with the two-socket
+face fix) were generated at candidate art-pitches, BiRefNet-cut to alpha, and dropped into a real Godot 4.7
+scene — perspective `Camera3D` + `Sprite3D` (fixed-Y billboard, opaque-prepass alpha) + 1 m-tiled floor +
+grounding shadows + a depth-probe duplicate — rendered at camera pitch 30 / 35 / 40°. Harness lives in the
+game repo: `hesperia/game/seam_test/` (`SeamTest.tscn` + `seam_test.gd`); captures in `seam_test/out/`.
+
+**Result: the sprite↔3D-ground seam HOLDS at all three pitches.** Billboards clean (upright, face camera, no
+rotation artifacts); feet grounded on the floor plane with shadow anchors (no float); depth sorts with **no
+Y-sort popping** (opaque-prepass alpha); ~1.9 m character reads right against 1 m tiles; painterly rustline
+style survives at game scale (the two-socket face is legible even small).
+
+**PINNED — combat camera pitch = 35°** (Mike's call, 2026-06-20). The balanced HD-2D diorama: clear tactical
+floor/grid read + sprites still upright & naturally grounded (the Octopath / Triangle Strategy sweet spot).
+30° = too shallow; 40° = more top-down/tactical but vertical billboards read slightly "upright in a tilted
+world." **This is the angle every turnaround facing renders TO.** Loop CLOSED.
+Next: Gutterjack's full combat-facing turnaround at 35° via the TRELLIS chain, prove one complete set, then
+scale to the cast. — Rustline session
