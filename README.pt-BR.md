@@ -113,6 +113,15 @@ O Style Dataset Lab torna a conexão explícita. Sua constituição define as re
 
 O resultado prático: quando seu LoRA se desvia, você pode perguntar *por quê*. Quando sua próxima rodada de treinamento precisar de melhores dados, você saberá exatamente quais registros estão próximos do ideal e qual regra única eles não cumpriram. Quando um novo membro da equipe perguntar qual é a linguagem visual do projeto, a resposta não será uma placa Figma — será uma constituição pesquisável com 1.182 exemplos graduados.
 
+## Comprovado em produção
+
+Este não é um fluxo de trabalho de demonstração. Duas LoRAs reais foram processadas integralmente através dele — o mesmo ciclo de criação → curadoria → treinamento → lançamento, em extremos opostos do espectro da curadoria.
+
+- **[Tallow Fen](handbook/case-study-tallow-fen/)** (design de criaturas) — um bestiário criado do zero, com aproximadamente **34% de aprovação** em 293 registros selecionados (169 rejeitados — a triagem é rigorosa). Lançado `tallow_fen_style_v3.safetensors` @ 1.5 no `qwen-image`.
+- **[Rustline](handbook/case-study-rustline/)** (design de conceito) — um conjunto denso e pré-definido, com aproximadamente **96% de aprovação** em 180 registros. Lançado `rustline_v3ckpt_1500.safetensors` @ 1.0 no `qwen-image`, reutilizado posteriormente por um segundo projeto.
+
+O mesmo fluxo de trabalho, dois perfis de produção: a triagem da curadoria é real (rejeita rigorosamente temas abertos) e uma abordagem disciplinada na criação resulta em alta aceitação.
+
 ## Cinco domínios, regras reais
 
 Não são apenas modelos de exemplo. Cada domínio é fornecido com regras de constituição de nível de produção, definições de faixa, rubricas de pontuação e vocabulário de grupo.
@@ -153,11 +162,13 @@ projects/my-project/
 
 Estas não são apenas aspirações. Elas são aplicadas.
 
-- **Os snapshots são imutáveis.** A impressão digital da configuração (SHA-256) prova que nada foi alterado.
-- **As divisões evitam vazamentos.** As famílias de objetos (por identidade, linhagem ou sufixo de ID) nunca cruzam os limites das partições.
-- **Os manifestos são contratos congelados.** Hash de exportação + impressão digital da configuração. Se algo mudar, crie um novo.
-- **Os adaptadores não podem alterar a verdade.** Layout diferente, mesmos registros. Sem adições, sem remoções, sem reclassificações.
-- **As saídas geradas retornam através da revisão.** Sem atalhos. Curadoria e vinculação como tudo o mais.
+- **Os instantâneos são imutáveis.** A impressão digital da configuração (SHA-256) comprova que nada foi alterado.
+- **As divisões evitam vazamentos.** As famílias de temas (por identidade, linhagem ou sufixo de ID) nunca cruzam os limites das partições.
+- **Os manifestos são contratos fixos.** Exporta o hash + impressão digital da configuração. Se algo mudar, crie um novo.
+- **As execuções fixam seu grafo exato.** Cada geração registra `comfy_workflow_sha` + hashes do conteúdo do modelo/LoRA + política de semente, para que uma série possa ser reproduzida byte a byte — idêntica nos executores JS e Python. O hash do modelo é opcional (`--hash-models`) e nunca é fabricado.
+- **Nenhum modelo verifica seu próprio resultado.** As avaliações registram `judged_by_model` e `generator_model`; um aviso é exibido se eles forem o mesmo modelo.
+- **Os adaptadores não podem alterar a verdade.** Layout diferente, os mesmos registros. Sem adições, sem remoções, sem reclassificação.
+- **As saídas geradas são reintroduzidas através da revisão.** Sem desvio. Curadoria e vinculação como em tudo o mais.
 
 ## Star Freight
 

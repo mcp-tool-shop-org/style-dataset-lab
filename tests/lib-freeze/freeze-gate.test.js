@@ -18,7 +18,7 @@ import {
   resolveEntryBySubject,
   resolveEntryByAssetPath,
 } from '../../lib/freeze-gate.js';
-import { eventsPath, readEvents } from '../../lib/freeze-events.js';
+import { eventsPath, readEvents, appendEvent } from '../../lib/freeze-events.js';
 
 async function scaffold() {
   const tmp = await mkdtemp(join(tmpdir(), 'sdlab-gate-'));
@@ -244,6 +244,77 @@ test('assertNotFrozen: null resolved = no-op', async () => {
   const tmp = await mkdtemp(join(tmpdir(), 'sdlab-gate-'));
   try {
     await assertNotFrozen({ projectRoot: tmp, resolved: null, action: 'test' });
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
+
+// --- contrastive refuse messaging (UNCERTAINTY_GATED_HUMANS / Horvitz CHI 1999) ---
+
+test('gate: frozen message leads contrastively with who/why + watched fields', async () => {
+  const { tmp, projectRoot, canonRoot } = await scaffold();
+  try {
+    await writeCharacterEntry(canonRoot, 'heracles', 'frozen', {
+      freezeFields: {
+        frozen_by: 'mike',
+        frozen_reason: 'Labor III plate approved',
+        watch_fields: ['visual.silhouette_cue', 'visual.palette'],
+      },
+    });
+    await assert.rejects(
+      () => assertNotFrozenBySubject(projectRoot, 'heracles', { action: 'generate' }),
+      (err) => {
+        assert.equal(err.code, 'CANON_ENTRY_FROZEN');
+        assert.match(err.message, /Default: REFUSE/);
+        assert.match(err.message, /frozen by mike/);
+        assert.match(err.message, /Labor III plate approved/);
+        assert.match(err.hint, /visual\.silhouette_cue/);
+        return true;
+      },
+    );
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('gate: soft-advisory bypass prompt states the override condition (don\'t touch watched fields)', async () => {
+  const { tmp, projectRoot, canonRoot } = await scaffold();
+  try {
+    await writeCharacterEntry(canonRoot, 'heracles', 'soft-advisory', {
+      freezeFields: { frozen_by: 'mike', frozen_reason: 'palette locked', watch_fields: ['visual.palette'] },
+    });
+    await assert.rejects(
+      () => assertNotFrozenBySubject(projectRoot, 'heracles', { action: 'generate', allowSoftAdvisoryBypass: true }),
+      (err) => {
+        assert.equal(err.code, 'CANON_ENTRY_FROZEN');
+        assert.match(err.message, /Default: REFUSE/);
+        assert.match(err.message, /Override requires --i-know AND --reason/); // preserved phrase
+        assert.match(err.hint, /ONLY if your change does not touch the watched fields/);
+        assert.match(err.hint, /visual\.palette/);
+        return true;
+      },
+    );
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('gate: contrastive lead includes the freeze date when the event log has one', async () => {
+  const { tmp, projectRoot, canonRoot } = await scaffold();
+  try {
+    await writeCharacterEntry(canonRoot, 'heracles', 'frozen', {
+      freezeFields: { frozen_by: 'mike', frozen_reason: 'r' },
+    });
+    await appendEvent(projectRoot, {
+      type: 'freeze', entity_id: 'heracles', by: 'mike', reason: 'r', at: '2026-04-22T10:00:00.000Z',
+    });
+    await assert.rejects(
+      () => assertNotFrozenBySubject(projectRoot, 'heracles', { action: 'generate' }),
+      (err) => {
+        assert.match(err.message, /on 2026-04-22/);
+        return true;
+      },
+    );
   } finally {
     await rm(tmp, { recursive: true, force: true });
   }

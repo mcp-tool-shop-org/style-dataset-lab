@@ -165,6 +165,8 @@ These are not aspirational. They are enforced.
 - **Snapshots are immutable.** Config fingerprint (SHA-256) proves nothing changed.
 - **Splits prevent leakage.** Subject families (by identity, lineage, or ID suffix) never cross partition boundaries.
 - **Manifests are frozen contracts.** Export hash + config fingerprint. If anything changes, create a new one.
+- **Runs pin their exact graph.** Every generation records `comfy_workflow_sha` + model/LoRA content hashes + seed policy, so a wave is byte-for-byte replayable — identical across the JS and Python runners. Model hashing is opt-in (`--hash-models`) and never fabricated.
+- **No model verifies its own output.** Judgments record `judged_by_model` and `generator_model`; a warning fires if they are ever the same model.
 - **Adapters cannot mutate truth.** Different layout, same records. No additions, no removals, no reclassification.
 - **Generated outputs re-enter through review.** No bypass. Curate and bind like everything else.
 

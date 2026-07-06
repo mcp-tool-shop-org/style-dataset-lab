@@ -20,6 +20,7 @@ import { runtimeError, inputError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { pickOutputImage } from "../lib/comfyui-output.js";
 import { buildQwenGraph, QWEN_DEFAULTS } from "../lib/adapters/comfyui-workflows.js";
+import { buildPinning, SEED_POLICIES, createHashCache, flushHashCache } from "../lib/run-manifest.js";
 import { info, result } from "../lib/log.js";
 
 /**
@@ -272,12 +273,18 @@ export async function run(argv = process.argv.slice(2)) {
       game: { type: 'string' },
       'dry-run': { type: 'boolean' },
       resume: { type: 'boolean' },
+      'hash-models': { type: 'boolean' },
     },
     deprecated: { game: 'project' },
   });
   const packPath = parsed.positionals[0] || "inputs/prompts/rpg-icons-lane1.json";
   const dryRun = parsed.flags['dry-run'] === true;
   const resume = parsed.flags['resume'] === true;
+  // PIN_PER_STEP: --hash-models opts into content hashing of the checkpoint/
+  // unet/clip/vae/LoRA files (best-effort, cached). Without it the pinning block
+  // still records comfy_workflow_sha + model name/size + seed_policy.
+  const hashModels = parsed.flags['hash-models'] === true;
+  const hashCache = hashModels ? createHashCache() : undefined;
 
   const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'pack-path' });
   const raw = await readJsonFile(fullPackPath);
@@ -432,6 +439,20 @@ export async function run(argv = process.argv.slice(2)) {
         provenance.loras = loras;
       }
 
+      // PIN_PER_STEP: pin the exact graph + model/LoRA content identity + seed
+      // policy via the shared contract (lib/run-manifest.js). Model hashing is
+      // wave-constant; the shared cache means it runs at most once per wave.
+      provenance.pinning = buildPinning({
+        graph: nodes,
+        models: isQwen
+          ? { unet: provenance.unet, clip: provenance.clip, vae: provenance.vae }
+          : { checkpoint: d.checkpoint },
+        loras: isQwen ? (d.loras || []) : loras,
+        seedPolicy: SEED_POLICIES.BASE_INCREMENT,
+        hashModels,
+        cache: hashCache,
+      });
+
       const record = {
         id: assetId,
         schema_version: "1.0.0",
@@ -466,6 +487,9 @@ export async function run(argv = process.argv.slice(2)) {
       info('generate', `progress ${generated}/${totalExpected} — avg ${formatEta(avgMs)}/item, ETA ~${formatEta(etaMs)}`);
     }
   }
+
+  // Persist any newly computed model hashes so the next wave reuses them.
+  flushHashCache(hashCache);
 
   console.log("");
   const succeeded = generated - errors - skipped;

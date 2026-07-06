@@ -113,6 +113,15 @@ Style Dataset Lab rende esplicita questa connessione. La tua costituzione defini
 
 Il risultato pratico: quando il tuo LoRA subisce modifiche indesiderate, puoi chiedere *perché*. Quando il tuo prossimo ciclo di addestramento richiede dati migliori, sai esattamente quali record sono quasi corretti e quale singola regola hanno violato. Quando un nuovo membro del team chiede qual è il linguaggio visivo del progetto, la risposta non è una bacheca Figma, ma una costituzione ricercabile con 1.182 esempi valutati.
 
+## Testato in produzione
+
+Non si tratta di una pipeline dimostrativa. Due modelli LoRA reali sono stati elaborati integralmente attraverso questa pipeline: lo stesso ciclo canonico → curatela → addestramento → distribuzione, agli estremi opposti dello spettro della curatela.
+
+- **[Tallow Fen](handbook/case-study-tallow-fen/)** (progettazione di creature): un canone di bestiario creato da zero, con circa il **34% di approvazioni** su 293 record curati (169 rifiutati: la fase di selezione è rigorosa). È stato distribuito `tallow_fen_style_v3.safetensors` a 1.5 su `qwen-image`.
+- **[Rustline](handbook/case-study-rustline/)** (progettazione concettuale): un canone denso e predefinito, con circa il **96% di approvazioni** su 180 record. È stato distribuito `rustline_v3ckpt_1500.safetensors` a 1.0 su `qwen-image`, ed è stato riutilizzato in un secondo progetto.
+
+La stessa pipeline, due profili di produzione: la fase di curatela è reale (rifiuta rigorosamente i contenuti inappropriati) e un canone ben definito produce alti tassi di accettazione.
+
 ## Cinque domini, regole reali
 
 Non semplici modelli di esempio. Ogni dominio viene fornito con regole della costituzione adatte alla produzione, definizioni delle corsie, rubriche di valutazione e vocabolario di gruppo.
@@ -154,10 +163,12 @@ projects/my-project/
 Queste non sono semplici aspirazioni. Sono applicate rigorosamente.
 
 - **Gli snapshot sono immutabili.** L'impronta della configurazione (SHA-256) dimostra che nulla è stato modificato.
-- **Le suddivisioni prevengono perdite di dati.** Le famiglie di soggetti (per identità, discendenza o suffisso ID) non si sovrappongono mai tra le diverse partizioni.
-- **I manifest sono contratti vincolanti.** Hash dell'esportazione + impronta della configurazione. Se qualcosa cambia, crearne uno nuovo.
+- **Le suddivisioni prevengono la dispersione dei dati.** Le famiglie di soggetti (per identità, discendenza o suffisso ID) non superano mai i confini delle partizioni.
+- **I manifest sono contratti vincolanti.** Esportazione dell'hash + impronta della configurazione. Se qualcosa cambia, crearne uno nuovo.
+- **Le esecuzioni fissano il loro grafo esatto.** Ogni generazione registra `comfy_workflow_sha` + hash del contenuto del modello/LoRA + politica dei seed, in modo che un ciclo possa essere riprodotto byte per byte: identico sia nell'ambiente JS che Python. L'hashing del modello è opzionale (`--hash-models`) e non viene mai falsificato.
+- **Nessun modello verifica il proprio output.** Le valutazioni registrano `judged_by_model` e `generator_model`; se questi valori sono mai uguali, viene visualizzato un avviso.
 - **Gli adattatori non possono alterare la verità.** Layout diverso, stessi record. Nessuna aggiunta, nessuna rimozione, nessuna riclassificazione.
-- **Gli output generati vengono rielaborati tramite revisione.** Nessun bypass. Curare e collegare come tutto il resto.
+- **Gli output generati vengono reintrodotti attraverso la revisione.** Nessun bypass. Curatela e collegamento come per tutti gli altri elementi.
 
 ## Star Freight
 

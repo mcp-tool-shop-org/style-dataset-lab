@@ -4,7 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## [3.2.0] - 2026-07-06
+## [3.3.0] - 2026-07-06
+
+**Provenance hardening.** This release closes the three weakest workflow-standards scores (PIN_PER_STEP, EXTERNAL_VERIFIER, UNCERTAINTY_GATED_HUMANS) so shipped, production LoRA work is byte-for-byte reproducible and the verifier/human-gate muscles are in place. No breaking changes — every new field is additive and optional; legacy manifests and records load unchanged.
+
+### Added
+
+- **PIN_PER_STEP — run-manifest pinning contract** (`lib/run-manifest.js`, the single source of truth): every generation writer now records a `pinning` block so a wave is byte-for-byte replayable —
+  - **`comfy_workflow_sha`** — SHA-256 of the exact ComfyUI graph submitted (per-item seed + prompt normalized out, so one hash pins the whole wave's pipeline skeleton). The JS runners (`generate.js`, `comfyui-runner.js`) and the Python bridge (`scripts/qwen_generate.py`) produce a **byte-identical** hash for the same graph.
+  - **Model + LoRA content identity** — `unet`/`clip`/`vae`/`checkpoint` and each LoRA upgraded from a bare filename to `{name, size_bytes, sha256}`. `sha256` is opt-in via `--hash-models` (best-effort, resolved under the ComfyUI models dir, cached by `(name, size, mtime)` so multi-GB checkpoints aren't re-hashed every wave); `size_bytes` is always recorded when the file resolves. Unresolvable files record `sha256: null` with a `hash_note` — a hash is never fabricated.
+  - **`seed_policy`** — records the intent behind seed selection (`base+increment`, `explicit-per-item`, `fixed`, `random`), not just the values.
+  - New `--hash-models` flag on `sdlab generate` and `sdlab run generate` (and `scripts/qwen_generate.py`).
+- **EXTERNAL_VERIFIER — judge/generator provenance** (`lib/verifier.js`): curate and critique records now carry **`judged_by_model`** (`human` / `rule-based:sdlab-critique-v1`) and **`generator_model`** (derived as `<base>:<model>`, e.g. `qwen-image:qwen_image_fp8_e4m3fn`), and a **WARN fires when the two are the same model** — the self-verification failure mode. (Today's rule-based critique engine is a different artifact class from the generator, so the warning does not fire; the fields + warning install the muscle for when an LLM critique mode enters the loop.)
+- **UNCERTAINTY_GATED_HUMANS —**
+  - **`sdlab critique --triage`** surfaces only the candidates that need a human — `off-model` OR ≥ `--drift-threshold` (default 3) drift issues — so attention gates on uncertainty rather than on every item. The full `critique.json` is unchanged; triage is a view over it.
+  - **Contrastive freeze-gate refusals** — the freeze bypass prompt now leads with the default action and the system's reasoning (`Default: REFUSE — "<id>" is <status> frozen by <by> on <date>, reason: "<why>". Override with --i-know --reason ONLY if your change does not touch the watched fields [...]`), and `curate <id> borderline` prints a contrastive HOLD advisory.
+
+### Changed
+
+- **Manifest `SCHEMA_VERSION` 2.2.0 → 2.3.0** — the ComfyUI run manifest now stamps `schema_version` and carries the `pinning` block. Readers still `checkManifestVersion()`-warn (never throw) on mismatch, so pre-3.3.0 manifests load fine.
+
+### Tests & coverage
+
+- **400 tests, 0 failing** (368 → 400: +32 for pinning, verifier fields, triage, and contrastive freeze wording). Coverage: statements **63.53%** / branches **75.77%** / functions **69.04%**.
+
+
 
 The **canon authoring** release. A new `sdlab canon *` namespace turns a project's canon entity store into the projections training actually consumes, and wraps a witness-backed freeze spine around entries that must not drift — plus first-class Flux and Qwen-Image training paths.
 

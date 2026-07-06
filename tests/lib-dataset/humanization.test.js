@@ -42,7 +42,7 @@ test('DB-001/DB-006: snapshot manifest is stamped with SCHEMA_VERSION', async ()
     const { snapshotId } = await createSnapshot(proj.projectRoot, SELECTION_PROFILE);
     const manifest = await loadSnapshot(proj.projectRoot, snapshotId);
     assert.equal(manifest.schema_version, SCHEMA_VERSION);
-    assert.equal(SCHEMA_VERSION, '2.2.0');
+    assert.equal(SCHEMA_VERSION, '2.3.0'); // v3.3.0: PIN_PER_STEP run-manifest pinning block
   } finally {
     proj.cleanup();
   }

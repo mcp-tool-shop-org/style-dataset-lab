@@ -24,6 +24,7 @@ export async function run(argv = process.argv.slice(2)) {
       brief: { type: 'string' },
       seed: { type: 'string' },
       'dry-run': { type: 'boolean' },
+      'hash-models': { type: 'boolean' },
       json: { type: 'boolean' },
     },
     deprecated: { game: 'project' },
@@ -36,6 +37,7 @@ export async function run(argv = process.argv.slice(2)) {
     console.log('  --brief <id>      Compiled brief ID (required)');
     console.log('  --seed <n>        Override base seed');
     console.log('  --dry-run         Prepare run dir without submitting to ComfyUI');
+    console.log('  --hash-models     Content-hash the model/LoRA files into the run manifest (best-effort, cached)');
     console.log('  --json            Output manifest as JSON');
     return;
   }
@@ -59,6 +61,7 @@ export async function run(argv = process.argv.slice(2)) {
     brief,
     baseSeed: flags.seed ? parseNumberFlag('seed', flags.seed, { int: true, min: 0 }) : undefined,
     dryRun: flags['dry-run'] || false,
+    hashModels: flags['hash-models'] || false,
   });
 
   // Save summary

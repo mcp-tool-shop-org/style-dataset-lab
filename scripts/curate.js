@@ -18,6 +18,7 @@ import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { result } from "../lib/log.js";
 import { assertNotFrozenByAssetPath } from "../lib/freeze-gate.js";
+import { deriveGeneratorModel, warnIfSelfVerification, HUMAN_JUDGE } from "../lib/verifier.js";
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
@@ -132,11 +133,19 @@ export async function run(argv = process.argv.slice(2)) {
     );
   }
 
+  // EXTERNAL_VERIFIER: record WHO judged (human) and WHAT generated the artifact,
+  // and warn if they ever coincide (they never do for human curation — the field
+  // + warning install the muscle for when an LLM judge enters the loop).
+  const generator_model = deriveGeneratorModel(record.provenance);
+  warnIfSelfVerification(HUMAN_JUDGE, generator_model, assetId);
+
   // Now safely update the record. If writing fails, try to restore the image.
   record.asset_path = newPath;
   record.judgment = {
     status,
     reviewer: "human:mike",
+    judged_by_model: HUMAN_JUDGE,
+    generator_model,
     reviewed_at: new Date().toISOString(),
     explanation,
     criteria_scores,
@@ -164,6 +173,18 @@ export async function run(argv = process.argv.slice(2)) {
   result(`  record: records/${assetId}.json`);
   console.log(`  ${explanation}`);
   if (failure_modes.length) console.log(`  Failures: ${failure_modes.join(", ")}`);
+
+  // UNCERTAINTY_GATED_HUMANS: contrastive advisory on borderline (Horvitz CHI
+  // 1999). State the default (HOLD — borderline is not training-eligible) and
+  // what a later promotion must justify, so the promoter argues against a stated
+  // default rather than nudging a status upward unexamined.
+  if (status === 'borderline') {
+    const drift = failure_modes.length ? failure_modes.join(', ') : 'the drift you noted';
+    console.log(
+      `  \x1b[2mDefault: HOLD — 'borderline' is not training-eligible. ` +
+      `To later promote to 'approved', justify why ${drift} is acceptable for canon (re-run curate approved with that reason).\x1b[0m`,
+    );
+  }
 }
 
 async function listUncurated(GAME_ROOT) {

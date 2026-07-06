@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-Style Dataset Lab v3.2.0 ships the `sdlab` CLI, its shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`.
+Style Dataset Lab v3.3.0 ships the `sdlab` CLI, its shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`.
 
 > **Legacy flag.** The `--game <name>` flag is a deprecated alias for `--project <name>`. It still works with a warning and will be removed in v4.
 
@@ -43,8 +43,8 @@ sdlab generate <prompt-pack-path> --project <name> [--dry-run]
 |------|---------|-------------|
 | `--project <name>` | `star-freight` | Target project directory under `projects/` |
 | `--dry-run` | -- | Print what would be generated without calling ComfyUI |
-| `--subject <name>` | all | Only generate for one subject |
-| `--seeds <n>` | 3 | Number of random seeds per subject-variation pair |
+| `--resume` | -- | Skip jobs whose record + image already exist (seeds stay bit-identical) |
+| `--hash-models` | -- | Content-hash the checkpoint/unet/clip/vae/LoRA files into the record's `pinning` block (best-effort, cached) |
 
 **Prompt pack format** (`inputs/prompts/*.json`):
 
@@ -103,7 +103,7 @@ sdlab curate --list --project <name>
 | `--failures <f1,f2>` | -- | Named failure modes, e.g. `too_clean,wrong_material` |
 | `--notes <text>` | -- | Improvement notes for borderline or rejected images |
 
-**Behavior:** Updates the record's `judgment` block, moves the image file from `outputs/candidates/` to the status directory within the project folder. The record is written before the file move to prevent orphaned images.
+**Behavior:** Updates the record's `judgment` block, moves the image file from `outputs/candidates/` to the status directory within the project folder. The record is written before the file move to prevent orphaned images. The judgment records `judged_by_model` (`human`) and `generator_model` (derived from the record's provenance) for EXTERNAL_VERIFIER provenance. Curating to `borderline` prints a contrastive HOLD advisory (borderline is not training-eligible; a later promotion must justify the noted drift).
 
 ---
 
@@ -239,6 +239,48 @@ Test the painterly pipeline on a single image before running a full batch.
 ```bash
 sdlab painterly:test --project <name>
 ```
+
+---
+
+## Provenance & pinning (PIN_PER_STEP)
+
+Every generation writer — `sdlab generate` (record `provenance`), `sdlab run generate` (run `manifest.json`), and the `scripts/qwen_generate.py` bridge (wave `generation.json`) — records a **`pinning`** block so a wave is byte-for-byte replayable. The field contract lives in one place (`lib/run-manifest.js`) and the Python bridge mirrors it exactly, so a given ComfyUI graph produces a **byte-identical** `comfy_workflow_sha` across runners.
+
+```json
+"pinning": {
+  "pinning_version": "1.0.0",
+  "comfy_workflow_sha": "sha256:…",
+  "seed_policy": "base+increment",
+  "models": {
+    "unet": { "name": "qwen_image_fp8_e4m3fn.safetensors", "size_bytes": 20430635136, "sha256": "sha256:…" }
+  },
+  "loras": [
+    { "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0, "size_bytes": 295144504, "sha256": "sha256:…" }
+  ]
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `comfy_workflow_sha` | SHA-256 of the exact ComfyUI graph submitted, with per-item seed + prompt normalized out — so one hash pins the whole wave's pipeline skeleton (models, sampler/scheduler/shift, LoRA chain, dims/steps/cfg, topology). |
+| `models.{unet,clip,vae,checkpoint}` | Content identity per model loader: `{name, size_bytes, sha256}`. |
+| `loras[]` | Per-LoRA `{name, weight, size_bytes, sha256}`. |
+| `seed_policy` | Intent behind seed selection: `base+increment`, `explicit-per-item`, `fixed`, or `random`. |
+
+**Model hashing is opt-in.** Without `--hash-models`, `size_bytes` is recorded but `sha256` is `null` with a `hash_note`. With `--hash-models`, files are resolved under the ComfyUI models dir (`SDLAB_MODELS_DIR`, default `E:/AI-Models/ComfyUI_windows_portable/ComfyUI/models`) and hashed best-effort, cached by `(name, size, mtime)` (`SDLAB_HASH_CACHE`) so multi-GB checkpoints aren't re-hashed every wave. An unresolvable file records `sha256: null` — a hash is **never** fabricated.
+
+**Backward compatible.** The block is additive and optional. The run manifest also stamps `schema_version` (bumped to `2.3.0`); readers warn-and-continue on mismatch, so pre-3.3.0 manifests and records load unchanged.
+
+## Verifier provenance (EXTERNAL_VERIFIER)
+
+Curate and critique judgments record who judged and what generated the artifact, and warn when they coincide (the self-verification failure mode):
+
+| Field | On | Value |
+|-------|-----|-------|
+| `judged_by_model` | curate judgment / critique candidate | `human` / `rule-based:sdlab-critique-v1` |
+| `generator_model` | curate judgment / critique candidate + report | `<base>:<model>`, e.g. `qwen-image:qwen_image_fp8_e4m3fn` |
+
+When `judged_by_model === generator_model` a WARN is emitted — a model must not verify its own output. (Today's rule-based critique engine is a different artifact class from the generator, so it never fires; the fields install the muscle for when an LLM critique mode enters the loop.)
 
 ---
 
@@ -463,20 +505,21 @@ sdlab brief show <brief-id> --project <name>
 
 ### sdlab run
 
-Execute briefs through ComfyUI.
+Execute briefs through ComfyUI. `run generate` writes a run `manifest.json` with the PIN_PER_STEP `pinning` block (see [Provenance & pinning](#provenance--pinning-pin_per_step)); pass `--hash-models` to content-hash the model/LoRA files into it.
 
 ```bash
-sdlab run generate --brief <id> --project <name>
+sdlab run generate --brief <id> --project <name> [--hash-models]
 sdlab run show <run-id> --project <name>
 sdlab run list --project <name>
 ```
 
 ### sdlab critique
 
-Critique a run and optionally show the saved critique.
+Critique a run and optionally show the saved critique. `--triage` surfaces only the candidates that need a human — `off-model` OR ≥ `--drift-threshold` (default 3) drift issues — so attention gates on uncertainty rather than on every item (UNCERTAINTY_GATED_HUMANS). The full `critique.json` is always written; triage is a view over it.
 
 ```bash
 sdlab critique --run <id> --project <name>
+sdlab critique --run <id> --triage [--drift-threshold <n>] --project <name>
 sdlab critique show --run <id> --project <name>
 ```
 
