@@ -1,0 +1,77 @@
+{
+  "wave": "rl-v3-ironclad-fix",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    832,
+    1216
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "sleek, glossy, clean, polished, smooth plating, symmetrical, matching armor set, uniform armour suit, halo spartan, power armour, mech suit, sci-fi supersoldier, game-ready armour, shiny chrome, plastic, holographic hud, bare human skin, human face, human muscle, exposed flesh, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, text, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "ironclad_fix",
+      "variation": 0,
+      "seed": 9800,
+      "file": "ironclad_fix_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 1,
+      "seed": 9801,
+      "file": "ironclad_fix_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 2,
+      "seed": 9802,
+      "file": "ironclad_fix_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 3,
+      "seed": 9803,
+      "file": "ironclad_fix_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 4,
+      "seed": 9804,
+      "file": "ironclad_fix_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 5,
+      "seed": 9805,
+      "file": "ironclad_fix_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 6,
+      "seed": 9806,
+      "file": "ironclad_fix_v6.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "ironclad_fix",
+      "variation": 7,
+      "seed": 9807,
+      "file": "ironclad_fix_v7.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android enforcer, a heavy hulking under-city brute built from corroded mismatched salvaged metal plates bolted and riveted together in an asymmetric battered patchwork, a once-tower enforcer now stripped of his clean armour and rust-eaten with crude scavenged patches, a synthetic visored head with a dull amber slit, exposed oily hydraulics and frayed cabling between the mismatched plates, a stamped decommission mark, heavily grimy wet and matte, a corroded scrap-brute not a clean suit of armour, a single full android character on a plain dark grimy under-city background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    }
+  ]
+}

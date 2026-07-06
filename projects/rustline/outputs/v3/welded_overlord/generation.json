@@ -1,0 +1,49 @@
+{
+  "wave": "rl-v3-w1-welded_overlord",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "full android, pristine, brand new, shiny chrome, sleek clean undamaged, no human face, plastic, neon, saturated colour, anime, cel-shaded, glossy 3d render, bright daylight, text, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "welded_overlord",
+      "variation": 0,
+      "seed": 9500,
+      "file": "welded_overlord_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg overlord, a ruling augmented human now mostly cold machine, a gaunt human face and human eyes still showing through a corroded clean-tech augmented frame, controlled precise machine parts but damaged rusted and decaying, a fallen devoured remnant, grimy, dim sodium light, a single full-body character on a plain dark grimy background"
+    },
+    {
+      "id": "welded_overlord",
+      "variation": 1,
+      "seed": 9501,
+      "file": "welded_overlord_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg overlord, a ruling augmented human now mostly cold machine, a gaunt human face and human eyes still showing through a corroded clean-tech augmented frame, controlled precise machine parts but damaged rusted and decaying, a fallen devoured remnant, grimy, dim sodium light, a single full-body character on a plain dark grimy background"
+    },
+    {
+      "id": "welded_overlord",
+      "variation": 2,
+      "seed": 9502,
+      "file": "welded_overlord_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg overlord, a ruling augmented human now mostly cold machine, a gaunt human face and human eyes still showing through a corroded clean-tech augmented frame, controlled precise machine parts but damaged rusted and decaying, a fallen devoured remnant, grimy, dim sodium light, a single full-body character on a plain dark grimy background"
+    },
+    {
+      "id": "welded_overlord",
+      "variation": 3,
+      "seed": 9503,
+      "file": "welded_overlord_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg overlord, a ruling augmented human now mostly cold machine, a gaunt human face and human eyes still showing through a corroded clean-tech augmented frame, controlled precise machine parts but damaged rusted and decaying, a fallen devoured remnant, grimy, dim sodium light, a single full-body character on a plain dark grimy background"
+    }
+  ]
+}

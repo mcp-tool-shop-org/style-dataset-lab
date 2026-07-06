@@ -1,0 +1,77 @@
+{
+  "wave": "rl-phaseB-ironclad",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "sleek, glossy, clean, polished, smooth plating, halo spartan, power armour, sci-fi supersoldier, game-ready armour, shiny chrome, plastic, holographic hud, neon, saturated colour, headless, skeleton, exposed ribcage, bare human skin, human face, anime, chibi, cel-shaded, brass, clockwork, glossy 3d render, bright daylight, text, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "ironclad",
+      "variation": 0,
+      "seed": 8100,
+      "file": "ironclad_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 1,
+      "seed": 8101,
+      "file": "ironclad_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 2,
+      "seed": 8102,
+      "file": "ironclad_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 3,
+      "seed": 8103,
+      "file": "ironclad_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 4,
+      "seed": 8104,
+      "file": "ironclad_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 5,
+      "seed": 8105,
+      "file": "ironclad_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 6,
+      "seed": 8106,
+      "file": "ironclad_v6.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "ironclad",
+      "variation": 7,
+      "seed": 8107,
+      "file": "ironclad_v7.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android corporate enforcer, a broad heavy synth built from matte scuffed concrete-grey industrial plates bolted and riveted together, exposed oily chest-hydraulics and frayed cabling showing between the plates, reinforced rust-edged steel pauldrons with rust streaks running down them, a battered visored helmet-head with a dull dim-amber light-leak at the slit, boots caked in wet concrete, heavily worn grimy and matte, a corroded under-city brute, not sleek not glossy not clean armour, a single full-body android character on a plain dark grimy background"
+    }
+  ]
+}
