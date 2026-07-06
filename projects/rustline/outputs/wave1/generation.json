@@ -1,0 +1,413 @@
+{
+  "wave": "rustline-wave1",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "neon, neon signs, holograms, glowing signage, saturated colours, magenta glow, cyan glow, bright vibrant colours, headless, skeleton, exposed ribcage, organic bones, skull, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+  "loras": [],
+  "items": [
+    {
+      "id": "gutterjack",
+      "variation": 0,
+      "seed": 5200,
+      "file": "gutterjack_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single hunched lanky android scavenger in patched scuffed off-white plating, a scavenged tarp worn like a poncho, exposed neck-gears and frayed cabling, a single cracked optic, oil-stained hands, knee-high rusted steel shin-guards, standing in a grimy rain-wet scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gutterjack",
+      "variation": 1,
+      "seed": 5201,
+      "file": "gutterjack_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single hunched lanky android scavenger in patched scuffed off-white plating, a scavenged tarp worn like a poncho, exposed neck-gears and frayed cabling, a single cracked optic, oil-stained hands, knee-high rusted steel shin-guards, standing in a grimy rain-wet scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gutterjack",
+      "variation": 2,
+      "seed": 5202,
+      "file": "gutterjack_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single hunched lanky android scavenger in patched scuffed off-white plating, a scavenged tarp worn like a poncho, exposed neck-gears and frayed cabling, a single cracked optic, oil-stained hands, knee-high rusted steel shin-guards, standing in a grimy rain-wet scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gutterjack",
+      "variation": 3,
+      "seed": 5203,
+      "file": "gutterjack_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single hunched lanky android scavenger in patched scuffed off-white plating, a scavenged tarp worn like a poncho, exposed neck-gears and frayed cabling, a single cracked optic, oil-stained hands, knee-high rusted steel shin-guards, standing in a grimy rain-wet scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gutterjack",
+      "variation": 4,
+      "seed": 5204,
+      "file": "gutterjack_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single hunched lanky android scavenger in patched scuffed off-white plating, a scavenged tarp worn like a poncho, exposed neck-gears and frayed cabling, a single cracked optic, oil-stained hands, knee-high rusted steel shin-guards, standing in a grimy rain-wet scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "ironclad",
+      "variation": 0,
+      "seed": 5205,
+      "file": "ironclad_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single broad heavy android enforcer in matte scuffed concrete-grey plating, reinforced rust-edged steel pauldrons, a visored helmet-head with a dull amber slit, exposed oily chest-hydraulics, frayed wrist-cabling, standing in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "ironclad",
+      "variation": 1,
+      "seed": 5206,
+      "file": "ironclad_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single broad heavy android enforcer in matte scuffed concrete-grey plating, reinforced rust-edged steel pauldrons, a visored helmet-head with a dull amber slit, exposed oily chest-hydraulics, frayed wrist-cabling, standing in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "ironclad",
+      "variation": 2,
+      "seed": 5207,
+      "file": "ironclad_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single broad heavy android enforcer in matte scuffed concrete-grey plating, reinforced rust-edged steel pauldrons, a visored helmet-head with a dull amber slit, exposed oily chest-hydraulics, frayed wrist-cabling, standing in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "ironclad",
+      "variation": 3,
+      "seed": 5208,
+      "file": "ironclad_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single broad heavy android enforcer in matte scuffed concrete-grey plating, reinforced rust-edged steel pauldrons, a visored helmet-head with a dull amber slit, exposed oily chest-hydraulics, frayed wrist-cabling, standing in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "ironclad",
+      "variation": 4,
+      "seed": 5209,
+      "file": "ironclad_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single broad heavy android enforcer in matte scuffed concrete-grey plating, reinforced rust-edged steel pauldrons, a visored helmet-head with a dull amber slit, exposed oily chest-hydraulics, frayed wrist-cabling, standing in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "scrap_saint",
+      "variation": 0,
+      "seed": 5210,
+      "file": "scrap_saint_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single gaunt tall android preacher in peeling off-white plating, head bowed under a hood of wet rags, an open robe over an exposed oily chest-mechanism, hands wrapped in frayed cabling, standing in a grimy rain-wet under-city shrine, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "scrap_saint",
+      "variation": 1,
+      "seed": 5211,
+      "file": "scrap_saint_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single gaunt tall android preacher in peeling off-white plating, head bowed under a hood of wet rags, an open robe over an exposed oily chest-mechanism, hands wrapped in frayed cabling, standing in a grimy rain-wet under-city shrine, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "scrap_saint",
+      "variation": 2,
+      "seed": 5212,
+      "file": "scrap_saint_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single gaunt tall android preacher in peeling off-white plating, head bowed under a hood of wet rags, an open robe over an exposed oily chest-mechanism, hands wrapped in frayed cabling, standing in a grimy rain-wet under-city shrine, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "scrap_saint",
+      "variation": 3,
+      "seed": 5213,
+      "file": "scrap_saint_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single gaunt tall android preacher in peeling off-white plating, head bowed under a hood of wet rags, an open robe over an exposed oily chest-mechanism, hands wrapped in frayed cabling, standing in a grimy rain-wet under-city shrine, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "scrap_saint",
+      "variation": 4,
+      "seed": 5214,
+      "file": "scrap_saint_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single gaunt tall android preacher in peeling off-white plating, head bowed under a hood of wet rags, an open robe over an exposed oily chest-mechanism, hands wrapped in frayed cabling, standing in a grimy rain-wet under-city shrine, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustblood",
+      "variation": 0,
+      "seed": 5215,
+      "file": "rustblood_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single wiry hunched android mender, limbs wrapped in frayed canvas strips, a patchwork-plated torso, one arm stripped to bare hydraulics, a present seamed face with a cracked magnifier-lens flipped over one optic, rusted needle-driver fingers, a sagging tool-belt, in a grimy back-alley clinic, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustblood",
+      "variation": 1,
+      "seed": 5216,
+      "file": "rustblood_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single wiry hunched android mender, limbs wrapped in frayed canvas strips, a patchwork-plated torso, one arm stripped to bare hydraulics, a present seamed face with a cracked magnifier-lens flipped over one optic, rusted needle-driver fingers, a sagging tool-belt, in a grimy back-alley clinic, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustblood",
+      "variation": 2,
+      "seed": 5217,
+      "file": "rustblood_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single wiry hunched android mender, limbs wrapped in frayed canvas strips, a patchwork-plated torso, one arm stripped to bare hydraulics, a present seamed face with a cracked magnifier-lens flipped over one optic, rusted needle-driver fingers, a sagging tool-belt, in a grimy back-alley clinic, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustblood",
+      "variation": 3,
+      "seed": 5218,
+      "file": "rustblood_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single wiry hunched android mender, limbs wrapped in frayed canvas strips, a patchwork-plated torso, one arm stripped to bare hydraulics, a present seamed face with a cracked magnifier-lens flipped over one optic, rusted needle-driver fingers, a sagging tool-belt, in a grimy back-alley clinic, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustblood",
+      "variation": 4,
+      "seed": 5219,
+      "file": "rustblood_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single wiry hunched android mender, limbs wrapped in frayed canvas strips, a patchwork-plated torso, one arm stripped to bare hydraulics, a present seamed face with a cracked magnifier-lens flipped over one optic, rusted needle-driver fingers, a sagging tool-belt, in a grimy back-alley clinic, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 0,
+      "seed": 5220,
+      "file": "dockrat_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single squat barrel-chested android dock-laborer with bowed legs, a dented steel-drum torso, arms in chain-link sleeves, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps fused to the plating, a blunt present face, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 1,
+      "seed": 5221,
+      "file": "dockrat_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single squat barrel-chested android dock-laborer with bowed legs, a dented steel-drum torso, arms in chain-link sleeves, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps fused to the plating, a blunt present face, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 2,
+      "seed": 5222,
+      "file": "dockrat_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single squat barrel-chested android dock-laborer with bowed legs, a dented steel-drum torso, arms in chain-link sleeves, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps fused to the plating, a blunt present face, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 3,
+      "seed": 5223,
+      "file": "dockrat_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single squat barrel-chested android dock-laborer with bowed legs, a dented steel-drum torso, arms in chain-link sleeves, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps fused to the plating, a blunt present face, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 4,
+      "seed": 5224,
+      "file": "dockrat_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single squat barrel-chested android dock-laborer with bowed legs, a dented steel-drum torso, arms in chain-link sleeves, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps fused to the plating, a blunt present face, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hushwire",
+      "variation": 0,
+      "seed": 5225,
+      "file": "hushwire_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single lean agile android courier in a fitted weathered jacket with the collar up, a smooth synth face with one cracked cheek-panel, slim limbs with exposed forearm-cabling, hands in pockets, in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hushwire",
+      "variation": 1,
+      "seed": 5226,
+      "file": "hushwire_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single lean agile android courier in a fitted weathered jacket with the collar up, a smooth synth face with one cracked cheek-panel, slim limbs with exposed forearm-cabling, hands in pockets, in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hushwire",
+      "variation": 2,
+      "seed": 5227,
+      "file": "hushwire_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single lean agile android courier in a fitted weathered jacket with the collar up, a smooth synth face with one cracked cheek-panel, slim limbs with exposed forearm-cabling, hands in pockets, in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hushwire",
+      "variation": 3,
+      "seed": 5228,
+      "file": "hushwire_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single lean agile android courier in a fitted weathered jacket with the collar up, a smooth synth face with one cracked cheek-panel, slim limbs with exposed forearm-cabling, hands in pockets, in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hushwire",
+      "variation": 4,
+      "seed": 5229,
+      "file": "hushwire_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single lean agile android courier in a fitted weathered jacket with the collar up, a smooth synth face with one cracked cheek-panel, slim limbs with exposed forearm-cabling, hands in pockets, in a grimy rain-wet alley, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 0,
+      "seed": 5230,
+      "file": "gristle_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single heavy asymmetrical android brawler, one arm a massive piston-claw, a welded scrap-block torso, legs wrapped in tyre-rubber, a battered present face with a missing jaw-plate exposing a piston-tongue, a cracked oil-leaking chest-plate, in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 1,
+      "seed": 5231,
+      "file": "gristle_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single heavy asymmetrical android brawler, one arm a massive piston-claw, a welded scrap-block torso, legs wrapped in tyre-rubber, a battered present face with a missing jaw-plate exposing a piston-tongue, a cracked oil-leaking chest-plate, in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 2,
+      "seed": 5232,
+      "file": "gristle_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single heavy asymmetrical android brawler, one arm a massive piston-claw, a welded scrap-block torso, legs wrapped in tyre-rubber, a battered present face with a missing jaw-plate exposing a piston-tongue, a cracked oil-leaking chest-plate, in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 3,
+      "seed": 5233,
+      "file": "gristle_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single heavy asymmetrical android brawler, one arm a massive piston-claw, a welded scrap-block torso, legs wrapped in tyre-rubber, a battered present face with a missing jaw-plate exposing a piston-tongue, a cracked oil-leaking chest-plate, in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 4,
+      "seed": 5234,
+      "file": "gristle_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single heavy asymmetrical android brawler, one arm a massive piston-claw, a welded scrap-block torso, legs wrapped in tyre-rubber, a battered present face with a missing jaw-plate exposing a piston-tongue, a cracked oil-leaking chest-plate, in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 0,
+      "seed": 5235,
+      "file": "hearthframe_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single petite rounded doll-jointed android servant, a smooth synth-bone oval torso, a frayed apron, a present cracked porcelain-smooth face with one dark eye, thin rod-limbs, an apron pocket of broken utensils, in a grimy tenement kitchen, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 1,
+      "seed": 5236,
+      "file": "hearthframe_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single petite rounded doll-jointed android servant, a smooth synth-bone oval torso, a frayed apron, a present cracked porcelain-smooth face with one dark eye, thin rod-limbs, an apron pocket of broken utensils, in a grimy tenement kitchen, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 2,
+      "seed": 5237,
+      "file": "hearthframe_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single petite rounded doll-jointed android servant, a smooth synth-bone oval torso, a frayed apron, a present cracked porcelain-smooth face with one dark eye, thin rod-limbs, an apron pocket of broken utensils, in a grimy tenement kitchen, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 3,
+      "seed": 5238,
+      "file": "hearthframe_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single petite rounded doll-jointed android servant, a smooth synth-bone oval torso, a frayed apron, a present cracked porcelain-smooth face with one dark eye, thin rod-limbs, an apron pocket of broken utensils, in a grimy tenement kitchen, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 4,
+      "seed": 5239,
+      "file": "hearthframe_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single petite rounded doll-jointed android servant, a smooth synth-bone oval torso, a frayed apron, a present cracked porcelain-smooth face with one dark eye, thin rod-limbs, an apron pocket of broken utensils, in a grimy tenement kitchen, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustgrave",
+      "variation": 0,
+      "seed": 5240,
+      "file": "rustgrave_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single sturdy scarred android veteran in a tattered military greatcoat over dented armour plates, a battered present face with one replaced dull-amber optic, a rusted rifle-stock fused as the left forearm, scavenged plates lashed on, in a grimy rain-wet ruin, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustgrave",
+      "variation": 1,
+      "seed": 5241,
+      "file": "rustgrave_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single sturdy scarred android veteran in a tattered military greatcoat over dented armour plates, a battered present face with one replaced dull-amber optic, a rusted rifle-stock fused as the left forearm, scavenged plates lashed on, in a grimy rain-wet ruin, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustgrave",
+      "variation": 2,
+      "seed": 5242,
+      "file": "rustgrave_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single sturdy scarred android veteran in a tattered military greatcoat over dented armour plates, a battered present face with one replaced dull-amber optic, a rusted rifle-stock fused as the left forearm, scavenged plates lashed on, in a grimy rain-wet ruin, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustgrave",
+      "variation": 3,
+      "seed": 5243,
+      "file": "rustgrave_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single sturdy scarred android veteran in a tattered military greatcoat over dented armour plates, a battered present face with one replaced dull-amber optic, a rusted rifle-stock fused as the left forearm, scavenged plates lashed on, in a grimy rain-wet ruin, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "rustgrave",
+      "variation": 4,
+      "seed": 5244,
+      "file": "rustgrave_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single sturdy scarred android veteran in a tattered military greatcoat over dented armour plates, a battered present face with one replaced dull-amber optic, a rusted rifle-stock fused as the left forearm, scavenged plates lashed on, in a grimy rain-wet ruin, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 0,
+      "seed": 5245,
+      "file": "dustwhisper_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stooped slight android archivist in a frayed scholar's coat, a present seamed face behind thick cracked lens-spectacles, ink-and-oil-stained fingers, coat pockets bulging with rusted data-chips, a satchel of salvaged records, in a grimy archive den, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 1,
+      "seed": 5246,
+      "file": "dustwhisper_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stooped slight android archivist in a frayed scholar's coat, a present seamed face behind thick cracked lens-spectacles, ink-and-oil-stained fingers, coat pockets bulging with rusted data-chips, a satchel of salvaged records, in a grimy archive den, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 2,
+      "seed": 5247,
+      "file": "dustwhisper_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stooped slight android archivist in a frayed scholar's coat, a present seamed face behind thick cracked lens-spectacles, ink-and-oil-stained fingers, coat pockets bulging with rusted data-chips, a satchel of salvaged records, in a grimy archive den, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 3,
+      "seed": 5248,
+      "file": "dustwhisper_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stooped slight android archivist in a frayed scholar's coat, a present seamed face behind thick cracked lens-spectacles, ink-and-oil-stained fingers, coat pockets bulging with rusted data-chips, a satchel of salvaged records, in a grimy archive den, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 4,
+      "seed": 5249,
+      "file": "dustwhisper_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stooped slight android archivist in a frayed scholar's coat, a present seamed face behind thick cracked lens-spectacles, ink-and-oil-stained fingers, coat pockets bulging with rusted data-chips, a satchel of salvaged records, in a grimy archive den, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "neutral_barrel",
+      "variation": 0,
+      "seed": 5250,
+      "file": "neutral_barrel_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single rusted steel fuel barrel, dented and oil-streaked, on wet concrete, dim sodium light"
+    },
+    {
+      "id": "neutral_barrel",
+      "variation": 1,
+      "seed": 5251,
+      "file": "neutral_barrel_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single rusted steel fuel barrel, dented and oil-streaked, on wet concrete, dim sodium light"
+    },
+    {
+      "id": "neutral_door",
+      "variation": 0,
+      "seed": 5252,
+      "file": "neutral_door_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single battered riveted steel door, rust and scratched graffiti, set in a grimy concrete wall, dim sodium light"
+    },
+    {
+      "id": "neutral_door",
+      "variation": 1,
+      "seed": 5253,
+      "file": "neutral_door_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single battered riveted steel door, rust and scratched graffiti, set in a grimy concrete wall, dim sodium light"
+    },
+    {
+      "id": "neutral_bench",
+      "variation": 0,
+      "seed": 5254,
+      "file": "neutral_bench_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single cluttered metal workbench strewn with rusted tools and oily rags, against a grimy wall, dim sodium light"
+    },
+    {
+      "id": "neutral_bench",
+      "variation": 1,
+      "seed": 5255,
+      "file": "neutral_bench_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single cluttered metal workbench strewn with rusted tools and oily rags, against a grimy wall, dim sodium light"
+    }
+  ]
+}

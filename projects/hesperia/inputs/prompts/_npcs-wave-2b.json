@@ -1,0 +1,27 @@
+{
+  "wave": "hesperia-npcs-wave-2b-humans-cyborgs",
+  "description": "Wave 2 HUMAN / Welded / fallen-bad-cyborg powers/antagonists (10). They KEEP human faces/flesh (no human-realism negative), but 'pristine/clean' is negated so the bad-cyborgs read FALLEN/corroded, never Gen-2-clean.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "pristine, clean, sleek, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra arms, extra fingers, fused fingers, bad anatomy, malformed face, two heads, skull, skeleton, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 9750,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "marek_dren", "variations": 2, "prompt": "a gaunt aging human man, an ash-stained reinforced-polymer suit with a frayed collar, thin silvered hair, milky eyes from filtered light, a cracked etched colony medallion at his chest, severe and grief-worn, a tower council leader, full-figure character concept, grounded painterly, cold filtered light" },
+    { "id": "joren_kade", "variations": 2, "prompt": "a human tower enforcer, heavy rust-spotted plated exo-armor patched with plates, a visor cracked at the left edge, a faded security insignia on a scarred forearm, a battered rifle with a copper-wire silencer, dutiful but haunted, in a grimy under-city tunnel, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "silas_rook", "variations": 2, "prompt": "a wiry human body-broker, a threadbare coat patched with blood-stained fabric, a leather apron stained with oil and ash, scarred hands with broken nails, a thin copper necklace of small bone fragments, a hollow-eyed stare, at a grim under-city reclamation stall, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "grindwheel", "variations": 2, "prompt": "a broad-shouldered welded cyborg foreman, grafted hydraulic arms and a reinforced spine visible under a grease-stained workshirt, a half-flesh half-crude-plating face, one eye a magnifying monocle on an articulated arm, a heavy wrench in his belt, a gruff union foreman, in a grimy under-city workshop, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "splice_forge", "variations": 2, "prompt": "a hulking welded cyborg fabricator, a chassis of interlocked steel plates with bright orange weld-seams, coolant tubes snaking across his back, a few incongruously clean tower-issued metal parts grafted in among the grimy scrap, a multi-tool hand sparking, in a grimy fabrication shop, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "administrator_kaelen", "variations": 2, "prompt": "a gaunt fallen cyborg administrator, faded administrative robes over a thin augmented human frame, tarnished silver data-ports and a cracked ocular lens set in his face, one arm a rust-streaked prosthetic manipulator, bitter and protocol-bound, in a crumbling data archive, full-figure character concept, grounded painterly, dim cold light" },
+    { "id": "bulwark", "variations": 2, "prompt": "a heavy fallen cyborg enforcer, oxidized pauldrons and chest-plating bolted directly into weathered human flesh, one leg a grinding piston-strut, a face of scar tissue and cold corroded steel, one eye a flickering targeting sensor, standing rigid at a ruined checkpoint, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "curator_valerius", "variations": 2, "prompt": "a slender fallen cyborg scholar, a frail human frame augmented with delicate corroded brass filigree and fine-wire neural interfaces, shaking hands clutching small tools, a sorrowful broken expression, standing among rusting android shells in a bombed-out museum, full-figure character concept, grounded painterly, dim warm light" },
+    { "id": "marshal_corvus", "variations": 2, "prompt": "a broad-shouldered fallen cyborg warlord, battered rusted iron plating grafted across a human torso and arms, one gauntlet a heavy fused power-fist, a rigid metal jaw graft, one weary suspicious eye, on a scavenger-camp throne of broken tech, full-figure character concept, grounded painterly, dim firelight" },
+    { "id": "cormac_rell", "variations": 2, "prompt": "a broad-shouldered warlord in scarred acid-resistant polymer armor pitted with burns, a battered gas-mask welded to his helm, a belt of reclaimed filtration canisters, a jagged rust-spiked mace, commanding, in a toxic yellow-fogged basin, full-figure character concept, grounded painterly, sickly yellow haze and shadow" }
+  ]
+}

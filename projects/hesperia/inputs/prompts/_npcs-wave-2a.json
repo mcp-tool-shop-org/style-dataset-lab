@@ -1,0 +1,23 @@
+{
+  "wave": "hesperia-npcs-wave-2a-androids",
+  "description": "Wave 2 ANDROID powers/antagonists (6), chassis-hard per the craft lesson. Human-realism + sleek-clean hard-negated.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 9700,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "ledgerhand", "variations": 2, "prompt": "a tall gaunt android quartermaster, a worn matte corroded android chassis, one optic replaced by a chipped accounting-lens, a patched longcoat of faded tower-fabric stained with grease and oxidant, a notched tally-stick and a data-slate chained to the belt, cold and calculating, a synthetic faceplate and mechanical jointed body, at an under-city resource stall, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "lodestone", "variations": 2, "prompt": "a calm android elder seated cross-legged in a reclaimed meditation niche, a low-profile android chassis with outer plating dulled to soft matte grey, hands resting open palms-upward, faint circuitry patterns beneath worn polymer like veins in stone, serene and still, a synthetic faceplate and mechanical body, warm-lit grimy communion niche, full-figure character concept, grounded painterly, warm amber light" },
+    { "id": "lasthold", "variations": 2, "prompt": "a heavy battle-scarred android commander, a corroded military android chassis, one arm a solid unadorned hydraulic lift, military optical sensors with one cracked and dark, a faded frayed command sash stained with hydraulic fluid, grim and weary, a synthetic faceplate and mechanical jointed body, in a dim under-city war-room, full-figure character concept, grounded painterly, dim sodium light" },
+    { "id": "vex", "variations": 2, "prompt": "a tall android cult-zealot, a chassis patched with salvaged liturgical metal plates, a cracked copper halo of fiber-optic prayer-wires draped over a cracked ceramic face-mask, one arm a rusted reliquary device, fanatical and righteous, a synthetic faceplate and mechanical body, in a grimy candlelit ritual chamber, full-figure character concept, grounded painterly, dim warm light" },
+    { "id": "kess", "variations": 2, "prompt": "a feral scavenger android, a patchwork of mismatched alloy plates riveted together with improvised bolts, a jagged cracked visor, a makeshift spear of a broken antenna and a salvaged coil, wary and wild, a synthetic faceplate and mechanical body, in a pale-lit irradiated crater, full-figure character concept, grounded painterly, dim cold light" },
+    { "id": "mirella", "variations": 2, "prompt": "a slender android cartel boss, a matte-black corroded chassis laced with exposed copper wiring, a long fingered glove with built-in lockpicks, a patchwork coat of repurposed cargo-straps, one amber optic, sly and commanding, a synthetic faceplate and mechanical jointed body, in a dim black-market den, full-figure character concept, grounded painterly, dim sodium light" }
+  ]
+}

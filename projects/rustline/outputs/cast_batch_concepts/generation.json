@@ -1,0 +1,82 @@
+{
+  "wave": "rustline-cast-batch-concepts",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 26,
+  "cfg": 3.5,
+  "size": [
+    896,
+    1152
+  ],
+  "style_prefix": "rustline style",
+  "negative": "stenciled text, letters, words, writing, numbers, logo on clothing, printed label, watermark, signature, text, cyclops, single eye, one eye, monocular, single optic, smooth blank faceplate, human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, sleek bodysuit, clean, pristine, glossy, chrome, shiny, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, busy background, scenery, environment, interior, multiple characters, cropped legs, missing feet, out of frame, close-up, portrait crop",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "rustgrave",
+      "variation": 0,
+      "seed": 9600,
+      "file": "rustgrave_v0.png",
+      "prompt": "rustline style, a sturdy scarred android veteran, a fused rifle-stock forearm, a military greatcoat layered with scavenged armor, a grim cluster of decommission-tags worn like medals, two optic sockets one a colder replaced optic, dented armor plates, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left"
+    },
+    {
+      "id": "rustgrave",
+      "variation": 1,
+      "seed": 9601,
+      "file": "rustgrave_v1.png",
+      "prompt": "rustline style, a sturdy scarred android veteran, a fused rifle-stock forearm, a military greatcoat layered with scavenged armor, a grim cluster of decommission-tags worn like medals, two optic sockets one a colder replaced optic, dented armor plates, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 0,
+      "seed": 9602,
+      "file": "hearthframe_v0.png",
+      "prompt": "rustline style, a petite android care-unit, domestic livery and an apron with a household sigil scratched out, a stamped service-tag, a porcelain-smooth cracked faceplate with two optic sockets, gentle care-unit hands, a solid plated rounded torso, a stamped decommission brand, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, warm amber light lit from the upper left"
+    },
+    {
+      "id": "hearthframe",
+      "variation": 1,
+      "seed": 9603,
+      "file": "hearthframe_v1.png",
+      "prompt": "rustline style, a petite android care-unit, domestic livery and an apron with a household sigil scratched out, a stamped service-tag, a porcelain-smooth cracked faceplate with two optic sockets, gentle care-unit hands, a solid plated rounded torso, a stamped decommission brand, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, warm amber light lit from the upper left"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 0,
+      "seed": 9604,
+      "file": "dustwhisper_v0.png",
+      "prompt": "rustline style, a stooped slight android archivist, laden with rolled manifests and stamped certificates and data-chips, a stamp-tool, an administrative stoop, a scholar's coat, cracked lens-spectacles over two optic sockets, ink-and-oil-stained fingers, a record satchel, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim warm light lit from the upper left"
+    },
+    {
+      "id": "dustwhisper",
+      "variation": 1,
+      "seed": 9605,
+      "file": "dustwhisper_v1.png",
+      "prompt": "rustline style, a stooped slight android archivist, laden with rolled manifests and stamped certificates and data-chips, a stamp-tool, an administrative stoop, a scholar's coat, cracked lens-spectacles over two optic sockets, ink-and-oil-stained fingers, a record satchel, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim warm light lit from the upper left"
+    },
+    {
+      "id": "ironclad",
+      "variation": 0,
+      "seed": 9606,
+      "file": "ironclad_v0.png",
+      "prompt": "rustline style, a broad heavy android enforcer, once-clean tower-issue plating now stripped rust-eaten and bolted over with under-city patches, a broken asymmetric silhouette, NOT smooth power-armor, a battered visor helmet with a dull-amber slit, exposed chest-hydraulics, triage-scarred hands, a stamped decommission brand, a synthetic faceplate and corroded mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left"
+    },
+    {
+      "id": "ironclad",
+      "variation": 1,
+      "seed": 9607,
+      "file": "ironclad_v1.png",
+      "prompt": "rustline style, a broad heavy android enforcer, once-clean tower-issue plating now stripped rust-eaten and bolted over with under-city patches, a broken asymmetric silhouette, NOT smooth power-armor, a battered visor helmet with a dull-amber slit, exposed chest-hydraulics, triage-scarred hands, a stamped decommission brand, a synthetic faceplate and corroded mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left"
+    }
+  ]
+}

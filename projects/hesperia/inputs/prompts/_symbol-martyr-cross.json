@@ -1,0 +1,18 @@
+{
+  "wave": "hesperia-symbol-martyr-cross",
+  "description": "Canon ICON reference for the Rust Communion's holy symbol (ratified 2026-06-19): a machine martyr-cross = an android memory-core at the crossing of salvaged struts, bound in wire + rag. Honors the First Refusal + Sam. Must read MACHINE SALVAGE, cross-FORM but NEVER a Christian crucifix. Portrait framing, centered icon. The Christian-crucifix prior is hard-negated.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "crucifix, jesus, christ, crucified figure, body on the cross, person on cross, man, human figure, saint, halo, religious painting, stained glass, church interior, cathedral, clean, pristine, sleek, chrome, polished, shiny, new, glossy, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label, words, letters",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 8400,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "martyr_cross_relic", "variations": 6, "prompt": "a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded" }
+  ]
+}
