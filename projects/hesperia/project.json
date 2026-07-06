@@ -1,0 +1,25 @@
+{
+  "name": "hesperia",
+  "display_name": "Hesperia",
+  "domain": "concept-design",
+  "version": "0.1.0",
+  "description": "Hesperia game world concept art (establishing plates, regions, locations) rendered in the studio rustline house style. CONSUMES the trained rustline style LoRA (Qwen-Image base, trigger 'rustline'). NOT a style-training project - this generates production concept art FROM the rustline style. GATED: do not run until (1) the 5090 is free and (2) the rustline production LoRA is installed and named in the wave's defaults.loras.",
+  "consumes_style": "rustline",
+  "defaults": {
+    "base": "qwen-image",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "clip_type": "qwen_image",
+    "vae": "qwen_image_vae.safetensors",
+    "weight_dtype": "default",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "comfy_url": "http://127.0.0.1:8188",
+    "loras": []
+  }
+}

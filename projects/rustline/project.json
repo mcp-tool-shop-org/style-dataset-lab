@@ -1,0 +1,26 @@
+{
+  "name": "rustline",
+  "display_name": "Rustline",
+  "domain": "concept-design",
+  "version": "1.0.0",
+  "description": "Grounded grimy cyberpunk concept art — the corroded under-districts of a megacity (SNES-Shadowrun register). Grounded warm-sodium character cast; neon-noir reserved for environment plates (the 2026-06-18 neon amendment). Gen-1 androids + humans + Welded cyborgs; this is the visual canon for the game Hesperia. Generated on the studio's verified Qwen-Image base; trigger word rustline. Production default = rustline_style_v3 ckpt-1500 @ weight 1.0.",
+  "defaults": {
+    "base": "qwen-image",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "clip_type": "qwen_image",
+    "vae": "qwen_image_vae.safetensors",
+    "weight_dtype": "default",
+    "shift": 3.1,
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "comfy_url": "http://127.0.0.1:8188",
+    "loras": [
+      { "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "tallow-fen",
+  "display_name": "Tallow Fen",
+  "domain": "creature-design",
+  "version": "0.1.0",
+  "description": "Creature concept art — an original non-anime painterly bog bestiary, generated on the studio's verified Qwen-Image base.",
+  "defaults": {
+    "base": "qwen-image",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "clip_type": "qwen_image",
+    "vae": "qwen_image_vae.safetensors",
+    "weight_dtype": "default",
+    "shift": 3.1,
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "comfy_url": "http://127.0.0.1:8188",
+    "loras": [
+      {
+        "name": "tallow_fen_style_v3.safetensors",
+        "weight": 1.5
+      }
+    ]
+  }
+}

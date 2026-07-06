@@ -1,0 +1,5 @@
+# Large Claude Design vector atlas exports — kept LOCAL as structure refs only.
+# The lightweight studio-world-map.svg IS committed. Output images are handled
+# by the root .gitignore (projects/*/outputs/**/*.{png,jpg,jpeg,webp}); this
+# project's 12 generation.json provenance files ARE tracked.
+inputs/composition-seeds/*.html

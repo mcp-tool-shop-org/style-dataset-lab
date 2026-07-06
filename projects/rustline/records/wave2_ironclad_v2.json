@@ -1,0 +1,51 @@
+{
+  "id": "wave2_ironclad_v2",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-18T00:12:02.424Z",
+  "asset_path": "outputs/approved/wave2_ironclad_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1193562
+  },
+  "provenance": {
+    "workflow_id": "rustline-wave2",
+    "base": "qwen-image",
+    "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single broad heavy android enforcer in matte scuffed concrete-grey plating, reinforced rust-edged steel pauldrons, a visored helmet-head with a dull amber slit, exposed oily chest-hydraulics, frayed wrist-cabling, standing in a grimy rain-wet alley, dim sodium light, the whole figure centred",
+    "negative_prompt": "neon, neon signs, holograms, glowing signage, saturated colours, magenta glow, cyan glow, bright vibrant colours, headless, skeleton, exposed ribcage, bony frame, exposed bones, human skin, human face, bare human chest, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+    "seed": 6108,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "gpu_model": "RTX 5090",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "txt2img"
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-18T00:12:02.424Z",
+    "explanation": "v1 sleek Halo-Spartan exemplar; dropped in v2 curation (Mike-approved 2026-06-18), replaced with matte-industrial set",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [
+      "sleek_scifi_armor_prior"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

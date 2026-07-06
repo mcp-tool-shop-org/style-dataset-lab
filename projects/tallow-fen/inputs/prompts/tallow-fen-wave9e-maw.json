@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave9e-maw",
+  "description": "Mire Maw reinforcement (6 clean needed, 2 standing): four micro-variants of the shore composition (the only formula with two clean hits — leaning blank cone across water, drooping snag-crown like wet hair, single bright seam, empty fog, reflection). Alone-positives against the wave8 companion pressure. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, companion creature, background figure, beast in the fog, wraith, ghost, boat, shipwreck, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, serpent head, beaked head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, glowing ring, shrine, statue, idol, symmetrical, upward spikes, glowing eyes, fire, flames, torch, candle, melted candle, wax candle, mushroom, flared cap, anvil, cowl, hood, skeleton, twin trunk, split trunk",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 11550,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_mire-maw-water",
+      "variations": 2,
+      "prompt": "a Mire Maw utterly alone across open black water, a vast leaning cone of dark sodden peat-flesh against pale fog, a crown of drooping root-snags falling over its tip like wet hair, one thin bright line of amber wax running down its near flank from top to waterline, its long dim reflection broken by slow ripples, empty fen in every direction, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_mire-maw-tilt",
+      "variations": 2,
+      "prompt": "a Mire Maw leaning hard over still black water, nothing else living in the fog, the massive blank cone of wet peat-flesh tilted like a falling stack, drooping root-snags spilling over its tip and down its high side, a single bright amber wax seam catching the warm light along its leaning flank, its tilted reflection wavering below, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-haze",
+      "variations": 2,
+      "prompt": "a Mire Maw rising through thick haze across the water, the leaning blank peat cone half-swallowed by fog, its drooping crown of root-snags a dark tangle over the dim summit, the amber wax seam a soft warm line down the near flank, slow rings spreading from its base, empty water and empty fog around it, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_mire-maw-hulk",
+      "variations": 2,
+      "prompt": "a Mire Maw near at hand from across a narrow channel of black water, the dark sodden peat-flesh of its leaning cone filling the view, wet matted fibre texture down its blank slopes, the bright amber wax seam running its full height with slow drips standing on the wax, the drooping snag-crown crooked far above, alone in the empty fen, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "workflow_id": "creature-portrait-set",
+  "label": "Creature Portrait Set",
+  "description": "Generate creature concept candidates exploring anatomy and silhouette.",
+  "lane_id": "concept",
+  "subject_mode": "required",
+  "output_mode": "portrait_set",
+  "output_count": 4,
+  "required_reference_roles": ["anchor"],
+  "preferred_reference_tags": ["concept", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "creature concept art",
+      "strong anatomical read",
+      "distinctive silhouette"
+    ],
+    "structure": "style_prefix, subject_identity, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "species identity",
+      "anatomy logic",
+      "silhouette clarity"
+    ],
+    "optional_blocks": [
+      "scale reference note",
+      "locomotion note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "human anatomy default",
+      "generic dragon",
+      "over-ornamentation",
+      "anatomical impossibility"
+    ],
+    "lane_specific_avoid": [
+      "environment focus",
+      "multiple creatures"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "anatomy",
+    "silhouette",
+    "material_language",
+    "palette"
+  ],
+  "drift_guards": [
+    "preserve species anatomy",
+    "preserve silhouette proportions",
+    "preserve surface material language"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "increment"
+  }
+}

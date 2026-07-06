@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave8d-boil",
+  "description": "Rust Boil rebuild three (8 clean needed): wave7 proved the form exists in-model (perfect blister-mounds rendered as background scenery while the subject went vertical-figure). Levers: ASPECT-RATIO language (low and wide, twice as wide as tall — every failure went vertical), the hole noun deleted entirely (it painted open voids; the crown is only ever a taut tallow disc), flat-ground fusion only (banks invited grip-fingers). Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, arms, hands, legs, claws, skeleton, bone arms, hunched figure, standing figure, wizard, witch, robed figure, humanoid, head, neck, eye, socket, helmet, tall, vertical, tower, sphere on a pedestal, tree stump, hollow, open hole, dark hole, pipe, funnel, horn, jug, pot, hat, blood, gore, crimson, plant, flower, leaves, vines, volcano, mouth, face",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 10440,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_rust-boil-blister",
+      "variations": 2,
+      "prompt": "a Rust Boil, a low wide blister-dome of dark swollen peat-flesh twice as wide as it is tall, swelling directly out of flat wet mud and fused into the ground all around its rim with no body beneath it, its crown capped by a taut smooth disc of translucent amber tallow glowing faintly, dried dark rust-brown stains fanning down its smooth sides, one yellow-brown fen-bone splinter low in its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-taut",
+      "variations": 2,
+      "prompt": "a Rust Boil swelling under inner pressure, a low wide dome of dark peat-flesh far broader than it is tall and fused seamlessly into the flat bog floor, the taut smooth disc of translucent amber tallow at its crown bulging gently upward, unbroken, with a warm glow pressing through the strained wax, fine dried rust-brown stain lines webbing out from the crown rim, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_rust-boil-mudline",
+      "variations": 2,
+      "prompt": "a Rust Boil on open mud flats in thin fog, a low wide swollen blister of dark peat-flesh rising out of the level ground, twice as wide as tall, shallow puddles mirroring its dark bulk, the taut amber tallow disc at its crown catching one warm light, long dried rust-brown stains down its near side, the fen-bone splinter jutting low from its flank, colours peat black-brown, dried rust, tallow gold, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_rust-boil-rim",
+      "variations": 2,
+      "prompt": "a Rust Boil close on its crown, the smooth taut disc of translucent amber tallow stretched across the top of a low wide peat-flesh dome, heavy dried rust-brown streaks radiating down from the disc rim over the dark swollen flesh, the dome fused into flat wet mud at its base with no body beneath, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background"
+    }
+  ]
+}

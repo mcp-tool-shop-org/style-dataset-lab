@@ -1,0 +1,49 @@
+{
+  "id": "concept_peat-dredge-gleam_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/rejected/concept_peat-dredge-gleam_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1190828
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8c-dredge",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Peat Dredge near at hand in dark water, only the top of its broad smooth headless hump above the surface, the cracked translucent amber tallow membrane stretched over its sealed back-dome glowing softly under one warm light, fine amber beads standing on the wax, wet matted peat fibre running down to the waterline, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, open mouth, jaws, teeth, fangs, grin, skull, bone, femur, corpse, zombie, anglerfish, glowing lure, whale, fish, fins, rearing, serpent, snake, neck, worm, head, face, eyes, standing on legs, legs, spikes, shipwreck, boat, ship, machinery, crane, necklace",
+    "seed": 10336,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "a crow-beaked creature wears the amber dome as a helmet and wades on skeletal hands",
+    "criteria_scores": {},
+    "failure_modes": [
+      "animal_head",
+      "limbs"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

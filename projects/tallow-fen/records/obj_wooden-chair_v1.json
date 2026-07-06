@@ -1,0 +1,47 @@
+{
+  "id": "obj_wooden-chair_v1",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-09T19:42:45.221Z",
+  "asset_path": "outputs/rejected/obj_wooden-chair_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1122402
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave3-neutral",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a single old wooden chair with worn turned legs, standing alone on a plain neutral grey background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, human person, creature, monster, animal, modern gear, gun, text, watermark, frame, border, signature",
+    "seed": 4301,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": 20398,
+    "gpu_model": "RTX 5090",
+    "batch_index": 1,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "reviewed_at": "2026-06-09T19:56:26.888Z",
+    "explanation": "style on-target but an off-prompt lantern prop appears in every neutral image of wave 3; a dataset-wide correlated prop would leak into the style trigger, so this image is superseded by its wave-3b lantern-negative regeneration",
+    "criteria_scores": {},
+    "failure_modes": [
+      "style_residue_prop"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

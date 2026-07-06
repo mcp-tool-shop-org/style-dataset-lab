@@ -1,0 +1,63 @@
+{
+  "wave": "rl-v3-dockrat2",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    832,
+    1216
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "bad anatomy, deformed, extra limbs, missing limbs, extra arms, extra legs, deformed hands, extra fingers, fused fingers, mutated hands, floating head, detached head, disconnected limbs, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, bare human skin, human face, human muscle, bare chest, exposed human flesh, sleek clean sci-fi robot, halo spartan, power armour, mech suit, plastic, legible text, readable letters, large numbers, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "dockrat2",
+      "variation": 0,
+      "seed": 10500,
+      "file": "dockrat2_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android dock-laborer, a squat heavy synth bowed under load, a dented plated torso, a fused cargo back-rig and harness with straps and counterweights, a synthetic faceplate not human skin, a rusted hook replacing one hand, chain-link forearm sleeves, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "dockrat2",
+      "variation": 1,
+      "seed": 10501,
+      "file": "dockrat2_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android dock-laborer, a squat heavy synth bowed under load, a dented plated torso, a fused cargo back-rig and harness with straps and counterweights, a synthetic faceplate not human skin, a rusted hook replacing one hand, chain-link forearm sleeves, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "dockrat2",
+      "variation": 2,
+      "seed": 10502,
+      "file": "dockrat2_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android dock-laborer, a squat heavy synth bowed under load, a dented plated torso, a fused cargo back-rig and harness with straps and counterweights, a synthetic faceplate not human skin, a rusted hook replacing one hand, chain-link forearm sleeves, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "dockrat2",
+      "variation": 3,
+      "seed": 10503,
+      "file": "dockrat2_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android dock-laborer, a squat heavy synth bowed under load, a dented plated torso, a fused cargo back-rig and harness with straps and counterweights, a synthetic faceplate not human skin, a rusted hook replacing one hand, chain-link forearm sleeves, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "dockrat2",
+      "variation": 4,
+      "seed": 10504,
+      "file": "dockrat2_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android dock-laborer, a squat heavy synth bowed under load, a dented plated torso, a fused cargo back-rig and harness with straps and counterweights, a synthetic faceplate not human skin, a rusted hook replacing one hand, chain-link forearm sleeves, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "dockrat2",
+      "variation": 5,
+      "seed": 10505,
+      "file": "dockrat2_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android dock-laborer, a squat heavy synth bowed under load, a dented plated torso, a fused cargo back-rig and harness with straps and counterweights, a synthetic faceplate not human skin, a rusted hook replacing one hand, chain-link forearm sleeves, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    }
+  ]
+}

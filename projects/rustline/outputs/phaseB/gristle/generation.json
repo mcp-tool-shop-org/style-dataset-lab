@@ -1,0 +1,63 @@
+{
+  "wave": "rl-phaseB-gristle",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "bare chest, bare skin, bare midriff, exposed stomach, muscular abs, six-pack, shirtless, bare feet, human skin, human torso, bodybuilder, neon, saturated colour, headless, skeleton, exposed ribcage, human face, anime, chibi, cel-shaded, brass, clockwork, glossy 3d render, bright daylight, text, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "gristle",
+      "variation": 0,
+      "seed": 8200,
+      "file": "gristle_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android gang brawler, a heavy asymmetrical synth with a welded scrap-block torso of bolted metal plates under a closed grimy canvas work-shirt and a riveted iron cuirass, no bare chest no bare skin, one arm a massive piston-claw, legs wrapped in tyre-rubber, heavy booted feet, a battered synthetic faceplate with a heavy reinforced iron underjaw, a cracked oil-leaking chest-plate, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "gristle",
+      "variation": 1,
+      "seed": 8201,
+      "file": "gristle_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android gang brawler, a heavy asymmetrical synth with a welded scrap-block torso of bolted metal plates under a closed grimy canvas work-shirt and a riveted iron cuirass, no bare chest no bare skin, one arm a massive piston-claw, legs wrapped in tyre-rubber, heavy booted feet, a battered synthetic faceplate with a heavy reinforced iron underjaw, a cracked oil-leaking chest-plate, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "gristle",
+      "variation": 2,
+      "seed": 8202,
+      "file": "gristle_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android gang brawler, a heavy asymmetrical synth with a welded scrap-block torso of bolted metal plates under a closed grimy canvas work-shirt and a riveted iron cuirass, no bare chest no bare skin, one arm a massive piston-claw, legs wrapped in tyre-rubber, heavy booted feet, a battered synthetic faceplate with a heavy reinforced iron underjaw, a cracked oil-leaking chest-plate, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "gristle",
+      "variation": 3,
+      "seed": 8203,
+      "file": "gristle_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android gang brawler, a heavy asymmetrical synth with a welded scrap-block torso of bolted metal plates under a closed grimy canvas work-shirt and a riveted iron cuirass, no bare chest no bare skin, one arm a massive piston-claw, legs wrapped in tyre-rubber, heavy booted feet, a battered synthetic faceplate with a heavy reinforced iron underjaw, a cracked oil-leaking chest-plate, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "gristle",
+      "variation": 4,
+      "seed": 8204,
+      "file": "gristle_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android gang brawler, a heavy asymmetrical synth with a welded scrap-block torso of bolted metal plates under a closed grimy canvas work-shirt and a riveted iron cuirass, no bare chest no bare skin, one arm a massive piston-claw, legs wrapped in tyre-rubber, heavy booted feet, a battered synthetic faceplate with a heavy reinforced iron underjaw, a cracked oil-leaking chest-plate, a single full-body android character on a plain dark grimy background"
+    },
+    {
+      "id": "gristle",
+      "variation": 5,
+      "seed": 8205,
+      "file": "gristle_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android gang brawler, a heavy asymmetrical synth with a welded scrap-block torso of bolted metal plates under a closed grimy canvas work-shirt and a riveted iron cuirass, no bare chest no bare skin, one arm a massive piston-claw, legs wrapped in tyre-rubber, heavy booted feet, a battered synthetic faceplate with a heavy reinforced iron underjaw, a cracked oil-leaking chest-plate, a single full-body android character on a plain dark grimy background"
+    }
+  ]
+}

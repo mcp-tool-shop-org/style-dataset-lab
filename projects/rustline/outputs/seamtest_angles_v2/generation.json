@@ -1,0 +1,68 @@
+{
+  "wave": "rustline-seamtest-gutterjack-angles-v2",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 26,
+  "cfg": 3.5,
+  "size": [
+    896,
+    1152
+  ],
+  "style_prefix": "rustline style",
+  "negative": "cyclops, single eye, one eye, monocular, single optic, one optic socket, smooth blank faceplate, human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label, busy background, scenery, environment, interior, multiple characters, cropped legs, missing feet, out of frame, close-up, portrait crop",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "gutterjack_front",
+      "variation": 0,
+      "seed": 9100,
+      "file": "gutterjack_front_v0.png",
+      "prompt": "rustline style, a hunched lanky scavenger android, a battered synthetic faceplate bearing TWO optic sockets \u2014 the right socket a cracked dull-amber glowing optic, the left socket smashed-in and empty (a dark shattered hollow where he destroyed his own empathy-lens) \u2014 a body that is a patchwork of mismatched salvaged makes, a tarp poncho, exposed neck-gears, salvage and price-tags hung on him, a stamped decommission brand on his chassis, a mechanical jointed body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level (a flat front character view), grounded painterly, dim sodium light lit consistently from the upper left"
+    },
+    {
+      "id": "gutterjack_front",
+      "variation": 1,
+      "seed": 9101,
+      "file": "gutterjack_front_v1.png",
+      "prompt": "rustline style, a hunched lanky scavenger android, a battered synthetic faceplate bearing TWO optic sockets \u2014 the right socket a cracked dull-amber glowing optic, the left socket smashed-in and empty (a dark shattered hollow where he destroyed his own empathy-lens) \u2014 a body that is a patchwork of mismatched salvaged makes, a tarp poncho, exposed neck-gears, salvage and price-tags hung on him, a stamped decommission brand on his chassis, a mechanical jointed body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level (a flat front character view), grounded painterly, dim sodium light lit consistently from the upper left"
+    },
+    {
+      "id": "gutterjack_pitch30",
+      "variation": 0,
+      "seed": 9102,
+      "file": "gutterjack_pitch30_v0.png",
+      "prompt": "rustline style, a hunched lanky scavenger android, a battered synthetic faceplate bearing TWO optic sockets \u2014 the right socket a cracked dull-amber glowing optic, the left socket smashed-in and empty (a dark shattered hollow where he destroyed his own empathy-lens) \u2014 a body that is a patchwork of mismatched salvaged makes, a tarp poncho, exposed neck-gears, salvage and price-tags hung on him, a stamped decommission brand on his chassis, a mechanical jointed body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, viewed from a fixed three-quarter high-angle camera roughly 30 degrees above the figure, a gentle top-down HD-2D tactical-RPG sprite perspective like Octopath Traveler, grounded painterly, dim sodium light lit consistently from the upper left"
+    },
+    {
+      "id": "gutterjack_pitch30",
+      "variation": 1,
+      "seed": 9103,
+      "file": "gutterjack_pitch30_v1.png",
+      "prompt": "rustline style, a hunched lanky scavenger android, a battered synthetic faceplate bearing TWO optic sockets \u2014 the right socket a cracked dull-amber glowing optic, the left socket smashed-in and empty (a dark shattered hollow where he destroyed his own empathy-lens) \u2014 a body that is a patchwork of mismatched salvaged makes, a tarp poncho, exposed neck-gears, salvage and price-tags hung on him, a stamped decommission brand on his chassis, a mechanical jointed body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, viewed from a fixed three-quarter high-angle camera roughly 30 degrees above the figure, a gentle top-down HD-2D tactical-RPG sprite perspective like Octopath Traveler, grounded painterly, dim sodium light lit consistently from the upper left"
+    },
+    {
+      "id": "gutterjack_pitch40",
+      "variation": 0,
+      "seed": 9104,
+      "file": "gutterjack_pitch40_v0.png",
+      "prompt": "rustline style, a hunched lanky scavenger android, a battered synthetic faceplate bearing TWO optic sockets \u2014 the right socket a cracked dull-amber glowing optic, the left socket smashed-in and empty (a dark shattered hollow where he destroyed his own empathy-lens) \u2014 a body that is a patchwork of mismatched salvaged makes, a tarp poncho, exposed neck-gears, salvage and price-tags hung on him, a stamped decommission brand on his chassis, a mechanical jointed body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, viewed from a fixed three-quarter top-down camera roughly 40 degrees above the figure, a steeper high-angle HD-2D tactical sprite perspective, grounded painterly, dim sodium light lit consistently from the upper left"
+    },
+    {
+      "id": "gutterjack_pitch40",
+      "variation": 1,
+      "seed": 9105,
+      "file": "gutterjack_pitch40_v1.png",
+      "prompt": "rustline style, a hunched lanky scavenger android, a battered synthetic faceplate bearing TWO optic sockets \u2014 the right socket a cracked dull-amber glowing optic, the left socket smashed-in and empty (a dark shattered hollow where he destroyed his own empathy-lens) \u2014 a body that is a patchwork of mismatched salvaged makes, a tarp poncho, exposed neck-gears, salvage and price-tags hung on him, a stamped decommission brand on his chassis, a mechanical jointed body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, viewed from a fixed three-quarter top-down camera roughly 40 degrees above the figure, a steeper high-angle HD-2D tactical sprite perspective, grounded painterly, dim sodium light lit consistently from the upper left"
+    }
+  ]
+}

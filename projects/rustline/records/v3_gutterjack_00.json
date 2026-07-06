@@ -1,0 +1,49 @@
+{
+  "id": "v3_gutterjack_00",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-19T07:44:16.501Z",
+  "asset_path": "outputs/approved/v3_gutterjack_00.png",
+  "image": {
+    "format": "png",
+    "width": 832,
+    "height": 1216,
+    "bytes": 1071600
+  },
+  "provenance": {
+    "workflow_id": "rl-v3-gutterjack_fin",
+    "base": "qwen-image",
+    "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android scavenger, a hunched lanky synth in patched scuffed off-white plating, a scavenged tarp worn like a poncho, a synthetic faceplate not human skin with TWO optic sockets, one a cracked dull-amber optic and the other smashed empty and dark, a patchwork body of mismatched salvaged metal makes, exposed neck-gears and frayed cabling, a struck decommission brand on the chest-plate, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot",
+    "negative_prompt": "bad anatomy, deformed, extra limbs, missing limbs, deformed hands, extra fingers, fused fingers, mutated hands, floating head, detached head, disconnected limbs, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, skeleton, skeletal, ribcage, rib cage, ribs, exposed ribs, exposed bones, bones, bony, spine, skeletal frame, skeletal torso, hollow torso, cyclops, single optic, single eye, one eye, monocular, lone side optic, smooth eyeless face, blank eye socket on a smooth face, missing eye, bare human skin, human face, human muscle, bare chest, exposed human flesh, sleek clean sci-fi robot, halo spartan, power armour, mech suit, plastic, legible text, readable letters, large numbers, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, watermark, frame, border, signature",
+    "seed": 11100,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 832,
+    "height": 1216,
+    "gpu_model": "RTX 5090",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "txt2img"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:opus-4-8",
+    "reviewed_at": "2026-06-19T07:44:16.501Z",
+    "explanation": "rustline style, an android scavenger in a tattered tarp poncho, two optics one smashed dark, patchwork salvaged plating, in a grimy under-city",
+    "criteria_scores": {
+      "style_consistency": 0.85,
+      "canon_fidelity": 0.85,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.85
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

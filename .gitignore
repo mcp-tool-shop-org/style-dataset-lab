@@ -12,6 +12,12 @@ projects/*/snapshots/
 projects/*/splits/
 projects/*/dataset-cards/
 projects/*/eval-packs/
+# Training packages copy the curated images (large, regenerable from the
+# tracked manifest + records via `sdlab training-package build`)
+projects/*/training/packages/
+
+# Python cache (scripts/qwen_generate.py runs)
+__pycache__/
 
 # Canon-build generated output + cache (regenerable from canon entries).
 # config.json is tracked; build output directories are not.
@@ -39,3 +45,10 @@ site/node_modules/
 # Test coverage output
 coverage/
 .nyc_output/
+
+# Generated candidate images — ignore at ANY depth.
+# (Was projects/*/outputs/*/*.png — only 2-level; missed outputs/v3/<subject>/ etc.)
+projects/*/outputs/**/*.png
+projects/*/outputs/**/*.jpg
+projects/*/outputs/**/*.jpeg
+projects/*/outputs/**/*.webp

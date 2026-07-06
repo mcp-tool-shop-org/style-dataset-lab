@@ -1,0 +1,19 @@
+{
+  "wave": "rustline-wave5",
+  "description": "Heavy-archetype grind to 8 clean each. Break the strongman/bare-chest prior by reframing the garment+body: Gristle = riveted iron barrel-torso (drum, not humanoid chest); Dockrat = closed boiler-suit zipped to the neck. Bare skin + open-coat banned.",
+  "base": "qwen-image",
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "defaults": {
+    "negative": "bare skin, bare chest, bare midriff, exposed stomach, muscular abs, six-pack, shirtless, open coat, open collar, unzipped, v-neck, cleavage, human torso, human skin, human face, tongue, open mouth, neon, holograms, saturated colours, headless, skeleton, exposed ribcage, anime, manga, cel shading, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 8200,
+    "loras": []
+  },
+  "subjects": [
+    { "id": "gristle", "variations": 8, "prompt": "a single hulking android brawler with a riveted iron barrel-torso (a solid welded metal drum chest, fully plated, not a humanoid muscular chest, no bare skin), one arm a massive piston-claw, heavy armour plates on the shoulders and legs, legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy closed iron underjaw, in a grimy scrapyard, dim sodium light, the whole figure centred" },
+    { "id": "dockrat", "variations": 8, "prompt": "a single stocky android dock-laborer in a closed grimy boiler-suit zipped to the neck (a single full coverall, fully covered, no open collar and no bare chest and no bare skin), heavy rubber gloves, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred" }
+  ]
+}

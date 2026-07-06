@@ -1,0 +1,124 @@
+{
+  "wave": "hesperia-npcs-wave-3b-welded-human",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 26,
+  "cfg": 3.5,
+  "size": [
+    896,
+    1152
+  ],
+  "style_prefix": "rustline style",
+  "negative": "pristine, clean, sleek, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra arms, extra fingers, fused fingers, bad anatomy, malformed face, two heads, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "keelwright",
+      "variation": 0,
+      "seed": 10050,
+      "file": "keelwright_v0.png",
+      "prompt": "rustline style, a lean welded cyborg builder, a frame of alloy ribs wrapped in weathered leather with a patchwork of titanium plates over the torso, a hard-hat with a built-in lamp sitting askew, calibrated laser-levels dangling from the belt, a steady reassuring bearing, in the base structural deck, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "keelwright",
+      "variation": 1,
+      "seed": 10051,
+      "file": "keelwright_v1.png",
+      "prompt": "rustline style, a lean welded cyborg builder, a frame of alloy ribs wrapped in weathered leather with a patchwork of titanium plates over the torso, a hard-hat with a built-in lamp sitting askew, calibrated laser-levels dangling from the belt, a steady reassuring bearing, in the base structural deck, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "rhea_mott",
+      "variation": 0,
+      "seed": 10052,
+      "file": "rhea_mott_v0.png",
+      "prompt": "rustline style, a tall lean welded cyborg gardener woman, a reinforced back-plate supporting a modular hydroponics tray system, soft-grip manipulator hands tipped with micro-cutters, a patched coat of woven algae-fiber, a belt of clinking nutrient vials, tending a few green sprouts, a rare touch of life, in a base hydroponics corridor, full-figure character concept, grounded painterly, warm grow-light glow"
+    },
+    {
+      "id": "rhea_mott",
+      "variation": 1,
+      "seed": 10053,
+      "file": "rhea_mott_v1.png",
+      "prompt": "rustline style, a tall lean welded cyborg gardener woman, a reinforced back-plate supporting a modular hydroponics tray system, soft-grip manipulator hands tipped with micro-cutters, a patched coat of woven algae-fiber, a belt of clinking nutrient vials, tending a few green sprouts, a rare touch of life, in a base hydroponics corridor, full-figure character concept, grounded painterly, warm grow-light glow"
+    },
+    {
+      "id": "gail_voss",
+      "variation": 0,
+      "seed": 10054,
+      "file": "gail_voss_v0.png",
+      "prompt": "rustline style, a welded cyborg strategist woman, soot-streaked work overalls over a scarred forearm ending in a polished steel prosthetic, a weathered bandana under a hard-hat, a methodical commanding bearing, a battle-map at hand, in a base war-room, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "gail_voss",
+      "variation": 1,
+      "seed": 10055,
+      "file": "gail_voss_v1.png",
+      "prompt": "rustline style, a welded cyborg strategist woman, soot-streaked work overalls over a scarred forearm ending in a polished steel prosthetic, a weathered bandana under a hard-hat, a methodical commanding bearing, a battle-map at hand, in a base war-room, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "mirevault",
+      "variation": 0,
+      "seed": 10056,
+      "file": "mirevault_v0.png",
+      "prompt": "rustline style, a wiry human man in an oil-stained work coat, sleeves rolled to forearms scarred with old burns, a battered metal tool-satchel across his chest, thick rimmed goggles on his forehead, calloused hands and a steady quiet smile, among salvage-cache shelves, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "mirevault",
+      "variation": 1,
+      "seed": 10057,
+      "file": "mirevault_v1.png",
+      "prompt": "rustline style, a wiry human man in an oil-stained work coat, sleeves rolled to forearms scarred with old burns, a battered metal tool-satchel across his chest, thick rimmed goggles on his forehead, calloused hands and a steady quiet smile, among salvage-cache shelves, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "jonas_creel",
+      "variation": 0,
+      "seed": 10058,
+      "file": "jonas_creel_v0.png",
+      "prompt": "rustline style, a human medic man, a weather-worn coat with dozens of bulging pockets of gauze and solder and spare servos, a right forearm sleeved in polished alloy housing a diagnostic scanner, a scarred face framed by a knit cap, binocular lenses around his neck, in a base infirmary, full-figure character concept, grounded painterly, dim warm light"
+    },
+    {
+      "id": "jonas_creel",
+      "variation": 1,
+      "seed": 10059,
+      "file": "jonas_creel_v1.png",
+      "prompt": "rustline style, a human medic man, a weather-worn coat with dozens of bulging pockets of gauze and solder and spare servos, a right forearm sleeved in polished alloy housing a diagnostic scanner, a scarred face framed by a knit cap, binocular lenses around his neck, in a base infirmary, full-figure character concept, grounded painterly, dim warm light"
+    },
+    {
+      "id": "jace",
+      "variation": 0,
+      "seed": 10060,
+      "file": "jace_v0.png",
+      "prompt": "rustline style, a broad-shouldered human bartender man, a perpetually grease-stained apron, a jagged scar across one cheek, a metal serving-spoon clipped to the belt, a weathered tin mug in hand, warm and steady, in a salvaged mess-hall hearth, full-figure character concept, grounded painterly, warm hearth light"
+    },
+    {
+      "id": "jace",
+      "variation": 1,
+      "seed": 10061,
+      "file": "jace_v1.png",
+      "prompt": "rustline style, a broad-shouldered human bartender man, a perpetually grease-stained apron, a jagged scar across one cheek, a metal serving-spoon clipped to the belt, a weathered tin mug in hand, warm and steady, in a salvaged mess-hall hearth, full-figure character concept, grounded painterly, warm hearth light"
+    },
+    {
+      "id": "pip",
+      "variation": 0,
+      "seed": 10062,
+      "file": "pip_v0.png",
+      "prompt": "rustline style, a young human child, a thin small frame swathed in an oversized patched coat sewn from many fabric scraps, soot-smudged hair in a tangled mop, a wooden toy wrench clutched in one hand, a band of hand-drawn symbols stitched on the chest pocket, wide curious bright eyes, hopeful, in the warm lamplit base, full-figure character concept, grounded painterly, warm gentle light"
+    },
+    {
+      "id": "pip",
+      "variation": 1,
+      "seed": 10063,
+      "file": "pip_v1.png",
+      "prompt": "rustline style, a young human child, a thin small frame swathed in an oversized patched coat sewn from many fabric scraps, soot-smudged hair in a tangled mop, a wooden toy wrench clutched in one hand, a band of hand-drawn symbols stitched on the chest pocket, wide curious bright eyes, hopeful, in the warm lamplit base, full-figure character concept, grounded painterly, warm gentle light"
+    }
+  ]
+}

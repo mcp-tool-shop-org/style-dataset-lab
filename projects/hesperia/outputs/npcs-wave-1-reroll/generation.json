@@ -1,0 +1,54 @@
+{
+  "wave": "hesperia-reroll-ironsight",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 26,
+  "cfg": 3.5,
+  "size": [
+    896,
+    1152
+  ],
+  "style_prefix": "rustline style",
+  "negative": "human skin, bare skin, human face, realistic human woman, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, skull, skeleton, skeletal, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "ironsight",
+      "variation": 0,
+      "seed": 9500,
+      "file": "ironsight_v0.png",
+      "prompt": "rustline style, a lean female-framed android sniper, a worn matte-grey corroded android chassis with exposed mechanical joints, rust-streaked plating and patched salvage, a hard synthetic faceplate instead of a human face, a long-range optical implant glowing dim amber on one temple, posture angled like a hunter, holding a long rifle with an etched barrel, cold and severe, a grimy decommissioned militant in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "ironsight",
+      "variation": 1,
+      "seed": 9501,
+      "file": "ironsight_v1.png",
+      "prompt": "rustline style, a lean female-framed android sniper, a worn matte-grey corroded android chassis with exposed mechanical joints, rust-streaked plating and patched salvage, a hard synthetic faceplate instead of a human face, a long-range optical implant glowing dim amber on one temple, posture angled like a hunter, holding a long rifle with an etched barrel, cold and severe, a grimy decommissioned militant in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "ironsight",
+      "variation": 2,
+      "seed": 9502,
+      "file": "ironsight_v2.png",
+      "prompt": "rustline style, a lean female-framed android sniper, a worn matte-grey corroded android chassis with exposed mechanical joints, rust-streaked plating and patched salvage, a hard synthetic faceplate instead of a human face, a long-range optical implant glowing dim amber on one temple, posture angled like a hunter, holding a long rifle with an etched barrel, cold and severe, a grimy decommissioned militant in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "ironsight",
+      "variation": 3,
+      "seed": 9503,
+      "file": "ironsight_v3.png",
+      "prompt": "rustline style, a lean female-framed android sniper, a worn matte-grey corroded android chassis with exposed mechanical joints, rust-streaked plating and patched salvage, a hard synthetic faceplate instead of a human face, a long-range optical implant glowing dim amber on one temple, posture angled like a hunter, holding a long rifle with an etched barrel, cold and severe, a grimy decommissioned militant in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    }
+  ]
+}

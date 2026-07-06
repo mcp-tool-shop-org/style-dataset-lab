@@ -1,0 +1,49 @@
+{
+  "id": "concept_mire-maw-crown_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T13:14:45.538Z",
+  "asset_path": "outputs/rejected/concept_mire-maw-crown_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1228007
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave8e-maw",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Mire Maw from slightly below at middle distance, the leaning blank cone of dark peat-flesh towering up to its crooked crown of snapped bone snags hanging loose like storm-broken branches with every point down, a faint warm amber light rimming the flat top behind them, the bright wax seam running down the far side of the flank catching the light at its edge, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, serpent head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, glowing ring, shrine, statue, idol, symmetrical, upward spikes, glowing eyes, fire, flames, torch, candle, melted candle, wax candle, mushroom, flared cap, anvil, cowl, hood, background figure, wraith, ghost",
+    "seed": 10554,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T13:14:45.538Z",
+    "explanation": "mushroom-cap tree form with a skeleton crawling at the base",
+    "criteria_scores": {},
+    "failure_modes": [
+      "flared_cap",
+      "skeleton"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.85
+  },
+  "canon": null,
+  "iteration": null
+}

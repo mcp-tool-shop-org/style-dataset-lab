@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave5e-maw",
+  "description": "Bestiary expansion (canon approved 2026-06-10): Mire Maw first dataset wave. Anti-miss negatives from the Forbidden line (concentric-fanged pit / demon idol / upward spikes). Fresh seeds; loras pinned empty.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, rows of teeth, concentric fangs, sarlacc, demon, devil, statue, idol, symmetrical, upward spikes, spiky horns, glowing eyes",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 7550,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_mire-maw",
+      "variations": 2,
+      "prompt": "a Mire Maw, a towering leaning cone of sodden dark peat-flesh risen out of a black bog at a three-quarter angle, a single vertical slit running down its face lined with slow-dripping amber tallow, a crown-ring of broken yellow-brown antlers around its top with every point sagging downward, a still amber tallow pool set into its apex, massive heavy and asymmetric, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-rising",
+      "variations": 2,
+      "prompt": "a Mire Maw half-risen, a huge cone of sodden dark peat-flesh heaving up out of a black bog with wet peat pouring off its flanks, the vertical tallow-lined slit in its face beginning to part, the drooping crown of broken antlers ringing its top, water sheeting away from its base, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-profile",
+      "variations": 2,
+      "prompt": "a Mire Maw in full profile, a towering asymmetric cone of dark sodden peat-flesh leaning to one side over the bog, the edge of its vertical amber tallow-lined slit catching warm light, broken yellow-brown antlers drooping downward in a ring around its top, a faint amber sheen from the still tallow pool at its apex, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_mire-maw-low",
+      "variations": 2,
+      "prompt": "a Mire Maw from a low angle looking up, the towering leaning peat-flesh cone looming overhead against cold fen gloom, the vertical slit down its near face glistening with slow amber tallow drips, the crown of broken antlers sagging downward around its distant top, warm tallow light catching one side, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    }
+  ]
+}

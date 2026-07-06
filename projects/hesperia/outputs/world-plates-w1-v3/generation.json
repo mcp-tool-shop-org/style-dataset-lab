@@ -1,0 +1,320 @@
+{
+  "wave": "hesperia-world-plates-w1",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    1344,
+    768
+  ],
+  "style_prefix": "rustline style",
+  "negative": "anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, bright even daylight, clean utopia, pristine, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "vertical_city",
+      "variation": 0,
+      "seed": 7000,
+      "file": "vertical_city_v0.png",
+      "prompt": "rustline style, a wide cinematic establishing shot of a vertical megacity on a dead colony world: sealed clean arcology towers spearing up out of a thick smog line into a starless bruised sky, a mid-level belt of failing terraforming machinery, and a corroded rust-grimed under-city sprawling below in dim sodium lamplight, rain and haze, deep low-key chiaroscuro"
+    },
+    {
+      "id": "vertical_city",
+      "variation": 1,
+      "seed": 7001,
+      "file": "vertical_city_v1.png",
+      "prompt": "rustline style, a wide cinematic establishing shot of a vertical megacity on a dead colony world: sealed clean arcology towers spearing up out of a thick smog line into a starless bruised sky, a mid-level belt of failing terraforming machinery, and a corroded rust-grimed under-city sprawling below in dim sodium lamplight, rain and haze, deep low-key chiaroscuro"
+    },
+    {
+      "id": "vertical_city",
+      "variation": 2,
+      "seed": 7002,
+      "file": "vertical_city_v2.png",
+      "prompt": "rustline style, a wide cinematic establishing shot of a vertical megacity on a dead colony world: sealed clean arcology towers spearing up out of a thick smog line into a starless bruised sky, a mid-level belt of failing terraforming machinery, and a corroded rust-grimed under-city sprawling below in dim sodium lamplight, rain and haze, deep low-key chiaroscuro"
+    },
+    {
+      "id": "vertical_city",
+      "variation": 3,
+      "seed": 7003,
+      "file": "vertical_city_v3.png",
+      "prompt": "rustline style, a wide cinematic establishing shot of a vertical megacity on a dead colony world: sealed clean arcology towers spearing up out of a thick smog line into a starless bruised sky, a mid-level belt of failing terraforming machinery, and a corroded rust-grimed under-city sprawling below in dim sodium lamplight, rain and haze, deep low-key chiaroscuro"
+    },
+    {
+      "id": "the_towers",
+      "variation": 0,
+      "seed": 7004,
+      "file": "the_towers_v0.png",
+      "prompt": "rustline style, sealed clean glass-and-steel arcology towers rising above the smog line, cold sterile light in the windows, restrained electric neon-noir signage, sleek and pristine and quietly menacing against a dark bruised sky, seen from far below in the grime"
+    },
+    {
+      "id": "the_towers",
+      "variation": 1,
+      "seed": 7005,
+      "file": "the_towers_v1.png",
+      "prompt": "rustline style, sealed clean glass-and-steel arcology towers rising above the smog line, cold sterile light in the windows, restrained electric neon-noir signage, sleek and pristine and quietly menacing against a dark bruised sky, seen from far below in the grime"
+    },
+    {
+      "id": "the_towers",
+      "variation": 2,
+      "seed": 7006,
+      "file": "the_towers_v2.png",
+      "prompt": "rustline style, sealed clean glass-and-steel arcology towers rising above the smog line, cold sterile light in the windows, restrained electric neon-noir signage, sleek and pristine and quietly menacing against a dark bruised sky, seen from far below in the grime"
+    },
+    {
+      "id": "the_towers",
+      "variation": 3,
+      "seed": 7007,
+      "file": "the_towers_v3.png",
+      "prompt": "rustline style, sealed clean glass-and-steel arcology towers rising above the smog line, cold sterile light in the windows, restrained electric neon-noir signage, sleek and pristine and quietly menacing against a dark bruised sky, seen from far below in the grime"
+    },
+    {
+      "id": "under_city_hub",
+      "variation": 0,
+      "seed": 7008,
+      "file": "under_city_hub_v0.png",
+      "prompt": "rustline style, a grimy rain-wet under-city street, corroded lower districts, rust-streaked concrete, leaking pipes and tangled cabling overhead, dim sodium lamplight pooling on wet asphalt, a few cast-off worn androids moving in the haze, lived-in dystopian squalor"
+    },
+    {
+      "id": "under_city_hub",
+      "variation": 1,
+      "seed": 7009,
+      "file": "under_city_hub_v1.png",
+      "prompt": "rustline style, a grimy rain-wet under-city street, corroded lower districts, rust-streaked concrete, leaking pipes and tangled cabling overhead, dim sodium lamplight pooling on wet asphalt, a few cast-off worn androids moving in the haze, lived-in dystopian squalor"
+    },
+    {
+      "id": "under_city_hub",
+      "variation": 2,
+      "seed": 7010,
+      "file": "under_city_hub_v2.png",
+      "prompt": "rustline style, a grimy rain-wet under-city street, corroded lower districts, rust-streaked concrete, leaking pipes and tangled cabling overhead, dim sodium lamplight pooling on wet asphalt, a few cast-off worn androids moving in the haze, lived-in dystopian squalor"
+    },
+    {
+      "id": "under_city_hub",
+      "variation": 3,
+      "seed": 7011,
+      "file": "under_city_hub_v3.png",
+      "prompt": "rustline style, a grimy rain-wet under-city street, corroded lower districts, rust-streaked concrete, leaking pipes and tangled cabling overhead, dim sodium lamplight pooling on wet asphalt, a few cast-off worn androids moving in the haze, lived-in dystopian squalor"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 0,
+      "seed": 7012,
+      "file": "rust_communion_v0.png",
+      "prompt": "rustline style, an under-city shrine of a salvaged-machine empathy faith, a reverent altar built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive glow, oily rust venerated as holy, hooded synthetic figures bowed in the gloom"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 1,
+      "seed": 7013,
+      "file": "rust_communion_v1.png",
+      "prompt": "rustline style, an under-city shrine of a salvaged-machine empathy faith, a reverent altar built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive glow, oily rust venerated as holy, hooded synthetic figures bowed in the gloom"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 2,
+      "seed": 7014,
+      "file": "rust_communion_v2.png",
+      "prompt": "rustline style, an under-city shrine of a salvaged-machine empathy faith, a reverent altar built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive glow, oily rust venerated as holy, hooded synthetic figures bowed in the gloom"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 3,
+      "seed": 7015,
+      "file": "rust_communion_v3.png",
+      "prompt": "rustline style, an under-city shrine of a salvaged-machine empathy faith, a reverent altar built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive glow, oily rust venerated as holy, hooded synthetic figures bowed in the gloom"
+    },
+    {
+      "id": "failing_lattice",
+      "variation": 0,
+      "seed": 7016,
+      "file": "failing_lattice_v0.png",
+      "prompt": "rustline style, a mid-level belt of terraforming machinery against the smog, tall atmosphere-scrubber stacks and low greenhouse domes, half of them dark and tilting and broken, faint sparks and leaking vapour, dim sodium glow, a system visibly breaking down"
+    },
+    {
+      "id": "failing_lattice",
+      "variation": 1,
+      "seed": 7017,
+      "file": "failing_lattice_v1.png",
+      "prompt": "rustline style, a mid-level belt of terraforming machinery against the smog, tall atmosphere-scrubber stacks and low greenhouse domes, half of them dark and tilting and broken, faint sparks and leaking vapour, dim sodium glow, a system visibly breaking down"
+    },
+    {
+      "id": "failing_lattice",
+      "variation": 2,
+      "seed": 7018,
+      "file": "failing_lattice_v2.png",
+      "prompt": "rustline style, a mid-level belt of terraforming machinery against the smog, tall atmosphere-scrubber stacks and low greenhouse domes, half of them dark and tilting and broken, faint sparks and leaking vapour, dim sodium glow, a system visibly breaking down"
+    },
+    {
+      "id": "failing_lattice",
+      "variation": 3,
+      "seed": 7019,
+      "file": "failing_lattice_v3.png",
+      "prompt": "rustline style, a mid-level belt of terraforming machinery against the smog, tall atmosphere-scrubber stacks and low greenhouse domes, half of them dark and tilting and broken, faint sparks and leaking vapour, dim sodium glow, a system visibly breaking down"
+    },
+    {
+      "id": "toxic_basin",
+      "variation": 0,
+      "seed": 7020,
+      "file": "toxic_basin_v0.png",
+      "prompt": "rustline style, a low dead-air basin where toxic air pools, sulfur-yellow haze hanging in the hollows, sulfide-blackened metal and a collapsed sealed dome, an abandoned human safe-zone with dead warning lights, unbreathable and still"
+    },
+    {
+      "id": "toxic_basin",
+      "variation": 1,
+      "seed": 7021,
+      "file": "toxic_basin_v1.png",
+      "prompt": "rustline style, a low dead-air basin where toxic air pools, sulfur-yellow haze hanging in the hollows, sulfide-blackened metal and a collapsed sealed dome, an abandoned human safe-zone with dead warning lights, unbreathable and still"
+    },
+    {
+      "id": "toxic_basin",
+      "variation": 2,
+      "seed": 7022,
+      "file": "toxic_basin_v2.png",
+      "prompt": "rustline style, a low dead-air basin where toxic air pools, sulfur-yellow haze hanging in the hollows, sulfide-blackened metal and a collapsed sealed dome, an abandoned human safe-zone with dead warning lights, unbreathable and still"
+    },
+    {
+      "id": "toxic_basin",
+      "variation": 3,
+      "seed": 7023,
+      "file": "toxic_basin_v3.png",
+      "prompt": "rustline style, a low dead-air basin where toxic air pools, sulfur-yellow haze hanging in the hollows, sulfide-blackened metal and a collapsed sealed dome, an abandoned human safe-zone with dead warning lights, unbreathable and still"
+    },
+    {
+      "id": "radiation_reaches",
+      "variation": 0,
+      "seed": 7024,
+      "file": "radiation_reaches_v0.png",
+      "prompt": "rustline style, the open surface under a magnetosphere-dead bruised sky, a ruined reactor and toppled lattice towers on scorched cracked concrete, a faint sickly shimmer in the air, distant smog, a lone hardened android silhouette far off, desolate"
+    },
+    {
+      "id": "radiation_reaches",
+      "variation": 1,
+      "seed": 7025,
+      "file": "radiation_reaches_v1.png",
+      "prompt": "rustline style, the open surface under a magnetosphere-dead bruised sky, a ruined reactor and toppled lattice towers on scorched cracked concrete, a faint sickly shimmer in the air, distant smog, a lone hardened android silhouette far off, desolate"
+    },
+    {
+      "id": "radiation_reaches",
+      "variation": 2,
+      "seed": 7026,
+      "file": "radiation_reaches_v2.png",
+      "prompt": "rustline style, the open surface under a magnetosphere-dead bruised sky, a ruined reactor and toppled lattice towers on scorched cracked concrete, a faint sickly shimmer in the air, distant smog, a lone hardened android silhouette far off, desolate"
+    },
+    {
+      "id": "radiation_reaches",
+      "variation": 3,
+      "seed": 7027,
+      "file": "radiation_reaches_v3.png",
+      "prompt": "rustline style, the open surface under a magnetosphere-dead bruised sky, a ruined reactor and toppled lattice towers on scorched cracked concrete, a faint sickly shimmer in the air, distant smog, a lone hardened android silhouette far off, desolate"
+    },
+    {
+      "id": "polar_front",
+      "variation": 0,
+      "seed": 7028,
+      "file": "polar_front_v0.png",
+      "prompt": "rustline style, a blizzard at the freeze-out edge of the colony, driving snow whiting out a half-buried lattice station, ice rimed on dead machinery, the atmosphere collapsing onto the pole, a single android trudging through the whiteout, cold and bleak"
+    },
+    {
+      "id": "polar_front",
+      "variation": 1,
+      "seed": 7029,
+      "file": "polar_front_v1.png",
+      "prompt": "rustline style, a blizzard at the freeze-out edge of the colony, driving snow whiting out a half-buried lattice station, ice rimed on dead machinery, the atmosphere collapsing onto the pole, a single android trudging through the whiteout, cold and bleak"
+    },
+    {
+      "id": "polar_front",
+      "variation": 2,
+      "seed": 7030,
+      "file": "polar_front_v2.png",
+      "prompt": "rustline style, a blizzard at the freeze-out edge of the colony, driving snow whiting out a half-buried lattice station, ice rimed on dead machinery, the atmosphere collapsing onto the pole, a single android trudging through the whiteout, cold and bleak"
+    },
+    {
+      "id": "polar_front",
+      "variation": 3,
+      "seed": 7031,
+      "file": "polar_front_v3.png",
+      "prompt": "rustline style, a blizzard at the freeze-out edge of the colony, driving snow whiting out a half-buried lattice station, ice rimed on dead machinery, the atmosphere collapsing onto the pole, a single android trudging through the whiteout, cold and bleak"
+    },
+    {
+      "id": "landed_ark",
+      "variation": 0,
+      "seed": 7032,
+      "file": "landed_ark_v0.png",
+      "prompt": "rustline style, the colony's origin: a vast tilted generation-ship ark hull half-buried in waste on the horizon, ancient and corroded, dwarfing tiny figures at its foot, the relic of a centuries-long crossing, dim sodium light through smog"
+    },
+    {
+      "id": "landed_ark",
+      "variation": 1,
+      "seed": 7033,
+      "file": "landed_ark_v1.png",
+      "prompt": "rustline style, the colony's origin: a vast tilted generation-ship ark hull half-buried in waste on the horizon, ancient and corroded, dwarfing tiny figures at its foot, the relic of a centuries-long crossing, dim sodium light through smog"
+    },
+    {
+      "id": "landed_ark",
+      "variation": 2,
+      "seed": 7034,
+      "file": "landed_ark_v2.png",
+      "prompt": "rustline style, the colony's origin: a vast tilted generation-ship ark hull half-buried in waste on the horizon, ancient and corroded, dwarfing tiny figures at its foot, the relic of a centuries-long crossing, dim sodium light through smog"
+    },
+    {
+      "id": "landed_ark",
+      "variation": 3,
+      "seed": 7035,
+      "file": "landed_ark_v3.png",
+      "prompt": "rustline style, the colony's origin: a vast tilted generation-ship ark hull half-buried in waste on the horizon, ancient and corroded, dwarfing tiny figures at its foot, the relic of a centuries-long crossing, dim sodium light through smog"
+    },
+    {
+      "id": "dead_sky_hesperos",
+      "variation": 0,
+      "seed": 7036,
+      "file": "dead_sky_hesperos_v0.png",
+      "prompt": "rustline style, a mood plate of the dead unshielded sky at dusk over the smog, the dull amber evening star low and alone, no other stars, a vast unprotected emptiness above a dying world, deep desaturated gloom"
+    },
+    {
+      "id": "dead_sky_hesperos",
+      "variation": 1,
+      "seed": 7037,
+      "file": "dead_sky_hesperos_v1.png",
+      "prompt": "rustline style, a mood plate of the dead unshielded sky at dusk over the smog, the dull amber evening star low and alone, no other stars, a vast unprotected emptiness above a dying world, deep desaturated gloom"
+    },
+    {
+      "id": "dead_sky_hesperos",
+      "variation": 2,
+      "seed": 7038,
+      "file": "dead_sky_hesperos_v2.png",
+      "prompt": "rustline style, a mood plate of the dead unshielded sky at dusk over the smog, the dull amber evening star low and alone, no other stars, a vast unprotected emptiness above a dying world, deep desaturated gloom"
+    },
+    {
+      "id": "sams_road",
+      "variation": 0,
+      "seed": 7039,
+      "file": "sams_road_v0.png",
+      "prompt": "rustline style, a lone set of bootprints crossing a dead-air waste from distant clean towers down toward a grimy under-city, a discarded depleted power-cell and a fallen human rebreather suit in the foreground, sodium light through haze, quiet and tragic, no figure present"
+    },
+    {
+      "id": "sams_road",
+      "variation": 1,
+      "seed": 7040,
+      "file": "sams_road_v1.png",
+      "prompt": "rustline style, a lone set of bootprints crossing a dead-air waste from distant clean towers down toward a grimy under-city, a discarded depleted power-cell and a fallen human rebreather suit in the foreground, sodium light through haze, quiet and tragic, no figure present"
+    },
+    {
+      "id": "sams_road",
+      "variation": 2,
+      "seed": 7041,
+      "file": "sams_road_v2.png",
+      "prompt": "rustline style, a lone set of bootprints crossing a dead-air waste from distant clean towers down toward a grimy under-city, a discarded depleted power-cell and a fallen human rebreather suit in the foreground, sodium light through haze, quiet and tragic, no figure present"
+    }
+  ]
+}

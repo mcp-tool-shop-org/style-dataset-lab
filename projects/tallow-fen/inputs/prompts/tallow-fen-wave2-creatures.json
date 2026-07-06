@@ -1,0 +1,46 @@
+{
+  "wave": "tallow-fen-wave2-creatures",
+  "description": "Tallow Fen bestiary wave 2 — Tallow Hound + Bog Tithe pose/angle variations for the style LoRA dataset. Anti-miss negatives: no literal hanging-lantern prop (wave-1 literalized the style descriptor's lantern LIGHT into a prop), hound is peat-flesh with exposed ribs, not a full skeleton. Prompts derived from canon/tallow-fen-canon.md.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, hanging lantern, carried lantern, lantern on a chain, lantern prop, full skeleton, skeletal dog, bare bones everywhere",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 4100
+  },
+  "subjects": [
+    {
+      "id": "concept_tallow-hound-prowl",
+      "variations": 2,
+      "prompt": "a Tallow Hound, a low-slung emaciated quadruped scavenger the size of a starved dog, prowling low with its nose to the ground, matted fibrous peat-flesh hide covering its body, only the rib-bones along its flank exposed and yellowed, solid amber tallow drips hanging frozen from its empty eye-sockets, heavy drooping head, colours peat black-brown, tallow gold, bone ash, a single creature on a plain neutral grey background"
+    },
+    {
+      "id": "concept_tallow-hound-stand",
+      "variations": 2,
+      "prompt": "a Tallow Hound, a starved dog-sized quadruped standing hunched in profile, head drooping low, wet matted peat-flesh hide with no fur, exposed yellowed rib ridges showing through the hide along its side, frozen amber tallow drips from its hollow eye-sockets, colours peat black-brown, tallow gold, bone ash, a single creature on a plain dark peat-brown background"
+    },
+    {
+      "id": "concept_tallow-hound-mound",
+      "variations": 2,
+      "prompt": "a Tallow Hound, an emaciated hunched quadruped seen from a three-quarter angle standing atop a low peat mound, drooping heavy head, fibrous bog-body hide of matted peat, bare yellowed rib-bones exposed along the ribcage only, amber tallow drips set hard beneath its empty eye-sockets, colours peat black-brown, tallow gold, bone ash, a single creature on a plain muted green-grey background"
+    },
+    {
+      "id": "concept_bog-tithe-front",
+      "variations": 2,
+      "prompt": "a Bog Tithe, a wide squat amorphous mound creature seen from the front, human-tall but bulbous and limbless, dragging itself forward, compacted peat-flesh studded with protruding stained fen-bones and antlers of swallowed animals, rust-red water weeping from its seams, one sunken amber tallow eye low in its mass, colours peat black, dried rust red, bone ash, a single creature on a plain neutral grey background"
+    },
+    {
+      "id": "concept_bog-tithe-profile",
+      "variations": 2,
+      "prompt": "a Bog Tithe, a broad heavy clotted boulder-mass of compacted peat seen in profile, sagging top, no clear limbs, stained antlers and yellowed bones of swallowed things protruding from its back, thin rust-red runoff weeping down its seams, a single sunken amber tallow eye, colours peat black, dried rust red, bone ash, a single creature on a plain dark peat-brown background"
+    },
+    {
+      "id": "concept_bog-tithe-water",
+      "variations": 2,
+      "prompt": "a Bog Tithe, a wide squat bulbous mound creature hunched in shallow black bog water at a three-quarter angle, compacted wet peat-flesh studded with protruding fen-bones and a swallowed deer antler, rust-red water seeping from its folds into the pool, one sunken amber tallow eye, colours peat black, dried rust red, bone ash, a single creature, plain misty background"
+    }
+  ]
+}

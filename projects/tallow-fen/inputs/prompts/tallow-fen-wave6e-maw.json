@@ -1,0 +1,37 @@
+{
+  "wave": "tallow-fen-wave6e-maw",
+  "description": "Mire Maw rebuild after wave5e went 0/8 (demon/skull face above the slit 8/8 — Qwen puts faces on towers; antler crown rendered as a majestic upward stag rack; lantern perched in the crown like a shrine; teeth in the slit). Fixes: tallow-light prefix; blank-peat-slope-above-the-slit positives + widow-grade anti-face block; snapped drooping antler stubs, never a rack; slit lined only with smooth tallow. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture",
+  "defaults": {
+    "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, face, eyes, eye sockets, skull, skull face, animal head, deer head, dragon head, demon, devil, rows of teeth, fangs, concentric teeth, sarlacc, majestic antler rack, upward antlers, halo, shrine, statue, idol, symmetrical, upward spikes, glowing eyes",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 8550,
+    "loras": []
+  },
+  "subjects": [
+    {
+      "id": "concept_mire-maw",
+      "variations": 2,
+      "prompt": "a Mire Maw, a towering leaning cone of sodden dark peat-flesh risen out of a black bog at a three-quarter angle, a single vertical slit running down its lower face lined only with smooth slow-dripping amber tallow, the broad peat slope above the slit completely blank and featureless with no face, a ring of snapped yellow-brown antler stubs jutting from its top all broken short and drooping loosely downward, a still amber tallow pool sunk into its flat apex, massive heavy and asymmetric, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-rising",
+      "variations": 2,
+      "prompt": "a Mire Maw half-risen, a huge blank cone of sodden dark peat-flesh heaving up out of a black bog with wet peat pouring off its featureless flanks, the vertical tallow-lined slit in its lower face beginning to part with amber drips stringing across the gap, snapped antler stubs drooping around its top, water sheeting away from its base, no face anywhere on the blank peat, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_mire-maw-profile",
+      "variations": 2,
+      "prompt": "a Mire Maw in full profile, a towering asymmetric cone of dark sodden peat-flesh leaning to one side over the bog, the edge of its vertical amber tallow-lined slit just visible on the near face catching warm light, its long upper slope blank featureless wet peat, broken yellow-brown antler stubs drooping downward in a loose ring around its top, a faint amber sheen from the still tallow pool at its flat apex, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_mire-maw-low",
+      "variations": 2,
+      "prompt": "a Mire Maw from a low angle looking up, the towering leaning cone of blank dark peat-flesh looming overhead against cold fen gloom, the vertical slit down its near face glistening with slow amber tallow drips and nothing else, the wide peat slope above it featureless with no face, snapped antler stubs sagging around its distant top edge, one warm tallow light catching its flank, colours peat black-brown, dried rust, bone ash, a single creature, dark misty background"
+    }
+  ]
+}

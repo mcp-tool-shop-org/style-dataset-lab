@@ -15,10 +15,11 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs, getProjectName } from "../lib/args.js";
 import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
-import { readJsonFile } from "../lib/config.js";
-import { runtimeError, handleCliError } from "../lib/errors.js";
+import { readJsonFile, loadProjectMeta, resolveGpuModel } from "../lib/config.js";
+import { runtimeError, inputError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { pickOutputImage } from "../lib/comfyui-output.js";
+import { buildQwenGraph, QWEN_DEFAULTS } from "../lib/adapters/comfyui-workflows.js";
 import { info, result } from "../lib/log.js";
 
 /**
@@ -177,6 +178,89 @@ function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, c
   return { nodes, saveNodeId: saveId };
 }
 
+/**
+ * Detect the input schema and normalize to a unified shape:
+ *   { lane, style_prefix, negative, defaults, base, jobs:[{assetId, subjectId, variationId, prompt, seed, loras}] }
+ *
+ * Two accepted schemas (both produce jobs in subject-major order, so the legacy
+ * seed sequence stays byte-identical):
+ *
+ *   • Legacy pack — top-level `lane` + `variations` (array) applied to every
+ *     subject. seed = base_seed + jobIndex + (variation.seed_offset||0);
+ *     assetId = `${subject.id}_${variation.id}`; `negative` is top-level.
+ *
+ *   • Wave (what `sdlab init` scaffolds, e.g. example-wave.json) — each subject
+ *     carries `variations` as an integer count; `negative` lives in `defaults`.
+ *     seed = base_seed + jobIndex; assetId = `${subject.id}_v${v}`. This matches
+ *     scripts/qwen_generate.py's seed/filename scheme.
+ *
+ * `base` resolves: input.base → input.defaults.base → project.json defaults.base
+ * → "sdxl". `"qwen-image"` routes to the non-anime Qwen graph.
+ */
+function normalizeGenerationInput(raw, projectMeta) {
+  if (!Array.isArray(raw.subjects) || raw.subjects.length === 0) {
+    throw inputError(
+      'INPUT_MISSING_FIELDS',
+      'Prompt pack/wave must have a non-empty "subjects" array.',
+      'See inputs/prompts/example-wave.json for the expected shape.'
+    );
+  }
+  const defaults = raw.defaults || {};
+  const base = String(
+    raw.base || defaults.base || projectMeta?.defaults?.base || 'sdxl'
+  ).toLowerCase();
+  const baseSeed = Number.isFinite(defaults.base_seed) ? defaults.base_seed : 0;
+  const stylePrefix = raw.style_prefix || '';
+  const compose = (p) => (stylePrefix ? `${stylePrefix}, ${p}` : p);
+
+  const jobs = [];
+  let k = 0;
+
+  if (Array.isArray(raw.variations)) {
+    // Legacy pack schema
+    if (!raw.lane) {
+      throw inputError(
+        'INPUT_MISSING_FIELDS',
+        'Legacy pack (top-level "variations" array) requires a "lane".',
+        'Add a "lane" string, or use the wave schema (per-subject integer "variations").'
+      );
+    }
+    const negative = raw.negative ?? '';
+    for (const subject of raw.subjects) {
+      for (const variation of raw.variations) {
+        jobs.push({
+          assetId: `${subject.id}_${variation.id}`,
+          subjectId: subject.id,
+          variationId: variation.id,
+          prompt: compose(subject.prompt),
+          seed: baseSeed + k + (variation.seed_offset || 0),
+          loras: variation.loras || [],
+        });
+        k++;
+      }
+    }
+    return { lane: raw.lane, style_prefix: stylePrefix, negative, defaults, base, jobs, schema: 'pack' };
+  }
+
+  // Wave schema
+  const negative = raw.negative ?? defaults.negative ?? '';
+  for (const subject of raw.subjects) {
+    const nvar = Number.isFinite(subject.variations) ? subject.variations : 1;
+    for (let v = 0; v < nvar; v++) {
+      jobs.push({
+        assetId: `${subject.id}_v${v}`,
+        subjectId: subject.id,
+        variationId: `v${v}`,
+        prompt: compose(subject.prompt),
+        seed: baseSeed + k,
+        loras: [],
+      });
+      k++;
+    }
+  }
+  return { lane: raw.wave || raw.lane || 'default', style_prefix: stylePrefix, negative, defaults, base, jobs, schema: 'wave' };
+}
+
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
   const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
@@ -196,13 +280,40 @@ export async function run(argv = process.argv.slice(2)) {
   const resume = parsed.flags['resume'] === true;
 
   const fullPackPath = resolveSafeProjectPath(GAME_ROOT, packPath, { flagName: 'pack-path' });
-  const pack = await readJsonFile(fullPackPath, { requiredFields: ['lane', 'subjects', 'variations', 'defaults'] });
+  const raw = await readJsonFile(fullPackPath);
+  const projectMeta = loadProjectMeta(GAME_ROOT);
+  const gpuModel = resolveGpuModel(projectMeta?.defaults);
+  const pack = normalizeGenerationInput(raw, projectMeta);
+
+  const d = pack.defaults;
+  const base = pack.base;
+  const isQwen = base === 'qwen-image';
+
+  // Resolve effective sampler params once. Qwen applies its own defaults when a
+  // wave omits them; SDXL uses the pack defaults exactly as authored (unchanged).
+  const resolved = isQwen
+    ? {
+        width: d.width || QWEN_DEFAULTS.width,
+        height: d.height || QWEN_DEFAULTS.height,
+        steps: d.steps || QWEN_DEFAULTS.steps,
+        cfg: d.cfg || QWEN_DEFAULTS.cfg,
+        sampler: d.sampler || QWEN_DEFAULTS.sampler,
+        scheduler: d.scheduler || QWEN_DEFAULTS.scheduler,
+      }
+    : {
+        width: d.width,
+        height: d.height,
+        steps: d.steps,
+        cfg: d.cfg,
+        sampler: d.sampler,
+        scheduler: d.scheduler,
+      };
 
   console.log(`\x1b[1mstyle-dataset-lab\x1b[0m generate`);
   console.log(`  Lane: ${pack.lane}`);
-  console.log(`  Subjects: ${pack.subjects.length}`);
-  console.log(`  Variations: ${pack.variations.length}`);
-  console.log(`  Total candidates: ${pack.subjects.length * pack.variations.length}`);
+  console.log(`  Base: ${base}${isQwen ? ' \x1b[2m(non-anime)\x1b[0m' : ''}`);
+  console.log(`  Subjects: ${raw.subjects.length}`);
+  console.log(`  Total candidates: ${pack.jobs.length}`);
   console.log("");
 
   if (!dryRun) {
@@ -216,118 +327,143 @@ export async function run(argv = process.argv.slice(2)) {
   await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
   await mkdir(join(GAME_ROOT, "records"), { recursive: true });
 
-  const d = pack.defaults;
   let generated = 0;
   let errors = 0;
   let skipped = 0;
-  const totalExpected = pack.subjects.length * pack.variations.length;
+  const totalExpected = pack.jobs.length;
   const runStartMs = Date.now();
 
-  for (const subject of pack.subjects) {
-    for (const variation of pack.variations) {
-      const assetId = `${subject.id}_${variation.id}`;
-      const seed = (d.base_seed + generated) + (variation.seed_offset || 0);
-      const fullPrompt = `${pack.style_prefix}, ${subject.prompt}`;
-      const loras = variation.loras || [];
+  for (const job of pack.jobs) {
+    const { assetId, prompt: fullPrompt, seed, loras } = job;
 
-      // --resume: skip subjects whose record + image are both already on disk.
-      // Seeds are deterministic per (base_seed, generated, variation), so
-      // increment `generated` for skipped slots to keep downstream seeds stable.
-      if (resume && !dryRun) {
-        const recordPath = join(GAME_ROOT, `records/${assetId}.json`);
-        const imagePath = join(GAME_ROOT, `outputs/candidates/${assetId}.png`);
-        if (existsSync(recordPath) && existsSync(imagePath)) {
-          console.log(`  [${generated + 1}/${totalExpected}] ${assetId} \x1b[2m(resumed — skipped)\x1b[0m`);
-          generated++;
-          skipped++;
-          continue;
-        }
+    // --resume: skip jobs whose record + image are both already on disk.
+    // Seeds are precomputed per job index, so skipping never shifts later seeds.
+    if (resume && !dryRun) {
+      const recordPath = join(GAME_ROOT, `records/${assetId}.json`);
+      const imagePath = join(GAME_ROOT, `outputs/candidates/${assetId}.png`);
+      if (existsSync(recordPath) && existsSync(imagePath)) {
+        console.log(`  [${generated + 1}/${totalExpected}] ${assetId} \x1b[2m(resumed — skipped)\x1b[0m`);
+        generated++;
+        skipped++;
+        continue;
       }
+    }
 
-      console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${loras.length})`);
+    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${isQwen ? (d.loras || []).length : loras.length})`);
 
-      if (dryRun) {
+    if (dryRun) {
+      generated++;
+      continue;
+    }
+
+    const startMs = Date.now();
+    const { nodes, saveNodeId } = isQwen
+      ? buildQwenGraph({
+          prompt: fullPrompt,
+          negativePrompt: pack.negative,
+          seed,
+          width: resolved.width,
+          height: resolved.height,
+          steps: resolved.steps,
+          cfg: resolved.cfg,
+          sampler: resolved.sampler,
+          scheduler: resolved.scheduler,
+          shift: d.shift ?? QWEN_DEFAULTS.shift,
+          unet: d.unet || QWEN_DEFAULTS.unet,
+          clip: d.clip || QWEN_DEFAULTS.clip,
+          vae: d.vae || QWEN_DEFAULTS.vae,
+          clipType: d.clip_type || QWEN_DEFAULTS.clip_type,
+          weightDtype: d.weight_dtype || QWEN_DEFAULTS.weight_dtype,
+          loras: d.loras || [],
+          filenamePrefix: 'sdl',
+        })
+      : buildWorkflow(
+          fullPrompt, pack.negative,
+          d.checkpoint, loras, seed,
+          resolved.steps, resolved.cfg, resolved.sampler, resolved.scheduler,
+          resolved.width, resolved.height,
+        );
+
+    try {
+      const submitResult = await submitAndWait(nodes, COMFY_URL);
+      const elapsed = Date.now() - startMs;
+
+      // Prefer the explicit SaveImage node from the builder; fall back
+      // to highest numeric node id (see lib/comfyui-output.js).
+      const picked = pickOutputImage(submitResult.outputs, { preferNodeId: saveNodeId });
+      if (!picked) {
+        console.log(`    \x1b[33m⚠\x1b[0m No output image found`);
         generated++;
         continue;
       }
 
-      const startMs = Date.now();
-      const { nodes, saveNodeId } = buildWorkflow(
-        fullPrompt, pack.negative,
-        d.checkpoint, loras, seed,
-        d.steps, d.cfg, d.sampler, d.scheduler,
-        d.width, d.height,
+      // Download and save
+      const imgData = await downloadImage(picked.filename, picked.subfolder, COMFY_URL);
+      const destPath = `outputs/candidates/${assetId}.png`;
+      await writeFile(join(GAME_ROOT, destPath), imgData);
+
+      // Write provenance record (base-aware: Qwen records unet/clip/vae/shift,
+      // SDXL records checkpoint/loras).
+      const provenance = {
+        workflow_id: pack.lane,
+        workflow_version: "1.0.0",
+        base,
+        prompt: fullPrompt,
+        negative_prompt: pack.negative,
+        seed,
+        steps: resolved.steps,
+        cfg: resolved.cfg,
+        sampler: resolved.sampler,
+        scheduler: resolved.scheduler,
+        width: resolved.width,
+        height: resolved.height,
+        generation_time_ms: elapsed,
+        gpu_model: gpuModel,
+        batch_index: generated,
+      };
+      if (isQwen) {
+        provenance.unet = d.unet || QWEN_DEFAULTS.unet;
+        provenance.clip = d.clip || QWEN_DEFAULTS.clip;
+        provenance.vae = d.vae || QWEN_DEFAULTS.vae;
+        provenance.shift = d.shift ?? QWEN_DEFAULTS.shift;
+        provenance.loras = d.loras || [];
+      } else {
+        provenance.checkpoint = d.checkpoint;
+        provenance.loras = loras;
+      }
+
+      const record = {
+        id: assetId,
+        schema_version: "1.0.0",
+        created_at: new Date().toISOString(),
+        asset_path: destPath,
+        image: { format: "png", width: resolved.width, height: resolved.height, bytes: imgData.length },
+        provenance,
+        judgment: null,
+        canon: null,
+        iteration: null,
+      };
+
+      await writeFile(
+        join(GAME_ROOT, `records/${assetId}.json`),
+        JSON.stringify(record, null, 2),
       );
 
-      try {
-        const submitResult = await submitAndWait(nodes, COMFY_URL);
-        const elapsed = Date.now() - startMs;
+      console.log(`    \x1b[32m✓\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
+    } catch (err) {
+      console.log(`    \x1b[31m✗\x1b[0m ${err.message}`);
+      errors++;
+    }
 
-        // Prefer the explicit SaveImage node from buildWorkflow; fall back
-        // to highest numeric node id (see lib/comfyui-output.js).
-        const picked = pickOutputImage(submitResult.outputs, { preferNodeId: saveNodeId });
-        if (!picked) {
-          console.log(`    \x1b[33m⚠\x1b[0m No output image found`);
-          generated++;
-          continue;
-        }
+    generated++;
 
-        // Download and save
-        const imgData = await downloadImage(picked.filename, picked.subfolder, COMFY_URL);
-        const destPath = `outputs/candidates/${assetId}.png`;
-        await writeFile(join(GAME_ROOT, destPath), imgData);
-
-        // Write provenance record
-        const record = {
-          id: assetId,
-          schema_version: "1.0.0",
-          created_at: new Date().toISOString(),
-          asset_path: destPath,
-          image: { format: "png", width: d.width, height: d.height, bytes: imgData.length },
-          provenance: {
-            workflow_id: pack.lane,
-            workflow_version: "1.0.0",
-            checkpoint: d.checkpoint,
-            loras,
-            prompt: fullPrompt,
-            negative_prompt: pack.negative,
-            seed,
-            steps: d.steps,
-            cfg: d.cfg,
-            sampler: d.sampler,
-            scheduler: d.scheduler,
-            width: d.width,
-            height: d.height,
-            generation_time_ms: elapsed,
-            gpu_model: "RTX 5080",
-            batch_index: generated,
-          },
-          judgment: null,
-          canon: null,
-          iteration: null,
-        };
-
-        await writeFile(
-          join(GAME_ROOT, `records/${assetId}.json`),
-          JSON.stringify(record, null, 2),
-        );
-
-        console.log(`    \x1b[32m✓\x1b[0m ${destPath} (${elapsed}ms, ${imgData.length} bytes)`);
-      } catch (err) {
-        console.log(`    \x1b[31m✗\x1b[0m ${err.message}`);
-        errors++;
-      }
-
-      generated++;
-
-      // ETA every 5 items (not every item — too noisy for long runs).
-      if (!dryRun && generated > 0 && generated % 5 === 0 && generated < totalExpected) {
-        const elapsedTotal = Date.now() - runStartMs;
-        const avgMs = elapsedTotal / generated;
-        const remaining = totalExpected - generated;
-        const etaMs = avgMs * remaining;
-        info('generate', `progress ${generated}/${totalExpected} — avg ${formatEta(avgMs)}/item, ETA ~${formatEta(etaMs)}`);
-      }
+    // ETA every 5 items (not every item — too noisy for long runs).
+    if (!dryRun && generated > 0 && generated % 5 === 0 && generated < totalExpected) {
+      const elapsedTotal = Date.now() - runStartMs;
+      const avgMs = elapsedTotal / generated;
+      const remaining = totalExpected - generated;
+      const etaMs = avgMs * remaining;
+      info('generate', `progress ${generated}/${totalExpected} — avg ${formatEta(avgMs)}/item, ETA ~${formatEta(etaMs)}`);
     }
   }
 

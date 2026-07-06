@@ -1,0 +1,77 @@
+{
+  "wave": "tallow-fen-wave5a-pall",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture",
+  "negative": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, bird, seagull, feathers, beak, bat, dragon, leathery demon wings, sleek elegant glide, eyes, glowing eyes",
+  "loras": [],
+  "items": [
+    {
+      "id": "concept_fen-pall",
+      "variation": 0,
+      "seed": 7110,
+      "file": "concept_fen-pall_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall, a sagging airborne creature like a soaked heavy shroud laboring low over black bog water at a three-quarter angle, two uneven drooping wing-masses with the left wing larger and hanging lower, cracked yellow-brown fen-bone struts piercing through the wet dark peat-flesh wing-sheets, a blunt featureless head-bulb with one dark hollow and a single long amber tallow drip trailing beneath it, heavy and struggling in the air, colours peat black-brown, bog green, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall",
+      "variation": 1,
+      "seed": 7111,
+      "file": "concept_fen-pall_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall, a sagging airborne creature like a soaked heavy shroud laboring low over black bog water at a three-quarter angle, two uneven drooping wing-masses with the left wing larger and hanging lower, cracked yellow-brown fen-bone struts piercing through the wet dark peat-flesh wing-sheets, a blunt featureless head-bulb with one dark hollow and a single long amber tallow drip trailing beneath it, heavy and struggling in the air, colours peat black-brown, bog green, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-hang",
+      "variation": 0,
+      "seed": 7112,
+      "file": "concept_fen-pall-hang_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall hanging heavy in cold fog mid-beat, a sagging shroud-like flying creature with two drooping uneven wing-masses of wet peat-flesh sheets sagging between cracked fen-bone struts, the wing-sheets torn at the edges, a blunt head-bulb with a single dark hollow and one long amber tallow drip hanging from it, colours peat black-brown, bog green, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-hang",
+      "variation": 1,
+      "seed": 7113,
+      "file": "concept_fen-pall-hang_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall hanging heavy in cold fog mid-beat, a sagging shroud-like flying creature with two drooping uneven wing-masses of wet peat-flesh sheets sagging between cracked fen-bone struts, the wing-sheets torn at the edges, a blunt head-bulb with a single dark hollow and one long amber tallow drip hanging from it, colours peat black-brown, bog green, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-profile",
+      "variation": 0,
+      "seed": 7114,
+      "file": "concept_fen-pall-profile_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall in full profile dragging itself low above dead reeds, a heavy sagging airborne mass like wet cloth thrown over the wind, uneven drooping wings of dark peat-flesh sheets pierced by yellow-brown fen-bone struts, a blunt featureless head-bulb trailing one long amber tallow drip, its underside almost brushing the reeds, colours peat black-brown, bog green, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-profile",
+      "variation": 1,
+      "seed": 7115,
+      "file": "concept_fen-pall-profile_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall in full profile dragging itself low above dead reeds, a heavy sagging airborne mass like wet cloth thrown over the wind, uneven drooping wings of dark peat-flesh sheets pierced by yellow-brown fen-bone struts, a blunt featureless head-bulb trailing one long amber tallow drip, its underside almost brushing the reeds, colours peat black-brown, bog green, bone ash, a single creature, pale misty background"
+    },
+    {
+      "id": "concept_fen-pall-rear",
+      "variation": 0,
+      "seed": 7116,
+      "file": "concept_fen-pall-rear_v0.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall seen from behind at a three-quarter angle, a sagging shroud-like flying creature laboring away over a black bog, two uneven drooping wing-masses of wet peat-flesh with cracked fen-bone struts showing through, a warm amber rim of tallow light along its left wing edge, colours peat black-brown, bog green, bone ash, a single creature, dark misty background"
+    },
+    {
+      "id": "concept_fen-pall-rear",
+      "variation": 1,
+      "seed": 7117,
+      "file": "concept_fen-pall-rear_v1.png",
+      "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, a single warm lantern light in cold fen gloom, grim folkloric, matte painterly texture, a Fen Pall seen from behind at a three-quarter angle, a sagging shroud-like flying creature laboring away over a black bog, two uneven drooping wing-masses of wet peat-flesh with cracked fen-bone struts showing through, a warm amber rim of tallow light along its left wing edge, colours peat black-brown, bog green, bone ash, a single creature, dark misty background"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "wave": "tallow-fen-p2-concepts",
+  "description": "Phase-2 turnaround concepts: clean 3/4 poses, full creature, flat pale bg, all features visible. Pall + Brood bare-trigger on the installed v3 @1.5 (their clean classes). 3 variations each to pick the best mesh input.",
+  "base": "qwen-image",
+  "style_prefix": "tallow_fen style",
+  "defaults": {
+    "negative": "text, watermark, frame, border, signature, multiple creatures, busy background, scenery, cropped, cut off",
+    "width": 1024,
+    "height": 1024,
+    "steps": 22,
+    "cfg": 3.5,
+    "base_seed": 8800,
+    "loras": [{ "name": "tallow_fen_style_v3.safetensors", "weight": 1.5 }]
+  },
+  "subjects": [
+    {
+      "id": "concept_pall_p2",
+      "variations": 3,
+      "prompt": "a creature concept, a single sagging flying creature at a clear three-quarter front angle, both uneven wings of cracked amber tallow on yellow-brown bone struts fully spread and visible, a smooth featureless pale head-bulb, the whole creature centered and fully in frame, a flat plain pale grey background"
+    },
+    {
+      "id": "concept_brood_p2",
+      "variations": 3,
+      "prompt": "a creature concept, a single clotted heap of fused rounded amber tallow grub-bodies bound in a net of dark strands with charred black stubs, seen at a three-quarter angle, the whole mass centered and fully in frame, a flat plain pale grey background"
+    }
+  ]
+}

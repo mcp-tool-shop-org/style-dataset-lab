@@ -1,0 +1,48 @@
+{
+  "id": "concept_rust-boil-bank_v0",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-10T12:54:49.858Z",
+  "asset_path": "outputs/rejected/concept_rust-boil-bank_v0.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 1270105
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave7d-boil",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Rust Boil grown into the side of a low peat bank, a heavy swollen blister-dome of dark peat-flesh merging seamlessly into the bank's mud at its whole lower edge, the round crown opening sealed flush under a stretched unbroken disc of translucent amber tallow with a dull glow behind it, layered dried rust-brown stains running down its smooth swollen side, broken reeds around its base, colours peat black-brown, dried rust, tallow gold, a single creature, dark misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, human person, human face, modern gear, metal plate armor, gun, text, watermark, frame, border, signature, lantern, lamp, arms, hands, legs, claws, skeleton, bone arms, hunched figure, wizard, witch, robed figure, humanoid, head, neck, eye, socket, tree stump, hollow, open hole, pipe, funnel, horn, jug, pot, hat, blood, gore, crimson, plant, flower, leaves, vines, volcano, mouth, face",
+    "seed": 9442,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": []
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-10T12:54:49.858Z",
+    "explanation": "the base folds read as crouched haunches under the cracked dome",
+    "criteria_scores": {},
+    "failure_modes": [
+      "limb_folds"
+    ],
+    "improvement_notes": "bank compositions invite grip anatomy",
+    "confidence": 0.8
+  },
+  "canon": null,
+  "iteration": null
+}

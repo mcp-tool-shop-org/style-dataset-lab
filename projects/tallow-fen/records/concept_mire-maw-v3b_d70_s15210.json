@@ -1,0 +1,185 @@
+{
+  "id": "concept_mire-maw-v3b_d70_s15210",
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-17T13:07:18.467Z",
+  "asset_path": "outputs/approved/concept_mire-maw-v3b_d70_s15210.png",
+  "image": {
+    "format": "png",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 613511
+  },
+  "provenance": {
+    "workflow_id": "tallow-fen-wave13-i2i-maw",
+    "workflow_version": "1.0.0",
+    "base": "qwen-image",
+    "prompt": "hand-painted oil-and-ink creature concept art, muted peat-and-tallow palette, soft charcoal outlines, one warm tallow light in cold fen gloom, grim folkloric, matte painterly texture, a Mire Maw, a towering leaning cone of dark sodden peat-flesh rising from black bog water, wet matted fibre texture and drowned moss down its blank featureless slopes, a sparse ring of short broken yellow-brown bone snags drooping downward around its tip, one bright vertical seam of amber wax running down its near flank to the waterline with slow drips standing on the wax, its dim reflection in the still water, alone in empty fog, colours peat black-brown, dried rust, bone ash, a single creature, pale misty background",
+    "negative_prompt": "anime, manga, cartoon, cel shading, chibi, cute, photograph, photorealistic, 3d render, smooth CG, multiple creatures, second creature, two towers, companion, background figure, beast in the fog, wraith, ghost, human person, human face, modern gear, text, watermark, frame, border, signature, lantern, lamp, candle, face, eyes, eye sockets, skull, animal head, deer head, dragon head, serpent head, beaked head, demon, teeth, fangs, majestic antler rack, upward antlers, hair, dense tangle, halo, mushroom, flared cap, anvil, cowl, hood, skeleton, arms, hands, legs, claws, fire, flames, torch, road, highway, lava",
+    "seed": 15210,
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024,
+    "generation_time_ms": null,
+    "gpu_model": "RTX 5090",
+    "batch_index": 0,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "loras": [],
+    "method": "img2img shape-anchor",
+    "init_image": "E:\\AI\\training\\_mocks\\mock3_mire-maw-b.png",
+    "denoise": 0.7
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "claude:fable-5",
+    "reviewed_at": "2026-06-17T13:07:18.467Z",
+    "explanation": "a leaning asymmetric cone of dark peat over black water, a bright amber seam catching the light along its near flank, blank wet slopes, broken snags drooping at the tip, dim reflection",
+    "criteria_scores": {
+      "anatomy_accuracy": 0.8,
+      "silhouette_distinction": 0.85,
+      "surface_texture": 0.8,
+      "evolutionary_logic": 0.8,
+      "scale_accuracy": 0.8,
+      "locomotion_read": 0.78,
+      "behavioral_read": 0.78,
+      "habitat_fit": 0.8,
+      "style_consistency": 0.75
+    },
+    "failure_modes": [],
+    "improvement_notes": "i2i (mock3-b, d0.70) — strong lean",
+    "confidence": 0.8
+  },
+  "canon": {
+    "constitution_version": "1.0.0",
+    "bound_at": "2026-06-17T13:19:13.913Z",
+    "bound_by": "canon-bind-v1",
+    "faction": null,
+    "assertions": [
+      {
+        "rule_id": "ANA-001",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+      },
+      {
+        "rule_id": "ANA-002",
+        "category": "anatomy",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+      },
+      {
+        "rule_id": "SIL-001",
+        "category": "silhouette",
+        "verdict": "pass",
+        "score": 0.85,
+        "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+      },
+      {
+        "rule_id": "SUR-001",
+        "category": "surface",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Surface texture coherent — covering reads consistently across the body (80%)"
+      },
+      {
+        "rule_id": "EVO-001",
+        "category": "ecology",
+        "verdict": "pass",
+        "score": 0.8,
+        "rationale": "Adaptations make ecological sense — form follows function (80%)"
+      },
+      {
+        "rule_id": "LOC-001",
+        "category": "locomotion",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Locomotion class clear — movement mode reads from anatomy (78%)"
+      },
+      {
+        "rule_id": "BEH-001",
+        "category": "behavior",
+        "verdict": "pass",
+        "score": 0.78,
+        "rationale": "Behavioral cues present — temperament reads from pose and expression (78%)"
+      },
+      {
+        "rule_id": "STY-001",
+        "category": "style",
+        "verdict": "pass",
+        "score": 0.75,
+        "rationale": "Style consistent — creature fits the lineup's design language (75%)"
+      }
+    ],
+    "assertion_count": 8,
+    "pass_count": 8,
+    "fail_count": 0,
+    "partial_count": 0
+  },
+  "iteration": null,
+  "canon_assertions": [
+    {
+      "rule_id": "ANA-001",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy is plausible — structure supports locomotion and mass (80%)"
+    },
+    {
+      "rule_id": "ANA-002",
+      "category": "anatomy",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Anatomy consistent across views — proportions and joints stable (80%)"
+    },
+    {
+      "rule_id": "SIL-001",
+      "category": "silhouette",
+      "verdict": "pass",
+      "score": 0.85,
+      "rationale": "Silhouette distinctive — creature readable by outline alone (85%)"
+    },
+    {
+      "rule_id": "SUR-001",
+      "category": "surface",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Surface texture coherent — covering reads consistently across the body (80%)"
+    },
+    {
+      "rule_id": "EVO-001",
+      "category": "ecology",
+      "verdict": "pass",
+      "score": 0.8,
+      "rationale": "Adaptations make ecological sense — form follows function (80%)"
+    },
+    {
+      "rule_id": "LOC-001",
+      "category": "locomotion",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Locomotion class clear — movement mode reads from anatomy (78%)"
+    },
+    {
+      "rule_id": "BEH-001",
+      "category": "behavior",
+      "verdict": "pass",
+      "score": 0.78,
+      "rationale": "Behavioral cues present — temperament reads from pose and expression (78%)"
+    },
+    {
+      "rule_id": "STY-001",
+      "category": "style",
+      "verdict": "pass",
+      "score": 0.75,
+      "rationale": "Style consistent — creature fits the lineup's design language (75%)"
+    }
+  ],
+  "canon_explanation": "Approved: passes 8/8 constitution rules.  a leaning asymmetric cone of dark peat over black water, a bright amber seam catching the light along its near flank, blank wet slopes, broken snags drooping at the tip, dim reflection"
+}
