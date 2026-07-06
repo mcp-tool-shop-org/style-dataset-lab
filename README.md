@@ -113,6 +113,15 @@ Style Dataset Lab makes the connection explicit. Your constitution defines the r
 
 The practical result: when your LoRA drifts, you can ask *why*. When your next training round needs better data, you know exactly which records are near-misses and what single rule they failed. When a new team member asks what the project's visual language is, the answer isn't a Figma board — it's a searchable constitution with 1,182 graded examples.
 
+## Proven in production
+
+This isn't a demo pipeline. Two real style-LoRAs have shipped end-to-end through it — the same canon → curate → train → ship loop, at opposite ends of the curation spectrum.
+
+- **[Tallow Fen](handbook/case-study-tallow-fen/)** (creature-design) — a from-scratch bestiary canon, **~34% approval** across 293 curated records (169 rejected — the gate rejects hard). Shipped `tallow_fen_style_v3.safetensors` @ 1.5 on `qwen-image`.
+- **[Rustline](handbook/case-study-rustline/)** (concept-design) — dense, pre-formed canon, **~96% approval** across 180 records. Shipped `rustline_v3ckpt_1500.safetensors` @ 1.0 on `qwen-image`, reused downstream by a second project.
+
+Same pipeline, two production profiles: the curation gate is real (it rejects hard on open subjects), and disciplined canon yields high acceptance.
+
 ## Five domains, real rules
 
 Not placeholder templates. Each domain ships with production-grade constitution rules, lane definitions, scoring rubrics, and group vocabulary.
