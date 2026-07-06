@@ -1,0 +1,54 @@
+{
+  "wave": "hesperia-reroll-sere",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 26,
+  "cfg": 3.5,
+  "size": [
+    896,
+    1152
+  ],
+  "style_prefix": "rustline style",
+  "negative": "old man, elderly man, wrinkled, wrinkles, aged human face, geriatric, balding old man, gray-haired old man, beard, jowls, sagging skin, liver spots, human skin, human flesh face, realistic human face, human, pretty, beautiful, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, skull, skeleton, skeletal, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "sere",
+      "variation": 0,
+      "seed": 9900,
+      "file": "sere_v0.png",
+      "prompt": "rustline style, a venerable archaic Gen-1 android, an obsolete early companion-model design distinct from the rest of the cast, the wear of centuries worn into the chassis with deep corrosion, patina, and layered re-welds and old repairs, a conspicuous empty round core-socket cavity at the sternum ringed by reverent relic-wrappings, a smooth dignified synthetic faceplate and a machine face that is ageless with no human skin, reactivated-rough with dormancy dust, a distinct tall lead silhouette, a mechanical jointed body, standing in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "sere",
+      "variation": 1,
+      "seed": 9901,
+      "file": "sere_v1.png",
+      "prompt": "rustline style, a venerable archaic Gen-1 android, an obsolete early companion-model design distinct from the rest of the cast, the wear of centuries worn into the chassis with deep corrosion, patina, and layered re-welds and old repairs, a conspicuous empty round core-socket cavity at the sternum ringed by reverent relic-wrappings, a smooth dignified synthetic faceplate and a machine face that is ageless with no human skin, reactivated-rough with dormancy dust, a distinct tall lead silhouette, a mechanical jointed body, standing in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "sere",
+      "variation": 2,
+      "seed": 9902,
+      "file": "sere_v2.png",
+      "prompt": "rustline style, a venerable archaic Gen-1 android, an obsolete early companion-model design distinct from the rest of the cast, the wear of centuries worn into the chassis with deep corrosion, patina, and layered re-welds and old repairs, a conspicuous empty round core-socket cavity at the sternum ringed by reverent relic-wrappings, a smooth dignified synthetic faceplate and a machine face that is ageless with no human skin, reactivated-rough with dormancy dust, a distinct tall lead silhouette, a mechanical jointed body, standing in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    },
+    {
+      "id": "sere",
+      "variation": 3,
+      "seed": 9903,
+      "file": "sere_v3.png",
+      "prompt": "rustline style, a venerable archaic Gen-1 android, an obsolete early companion-model design distinct from the rest of the cast, the wear of centuries worn into the chassis with deep corrosion, patina, and layered re-welds and old repairs, a conspicuous empty round core-socket cavity at the sternum ringed by reverent relic-wrappings, a smooth dignified synthetic faceplate and a machine face that is ageless with no human skin, reactivated-rough with dormancy dust, a distinct tall lead silhouette, a mechanical jointed body, standing in the dim under-city, full-figure character concept, grounded painterly, dim sodium light"
+    }
+  ]
+}
