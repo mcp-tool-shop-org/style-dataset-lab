@@ -1,0 +1,18 @@
+{
+  "wave": "hesperia-reroll-rust-communion",
+  "description": "Tighten rust_communion: central figure read too clean + a literal Christian cross crept in. Push grime on every figure, explicit machine-relic iconography (scrap/cabling/core), negative-suppress crucifix + sleek-white-clean. Keep the hooded acolytes. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "crucifix, christian cross, religious cross, church, sleek white robot, polished chrome, clean, pristine, glossy, skeleton, skull, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, bright even daylight, clean utopia, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+    "width": 1344,
+    "height": 768,
+    "steps": 24,
+    "cfg": 3.5,
+    "base_seed": 8100,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "rust_communion", "variations": 4, "prompt": "a grimy under-city shrine of a salvaged-machine empathy faith, a corroded altar of scrap metal and tangled cabling built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive candlelight, oily rust venerated as holy, rust-streaked hooded synthetic acolytes bowed in the gloom, every figure worn corroded and grimy, machine-relic iconography of salvaged parts and wire, no crosses" }
+  ]
+}

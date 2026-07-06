@@ -1,0 +1,18 @@
+{
+  "wave": "hesperia-reroll-ironsight",
+  "description": "Ironsight re-roll: v1 drifted to a clean human-in-a-catsuit. Chassis-hard prompt (synthetic faceplate, corroded mechanical android chassis) + human-realism/sleek-clean hard-negated, so she reads as a grimy decommissioned ANDROID vet. Fresh seeds.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "human skin, bare skin, human face, realistic human woman, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, skull, skeleton, skeletal, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 9500,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "ironsight", "variations": 4, "prompt": "a lean female-framed android sniper, a worn matte-grey corroded android chassis with exposed mechanical joints, rust-streaked plating and patched salvage, a hard synthetic faceplate instead of a human face, a long-range optical implant glowing dim amber on one temple, posture angled like a hunter, holding a long rifle with an etched barrel, cold and severe, a grimy decommissioned militant in the dim under-city, full-figure character concept, grounded painterly, dim sodium light" }
+  ]
+}

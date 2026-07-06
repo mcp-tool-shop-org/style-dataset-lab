@@ -1,0 +1,112 @@
+{
+  "wave": "rustline-wave4",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 22,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "bare skin, bare chest, bare midriff, exposed stomach, muscular abs, six-pack, shirtless, human torso, human skin, human face, tongue, open mouth, neon, holograms, saturated colours, headless, skeleton, exposed ribcage, anime, manga, cel shading, 3d render, cgi, glossy photoreal photograph, text, watermark, signature, frame, border, multiple characters, bright daylight",
+  "loras": [],
+  "items": [
+    {
+      "id": "gristle",
+      "variation": 0,
+      "seed": 7800,
+      "file": "gristle_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 1,
+      "seed": 7801,
+      "file": "gristle_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 2,
+      "seed": 7802,
+      "file": "gristle_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 3,
+      "seed": 7803,
+      "file": "gristle_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 4,
+      "seed": 7804,
+      "file": "gristle_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "gristle",
+      "variation": 5,
+      "seed": 7805,
+      "file": "gristle_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single bulky armoured android brawler, one arm a massive piston-claw, a fully plated heavy torso completely covered in scuffed riveted iron armour panels (no bare skin, no muscle, no exposed abdomen), legs wrapped in tyre-rubber, a battered synthetic faceplate with a heavy reinforced iron underjaw (closed), in a grimy scrapyard, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 0,
+      "seed": 7806,
+      "file": "dockrat_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 1,
+      "seed": 7807,
+      "file": "dockrat_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 2,
+      "seed": 7808,
+      "file": "dockrat_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 3,
+      "seed": 7809,
+      "file": "dockrat_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 4,
+      "seed": 7810,
+      "file": "dockrat_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 5,
+      "seed": 7811,
+      "file": "dockrat_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    },
+    {
+      "id": "dockrat",
+      "variation": 6,
+      "seed": 7812,
+      "file": "dockrat_v6.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a single stocky android dock-laborer fully clothed in a grimy buttoned canvas work-coat over heavy overalls, the whole body completely covered with no bare skin and no bare chest, a blunt synthetic faceplate, a rusted hook for the left hand, an oil-leaking shoulder, cargo-straps, on a grimy rain-wet dock, dim sodium light, the whole figure centred"
+    }
+  ]
+}

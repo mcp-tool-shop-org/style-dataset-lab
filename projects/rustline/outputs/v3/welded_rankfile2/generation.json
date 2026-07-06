@@ -1,0 +1,63 @@
+{
+  "wave": "rl-v3-welded_rankfile2",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    832,
+    1216
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "bad anatomy, deformed, extra limbs, missing limbs, extra arms, extra legs, deformed hands, extra fingers, fused fingers, mutated hands, floating head, detached head, disconnected limbs, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, full android, all-metal body, synthetic faceplate, no human flesh, no human face, sleek, clean, pristine, polished, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, text, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "welded_rankfile2",
+      "variation": 0,
+      "seed": 10000,
+      "file": "welded_rankfile2_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg, an augmented human survivor, a human face and human flesh as the base with one scrap-metal machine arm and patched bolted cybernetics and exposed wiring on the skin, a crude rebreather, rust and grime, in a grimy under-city, dim sodium light, a single full character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "welded_rankfile2",
+      "variation": 1,
+      "seed": 10001,
+      "file": "welded_rankfile2_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg, an augmented human survivor, a human face and human flesh as the base with one scrap-metal machine arm and patched bolted cybernetics and exposed wiring on the skin, a crude rebreather, rust and grime, in a grimy under-city, dim sodium light, a single full character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "welded_rankfile2",
+      "variation": 2,
+      "seed": 10002,
+      "file": "welded_rankfile2_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg, an augmented human survivor, a human face and human flesh as the base with one scrap-metal machine arm and patched bolted cybernetics and exposed wiring on the skin, a crude rebreather, rust and grime, in a grimy under-city, dim sodium light, a single full character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "welded_rankfile2",
+      "variation": 3,
+      "seed": 10003,
+      "file": "welded_rankfile2_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg, an augmented human survivor, a human face and human flesh as the base with one scrap-metal machine arm and patched bolted cybernetics and exposed wiring on the skin, a crude rebreather, rust and grime, in a grimy under-city, dim sodium light, a single full character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "welded_rankfile2",
+      "variation": 4,
+      "seed": 10004,
+      "file": "welded_rankfile2_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg, an augmented human survivor, a human face and human flesh as the base with one scrap-metal machine arm and patched bolted cybernetics and exposed wiring on the skin, a crude rebreather, rust and grime, in a grimy under-city, dim sodium light, a single full character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "welded_rankfile2",
+      "variation": 5,
+      "seed": 10005,
+      "file": "welded_rankfile2_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a welded cyborg, an augmented human survivor, a human face and human flesh as the base with one scrap-metal machine arm and patched bolted cybernetics and exposed wiring on the skin, a crude rebreather, rust and grime, in a grimy under-city, dim sodium light, a single full character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    }
+  ]
+}
