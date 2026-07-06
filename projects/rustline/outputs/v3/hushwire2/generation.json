@@ -1,0 +1,63 @@
+{
+  "wave": "rl-v3-hushwire2",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    832,
+    1216
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "bad anatomy, deformed, extra limbs, missing limbs, extra arms, extra legs, deformed hands, extra fingers, fused fingers, mutated hands, floating head, detached head, disconnected limbs, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, bare human skin, human face, human muscle, bare chest, exposed human flesh, sleek clean sci-fi robot, halo spartan, power armour, mech suit, plastic, legible text, readable letters, large numbers, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "hushwire2",
+      "variation": 0,
+      "seed": 10600,
+      "file": "hushwire2_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android courier, a lean slim synth in a fitted weathered jacket, a smooth synthetic faceplate not human skin with one cracked cheek-panel, a sealed gasketed body, exposed forearm-cabling, a wrist courier-compartment, collar up, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "hushwire2",
+      "variation": 1,
+      "seed": 10601,
+      "file": "hushwire2_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android courier, a lean slim synth in a fitted weathered jacket, a smooth synthetic faceplate not human skin with one cracked cheek-panel, a sealed gasketed body, exposed forearm-cabling, a wrist courier-compartment, collar up, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "hushwire2",
+      "variation": 2,
+      "seed": 10602,
+      "file": "hushwire2_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android courier, a lean slim synth in a fitted weathered jacket, a smooth synthetic faceplate not human skin with one cracked cheek-panel, a sealed gasketed body, exposed forearm-cabling, a wrist courier-compartment, collar up, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "hushwire2",
+      "variation": 3,
+      "seed": 10603,
+      "file": "hushwire2_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android courier, a lean slim synth in a fitted weathered jacket, a smooth synthetic faceplate not human skin with one cracked cheek-panel, a sealed gasketed body, exposed forearm-cabling, a wrist courier-compartment, collar up, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "hushwire2",
+      "variation": 4,
+      "seed": 10604,
+      "file": "hushwire2_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android courier, a lean slim synth in a fitted weathered jacket, a smooth synthetic faceplate not human skin with one cracked cheek-panel, a sealed gasketed body, exposed forearm-cabling, a wrist courier-compartment, collar up, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "hushwire2",
+      "variation": 5,
+      "seed": 10605,
+      "file": "hushwire2_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android courier, a lean slim synth in a fitted weathered jacket, a smooth synthetic faceplate not human skin with one cracked cheek-panel, a sealed gasketed body, exposed forearm-cabling, a wrist courier-compartment, collar up, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "wave": "hesperia-reroll-rust-communion",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    1344,
+    768
+  ],
+  "style_prefix": "rustline style",
+  "negative": "crucifix, christian cross, religious cross, church, sleek white robot, polished chrome, clean, pristine, glossy, skeleton, skull, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, bright even daylight, clean utopia, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "rust_communion",
+      "variation": 0,
+      "seed": 8100,
+      "file": "rust_communion_v0.png",
+      "prompt": "rustline style, a grimy under-city shrine of a salvaged-machine empathy faith, a corroded altar of scrap metal and tangled cabling built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive candlelight, oily rust venerated as holy, rust-streaked hooded synthetic acolytes bowed in the gloom, every figure worn corroded and grimy, machine-relic iconography of salvaged parts and wire, no crosses"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 1,
+      "seed": 8101,
+      "file": "rust_communion_v1.png",
+      "prompt": "rustline style, a grimy under-city shrine of a salvaged-machine empathy faith, a corroded altar of scrap metal and tangled cabling built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive candlelight, oily rust venerated as holy, rust-streaked hooded synthetic acolytes bowed in the gloom, every figure worn corroded and grimy, machine-relic iconography of salvaged parts and wire, no crosses"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 2,
+      "seed": 8102,
+      "file": "rust_communion_v2.png",
+      "prompt": "rustline style, a grimy under-city shrine of a salvaged-machine empathy faith, a corroded altar of scrap metal and tangled cabling built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive candlelight, oily rust venerated as holy, rust-streaked hooded synthetic acolytes bowed in the gloom, every figure worn corroded and grimy, machine-relic iconography of salvaged parts and wire, no crosses"
+    },
+    {
+      "id": "rust_communion",
+      "variation": 3,
+      "seed": 8103,
+      "file": "rust_communion_v3.png",
+      "prompt": "rustline style, a grimy under-city shrine of a salvaged-machine empathy faith, a corroded altar of scrap metal and tangled cabling built around a scavenged android memory-core relic wrapped in wet rags, warm amber votive candlelight, oily rust venerated as holy, rust-streaked hooded synthetic acolytes bowed in the gloom, every figure worn corroded and grimy, machine-relic iconography of salvaged parts and wire, no crosses"
+    }
+  ]
+}

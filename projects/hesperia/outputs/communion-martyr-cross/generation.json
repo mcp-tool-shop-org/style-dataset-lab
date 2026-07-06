@@ -1,0 +1,68 @@
+{
+  "wave": "hesperia-symbol-martyr-cross",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 26,
+  "cfg": 3.5,
+  "size": [
+    896,
+    1152
+  ],
+  "style_prefix": "rustline style",
+  "negative": "crucifix, jesus, christ, crucified figure, body on the cross, person on cross, man, human figure, saint, halo, religious painting, stained glass, church interior, cathedral, clean, pristine, sleek, chrome, polished, shiny, new, glossy, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label, words, letters",
+  "loras": [
+    {
+      "name": "rustline_v3ckpt_1500.safetensors",
+      "weight": 1.0
+    }
+  ],
+  "items": [
+    {
+      "id": "martyr_cross_relic",
+      "variation": 0,
+      "seed": 8400,
+      "file": "martyr_cross_relic_v0.png",
+      "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded"
+    },
+    {
+      "id": "martyr_cross_relic",
+      "variation": 1,
+      "seed": 8401,
+      "file": "martyr_cross_relic_v1.png",
+      "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded"
+    },
+    {
+      "id": "martyr_cross_relic",
+      "variation": 2,
+      "seed": 8402,
+      "file": "martyr_cross_relic_v2.png",
+      "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded"
+    },
+    {
+      "id": "martyr_cross_relic",
+      "variation": 3,
+      "seed": 8403,
+      "file": "martyr_cross_relic_v3.png",
+      "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded"
+    },
+    {
+      "id": "martyr_cross_relic",
+      "variation": 4,
+      "seed": 8404,
+      "file": "martyr_cross_relic_v4.png",
+      "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded"
+    },
+    {
+      "id": "martyr_cross_relic",
+      "variation": 5,
+      "seed": 8405,
+      "file": "martyr_cross_relic_v5.png",
+      "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded"
+    }
+  ]
+}
