@@ -1,0 +1,77 @@
+{
+  "wave": "rl-phaseB-neon_env",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    1024,
+    1024
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "people, characters, figures, person, crowd, holograms, bright daylight, clean chrome utopia, sunny, anime, cel-shaded, glossy 3d render, text, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "env_alley",
+      "variation": 0,
+      "seed": 8300,
+      "file": "env_alley_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a narrow rain-wet under-city alley at night, neon signs glowing along the wet brick walls, magenta and cyan electric neon reflecting on the rain-slick asphalt and drifting smog, rust and scrap and leaking pipes, neon as moody low-key atmosphere, still grimy and grounded, no people, empty street"
+    },
+    {
+      "id": "env_alley",
+      "variation": 1,
+      "seed": 8301,
+      "file": "env_alley_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a narrow rain-wet under-city alley at night, neon signs glowing along the wet brick walls, magenta and cyan electric neon reflecting on the rain-slick asphalt and drifting smog, rust and scrap and leaking pipes, neon as moody low-key atmosphere, still grimy and grounded, no people, empty street"
+    },
+    {
+      "id": "env_market",
+      "variation": 0,
+      "seed": 8302,
+      "file": "env_market_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a derelict under-city market at night, shuttered stalls and scrap, a few neon signs glowing magenta and cyan over the wet ground, smog haze and dim sodium light, neon as moody low-key atmosphere, grimy and grounded, no people, deserted"
+    },
+    {
+      "id": "env_market",
+      "variation": 1,
+      "seed": 8303,
+      "file": "env_market_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a derelict under-city market at night, shuttered stalls and scrap, a few neon signs glowing magenta and cyan over the wet ground, smog haze and dim sodium light, neon as moody low-key atmosphere, grimy and grounded, no people, deserted"
+    },
+    {
+      "id": "env_stair",
+      "variation": 0,
+      "seed": 8304,
+      "file": "env_stair_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a wet concrete stairwell descending into the under-city at night, a single large neon sign glowing cyan above, magenta neon spill on the rain-wet steps, rust streaks and grime, smog haze, neon as moody low-key atmosphere, no people"
+    },
+    {
+      "id": "env_stair",
+      "variation": 1,
+      "seed": 8305,
+      "file": "env_stair_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a wet concrete stairwell descending into the under-city at night, a single large neon sign glowing cyan above, magenta neon spill on the rain-wet steps, rust streaks and grime, smog haze, neon as moody low-key atmosphere, no people"
+    },
+    {
+      "id": "env_overpass",
+      "variation": 0,
+      "seed": 8306,
+      "file": "env_overpass_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a rain-soaked under-city street beneath a concrete overpass at night, neon signage glowing magenta and cyan in the smog, puddled reflective asphalt, leaking pipes and rusted scrap, dim sodium pools, neon as moody low-key atmosphere, grounded and grimy, no people"
+    },
+    {
+      "id": "env_overpass",
+      "variation": 1,
+      "seed": 8307,
+      "file": "env_overpass_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, a rain-soaked under-city street beneath a concrete overpass at night, neon signage glowing magenta and cyan in the smog, puddled reflective asphalt, leaking pipes and rusted scrap, dim sodium pools, neon as moody low-key atmosphere, grounded and grimy, no people"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "wave": "rl-v3-scrapsaint_fin",
+  "base": "qwen-image",
+  "unet": "qwen_image_fp8_e4m3fn.safetensors",
+  "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+  "vae": "qwen_image_vae.safetensors",
+  "sampler": "euler",
+  "scheduler": "simple",
+  "shift": 3.1,
+  "steps": 24,
+  "cfg": 3.5,
+  "size": [
+    832,
+    1216
+  ],
+  "style_prefix": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly",
+  "negative": "bad anatomy, deformed, extra limbs, missing limbs, deformed hands, extra fingers, fused fingers, mutated hands, floating head, detached head, disconnected limbs, cropped, close-up, headshot, cut off legs, feet cut off, out of frame, skeleton, skeletal, ribcage, rib cage, ribs, exposed ribs, exposed bones, bones, bony, spine, skeletal frame, skeletal torso, hollow torso, cyclops, single optic, single eye, one eye, monocular, lone side optic, smooth eyeless face, blank eye socket on a smooth face, missing eye, bare human skin, human face, human muscle, bare chest, exposed human flesh, sleek clean sci-fi robot, halo spartan, power armour, mech suit, plastic, legible text, readable letters, large numbers, neon, saturated colour, anime, chibi, cel-shaded, glossy 3d render, bright daylight, watermark, frame, border, signature",
+  "loras": [],
+  "items": [
+    {
+      "id": "scrapsaint_fin",
+      "variation": 0,
+      "seed": 11200,
+      "file": "scrapsaint_fin_v0.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android preacher, a gaunt tall synth in peeling off-white plating, head bowed under a hood of scavenged wet rags, a synthetic faceplate shadowed but present with two dim dull-amber optics, an open ragged robe revealing an exposed oily chest-mechanism that cradles a small salvaged memory-core like a reliquary, a speaker-grille voice-unit, cabling-wrapped hands, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "scrapsaint_fin",
+      "variation": 1,
+      "seed": 11201,
+      "file": "scrapsaint_fin_v1.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android preacher, a gaunt tall synth in peeling off-white plating, head bowed under a hood of scavenged wet rags, a synthetic faceplate shadowed but present with two dim dull-amber optics, an open ragged robe revealing an exposed oily chest-mechanism that cradles a small salvaged memory-core like a reliquary, a speaker-grille voice-unit, cabling-wrapped hands, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "scrapsaint_fin",
+      "variation": 2,
+      "seed": 11202,
+      "file": "scrapsaint_fin_v2.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android preacher, a gaunt tall synth in peeling off-white plating, head bowed under a hood of scavenged wet rags, a synthetic faceplate shadowed but present with two dim dull-amber optics, an open ragged robe revealing an exposed oily chest-mechanism that cradles a small salvaged memory-core like a reliquary, a speaker-grille voice-unit, cabling-wrapped hands, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "scrapsaint_fin",
+      "variation": 3,
+      "seed": 11203,
+      "file": "scrapsaint_fin_v3.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android preacher, a gaunt tall synth in peeling off-white plating, head bowed under a hood of scavenged wet rags, a synthetic faceplate shadowed but present with two dim dull-amber optics, an open ragged robe revealing an exposed oily chest-mechanism that cradles a small salvaged memory-core like a reliquary, a speaker-grille voice-unit, cabling-wrapped hands, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "scrapsaint_fin",
+      "variation": 4,
+      "seed": 11204,
+      "file": "scrapsaint_fin_v4.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android preacher, a gaunt tall synth in peeling off-white plating, head bowed under a hood of scavenged wet rags, a synthetic faceplate shadowed but present with two dim dull-amber optics, an open ragged robe revealing an exposed oily chest-mechanism that cradles a small salvaged memory-core like a reliquary, a speaker-grille voice-unit, cabling-wrapped hands, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    },
+    {
+      "id": "scrapsaint_fin",
+      "variation": 5,
+      "seed": 11205,
+      "file": "scrapsaint_fin_v5.png",
+      "prompt": "gritty hand-painted cyberpunk concept art, dark muted desaturated palette of concrete grey rust-brown and dim sodium-amber, heavy low-key chiaroscuro, rain-wet grime and smog haze, lived-in dystopian squalor, film grain, matte painterly, an android preacher, a gaunt tall synth in peeling off-white plating, head bowed under a hood of scavenged wet rags, a synthetic faceplate shadowed but present with two dim dull-amber optics, an open ragged robe revealing an exposed oily chest-mechanism that cradles a small salvaged memory-core like a reliquary, a speaker-grille voice-unit, cabling-wrapped hands, a struck decommission brand, a single full android character on a plain dark grimy background, full figure shown from head to boots, full body length, standing upright with both feet planted on the wet ground, the entire body visible in frame, wide full-body shot"
+    }
+  ]
+}

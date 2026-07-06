@@ -1,0 +1,19 @@
+{
+  "wave": "hesperia-smoke-w1",
+  "description": "2-image smoke test before the full world-plates-w1 batch: verify v3 LoRA binds (rustline style) + VRAM holds. Delete after.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, bright even daylight, clean utopia, pristine, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+    "width": 1344,
+    "height": 768,
+    "steps": 24,
+    "cfg": 3.5,
+    "base_seed": 7000,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "vertical_city", "variations": 1, "prompt": "a wide cinematic establishing shot of a vertical megacity on a dead colony world: sealed clean arcology towers spearing up out of a thick smog line into a starless bruised sky, a mid-level belt of failing terraforming machinery, and a corroded rust-grimed under-city sprawling below in dim sodium lamplight, rain and haze, deep low-key chiaroscuro" },
+    { "id": "under_city_hub", "variations": 1, "prompt": "a grimy rain-wet under-city street, corroded lower districts, rust-streaked concrete, leaking pipes and tangled cabling overhead, dim sodium lamplight pooling on wet asphalt, a few cast-off worn androids moving in the haze, lived-in dystopian squalor" }
+  ]
+}
