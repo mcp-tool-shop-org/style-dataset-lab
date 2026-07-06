@@ -10,6 +10,8 @@ import { config } from '../site-config';
 
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
 const handbookHref = `${base}handbook/`;
+const tallowFenHref = `${base}handbook/case-study-tallow-fen/`;
+const rustlineHref = `${base}handbook/case-study-rustline/`;
 const installCmd = 'npm install -g @mcptoolshop/style-dataset-lab';
 const ogUrl = 'https://mcp-tool-shop-org.github.io/style-dataset-lab/';
 // No OG image asset is shipped yet — leave undefined so scrapers fall back to
@@ -25,7 +27,7 @@ const ogImage: string | undefined = undefined;
   repoUrl={config.repoUrl}
   npmUrl={config.npmUrl}
   footerText={config.footerText}
-  nav={config.sections.map(s => ({ href: `#${s.id}`, label: s.title }))}
+  nav={[{ href: '#proven', label: 'Proven in production' }, ...config.sections.map(s => ({ href: `#${s.id}`, label: s.title }))]}
   ogUrl={ogUrl}
   ogImage={ogImage}
 >
@@ -82,6 +84,92 @@ const ogImage: string | undefined = undefined;
       >
         See how it works
       </a>
+    </div>
+  </section>
+
+  <!-- Proven in production — market proof: two real style-LoRAs shipped end-to-end through this pipeline. -->
+  <section id="proven" class="border-t border-edge py-14 md:py-20">
+    <div class="mb-3">
+      <span class="inline-flex items-center rounded-full border border-edge px-3 py-1 text-xs font-medium text-muted">
+        Proven in production
+      </span>
+    </div>
+    <h2 class="text-3xl font-bold tracking-tight text-heading md:text-4xl">
+      Two real style-LoRAs shipped through this pipeline
+    </h2>
+    <p class="mt-3 max-w-3xl text-base text-muted md:text-lg">
+      The same pipeline shipped a coherent style through a brutal, high-rejection exploratory
+      creature run <span class="text-body">and</span> a converged, high-yield concept run. Two
+      different production profiles, one pipeline, two shipped LoRAs — with real curation numbers
+      you can inspect in the repo.
+    </p>
+
+    <div class="mt-8 grid gap-4 md:grid-cols-2">
+      <div class="rounded-xl border border-edge bg-surface-raised p-6">
+        <div class="flex items-baseline justify-between gap-3">
+          <h3 class="text-lg font-semibold text-heading">Tallow Fen</h3>
+          <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-muted">creature-design</span>
+        </div>
+        <p class="mt-2 text-sm text-muted">
+          A from-scratch bestiary canon and an honest curation gate — 169 rejections against 99 approvals.
+          The gate that can reject hard.
+        </p>
+        <dl class="mt-5 grid grid-cols-3 gap-3 text-center">
+          <div>
+            <dd class="text-2xl font-bold text-heading">293</dd>
+            <dt class="mt-1 text-xs text-muted">records</dt>
+          </div>
+          <div>
+            <dd class="text-2xl font-bold text-heading">~34%</dd>
+            <dt class="mt-1 text-xs text-muted">approval rate</dt>
+          </div>
+          <div>
+            <dd class="text-2xl font-bold text-heading">25</dd>
+            <dt class="mt-1 text-xs text-muted">provenance waves</dt>
+          </div>
+        </dl>
+        <p class="mt-5 text-xs text-muted">
+          Shipped style
+          <code class="font-mono text-body">tallow_fen_style_v3.safetensors</code> @ 1.5 · base
+          <code class="font-mono text-body">qwen-image</code>
+        </p>
+        <a href={tallowFenHref} class="mt-4 inline-flex text-sm font-medium text-body hover:text-heading">
+          Read the case study →
+        </a>
+      </div>
+
+      <div class="rounded-xl border border-edge bg-surface-raised p-6">
+        <div class="flex items-baseline justify-between gap-3">
+          <h3 class="text-lg font-semibold text-heading">Rustline</h3>
+          <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-muted">concept-design</span>
+        </div>
+        <p class="mt-2 text-sm text-muted">
+          Dense, pre-formed canon and a converged run — 172 approvals against 8 rejections. Reused
+          downstream by a second project.
+        </p>
+        <dl class="mt-5 grid grid-cols-3 gap-3 text-center">
+          <div>
+            <dd class="text-2xl font-bold text-heading">180</dd>
+            <dt class="mt-1 text-xs text-muted">records</dt>
+          </div>
+          <div>
+            <dd class="text-2xl font-bold text-heading">~96%</dd>
+            <dt class="mt-1 text-xs text-muted">approval rate</dt>
+          </div>
+          <div>
+            <dd class="text-2xl font-bold text-heading">46</dd>
+            <dt class="mt-1 text-xs text-muted">provenance waves</dt>
+          </div>
+        </dl>
+        <p class="mt-5 text-xs text-muted">
+          Shipped style
+          <code class="font-mono text-body">rustline_v3ckpt_1500.safetensors</code> @ 1.0 · base
+          <code class="font-mono text-body">qwen-image</code>
+        </p>
+        <a href={rustlineHref} class="mt-4 inline-flex text-sm font-medium text-body hover:text-heading">
+          Read the case study →
+        </a>
+      </div>
     </div>
   </section>
 
