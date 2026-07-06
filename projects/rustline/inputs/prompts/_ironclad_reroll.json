@@ -1,0 +1,18 @@
+{
+  "wave": "rustline-ironclad-reroll",
+  "description": "Ironclad concept re-roll — the batch v0/v1 leaned rusty-but-symmetric power-armor (the historical sleek prior). Hard anti-sleek/anti-symmetric prompt to land the canon BROKEN asymmetric corroded ex-enforcer (the v3 fix). Full-body front, plain backdrop.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "halo spartan, power armor, sleek armor, symmetric, clean soldier, sci-fi supersoldier, mecha, glossy, polished, pristine, stenciled text, letters, words, logo on clothing, watermark, signature, text, human skin, human face, realistic human, neon, bright even daylight, deformed, extra limbs, extra fingers, bad anatomy, skull, skeletal, syringes, anime, manga, cel shading, 3d render, cgi, oversaturated, cartoon, busy background, scenery, multiple characters, cropped legs, missing feet, out of frame, close-up, portrait crop",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 9700,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "ironclad", "variations": 3, "prompt": "a hulking decommissioned android enforcer gone to ruin, a BROKEN ASYMMETRIC silhouette, mismatched salvaged plates with whole sections missing exposing oily internal hydraulics and bare frame, heavy rust streaks and caked grime, one shoulder bulkier than the other, a dented battered visor-helmet with a dull amber slit, a hunched lopsided stance, scavenged under-city patches crudely bolted over stripped tower plating, not smooth and not symmetric, a synthetic faceplate and corroded mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left" }
+  ]
+}

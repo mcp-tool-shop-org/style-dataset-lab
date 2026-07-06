@@ -1,0 +1,21 @@
+{
+  "wave": "rustline-cast-batch-concepts",
+  "description": "Turnaround-batch concepts (full-body fronts) for the strongest v3 cast: Rustgrave, Hearthframe, Dustwhisper, Ironclad. Each = clean eye-level front, full body head-to-feet, plain pale-grey backdrop (for clean alpha-cut -> TRELLIS). Canon cues from _cast-androids.json. Negative now carries the TEXT-STENCIL suppressors (kills the A2 poncho/chest text) + two-socket/single-eye guards. v3 LoRA @ 1.0.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "stenciled text, letters, words, writing, numbers, logo on clothing, printed label, watermark, signature, text, cyclops, single eye, one eye, monocular, single optic, smooth blank faceplate, human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, sleek bodysuit, clean, pristine, glossy, chrome, shiny, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, busy background, scenery, environment, interior, multiple characters, cropped legs, missing feet, out of frame, close-up, portrait crop",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 9600,
+    "loras": [{ "name": "rustline_v3ckpt_1500.safetensors", "weight": 1.0 }]
+  },
+  "subjects": [
+    { "id": "rustgrave", "variations": 2, "prompt": "a sturdy scarred android veteran, a fused rifle-stock forearm, a military greatcoat layered with scavenged armor, a grim cluster of decommission-tags worn like medals, two optic sockets one a colder replaced optic, dented armor plates, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left" },
+    { "id": "hearthframe", "variations": 2, "prompt": "a petite android care-unit, domestic livery and an apron with a household sigil scratched out, a stamped service-tag, a porcelain-smooth cracked faceplate with two optic sockets, gentle care-unit hands, a solid plated rounded torso, a stamped decommission brand, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, warm amber light lit from the upper left" },
+    { "id": "dustwhisper", "variations": 2, "prompt": "a stooped slight android archivist, laden with rolled manifests and stamped certificates and data-chips, a stamp-tool, an administrative stoop, a scholar's coat, cracked lens-spectacles over two optic sockets, ink-and-oil-stained fingers, a record satchel, a synthetic faceplate and mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim warm light lit from the upper left" },
+    { "id": "ironclad", "variations": 2, "prompt": "a broad heavy android enforcer, once-clean tower-issue plating now stripped rust-eaten and bolted over with under-city patches, a broken asymmetric silhouette, NOT smooth power-armor, a battered visor helmet with a dull-amber slit, exposed chest-hydraulics, triage-scarred hands, a stamped decommission brand, a synthetic faceplate and corroded mechanical body, full body from head to feet, both feet planted flat on the ground, complete figure not cropped, a single isolated character centered on a plain flat pale-grey backdrop, standing upright facing the viewer at eye level, grounded painterly, dim sodium light lit from the upper left" }
+  ]
+}
