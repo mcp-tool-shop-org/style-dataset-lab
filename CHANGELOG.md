@@ -4,16 +4,40 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Added — ai-toolkit adapter for Flux LoRA training (Flux slice 3)
+## [3.2.0] - 2026-07-06
 
-- **`lib/adapters/ai-toolkit.js`** (new): Ostris ai-toolkit training package. Produces `dataset/<partition>/<record_id>.{png,txt}` + `metadata/<partition>.jsonl` + `ai-toolkit-config.yaml` at package root. The YAML config is populated from the profile and training manifest: `config.name = "{profile_id}-{source_export_id}"`, `model.name_or_path` from `profile.base_model_recommendations[0]`, `model.is_flux: true`, `model.quantize: true` (16GB-VRAM ceiling), `train.noise_scheduler: "flowmatch"`, `optimizer: "adamw8bit"`, `dtype: "bf16"`, multi-res `[512, 768, 1024]`, sample prompt seeded with the profile-derived style trigger.
-- **Precondition:** the adapter requires `profile.target_family === 'flux'` and throws `ADAPTER_TARGET_FAMILY_MISMATCH` (input error, exit 1) otherwise. SDXL callers should use `diffusers-lora`.
-- **Registered** in `ADAPTER_REGISTRY` so `listAdapters()`, `isRegisteredAdapter()`, `loadAdapter()`, and profile validation all pick it up automatically.
-- **`is_style` flag** — emitted as `profile.is_style_lora === true`. World/style LoRAs (broad aesthetics) set `is_style_lora: true`; per-character subject LoRAs in the two-LoRA-stack pattern default to `false`. Drives ai-toolkit's training regularization — wrong value silently mistrains. Wires up the contract needed by the two-LoRA stack implementation session without requiring a follow-up patch.
-- **Flux profiles updated:** `character-style-lora-flux` and `environment-mood-lora-flux` now list `ai-toolkit` in their `adapter_targets` and carry `"is_style_lora": true`.
-- **Handbook:** adapter list in the reference page updated to describe all three adapters and call out the ai-toolkit Flux-only precondition.
-- **Runtime dep:** `yaml@^2.8.3` added for YAML emission.
-- 11 new tests (`ai-toolkit-adapter.test.js` + 3 new cases in `training-adapters.test.js`). Tests 153 → 168.
+The **canon authoring** release. A new `sdlab canon *` namespace turns a project's canon entity store into the projections training actually consumes, and wraps a witness-backed freeze spine around entries that must not drift — plus first-class Flux and Qwen-Image training paths.
+
+### Added
+
+- **Canon authoring namespace (`sdlab canon *`)** — the headline of this release:
+  - **`sdlab canon build`** (#16) — builds three canonical projections from a project's canon entity store: `dataset.jsonl` (for training adapters), `prompts/<id>.j2` (Jinja2 templates for ComfyUI invocation), and `context/<id>.md` (narrative blocks for Role OS dispatch). Output keyed by `<canon_sha>` with a content-addressable cache under `canon-build/.cache/`. Flags: `--full`, `--no-cache`, `--dry-run`, `--only <ids>`, `--json`, `--quiet`.
+  - **`sdlab canon freeze` / `unfreeze` / `freeze-status`** (#17) — witness-chain freeze tooling. `freeze` stamps a freeze block on an entry (witnessed against a canon-build output via `locked_at_build`), writing both the entry frontmatter and an append-only `canon-build/freeze-events.jsonl`. Statuses: `frozen` (regen refused; unfreeze ceremony required) and `soft-advisory` (refused by default, bypassable with `--i-know`). `--reason` is required on freeze/unfreeze — the audit record depends on it. `freeze-status` is a read-only glance at an entry's state.
+  - **`sdlab canon drift`** (#19) — for every frozen / on-canon-change entry, recomputes the watch-field hash and compares against the hash stamped in the latest canon-build manifest; reports drifted entries and overrides since a given build.
+- **Canon schema system** (#18) — Star Freight Grounded canon shipped as worked example data (28 entities across 5 entry schemas), demonstrating the entity format `canon build` consumes.
+- **`flux-natural-language` caption strategy** (#11) — natural-language captions for Flux.1-dev LoRA training, alongside the existing SDXL trigger-word strategy.
+- **Two-LoRA stack training contract** (#15) — threads the `is_style_lora` boolean through profiles and adapters (world/style LoRAs → `true`, per-character subject LoRAs → `false`), driving trainer regularization for the two-LoRA stacking pattern.
+- **Flux training targets** — Flux-target training profiles (#12) and Flux-target ComfyUI workflow profiles (#13) for Star Freight, plus the **`ai-toolkit` adapter** for Flux LoRA training (#14): emits `dataset/<partition>/<record_id>.{png,txt}` + `metadata/<partition>.jsonl` + an `ai-toolkit-config.yaml` that Ostris [ai-toolkit](https://github.com/ostris/ai-toolkit) consumes directly. Flux-only — rejects non-Flux profiles with `ADAPTER_TARGET_FAMILY_MISMATCH`; emits `is_style` from the profile's `is_style_lora`. Registered in `ADAPTER_REGISTRY` beside `generic-image-caption` and `diffusers-lora`.
+- **Qwen-Image native generation** (#24) — native non-anime Qwen-Image generation path with a `gpu_model` override.
+- **Qwen DiT LoRA chain** (#25) — DiT LoRA chaining in both Qwen runners, with tallow-fen style-LoRA dataset wiring.
+
+### Fixed
+
+- **Caption prompt bleed** (#9) — routed captions through the shared research-backed builder so prompt fragments no longer bleed across records.
+- **Freeze witness-chain drift** (#19) — the drift CLI reads `.watch_hash` from the rich freeze stamp, and `freeze-status` surfaces resolved `watch_fields`.
+
+### Changed
+
+- Training adapter registry now exposes three adapters — `generic-image-caption`, `diffusers-lora`, `ai-toolkit`; the handbook reference and README document the `ai-toolkit` Flux-only precondition.
+- `projects/`: rustline and tallow-fen production style datasets added as worked examples (repo-clone content; not shipped in the npm package).
+
+### Dependencies
+
+- **`yaml@^2.8.3`** added as a runtime dependency for the ai-toolkit YAML config (#14), kept current in the range (#23). CI: `actions/checkout` 6→7 (#30), `codecov/codecov-action` 5→7 (#31).
+
+### Tests & coverage
+
+- **368 tests, 0 failing.** Coverage: statements **60.36%** / branches **75.5%** / functions **68.35%**.
 
 ## [3.1.0] - 2026-04-22
 

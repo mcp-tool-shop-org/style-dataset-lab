@@ -13,13 +13,13 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-Definisci le tue regole visive. Genera immagini. Valuta ogni immagine in base a quelle regole. Invia i risultati come dati di addestramento versionati e verificabili, quindi metti in funzione i modelli addestrati nei flussi di lavoro di produzione reali e reinserisci i risultati migliori nel tuo database.
+Scrivi le tue regole visive. Genera immagini. Valuta ogni immagine in base a tali regole. Pubblica i risultati come dati di addestramento verificabili e versionati, quindi utilizza i modelli addestrati in flussi di lavoro di produzione reali e reintroduci gli output migliori nel tuo corpus.
 
-Style Dataset Lab collega le caratteristiche del vostro stile artistico definite in precedenza al set di dati utilizzato per l'addestramento. Definite una "costituzione" che includa regole sulla silhouette, vincoli di palette, linguaggio dei materiali, o qualsiasi altro aspetto rilevante per il vostro progetto. Il sistema genera candidati, li valuta in base a tali regole e confeziona le opere approvate in set di dati riproducibili, in cui ogni elemento spiega perché è stato incluso.
+Style Dataset Lab collega le indicazioni che hai fornito sullo stile artistico al set di dati da cui effettivamente esegui l'addestramento, quindi completa il ciclo fino alla fase di produzione. Definisci una serie di regole: regole sulla silhouette, vincoli sulla palette, linguaggio dei materiali o qualsiasi altro elemento rilevante per il tuo progetto. Il flusso di lavoro genera candidati, li valuta in base alle regole e raggruppa gli elementi approvati in set di dati riproducibili, dove ogni record spiega perché è stato incluso.
 
-Successivamente, entra in gioco l'ambiente di lavoro di produzione: compila le istruzioni di generazione a partire dalle informazioni del progetto, eseguile tramite ComfyUI, valuta i risultati, genera in batch fogli di espressioni e schemi ambientali, seleziona i risultati migliori e reinseriscili come nuovi candidati. Il ciclo si chiude: genera, seleziona, valuta, migliora.
+Successivamente, l'ambiente di lavoro di produzione prende il sopravvento: compila le specifiche per la generazione a partire dai dati del progetto, eseguile tramite ComfyUI, valuta gli output, genera in batch fogli di espressione e schede ambientali, seleziona i risultati migliori e reintroducili come nuovi candidati. Il ciclo si chiude: produci, seleziona, rivedi, rafforza.
 
-## La pipeline
+## Il flusso di lavoro
 
 ```bash
 # Write your canon. Scaffold the project.
@@ -56,56 +56,78 @@ sdlab select --run run_2026-04-16_001 --approve 001.png,003.png
 sdlab reingest selected --selection selection_2026-04-16_001
 ```
 
-Quest'ultimo comando è fondamentale. I risultati selezionati vengono sottoposti allo stesso processo di valutazione di tutto il resto. Il database cresce e le regole rimangono valide.
+Quest'ultimo comando è il punto cruciale. Gli output selezionati vengono reintrodotti nello stesso processo di revisione insieme a tutti gli altri elementi. Il corpus si espande e le regole rimangono valide.
+
+## Definizione del canone
+
+Prima che il flusso di lavoro del set di dati venga eseguito, lo spazio dei nomi `sdlab canon *` trasforma l'archivio delle entità del canone del tuo progetto nelle tre proiezioni utilizzate effettivamente per l'addestramento e la produzione, e blocca le voci che non devono subire modifiche.
+
+```bash
+# Build three projections from the canon entity store:
+#   dataset.jsonl  → training adapters
+#   prompts/*.j2   → ComfyUI workflow invocation
+#   context/*.md   → Role OS narrative dispatch
+sdlab canon build --project my-project
+
+# Freeze an entry so regeneration can't silently change it
+sdlab canon freeze kael_maren --project my-project --reason "prologue portrait locked"
+
+# Report drift on frozen entries since the last clean build
+sdlab canon drift --project my-project
+```
+
+`canon build` è basato sull'indirizzamento dei contenuti: il suo output è identificato da un codice `canon_sha` ed è memorizzato nella cache, quindi una ricostruzione del canone invariata viene eseguita istantaneamente. `canon freeze` registra ogni "congelamento" rispetto a una versione specifica e lo aggiunge a una traccia di controllo in `freeze-events.jsonl`: le voci "congelate" rifiutano esplicitamente la rigenerazione, mentre le voci "soft-advisory" rifiutano per impostazione predefinita (è possibile ignorare l'impostazione con `--i-know`). `canon drift` ricalcola l'hash di ogni voce monitorata e segnala eventuali modifiche rispetto all'ultima versione pulita.
+
+Flusso di lavoro completo nel manuale: [Canon build](handbook/canon-build/), [Canon freeze](handbook/canon-freeze/) e [Two-LoRA stacking](handbook/two-lora-stacking/).
 
 ## Cosa produce
 
-Sono disponibili sette elementi del database e un intero ambiente di lavoro di produzione. Ogni elemento è collegato ai suoi predecessori, in modo da poter risalire a qualsiasi record di addestramento alla regola che lo ha approvato.
+Sette artefatti del set di dati e un ambiente di lavoro di produzione completo. Ogni artefatto è collegato ai suoi predecessori, in modo da poter risalire a qualsiasi record di addestramento fino alla regola che lo ha approvato.
 
-| Artefatto. | Cos'è. |
+| Artefatto | Cos'è |
 |----------|-----------|
-| **Snapshot** | Selezione di record "congelati" con impronta di configurazione. Ogni inclusione ha una motivazione esplicita. |
-| **Split** | Partizione di addestramento/validazione/test in cui le famiglie di soggetti non si sovrappongono. |
-| **Export package** | Set di dati autonomo: manifest, metadati, immagini, suddivisioni, scheda del set di dati, checksum. |
-| **Eval pack** | Compiti di test sensibili al "canone": copertura delle "lane", deriva proibita, ancoraggi/modelli di riferimento, continuità dei soggetti. |
-| **Training package** | Layout pronto per l'addestramento tramite adattatori (`diffusers-lora`, `generic-image-caption`). Stessa verità, formato diverso. |
-| **Eval scorecard** | Valutazione di superamento/non superamento per ogni compito, in base alla valutazione dei risultati generati rispetto ai set di valutazione. |
-| **Implementation pack** | Esempi di prompt, errori noti, test di continuità e indicazioni per il reinserimento. |
+| **Snapshot** | Selezione di record congelati con impronta di configurazione. Ogni inclusione ha una motivazione esplicita. |
+| **Split** | Partizione train/val/test in cui le famiglie di soggetti non superano i confini. |
+| **Export package** | Set di dati autonomo: manifesto, metadati, immagini, suddivisioni, scheda del set di dati, checksum. |
+| **Eval pack** | Attività di test consapevoli del canone: copertura delle corsie, divieto di modifiche, ancoraggio/oro, continuità dei soggetti. |
+| **Training package** | Layout pronto per l'addestramento tramite adattatori (`diffusers-lora`, `generic-image-caption`). Stessi dati, formato diverso. |
+| **Eval scorecard** | Valutazione per attività con esito positivo/negativo basata sulla valutazione degli output generati rispetto ai pacchetti di valutazione. |
+| **Implementation pack** | Esempi di prompt, errori noti, test di continuità e indicazioni per la reintroduzione. |
 
-L'ambiente di lavoro di produzione offre:
+L'ambiente di lavoro di produzione aggiunge:
 
-| Superficie di interazione | Cosa fa |
+| Superficie | Cosa fa |
 |---------|-------------|
-| **Compiled brief** | Generazione deterministica a partire dal profilo del flusso di lavoro e dalle informazioni del progetto. |
-| **Run** | Artefatto di esecuzione stabile: istruzioni + seed + output di ComfyUI + manifest. |
-| **Critique** | Valutazione strutturata e multidimensionale dei risultati rispetto al modello di riferimento. |
-| **Batch** | Produzione coordinata su più canali (fogli di espressioni, schemi ambientali, pacchetti di silhouette). |
-| **Selection** | Artefatto delle decisioni creative: quali output sono stati scelti, perché e da dove provengono. |
-| **Re-ingest** | Gli output selezionati vengono restituiti come record candidati con la completa provenienza della generazione. |
+| **Compiled brief** | Istruzioni di generazione deterministiche dal profilo del flusso di lavoro + dati del progetto. |
+| **Run** | Artefatto di esecuzione congelato: breve descrizione + seed + output ComfyUI + manifesto. |
+| **Critique** | Valutazione strutturata multidimensionale degli output rispetto al canone. |
+| **Batch** | Produzione coordinata multi-slot (fogli di espressione, schede ambientali, pacchetti di silhouette). |
+| **Selection** | Artefatto decisionale creativo: quali output sono stati scelti, perché e da dove provengono. |
+| **Re-ingest** | Gli output selezionati vengono reintrodotti come record candidati con la cronologia completa della generazione. |
 
 ## Perché esiste
 
-I dati di addestramento sono l'elemento più importante in qualsiasi pipeline di intelligenza artificiale visiva. Tuttavia, la maggior parte dei dati di addestramento è costituita da una cartella di immagini senza una cronologia, senza una traccia di valutazione e senza un collegamento alle regole di stile che avrebbero dovuto seguire.
+I dati di addestramento sono l'artefatto più importante in qualsiasi flusso di lavoro di intelligenza artificiale visiva. Ma la maggior parte dei dati di addestramento è una cartella di immagini senza cronologia, senza traccia delle valutazioni e senza collegamento con le regole di stile che avrebbero dovuto seguire.
 
-Style Dataset Lab rende esplicito questo collegamento. La vostra "costituzione" definisce le regole. La vostra "rubrica" definisce le dimensioni della valutazione. I vostri registri di "curazione" documentano la valutazione. La vostra "prova canonica" dimostra il collegamento. E il vostro set di dati porta con sé tutto questo come una verità strutturata, interrogabile e riproducibile.
+Style Dataset Lab rende esplicita questa connessione. La tua costituzione definisce le regole. La tua rubrica definisce le dimensioni della valutazione. I tuoi record di curatela registrano la valutazione. Il tuo legame con il canone dimostra la connessione. E il tuo set di dati conserva tutto questo come informazioni strutturate, ricercabili e riproducibili.
 
-Il risultato pratico: quando il vostro LoRA si discosta, potete capire *perché*. Quando la vostra prossima fase di addestramento necessita di dati migliori, sapete esattamente quali record sono "quasi giusti" e quale singola regola hanno violato. Quando un nuovo membro del team chiede qual è il linguaggio visivo del progetto, la risposta non è una lavagna Figma, ma una "costituzione" ricercabile con 1.182 esempi valutati.
+Il risultato pratico: quando il tuo LoRA subisce modifiche indesiderate, puoi chiedere *perché*. Quando il tuo prossimo ciclo di addestramento richiede dati migliori, sai esattamente quali record sono quasi corretti e quale singola regola hanno violato. Quando un nuovo membro del team chiede qual è il linguaggio visivo del progetto, la risposta non è una bacheca Figma, ma una costituzione ricercabile con 1.182 esempi valutati.
 
 ## Cinque domini, regole reali
 
-Non modelli di esempio. Ogni dominio viene fornito con regole di "costituzione" di livello professionale, definizioni di "lane", rubriche di valutazione e vocabolario di gruppo.
+Non semplici modelli di esempio. Ogni dominio viene fornito con regole della costituzione adatte alla produzione, definizioni delle corsie, rubriche di valutazione e vocabolario di gruppo.
 
-| Dominio. | Lane. | Cosa viene valutato. |
+| Dominio | Corsie | Cosa viene valutato |
 |--------|-------|-----------------|
-| **game-art** | personaggio, ambiente, oggetto, interfaccia utente, nave, interno, attrezzatura. | Silhouette alla scala del gameplay, interpretazione della fazione, usura e invecchiamento. |
-| **character-design** | ritratto, figura intera, vista a 360°, foglio di espressioni, posa d'azione. | proporzioni, logica dell'abbigliamento, personalità, chiarezza dei gesti. |
-| **creature-design** | concept, ortografico, studio dei dettagli, azione, riferimento delle dimensioni, habitat. | anatomia, logica evolutiva, distinzione della silhouette. |
-| **architecture** | esterno, interno, paesaggio urbano, dettaglio strutturale, rovina, paesaggio. | struttura, coerenza dei materiali, prospettiva, coerenza dell'epoca. |
-| **vehicle-mech** | esterno, cabina di pilotaggio, componente, schema, foglio di silhouette, variante danneggiata. | logica meccanica, linguaggio del design, punti di accesso, narrazione dei danni. |
+| **game-art** | personaggio, ambiente, oggetto di scena, interfaccia utente, nave, interno, attrezzatura | Silhouette su scala di gioco, identificazione della fazione, usura e invecchiamento |
+| **character-design** | ritratto, figura intera, rotazione a 360 gradi, foglio di espressioni, posa d'azione | Proporzioni, logica del costume, personalità, chiarezza dei gesti |
+| **creature-design** | concetto, ortografico, studio dettagliato, azione, riferimento alla scala, habitat | Anatomia, logica evolutiva, distinzione della silhouette |
+| **architecture** | esterno, interno, paesaggio urbano, dettaglio strutturale, rovina, paesaggio | Struttura, coerenza dei materiali, prospettiva, coerenza dell'epoca |
+| **vehicle-mech** | esterno, cabina di pilotaggio, componente, schema, foglio di silhouette, variante danneggiata | Logica meccanica, linguaggio del design, punti di accesso, narrazione dei danni |
 
 ## Struttura del progetto
 
-Ogni progetto è autonomo. Cinque file di configurazione JSON definiscono le regole; il resto è costituito da dati.
+Ogni progetto è autonomo. Cinque file di configurazione JSON definiscono le regole; tutto il resto sono dati.
 
 ```
 projects/my-project/
@@ -127,19 +149,19 @@ projects/my-project/
   inbox/generated/       Re-ingested images awaiting review
 ```
 
-## Principi fondamentali
+## Proprietà di affidabilità
 
-Questi principi non sono solo aspirazionali, ma vengono applicati rigorosamente.
+Queste non sono semplici aspirazioni. Sono applicate rigorosamente.
 
-- **Gli snapshot sono immutabili.** L'impronta digitale della configurazione (SHA-256) dimostra che nulla è cambiato.
-- **Le suddivisioni impediscono la fuoriuscita di dati.** Le famiglie di soggetti (definite da identità, lignaggio o suffisso ID) non attraversano i confini delle partizioni.
-- **I manifesti sono contratti vincolanti.** Esportazione dell'hash + impronta digitale della configurazione. Se qualcosa cambia, è necessario crearne uno nuovo.
-- **Gli adattatori non possono alterare i dati.** Layout diversi, ma stessi record. Nessuna aggiunta, nessuna rimozione, nessuna riclassificazione.
-- **Gli output generati vengono riesaminati.** Non ci sono scorciatoie. Vengono curati e collegati come tutto il resto.
+- **Gli snapshot sono immutabili.** L'impronta della configurazione (SHA-256) dimostra che nulla è stato modificato.
+- **Le suddivisioni prevengono perdite di dati.** Le famiglie di soggetti (per identità, discendenza o suffisso ID) non si sovrappongono mai tra le diverse partizioni.
+- **I manifest sono contratti vincolanti.** Hash dell'esportazione + impronta della configurazione. Se qualcosa cambia, crearne uno nuovo.
+- **Gli adattatori non possono alterare la verità.** Layout diverso, stessi record. Nessuna aggiunta, nessuna rimozione, nessuna riclassificazione.
+- **Gli output generati vengono rielaborati tramite revisione.** Nessun bypass. Curare e collegare come tutto il resto.
 
 ## Star Freight
 
-Il repository include un esempio completo e funzionante: 1.182 record, 5 fazioni, 7 percorsi, 24 regole costituzionali, 892 risorse approvate, 2 profili di addestramento. Un canone visivo di un RPG fantascientifico, completamente curato.
+Il repository include un esempio completo funzionante: 1.182 record, 5 fazioni, 7 percorsi, 24 regole costitutive, 892 risorse approvate, 2 profili di addestramento. Un canone visivo di fantascienza RPG, completamente curato.
 
 ```bash
 git clone https://github.com/mcp-tool-shop-org/style-dataset-lab
@@ -149,9 +171,9 @@ sdlab snapshot create --project star-freight   # 839 eligible records
 sdlab split build --project star-freight       # zero subject leakage
 ```
 
-## Formati di output
+## Formati downstream
 
-`sdlab` è proprietaria del dataset. La conversione del formato è gestita da [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset): TRL, LLaVA, Qwen2-VL, JSONL, Parquet e altro. `repo-dataset` esegue la conversione; non decide quali dati includere.
+`sdlab` è il proprietario del set di dati. La conversione del formato è gestita da [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset): TRL, LLaVA, Qwen2-VL, JSONL, Parquet e altro. `repo-dataset` esegue il rendering; non decide mai l'inclusione.
 
 ## Installazione
 
@@ -159,11 +181,11 @@ sdlab split build --project star-freight       # zero subject leakage
 npm install -g @mcptoolshop/style-dataset-lab
 ```
 
-Richiede Node.js 20+ e [ComfyUI](https://github.com/comfyanonymous/ComfyUI) installato localmente all'indirizzo localhost:8188 per la generazione.
+Richiede Node.js 20+ e [ComfyUI](https://github.com/comfyanonymous/ComfyUI) su localhost:8188 per la generazione.
 
 ### Prova senza ComfyUI
 
-È possibile esplorare l'intera interfaccia di interazione, escluse le funzioni di generazione, tramite l'ispezione, la curatela, lo snapshot, la suddivisione e l'esportazione, utilizzando il progetto Star Freight incluso, senza installare ComfyUI o scaricare alcun file SDXL.
+È possibile esplorare l'intera interfaccia non di generazione (ispezione, curatela, snapshot, suddivisione, esportazione) utilizzando il progetto Star Freight incluso, senza installare ComfyUI o scaricare alcun peso SDXL.
 
 ```bash
 # Scaffold a fresh project (no ComfyUI needed)
@@ -176,13 +198,13 @@ sdlab project doctor --project test
 sdlab snapshot create --dry-run --project star-freight
 ```
 
-Il comando `sdlab project doctor` convalida la configurazione di ogni progetto (costituzione, percorsi, rubriche, terminologia) e segnala l'idoneità senza utilizzare la GPU. Qualsiasi comando che modifichi lo stato generato accetta l'opzione `--dry-run` per visualizzare l'effetto prima di applicarlo.
+`sdlab project doctor` convalida la configurazione di ogni progetto (costituzione, percorsi, rubrica, terminologia) e segnala l'idoneità senza toccare la GPU. Qualsiasi comando che modifica lo stato generato accetta `--dry-run` per visualizzare in anteprima l'effetto.
 
-Se si dimentica `--project`, la CLI passa al primo progetto trovato nella cartella `projects/` e visualizza un avviso; per disattivare l'avviso, è necessario specificare esplicitamente `--project`.
+Se si dimentica `--project`, la CLI torna al primo progetto che trova nella cartella `projects/` e stampa un avviso; passare `--project` esplicitamente per disattivare l'avviso.
 
-### Riprendere un'esecuzione interrotta
+### Ripresa di un'esecuzione interrotta
 
-È possibile riprendere le lunghe esecuzioni di generazione senza dover ripetere il lavoro già completato:
+Le lunghe esecuzioni di generazione possono essere riprese senza ripetere il lavoro completato:
 
 ```bash
 # Skip subjects whose record + image are already on disk.
@@ -194,36 +216,36 @@ sdlab generate inputs/prompts/wave1.json --project my-project --resume
 sdlab batch generate --resume batch_2026-04-22_001 --project my-project
 ```
 
-Entrambi i comandi funzionano perché ogni sezione scrive il proprio file manifest in modo atomico al termine dell'esecuzione; un arresto anomalo durante l'esecuzione non corrompe lo stato parziale.
+Entrambi i comandi funzionano perché ogni slot scrive la sua voce del manifest in modo atomico al termine; un arresto anomalo durante l'esecuzione non corrompe mai lo stato parziale.
 
 ## Risoluzione dei problemi
 
 Modalità di errore comuni e soluzioni:
 
-**`ECONNREFUSED 127.0.0.1:8188` in qualsiasi comando `sdlab generate` / `sdlab run generate` / `sdlab batch generate`**
-ComfyUI non è in esecuzione. Avvia ComfyUI (`python main.py --listen 127.0.0.1 --port 8188`) e verifica con `curl http://127.0.0.1:8188/system_stats`. Per puntare a un host/porta diverso, imposta `COMFY_URL=http://host:port`.
+**`ECONNREFUSED 127.0.0.1:8188` in qualsiasi `sdlab generate` / `sdlab run generate` / `sdlab batch generate`**
+ComfyUI non è in esecuzione. Avviare ComfyUI (`python main.py --listen 127.0.0.1 --port 8188`) e confermare con `curl http://127.0.0.1:8188/system_stats`. Per puntare a un host/porta diverso, impostare `COMFY_URL=http://host:port`.
 
 **`missing checkpoint` / `LoRA weight not found`**
-Il profilo del flusso di lavoro indica un file modello che non si trova nelle cartelle `models/checkpoints/` o `models/loras/` di ComfyUI. Apri `projects/<project>/workflows/profiles/<profile>.json`, individua il campo `checkpoint` o `lora` e scarica il file corrispondente oppure sostituiscilo con uno che hai già. Esegui nuovamente `sdlab project doctor --project <project>` per confermare la correzione.
+Il profilo del flusso di lavoro fa riferimento a un file modello che non si trova nelle cartelle `models/checkpoints/` o `models/loras/` di ComfyUI. Aprire `projects/<project>/workflows/profiles/<profile>.json`, individuare il campo `checkpoint` o `lora` e scaricare il peso di riferimento oppure sostituirlo con uno che si ha già. Rieseguire `sdlab project doctor --project <project>` per confermare la correzione.
 
 **Errori di `sdlab project doctor`**
-Doctor restituisce codici di errore strutturati. Alcuni esempi comuni:
-- `E_PROJECT_NOT_FOUND` — la directory del progetto non esiste nella cartella `projects/`. Verifica l'ortografia.
-- `E_CONFIG_INVALID` — uno dei cinque file di configurazione JSON non ha superato la convalida dello schema. Il campo `hint` indica il file e il campo errati.
-- `E_RECORD_DRIFT` — l'impronta digitale della configurazione di un record non corrisponde più alla sua origine. Ricurata o ricollega come suggerito nell'hint.
+Doctor restituisce codici di errore strutturati. Alcuni comuni:
+- `E_PROJECT_NOT_FOUND`: la directory del progetto non esiste in `projects/`. Controllare l'ortografia.
+- `E_CONFIG_INVALID`: uno dei cinque file di configurazione JSON ha fallito la convalida dello schema. Il campo `hint` indica il file e il campo problematici.
+- `E_RECORD_DRIFT`: l'impronta della configurazione di un record non corrisponde più alla sua origine. Rielaborare o ricollegare come suggerisce l'indicazione.
 
-**`Nessun progetto specificato, si utilizza il valore predefinito <name>`**
-Un avviso di lieve entità. Utilizzare l'opzione `--project <name>` per specificare esplicitamente il progetto desiderato e silenziare l'avviso.
+**`No --project specified, falling back to <name>`**
+Un avviso lieve. Passare `--project <name>` esplicitamente per selezionare il progetto corretto e disattivare l'avviso.
 
-**Problemi relativi alla memoria della VRAM (painterly)**
-Consultare il file `docs/internal/HANDOFF.md` per le note sulla regolazione del denoising "painterly". In breve: ridurre l'intensità del denoising, diminuire la dimensione del batch o utilizzare un checkpoint più piccolo nel profilo di lavoro.
+**Problemi di memoria VRAM / "Painterly"**
+Consultare `docs/internal/HANDOFF.md` per le note sulla regolazione del denoising "painterly". In breve: ridurre la forza del denoising, diminuire la dimensione del batch o passare a un checkpoint più piccolo nel profilo del flusso di lavoro.
 
 **Segnalazione di bug**
-Aprire una segnalazione all'indirizzo https://github.com/mcp-tool-shop-org/style-dataset-lab/issues, includendo la versione di sdlab (`sdlab --version`), la versione di Node (`node -v`), il comando completo e l'output dettagliato dell'errore. Un modello per la segnalazione di bug precompila i campi.
+Aprire una segnalazione su https://github.com/mcp-tool-shop-org/style-dataset-lab/issues con la versione di sdlab (`sdlab --version`), la versione di Node (`node -v`), il comando completo e l'output strutturato dell'errore. Un modello per la segnalazione di bug precompila i campi.
 
 ## Sicurezza
 
-Funziona solo localmente. Nessuna telemetria, nessuna analisi, nessuna richiesta esterna. Le immagini rimangono sulla GPU e sul filesystem locale.
+Solo locale. Nessun telemetria, nessuna analisi, nessuna richiesta esterna. Le immagini rimangono sulla GPU e sul file system.
 
 ## Licenza
 
@@ -231,4 +253,4 @@ MIT
 
 ---
 
-Creato da <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>
+Realizzato da <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>

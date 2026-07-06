@@ -58,6 +58,28 @@ sdlab reingest selected --selection selection_2026-04-16_001
 
 That last command is the point. Selected outputs come back through the same review process as everything else. The corpus grows and the rules hold.
 
+## Canon authoring
+
+Before the dataset pipeline runs, the `sdlab canon *` namespace turns your project's canon entity store into the three projections training and production actually consume — and locks the entries that must not drift.
+
+```bash
+# Build three projections from the canon entity store:
+#   dataset.jsonl  → training adapters
+#   prompts/*.j2   → ComfyUI workflow invocation
+#   context/*.md   → Role OS narrative dispatch
+sdlab canon build --project my-project
+
+# Freeze an entry so regeneration can't silently change it
+sdlab canon freeze kael_maren --project my-project --reason "prologue portrait locked"
+
+# Report drift on frozen entries since the last clean build
+sdlab canon drift --project my-project
+```
+
+`canon build` is content-addressable — its output is keyed by a `canon_sha` and cached, so an unchanged canon rebuilds instantly. `canon freeze` witnesses each freeze against a specific build and appends to a `freeze-events.jsonl` audit trail: `frozen` entries refuse regeneration outright, `soft-advisory` entries refuse by default (bypass with `--i-know`). `canon drift` recomputes every watched entry's hash and flags anything that moved since the last clean build.
+
+Full workflow in the handbook: [Canon build](handbook/canon-build/), [Canon freeze](handbook/canon-freeze/), and [Two-LoRA stacking](handbook/two-lora-stacking/).
+
 ## What it produces
 
 Seven dataset artifacts and a full production workbench. Each artifact links to its predecessors so you can trace any training record back to the rule that approved it.

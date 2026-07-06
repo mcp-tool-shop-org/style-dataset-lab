@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-Style Dataset Lab v3.0.0 ships the `sdlab` CLI, 12 shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`.
+Style Dataset Lab v3.2.0 ships the `sdlab` CLI, its shared library modules, and pipeline scripts. All commands accept `--project <name>` to target a project under `projects/`. The default is `star-freight`.
 
 > **Legacy flag.** The `--game <name>` flag is a deprecated alias for `--project <name>`. It still works with a warning and will be removed in v4.
 
@@ -238,6 +238,69 @@ Test the painterly pipeline on a single image before running a full batch.
 
 ```bash
 sdlab painterly:test --project <name>
+```
+
+---
+
+## Canon Commands
+
+The `sdlab canon *` namespace builds trainable projections from a project's canon entity store and manages a witness-backed freeze spine over entries that must not drift. (Distinct from `sdlab canon-bind`, which binds curated records to constitution rules.)
+
+### sdlab canon build
+
+Build the three canonical projections — `dataset.jsonl` (training adapters), `prompts/<id>.j2` (Jinja2 templates for ComfyUI invocation), and `context/<id>.md` (narrative blocks for Role OS dispatch) — from `canon-build/config.json`. Output lands in `<project>/canon-build/<canon_sha>/` with a content-addressable cache under `<project>/canon-build/.cache/`.
+
+```bash
+sdlab canon build --project <name> [--full] [--no-cache] [--dry-run] [--only <id[,id...]>] [--json]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--project <name>` | Project to operate on (required) |
+| `--full` | Ignore cache hits; rebuild every entity |
+| `--no-cache` | Neither read nor write the cache this run |
+| `--dry-run` | Walk + resolve + plan; write nothing |
+| `--only <ids>` | Limit to specific entity ids (comma-separated) |
+| `--json` | Emit the result summary as JSON |
+| `--quiet` | Suppress the human-readable summary |
+
+Exit codes: `1` = user/config error; `2` = runtime error (e.g. context-length cap).
+
+### sdlab canon freeze
+
+Stamp a freeze block on a canon entry, witnessed against a canon-build output (`locked_at_build`). Writes both the entry frontmatter and an append-only `canon-build/freeze-events.jsonl`. `--reason` is required — the audit record depends on it.
+
+```bash
+sdlab canon freeze <entity_id> --project <name> --reason "<text>" [--status frozen|soft-advisory] [--watch <fields>] [--build <sha>] [--by <name>] [--json]
+```
+
+| Status | Behavior |
+|--------|----------|
+| `frozen` | Regeneration refused outright; unfreeze ceremony required. |
+| `soft-advisory` | Refused by default; bypassable with `--i-know` + `--reason`. |
+
+### sdlab canon unfreeze
+
+Lift a freeze back to `status=auto`. Preserves the `freeze.overrides[]` history (append-only) and writes an `unfreeze` event. `--reason` is required.
+
+```bash
+sdlab canon unfreeze <entity_id> --project <name> --reason "<text>" [--by <name>] [--json]
+```
+
+### sdlab canon freeze-status
+
+Read-only glance at an entry's freeze state — status, `locked_at_build`, `frozen_by`, `frozen_reason`, `watch_fields`, overrides count, and event count.
+
+```bash
+sdlab canon freeze-status <entity_id> --project <name> [--json]
+```
+
+### sdlab canon drift
+
+For every frozen or on-canon-change entry, recompute the watch-field hash and compare against the hash stamped in the latest canon-build manifest. Reports drifted entries and overrides since a given build (default: since the latest clean build).
+
+```bash
+sdlab canon drift --project <name> [--since <build_hash>] [--json]
 ```
 
 ---
