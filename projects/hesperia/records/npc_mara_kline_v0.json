@@ -1,0 +1,60 @@
+{
+  "id": "npc_mara_kline_v0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.783Z",
+  "asset_path": "outputs/borderline/npc_mara_kline_v0.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 967859
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-npcs-wave-1",
+    "base": "qwen-image",
+    "prompt": "rustline style, a worn human woman, short copper hair under a cracked polymer cap, a patched grey work jumpsuit with teal silicone seals streaked white with mineral deposits, forearms etched with fine schematics, a thin glowing amber band on one wrist, tired and watchful, standing in a dim sodium-lit tower water-reclamation plant, full-figure character concept, grounded painterly, low-key light",
+    "negative_prompt": "clean, pristine, sleek, glossy, chrome, shiny, new, neon, bright even daylight, deformed, mutated, extra limbs, extra arms, extra fingers, fused fingers, bad anatomy, malformed face, two heads, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": 9000,
+    "steps": 26,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image:qwen_image_fp8_e4m3fn",
+    "reviewed_at": "2026-07-07T02:08:26.884Z",
+    "explanation": "Human worker base is fine but saturated green and orange glowing straps and wristband on the body break the grounded-cast no-neon rule. Foam artifacts too.",
+    "criteria_scores": {
+      "on_canon": 0.55,
+      "palette_mood": 0.6,
+      "material_logic": 0.65,
+      "silhouette_read": 0.75,
+      "style_consistency": 0.62
+    },
+    "failure_modes": [
+      "neon_on_character"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

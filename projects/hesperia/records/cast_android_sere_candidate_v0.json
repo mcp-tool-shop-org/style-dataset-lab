@@ -1,0 +1,62 @@
+{
+  "id": "cast_android_sere_candidate_v0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.761Z",
+  "asset_path": "outputs/borderline/cast_android_sere_candidate_v0.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1067857
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-main-cast-welded-human",
+    "base": "qwen-image",
+    "prompt": "rustline style, an ancient Gen-1 android of an older companion-era make, an archaic industrial design language distinct from the others, a conspicuous empty core-socket cavity at the sternum ringed by reverent relic-wrappings, reactivated-rough with dormancy dust and mismatched fresh repairs, a speaker-grille chronicler aspect, a distinct lead silhouette, a synthetic faceplate and mechanical body, in the under-city, full-figure character concept, grounded painterly, dim sodium light",
+    "negative_prompt": "cyclops, single eye, one eye, monocular, single optic, smooth blank faceplate, human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": null,
+    "seed_note": "unknown — dir generation.json was overwritten by a later same-dir pass; prompt reconstructed from brief",
+    "reconstructed_from_brief": "_cast-androids.json",
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image:qwen_image_fp8_e4m3fn",
+    "reviewed_at": "2026-07-07T02:04:54.864Z",
+    "explanation": "The Sere motif is right - the empty chest core-socket (the man with the hole) on an ancient rusted body - but a bare human face on a Gen-1 android is class bleed. Design held for Mike.",
+    "criteria_scores": {
+      "on_canon": 0.6,
+      "palette_mood": 0.8,
+      "material_logic": 0.75,
+      "silhouette_read": 0.8,
+      "style_consistency": 0.78
+    },
+    "failure_modes": [
+      "class_bleed"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

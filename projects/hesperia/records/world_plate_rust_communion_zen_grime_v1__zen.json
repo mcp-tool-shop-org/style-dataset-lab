@@ -1,0 +1,41 @@
+{
+  "id": "world_plate_rust_communion_zen_grime_v1__zen",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.723Z",
+  "asset_path": "outputs/world-plates-v3-communion-zen/rust_communion_zen_grime_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1214011
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-reroll-rust-communion-zen-grime",
+    "base": "qwen-image",
+    "prompt": "rustline style, a calm circle of worn corroded rust-streaked androids seated together in quiet communion, weathered grimy salvaged bodies scarred and patched, serene faces warmly lit, eyes calm and aware, slender glowing filament cables linking them temple to temple, a small salvaged android memory-core on a low scrap-metal frame at the centre of the circle, warm amber lamplight in a grimy lived-in under-city sanctuary, peaceful meditative and still, gentle equanimity, low-key warm painterly light",
+    "negative_prompt": "clean, pristine, sleek, glossy, chrome, shiny, new, polished, hooded, hoods, bowed, kneeling, sinister, cult, occult, horror, eerie, crying, weeping, tears, grief, dramatic, crucifix, christian cross, church, cathedral, pitch black, unlit, skull, skeleton, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+    "seed": 8301,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

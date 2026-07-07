@@ -1,0 +1,41 @@
+{
+  "id": "npc_jace_v0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.846Z",
+  "asset_path": "outputs/npcs-wave-3/jace_v0.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1079149
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-npcs-wave-3b-welded-human",
+    "base": "qwen-image",
+    "prompt": "rustline style, a broad-shouldered human bartender man, a perpetually grease-stained apron, a jagged scar across one cheek, a metal serving-spoon clipped to the belt, a weathered tin mug in hand, warm and steady, in a salvaged mess-hall hearth, full-figure character concept, grounded painterly, warm hearth light",
+    "negative_prompt": "pristine, clean, sleek, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra arms, extra fingers, fused fingers, bad anatomy, malformed face, two heads, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": 10060,
+    "steps": 26,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

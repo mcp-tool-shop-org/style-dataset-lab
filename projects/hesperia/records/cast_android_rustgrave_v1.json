@@ -1,0 +1,62 @@
+{
+  "id": "cast_android_rustgrave_v1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.758Z",
+  "asset_path": "outputs/borderline/cast_android_rustgrave_v1.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1146333
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-main-cast-welded-human",
+    "base": "qwen-image",
+    "prompt": "rustline style, a sturdy scarred android veteran, a fused rifle-stock forearm, a military greatcoat layered with scavenged armor, a grim cluster of decommission-tags worn like medals or a rosary, the hardest scarred bearing, a colder replaced optic, dented armor plates, a synthetic faceplate and mechanical body, in the under-city, full-figure character concept, grounded painterly, dim sodium light",
+    "negative_prompt": "cyclops, single eye, one eye, monocular, single optic, smooth blank faceplate, human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": null,
+    "seed_note": "unknown — dir generation.json was overwritten by a later same-dir pass; prompt reconstructed from brief",
+    "reconstructed_from_brief": "_cast-androids.json",
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image:qwen_image_fp8_e4m3fn",
+    "reviewed_at": "2026-07-07T02:03:17.151Z",
+    "explanation": "Same strong veteran kit and rifle but a human face plus a mismatched human eye and blood. Should be a synth-faced android. Class bleed.",
+    "criteria_scores": {
+      "on_canon": 0.55,
+      "palette_mood": 0.8,
+      "material_logic": 0.7,
+      "silhouette_read": 0.82,
+      "style_consistency": 0.75
+    },
+    "failure_modes": [
+      "class_bleed"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

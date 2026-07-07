@@ -1,0 +1,41 @@
+{
+  "id": "npc_elias_vorn_v1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.778Z",
+  "asset_path": "outputs/npcs-wave-1/elias_vorn_v1.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 922404
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-npcs-wave-1",
+    "base": "qwen-image",
+    "prompt": "rustline style, a thin pale human man, pallid skin, forged-glass spectacles over a nose scar, a long charcoal coat lined with small softly glowing cubes, a silver wrist-cuff, gentle and scholarly, among shelves of records in a dim tower archive, full-figure character concept, grounded painterly, low-key warm light",
+    "negative_prompt": "clean, pristine, sleek, glossy, chrome, shiny, new, neon, bright even daylight, deformed, mutated, extra limbs, extra arms, extra fingers, fused fingers, bad anatomy, malformed face, two heads, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": 9003,
+    "steps": 26,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

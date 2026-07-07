@@ -1,0 +1,41 @@
+{
+  "id": "cast_android_sere_v2__srr2",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.877Z",
+  "asset_path": "outputs/sere-reroll2/sere_v2.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1036227
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-reroll-sere2",
+    "base": "qwen-image",
+    "prompt": "rustline style, a calm composed adult man in his thirties, distinctly male and masculine with a strong defined jaw and a heavy brow and a steady level gaze, his face rendered as a worn synthetic android faceplate of machined panels and fine seams (clearly a machine, not flesh, but unmistakably a man), an archaic Gen-1 companion-model android worn by centuries with deep corrosion, patina and layered old re-welds, a conspicuous empty round core-socket cavity at the sternum ringed by relic-wrappings, a mechanical jointed body, a tall dignified lead silhouette, standing in the dim under-city, full-figure character concept, grounded painterly, dim sodium light",
+    "negative_prompt": "old man, elderly, aged, wrinkled, wrinkles, gray hair, white hair, jowls, sagging skin, feminine, female, woman, androgynous, effeminate, delicate, soft pretty face, makeup, lipstick, youthful boy, teenager, child, clean, pristine, sleek, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, skull, skeleton, skeletal, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": 9952,
+    "steps": 26,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

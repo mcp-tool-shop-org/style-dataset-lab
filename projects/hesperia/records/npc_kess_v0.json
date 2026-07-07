@@ -1,0 +1,60 @@
+{
+  "id": "npc_kess_v0",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.816Z",
+  "asset_path": "outputs/approved/npc_kess_v0.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1071864
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-npcs-wave-2b-humans-cyborgs",
+    "base": "qwen-image",
+    "prompt": "rustline style, a feral scavenger android, a patchwork of mismatched alloy plates riveted together with improvised bolts, a jagged cracked visor, a makeshift spear of a broken antenna and a salvaged coil, wary and wild, a synthetic faceplate and mechanical body, in a pale-lit irradiated crater, full-figure character concept, grounded painterly, dim cold light",
+    "negative_prompt": "human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": null,
+    "seed_note": "unknown — dir generation.json was overwritten by a later same-dir pass; prompt reconstructed from brief",
+    "reconstructed_from_brief": "_npcs-wave-2a.json",
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image:qwen_image_fp8_e4m3fn",
+    "reviewed_at": "2026-07-07T02:10:08.112Z",
+    "explanation": "Grounded scrap-warrior: rusted scrap-plate cuirass, crude coiled-haft spear, one cracked amber optic, radiation-waste backdrop. On-canon salvage aesthetic.",
+    "criteria_scores": {
+      "silhouette_read": 0.82,
+      "palette_mood": 0.78,
+      "material_logic": 0.82,
+      "on_canon": 0.78,
+      "style_consistency": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

@@ -1,0 +1,43 @@
+{
+  "id": "npc_forgebrand_v1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.840Z",
+  "asset_path": "outputs/npcs-wave-3/forgebrand_v1.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1108593
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-npcs-wave-3b-welded-human",
+    "base": "qwen-image",
+    "prompt": "rustline style, a squat android forge-smith, a chassis of brushed copper plates soot-streaked from the belly up, a massive dented welding torch slung over one shoulder, a modular gripper arm that snaps to a hammer or press, warm amber optics, a synthetic faceplate and mechanical body, at a salvaged under-city forge, full-figure character concept, grounded painterly, warm forge light",
+    "negative_prompt": "human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, syringes, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": null,
+    "seed_note": "unknown — dir generation.json was overwritten by a later same-dir pass; prompt reconstructed from brief",
+    "reconstructed_from_brief": "_npcs-wave-3a.json",
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

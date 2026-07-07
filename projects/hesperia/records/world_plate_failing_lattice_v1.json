@@ -1,0 +1,58 @@
+{
+  "id": "world_plate_failing_lattice_v1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.670Z",
+  "asset_path": "outputs/approved/world_plate_failing_lattice_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 998377
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-world-plates-w1",
+    "base": "qwen-image",
+    "prompt": "rustline style, a mid-level belt of terraforming machinery against the smog, tall atmosphere-scrubber stacks and low greenhouse domes, half of them dark and tilting and broken, faint sparks and leaking vapour, dim sodium glow, a system visibly breaking down",
+    "negative_prompt": "anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, bright even daylight, clean utopia, pristine, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+    "seed": 7017,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image:qwen_image_fp8_e4m3fn",
+    "reviewed_at": "2026-07-07T01:54:37.033Z",
+    "explanation": "Scrubber stacks, cooling tower, broken greenhouse domes leaking and sparking, smog. Reads as a system breaking down.",
+    "criteria_scores": {
+      "on_canon": 0.82,
+      "palette_mood": 0.78,
+      "material_logic": 0.85,
+      "silhouette_read": 0.8,
+      "style_consistency": 0.8
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

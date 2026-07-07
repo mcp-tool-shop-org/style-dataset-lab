@@ -1,0 +1,60 @@
+{
+  "id": "symbol_martyr_cross_relic_v4",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.736Z",
+  "asset_path": "outputs/borderline/symbol_martyr_cross_relic_v4.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 890294
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-symbol-martyr-cross",
+    "base": "qwen-image",
+    "prompt": "rustline style, a venerated salvaged-machine holy relic centered against a dark grimy concrete wall, two thick corroded scavenged metal struts welded together in a cross, a single glowing amber android memory-core chip mounted at the centre where the struts cross, the join bound and wrapped with tangled wire and cabling and oil-stained rag, rusted scrap metal, bolts and rough weld-seams, soft warm light glowing out from the core, a reverent grimy machine-relic icon, centered, low-key warm painterly light, grounded and corroded",
+    "negative_prompt": "crucifix, jesus, christ, crucified figure, body on the cross, person on cross, man, human figure, saint, halo, religious painting, stained glass, church interior, cathedral, clean, pristine, sleek, chrome, polished, shiny, new, glossy, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label, words, letters",
+    "seed": 8404,
+    "steps": 26,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": {
+    "status": "borderline",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image:qwen_image_fp8_e4m3fn",
+    "reviewed_at": "2026-07-07T02:08:26.679Z",
+    "explanation": "Strong pipe-cross relic but a gibberish caption text overlay at the bottom is a frame artifact. Salvageable by cropping the caption.",
+    "criteria_scores": {
+      "on_canon": 0.8,
+      "palette_mood": 0.82,
+      "material_logic": 0.82,
+      "silhouette_read": 0.8,
+      "style_consistency": 0.6
+    },
+    "failure_modes": [
+      "frame_artifact"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "iteration": null
+}

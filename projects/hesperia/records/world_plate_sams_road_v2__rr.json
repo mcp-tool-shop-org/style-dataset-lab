@@ -1,0 +1,43 @@
+{
+  "id": "world_plate_sams_road_v2__rr",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.719Z",
+  "asset_path": "outputs/world-plates-w1-v3-reroll/sams_road_v2.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 979370
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-reroll-rust-communion",
+    "base": "qwen-image",
+    "prompt": "rustline style, a lone trail of bootprints crossing an empty dead-air wasteland from distant sealed towers down toward a grimy under-city, an abandoned depleted power-cell and an empty discarded rebreather mask lying alone in the foreground, utterly deserted and silent, an empty road, sodium light through haze, quiet and tragic, no people, nobody there",
+    "negative_prompt": "person, people, human, man, woman, body, corpse, dead body, figure, silhouette, walker, soldier, character, crowd, anyone, skeleton, skull, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, bright even daylight, clean utopia, pristine, oversaturated, cartoon, text, watermark, signature, frame, border, map, diagram, labels",
+    "seed": null,
+    "seed_note": "unknown — dir generation.json was overwritten by a later same-dir pass; prompt reconstructed from brief",
+    "reconstructed_from_brief": "_reroll-sams_road.json",
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}

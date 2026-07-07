@@ -1,0 +1,41 @@
+{
+  "id": "npc_ironsight_v3__rr",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-07T01:48:07.802Z",
+  "asset_path": "outputs/npcs-wave-1-reroll/ironsight_v3.png",
+  "image": {
+    "format": "png",
+    "width": 896,
+    "height": 1152,
+    "bytes": 1072180
+  },
+  "provenance": {
+    "source": "generated-qwen",
+    "wave": "hesperia-reroll-ironsight",
+    "base": "qwen-image",
+    "prompt": "rustline style, a lean female-framed android sniper, a worn matte-grey corroded android chassis with exposed mechanical joints, rust-streaked plating and patched salvage, a hard synthetic faceplate instead of a human face, a long-range optical implant glowing dim amber on one temple, posture angled like a hunter, holding a long rifle with an etched barrel, cold and severe, a grimy decommissioned militant in the dim under-city, full-figure character concept, grounded painterly, dim sodium light",
+    "negative_prompt": "human skin, bare skin, human face, realistic human woman, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, skull, skeleton, skeletal, anime, manga, cel shading, chibi, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "seed": 9503,
+    "steps": 26,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 896,
+    "height": 1152,
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "rustline style",
+    "loras": [
+      {
+        "name": "rustline_v3ckpt_1500.safetensors",
+        "weight": 1
+      }
+    ],
+    "gpu_model": "RTX 5090"
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null
+}
