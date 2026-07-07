@@ -1,0 +1,35 @@
+{
+  "default_lane": "world_plate",
+  "lanes": [
+    {
+      "id": "world_plate",
+      "label": "World Plate / Region",
+      "description": "Establishing shots and region concept plates — the vertical city, the towers, the under-city, the failing lattice, the surface hazard regions, the landed ark, mood plates. Environments, not figures.",
+      "id_patterns": ["^world_plate_"]
+    },
+    {
+      "id": "cast_android",
+      "label": "Cast — Gen-1 Android",
+      "description": "The grounded Gen-1 android playable cast (Gutterjack, Ironclad, Scrap-Saint, Rustblood, Dockrat, Hushwire, Hearthframe, Rustgrave, Dustwhisper) and the protagonist Sere. Present synth head + plated torso, no bare skin.",
+      "id_patterns": ["^cast_android_"]
+    },
+    {
+      "id": "cast_welded_human",
+      "label": "Cast — Welded / Human",
+      "description": "Welded cyborgs (flesh-and-machine spectrum, human face + flesh base, e.g. Gristle) and tower-born humans (fragile, sheltered, e.g. Wren). Rendered grounded-grimy, never clean.",
+      "id_patterns": ["^cast_welded_human_"]
+    },
+    {
+      "id": "npc",
+      "label": "NPC",
+      "description": "Under-city and tower NPC roster across waves 1-3 — supporting cast, vendors, faction figures, betweeners.",
+      "id_patterns": ["^npc_"]
+    },
+    {
+      "id": "symbol",
+      "label": "Symbol / Relic",
+      "description": "Faction iconography and sacred objects — the Communion martyr-cross relic, memory-core relics, decommission brands, faction marks.",
+      "id_patterns": ["^symbol_"]
+    }
+  ]
+}

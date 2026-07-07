@@ -1,0 +1,47 @@
+{
+  "group_label": "faction",
+  "_law": "id_detection_order and prompt_detection_order are SEPARATELY encoded (sdlab v2 product law — never flatten into one list). id-order follows the canon listing convention; prompt-order is tuned so the most-specific faction keywords resolve first and the generic scavenger vocabulary (salvage/cargo) cannot steal a record.",
+  "id_detection_order": ["communion", "scrip", "decommissioned", "keeper"],
+  "prompt_detection_order": ["keeper", "communion", "decommissioned", "scrip"],
+  "groups": {
+    "communion": {
+      "label": "Rust Communion",
+      "description": "The under-city salvaged-machine empathy faith — venerates extracted android memory-cores as reliquary relics. Cast: Scrap-Saint, Rustblood, Hearthframe.",
+      "id_patterns": ["scrap_saint", "rustblood", "hearthframe"],
+      "prompt_patterns": ["communion", "reliquary", "memory-core", "monstrance", "votive", "shrine", "vestment"]
+    },
+    "scrip": {
+      "label": "Scrip (scavengers)",
+      "description": "The scavenger-pragmatic wing — scrap-rivers, cargo hauling, salvage and price-tags. Cast: Gutterjack, Dockrat, Hushwire.",
+      "id_patterns": ["gutterjack", "dockrat", "hushwire"],
+      "prompt_patterns": ["salvage", "scavenger", "cargo", "price.?tag", "scrap.?river", "hauler"]
+    },
+    "decommissioned": {
+      "label": "Decommissioned (militant)",
+      "description": "The militant/scarred wing — decommissioned enforcers and veterans, weaponized and hard. Cast: Rustgrave, Ironclad, Gristle (Welded).",
+      "id_patterns": ["rustgrave", "ironclad", "gristle"],
+      "prompt_patterns": ["decommission", "enforcer", "veteran", "welded.?shut", "greatcoat", "rifle.?stock", "dog.?tag"]
+    },
+    "keeper": {
+      "label": "Keeper (archival)",
+      "description": "The archival wing — keeper of certificates, manifests, and the failing-empathy death-records. Cast: Dustwhisper.",
+      "id_patterns": ["dustwhisper"],
+      "prompt_patterns": ["archivist", "certificate", "death-certificate", "manifest", "keeper", "data-chip"]
+    }
+  },
+  "cross_group_patterns": {},
+  "edge_defaults": {},
+  "null_faction_patterns": ["^world_plate_", "^symbol_", "^npc_"],
+  "id_fallbacks": {},
+  "faction_context": {},
+  "training_profiles": [
+    {
+      "profile_id": "hesperia-concept-reference",
+      "intended_use": "Hesperia world + cast concept-art reference set rendered in the rustline house style — for review, eval, and as an on-canon reference corpus. NOT a new style-training set (Hesperia consumes the rustline LoRA, it does not train one).",
+      "eligible_lanes": ["world_plate", "cast_android", "cast_welded_human", "symbol", "npc"],
+      "minimum_review_threshold": 0.7,
+      "excluded_content": ["rejected"],
+      "export_format": "trl"
+    }
+  ]
+}

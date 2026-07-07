@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "notes": "Hesperia concept-art constitution. Hesperia does not define its own style — it CONSUMES the studio rustline house style (Qwen-Image base, trigger 'rustline', LoRA rustline_v3ckpt_1500 @ 1.0). These rules encode the Hesperia art contract (canon/hesperia-art-contract.md) + the rustline canon it aligns to (projects/rustline/canon/). NO ANIME, ever.",
+  "rules": [
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Rendered in the rustline house style — gritty hand-painted cinematic concept art, film grain, matte painterly surfaces. Never anime, manga, cel-shading, chibi, flat vector, clean line art, glossy 3D/CGI, or photoreal photograph.",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Rustline house style holds — hand-painted cinematic, non-anime (${scorePct}%)",
+      "rationale_fail": "Off-style — reads as anime, vector, cel, 3D render, or photoreal, not rustline painterly (${scorePct}%)"
+    },
+    {
+      "id": "FRM-001",
+      "category": "framing",
+      "desc": "Clean production frame — a single coherent subject or scene, no text, watermark, signature, border, frame, map, diagram, or label artifacts.",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Frame is clean — coherent subject, no text or border artifacts (${scorePct}%)",
+      "rationale_fail": "Frame polluted — text, watermark, border, map, or label artifacts present (${scorePct}%)"
+    },
+    {
+      "id": "PAL-001",
+      "category": "palette",
+      "desc": "Master palette holds — concrete-grey #6b6e70, rust-brown #7a4a2b, sodium-amber #c8862f, soot #16140f, synth-bone #cbc6b6, toxic-green #5b6b4a; desaturated and matte, never oversaturated, glossy, or clean-bright.",
+      "dims": ["palette_mood"],
+      "rationale_pass": "Master palette present — desaturated grey/rust/sodium, matte (${scorePct}%)",
+      "rationale_fail": "Off-palette — oversaturated, clean-bright, or outside the concrete/rust/sodium master set (${scorePct}%)"
+    },
+    {
+      "id": "LIT-001",
+      "category": "lighting",
+      "desc": "Heavy low-key chiaroscuro; light rendered as an EFFECT (warm amber highlights, deep shadow, wet reflective grime), never as a literal lamp, gaslight, or source-object noun.",
+      "dims": ["palette_mood"],
+      "rationale_pass": "Lighting is low-key chiaroscuro effect — amber highlight against deep shadow (${scorePct}%)",
+      "rationale_fail": "Lighting flat/bright or rendered as a literal lamp object, not a low-key effect (${scorePct}%)"
+    },
+    {
+      "id": "SIL-001",
+      "category": "silhouette",
+      "desc": "Subject and composition read clearly and distinctly — the plate or figure is legible by its silhouette/massing and holds at reduced scale.",
+      "dims": ["silhouette_read"],
+      "rationale_pass": "Silhouette/composition reads clearly and holds at scale (${scorePct}%)",
+      "rationale_fail": "Silhouette muddy — subject or composition does not read at reduced scale (${scorePct}%)"
+    },
+    {
+      "id": "MAT-001",
+      "category": "material",
+      "desc": "Material logic reads — rust, grime, wet concrete, corrosion, leaking pipes, scrap and rain-wet surfaces are physically coherent; lived-in dystopian squalor, never sterile or new.",
+      "dims": ["material_logic"],
+      "rationale_pass": "Materials coherent — rust, grime, wet concrete read as lived-in squalor (${scorePct}%)",
+      "rationale_fail": "Materials incoherent or too clean — grit/corrosion does not read (${scorePct}%)"
+    },
+    {
+      "id": "LAW-001",
+      "category": "world-law",
+      "desc": "The visual law: sealed arcology towers read CLEAN and quietly menacing above the smog line (the enemy aesthetic); everything below the towers is corroded, grimy, rust-streaked and home. Cleanliness is menace, grime is home.",
+      "dims": ["on_canon", "material_logic"],
+      "rationale_pass": "Visual law holds — clean menacing towers above, corroded home below (${scorePct}%)",
+      "rationale_fail": "Visual law broken — under-city reads clean/utopian, or the towers read grimy/homey (${scorePct}%)"
+    },
+    {
+      "id": "NEON-001",
+      "category": "register",
+      "desc": "Neon rule — ENVIRONMENT plates may use restrained low-key neon-noir (towers, distant signage), never bright/clean/utopian. The CHARACTER cast stays grounded warm-sodium: NO saturated electric neon lighting on android/human/welded bodies.",
+      "dims": ["on_canon"],
+      "rationale_pass": "Register correct — neon-noir restrained to environment, cast stays grounded warm-sodium (${scorePct}%)",
+      "rationale_fail": "Register wrong — electric neon on a character body, or bright/clean utopian neon (${scorePct}%)"
+    },
+    {
+      "id": "CLS-001",
+      "category": "class-integrity",
+      "desc": "Class integrity — androids keep a present synthetic head and a plated torso with NO bare human skin, ribcage, or skeleton; Welded cyborgs and humans keep a human face and a flesh base (flesh-and-machine augment, or tower-born fragility). Never blur the human/android flesh line.",
+      "dims": ["material_logic", "on_canon"],
+      "lanes": ["cast_android", "cast_welded_human", "npc"],
+      "rationale_pass": "Class reads unambiguously — android plated+synth-faced, or welded/human flesh base (${scorePct}%)",
+      "rationale_fail": "Class bleed — bare skin/ribcage on an android, or a human/welded rendered as a bare synth (${scorePct}%)"
+    },
+    {
+      "id": "OPT-001",
+      "category": "optics",
+      "desc": "Android faces are coherent — default TWO optics. A single optic is allowed ONLY via visible damage (a smashed empty socket) or a deliberate centred cyclops. A lone side-optic on an otherwise smooth symmetric face reads as an error. The centred mono-optic cyclops is a Gen-2 enemy trait, not the Gen-1 cast.",
+      "dims": ["on_canon"],
+      "lanes": ["cast_android", "npc"],
+      "rationale_pass": "Optics coherent — two optics, or a justified damage/cyclops exception (${scorePct}%)",
+      "rationale_fail": "Optics incoherent — a lone side-optic error, or a Gen-2 cyclops on a Gen-1 face (${scorePct}%)"
+    },
+    {
+      "id": "CAN-001",
+      "category": "canon",
+      "desc": "On-canon to the Hesperia world bible — regions, entities, and factions (Communion, Scrip, Decommissioned, keeper) match their canon; the Gen-2 sleek-clean 'enemy' aesthetic must NOT bleed into the grounded rustline register (that look is a separate future LoRA).",
+      "dims": ["on_canon"],
+      "rationale_pass": "On-canon — regions/entities match the world bible, grounded register held (${scorePct}%)",
+      "rationale_fail": "Off-canon — wrong region/entity read, or Gen-2 sleek-clean bleed into grounded rustline (${scorePct}%)"
+    }
+  ]
+}

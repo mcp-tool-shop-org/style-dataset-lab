@@ -1,0 +1,36 @@
+{
+  "dimensions": [
+    "silhouette_read",
+    "palette_mood",
+    "material_logic",
+    "on_canon",
+    "style_consistency"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "anime_or_vector": ["STY-001"],
+    "frame_artifact": ["FRM-001"],
+    "off_palette": ["PAL-001"],
+    "literal_light_source": ["LIT-001"],
+    "weak_silhouette": ["SIL-001"],
+    "no_material_grit": ["MAT-001"],
+    "broken_world_law": ["LAW-001"],
+    "neon_on_character": ["NEON-001"],
+    "class_bleed": ["CLS-001"],
+    "bad_optics": ["OPT-001"],
+    "off_canon": ["CAN-001"]
+  }
+}
