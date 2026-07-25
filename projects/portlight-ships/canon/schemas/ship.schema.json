@@ -3,7 +3,7 @@
   "$id": "https://mcp-tool-shop-org.github.io/portlight-ships/schemas/ship.schema.json",
   "version": "1.0.0-draft",
   "title": "Portlight Ship Canon Entry",
-  "description": "Schema for a named sailing vessel. Adapted from the Star Freight ship schema, which carried silhouette_cue + hull_repair_history + material_dominant as the heaviest trainable leverage. TWO ADDITIONS, both earned by a failed 2026-07-25 generation run that produced eight structurally inconsistent variants of one galleon: (1) `visual.rig_plan` enumerates masts and sails BY NAME, so a prompt can refer to 'the foremast' instead of 'one mast' and the model has a structural inventory to be consistent with. (2) `damage_ladder` states which NAMED masts are broken and which NAMED sails are lost at each state, and requires the loss sets to be monotonically non-decreasing. In the failed run a mast snapped at state 04 and was intact again at 05, because nothing in the pipeline held a model of the ship's parts. Both fields are freeze-watched.",
+  "description": "Schema for a named sailing vessel. Adapted from the Star Freight ship schema, which carried silhouette_cue + hull_repair_history + material_dominant as the heaviest trainable leverage. TWO ADDITIONS, both earned by a failed 2026-07-25 generation run that produced eight structurally inconsistent variants of one galleon: (1) `visual.rig_plan` enumerates masts and sails BY NAME, so a prompt can refer to 'the foremast' instead of 'one mast' and the model has a structural inventory to be consistent with. (2) `damage_ladder` declares which severity tiers the hull supports and what rig variants each produces — the tiers themselves are defined once in canon/damage-tiers.md, and which mast breaks is deliberately NOT scripted, because that is the judgement the anatomy training exists to produce. Both fields are freeze-watched.",
   "type": "object",
   "required": ["id", "ship_class", "tonnage_class", "era", "visual", "damage_ladder", "narrative", "forbidden_inputs", "signature_features", "canon_refs"],
   "properties": {
@@ -17,7 +17,7 @@
     "ship_class": {
       "type": "string",
       "enum": [
-        "galleon", "carrack", "caravel", "fluyt", "brigantine",
+        "galleon", "carrack", "caravel", "fluyt", "brig", "brigantine",
         "schooner", "sloop", "frigate", "xebec", "cutter", "barque",
         "derelict-unknown"
       ]
@@ -82,7 +82,7 @@
                 "properties": {
                   "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
                   "mast": { "type": "string", "description": "id of the mast it is bent to, or 'bowsprit'." },
-                  "sail_type": { "type": "string", "enum": ["course", "topsail", "topgallant", "lateen", "staysail", "jib", "spritsail"] }
+                  "sail_type": { "type": "string", "enum": ["course", "topsail", "topgallant", "gaff", "lateen", "staysail", "jib", "spritsail"] }
                 },
                 "additionalProperties": false
               }
@@ -113,24 +113,13 @@
     "damage_ladder": {
       "type": "array",
       "minItems": 2,
-      "description": "The ordered states. masts_broken and sails_lost MUST be monotonically non-decreasing down the array — anything broken at state N stays broken at N+1. Validate this on canon build; the 2026-07-25 run shipped a mast that un-broke between states.",
+      "description": "Which severity tiers this hull supports, and what rig variants each tier produces. NOTHING MORE. The tiers themselves are defined once for the whole project in canon/damage-tiers.md.\n\nDeliberately does NOT enumerate which mast breaks or which sail is lost. An earlier draft did, and that was hand-authoring the exact judgement the anatomy training exists to produce: a model that has learned a xebec's three lateen yards from pristine turnarounds should decide how they come down. Scripting it per hull means we never find out whether the training worked, and every new hull becomes an authoring job — which is the problem this pipeline was built to remove.\n\nWhat canon still owes: that the tiers mean comparable severity across a sloop and a galleon, that damage never runs backwards, and that a tier whose canvas is destroyed cannot offer a furled variant.",
       "items": {
         "type": "object",
-        "required": ["state_id", "order", "condition", "rig_states"],
+        "required": ["state_id", "order", "hull_condition", "rig_states"],
         "properties": {
           "state_id": { "type": "string", "pattern": "^[0-9]{2}-[a-z][a-z0-9-]*$" },
           "order": { "type": "integer", "minimum": 1 },
-          "condition": { "type": "string", "description": "What a viewer SEES. Describe the result, never the manoeuvre." },
-          "masts_broken": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "mast ids from rig_plan.masts. Empty = all standing."
-          },
-          "sails_lost": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "sail ids from rig_plan.sails that are destroyed and gone at this state."
-          },
           "hull_condition": {
             "type": "string",
             "enum": ["pristine-new", "well-maintained", "field-patched", "breached-scorched", "derelict-burnt"]
@@ -139,7 +128,11 @@
             "type": "array",
             "items": { "type": "string", "enum": ["sails-open", "sails-closed", "sails-none"] },
             "minItems": 1,
-            "description": "Which rig variants this state produces. A state whose canvas is destroyed cannot furl, so it offers sails-open only — that is WHY 04 has no closed variant, recorded rather than assumed."
+            "description": "Which rig variants this tier produces. A tier whose canvas is destroyed cannot furl, so it offers sails-open only — that is WHY 04 has no closed variant, recorded rather than assumed."
+          },
+          "hull_note": {
+            "type": "string",
+            "description": "OPTIONAL, and only where this hull's tier genuinely departs from the shared definition — e.g. a single-masted vessel, where 'a mast is down' means something different. Not a place to re-script the damage."
           }
         },
         "additionalProperties": false

@@ -44,45 +44,22 @@ visual:
 damage_ladder:
   - state_id: 01-pristine
     order: 1
-    condition: Flawless. All three lateens set hard and drawing. Oiled hull bright, red sheer stripe crisp, oars shipped.
-    masts_broken: []
-    sails_lost: []
     hull_condition: pristine-new
     rig_states: [sails-open, sails-closed]
   - state_id: 02-light
     order: 2
-    condition: Working wear. Small tears and patches in the lateen canvas, salt bloom on the oiled topsides, the red stripe chipped. All three masts standing.
-    masts_broken: []
-    sails_lost: []
     hull_condition: well-maintained
     rig_states: [sails-open, sails-closed]
   - state_id: 03-moderate
     order: 3
-    condition: >-
-      Fought. Lateens holed, one long yard cracked and drooping at its lower end. Splintering and
-      scorch along the low freeboard, two oar ports stove in. All three masts still standing.
-    masts_broken: []
-    sails_lost: [jib]
     hull_condition: field-patched
     rig_states: [sails-open, sails-closed]
   - state_id: 04-heavy
     order: 4
-    condition: >-
-      Crippled. The FOREMAST is snapped low — a jagged stump with its huge lateen yard come down
-      across the bow and trailing in the water line. Remaining canvas in ragged strips. The low
-      hull breached, the overhanging bow splintered, oar ports smashed through.
-    masts_broken: [foremast]
-    sails_lost: [fore-lateen, jib]
     hull_condition: breached-scorched
     rig_states: [sails-open]
   - state_id: 05-destroyed
     order: 5
-    condition: >-
-      Burnt out. FOREMAST still down and the MAINMAST gone with it — two stumps, one great yard
-      still fouled across the wreck. Only the short mizzen leans. No canvas but charred rags. The
-      overhanging bow and stern broken open, hull holed at the waterline, timbers black.
-    masts_broken: [foremast, mainmast]
-    sails_lost: [fore-lateen, main-lateen, mizzen-lateen, jib]
     hull_condition: derelict-burnt
     rig_states: [sails-none]
 
@@ -143,14 +120,13 @@ Three masts, raked forward, and this is the part that makes her unmistakable: ev
 almost to the deck at the forward end. Three of those leaning triangles over a low dark hull is a
 silhouette no other rig produces.
 
-## How she comes apart
+## How damage reads on her
 
-Her lateen yards are enormous and they are the first thing to go wrong. **03** cracks one. **04**
-snaps the foremast low and brings that whole yard down across the bow. **05** takes the mainmast
-too, leaving two stumps and a great spar still fouled across the wreck.
-
-Damage reads hard on her because she has so little freeboard — a breach on a xebec is at the
-waterline by definition.
+Severity tiers are defined once in `canon/damage-tiers.md` and are the same for every
+hull in the fleet. What is specific to this ship is where damage *shows*: which parts of
+her are exposed, which are structural, and what a viewer notices first when she has been
+hit. Which particular spar comes down is not scripted here — that is the model's call
+from her anatomy, and ours to curate.
 
 ## Rig
 

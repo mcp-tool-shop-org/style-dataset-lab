@@ -48,59 +48,26 @@ visual:
 damage_ladder:
   - state_id: 01-pristine
     order: 1
-    condition: >-
-      Flawless. Every sail whole and drawing full. Rigging taut. Planking sound and freshly
-      payed. Gilding bright and unchipped.
-    masts_broken: []
-    sails_lost: []
     hull_condition: pristine-new
     rig_states: [sails-open, sails-closed]
 
   - state_id: 02-light
     order: 2
-    condition: >-
-      Working wear. A few small tears and sewn canvas patches in the sails. Salt staining and
-      scuffing along the planking. One or two ropes hanging loose. All three masts upright
-      and whole.
-    masts_broken: []
-    sails_lost: []
     hull_condition: well-maintained
     rig_states: [sails-open, sails-closed]
 
   - state_id: 03-moderate
     order: 3
-    condition: >-
-      Fought and survived. Sails holed in several places. Scorch marks and splintered planking
-      around the gun ports. One yard broken and hanging. Rigging slack in places. All three
-      masts still upright and whole.
-    masts_broken: []
-    sails_lost: [main-topgallant]
     hull_condition: field-patched
     rig_states: [sails-open, sails-closed]
 
   - state_id: 04-heavy
     order: 4
-    condition: >-
-      Crippled. The FOREMAST is snapped through above the lower section: the stump stands
-      jagged and splintered, and the upper mast has come down and hangs at a steep angle
-      tangled in its own rigging with its yards. The remaining canvas is torn to ragged strips
-      with clear sky showing through. Hull breached in two places, blackened and splintered.
-      The stern gallery is partly shattered. Still afloat. This ship cannot sail.
-    masts_broken: [foremast]
-    sails_lost: [spritsail, fore-course, fore-topsail, main-topgallant, fore-staysail]
     hull_condition: breached-scorched
     rig_states: [sails-open]
 
   - state_id: 05-destroyed
     order: 5
-    condition: >-
-      A burnt-out derelict hulk. The FOREMAST is still down from the previous state and the
-      MAINMAST has now gone too — both are broken stumps, one upper section still fouled in
-      the shrouds. Only the mizzen stands, leaning. No canvas remains but a few blackened
-      rags. The hull is holed clean through with ribs exposed. Timbers charred grey. Gilding
-      burnt away.
-    masts_broken: [foremast, mainmast]
-    sails_lost: [spritsail, fore-course, fore-topsail, main-course, main-topsail, main-topgallant, mizzen-lateen, fore-staysail, jib]
     hull_condition: derelict-burnt
     rig_states: [sails-none]
 
@@ -177,22 +144,13 @@ stern gallery is carved and gilded with a lantern at each quarter. A gilded figu
 beneath the bowsprit. These survive every damage state until the fire takes them, and they
 are what makes a wrecked galleon still recognisably *this* galleon.
 
-## How she comes apart
+## How damage reads on her
 
-The ladder is not a fade. Each state is a specific, named loss.
-
-Through **02** and **03** she stays whole aloft — torn canvas, scorched planking, a broken
-yard, but three masts standing. The change is surface damage, not structure.
-
-**04** is where structure goes. The foremast snaps above the lower section, the stump left
-jagged, the upper mast down and hanging in its own rigging. Everything forward of the main is
-gone or in strips. She is still afloat and she cannot sail.
-
-**05** takes the mainmast too. Both stumps, one section still fouled in the shrouds, only the
-mizzen standing and leaning. Canvas gone but for rags. Hull holed through, ribs showing,
-timbers charred grey, gilding burnt off her.
-
-Nothing that breaks ever comes back. A mast down at 04 is down at 05.
+Severity tiers are defined once in `canon/damage-tiers.md` and are the same for every
+hull in the fleet. What is specific to this ship is where damage *shows*: which parts of
+her are exposed, which are structural, and what a viewer notices first when she has been
+hit. Which particular spar comes down is not scripted here — that is the model's call
+from her anatomy, and ours to curate.
 
 ## Rig
 

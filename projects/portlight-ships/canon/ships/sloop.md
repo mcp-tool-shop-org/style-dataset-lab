@@ -33,7 +33,7 @@ visual:
       - { id: mainmast, position: single, relative_height: tallest, sections: [lower, top] }
     sails:
       - { id: jib,          mast: bowsprit, sail_type: jib }
-      - { id: main-gaff,    mast: mainmast, sail_type: course }
+      - { id: main-gaff,    mast: mainmast, sail_type: gaff }
       - { id: main-topsail, mast: mainmast, sail_type: topsail }
   rig_states: [sails-open, sails-closed, sails-none]
   art_lane: damage-state-plate
@@ -42,46 +42,22 @@ visual:
 damage_ladder:
   - state_id: 01-pristine
     order: 1
-    condition: Flawless. Gaff mainsail hard and drawing, boom out over the stern, square topsail set, jib full. Oiled planking bright.
-    masts_broken: []
-    sails_lost: []
     hull_condition: pristine-new
     rig_states: [sails-open, sails-closed]
   - state_id: 02-light
     order: 2
-    condition: Working wear. A patch or two in the mainsail, frayed leech, salt bloom along the low topsides. Mast whole and standing.
-    masts_broken: []
-    sails_lost: []
     hull_condition: well-maintained
     rig_states: [sails-open, sails-closed]
   - state_id: 03-moderate
     order: 3
-    condition: >-
-      Chased and hit. Mainsail holed, jib shot away, boom cracked and drooping aft. Splintering
-      along the low rail. Mast whole and still standing.
-    masts_broken: []
-    sails_lost: [jib]
     hull_condition: field-patched
     rig_states: [sails-open, sails-closed]
   - state_id: 04-heavy
     order: 4
-    condition: >-
-      Crippled. The MAINMAST is snapped above the lower section — the topmast and its square topsail
-      yard have come down and hang alongside in the rigging, leaving a jagged stump with the gaff
-      sail still bent to it in strips. With one mast, losing the top is losing most of her drive.
-      Hull breached at the waterline, planking split and blackened.
-    masts_broken: [mainmast]
-    sails_lost: [jib, main-topsail]
     hull_condition: breached-scorched
     rig_states: [sails-open]
   - state_id: 05-destroyed
     order: 5
-    condition: >-
-      Burnt out. The MAINMAST is gone entirely — a short charred stump at the partners and the whole
-      spar down across the hull with the boom, tangled in its own rigging. No canvas but blackened
-      rags. Hull holed through, transom stove in, timbers charred grey.
-    masts_broken: [mainmast]
-    sails_lost: [jib, main-gaff, main-topsail]
     hull_condition: derelict-burnt
     rig_states: [sails-none]
 
@@ -143,15 +119,13 @@ topsail may sit above the gaff. Forward, a long bowsprit and one headsail.
 The hull is small, shallow and low, with no castles, no gallery, no carving, no gilding and no
 gun ports. She is the plainest thing afloat, and drawn honestly that plainness is her character.
 
-## How she comes apart
+## How damage reads on her
 
-She has one mast, so the ladder has to work differently from the three-masted hulls: **04** snaps
-the *topmast*, bringing the square topsail yard down alongside and leaving a jagged stump with the
-gaff sail still bent to it in rags. **05** takes the whole spar — stump at the partners, mast and
-boom down across the hull in a tangle of its own rigging.
-
-A dismasted sloop is barely a ship. That is the point of her as a damage state: there is nothing
-left to lose.
+Severity tiers are defined once in `canon/damage-tiers.md` and are the same for every
+hull in the fleet. What is specific to this ship is where damage *shows*: which parts of
+her are exposed, which are structural, and what a viewer notices first when she has been
+hit. Which particular spar comes down is not scripted here — that is the model's call
+from her anatomy, and ours to curate.
 
 ## Rig
 

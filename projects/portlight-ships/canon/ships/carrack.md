@@ -46,46 +46,22 @@ visual:
 damage_ladder:
   - state_id: 01-pristine
     order: 1
-    condition: Flawless. Canvas whole, the great main course drawing full with its device bright. Castle panels freshly painted, carved rails sharp.
-    masts_broken: []
-    sails_lost: []
     hull_condition: pristine-new
     rig_states: [sails-open, sails-closed]
   - state_id: 02-light
     order: 2
-    condition: Working wear. Patched canvas, the device on the main course faded, salt staining up the tumblehome, castle paint chipped. All three masts standing.
-    masts_broken: []
-    sails_lost: []
     hull_condition: well-maintained
     rig_states: [sails-open, sails-closed]
   - state_id: 03-moderate
     order: 3
-    condition: >-
-      Fought and survived. Canvas holed. Scorching and splintering across the forecastle face —
-      the castles take the fire first because they stand highest. A rail section shot away. All
-      three masts still standing.
-    masts_broken: []
-    sails_lost: [spritsail]
     hull_condition: field-patched
     rig_states: [sails-open, sails-closed]
   - state_id: 04-heavy
     order: 4
-    condition: >-
-      Crippled. The FOREMAST is snapped above the lower section, stump jagged, upper mast down and
-      hanging over the forecastle in its rigging. The forecastle itself is half shot away, its
-      painted panels blackened. Remaining canvas in strips. Hull breached amidships.
-    masts_broken: [foremast]
-    sails_lost: [spritsail, fore-course, fore-topsail]
     hull_condition: breached-scorched
     rig_states: [sails-open]
   - state_id: 05-destroyed
     order: 5
-    condition: >-
-      Burnt-out hulk. FOREMAST still down and the MAINMAST gone too — two broken stumps. Both
-      castles are gutted and open to the sky, the aftcastle collapsed inward. Only the lateen
-      mizzen leans. No canvas but blackened rags. Hull holed through, ribs exposed, timbers charred.
-    masts_broken: [foremast, mainmast]
-    sails_lost: [spritsail, fore-course, fore-topsail, main-course, main-topsail, mizzen-lateen]
     hull_condition: derelict-burnt
     rig_states: [sails-none]
 
@@ -146,14 +122,13 @@ The hull is round-bellied with heavy tumblehome. Three masts: a short foremast a
 mainmast, both square-rigged, with a lateen on the mizzen. A large painted device on the main
 course, and heraldic panels on the castle faces.
 
-## How she comes apart
+## How damage reads on her
 
-The castles stand highest, so they take fire first. **03** chews up the forecastle face. **04**
-snaps the foremast and brings it down across the wrecked forecastle. **05** guts both castles —
-open to the sky, aftcastle collapsed inward — and takes the mainmast with them.
-
-A gutted carrack is one of the most distinctive wrecks in the fleet, because the two towers
-becoming two ruins is such a specific shape.
+Severity tiers are defined once in `canon/damage-tiers.md` and are the same for every
+hull in the fleet. What is specific to this ship is where damage *shows*: which parts of
+her are exposed, which are structural, and what a viewer notices first when she has been
+hit. Which particular spar comes down is not scripted here — that is the model's call
+from her anatomy, and ours to curate.
 
 ## Rig
 

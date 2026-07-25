@@ -46,46 +46,22 @@ visual:
 damage_ladder:
   - state_id: 01-pristine
     order: 1
-    condition: Flawless. Canvas whole and drawing. Planking sound and freshly scrubbed. Rigging taut.
-    masts_broken: []
-    sails_lost: []
     hull_condition: pristine-new
     rig_states: [sails-open, sails-closed]
   - state_id: 02-light
     order: 2
-    condition: Working wear. Sewn patches in the canvas, salt staining along the broad topsides, a rope or two adrift. All three masts upright and whole.
-    masts_broken: []
-    sails_lost: []
     hull_condition: well-maintained
     rig_states: [sails-open, sails-closed]
   - state_id: 03-moderate
     order: 3
-    condition: >-
-      Caught and mauled. Canvas holed. Splintered planking and scorching along the broad run of
-      the topsides — the damage shows badly on a hull with no gun ports to hide it. One yard
-      hanging. All three masts still upright and whole.
-    masts_broken: []
-    sails_lost: [mizzen-lateen]
     hull_condition: field-patched
     rig_states: [sails-open, sails-closed]
   - state_id: 04-heavy
     order: 4
-    condition: >-
-      Crippled. The FOREMAST is snapped above the lower section — jagged stump standing, upper
-      mast down and hanging in its rigging. Remaining canvas in strips. The broad topsides
-      breached in two places, blackened and splintered. Still afloat and cannot sail.
-    masts_broken: [foremast]
-    sails_lost: [spritsail, fore-course, fore-topsail, mizzen-lateen]
     hull_condition: breached-scorched
     rig_states: [sails-open]
   - state_id: 05-destroyed
     order: 5
-    condition: >-
-      Burnt-out hulk. FOREMAST still down and the MAINMAST gone too — both broken stumps. Only
-      the short mizzen stands. No canvas but blackened rags. The rounded stern stove in, hull
-      holed through, ribs showing, timbers charred grey.
-    masts_broken: [foremast, mainmast]
-    sails_lost: [spritsail, fore-course, fore-topsail, main-course, main-topsail, mizzen-lateen]
     hull_condition: derelict-burnt
     rig_states: [sails-none]
 
@@ -150,12 +126,13 @@ The defining feature is a negative one: **no gun ports.** An unbroken run of pla
 galleon shows two rows of muzzles. She carries cargo where guns would go, and she runs rather
 than fights.
 
-## How she comes apart
+## How damage reads on her
 
-Because she has no gun ports to break up the topsides, damage reads badly on her — a scorched,
-splintered patch on that long plain run of planking is unmistakable. Through **02** and **03**
-she stays whole aloft. **04** takes the foremast; **05** takes the mainmast too and stoves in the
-rounded stern.
+Severity tiers are defined once in `canon/damage-tiers.md` and are the same for every
+hull in the fleet. What is specific to this ship is where damage *shows*: which parts of
+her are exposed, which are structural, and what a viewer notices first when she has been
+hit. Which particular spar comes down is not scripted here — that is the model's call
+from her anatomy, and ours to curate.
 
 ## Rig
 

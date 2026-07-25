@@ -38,7 +38,7 @@ visual:
       - { id: fore-course,     mast: foremast, sail_type: course }
       - { id: fore-topsail,    mast: foremast, sail_type: topsail }
       - { id: fore-topgallant, mast: foremast, sail_type: topgallant }
-      - { id: main-gaff,       mast: mainmast, sail_type: course }
+      - { id: main-gaff,       mast: mainmast, sail_type: gaff }
       - { id: main-topsail,    mast: mainmast, sail_type: topsail }
   rig_states: [sails-open, sails-closed, sails-none]
   art_lane: damage-state-plate
@@ -47,47 +47,22 @@ visual:
 damage_ladder:
   - state_id: 01-pristine
     order: 1
-    condition: Flawless. Square canvas stacked and drawing on the foremast, the gaff mainsail hard aft. Tarred topsides black and clean, red stripe crisp.
-    masts_broken: []
-    sails_lost: []
     hull_condition: pristine-new
     rig_states: [sails-open, sails-closed]
   - state_id: 02-light
     order: 2
-    condition: Working wear. Patches in the canvas, the gaff sail's leech frayed, salt bloom on the tarred sides, stripe chipped. Both masts standing.
-    masts_broken: []
-    sails_lost: []
     hull_condition: well-maintained
     rig_states: [sails-open, sails-closed]
   - state_id: 03-moderate
     order: 3
-    condition: >-
-      Fought and got away. Square canvas holed on the foremast, the gaff spar cracked and its sail
-      hanging slack. Scorching and splintering around the small gun battery amidships. Both masts
-      still standing.
-    masts_broken: []
-    sails_lost: [fore-topgallant]
     hull_condition: field-patched
     rig_states: [sails-open, sails-closed]
   - state_id: 04-heavy
     order: 4
-    condition: >-
-      Crippled. The FOREMAST is snapped above the lower section — jagged stump, upper mast with its
-      stacked yards come down over the bow and hanging in the rigging. All square canvas forward is
-      gone or in strips. The gaff mainsail survives in tatters. Hull breached, tarred planking
-      blackened and split.
-    masts_broken: [foremast]
-    sails_lost: [jib, fore-staysail, fore-course, fore-topsail, fore-topgallant]
     hull_condition: breached-scorched
     rig_states: [sails-open]
   - state_id: 05-destroyed
     order: 5
-    condition: >-
-      Burnt out. FOREMAST still down and the MAINMAST snapped too — the gaff spar fallen across the
-      wreck with it. Two stumps, no standing mast. No canvas but charred rags. Hull holed through
-      at the waterline, ribs showing, the red stripe burnt away.
-    masts_broken: [foremast, mainmast]
-    sails_lost: [jib, fore-staysail, fore-course, fore-topsail, fore-topgallant, main-gaff, main-topsail]
     hull_condition: derelict-burnt
     rig_states: [sails-none]
 
@@ -151,12 +126,13 @@ both masts and is a different ship.
 The hull is lean and low with a fine entry, flush-decked, no castles, a short battery of guns
 amidships and a narrow red stripe along the sheer.
 
-## How she comes apart
+## How damage reads on her
 
-The square foremast is the vulnerable one — all that stacked canvas and top-hamper. **03** cracks
-the gaff spar and holes the square canvas. **04** snaps the foremast and drops the whole stack of
-yards over the bow, leaving her with only a tattered gaff sail aft. **05** takes the mainmast too,
-and a brigantine with both masts down is a very small, very dark wreck.
+Severity tiers are defined once in `canon/damage-tiers.md` and are the same for every
+hull in the fleet. What is specific to this ship is where damage *shows*: which parts of
+her are exposed, which are structural, and what a viewer notices first when she has been
+hit. Which particular spar comes down is not scripted here — that is the model's call
+from her anatomy, and ours to curate.
 
 ## Rig
 
