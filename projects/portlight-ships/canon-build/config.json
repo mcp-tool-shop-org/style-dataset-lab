@@ -1,0 +1,27 @@
+{
+  "project_id": "portlight-ships",
+  "canon_root": "canon",
+  "schema_dir": "canon/schemas",
+  "entity_dirs": {
+    "ship.schema.json": "ships"
+  },
+  "schema_to_lane": {
+    "ship.schema.json": { "source": "field", "field": "visual.art_lane" }
+  },
+  "freeze_watch_defaults": {
+    "ship.schema.json": [
+      "visual.silhouette_cue",
+      "visual.palette",
+      "visual.rig_plan",
+      "visual.material_dominant",
+      "damage_ladder",
+      "signature_features",
+      "forbidden_inputs",
+      "ship_class",
+      "era"
+    ]
+  },
+  "context_limits": {
+    "ship": { "max_lines": 320 }
+  }
+}

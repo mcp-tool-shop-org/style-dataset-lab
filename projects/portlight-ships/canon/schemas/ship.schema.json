@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-tool-shop-org.github.io/portlight-ships/schemas/ship.schema.json",
+  "version": "1.0.0-draft",
+  "title": "Portlight Ship Canon Entry",
+  "description": "Schema for a named sailing vessel. Adapted from the Star Freight ship schema, which carried silhouette_cue + hull_repair_history + material_dominant as the heaviest trainable leverage. TWO ADDITIONS, both earned by a failed 2026-07-25 generation run that produced eight structurally inconsistent variants of one galleon: (1) `visual.rig_plan` enumerates masts and sails BY NAME, so a prompt can refer to 'the foremast' instead of 'one mast' and the model has a structural inventory to be consistent with. (2) `damage_ladder` states which NAMED masts are broken and which NAMED sails are lost at each state, and requires the loss sets to be monotonically non-decreasing. In the failed run a mast snapped at state 04 and was intact again at 05, because nothing in the pipeline held a model of the ship's parts. Both fields are freeze-watched.",
+  "type": "object",
+  "required": ["id", "ship_class", "tonnage_class", "era", "visual", "damage_ladder", "narrative", "forbidden_inputs", "signature_features", "canon_refs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Also the hull_id used by the portlight-ships pipeline and by every subject_id: <hull>__<state>__<rig>."
+    },
+    "display_name": { "type": "string" },
+
+    "ship_class": {
+      "type": "string",
+      "enum": [
+        "galleon", "carrack", "caravel", "fluyt", "brigantine",
+        "schooner", "sloop", "frigate", "xebec", "cutter", "barque",
+        "derelict-unknown"
+      ]
+    },
+    "tonnage_class": {
+      "type": "string",
+      "enum": ["pinnace-scale", "sloop-scale", "brig-scale", "ship-scale", "great-ship-scale"]
+    },
+    "era": { "type": "string", "description": "e.g. '1600s'. Keeps period drift out of the silhouette." },
+    "faction_of_origin": { "type": "string" },
+    "current_operator": { "type": "string" },
+
+    "visual": {
+      "type": "object",
+      "required": ["silhouette_cue", "palette", "material_dominant", "rig_plan", "art_lane"],
+      "properties": {
+        "silhouette_cue": {
+          "type": "string",
+          "description": "The read-at-a-glance shape. What makes this hull recognisable at sprite size."
+        },
+        "palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 3,
+          "maxItems": 6,
+          "description": "Required and pinned. An unpinned palette let the master's sails drift from the rest of the ladder."
+        },
+        "material_dominant": { "type": "string" },
+        "hull_markings": { "type": "array", "items": { "type": "string" } },
+
+        "rig_plan": {
+          "type": "object",
+          "description": "The structural inventory. THIS IS THE FIX for part-level drift: masts and sails are NAMED, so prompts and damage states refer to specific objects rather than counts the model is free to reinvent.",
+          "required": ["masts", "sails"],
+          "properties": {
+            "bowsprit": { "type": "boolean" },
+            "masts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["id", "position"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+                  "position": { "type": "string", "enum": ["fore", "main", "mizzen", "jigger", "single"] },
+                  "sections": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Lower / top / topgallant. A snapped mast breaks at a section join — naming them makes 'snapped partway up' unambiguous."
+                  },
+                  "relative_height": { "type": "string", "enum": ["tallest", "tall", "short"] }
+                },
+                "additionalProperties": false
+              }
+            },
+            "sails": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["id", "mast", "sail_type"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+                  "mast": { "type": "string", "description": "id of the mast it is bent to, or 'bowsprit'." },
+                  "sail_type": { "type": "string", "enum": ["course", "topsail", "topgallant", "lateen", "staysail", "jib", "spritsail"] }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+
+        "rig_states": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["sails-open", "sails-closed", "sails-none"] },
+          "minItems": 1,
+          "description": "Orthogonal to damage. Star Freight had no sails, so this axis is new. 'sails-closed' means canvas FURLED — rolled and lashed along the yard, still present. It does NOT mean absent; a ship with no canvas is a stripped derelict."
+        },
+
+        "art_lane": {
+          "type": "string",
+          "enum": [
+            "exterior-establishing", "damage-state-plate", "sprite-turnaround",
+            "dock-approach", "nav-chart-silhouette"
+          ]
+        },
+        "reference_plate_uri": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "damage_ladder": {
+      "type": "array",
+      "minItems": 2,
+      "description": "The ordered states. masts_broken and sails_lost MUST be monotonically non-decreasing down the array — anything broken at state N stays broken at N+1. Validate this on canon build; the 2026-07-25 run shipped a mast that un-broke between states.",
+      "items": {
+        "type": "object",
+        "required": ["state_id", "order", "condition", "rig_states"],
+        "properties": {
+          "state_id": { "type": "string", "pattern": "^[0-9]{2}-[a-z][a-z0-9-]*$" },
+          "order": { "type": "integer", "minimum": 1 },
+          "condition": { "type": "string", "description": "What a viewer SEES. Describe the result, never the manoeuvre." },
+          "masts_broken": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "mast ids from rig_plan.masts. Empty = all standing."
+          },
+          "sails_lost": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "sail ids from rig_plan.sails that are destroyed and gone at this state."
+          },
+          "hull_condition": {
+            "type": "string",
+            "enum": ["pristine-new", "well-maintained", "field-patched", "breached-scorched", "derelict-burnt"]
+          },
+          "rig_states": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["sails-open", "sails-closed", "sails-none"] },
+            "minItems": 1,
+            "description": "Which rig variants this state produces. A state whose canvas is destroyed cannot furl, so it offers sails-open only — that is WHY 04 has no closed variant, recorded rather than assumed."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "narrative": {
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": { "type": "string" },
+        "history_beats": { "type": "array", "items": { "type": "string" } },
+        "trade_capacity": { "type": "string" },
+        "current_status": {
+          "type": "string",
+          "enum": ["in-service-playable", "in-service-npc", "derelict-adrift", "destroyed-canonical", "unknown-contact"]
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Negative constraints as CANON, written once, not rediscovered per prompt. Every entry here should trace to an observed failure."
+    },
+    "signature_features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 6,
+      "description": "The identity anchors that must survive every damage state and every heading."
+    },
+
+    "freeze": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["auto", "frozen", "soft-advisory", "on-canon-change"] },
+        "locked_at_build": { "type": "string" },
+        "locked_at_canon_version": { "type": "string" },
+        "frozen_by": { "type": "string" },
+        "frozen_reason": { "type": "string" },
+        "watch_fields": { "type": "array", "items": { "type": "string" } },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "by", "reason"],
+            "properties": {
+              "at": { "type": "string" },
+              "by": { "type": "string" },
+              "reason": { "type": "string" },
+              "prior_status": { "type": "string" },
+              "prior_build_hash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "sources": { "type": "array", "items": { "type": "string" } },
+    "canon_refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+  },
+  "additionalProperties": false
+}
