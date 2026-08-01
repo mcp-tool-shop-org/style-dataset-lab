@@ -1,0 +1,229 @@
+{
+  "name": "salt-road style-set formula v2",
+  "date": "2026-07-30",
+  "note": "The pinned generation formula the Director asked to outsource. v2 folds in the earned rules: pixel-art ban in EVERY negative; ControlNet preamble drops 'sixteen-bit'; environment must be named when a control image has empty zones.",
+  "settings": {
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "clip_type": "qwen_image",
+    "vae": "qwen_image_vae.safetensors",
+    "shift": 3.1,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "denoise": 1.0,
+    "width": 1344,
+    "height": 768,
+    "controlnet_model": "Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors"
+  },
+  "preambles": {
+    "land": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, oblique projection seen from slightly above with building fronts flat-on and parallel to the picture plane, minimal perspective recession, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between",
+    "interior": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, interior seen straight on from slightly above with minimal perspective recession, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between",
+    "study": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, close material study seen from slightly above with minimal perspective recession, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between",
+    "sea": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European harbour seas, memory-bright color, quiet spare composition",
+    "ctl": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained palette of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between"
+  },
+  "negatives": {
+    "land": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite",
+    "sea": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, buildings, rooftops, town, houses, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite, turquoise, teal, tropical water, coral",
+    "ctl": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite, flat single-color background, isolated object on plain background, turquoise, teal"
+  },
+  "control_guides": {
+    "p04_crane": "6d98999786e058dab7312eed87edd249a7c96cc9043a5013e9b4f57892a5bad9.png",
+    "p05_treadwheel": "59aa2f61b986c0c45ad52787073a08d98b9fa9df15fd03f844ef84bc08c02c90.png",
+    "p07_door_v3": "6c6c656b9947c481e4ea3fb6c76db8bb20b17d3088772c0fd0fb88ef56f707fd.png",
+    "p14_stair_v3": "3c158bf9de5ff77720958af049643f6030fa5b0e44ec0209311fd0d533dc3315.png",
+    "p16_brig": "1656636f4f74706a211d5875cd87fa5a0cec7d43d30c238db6e01d52667d6ce7.png",
+    "p17_caravel": "6a07e435d28985ff95959c1cdf9fa57829f2e9fd35793d5ab1649b09b79e5e05.png"
+  },
+  "v3_wave2_lessons": "2026-07-30 wave-2 findings, apply to the NEXT wave: (1) add to all negatives: 'isometric view, letters, numbers, stencilled words, plastic, cooler, glowing emblem'; (2) foundry SYSTEM must demand a projection phrase per exterior ('seen flat-on / from across the water') â€” without it ~1 in 6 subjects drifts isometric-cozy; (3) say 'dark scorched brand monograms, never flame symbols' â€” 'burned brands' literalizes as lit-flame icons; (4) pseudo-lettering clusters on CRATES â€” prefer 'plain board crates'; (5) do not use 'mist thinning' near a depth-locked subject (paints a white void).",
+  "lint": {
+    "min_words": 30,
+    "max_words": 100,
+    "banned": [
+      "anime",
+      "pixel",
+      "photo",
+      "photograph",
+      "3d render",
+      "vector",
+      "people",
+      "person",
+      "figure",
+      "faces",
+      "sailor",
+      "worker",
+      "man ",
+      "woman",
+      "child",
+      "skull",
+      "pirate",
+      "treasure",
+      "cutlass",
+      "tricorn",
+      "dragon",
+      "magic",
+      "rune",
+      "wizard",
+      "neon",
+      "cyber",
+      "car ",
+      "truck",
+      "container ship",
+      "text",
+      "sign reading",
+      "lettering",
+      "turquoise",
+      "tropical"
+    ],
+    "required_any": [
+      "limewash",
+      "ochre",
+      "tarred",
+      "oak",
+      "brick",
+      "sailcloth",
+      "hemp",
+      "stone",
+      "brass",
+      "cask",
+      "quay",
+      "rope",
+      "canvas",
+      "iron",
+      "salt",
+      "cobble",
+      "tile",
+      "timber",
+      "wooden",
+      "water",
+      "wave",
+      "sea "
+    ]
+  },
+  "lora_production": {
+    "ruled": "Director, 2026-08-01 — rung L2 chosen from a measured 4-rung ladder.",
+    "applies_to": "LoRA-era ASSET generation (saltroad_style_v2_lowlr ckpt1500 @ 0.75). NOT the plate path below — wave-runner.py still builds plates as preambles[x] + subject, which is how the 73 approved plates were made.",
+    "assembly": "saltroad style, <subject>, visible brushstrokes, painterly worked surface",
+    "trigger": "saltroad style, ",
+    "surface_clause": ", visible brushstrokes, painterly worked surface",
+    "negative": "unchanged — the same §5 negative used for the plates and every sweep",
+    "why": "The plates were generated with a ~60-word preamble containing 'painterly gouache texture with visible brushwork'. Every LoRA sweep prompted the bare trigger, so plates-vs-outputs was never comparable and the trigger was carrying alone what a preamble had done. The trigger recovers ~40% of the plates' stroke structure; this clause recovers most of the rest.",
+    "measured_n8_quay": {
+      "plate_target": {
+        "flat_coh": 0.6889,
+        "flat_hf": 7.42,
+        "yellow_pct": 11.02,
+        "edge_hard": 3.361
+      },
+      "bare_trigger": {
+        "flat_coh": 0.4888,
+        "flat_hf": 9.2,
+        "yellow_pct": 8.54,
+        "edge_hard": 3.486
+      },
+      "with_clause_L2": {
+        "flat_coh": 0.6108,
+        "flat_hf": 7.5,
+        "yellow_pct": 10.94,
+        "edge_hard": 3.4
+      }
+    },
+    "generalises": {
+      "stone_flat_coh": "0.466 -> 0.712 (target 0.734)",
+      "interior_flat_coh": "0.593 -> 0.719 (target 0.707)"
+    },
+    "do_not": [
+      "Do NOT restore the FULL plate preamble at inference — measured worst on colour (19.1% yellow vs an 11.0% target). Its 'sixteen-bit palette discipline' / 'memory-bright color' directives fight the LoRA that already solved colour.",
+      "Do NOT use impasto / palette-knife wording — overshoots texture amount to 10.50 against a 7.42 plate target, and reads as oil rather than the plates' gouache.",
+      "Do NOT put this clause into training CAPTIONS. Captions stay content-only; this is generation-time only. That is the prompt-bleed antipattern lib/captions.js exists to prevent."
+    ],
+    "open": "Interiors are the one subject this does not fully close on texture AMOUNT (plates 6.00, L2 3.71). May want a stronger rung than exteriors.",
+    "evidence": "inputs/prompts/measure-texture.py + crosscheck-patch.py; texture-audit.json; crosscheck-patch.json",
+    "acceptance_2026_08_01": {
+      "coherence": "PASS — 4/4 positive on two subjects and two seeds the ladder never used (counting house, crooked stair; seeds 919/1234), mean +0.092. The clause is not tuned to the quay.",
+      "colour": "PASS on the quay at n=8 (10.94% yellow, green 0.57% — a clean read). NOT uniformly verified elsewhere: one counting-house seed read 13.9%.",
+      "caveat_read_this_before_a_wave": "The yellow gate is defined for limewashed-ochre FACADE subjects. On the mossy Crooked Stair it read 48-50% yellow while the image contains no yellow paint at all — yellow-green vegetation falls inside the 42-70 deg band. The paired control proves the clause is not the cause there: it LOWERED the reading (55.4->47.9, 60.0->49.8). Check green_pct, and check a paired no-clause control, before treating a yellow number on a non-facade subject as a regression.",
+      "standing_rule": "Yellow varies enormously by subject AND seed (one arm spanned 2.6%-19.9%). Verify colour per-subject with a paired control on a few seeds before any large asset run; never read a delta from n=3 means."
+    },
+    "v4_findings_2026_08_01": {
+      "interiors_are_a_DENSITY_problem_not_a_surface_one": {
+        "finding": "Interior texture amount does NOT respond to the surface clause or to LoRA weight. Raising weight 0.75->1.00 actually LOWERED flat_hf (3.87 -> 3.62). Coherence was already solved by weight alone (L0 @1.00 = 0.697 vs a 0.707 target).",
+        "fix": "Enrich the SUBJECT. Single lever, same rung/weight/seeds/negative: flat_hf 3.61 -> 6.91 (target 6.00), lap_var 216 -> 519 (target 494), all three seeds same sign, and yellow FELL to 0.33%.",
+        "rule": "Contract law 7 operationalised: add objects, not pixels. An interior subject needs a gallery, stacked levels, a ramp, hung tackle, a working desk, a handcart -- not more paint.",
+        "weight": "Interiors carry huge colour headroom (0.3-3.1% yellow vs a 12.6% gate), so weight 1.00 is safe there even though exteriors cannot afford it."
+      },
+      "the_lora_is_a_SCENE_style_not_a_SURFACE_style": {
+        "finding": "The house style holds on a figure IN A SCENE (flat_coh 0.36 -> 0.73 with the clause) but does NOT transfer to an isolated subject on a plain ground -- at ANY weight, with or without the clause. An isolated customs officer renders as a realist oil portrait; an isolated cask renders as a clean product shot, with the cooper's mark as a modern shield logo (contract law 4 inverted).",
+        "consequence": "Do NOT try to generate isolated props or characters in the house style by prompting them against a plain background. It does not work and more weight does not help.",
+        "the_route_that_does_work": "The studio's proven golden 3D path: concept generated IN SCENE -> mesh -> 8-direction pre-render -> RESTYLIZE with the house LoRA under ControlNet. Track C below shows the clause works under structural control, so restylize is where the house style gets applied to an isolated asset -- not generation.",
+        "character_aspect": "1344x768 crops a standing figure's head. Character plates need a portrait or square aspect; the landscape plate size is for environments.",
+        "character_negative": "The standard §5 negative contains 'people, faces, portrait' and forbids the subject. Drop exactly those three tokens for character work; keep every anime term.",
+        "character_colour": "A figure in-scene with the clause drove yellow to 20.4% (golden-hour light). Character work needs its own colour check; the exterior gate does not transfer."
+      },
+      "structural_control_is_compatible_with_the_surface": {
+        "finding": "The feared contract §2 conflict does not exist. Under canny ControlNet, coherence RISES (L0 0.489 -> 0.521) and the ruled clause still works on top (L2 0.633, above the 0.611 no-control figure). The 0.487 measured on the 5 approved ControlNet plates was subject-driven, not caused by control.",
+        "caution": "ControlNet raised measured yellow ~5pp (15-17% vs 9-11% uncontrolled). Watch colour on any Blender-locked run.",
+        "caveat": "Tested with the INSTALLED Qwen-Image-InstantX-ControlNet-Union and a canny guide derived from approved plate w2_003. formula.json names Qwen-Image-2512-Fun-Controlnet-Union-2602, which is NOT installed, and the authored control guides are not on disk. Directional, not a reproduction of the plate recipe."
+      },
+      "metric_limit_found": "flat_coh / flat_hf are MEANINGLESS on a plain-background isolated subject -- the 'flattest 40%' of such a frame is the empty backdrop, not the object. Isolated-asset work must be judged by eye or with a subject-masked measure."
+    },
+    "licences_verified_2026_08_01": {
+      "qwen_image_base": "Apache-2.0 — the reason this project is on Qwen at all.",
+      "fun_controlnet_union_2512": "APACHE-2.0, VERIFIED from alibaba-pai/Qwen-Image-2512-Fun-Controlnet-Union repo card metadata. Free commercial use. This is the control model MATCHED to the 2512 UNet; the InstantX union we had been using is trained against the earlier Qwen base and is off-distribution. Switch to Fun-Union-2602.",
+      "tripo_partner_api": "Paid tier (Pro/Enterprise) = user retains ownership + full commercial rights, models private, data not used for training. FREE tier = Tripo retains all rights, outputs CC BY 4.0, NO commercial use. Open question is which entitlement a Comfy Cloud partner call bills under — a billing question, not a legal one.",
+      "lesson": "Do not convert a consultant's 'my tools cannot check this' into 'a human must verify this'. Both licences above were one lookup away. An invented approval ceremony is a cost with no benefit, and it lands on the Director.",
+      "tripo_RESOLVED": "Comfy Pro buys COMPUTE, not a Tripo entitlement — Comfy's own docs say partner nodes send inputs to third-party providers and are silent on output ownership. TWO billing paths exist and they are NOT equivalent: (1) native partner credits, Comfy brokers and deducts Comfy credits, tier governing the output is ambiguous — NEVER use for anything that ships; (2) bring-our-own Tripo API key against a directly purchased Tripo plan (~$10-30/mo), which makes Tripo's PAID-tier terms apply directly — we own the outputs, commercial, private. Path 2 only, if ever.",
+      "decision": "PARK TRIPO. We already own the licence-clean answer: TRELLIS.2-4B is MIT (model + code), commercial_use=yes per the studio KB, runs on our own 5090, and produced a header-verified GLB in 97s at $0. Tripo P1 buys possibly-better game topology for an unresolved licence chain plus per-call spend. Revisit ONLY if TRELLIS topology proves inadequate — and even then TripoSG/TripoSR are MIT open weights, so a Tripo-family comparison can be run LOCALLY with no licence question at all before touching the partner API.",
+      "hunyuan3d_caution": "Hunyuan3D-2.1 is Tencent Community Licence — commercial WITH attribution, and Tencent imposes territory restrictions excluding UK/Europe. KB marks commercial_use=conditional. Not a drop-in."
+    },
+    "controlnet_ab_2026_08_01": {
+      "finding": "The MATCHED Fun Union 2512 is NOT automatically better than the off-distribution InstantX, and the consult's prediction (off-distribution => needs HIGHER strength, softer adherence) was backwards. Measured on the authored Blender depth guide, dense interior prompt, 3 fixed seeds, single lever = control model / strength.",
+      "measured": {
+        "TARGET_interior_plates": {
+          "flat_coh": 0.707,
+          "flat_hf": 6.0,
+          "lap_var": 494
+        },
+        "InstantX_@0.80": {
+          "flat_coh": 0.822,
+          "flat_hf": 6.89,
+          "lap_var": 517
+        },
+        "Fun2512_@0.35": {
+          "flat_coh": 0.703,
+          "flat_hf": 4.8,
+          "lap_var": 254
+        },
+        "Fun2512_@0.50": {
+          "flat_coh": 0.532,
+          "flat_hf": 3.25,
+          "lap_var": 156
+        },
+        "Fun2512_@0.65": {
+          "flat_coh": 0.444,
+          "flat_hf": 2.25,
+          "lap_var": 77
+        },
+        "Fun2512_@0.80": {
+          "flat_coh": 0.412,
+          "flat_hf": 1.62,
+          "lap_var": 44
+        }
+      },
+      "reading": "Fun 2512 suppresses surface MONOTONICALLY with strength and carries less detail energy than InstantX at EVERY setting. At 0.35 its coherence lands exactly on the plate target (0.703 vs 0.707) and layout still holds by eye (casks three deep with chalk crosses, ramp, beam-scale, rope on pegs, desk with wax jack and ledger) -- but flat_hf is still only 4.80 vs InstantX's 6.89.",
+      "standing": "KEEP InstantX @0.80/0.0/0.45 as the default for authored-depth interiors. Fun 2512 @0.35 is the alternative when structure fidelity matters more than surface energy. Do NOT run Fun 2512 at 0.80 -- it flattens the image (lap_var 44).",
+      "lesson": "'Matched to the base model' predicts compatibility, not superiority. A/B it on your own content before switching a default; the plausible mechanism story was wrong in direction."
+    },
+    "cloud_lora_delivery_DONE": "PRIVATE HF import into Comfy Cloud WORKS and is now done. Model Library -> Import -> paste the HF resolve URL (https://huggingface.co/<org>/<repo>/resolve/main/<file>.safetensors) -> select type LoRA -> Import. REQUIRES an HF token bound in Settings -> API Keys & Secrets with scope over the ORG. The pre-existing 'comfyui' token was fine-grained to user/mikeyfrilot only (global: []) and 404'd on the org repo; the Director bound the tool_shop_studio token and the import succeeded immediately. Cloud library entry: 'mcp-tool-shop/saltroad-style-lora - saltroad_style_v2_lowlr_000001500' (type LORA).",
+    "character_pipeline_PROVEN_2026_08_01": {
+      "path": "concept (plain grey, full figure, arms clear, props tight to body) -> TRELLIS.2-4B mesh (MIT, local, ~97s, $0) -> Blender 8-dir Cycles ortho render, straight-alpha RGBA -> Edit-2511 restylize with the house LoRA.",
+      "restylize_setting": "qwen_image_edit_2511_fp8mixed + TextEncodeQwenImageEditPlus (EMPTY-prompt negative) + CFGNorm + VAEEncode, cfg 2.5, DENOISE 0.75, style plate in the encoder image2 slot, SEED FIXED across all views.",
+      "measured": "Subject-masked coherence vs the 0.689 plate target: front 0.622->0.749, side 0.636->0.795, back 0.539->0.724. All three clear. Silhouette preserved exactly across views.",
+      "subject_matters_more_than_settings": "The same pipeline on a customs officer in an all-black wool coat cleared only 1 of 3 views (back view 0.339). A canvas/leather/hemp porter clears 3 of 3. Restylize uptake scales with how much HOUSE-PALETTE material the view carries. Pick demonstrators that can show the thing under test.",
+      "trellis_env": "ATTN_BACKEND=sdpa SPARSE_ATTN_BACKEND=sdpa (flash_attn is dead on sm_120) and PYTHONPATH=E:/AI-Models/TRELLIS.2-repo (running a SCRIPT puts the script's dir on sys.path, not cwd, so -WorkingDirectory is not enough).",
+      "prop_rule_refined": "A rope coil carried ON THE SHOULDER did NOT cause the TRELLIS back-half offset. The golden-path warning is about props held AWAY from the silhouette; body-tight shoulder-carried props are fine."
+    }
+  }
+}

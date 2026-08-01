@@ -1,0 +1,41 @@
+{
+  "default_lane": "exterior",
+  "lanes": [
+    {
+      "id": "exterior",
+      "label": "Exterior / Hull",
+      "description": "Full vehicle exterior views — hull design, body panels, overall form language",
+      "id_patterns": ["^ext_", "^vehicle_", "^hull_"]
+    },
+    {
+      "id": "cockpit",
+      "label": "Cockpit / Cabin",
+      "description": "Cockpit interiors, bridge layouts, cabin instruments, pilot seating",
+      "id_patterns": ["^cockpit_", "^cabin_", "^bridge_"]
+    },
+    {
+      "id": "component",
+      "label": "Component / Part Detail",
+      "description": "Individual mechanical components — engines, weapons, joints, thrusters, subsystems",
+      "id_patterns": ["^component_", "^part_", "^mechanism_"]
+    },
+    {
+      "id": "schematic",
+      "label": "Schematic / Blueprint",
+      "description": "Technical diagrams, orthographic breakdowns, cross-sections, exploded views",
+      "id_patterns": ["^schematic_", "^blueprint_", "^diagram_"]
+    },
+    {
+      "id": "silhouette_sheet",
+      "label": "Silhouette / Profile Sheet",
+      "description": "Silhouette studies, profile comparisons, class lineup sheets, scale charts",
+      "id_patterns": ["^silhouette_", "^profile_", "^outline_"]
+    },
+    {
+      "id": "damage_variant",
+      "label": "Damage / Battle Variant",
+      "description": "Battle-damaged states, wear progression, field-repaired configurations",
+      "id_patterns": ["^damage_", "^battle_", "^wear_"]
+    }
+  ]
+}

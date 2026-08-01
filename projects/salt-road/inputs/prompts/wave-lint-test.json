@@ -1,0 +1,46 @@
+{
+  "formula_ref": "formula.json",
+  "created": "2026-07-30",
+  "items": [
+    {
+      "id": "w2_r04_crane_tower",
+      "seed": 730404,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "6d98999786e058dab7312eed87edd249a7c96cc9043a5013e9b4f57892a5bad9.png",
+        "type": "depth",
+        "strength": 0.5,
+        "end": 0.6
+      },
+      "subject": "the great harbour crane at golden evening, two round towers of weathered oxide-red brick patched with lime repairs and gull stains, iron tie plates and putlog holes in the brickwork, a steep moss-edged tile roof between the towers, the mighty oak jib slung out over the water with its pulley block and hemp fall lowering a branded cask toward a waiting barge, coiled hawsers and worn stone bollards on the quay platform, small barred windows glowing faintly, long warm reflections trembling in the grey-green water, gulls wheeling around the roof, low raking sunlight"
+    },
+    {
+      "id": "w2_r05_crane_treadwheel",
+      "seed": 730405,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "59aa2f61b986c0c45ad52787073a08d98b9fa9df15fd03f844ef84bc08c02c90.png",
+        "type": "depth",
+        "strength": 0.5,
+        "end": 0.6
+      },
+      "subject": "inside the harbour crane's open gallery at working noon, the great oak treadwheel filling the archway between brick piers, polished treads and heavy spokes worn pale by use, the thick axle drum wound with taut hemp rope running over an iron-shod pulley to a cask swinging above the quay edge, tarred braces and pegged joints, chalk tallies scratched beside the arch, stacked casks and a coiled line on the worn timber deck below, bright water glittering beyond the arch, warm light raking through the gallery"
+    },
+    {
+      "id": "w2_r17_hull_caravel",
+      "seed": 730417,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "negExtra": ", red cross, crusader cross, templar cross, heraldic cross",
+      "cn": {
+        "image": "6a07e435d28985ff95959c1cdf9fa57829f2e9fd35793d5ab1649b09b79e5e05.png",
+        "type": "depth",
+        "strength": 0.7,
+        "end": 0.6
+      },
+      "subject": "a small weathered caravel at the quay seen from her quarter, rounded oak hull with visible strakes, scuffed paint and a patched rubbing strake, tall lateen sails of plain sun-bleached sailcloth with an intertwined merchant's mark in faded madder on the mainsail, hemp halyards and a rope ladder over the side, branded casks staged on the quay below the bollards, ripples lapping the hull with soft reflections, pale morning sky warming at the horizon, gulls about the masthead"
+    }
+  ]
+}
