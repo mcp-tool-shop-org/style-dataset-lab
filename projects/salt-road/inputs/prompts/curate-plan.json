@@ -1,0 +1,142 @@
+[
+  {
+    "id": "styleset_p01_quay_dawn",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p02_quay_noon",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p03_quay_night",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p04v2_crane_tower",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p05v2_crane_treadwheel",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p06v2_warehouse_interior",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p07v2_bonded_door",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p08_cargo_casks",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p09_cargo_bales",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p10_weighing_floor",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p11v2_beam_scale",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p12_counting_house",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p13_customs_shed",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p14v2_crooked_stair",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p15_stone_study",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p16v2_hull_brig",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p17v2_hull_caravel",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p18_sea_open",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p19v2_sea_chart",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p20_shore_vs_sea",
+    "status": "borderline"
+  },
+  {
+    "id": "styleset_p04_crane_tower_v1",
+    "status": "rejected",
+    "failures": "flat_void_background,asset_card_register"
+  },
+  {
+    "id": "styleset_p05_crane_treadwheel_v1",
+    "status": "rejected",
+    "failures": "pixel_art_register,teal_water"
+  },
+  {
+    "id": "styleset_p07_bonded_door_v1",
+    "status": "rejected",
+    "failures": "flat_void_background,limewash_flat"
+  },
+  {
+    "id": "styleset_p14_crooked_stair_v1",
+    "status": "rejected",
+    "failures": "airbrushed_mush,detail_loss"
+  },
+  {
+    "id": "styleset_p16_hull_brig_v1",
+    "status": "rejected",
+    "failures": "flat_design_register,teal_water"
+  },
+  {
+    "id": "styleset_p16_hull_brig_canny_v1",
+    "status": "rejected",
+    "failures": "void_background"
+  },
+  {
+    "id": "styleset_p17_hull_caravel_v1",
+    "status": "rejected",
+    "failures": "flat_design_register,teal_water"
+  },
+  {
+    "id": "styleset_p17_hull_caravel_canny_v1",
+    "status": "rejected",
+    "failures": "pixel_art_register,anatomy_drift"
+  },
+  {
+    "id": "styleset_p06_warehouse_interior_v1",
+    "status": "rejected",
+    "failures": "implausible_architecture"
+  },
+  {
+    "id": "styleset_p11_beam_scale_v1",
+    "status": "rejected",
+    "failures": "wrong_object"
+  },
+  {
+    "id": "styleset_p19_sea_chart_v1",
+    "status": "rejected",
+    "failures": "off_palette_sea"
+  },
+  {
+    "id": "styleset_p19v2_sea_chart_uncropped",
+    "status": "rejected",
+    "failures": "border_frame"
+  }
+]

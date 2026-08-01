@@ -1,0 +1,36 @@
+{
+  "dimensions": [
+    "silhouette_clarity",
+    "palette_adherence",
+    "material_fidelity",
+    "style_group_read",
+    "wear_level",
+    "style_consistency",
+    "composition",
+    "detail_quality"
+  ],
+  "thresholds": {
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
+    },
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
+    }
+  },
+  "failure_to_rules": {
+    "generic_look": ["GEN-001", "GRP-001"],
+    "wrong_style": ["STY-001", "GRP-001"],
+    "bad_composition": ["CMP-001", "SCL-001"],
+    "too_clean": ["WEA-001", "MAT-001"],
+    "bad_silhouette": ["SIL-001", "SHP-001"],
+    "wrong_palette": ["COL-001"],
+    "wrong_material": ["MAT-001"],
+    "style_group_unreadable": ["GRP-001", "SHP-001", "COL-001"]
+  }
+}

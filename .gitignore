@@ -52,3 +52,6 @@ projects/*/outputs/**/*.png
 projects/*/outputs/**/*.jpg
 projects/*/outputs/**/*.jpeg
 projects/*/outputs/**/*.webp
+
+# Blender module renders + saved scenes (regenerable from the module .py sources)
+projects/*/inputs/blender/out/

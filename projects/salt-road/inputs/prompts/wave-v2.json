@@ -1,0 +1,633 @@
+{
+  "formula_ref": "formula.json",
+  "created": "2026-07-30",
+  "items": [
+    {
+      "id": "w2_r04_crane_tower",
+      "seed": 730404,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "6d98999786e058dab7312eed87edd249a7c96cc9043a5013e9b4f57892a5bad9.png",
+        "type": "depth",
+        "strength": 0.5,
+        "end": 0.6
+      },
+      "subject": "the great harbour crane at golden evening, two round towers of weathered oxide-red brick patched with lime repairs and gull stains, iron tie plates and putlog holes in the brickwork, a steep moss-edged tile roof between the towers, the mighty oak jib slung out over the water with its pulley block and hemp fall lowering a branded cask toward a waiting barge, coiled hawsers and worn stone bollards on the quay platform, small barred windows glowing faintly, long warm reflections trembling in the grey-green water, gulls wheeling around the roof, low raking sunlight"
+    },
+    {
+      "id": "w2_r05_crane_treadwheel",
+      "seed": 730405,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "59aa2f61b986c0c45ad52787073a08d98b9fa9df15fd03f844ef84bc08c02c90.png",
+        "type": "depth",
+        "strength": 0.5,
+        "end": 0.6
+      },
+      "subject": "inside the harbour crane's open gallery at working noon, the great oak treadwheel filling the archway between brick piers, polished treads and heavy spokes worn pale by use, the thick axle drum wound with taut hemp rope running over an iron-shod pulley to a cask swinging above the quay edge, tarred braces and pegged joints, chalk tallies scratched beside the arch, stacked casks and a coiled line on the worn timber deck below, bright water glittering beyond the arch, warm light raking through the gallery"
+    },
+    {
+      "id": "w2_r07_bonded_door",
+      "seed": 730407,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "6c6c656b9947c481e4ea3fb6c76db8bb20b17d3088772c0fd0fb88ef56f707fd.png",
+        "type": "depth",
+        "strength": 0.55,
+        "end": 0.6
+      },
+      "subject": "the bonded warehouse door in a narrow quay lane, heavy oak double door aged silver-brown with hand-forged iron straps and clenched nails, a crimson wax seal on plaited cord over the meeting stile, the lintel scored with old tally marks, patchwork limewash in mismatched ochre and cream batches flaking to show earlier colours, a stout hoist beam overhead with its tackle block and hook throwing a long shadow, shuttered windows, neighbouring leaning facades crowding in on both sides, worn cobbles with cart ruts and grass tufts, warm afternoon side light"
+    },
+    {
+      "id": "w2_r14_crooked_stair",
+      "seed": 730414,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "3c158bf9de5ff77720958af049643f6030fa5b0e44ec0209311fd0d533dc3315.png",
+        "type": "depth",
+        "strength": 0.5,
+        "end": 0.6
+      },
+      "subject": "the crooked harbour stair plunging between crowding buildings, twenty-two uneven stone steps each worn to a hollow, risers patched with brick and mortar, moss and ferns in the shaded joints, flaking limewash walls in mismatched warm batches with an iron handrail stub and a rusted ring bolt, washing-line shadow crossing the passage, a bright sliver of grey-blue harbour water with a moored boat's bow at the bottom, rooftop tiles catching sun at the top, cool shade cut by one warm shaft of light"
+    },
+    {
+      "id": "w2_r16_hull_brig",
+      "seed": 730416,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "cn": {
+        "image": "1656636f4f74706a211d5875cd87fa5a0cec7d43d30c238db6e01d52667d6ce7.png",
+        "type": "depth",
+        "strength": 0.7,
+        "end": 0.6
+      },
+      "subject": "a two-masted trading brig moored broadside at the stone quay, dark tarred hull with a pale scrubbed sheer strake and rope fenders, weather-stained patched sails loosed to dry from the square yards, hemp standing rigging and ratlines taut, deck crowded with branded casks, coiled lines and a tarpaulined hatch, heavy mooring hawsers running to worn stone bollards, gulls on the yardarms, morning mist thinning over grey-blue water, warm light catching the mastheads and canvas, the quay stones wet in a cooler ramp at the lip"
+    },
+    {
+      "id": "w2_r17_hull_caravel",
+      "seed": 730417,
+      "preamble": "ctl",
+      "neg": "ctl",
+      "negExtra": ", red cross, crusader cross, templar cross, heraldic cross",
+      "cn": {
+        "image": "6a07e435d28985ff95959c1cdf9fa57829f2e9fd35793d5ab1649b09b79e5e05.png",
+        "type": "depth",
+        "strength": 0.7,
+        "end": 0.6
+      },
+      "subject": "a small weathered caravel at the quay seen from her quarter, rounded oak hull with visible strakes, scuffed paint and a patched rubbing strake, tall lateen sails of plain sun-bleached sailcloth with an intertwined merchant's mark in faded madder on the mainsail, hemp halyards and a rope ladder over the side, branded casks staged on the quay below the bollards, ripples lapping the hull with soft reflections, pale morning sky warming at the horizon, gulls about the masthead"
+    },
+    {
+      "id": "w2_r19_sea_chart",
+      "seed": 730419,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "flat top-down painted sea for a voyage map, cool slate grey-blue water built from broad visible gouache strokes in three muted tones, rhythmic hand-painted wave crests like an old chart's engraving turned to paint, a small wooden trading ship from above heeling slightly with a curling white wake, a hint of deeper slate shadow where the water deepens, calm deliberate plainness with the brushwork carrying all the life"
+    },
+    {
+      "id": "w2_001",
+      "seed": 730501,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "wet quay stone dipping into shallow brine, row of tall oxide brick merchant warehouses, limewash warehouse fronts in mismatched ochre batches, tarred timber hoists cantilevering over the waterline, weathered oak masts resting against hemp rope coils, stacked salt casks bearing burned cooper brands and chalk tallies, bales of sailcloth lashed with frayed cordage, brass cleats anchored in iron mooring rings, a pair of gulls perched on a drydock beam, soft morning fog layers diffusing across the damp basin",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_002",
+      "seed": 730502,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "patchy limewashed warehouse fronts in mismatched ochre batches, weathered oak piling in oxide brick foundations, tarred timber gangplanks meeting mossy quay stone with wet lips cooler and bluer than dry ground, stacked hemp rope coils beside brass capstan gears, barrel stacks bearing charred cooper brands and chalk tallies, heavy timber hoist beam sagging under dripping tackle, faded sailcloth awnings over crates, puddled cobblestones holding fractured reflections of warm window glow, low cloud cover diffusing light into cool overcast flatness.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_003",
+      "seed": 730503,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "Wet quay stone lip, patchy limewashed warehouse fronts in mismatched ochre batches, tarred timber cargo nets, oxide brick loading steps, weathered oak spars, hemp rope loops, brass mooring cleats, pine crates with burned brands and chalk tallies, sailcloth awnings, canvas sacks, iron ring bolts, lone grey gull on damp cobbles, stacked wool bales bearing painted merchant monograms, copperbound barrels on wooden skids, overcast flatness.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_004",
+      "seed": 730504,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "low tide exposing weed-slick lower quay stones, row of weathered oak hulls tilted on wet mud, rusted iron anchor chains coiled beside tarred timber cleats, stack of oxide brick storage sheds with patchy limewashed walls in mismatched ochre batches, heavy hemp rope wound around the drum winch, sailcloth awnings covering ironbound cargo crates bearing chalk tallies, painted merchant monograms, burned cooper brands, brass tide markers worn along the bluer stone lip, gulls resting on rafter ends, fog layers settling over raking morning sun",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_005",
+      "seed": 730505,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "broad stone quay at dawn, patchy limewash and ochre warehouse fronts over oxide brick, tarred timber hoists projecting from roof peaks, weathered oak casks marked with chalk tally marks and burned cooper brands, coiled hemp rope piled on frost dust, brass mooring cleats frosted to slate, folded sailcloth bales bound with rough lashings, gull resting on frozen bollard, first winter frost on timber frames, pale rime on barrel staves and roof ridges, breath-still water mirroring the harbor floor, raking winter light washing wet quay stone.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_006",
+      "seed": 730506,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the worn quay stone steps at low tide, row of tall narrow warehouse fronts in patchy limewash and oxide brick, tarred timber pilings, weathered oak hoist beams, brass sheave blocks with coiled hemp rope, stacked grain sacks marked by chalk tallies, wooden cargo chests bearing burned merchant monograms, folded sailcloth awnings, iron mooring cleats set in cracked mortar, wet lip of the harbour water, raking amber dusk washing over every roof ridge",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_007",
+      "seed": 730507,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the heavy squall line gathering past the outer breakwater, bank of low charcoal clouds above sunlit ochre limewashed warehouse facades, row of tall tarred timber hoist beams against oxide brick gables, wet lip of the quay stone showing deeper blue bands, thick sailcloth tarpaulins hurried over stacked weathered oak cargo bales, hemp rope coils secured with brass toggle knots, charcoal tally marks and painted merchant monograms on the crate staves, raking sun breaking over the darkened harbour mouth",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_008",
+      "seed": 730508,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the low channel between two moored hulls, tarred timber gunwales leaning forward, oxide brick warehouse fronts in staggered tiers, patchy limewash over mismatched ochre batches, weathered oak beam joists jutting from each gable peak, brass cleats bolted to wet quay stone, hemp rope coils resting on the cooler water lip, casks branded with burned merchant marks, wool bales stamped with chalk tallies, sailcloth patches folded against the bulkhead, gulls circling the ridge line, cat stretched on dry pallets, raking sun across the bluer stone lip",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_009",
+      "seed": 730509,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the damp spring morning, fresh limewash coating one timber facade in chalky white, scaffold poles still lashed to the gable peak with hemp rope, row of weathered oak warehouses in faded ochre and oxide brick, tarred timber hoist cranes resting against slate roof ridges, stacked wool bales marked with burned cooper brands, coiled sailcloth rolls beneath arched loading arches, wet quay stone edges cooling in bluer grey, brass capstans standing idle near painted merchant monograms, raking spring sun warming the upper masonry",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_010",
+      "seed": 730510,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the harbour mouth breakwater of great tumbled stones, a beacon brazier at its head, weathered oak pilings in grey silt, hemp rope coiled on cleats, oxide brick blocks in staggered courses, limewash patching workshop walls in mismatched ochre batches, tarred timber cranes above dry docks, sailcloth awnings tight against salt wind, brass compass housing near a mooring post, burned brands on stacked planks, chalk tallies across cargo pallets, wet lip of quay stone cooler and bluer than the dry, raking sun",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_011",
+      "seed": 730511,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the long stone quay at first light, row of tall narrow limewashed warehouse fronts in mismatched ochre batches, oxide brick gables, tarred timber loading cranes with brass sheaves, weathered oak pulley blocks and hemp rope coils, stacked wooden fish casks bearing burned brands and chalk tallies, shallow wicker baskets full of glinting silver scales, piled sailcloth on the cart frame, painted merchant monograms on the staves, gulls wheeling above the wheels, quay stone edges, wet lip cooler and bluer than dry, raking sun",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_012",
+      "seed": 730512,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the broad customs pier at midday, row of tall striped mooring poles in patchy mismatched limewash batches over oxide brick, official skiff hull wedged against tarred timber fenders, coils of braided hemp rope beside weathered oak capstans, brass binnacle dome and sailcloth awning slatting, supply crates stained with ochre washes and marked with burned brands and chalk tallies, painted merchant monograms on barrel ends, wet lip of the quay stone cooler and bluer than dry, broad flat glare",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_013",
+      "seed": 730513,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "open-sided quay shelter of tarred timber beams and oxide brick supports, weathered oak dock planks, salt cones stacked in tapering pyramids beneath the rafters, braided hemp rope and coarse sailcloth binding each mound, brass tension clamps securing the canvas edges, chalk tallies on rough burlap tags, painted merchant monograms burned into wooden staves, iron crane base bolted to the wet quay stone, limewashed gable ends in mismatched ochre batches, grey gull on mooring cleat, raking low winter light pooling across the damp planks.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_014",
+      "seed": 730514,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the broad quay stone at blue hour, wet lip cooler and bluer than dry, timber ladder braced against a cast iron bracket, warehouse gables washed in patchy limewash and mismatched ochre batches, tarred timber hoist frames, weathered oak spars on oxide brick ledges, coiled hemp rope bundles, folded sailcloth awnings, cargo casks marked with dark burned brands and pale chalk tallies, oxidized brass mooring rings, faded painted merchant monograms on barrel staves, lantern pools glowing amber across wet masonry.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_015",
+      "seed": 730515,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "narrow passage between leaning warehouse gables, walls faced in patchy limewash and oxide brick, tarred timber hoist beams stretching overhead to nearly touch, brass pulley blocks suspended from iron hooks, coiled hemp rope resting on quay stone curbs, stacked wool bales bound with sailcloth ties, cured hides stamped with burned cooper brands and chalk tallies, a bright vertical slot of open sky at the far end, raking low sun pooling across damp flagstones",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_016",
+      "seed": 730516,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the bell tower parapet framing a dense canopy of clay tile ridges, weathered oak crane arms anchored to iron bound pivot hubs, tarnished brass hoist wheels glazed with raking sun, tarred timber gangways spanning narrow alley gaps, patched limewash gables layered in mismatched ochre batches, stacked casks branded with burned cooper marks, hemp rope coils marked by chalk tallies, faded merchant monograms stamped on heavy sailcloth, raking late afternoon sun laying long cold shadows across the harbour beyond",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_017",
+      "seed": 730517,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the sunken well square behind the quay, iron windlass and weathered oak post, canvas bucket on braided hemp rope, radiating cobbles worn by sled runners and cart axles, oxide brick walls in patchy limewash and ochre batches, stacked tarred timber crates with burned cooper brands and chalk merchant tallies, oxidized brass cleats bolted to damp pilings, folded canvas awnings over empty loading bays, long raking sun and cool harbour flatness",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_018",
+      "seed": 730518,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "row of tall narrow oxide brick shop fronts in patchy limewashed ochre batches, heavy tarred timber shelves braced against weathered oak beams, coiled hemp rope bound with twine and chalk tally marks, wooden tackle blocks stamped with painted merchant monograms, brass fitted lanterns resting on rough plank counters, tapered ash oars leaning against the shop threshold, salt stained sailcloth draped over iron hooks, copper rivets and cleats catching the heat, late afternoon raking sun pooling across the wet lip of the quay stone",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_019",
+      "seed": 730519,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the sail loft's tall gable with its full-height loading doors open, sailcloth bolt visible in shadow, patchy limewash facades in mismatched ochre batches, weathered oak door frames, tarred timber roof purlins, stacks of hemp rope coils, oxide brick chimney stack, brass tackle hooks fixed to a support post, wooden casks stamped with burned cooper brands and painted merchant monograms, chalk tally marks scored on rough staves, raking afternoon sun pooling over wet quay stone lips cooler and bluer than dry",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_020",
+      "seed": 730520,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "oxide brick cooperage yard, stacks of oak staves against tarred timber frames, a pyramid of casks bound with hemp rope, barrel heads stamped with burned cooper brands and chalk tallies, drifts of wood shavings pooling at the drywell lip, dried timber beneath a sailcloth awning, brass hoops on wet quay stone slabs, limewashed storage sheds in ochre batches, raking late afternoon sun throwing long cold shadows across the yard.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_021",
+      "seed": 730521,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "weathered oak drying racks, coiled hemp rope beside tarred timber pilings, brown nets hanging in deep catenary curves between brass hooks, pale cork floats resting on the wet lip of blue-grey quay stone, dried sailcloth patches bearing painted merchant monograms on timber frames, chalk tally marks scratched into weathered oak planks, burned cooper brands scarred onto stacked barrel staves, limewash layers patching mismatched ochre batches on oxide brick gable ends, brass winch wheels beside iron cleats, raking sun casting geometric shadows across cobbles",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_022",
+      "seed": 730522,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "timber town gate framed in weathered oak, brass hinges and patchy limewash in mismatched ochre batches, oxide brick archway scarred by iron wheel rims, deep cart ruts carved into packed earth and wet quay stone, stacked cargo crates bearing charred cooper brands and faded chalk tallies, coiled hemp rope resting on a mossy bollard, tarred sailcloth draped over a rusted winch, casks marked with painted merchant sigils in oxide red, overcast flatness washing the worn threshold.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_023",
+      "seed": 730523,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the weathered oak roof trusses of the sail loft, brass pulley blocks mounted high along the rafters, an acre of pale sailcloth spread across plank flooring, hemp rope seams tracing stitched edges, chalk tally marks scored along folded hems, stacked canvas bolts bearing dark merchant monograms, tarred timber support columns, oxide brick walls patched with limewash in uneven ochre batches, coiled hemp spools resting on wooden brackets, brass tackle hanging from the beams, raking daylight cutting through dust",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_024",
+      "seed": 730524,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the low timber rope-walk shed, span of tarred oak beams above an oxide brick roof, three parallel hemp ropes feeding into heavy brass pulleys, weathered oak tension wheels on iron brackets, stacked sailcloth bundles beside chalk tallies, wooden cargo crates stamped with burned cooper brands, patchy limewash on the far gable wall, loose tarred cordage coils on damp quay stone, a lone gull perched on the vanishing tension wheel, raking afternoon sun.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_025",
+      "seed": 730525,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the heavy tarred timber floorboards scarred with salt, wall of weathered oak shelving stacked with pulley blocks and hemp rope coils, brass lantern frames beside bottles of thick pitch, bristle brushes across a chalk tally slate, patches of limewash in mismatched ochre batches, oxide brick backing stained with tar drips, coiled sailcloth sacks marked with burned cooper brands and painted merchant monograms, the chandlery interior at dusk, lantern pools pooling across the sawdust floor",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_026",
+      "seed": 730526,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the cooperage workbench at rest, half-raised cask on the iron-banded bending mare, pale wood shavings across oxide brick flooring, glowing iron cresset with tarred timber staves, chalk tally marks along the drying rack, burned merchant monograms on weathered oak, stacked hemp rope coils and brass fittings beside limewashed warehouse walls, wet quay stone beneath raking sun",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_027",
+      "seed": 730527,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the salt store interior, white salt piled in timber bays of tarred oak and limewashed pine, wooden shovels resting against rough-hewn staves, hemp rope coils beside brass scale weights, canvas sacks stamped with painted merchant monograms and burned crown marks, oxide brick walls patchy with flaking ochre batches, weathered beam joints scarred by damp and soot, loose salt grains settling on the flagstones, raking sun through high clerestory slats",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_028",
+      "seed": 730528,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "a weathered oak desk heaped with wax pools, stacks of chart parchments bearing chalk tally lines and painted pictorial seals, a brass telescope resting on the tarred timber sill, patched limewash walls in mismatched ochre batches, oxide brick hearth lined with soot blackened tiles, coiled hemp rope draped over iron hooks, folded sailcloth bundles stacked against the floorboards, narrow window framing the wet quay stone lip beyond, stacked casks branded with burned cooper marks, raking morning sun pooling across the sill",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_029",
+      "seed": 730529,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the timber gallery floor of weathered oak planks bearing deep wheel ruts, bonded warehouse bays washed in patchy limewash and dried ochre batches, stacked hemp sacks sealed with wax tags and chalk tally marks, tarred timber chests branded with cooper crosses and painted merchant sigils, coils of frayed hemp rope draped over oxide brick wall segments, brass pendants hanging from rusted iron hooks, a single shaft of raking sun settling on motes of suspended dust.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_030",
+      "seed": 730530,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "the heavy timber weighing floor at dawn, iron balance scales hanging motionless from blackened chains, tarred oak counterbeams supporting the low rafters, queue-worn floor stones pitted near the heavy door, brass counterweights on an ochre stained shelf, hemp rope coils beside chalk-dusted tally boards, cargo crates marked with burned cooper brands and painted merchant monograms, sailcloth bales draped over rough timber racks, wet quay stone thresholds reflecting the morning chill, raking dawn light pooling on the damp floor",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_031",
+      "seed": 730531,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "heavy oxide brick strongroom wall, weathered oak floorboards scarred by iron fittings, a great iron-bound chest marked with faded painted merchant monograms, stacked cargo crates branded with chalk tallies and burned cooper marks, a brass hook holding coiled hemp rope, a wrought iron candle lantern casting yellow wax pools on packed earth, long cold shadows pooling beneath low timber beams, patchy limewashed upper walls, brass key ring resting on a tarred timber table, raking afternoon light washing over the corner floor.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_032",
+      "seed": 730532,
+      "preamble": "interior",
+      "neg": "land",
+      "cn": null,
+      "subject": "dark tarred timber doorframe, weathered oak threshold planks, tall narrow warehouse fronts in patchy limewash and mismatched ochre batches, thick hemp rope coils on oxide brick floor patches, stacked sailcloth bundles with chalk tally crosses, iron bound crates bearing burned merchant sigils, polished brass ring handles, wet quay stone steps leading to salt mist, distant timber crane jib silhouettes, gulls wheeling over moored hull bows, brass cleat reflections on damp wood, raking sun flooding the open threshold",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_033",
+      "seed": 730533,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "the heavy iron mooring bollard, thick hemp rope wound in tight coils, polished brass shoulder catching pale light, cool blue wet quay stone pooling with tidal reflections, row of tall narrow oxide brick warehouses, patchy limewash and weathered ochre batches on timber frames, tarred oak gangplanks leaning against cobbled steps, stacked herring casks marked with burned cooper brands and chalk tally notches, salt stained sailcloth bundles tied to iron railings, overcast flatness washing over the stone lip.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_034",
+      "seed": 730534,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "wet lip quay stone, oxide brick embankment, tarred timber mooring posts, weathered oak bollards, folded brown sailcloth nets resting in heavy coils, clusters of pale cork floats threaded through hemp rope, brass mending needle lying across the damp surface, row of tall narrow limewashed warehouse fronts in mismatched ochre batches, stacked casks branded with burned cooper marks, raking sun casting long cold shadows across the wet masonry",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_035",
+      "seed": 730535,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "heavy iron lantern on its wall bracket, clouded glass panes, dark smoke stain climbing the limewash, patchy mismatched ochre batches, oxide brick parapet along the gable, tarred timber beam supporting the bracket, weathered oak recess beside it, brass latch plate resting smooth, coiled hemp rope draped over an iron hook, stack of burned brands on cargo casks, chalk tallies scrawled across a sailcloth tarpaulin, wet lip of quay stone cooling in shade, raking sun cutting through the harbour fog...",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_036",
+      "seed": 730536,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "the shuttered window in a patched limewash wall, patchy mismatched ochre batches visible beneath flaking paint, heavy iron hinge stains bleeding through weathered oak shutters, oxide brick facades rising in staggered tiers, tarred timber bulkheads lining the saltwater edge, stacked hemp rope coils on wet quay stone lip, brass porthole glass catching scattered highlights, faded sailcloth banners over iron brackets, painted merchant monograms across cargo crates, chalk tallies on dockside planks, burned brands marking loaded barrel heads, raking morning light carving long cold shadows.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_037",
+      "seed": 730537,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "weathered oak rafters crossing the timber frame, old clay roof tiles layered with coarse moss and grey lichen, a lone gull standing on the ridge beam, tarred timber purlins darkened by salt wind, hemp rope coils tight on the wooden sill, brass mooring rings set into the stone wall, stacked merchant crates bearing burned cooper marks and chalk tallies, limewashed gable fronts in earth tones, wet quay stone coping cool and blue beneath the eaves, raking autumn sun cutting through the harbour mists",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_038",
+      "seed": 730538,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "weathered oak pallet stacked with coarse hessian sacks bearing deep cooper brands and chalk tally marks, scattered white crystals pooling on damp timber boards, lengths of twisted hemp rope coiled beside the pallet, oxidised brass cleats bolted to a timber bollard, stacks of oxide brick crates bound in sailcloth, patchy limewash coats covering nearby warehouse gables, tarred timber piling sunk into silt, wet quay stone lip cooler and bluer than dry, raking sun through heavy fog layers",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_039",
+      "seed": 730539,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "thick pools of sealing wax beside a brass stamp, stacks of folded papers on iron weights, the oak counter in the foreground, tarred timber beams across the ceiling, limewash coats in patchy mismatched ochre batches, oxide brick hearth behind the drafting table, coils of hemp rope against sailcloth sacks, weathered oak crates along the sill, burned cargo brands on wooden planks, chalk tallies on quay stone slabs, painted merchant monograms on sailcloth tags, brass latches under raking sun",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_040",
+      "seed": 730540,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "the wet lip of the quay stone cooling blue against the tide line, a rusted iron mooring ring bolted into weathered oak blocks, heavy chain links resting on barnacled masonry below the water mark, row of tall oxide brick merchant stores in patchy limewash batches, timber hoist beams projecting from each gable peak, stacked casks bearing chalk tally marks and burned merchant monograms, folded sailcloth bundles lashed with hemp rope, tarnished brass cleats on damp stone, pale raking sun catching the wet surface",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_041",
+      "seed": 730541,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "loaded handcart with iron-shod wheel standing in deep old ruts, coil of braided hemp rope resting on its bed, stacked wooden crates marked with burned brands and chalk tallies, bundles of rough sailcloth bound with tarred timber straps, weathered oak beams supporting a heavy timber barrel bearing painted merchant monograms, rusted brass pulleys hanging from oxide brick gables, mismatched limewashed warehouse facades in faded ochre batches, iron mooring rings set into damp harbour mud, raking sun pooling across wet lip of quay stone",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_042",
+      "seed": 730542,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "worn quay stone bollards receding along the wet lip, each rope-polished differently by hemp rope wear, stacked casks bearing burned cooper marks, tarred timber cranes folded against oxide brick walls, oxidised brass tackle blocks hanging from iron rings, loose sailcloth draped over mooring posts, chalk tally marks on barrel staves, narrow limewashed warehouse fronts in mismatched ochre batches, timber hoist beams projecting from each gable peak, raking sun laying cold blue shadows over the waterline.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_043",
+      "seed": 730543,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "limewashed warehouse fronts in mismatched ochre batches, oxide brick chimney stack behind, weathered oak floorboards grooved from heavy carts, hemp rope coils near the threshold, great keys and a brass hasp lock on the bonded door's iron plate, stacked cargo crates marked with burned brands and chalk tallies, painted merchant monograms on folded sailcloth sacks, wet quay stone steps sloping to the waterline, cool grey overcast flatness.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_044",
+      "seed": 730544,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "long stone quay at first light, row of narrow limewashed warehouse fronts in mismatched ochre batches, timber hoist beams from each gable peak, stacked casks bearing cooper brands and chalk tallies, hanging wooden signboard of iron scrollwork, painted pictogram of a cask and beam-scale, weathered oak planks, hemp rope coiled on oxide brick bollards, brass tackle beside sailcloth awnings, overcast flatness washing the wet quay stone",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_045",
+      "seed": 730545,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "wet lip of quay stone cooling to pale blue, row of tall oxide brick warehouses in patchy limewash with mismatched ochre batches, tarred timber hoist beams projecting from gable peaks, stacked shipping casks bearing burned cooper brands and chalk tally marks, wooden stencilled crates arranged in tight geometric blocks, heavy iron tar brush resting on a weathered oak barrel head, fresh black marks pooling at the bristle tips, folded canvas sailcloth draped over a brass windlass drum, late afternoon raking sun glinting off wet timber.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_046",
+      "seed": 730546,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "weathered oak mooring posts sunk into wet quay stone, row of narrow limewashed warehouse fronts in patchy ochre batches, tarred timber hoist beams projecting from oxide brick gables, stacked casks stamped with chalk tallies and burned merchant brands, coils of hemp rope resting on sailcloth sacks bearing soot marks, the anchor leaning against the masonry, flukes worn bright, chain pooled in shallow brine, brass cleats tarnished near the wet dock lip, raking sun pooling on the quay stone",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_047",
+      "seed": 730547,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "the close up harbour surface, green-grey water ripples catching warm window reflections, wet lip of oxide brick quay stone, patchy limewash warehouse gables in mismatched ochre batches, tarred timber mooring stumps driven deep into mud, lengths of hemp rope coiled around weathered oak bollards, stacked casks bearing burned brands, chalk tallies scored on sailcloth bundles, painted merchant monograms fading along the salt crusted tide line, brass cleat fittings dulled by spray, raking late afternoon sun breaking across the green-grey water",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_048",
+      "seed": 730548,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "the long wet quay stone at silver dawn, weathered oak pilings rising from dark mudflats, tarred timber bulkheads scarred by salt and rope burns, oxide brick warehouses leaning against each other, limewashed gable fronts in patchy mismatched ochre batches, coiled hemp rope laid beside polished brass cleats, stacked merchant casks bearing burned barrel brands and chalk tallies, draped sailcloth drying over timber frames, a low fishing boat drifting far out on the glassy calm, raking sun pooling across silver water.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_049",
+      "seed": 730549,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "wet quay stone curbs meeting oxide brick foundations and hemp rope, tarred timber bulkheads scarred by tide lines, stacks of bound wool bales stamped with chalk merchant monograms, bronze capstan drums beside brass chart weights on weathered oak crates, row of narrow limewashed warehouse gables in mismatched ochre batches, timber hoist beams over stacked cooperage casks bearing burned barrel brands, short grey chop waves advancing in white capped ranks toward the quay, spray blowing past mooring lines, overcast flatness settling through fog layers",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_050",
+      "seed": 730550,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "wet quay stone lips cooler and deeper blue, gabled warehouse fronts of patchy limewash and mismatched ochre batches, tarred timber mooring bollards sunk in silt, weathered oak cargo winches on brass pins, stacked pitch casks with burned cooper brands and chalk tallies, coiled hemp rope beside painted cargo stamps, sailcloth awnings over open freight bays, a small trading schooner silhouette at anchor, evening sea, flat amber light path from the low sun.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_051",
+      "seed": 730551,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "the fractured granite breakwater stones, white waves breaking in cold crests, spray hanging like torn sailcloth, a row of weathered oak piers extending into the harbour mouth, oxide brick customs walls patchy with limewash batches, tarred timber mooring posts wrapped in hemp rope, stacked casks washed in ochre bearing burned cooper marks and chalk tally scratches, copper-bound iron gates resting on drydock beams, brass ship bells painted with merchant monograms, long raking sun pooling over the wet lip of the quay stone",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_052",
+      "seed": 730552,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "a weathered oak mooring buoy tethered with hemp rope, two tarred timber posts rising from the shallows, calm harbour water holding wobbly mirrored fragments, wet lip quay stone showing cooler bluer tones along the waterline, oxide brick warehouse walls painted in mismatched limewash and ochre batches, stacked timber crates marked with burned cooper brands and chalk tally marks, oxidised brass cleats bolted into the dock face, heavy sailcloth strips draped over iron rings, long raking sun pooling across the wet stone",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_053",
+      "seed": 730553,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "cooler blue wet lip of quay stone sloping into the basin, overlapping circles of falling rain expanding across the surface, row of tall narrow limewashed warehouse fronts in mismatched ochre batches, timber mooring posts set in tarred timber sleepers, hemp rope coiled along oxide brick ledges, stacked cargo crates marked with burned brands, chalk tallies, painted merchant monograms, sailcloth draped over brass cleats, weathered oak gangplanks leaning against ironbound hulls, gulls resting on the rafter eaves, overcast flatness pooling into muted grey light.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_054",
+      "seed": 730554,
+      "preamble": "sea",
+      "neg": "sea",
+      "cn": null,
+      "subject": "the broad slate water opening toward the stone harbour wall, the long white ship wake unfurling across the dark surface, frayed sailcloth strips caught in the troughs, rusted iron cleats in wet quay stone, thick hemp rope coiled on tarred timber bollards, stacks of oxide brick cargo crates marked with burned brands and chalk tallies, weathered oak hatches sealed with brass fastenings, patches of limewashed bulkhead planks in mismatched ochre batches, gull resting on a mooring ring, overcast flatness lying heavy on the water.",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_055",
+      "seed": 730555,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "weathered oak bollard scarred by iron rings, thick hemp rope coiled in tight concentric circles, a harbour cat curled against sunbaked timber, row of oxide brick warehouses leaning toward the water, patchy limewash facades flaking in layered ochre washes, tarred timber cargo nets draped across loading cranes, stacked sailcloth bales marked with chalk tallies, brass mooring cleats bolted into cracked masonry, wet quay stone lips reflecting the harbour basin, raking afternoon sun pooling on damp planks",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_056",
+      "seed": 730556,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "merchant warehouse row in patchy limewash batches, weathered oak gangplanks on wet lip quay stone, stacked hogsheads bearing burned cooper brands and chalk tallies, tarred hemp rope coils beside oxide brick coping, timber hoist beams against the night sky, single amber window behind rusted brass fittings, flocks of gulls above tarred sailcloth stacks, iron cargo crates marked with painted merchant monograms, pale moonlight path across the harbour",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_057",
+      "seed": 730557,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "row of tall narrow limewashed warehouse fronts in mismatched ochre batches, timber hoist beams in tarred pitch leaning over oxide brick stacks, coiled hemp rope resting on saddle stones, brass cleats catching the damp wind, canvas tarpaulins patched with sailcloth remnants, wooden pallets bearing cargo barrels stamped with burned brands and chalk tallies, burlap sacks split open at a corner revealing rare colour accents of saffron and madder against weathered oak planks, wet lip quay stone cooler and bluer than dry, raking sun",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_058",
+      "seed": 730558,
+      "preamble": "study",
+      "neg": "land",
+      "cn": null,
+      "subject": "the wet lip of the quay stone meeting dark water, bands of green weed and calcified barnacle reading like sedimentary strata, tarred timber pilings driven through oxide brick masonry, limewashed warehouse facades in mismatched ochre batches, stacked cargo crates bearing charred merchant monograms and chalk tallies, hemp rope coils resting on wet oak planks, brass cleats pitted with salt, sailcloth awnings folded against gable walls, gull silhouetted on the stone face, raking sun cutting through heavy fog layers",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_059",
+      "seed": 730559,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "the harbour mouth at storm light, a searing bright band under bruised cloud, boats running in, row of oxide brick warehouses with patchy limewash in mismatched ochre batches, tarred timber gables, weathered oak hoist beams, brass tackle on ironbound gates, hemp rope coiled on wet lip quay stone, stacked casks marked with burned cooper brands and chalk tally lines, torn sailcloth awnings, salt stained bulkheads, low iron mooring rings, distant mast timbers through the squall, raking storm light",
+      "enriched_by": "qwen3.6:35b-a3b"
+    },
+    {
+      "id": "w2_060",
+      "seed": 730560,
+      "preamble": "land",
+      "neg": "land",
+      "cn": null,
+      "subject": "washing lines strung between warehouse gables, damp sailcloth shirts and linen rags luffing like weathered flags, patchy limewash facings in mismatched ochre batches, tarred timber beams and weathered oak purlins, oxide brick chimneys rising above grey skies, hemp rope coils resting on wet quay stone lips, brass mooring rings set into limestone bollards, stacked cargo crates stamped with burned brands, iron-bound barrels marked by chalk tallies and merchant monograms, gulls wheeling above the rigging gaps, raking sun catching the damp weave",
+      "enriched_by": "qwen3.6:35b-a3b"
+    }
+  ]
+}

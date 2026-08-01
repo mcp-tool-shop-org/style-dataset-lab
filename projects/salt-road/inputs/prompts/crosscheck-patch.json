@@ -1,0 +1,86 @@
+{
+  "reference": [
+    "p03_quay_night",
+    "w2_002",
+    "w2_009",
+    "w2_011",
+    "w2_015",
+    "w2_024",
+    "w2_036",
+    "w2_042",
+    "w2_045",
+    "w2_051",
+    "w2_055",
+    "w2_r07_bonded_door"
+  ],
+  "heldout": [
+    "w2_007",
+    "w2_033",
+    "w2_037",
+    "w2_040",
+    "w2_047",
+    "w2_050",
+    "w2_059",
+    "w2_r17_hull_caravel"
+  ],
+  "rows": {
+    "FLOOR \u2014 held-out real plates": {
+      "n": 8,
+      "dists": 0.42435492778366257,
+      "style": 299585813.3181818
+    },
+    "base (no LoRA), bare": {
+      "n": 3,
+      "dists": 0.4454554012327483,
+      "style": 283706294.54545456
+    },
+    "L0 ship @0.75, bare": {
+      "n": 8,
+      "dists": 0.39754506132819434,
+      "style": 255321035.27272725
+    },
+    "L1 'visible brushwork'": {
+      "n": 8,
+      "dists": 0.37941962277347396,
+      "style": 239022526.1818182
+    },
+    "L2 'brushstrokes+worked'": {
+      "n": 8,
+      "dists": 0.3812349777330052,
+      "style": 246431004.8181818
+    },
+    "L3 impasto/palette-knife": {
+      "n": 8,
+      "dists": 0.36173668368296186,
+      "style": 226331558.54545456
+    },
+    "LP  plates' gouache clause": {
+      "n": 3,
+      "dists": 0.3691714785315774,
+      "style": 252643817.9393939
+    },
+    "LPF plates' full preamble": {
+      "n": 3,
+      "dists": 0.383747241713784,
+      "style": 302994808.72727275
+    }
+  },
+  "calibration": {
+    "dists_below_floor": [
+      "L0 ship @0.75, bare",
+      "L1 'visible brushwork'",
+      "L2 'brushstrokes+worked'",
+      "L3 impasto/palette-knife",
+      "LP  plates' gouache clause",
+      "LPF plates' full preamble"
+    ],
+    "style_below_floor": [
+      "base (no LoRA), bare",
+      "L0 ship @0.75, bare",
+      "L1 'visible brushwork'",
+      "L2 'brushstrokes+worked'",
+      "L3 impasto/palette-knife",
+      "LP  plates' gouache clause"
+    ]
+  }
+}
