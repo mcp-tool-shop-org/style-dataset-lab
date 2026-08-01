@@ -1,0 +1,443 @@
+{
+  "rows": [
+    {
+      "plate": "w2_046",
+      "yellow_pct": 31.6,
+      "redochre_pct": 61.2,
+      "ratio": 0.52
+    },
+    {
+      "plate": "w2_r17_hull_caravel",
+      "yellow_pct": 31.1,
+      "redochre_pct": 57.0,
+      "ratio": 0.55
+    },
+    {
+      "plate": "p15_stone_study",
+      "yellow_pct": 30.6,
+      "redochre_pct": 39.2,
+      "ratio": 0.78
+    },
+    {
+      "plate": "p01_quay_dawn",
+      "yellow_pct": 28.7,
+      "redochre_pct": 40.5,
+      "ratio": 0.71
+    },
+    {
+      "plate": "w2_r04_crane_tower",
+      "yellow_pct": 22.3,
+      "redochre_pct": 70.3,
+      "ratio": 0.32
+    },
+    {
+      "plate": "w2_012",
+      "yellow_pct": 22.1,
+      "redochre_pct": 62.0,
+      "ratio": 0.36
+    },
+    {
+      "plate": "w2_r07_bonded_door",
+      "yellow_pct": 21.4,
+      "redochre_pct": 76.6,
+      "ratio": 0.28
+    },
+    {
+      "plate": "w2_042",
+      "yellow_pct": 20.1,
+      "redochre_pct": 63.8,
+      "ratio": 0.31
+    },
+    {
+      "plate": "p02_quay_noon",
+      "yellow_pct": 19.7,
+      "redochre_pct": 56.5,
+      "ratio": 0.35
+    },
+    {
+      "plate": "w2_004",
+      "yellow_pct": 19.5,
+      "redochre_pct": 73.9,
+      "ratio": 0.26
+    },
+    {
+      "plate": "w2_011",
+      "yellow_pct": 18.3,
+      "redochre_pct": 63.3,
+      "ratio": 0.29
+    },
+    {
+      "plate": "w2_019",
+      "yellow_pct": 17.8,
+      "redochre_pct": 69.7,
+      "ratio": 0.26
+    },
+    {
+      "plate": "w2_059",
+      "yellow_pct": 17.5,
+      "redochre_pct": 67.4,
+      "ratio": 0.26
+    },
+    {
+      "plate": "w2_001",
+      "yellow_pct": 17.3,
+      "redochre_pct": 75.3,
+      "ratio": 0.23
+    },
+    {
+      "plate": "w2_047",
+      "yellow_pct": 17.1,
+      "redochre_pct": 68.2,
+      "ratio": 0.25
+    },
+    {
+      "plate": "w2_034",
+      "yellow_pct": 16.6,
+      "redochre_pct": 76.8,
+      "ratio": 0.22
+    },
+    {
+      "plate": "w2_040",
+      "yellow_pct": 15.0,
+      "redochre_pct": 63.9,
+      "ratio": 0.24
+    },
+    {
+      "plate": "w2_006",
+      "yellow_pct": 13.5,
+      "redochre_pct": 85.0,
+      "ratio": 0.16
+    },
+    {
+      "plate": "w2_041",
+      "yellow_pct": 12.9,
+      "redochre_pct": 85.9,
+      "ratio": 0.15
+    },
+    {
+      "plate": "w2_058",
+      "yellow_pct": 12.7,
+      "redochre_pct": 73.7,
+      "ratio": 0.17
+    },
+    {
+      "plate": "w2_017",
+      "yellow_pct": 12.2,
+      "redochre_pct": 86.3,
+      "ratio": 0.14
+    },
+    {
+      "plate": "w2_057",
+      "yellow_pct": 11.7,
+      "redochre_pct": 77.4,
+      "ratio": 0.15
+    },
+    {
+      "plate": "w2_007",
+      "yellow_pct": 11.6,
+      "redochre_pct": 57.1,
+      "ratio": 0.2
+    },
+    {
+      "plate": "w2_048",
+      "yellow_pct": 10.9,
+      "redochre_pct": 87.1,
+      "ratio": 0.12
+    },
+    {
+      "plate": "w2_009",
+      "yellow_pct": 10.8,
+      "redochre_pct": 52.7,
+      "ratio": 0.2
+    },
+    {
+      "plate": "w2_044",
+      "yellow_pct": 10.5,
+      "redochre_pct": 87.0,
+      "ratio": 0.12
+    },
+    {
+      "plate": "w2_032",
+      "yellow_pct": 9.4,
+      "redochre_pct": 90.2,
+      "ratio": 0.1
+    },
+    {
+      "plate": "w2_052",
+      "yellow_pct": 9.4,
+      "redochre_pct": 51.5,
+      "ratio": 0.18
+    },
+    {
+      "plate": "w2_003",
+      "yellow_pct": 9.2,
+      "redochre_pct": 88.3,
+      "ratio": 0.1
+    },
+    {
+      "plate": "w2_037",
+      "yellow_pct": 9.1,
+      "redochre_pct": 83.1,
+      "ratio": 0.11
+    },
+    {
+      "plate": "w2_002",
+      "yellow_pct": 9.0,
+      "redochre_pct": 73.1,
+      "ratio": 0.12
+    },
+    {
+      "plate": "p13_customs_shed",
+      "yellow_pct": 8.3,
+      "redochre_pct": 90.2,
+      "ratio": 0.09
+    },
+    {
+      "plate": "w2_049",
+      "yellow_pct": 8.3,
+      "redochre_pct": 91.3,
+      "ratio": 0.09
+    },
+    {
+      "plate": "w2_005",
+      "yellow_pct": 8.2,
+      "redochre_pct": 62.2,
+      "ratio": 0.13
+    },
+    {
+      "plate": "w2_038",
+      "yellow_pct": 8.1,
+      "redochre_pct": 79.9,
+      "ratio": 0.1
+    },
+    {
+      "plate": "w2_053",
+      "yellow_pct": 8.1,
+      "redochre_pct": 58.0,
+      "ratio": 0.14
+    },
+    {
+      "plate": "w2_016",
+      "yellow_pct": 7.3,
+      "redochre_pct": 89.2,
+      "ratio": 0.08
+    },
+    {
+      "plate": "w2_035",
+      "yellow_pct": 7.2,
+      "redochre_pct": 92.4,
+      "ratio": 0.08
+    },
+    {
+      "plate": "w2_055",
+      "yellow_pct": 6.9,
+      "redochre_pct": 88.8,
+      "ratio": 0.08
+    },
+    {
+      "plate": "w2_050",
+      "yellow_pct": 6.5,
+      "redochre_pct": 62.0,
+      "ratio": 0.1
+    },
+    {
+      "plate": "w2_008",
+      "yellow_pct": 6.0,
+      "redochre_pct": 73.3,
+      "ratio": 0.08
+    },
+    {
+      "plate": "w2_060",
+      "yellow_pct": 5.9,
+      "redochre_pct": 93.4,
+      "ratio": 0.06
+    },
+    {
+      "plate": "w2_036",
+      "yellow_pct": 5.8,
+      "redochre_pct": 86.7,
+      "ratio": 0.07
+    },
+    {
+      "plate": "p20_shore_vs_sea",
+      "yellow_pct": 5.0,
+      "redochre_pct": 44.0,
+      "ratio": 0.11
+    },
+    {
+      "plate": "p08_cargo_casks",
+      "yellow_pct": 4.9,
+      "redochre_pct": 77.4,
+      "ratio": 0.06
+    },
+    {
+      "plate": "w2_013",
+      "yellow_pct": 4.8,
+      "redochre_pct": 91.7,
+      "ratio": 0.05
+    },
+    {
+      "plate": "w2_033",
+      "yellow_pct": 4.7,
+      "redochre_pct": 63.1,
+      "ratio": 0.07
+    },
+    {
+      "plate": "w2_020",
+      "yellow_pct": 4.6,
+      "redochre_pct": 94.1,
+      "ratio": 0.05
+    },
+    {
+      "plate": "w2_056",
+      "yellow_pct": 4.4,
+      "redochre_pct": 65.5,
+      "ratio": 0.07
+    },
+    {
+      "plate": "w2_015",
+      "yellow_pct": 3.8,
+      "redochre_pct": 94.6,
+      "ratio": 0.04
+    },
+    {
+      "plate": "w2_045",
+      "yellow_pct": 3.7,
+      "redochre_pct": 77.1,
+      "ratio": 0.05
+    },
+    {
+      "plate": "w2_014",
+      "yellow_pct": 3.5,
+      "redochre_pct": 72.2,
+      "ratio": 0.05
+    },
+    {
+      "plate": "w2_028",
+      "yellow_pct": 3.5,
+      "redochre_pct": 94.9,
+      "ratio": 0.04
+    },
+    {
+      "plate": "p09_cargo_bales",
+      "yellow_pct": 3.4,
+      "redochre_pct": 89.4,
+      "ratio": 0.04
+    },
+    {
+      "plate": "w2_039",
+      "yellow_pct": 3.1,
+      "redochre_pct": 95.5,
+      "ratio": 0.03
+    },
+    {
+      "plate": "p12_counting_house",
+      "yellow_pct": 3.0,
+      "redochre_pct": 96.6,
+      "ratio": 0.03
+    },
+    {
+      "plate": "p10_weighing_floor",
+      "yellow_pct": 2.8,
+      "redochre_pct": 97.0,
+      "ratio": 0.03
+    },
+    {
+      "plate": "w2_024",
+      "yellow_pct": 2.7,
+      "redochre_pct": 96.0,
+      "ratio": 0.03
+    },
+    {
+      "plate": "w2_023",
+      "yellow_pct": 2.4,
+      "redochre_pct": 97.6,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_029",
+      "yellow_pct": 2.1,
+      "redochre_pct": 97.7,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_030",
+      "yellow_pct": 2.1,
+      "redochre_pct": 97.7,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_051",
+      "yellow_pct": 2.0,
+      "redochre_pct": 86.0,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_031",
+      "yellow_pct": 1.9,
+      "redochre_pct": 98.1,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_018",
+      "yellow_pct": 1.8,
+      "redochre_pct": 96.9,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_027",
+      "yellow_pct": 1.5,
+      "redochre_pct": 98.4,
+      "ratio": 0.02
+    },
+    {
+      "plate": "w2_026",
+      "yellow_pct": 1.4,
+      "redochre_pct": 96.7,
+      "ratio": 0.01
+    },
+    {
+      "plate": "p11v2_beam_scale",
+      "yellow_pct": 0.7,
+      "redochre_pct": 99.3,
+      "ratio": 0.01
+    },
+    {
+      "plate": "p06v2_warehouse_interior",
+      "yellow_pct": 0.4,
+      "redochre_pct": 99.6,
+      "ratio": 0.0
+    },
+    {
+      "plate": "w2_r05_crane_treadwheel",
+      "yellow_pct": 0.4,
+      "redochre_pct": 90.4,
+      "ratio": 0.0
+    },
+    {
+      "plate": "p03_quay_night",
+      "yellow_pct": 0.2,
+      "redochre_pct": 40.7,
+      "ratio": 0.01
+    },
+    {
+      "plate": "p18_sea_open",
+      "yellow_pct": 0.0,
+      "redochre_pct": 0.0,
+      "ratio": 0.0
+    },
+    {
+      "plate": "w2_r16_hull_brig",
+      "yellow_pct": 0.0,
+      "redochre_pct": 100.0,
+      "ratio": 0.0
+    },
+    {
+      "plate": "w2_r19_sea_chart",
+      "yellow_pct": 0.0,
+      "redochre_pct": 1.3,
+      "ratio": 0.0
+    }
+  ],
+  "offenders": []
+}
