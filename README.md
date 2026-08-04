@@ -27,7 +27,14 @@ sdlab init my-project --domain character-design
 
 # Generate candidates via ComfyUI, then review them
 sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab sheet outputs/candidates --project my-project   # HTML contact sheet to triage
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
+
+# Already have images? Bring them in without generating anything
+sdlab ingest ~/renders/wave1 --project my-project
+
+# Measure what the pixels actually are — palette and texture, as numbers
+sdlab measure outputs/candidates --project my-project
 
 # Bind approved work to constitution rules
 # (`sdlab bind` is a shorter alias for `canon-bind`)
@@ -162,13 +169,16 @@ projects/my-project/
 
 These are not aspirational. They are enforced.
 
-- **Snapshots are immutable.** Config fingerprint (SHA-256) proves nothing changed.
-- **Splits prevent leakage.** Subject families (by identity, lineage, or ID suffix) never cross partition boundaries.
-- **Manifests are frozen contracts.** Export hash + config fingerprint. If anything changes, create a new one.
-- **Runs pin their exact graph.** Every generation records `comfy_workflow_sha` + model/LoRA content hashes + seed policy, so a wave is byte-for-byte replayable — identical across the JS and Python runners. Model hashing is opt-in (`--hash-models`) and never fabricated.
+- **Snapshots are immutable.** Config fingerprint (SHA-256) proves nothing changed. IDs are claimed atomically, so two concurrent runs cannot interleave into one directory.
+- **Splits prevent leakage — and the check that says so is independent.** Subject families (by identity, lineage, or normalized ID stem) never cross partition boundaries, and a second check re-derives subject identity from scratch rather than re-reading the map the split itself used. A dataset card only claims "leakage: none (verified)" when both checks ran and passed; a split predating the second check says exactly that instead.
+- **Manifests are frozen contracts.** Export hash + config fingerprint, and `validate` re-hashes every file `checksums.txt` lists — so replacing an image inside a finished export is caught, including for manifests created before that check existed.
+- **Runs pin their exact graph.** Every generation records `comfy_workflow_sha` + model/LoRA content hashes + seed policy, so a wave is byte-for-byte replayable. The JS and Python runners are held to a byte-identical hash by a test that spawns both. Model hashing is opt-in (`--hash-models`) and never fabricated — an unresolvable file records `sha256: null` with a note.
 - **No model verifies its own output.** Judgments record `judged_by_model` and `generator_model`; a warning fires if they are ever the same model.
+- **A judgment says who made it.** `eligibility audit` distinguishes judgments a person wrote from judgments a bulk script minted, so a rationale that describes a category rather than an image cannot pass as curation.
+- **Measurement is not verdict.** `sdlab measure` attaches numbers to a record. It never sets a judgment, a fit, or an approval — and where a measure is undefined for an image it records `null` rather than a plausible number.
 - **Adapters cannot mutate truth.** Different layout, same records. No additions, no removals, no reclassification.
-- **Generated outputs re-enter through review.** No bypass. Curate and bind like everything else.
+- **Generated outputs re-enter through review.** No bypass. Curate and bind like everything else. Externally-generated images enter the same way via `sdlab ingest`, uncurated.
+- **Failures are visible.** A missing record, an unplaceable image, or a caption that cannot be built stops an export or training package rather than quietly shrinking it.
 
 ## Star Freight
 

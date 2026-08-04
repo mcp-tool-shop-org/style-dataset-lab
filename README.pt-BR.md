@@ -27,7 +27,14 @@ sdlab init my-project --domain character-design
 
 # Generate candidates via ComfyUI, then review them
 sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab sheet outputs/candidates --project my-project   # HTML contact sheet to triage
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
+
+# Already have images? Bring them in without generating anything
+sdlab ingest ~/renders/wave1 --project my-project
+
+# Measure what the pixels actually are — palette and texture, as numbers
+sdlab measure outputs/candidates --project my-project
 
 # Bind approved work to constitution rules
 # (`sdlab bind` is a shorter alias for `canon-bind`)
@@ -60,7 +67,7 @@ Esse último comando é o ponto crucial. As saídas selecionadas retornam pelo m
 
 ## Criação do cânone
 
-Antes que o pipeline do conjunto de dados seja executado, o namespace `sdlab canon *` transforma o repositório de entidades do cânone do seu projeto nas três projeções que o treinamento e a produção realmente usam — e bloqueia as entradas que não devem ser alteradas.
+Before the dataset pipeline runs, the `sdlab canon *` namespace turns your project's canon entity store into the three projections training and production actually consume — and locks the entries that must not drift.
 
 ```bash
 # Build three projections from the canon entity store:
@@ -76,7 +83,7 @@ sdlab canon freeze kael_maren --project my-project --reason "prologue portrait l
 sdlab canon drift --project my-project
 ```
 
-`canon build` é endereçável por conteúdo — sua saída é identificada por um `canon_sha` e armazenada em cache, para que uma reconstrução do cânone inalterado seja feita instantaneamente. `canon freeze` registra cada congelamento em relação a uma construção específica e anexa a um rastreamento de auditoria `freeze-events.jsonl`: as entradas `frozen` rejeitam explicitamente a regeneração, as entradas `soft-advisory` rejeitam por padrão (ignore com `--i-know`). `canon drift` recalcula o hash de cada entrada monitorada e sinaliza qualquer coisa que tenha sido alterada desde a última construção limpa.
+`canon build` é endereçável por conteúdo — sua saída é identificada por um `canon_sha` e armazenada em cache, de modo que uma versão inalterada é reconstruída instantaneamente. `canon freeze` registra cada estado contra uma compilação específica e adiciona a um `freeze-events.jsonl` histórico de auditoria: as entradas `frozen` rejeitam explicitamente a regeneração, as entradas `soft-advisory` rejeitam por padrão (ignorar com `--i-know`). `canon drift` recalcula o hash de cada entrada monitorada e sinaliza qualquer coisa que tenha sido alterada desde a última compilação limpa.
 
 Fluxo de trabalho completo no manual: [Canon build](handbook/canon-build/), [Canon freeze](handbook/canon-freeze/) e [Two-LoRA stacking](handbook/two-lora-stacking/).
 
@@ -90,7 +97,7 @@ Sete artefatos de conjunto de dados e uma estação de trabalho de produção co
 | **Split** | Partição de treinamento/validação/teste onde as famílias de assuntos nunca cruzam os limites. |
 | **Export package** | Conjunto de dados autônomo: manifesto, metadados, imagens, divisões, cartão do conjunto de dados, somas de verificação. |
 | **Eval pack** | Tarefas de teste com reconhecimento do cânone: cobertura da faixa, desvio proibido, âncora/ouro, continuidade do assunto. |
-| **Training package** | Layout pronto para o treinador por meio de adaptadores (`diffusers-lora`, `generic-image-caption`). A mesma verdade, formato diferente. |
+| **Training package** | Layout pronto para treinamento via adaptadores (`diffusers-lora`, `generic-image-caption`). A mesma verdade, formato diferente. |
 | **Eval scorecard** | Resultado de aprovação/reprovação por tarefa a partir da pontuação das saídas geradas em relação aos pacotes de avaliação. |
 | **Implementation pack** | Exemplos de prompts, falhas conhecidas, testes de continuidade e orientação para reintrodução. |
 
@@ -117,8 +124,8 @@ O resultado prático: quando seu LoRA se desvia, você pode perguntar *por quê*
 
 Este não é um fluxo de trabalho de demonstração. Duas LoRAs reais foram processadas integralmente através dele — o mesmo ciclo de criação → curadoria → treinamento → lançamento, em extremos opostos do espectro da curadoria.
 
-- **[Tallow Fen](handbook/case-study-tallow-fen/)** (design de criaturas) — um bestiário criado do zero, com aproximadamente **34% de aprovação** em 293 registros selecionados (169 rejeitados — a triagem é rigorosa). Lançado `tallow_fen_style_v3.safetensors` @ 1.5 no `qwen-image`.
-- **[Rustline](handbook/case-study-rustline/)** (design de conceito) — um conjunto denso e pré-definido, com aproximadamente **96% de aprovação** em 180 registros. Lançado `rustline_v3ckpt_1500.safetensors` @ 1.0 no `qwen-image`, reutilizado posteriormente por um segundo projeto.
+- **[Tallow Fen](handbook/case-study-tallow-fen/)** (design de criaturas) — um bestiário criado do zero, com aproximadamente **34% de aprovação** em 293 registros selecionados (169 rejeitados — a barreira é rigorosa). Enviado `tallow_fen_style_v3.safetensors` @ 1.5 em `qwen-image`.
+- **[Rustline](handbook/case-study-rustline/)** (design conceitual) — um conjunto de dados denso e pré-formatado, com aproximadamente **96% de aprovação** em 180 registros. Enviado `rustline_v3ckpt_1500.safetensors` @ 1.0 em `qwen-image`, reutilizado posteriormente por um segundo projeto.
 
 O mesmo fluxo de trabalho, dois perfis de produção: a triagem da curadoria é real (rejeita rigorosamente temas abertos) e uma abordagem disciplinada na criação resulta em alta aceitação.
 
@@ -162,13 +169,16 @@ projects/my-project/
 
 Estas não são apenas aspirações. Elas são aplicadas.
 
-- **Os instantâneos são imutáveis.** A impressão digital da configuração (SHA-256) comprova que nada foi alterado.
-- **As divisões evitam vazamentos.** As famílias de temas (por identidade, linhagem ou sufixo de ID) nunca cruzam os limites das partições.
-- **Os manifestos são contratos fixos.** Exporta o hash + impressão digital da configuração. Se algo mudar, crie um novo.
-- **As execuções fixam seu grafo exato.** Cada geração registra `comfy_workflow_sha` + hashes do conteúdo do modelo/LoRA + política de semente, para que uma série possa ser reproduzida byte a byte — idêntica nos executores JS e Python. O hash do modelo é opcional (`--hash-models`) e nunca é fabricado.
-- **Nenhum modelo verifica seu próprio resultado.** As avaliações registram `judged_by_model` e `generator_model`; um aviso é exibido se eles forem o mesmo modelo.
-- **Os adaptadores não podem alterar a verdade.** Layout diferente, os mesmos registros. Sem adições, sem remoções, sem reclassificação.
-- **As saídas geradas são reintroduzidas através da revisão.** Sem desvio. Curadoria e vinculação como em tudo o mais.
+- **Os snapshots são imutáveis.** A impressão digital da configuração (SHA-256) prova que nada foi alterado. Os IDs são reivindicados atomicamente, portanto, duas execuções simultâneas não podem se intercalar em um único diretório.
+- **As divisões evitam vazamentos — e a verificação que confirma isso é independente.** As famílias de objetos (por identidade, linhagem ou ID normalizado) nunca cruzam os limites da partição, e uma segunda verificação rederiva a identidade do objeto do zero, em vez de reler o mapa que a própria divisão usou. Um cartão de conjunto de dados apenas afirma "vazamento: nenhum (verificado)" quando ambas as verificações são executadas e aprovadas; uma divisão anterior à segunda verificação indica exatamente isso.
+- **Os manifestos são contratos congelados.** Hash de exportação + impressão digital da configuração, e `validate` recalcula o hash de cada arquivo que `checksums.txt` lista — portanto, substituir uma imagem dentro de uma exportação finalizada é detectado, incluindo para manifestos criados antes que essa verificação existisse.
+- **As execuções fixam seu grafo exato.** Cada geração registra `comfy_workflow_sha` + hashes do conteúdo do modelo/LoRA + política de sementes, portanto, uma onda pode ser reproduzida byte a byte. Os executores JS e Python são mantidos em um hash idêntico por meio de um teste que os inicia. O hashing do modelo é opcional (`--hash-models`) e nunca fabricado — um arquivo irresolvível registra `sha256: null` com uma nota.
+- **Nenhum modelo verifica sua própria saída.** Os julgamentos registram `judged_by_model` e `generator_model`; um aviso é acionado se eles forem o mesmo modelo.
+- **Um julgamento indica quem o fez.** `eligibility audit` distingue os julgamentos escritos por uma pessoa dos julgamentos gerados por um script em lote, portanto, uma justificativa que descreve uma categoria em vez de uma imagem não pode ser considerada como curadoria.
+- **A medição não é veredicto.** `sdlab measure` anexa números a um registro. Nunca define um julgamento, um ajuste ou uma aprovação — e onde uma medida é indefinida para uma imagem, registra `null` em vez de um número plausível.
+- **Os adaptadores não podem alterar a verdade.** Layout diferente, os mesmos registros. Sem adições, sem remoções, sem reclassificações.
+- **As saídas geradas entram novamente por meio da revisão.** Sem desvio. Curadoria e vinculação como tudo o mais. As imagens geradas externamente entram da mesma forma via `sdlab ingest`, sem curadoria.
+- **As falhas são visíveis.** Um registro ausente, uma imagem que não pode ser colocada ou uma legenda que não pode ser criada interrompe uma exportação ou pacote de treinamento em vez de simplesmente reduzi-lo silenciosamente.
 
 ## Star Freight
 
@@ -209,9 +219,9 @@ sdlab project doctor --project test
 sdlab snapshot create --dry-run --project star-freight
 ```
 
-`sdlab project doctor` valida cada configuração de projeto (constituição, rotas, rubrica, terminologia) e relata a elegibilidade sem tocar na GPU. Qualquer comando que altere o estado gerado aceita `--dry-run` para visualizar o efeito primeiro.
+`sdlab project doctor` validates every project config (constitution, lanes, rubric, terminology) and reports eligibility without touching the GPU. Any command that mutates generated state accepts `--dry-run` to preview the effect first.
 
-Se você esquecer `--project`, a CLI voltará ao primeiro projeto que encontrar em `projects/` e imprimirá um aviso — passe `--project` explicitamente para silenciá-lo.
+Se você esquecer `--project`, a CLI volta ao primeiro projeto que encontrar em `projects/` e imprime um aviso — passe `--project` explicitamente para silenciá-lo.
 
 ### Retomando uma execução interrompida
 
@@ -237,22 +247,22 @@ Modos de falha comuns e soluções:
 O ComfyUI não está em execução. Inicie o ComfyUI (`python main.py --listen 127.0.0.1 --port 8188`) e confirme com `curl http://127.0.0.1:8188/system_stats`. Para apontar para um host/porta diferente, defina `COMFY_URL=http://host:port`.
 
 **`missing checkpoint` / `LoRA weight not found`**
-O perfil de fluxo de trabalho especifica um arquivo de modelo que não está na pasta `models/checkpoints/` ou `models/loras/` do ComfyUI. Abra `projects/<project>/workflows/profiles/<profile>.json`, localize o campo `checkpoint` ou `lora` e, ou baixe o peso referenciado ou substitua-o por um que você já tenha. Execute novamente `sdlab project doctor --project <project>` para confirmar a correção.
+O perfil do seu fluxo de trabalho nomeia um arquivo de modelo que não está na pasta `models/checkpoints/` ou `models/loras/` do ComfyUI. Abra `projects/<project>/workflows/profiles/<profile>.json`, localize o campo `checkpoint` ou `lora` e baixe o peso referenciado ou substitua-o por um que você já tenha. Execute novamente `sdlab project doctor --project <project>` para confirmar a correção.
 
-**Erros de `sdlab project doctor`**
-Doctor retorna códigos de erro estruturados. Alguns comuns:
+**Erros `sdlab project doctor`**
+O Doctor retorna códigos de erro estruturados. Alguns comuns:
 - `E_PROJECT_NOT_FOUND` — o diretório do projeto não existe em `projects/`. Verifique a ortografia.
-- `E_CONFIG_INVALID` — um dos cinco arquivos de configuração JSON falhou na validação do esquema. O campo `hint` indica o arquivo e o campo com problemas.
-- `E_RECORD_DRIFT` — a impressão digital da configuração de um registro não corresponde mais à sua fonte. Reavalie ou redefina conforme sugerido no aviso.
+- `E_CONFIG_INVALID` — um dos cinco arquivos de configuração JSON falhou na validação do esquema. O campo `hint` nomeia o arquivo e o campo com problemas.
+- `E_RECORD_DRIFT` — a impressão digital da configuração de um registro não corresponde mais à sua fonte. Faça uma nova curadoria ou vincule novamente, conforme sugerido.
 
-**`No --project specified, falling back to <name>`**
-Um aviso leve. Passe `--project <name>` explicitamente para selecionar o projeto correto e silenciar o aviso.
+**Aviso `No --project specified, falling back to <name>`**
+Um aviso suave. Passe `--project <name>` explicitamente para selecionar o projeto correto e silenciar o aviso.
 
-**Problemas de VRAM / "Painterly" (estilo pictórico) / falta de memória**
-Consulte `docs/internal/HANDOFF.md` para obter as notas sobre o ajuste do ruído no estilo pictórico. Em resumo: diminua a intensidade do ruído, reduza o tamanho do lote ou altere para um checkpoint menor em seu perfil de fluxo de trabalho.
+**Painterly / VRAM out-of-memory issues**
+See `docs/internal/HANDOFF.md` for the painterly denoise tuning notes. In short: lower the denoise strength, reduce batch size, or switch to a smaller checkpoint in your workflow profile.
 
-**Relatando bugs**
-Crie uma solicitação em https://github.com/mcp-tool-shop-org/style-dataset-lab/issues com sua versão do sdlab (`sdlab --version`), versão do Node (`node -v`), o comando completo e a saída de erro estruturada. Um modelo de relatório de bug preenche os campos automaticamente.
+**Reporting bugs**
+File an issue at https://github.com/mcp-tool-shop-org/style-dataset-lab/issues with your sdlab version (`sdlab --version`), Node version (`node -v`), the full command, and the structured error output. A bug-report template prefills the fields.
 
 ## Segurança
 

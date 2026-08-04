@@ -25,6 +25,7 @@ export default defineConfig({
           items: [
             { slug: 'handbook' },
             { slug: 'handbook/getting-started' },
+            { slug: 'handbook/reviewing-candidates' },
             { slug: 'handbook/dataset-workflow' },
             { slug: 'handbook/reference' },
             { slug: 'handbook/architecture' },

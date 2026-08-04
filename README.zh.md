@@ -27,7 +27,14 @@ sdlab init my-project --domain character-design
 
 # Generate candidates via ComfyUI, then review them
 sdlab generate inputs/prompts/wave1.json --project my-project
+sdlab sheet outputs/candidates --project my-project   # HTML contact sheet to triage
 sdlab curate <id> approved "Strong silhouette, correct faction palette"
+
+# Already have images? Bring them in without generating anything
+sdlab ingest ~/renders/wave1 --project my-project
+
+# Measure what the pixels actually are — palette and texture, as numbers
+sdlab measure outputs/candidates --project my-project
 
 # Bind approved work to constitution rules
 # (`sdlab bind` is a shorter alias for `canon-bind`)
@@ -60,7 +67,7 @@ sdlab reingest selected --selection selection_2026-04-16_001
 
 ## 规范创作
 
-在数据集流水线运行之前，“sdlab canon *”命名空间会将你的项目的规范实体存储转换为三个投影，这些投影是训练和生产实际使用的——并且锁定那些不应发生变化的项目。
+Before the dataset pipeline runs, the `sdlab canon *` namespace turns your project's canon entity store into the three projections training and production actually consume — and locks the entries that must not drift.
 
 ```bash
 # Build three projections from the canon entity store:
@@ -76,7 +83,7 @@ sdlab canon freeze kael_maren --project my-project --reason "prologue portrait l
 sdlab canon drift --project my-project
 ```
 
-“canon build”（构建规范）是基于内容的——它的输出由一个“canon_sha”标识并进行缓存，因此未更改的规范可以立即重建。“canon freeze”（冻结规范）会针对特定的构建记录每次冻结操作，并将结果附加到“freeze-events.jsonl”审计跟踪中： “frozen”（已冻结）条目完全拒绝重新生成，“soft-advisory”（软提示）条目默认情况下拒绝（通过使用“--i-know”选项可以绕过）。“canon drift”（规范漂移）会重新计算每个受监控条目的哈希值，并标记自上次干净构建以来发生更改的任何内容。
+`canon build` 是基于内容的——它的输出由一个 `canon_sha` 确定，并进行缓存，因此未更改的规范可以立即重建。`canon freeze` 会针对特定的构建记录每次冻结状态，并将结果附加到 `freeze-events.jsonl` 审计跟踪中：`frozen` 条目会直接拒绝重新生成，`soft-advisory` 条目默认情况下会拒绝（通过 `--i-know` 可以绕过）。`canon drift` 会重新计算每个已监视条目的哈希值，并标记自上次完整构建以来发生更改的任何内容。
 
 完整的流程在手册中：[构建规范](handbook/canon-build/)、[冻结规范](handbook/canon-freeze/)和[双 LoRA 堆叠](handbook/two-lora-stacking/)。
 
@@ -90,7 +97,7 @@ sdlab canon drift --project my-project
 | **Split** | 训练/验证/测试分区，其中主题系列不会跨越边界。 |
 | **Export package** | 自包含数据集：清单、元数据、图像、分割、数据集卡、校验和。 |
 | **Eval pack** | 考虑规范的测试任务：车道覆盖率、禁止漂移、锚点/黄金标准、主题连续性。 |
-| **Training package** | 通过适配器（“diffusers-lora”、“generic-image-caption”）实现的，可用于训练器的布局。相同的真实数据，不同的格式。 |
+| **Training package** | 通过适配器实现训练器友好的布局（`diffusers-lora`、`generic-image-caption`）。相同的真相，不同的格式。 |
 | **Eval scorecard** | 根据评估包对生成的输出进行评分后的每个任务的通过/失败结果。 |
 | **Implementation pack** | 提示示例、已知错误、连续性测试和重新导入指南。 |
 
@@ -117,8 +124,8 @@ sdlab canon drift --project my-project
 
 这不是一个演示流水线。两个真实的风格 LoRA 都通过它完成了端到端的流程——相同的规范 → 策划 → 训练 → 发布循环，位于策划频谱的两端。
 
-- **[Tallow Fen](handbook/case-study-tallow-fen/)**（生物设计）——一个从头开始构建的奇幻生物典籍规范，在 293 个策划记录中，大约有 **34% 的批准率**（169 个被拒绝——审核严格）。发布了 `tallow_fen_style_v3.safetensors`，权重为 1.5，用于 `qwen-image`。
-- **[Rustline](handbook/case-study-rustline/)**（概念设计）——密集、预先构建的规范，在 180 个记录中，大约有 **96% 的批准率**。发布了 `rustline_v3ckpt_1500.safetensors`，权重为 1.0，用于 `qwen-image`，并在后续项目中被第二个项目重用。
+- **[Tallow Fen](handbook/case-study-tallow-fen/)**（生物设计）——一个从头开始构建的生物图鉴规范，在 293 个精选记录中获得约 **34% 的认可度**（169 个被拒绝——审核非常严格）。以 `tallow_fen_style_v3.safetensors` @ 1.5 的形式发布到 `qwen-image`。
+- **[Rustline](handbook/case-study-rustline/)**（概念设计）——一个密集、预先构建的规范，在 180 个记录中获得约 **96% 的认可度**。以 `rustline_v3ckpt_1500.safetensors` @ 1.0 的形式发布到 `qwen-image`，并在第二个项目中重复使用。
 
 相同的流水线，两种生产配置：策划审核是真实的（它会严格拒绝开放主题），并且严谨的规范可以产生很高的接受率。
 
@@ -162,13 +169,16 @@ projects/my-project/
 
 这些不是理想化的，而是强制执行的。
 
-- **快照是不可变的。** 配置指纹（SHA-256）证明没有任何更改。
-- **分割可以防止数据泄露。** 主题组（按身份、血统或 ID 后缀划分）永远不会跨越分区边界。
-- **清单是冻结的合同。** 导出哈希 + 配置指纹。如果发生任何更改，请创建一个新的。
-- **运行会固定其确切的图。** 每次生成都会记录 `comfy_workflow_sha` + 模型/LoRA 内容哈希 + 种子策略，因此一个批次可以完全重现——在 JS 和 Python 运行器中都是相同的。模型哈希是可选的（`--hash-models`），并且绝不会被伪造。
-- **没有模型会验证自己的输出。** 评估会记录 `judged_by_model` 和 `generator_model`；如果它们曾经是同一个模型，则会发出警告。
-- **适配器不能改变真相。** 不同的布局，相同的数据。没有添加、删除或重新分类。
-- **生成的输出通过审核后重新进入。** 没有绕过。像其他所有内容一样进行策划和绑定。
+- **快照是不可变的。** 配置指纹（SHA-256）证明没有任何更改。ID 是原子性地声明的，因此两个并发运行不能相互交错到一个目录中。
+- **分割可以防止泄漏——并且验证这一点的代码是独立的。** 主题系列（按身份、血统或规范化的 ID 词干）永远不会跨越分区边界，并且第二个检查会从头开始重新推导主题身份，而不是重新读取分割本身使用的映射。数据集卡仅在两个检查都运行并通过时声明“泄漏：无（已验证）”；如果分割早于第二次检查，则会明确说明这一点。
+- **清单是冻结的协议。** 导出哈希 + 配置指纹，并且 `validate` 会重新计算 `checksums.txt` 列出的每个文件——因此，替换完成导出中的图像会被捕获，包括对于在进行此检查之前创建的清单。
+- **运行会固定其确切的图。** 每个生成都会记录 `comfy_workflow_sha` + 模型/LoRA 内容哈希 + 种子策略，因此可以逐字节地重现一个批次。JS 和 Python 运行器通过一个测试来确保它们具有完全相同的哈希值，该测试会同时启动两者。模型哈希是可选的（`--hash-models`），并且绝不会伪造——如果无法解析某个文件，则会记录 `sha256: null` 并附带说明。
+- **没有模型会验证自己的输出。** 判断会记录 `judged_by_model` 和 `generator_model`；如果它们曾经是同一个模型，则会发出警告。
+- **判断会说明是谁做出的判断。** `eligibility audit` 会区分某人编写的判断和批量脚本生成的判断，因此描述一个类别而不是图像的理由不能被视为审核。
+- **测量不是结论。** `sdlab measure` 将数字附加到记录中。它绝不会设置判断、拟合或认可——并且如果某个图像没有定义度量值，则会记录 `null` 而不是一个合理的数字。
+- **适配器无法更改真相。** 不同的布局，相同的记录。没有添加、删除或重新分类。
+- **生成的输出会通过审核重新进入。** 没有绕过。像其他内容一样进行审核和绑定。外部生成的图像以相同的方式通过 `sdlab ingest` 进入，未经审核。
+- **失败是可见的。** 缺少记录、无法放置的图像或无法构建的标题会导致导出或训练包停止，而不是悄悄地缩小它。
 
 ## 星际货运
 
@@ -184,7 +194,7 @@ sdlab split build --project star-freight       # zero subject leakage
 
 ## 下游格式
 
-`sdlab` 拥有数据集。格式转换由 [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) 处理：TRL、LLaVA、Qwen2-VL、JSONL、Parquet 等。`repo-dataset` 进行渲染；它不会决定是否包含。
+`sdlab` 拥有数据集。格式转换由 [`repo-dataset`](https://github.com/mcp-tool-shop-org/repo-dataset) 处理：TRL、LLaVA、Qwen2-VL、JSONL、Parquet 等。`repo-dataset` 进行渲染；它绝不会决定是否包含。
 
 ## 安装
 
@@ -209,7 +219,7 @@ sdlab project doctor --project test
 sdlab snapshot create --dry-run --project star-freight
 ```
 
-`sdlab project doctor` 会验证每个项目配置（宪法、通道、评分标准、术语），并在不触及 GPU 的情况下报告资格。任何会更改生成状态的命令都接受 `--dry-run`，以便首先预览效果。
+`sdlab project doctor` validates every project config (constitution, lanes, rubric, terminology) and reports eligibility without touching the GPU. Any command that mutates generated state accepts `--dry-run` to preview the effect first.
 
 如果您忘记了 `--project`，CLI 将回退到在 `projects/` 下找到的第一个项目并打印警告——明确传递 `--project` 以使其停止发出警告。
 
@@ -233,26 +243,26 @@ sdlab batch generate --resume batch_2026-04-22_001 --project my-project
 
 常见的失败模式和解决方法：
 
-**任何 `sdlab generate` / `sdlab run generate` / `sdlab batch generate` 上的 `ECONNREFUSED 127.0.0.1:8188`**
-ComfyUI 没有运行。启动 ComfyUI（`python main.py --listen 127.0.0.1 --port 8188`），并使用 `curl http://127.0.0.1:8188/system_stats` 进行确认。要指向不同的主机/端口，请设置 `COMFY_URL=http://host:port`。
+**`ECONNREFUSED 127.0.0.1:8188` 在任何 `sdlab generate` / `sdlab run generate` / `sdlab batch generate` 上**
+ComfyUI 没有运行。启动 ComfyUI（`python main.py --listen 127.0.0.1 --port 8188`）并通过 `curl http://127.0.0.1:8188/system_stats` 进行确认。要指向不同的主机/端口，请设置 `COMFY_URL=http://host:port`。
 
 **`missing checkpoint` / `LoRA weight not found`**
-您的工作流程配置文件指定了一个不在 ComfyUI 的 `models/checkpoints/` 或 `models/loras/` 文件夹中的模型文件。打开 `projects/<project>/workflows/profiles/<profile>.json`，找到 `checkpoint` 或 `lora` 字段，然后下载引用的权重或将其替换为您已有的权重。重新运行 `sdlab project doctor --project <project>` 以确认修复。
+您的工作流程配置文件指定了一个不在 ComfyUI 的 `models/checkpoints/` 或 `models/loras/` 文件夹中的模型文件。打开 `projects/<project>/workflows/profiles/<profile>.json`，找到 `checkpoint` 或 `lora` 字段，然后下载引用的权重或将其替换为您已经拥有的权重。重新运行 `sdlab project doctor --project <project>` 以确认修复。
 
 **`sdlab project doctor` 错误**
 Doctor 返回结构化的错误代码。常见的错误：
-- `E_PROJECT_NOT_FOUND`——项目目录在 `projects/` 下不存在。检查拼写。
+- `E_PROJECT_NOT_FOUND`——项目目录不存在于 `projects/` 下。检查拼写。
 - `E_CONFIG_INVALID`——五个 JSON 配置文件中的一个未能通过模式验证。`hint` 字段指定了错误的 文件和字段。
-- `E_RECORD_DRIFT`——记录的配置指纹不再与其来源匹配。如提示所述，重新策划或重新绑定。
+- `E_RECORD_DRIFT`——某个记录的配置指纹不再与其来源匹配。如提示所述，重新审核或重新绑定。
 
 **`No --project specified, falling back to <name>`**
 一个软警告。明确传递 `--project <name>` 以选择正确的项目并停止发出警告。
 
-**绘画风格 / VRAM 内存不足问题**
-请参阅 `docs/internal/HANDOFF.md`，了解有关绘画风格降噪调整说明。简而言之：降低降噪强度、减少批处理大小或在工作流程配置文件中切换到较小的检查点。
+**Painterly / VRAM out-of-memory issues**
+See `docs/internal/HANDOFF.md` for the painterly denoise tuning notes. In short: lower the denoise strength, reduce batch size, or switch to a smaller checkpoint in your workflow profile.
 
-**报告错误**
-在 https://github.com/mcp-tool-shop-org/style-dataset-lab/issues 上提交问题，并提供您的 sdlab 版本（`sdlab --version`）、Node 版本（`node -v`）、完整的命令以及结构化的错误输出。一个错误报告模板会预填充这些字段。
+**Reporting bugs**
+File an issue at https://github.com/mcp-tool-shop-org/style-dataset-lab/issues with your sdlab version (`sdlab --version`), Node version (`node -v`), the full command, and the structured error output. A bug-report template prefills the fields.
 
 ## 安全性
 

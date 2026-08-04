@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [3.4.0] - 2026-08-04
+
+**Dogfood swarm.** A full health pass (bugs/security, then proactive hardening, then user-facing copy) followed by three new commands. Tests **400 → 791**. Every fix carries a test proven to fail against the unfixed code.
+
+The through-line: this package had never been exercised outside its own repo checkout, where the workspace root and the package root happen to be the same directory. Most of what follows falls out of that.
+
+### Added
+
+- **`sdlab ingest <dir>`** — bring externally-generated images into a project as bare, uncurated candidate records. There was previously no path in: `reingest generated` requires a trained LoRA's manifest and `reingest selected` requires a selection only the production loop can mint. Records land with `judgment: null`, `canon: null` and `provenance.source: "external"` — it never invents a judgment, a score, or a caption.
+- **`sdlab sheet [<dir>]`** — an HTML contact sheet over any directory of candidates, for visual triage before full-resolution review. Shows record id, curation status and prompt per tile; degrades to filename for images with no record yet. Images are referenced by relative path, so a 99-image sheet is ~110 KB and stays openable.
+- **`sdlab measure <target>`** — deterministic palette and texture measurement attached to records as numbers. Ported from the validated salt-road audit instruments. **Measurement, not verdict**: it never sets `judgment` or `overall_fit`. Requires Python 3.9+ with Pillow/numpy/scipy; without them it fails with a clear structured error rather than degrading silently.
+- **Judgment-provenance reporting** in `sdlab eligibility audit` — distinguishes judgments a person made from judgments a bulk script minted, read-only, without modifying any record.
+- `--resume` on `generate:identity`, `generate:controlnet` and `generate:ipadapter`, including the seed-advances-on-skip discipline that makes a resumed run reproduce what an uninterrupted one would have produced.
+
+### Fixed
+
+- **`sdlab init` wrote user projects into `node_modules/`.** `REPO_ROOT` resolved from the module's own location, so for anyone installing from npm rather than cloning, every project — canon, records, judgments, snapshots, exports — landed inside the installed package, where the next `npm ci` silently destroyed it. Replaced with a workspace resolver (`SDLAB_ROOT` → walk up from cwd for `projects/` → module root if it is the checkout → cwd) that refuses any root inside `node_modules`. A separate package root now serves `templates/` and `runtime/`, which ship in the tarball and are not workspace content.
+- **`--project` accepted a traversing value.** `--project ../../some-sibling-repo` resolved outside the sandbox and was accepted; ~26 scripts then wrote beneath it. `getProjectRoot()` now rejects separators and `..`, and every script routes through it.
+- **`sdlab project doctor` printed a failure and exited 0** on a missing project — and `npm run verify` and the CI smoke step both gate on that exit code.
+- **Subject leakage with an audit that certified it clean.** The split's subject-family fallback split one subject across two families (`_v1` suffix vs `v2` infix, case-sensitively), and the leakage audit re-read the same family map the assignment used, so it could not detect that class at all — while the dataset card printed "Subject leakage: None (verified)". Added an independent stem cross-check; the card now withholds "verified" unless both checks pass and the guessed-family share is immaterial. A split predating the cross-check now says so instead of claiming verification it never received.
+- **`training-package build` produced an empty package and exited 0 on Windows** without Developer Mode: no symlink guard, and a bare `catch { continue; }` in all three adapters dropped image, caption and metadata row together.
+- **`eval-run score` returned `overall_verdict: "pass"` for a missing eval pack** — `[].every()` is vacuously true, so a moved or deleted pack scored zero tasks as a pass.
+- **Pinning parity between the JS and Python runners.** Float formatting diverged (`0.00005` vs `5e-05`), an explicit `null` LoRA weight defaulted differently, and the Python bridge hardcoded `sampler`/`scheduler`/`shift` **inside its own pinning receipt** — asserting values it never read.
+- The freeze gate failed open on a malformed `status` (a capital `F` silently disabled protection). Captions fell back into curation metadata. `checksums.txt` was written and never verified. No `fetch` in the ComfyUI client carried a timeout. `--dry-run` created directories. `run generate` wrote its manifest only at the end, so an interrupted long run left no record at all and did not appear in `run list`.
+- `migrate-records.js` was excluded from the npm tarball while still dispatched and documented — every npm user running `sdlab migrate` got `Cannot find module`. `runtime/` did not ship at all. 30 KB of Python bytecode did.
+- Three scripts that fabricated curation rationales from a filename-prefix regex were deleted.
+
+### Changed
+
+- Error hints across `doctor`'s ~38 failure sites now carry a concrete next action, and `INPUT_UNKNOWN_PROJECT` names both causes (wrong directory vs missing project) rather than assuming the second.
+- `sdlab critique` no longer presents its automatic `Next:` suggestion as a considered judgment when nothing has been reviewed — every candidate is stamped `usable` by default and nothing changes it, so the ranking was drift-count tiebreaking, not assessment.
+- `sdlab init` scaffolds a per-project `.gitignore`; generated contact sheets and re-ingest staging images are ignored.
+
 ## [3.3.0] - 2026-07-06
 
 **Provenance hardening.** This release closes the three weakest workflow-standards scores (PIN_PER_STEP, EXTERNAL_VERIFIER, UNCERTAINTY_GATED_HUMANS) so shipped, production LoRA work is byte-for-byte reproducible and the verifier/human-gate muscles are in place. No breaking changes — every new field is additive and optional; legacy manifests and records load unchanged.

@@ -80,6 +80,51 @@ sdlab generate <prompt-pack-path> --project <name> [--dry-run]
 
 ---
 
+### sdlab ingest
+
+Bring externally-generated images in as bare, uncurated candidate records. The way in for images this tool did not generate.
+
+```bash
+sdlab ingest <dir> --project <name> [--wave <wave.json>] [--dry-run] [--json]
+```
+
+| Flag | Meaning |
+|---|---|
+| `<dir>` | Directory of images (png/jpg/jpeg/webp) |
+| `--wave <path>` | Wave JSON to attach real provenance, matched by filename stem |
+| `--dry-run` | Report what would happen; writes nothing |
+| `--json` | Machine-readable result |
+
+Records land with `judgment: null`, `canon: null`, `provenance.source: "external"`. Never fabricates a judgment, score or caption. Idempotent — existing records are skipped.
+
+### sdlab sheet
+
+Render an HTML contact sheet over any directory of candidates, for visual triage.
+
+```bash
+sdlab sheet [<dir>] --project <name> [--out <path>] [--dry-run]
+```
+
+Per tile: image, record id, curation status, prompt. Images with no record fall back to filename. Referenced by relative path (not embedded), so sheets stay small and open instantly. Written to `outputs/sheets/` and gitignored — regenerate freely.
+
+### sdlab measure
+
+Attach deterministic palette and texture measurements to records. **Measurement, not verdict** — never sets a judgment or fit.
+
+```bash
+sdlab measure <dir-or-record-glob> --project <name> [--anchors <path>] [--dry-run] [--json]
+```
+
+| Flag | Meaning |
+|---|---|
+| `<target>` | A directory of images, or a record-id glob (quote it) |
+| `--anchors <path>` | Palette anchor definitions, relative to the project root |
+| `--dry-run` | Measure and report; writes nothing |
+
+Produces `palette` (gated pixel share, mean saturation/value, per-anchor conformance) and `texture` (Laplacian variance, high-frequency ratio, edge density and hardness, structure-tensor coherence, luminance spread). An undefined measure records `null`, never `0`.
+
+Requires Python 3.9+ with Pillow, numpy and scipy. Without them the command fails with a structured error naming what is missing; `SDLAB_PYTHON` pins an interpreter. See [Reviewing candidates](/style-dataset-lab/handbook/reviewing-candidates/) for the full treatment.
+
 ### sdlab curate
 
 Move a candidate to approved/rejected/borderline and record the judgment.
