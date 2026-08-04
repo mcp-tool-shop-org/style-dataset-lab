@@ -364,21 +364,32 @@ export async function run(argv = process.argv.slice(2)) {
   console.log('');
   console.log(`\x1b[32m✓\x1b[0m Project "${projectName}" initialized`);
   console.log('');
+  // Paths printed here must be copy-pasteable from the user's shell, so they
+  // are relative to the workspace root (where they ran `init`), not to the
+  // project directory. Printing `<name>/canon/...` sent people to a path that
+  // does not exist — the file is at `projects/<name>/canon/...`.
+  const rel = (...segments) => ['projects', projectName, ...segments].join('/');
+
   console.log('Next steps:');
   let step = 1;
   if (wroteCanon['constitution.md']) {
-    console.log(`  ${step++}. Edit ${projectName}/canon/constitution.md — define your visual rules`);
+    console.log(`  ${step++}. Edit ${rel('canon', 'constitution.md')}`);
+    console.log(`     Describe your visual rules in prose — this is the canon the pipeline binds to.`);
   }
-  console.log(`  ${step++}. Edit ${projectName}/constitution.json — encode rules for canon-bind`);
+  console.log(`  ${step++}. Edit ${rel('constitution.json')}`);
+  console.log(`     Encode those rules as machine-checkable entries for canon-bind.`);
   if (wroteExamplePack) {
-    console.log(`  ${step++}. Run: sdlab generate inputs/prompts/example-wave.json --project ${projectName}`);
+    console.log(`  ${step++}. Generate your first candidates:`);
+    console.log(`     sdlab generate ${rel('inputs', 'prompts', 'example-wave.json')} --project ${projectName}`);
   } else {
-    console.log(`  ${step++}. Create prompt packs under ${projectName}/inputs/prompts/`);
-    console.log(`  ${step++}. Run: sdlab generate <pack> --project ${projectName}`);
+    console.log(`  ${step++}. Add a prompt pack under ${rel('inputs', 'prompts')}/`);
+    console.log(`  ${step++}. Generate your first candidates:`);
+    console.log(`     sdlab generate <pack> --project ${projectName}`);
   }
-  console.log(`  ${step++}. Run: sdlab project doctor --project ${projectName}`);
+  console.log(`  ${step++}. Check the project is wired correctly:`);
+  console.log(`     sdlab project doctor --project ${projectName}`);
   console.log('');
-  console.log(`See ${projectName}/README.md for the full quick-start.`);
+  console.log(`Full quick-start: ${rel('README.md')}`);
 }
 
 // Direct execution guard
