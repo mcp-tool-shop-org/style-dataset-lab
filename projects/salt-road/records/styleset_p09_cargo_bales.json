@@ -1,0 +1,60 @@
+{
+  "id": "styleset_p09_cargo_bales",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T22:03:17.889Z",
+  "asset_path": "outputs/approved/styleset_p09_cargo_bales.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1820289
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-v1",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud explicit submit_workflow graph",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, close material study seen from slightly above with minimal perspective recession, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between, still life study of canvas bales and wooden crates on a quay, off-white sailcloth wrapping tied with hemp cord, large painted merchant marks on the cloth, crosses and intertwined initials in dark pigment, a wooden crate stencilled with a simple line figure, tackle block and hook resting on top, hemp netting, warm side light",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, half-timbered facades, exposed timber framing, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait",
+    "seed": 730109,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained; plates are the training set)",
+    "loras": [],
+    "controlnet": null,
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/style-set-v1-manifest.json",
+    "note": null
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-30T23:57:51.603Z",
+    "explanation": "Director ruling 2026-07-30: pool look approved ('looks good'), final set 50-75.",
+    "criteria_scores": {
+      "director": 1
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "subject": "still life study of canvas bales and wooden crates on a quay, off-white sailcloth wrapping tied with hemp cord, large painted merchant marks on the cloth, crosses and intertwined initials in dark pigment, a wooden crate stencilled with a simple line figure, tackle block and hook resting on top, hemp netting, warm side light",
+    "subject_source": "authored subject line (wave-v2.json / style-set-v1-manifest.json) — NOT provenance.prompt"
+  },
+  "tags": [
+    "style-set-v1",
+    "environment",
+    "salt-road"
+  ]
+}

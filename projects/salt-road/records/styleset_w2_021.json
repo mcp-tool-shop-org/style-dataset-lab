@@ -1,0 +1,59 @@
+{
+  "id": "styleset_w2_021",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T23:43:36.999Z",
+  "asset_path": "outputs/rejected/styleset_w2_021.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1930314
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-set-v2-2026-07-30",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud official API via wave-runner.py (bridge transport)",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, oblique projection seen from slightly above with building fronts flat-on and parallel to the picture plane, minimal perspective recession, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between, weathered oak drying racks, coiled hemp rope beside tarred timber pilings, brown nets hanging in deep catenary curves between brass hooks, pale cork floats resting on the wet lip of blue-grey quay stone, dried sailcloth patches bearing painted merchant monograms on timber frames, chalk tally marks scratched into weathered oak planks, burned cooper brands scarred onto stacked barrel staves, limewash layers patching mismatched ochre batches on oxide brick gable ends, brass winch wheels beside iron cleats, raking sun casting geometric shadows across cobbles",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, half-timbered facades, exposed timber framing, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite",
+    "seed": 730521,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained)",
+    "loras": [],
+    "controlnet": null,
+    "enriched_by": "qwen3.6:35b-a3b",
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/wave-v2.json + formula.json + receipts.jsonl"
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-30T23:44:19.844Z",
+    "explanation": "pseudo-lettering on display cloth, half-timber facade, isometric register",
+    "criteria_scores": {},
+    "failure_modes": [
+      "lettering",
+      "half_timber",
+      "off_projection"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "tags": [
+    "style-set-v2",
+    "environment",
+    "salt-road"
+  ]
+}

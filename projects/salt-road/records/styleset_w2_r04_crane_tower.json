@@ -1,0 +1,66 @@
+{
+  "id": "styleset_w2_r04_crane_tower",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T23:43:36.975Z",
+  "asset_path": "outputs/approved/styleset_w2_r04_crane_tower.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1464298
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-set-v2-2026-07-30",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud official API via wave-runner.py (bridge transport)",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained palette of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between, the great harbour crane at golden evening, two round towers of weathered oxide-red brick patched with lime repairs and gull stains, iron tie plates and putlog holes in the brickwork, a steep moss-edged tile roof between the towers, the mighty oak jib slung out over the water with its pulley block and hemp fall lowering a branded cask toward a waiting barge, coiled hawsers and worn stone bollards on the quay platform, small barred windows glowing faintly, long warm reflections trembling in the grey-green water, gulls wheeling around the roof, low raking sunlight",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, half-timbered facades, exposed timber framing, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite, flat single-color background, isolated object on plain background, turquoise, teal",
+    "seed": 730404,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained)",
+    "loras": [],
+    "controlnet": {
+      "model": "Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors",
+      "image": "6d98999786e058dab7312eed87edd249a7c96cc9043a5013e9b4f57892a5bad9.png",
+      "type": "depth",
+      "strength": 0.5,
+      "end": 0.6
+    },
+    "enriched_by": "hand-authored",
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/wave-v2.json + formula.json + receipts.jsonl"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-31T00:10:18.656Z",
+    "explanation": "Director ruling 2026-07-30: 'keep the strays' - the water-gate crane admitted; its golden-evening cask-to-barge story stays.",
+    "criteria_scores": {
+      "director": 1
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "subject": "the great harbour crane at golden evening, two round towers of weathered oxide-red brick patched with lime repairs and gull stains, iron tie plates and putlog holes in the brickwork, a steep moss-edged tile roof between the towers, the mighty oak jib slung out over the water with its pulley block and hemp fall lowering a branded cask toward a waiting barge, coiled hawsers and worn stone bollards on the quay platform, small barred windows glowing faintly, long warm reflections trembling in the grey-green water, gulls wheeling around the roof, low raking sunlight",
+    "subject_source": "authored subject line (wave-v2.json / style-set-v1-manifest.json) — NOT provenance.prompt"
+  },
+  "tags": [
+    "style-set-v2",
+    "environment",
+    "salt-road"
+  ]
+}

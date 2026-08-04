@@ -3,11 +3,13 @@ id: frigate
 display_name: Frigate
 ship_class: frigate
 tonnage_class: ship-scale
-era: "1700s"
+tradition: crown-naval
+patina: new
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1700s"
   silhouette_cue: >-
     The fast cruiser. Long, low and sleek — a fine-lined warship hull with a markedly lower
     freeboard than a galleon or carrack, because her lower deck carries no guns and could be built
@@ -67,8 +69,6 @@ forbidden_inputs:
   - a high stern castle or towering gallery — her stern is modest and low
   - a fat round merchant belly — she is long, low and fine-lined
   - a lateen mizzen course — her mizzen carries a gaff spanker, and square topsails above
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - sails still set, full or drawing when the rig state is sails-closed
   - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
@@ -86,14 +86,16 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Frigate — the true frigate of the 18th century was square-rigged and carried all its main guns on a SINGLE continuous upper deck, the lower gun deck being unarmed crew quarters below the waterline; this single-deck armament distinguished frigates from ships-of-the-line carrying guns on multiple decks. Long sleek design, roughly 135 ft hull with a 13 ft draft; removing guns from the lower deck let designers lower the hull, giving superior sailing qualities and speeds up to 14 knots. French frigates carried 28–36 cannon on the main deck. Role: cruisers — independent fast scouts, commerce raiding, patrol, reconnaissance and message conveyance. NOTE: the gaff spanker on the mizzen is standard practice for the period rig and is not separately attested in this source."
 
 canon_refs:
   - portlight-ships/canon/damage-tiers.md
+  - portlight-ships/canon/traditions.md
 ---
 
 # Frigate

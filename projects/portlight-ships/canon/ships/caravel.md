@@ -3,11 +3,13 @@ id: caravel
 display_name: Caravel
 ship_class: caravel
 tonnage_class: pinnace-scale
-era: "1500s"
+tradition: sunward-sea
+patina: weathered
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1500s"
   silhouette_cue: >-
     Small, narrow and quick. High length-to-beam ratio — a slender ellipsoidal hull with a fine
     entry, almost no belly, and a modest raised deck aft rather than a true castle. Three masts on
@@ -59,8 +61,6 @@ forbidden_inputs:
   - a broad-bellied cargo hull — she is slender, high length-to-beam, with a fine entry
   - a tall stern castle or forecastle — she has at most a modest raised afterdeck
   - gun decks or rows of gun ports
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - sails still set, full or drawing when the rig state is sails-closed
   - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
@@ -78,14 +78,16 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Caravel — early caravels had one mast with lateen sails, later versions two or three; the caravela latina used exclusively triangular lateen sails; the caravela redonda, developed in the late 15th century, featured a square-rigged foremast with the other masts bearing lateen rig, the bulging square sail on the front mast distinguishing it. Typical 15th-century caravel 12–18 m long, displacement around 50–75 tons; high length-to-beam ratio of around 3.5:1 with a narrow ellipsoidal frame giving speed and handling at the cost of cargo capacity. Portuguese and Spanish exploration, 15th–16th centuries. THIS ENTRY USES THE CARAVELA REDONDA FORM."
 
 canon_refs:
   - portlight-ships/canon/damage-tiers.md
+  - portlight-ships/canon/traditions.md
 ---
 
 # Caravel

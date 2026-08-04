@@ -3,11 +3,13 @@ id: sloop
 display_name: Sloop
 ship_class: sloop
 tonnage_class: pinnace-scale
-era: "1600s-1700s"
+tradition: longshore
+patina: weathered
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1600s-1700s"
   silhouette_cue: >-
     ONE mast, and everything follows from that. A single tall mast stepped well forward of amidships,
     raked slightly aft, carrying one large four-cornered fore-and-aft GAFF mainsail slung behind it
@@ -73,13 +75,10 @@ forbidden_inputs:
   - gun ports
   - a deep-bellied or high-sided hull — she is small, shallow and low
   - the mast stepped amidships — it is stepped well FORWARD of amidships
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel
   - cropping any part of the vessel at the frame edge
   - text, numbers, labels, captions or panel borders
@@ -93,8 +92,9 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Sloop — a single-masted sailboat generally carrying one headsail forward of the mast and one mainsail abaft it; in the Age of Sail, before Bermuda rig became widespread, a non-Bermudian sloop might carry one or more square-rigged topsails hung from a topsail yard, indicating gaff rig with supplementary square topsails; the name is of Dutch origin. NOTE: 'sloop-of-war' is a naval term describing the purpose of a warship, not a rig, and must not be confused with the sloop rig used here."

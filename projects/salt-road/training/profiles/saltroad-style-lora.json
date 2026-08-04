@@ -1,0 +1,21 @@
+{
+  "profile_id": "saltroad-style-lora",
+  "label": "Salt Road house style LoRA (Qwen-Image)",
+  "target_family": "qwen-image",
+  "asset_type": "game-art",
+  "eligible_lanes": [],
+  "adapter_targets": ["diffusers-lora"],
+  "trigger_override": "saltroad",
+  "caption_strategy": "subject-natural-language",
+  "is_style_lora": true,
+  "base_model_recommendations": ["Qwen/Qwen-Image"],
+  "training_hyperparameters": {
+    "rank": 16,
+    "alpha": 16,
+    "steps": 2500,
+    "lr": "1e-4",
+    "optimizer": "adamw8bit",
+    "save_every": 250
+  },
+  "notes": "A modern Uncharted Waters: New Horizons — painterly early-modern North European trading port. 73 Director-approved environment plates (2026-07-30). Captions are CONTENT-ONLY prose, trigger-first ('saltroad style, <subject>') sourced from canon.subject — style vocabulary belongs to the trigger, never the caption. Uses caption_strategy 'subject-natural-language' because this project's judgment.explanation holds curation RULINGS, not scene text, so flux-natural-language would bake review metadata into every caption. eligible_lanes empty (lane-mismatch gotcha drops all rows otherwise). Steps 2500 not 3000: 73 images at 3000 is ~41 epochs and overfits; checkpoints every 250 give 10 candidates to A/B locally at zero extra GPU cost (single-lever discipline — one run, many checkpoints, never a confounded sweep)."
+}

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Salt Road — Style Set v1 — Director Review</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#16181c; color:#d8d5cd; font:15px/1.5 "Segoe UI",system-ui,sans-serif; margin:0; padding:32px; }
+  h1 { font-size:22px; color:#e8c987; margin:0 0 4px; }
+  h2 { font-size:16px; color:#e8c987; margin:28px 0 8px; }
+  .rule { background:#26221a; border:1px solid #6b5a33; border-radius:8px; padding:10px 14px; margin:14px 0 22px; color:#e8d9b0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); gap:18px; }
+  .card { background:#1d2025; border:1px solid #33373e; border-radius:10px; overflow:hidden; }
+  .card img { width:100%; display:block; }
+  .card .body { padding:10px 12px; }
+  .card .id { font-weight:600; color:#f0ede4; }
+  .card .law { color:#9fb6c4; font-size:13px; }
+  .flag { color:#e0a35c; font-size:13px; margin-top:4px; }
+  .ok { color:#8fbc8f; font-size:13px; margin-top:4px; }
+  a { color:#9fc3e0; }
+  table { border-collapse:collapse; margin:10px 0; }
+  td, th { border:1px solid #33373e; padding:6px 10px; font-size:13px; text-align:left; }
+  code { background:#26292e; padding:1px 5px; border-radius:4px; font-size:13px; }
+</style>
+</head>
+<body>
+<h1>Salt Road — Style Set v1 — 20 candidate plates</h1>
+<div>Generated 2026-07-30 on Comfy Cloud · explicit Qwen graph (qwen_image_2512_bf16, 1344×768, steps 24, cfg 3.5, euler/simple, shift 3.1, no Lightning) · every setting pinned in <code>inputs/prompts/style-set-v1-manifest.json</code> · all records curated <b>borderline</b> in sdlab (HOLD — nothing is training-eligible until you rule).</div>
+<div class="rule">⚖ <b>Judge at FULL RES, not from these tiles.</b> The full files are in
+<code>E:\AI\style-dataset-lab\projects\salt-road\outputs\borderline\</code> — click any image below to open it.
+Thumbnails exist for navigation only.</div>
+
+<h2>The rulings this set needs from you</h2>
+<table>
+<tr><th>#</th><th>Question</th><th>Where</th></tr>
+<tr><td>1</td><td><b>The look itself</b> — is this the modern New Horizons you meant? One palette, one projection, one light discipline; approve the set (or name what's off) before the saltroad LoRA trains on it.</td><td>whole set</td></tr>
+<tr><td>2</td><td>Red crosses on the caravel's sails — unauthored iconography; reads military-order rather than merchant. Keep, or re-roll with plain/merchant-marked sails?</td><td>p17v2</td></tr>
+<tr><td>3</td><td>The flattest plates: the chart-sea (map layer, deliberately plain — ai-eyes read it "sprite-like", I overruled) and the two void-flank plates (door, stair — croppable). Acceptable in a training set?</td><td>p19v2, p07v2, p14v2</td></tr>
+<tr><td>4</td><td>Small props with loud choices: stick-figure stencil on the crate, heroically oversized customs stamp, writing table instead of a standing desk.</td><td>p09, p13, p12</td></tr>
+</table>
+
+<h2>The candidates</h2>
+<div class="grid">
+<div class="card"><a href="borderline/styleset_p01_quay_dawn.png"><img src="borderline/styleset_p01_quay_dawn.png" loading="lazy"></a><div class="body"><div class="id">p01 — quay at dawn</div><div class="law">Laws 1+2: batch-varied limewash, gable hoists; wet/dry stone ramps</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p02_quay_noon.png"><img src="borderline/styleset_p02_quay_noon.png" loading="lazy"></a><div class="body"><div class="id">p02 — quay at noon</div><div class="law">Flat-on fronts, open loading doors, crowded marked cargo, hard shadows</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p03_quay_night.png"><img src="borderline/styleset_p03_quay_night.png" loading="lazy"></a><div class="body"><div class="id">p03 — quay at night</div><div class="law">Law 6: light as the one added axis — lantern pools, silhouetted hoists</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p04v2_crane_tower.png"><img src="borderline/styleset_p04v2_crane_tower.png" loading="lazy"></a><div class="body"><div class="id">p04v2 — the crane (Blender depth-lock)</div><div class="law">Law 3: the crane as a building</div><div class="flag">blockout massing softened at cn 0.6 (conical caps invented)</div></div></div>
+<div class="card"><a href="borderline/styleset_p05v2_crane_treadwheel.png"><img src="borderline/styleset_p05v2_crane_treadwheel.png" loading="lazy"></a><div class="body"><div class="id">p05v2 — treadwheel gallery (depth-lock)</div><div class="law">Law 3: treadwheels inside, drawn as architecture</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p06v2_warehouse_interior.png"><img src="borderline/styleset_p06v2_warehouse_interior.png" loading="lazy"></a><div class="body"><div class="id">p06v2 — bonded warehouse interior</div><div class="law">Tarred timber (darkest ramp), oak ramp to gallery, dusty shafts</div><div class="ok">clean (v1 ramp-to-nowhere fixed)</div></div></div>
+<div class="card"><a href="borderline/styleset_p07v2_bonded_door.png"><img src="borderline/styleset_p07v2_bonded_door.png" loading="lazy"></a><div class="body"><div class="id">p07v2 — the bonded door (depth-lock)</div><div class="law">Law 1 patchwork limewash + the door that needs a seal</div><div class="flag">dark void flanks (croppable); marginal eyes pixel-signal overruled</div></div></div>
+<div class="card"><a href="borderline/styleset_p08_cargo_casks.png"><img src="borderline/styleset_p08_cargo_casks.png" loading="lazy"></a><div class="body"><div class="id">p08 — cask study</div><div class="law">Law 4: four mark systems, each head different — someone's money</div><div class="ok">strongest law-4 plate</div></div></div>
+<div class="card"><a href="borderline/styleset_p09_cargo_bales.png"><img src="borderline/styleset_p09_cargo_bales.png" loading="lazy"></a><div class="body"><div class="id">p09 — bale + crate study</div><div class="law">Law 4: merchant mark on sailcloth</div><div class="flag">crate stencil is a stick figure — reads slightly modern</div></div></div>
+<div class="card"><a href="borderline/styleset_p10_weighing_floor.png"><img src="borderline/styleset_p10_weighing_floor.png" loading="lazy"></a><div class="body"><div class="id">p10 — the weighing floor</div><div class="law">Beam-scales hung from roof timbers; door on bright water</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p11v2_beam_scale.png"><img src="borderline/styleset_p11v2_beam_scale.png" loading="lazy"></a><div class="body"><div class="id">p11v2 — one beam scale, close</div><div class="law">Balance anatomy correct (v1 painted a brass cylinder)</div><div class="flag">slight item-card drama</div></div></div>
+<div class="card"><a href="borderline/styleset_p12_counting_house.png"><img src="borderline/styleset_p12_counting_house.png" loading="lazy"></a><div class="body"><div class="id">p12 — the counting house</div><div class="law">Ledger, seal, wax, pigeonholes, window on the water</div><div class="flag">table not standing desk; most rendered finish of the interiors</div></div></div>
+<div class="card"><a href="borderline/styleset_p13_customs_shed.png"><img src="borderline/styleset_p13_customs_shed.png" loading="lazy"></a><div class="body"><div class="id">p13 — the customs shed</div><div class="law">The stamp, the peg tally board, chalked marks on every cask</div><div class="flag">stamp heroically oversized (chunky-readable?)</div></div></div>
+<div class="card"><a href="borderline/styleset_p14v2_crooked_stair.png"><img src="borderline/styleset_p14v2_crooked_stair.png" loading="lazy"></a><div class="body"><div class="id">p14v2 — the crooked stair (depth-lock)</div><div class="law">Uneven hollowed treads, moss joints, water sliver at the bottom</div><div class="flag">dark void flanks (croppable)</div></div></div>
+<div class="card"><a href="borderline/styleset_p15_stone_study.png"><img src="borderline/styleset_p15_stone_study.png" loading="lazy"></a><div class="body"><div class="id">p15 — quay stone study</div><div class="law">Wet lip = a different ramp, not a darker one; bollard rope-wear</div><div class="flag">no cart ruts; heaviest impasto of the set</div></div></div>
+<div class="card"><a href="borderline/styleset_p16v2_hull_brig.png"><img src="borderline/styleset_p16v2_hull_brig.png" loading="lazy"></a><div class="body"><div class="id">p16v2 — brig at the quay (portlight mesh depth-lock)</div><div class="law">Anatomy stays real — invent the flag, not the ship</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p17v2_hull_caravel.png"><img src="borderline/styleset_p17v2_hull_caravel.png" loading="lazy"></a><div class="body"><div class="id">p17v2 — caravel at the quay (portlight mesh depth-lock)</div><div class="law">Quarter view, strakes, lateen set</div><div class="flag">RED CROSSES on sails — unauthored iconography, your call</div></div></div>
+<div class="card"><a href="borderline/styleset_p18_sea_open.png"><img src="borderline/styleset_p18_sea_open.png" loading="lazy"></a><div class="body"><div class="id">p18 — open water</div><div class="law">The cool engine: deliberately plainer than the land</div><div class="ok">clean</div></div></div>
+<div class="card"><a href="borderline/styleset_p19v2_sea_chart.png"><img src="borderline/styleset_p19v2_sea_chart.png" loading="lazy"></a><div class="body"><div class="id">p19v2 — sea as map layer (cropped)</div><div class="law">§6: map layer flat top-down, deliberately plainer</div><div class="flag">flattest plate; painted chart border cropped off; eyes flagged sprite-like, overruled at full res</div></div></div>
+<div class="card"><a href="borderline/styleset_p20_shore_vs_sea.png"><img src="borderline/styleset_p20_shore_vs_sea.png" loading="lazy"></a><div class="body"><div class="id">p20 — the harbour mouth</div><div class="law">The thesis: dense warm shore against wide cool empty sea</div><div class="ok">the lead image</div></div></div>
+</div>
+
+<h2>What happened under the hood (receipts)</h2>
+<ul>
+<li><b>The template gotcha is dead:</b> two probes with different prompts/seeds produced different, prompt-faithful images through the explicit graph. The <code>run_template</code> path (which ignored inputs and returned a fashion photo) was never used.</li>
+<li><b>Blockout-first ran:</b> Blender 5.2 headless rendered clay + depth for crane ×2, door, stair, and both portlight hulls (brig + caravel GLBs); structural plates generated through Qwen-Image-2512 Fun ControlNet Union (depth). A half-scale bug in the blockout script was caught by eye and fixed; the canny lane was dropped after it invited anatomy drift.</li>
+<li><b>Register lesson (pinned in the manifest):</b> under ControlNet, "sixteen-bit palette discipline" + empty control zones collapse the register into pixel-art / flat-design / asset-card voids. Fixed with environment prompt lines, anti-pixel negatives, and softer end_percent. 12 failed/superseded versions are curated <b>rejected</b> with named failure tags — the full history is in <code>outputs/rejected/</code>.</li>
+<li><b>ai-eyes calibrated on known answers</b> (painted-vs-pixel proven; painted-vs-3D unreliable at low sigmoids → advisory only). Anime screen 0/20, photograph screen 0/20.</li>
+<li><b>After your ruling:</b> approved plates get captions with the <code>saltroad</code> trigger and the LoRA trains — nothing trains before that.</li>
+</ul>
+</body>
+</html>

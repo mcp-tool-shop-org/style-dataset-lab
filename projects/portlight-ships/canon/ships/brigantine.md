@@ -3,11 +3,13 @@ id: brigantine
 display_name: Brigantine
 ship_class: brigantine
 tonnage_class: brig-scale
-era: "1600s-1700s"
+tradition: longshore
+patina: seasoned
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1600s-1700s"
   silhouette_cue: >-
     Two masts, lean and fast, low in the water with a fine entry. The rig is MIXED and asymmetric,
     and that asymmetry is the whole read: the FOREMAST is fully square-rigged, carrying stacked
@@ -77,13 +79,10 @@ forbidden_inputs:
   - three masts — a brigantine has exactly two
   - a tall stern castle or carved gallery — she is flush-decked and plain
   - two continuous gun decks — she carries a short battery amidships only
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel
   - cropping any part of the vessel at the frame edge
   - text, numbers, labels, captions or panel borders
@@ -97,8 +96,9 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Brigantine — two masts; foremast fully square-rigged; mainmast (the taller, aft mast) carries a square topsail and a gaff mainsail behind the mast; by the 18th century could also carry square topgallants above the gaff mainsail. Distinguished from a BRIG, which is principally square-rigged on both masts. Burden typically 30–150 tons. Prominent in Atlantic maritime nations from the 17th century; second-most popular rig built in British North America before 1775; employed for piracy, espionage and reconnoitering."

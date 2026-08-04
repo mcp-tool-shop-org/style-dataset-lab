@@ -3,11 +3,13 @@ id: fluyt
 display_name: Fluyt
 ship_class: fluyt
 tonnage_class: ship-scale
-era: "1600s"
+tradition: cold-coast
+patina: seasoned
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1600s"
   silhouette_cue: >-
     The purpose-built cargo hull. Pear-shaped in section — very broad at the waterline, tumbling
     home hard above it to a narrow weather deck — with a high rounded stern. Shallow draught for
@@ -74,14 +76,10 @@ forbidden_inputs:
   - gun ports or gun decks anywhere on the hull — the fluyt is an unarmed merchantman and that is her defining read
   - a warship's fine entry or lean run — the hull is deliberately fat and rounded
   - heavy gilding or carved stern gallery — she is plain and cheap by design
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed — furled means rolled and lashed along the yard
-  - bare masts with no canvas at all when the rig state is sails-closed
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel
   - cropping any part of the vessel at the frame edge
   - text, numbers, labels, captions or panel borders
@@ -95,8 +93,9 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Fluyt — three-masted configuration carries square rig on fore and main with a lateen mizzen; pear-shaped profile; shallow draught; armament minimised or eliminated to maximise cargo; small crew; 16th-century Dutch origin, dominant through the 17th–18th centuries"

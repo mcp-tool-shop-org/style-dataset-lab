@@ -1,0 +1,66 @@
+{
+  "id": "styleset_w2_r07_bonded_door",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T23:43:36.978Z",
+  "asset_path": "outputs/approved/styleset_w2_r07_bonded_door.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1273883
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-set-v2-2026-07-30",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud official API via wave-runner.py (bridge transport)",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained palette of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between, the bonded warehouse door in a narrow quay lane, heavy oak double door aged silver-brown with hand-forged iron straps and clenched nails, a crimson wax seal on plaited cord over the meeting stile, the lintel scored with old tally marks, patchwork limewash in mismatched ochre and cream batches flaking to show earlier colours, a stout hoist beam overhead with its tackle block and hook throwing a long shadow, shuttered windows, neighbouring leaning facades crowding in on both sides, worn cobbles with cart ruts and grass tufts, warm afternoon side light",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, half-timbered facades, exposed timber framing, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite, flat single-color background, isolated object on plain background, turquoise, teal",
+    "seed": 730407,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained)",
+    "loras": [],
+    "controlnet": {
+      "model": "Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors",
+      "image": "6c6c656b9947c481e4ea3fb6c76db8bb20b17d3088772c0fd0fb88ef56f707fd.png",
+      "type": "depth",
+      "strength": 0.55,
+      "end": 0.6
+    },
+    "enriched_by": "hand-authored",
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/wave-v2.json + formula.json + receipts.jsonl"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-31T22:13:34.677Z",
+    "explanation": "Director rulings 2026-07-30 (look approved + half-timber admitted): advisor's earlier 'toy-scaled door' flag WITHDRAWN on re-inspection - it is a secure man-door with flanking windows at matching scale, and its patchwork limewash is the strongest law-1 demonstration in the set. Edge half-timber now admitted.",
+    "criteria_scores": {
+      "director": 1
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "subject": "the bonded warehouse door in a narrow quay lane, heavy oak double door aged silver-brown with hand-forged iron straps and clenched nails, a crimson wax seal on plaited cord over the meeting stile, the lintel scored with old tally marks, patchwork limewash in mismatched ochre and cream batches flaking to show earlier colours, a stout hoist beam overhead with its tackle block and hook throwing a long shadow, shuttered windows, neighbouring leaning facades crowding in on both sides, worn cobbles with cart ruts and grass tufts, warm afternoon side light",
+    "subject_source": "authored subject line (wave-v2.json / style-set-v1-manifest.json) — NOT provenance.prompt"
+  },
+  "tags": [
+    "style-set-v2",
+    "environment",
+    "salt-road"
+  ]
+}

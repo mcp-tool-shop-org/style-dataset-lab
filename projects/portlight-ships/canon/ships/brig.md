@@ -3,11 +3,13 @@ id: brig
 display_name: Brig
 ship_class: brig
 tonnage_class: brig-scale
-era: "1700s"
+tradition: crown-naval
+patina: seasoned
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1700s"
   silhouette_cue: >-
     Two masts, BOTH fully square-rigged, each carrying a tall stack of horizontal yards — course,
     topsail, topgallant and often a royal above that. The rig reads as two matched ladders of
@@ -63,8 +65,6 @@ forbidden_inputs:
   - three masts — a brig has exactly two
   - a lean raked privateer hull — she is fuller and more workmanlike than a brigantine
   - stern castle, quarter gallery or gilded carving
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - sails still set, full or drawing when the rig state is sails-closed
   - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
@@ -82,14 +82,16 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Brig — two SQUARE-RIGGED masts (fore and main); foremast carries fore sail, fore topsail, fore topgallant and fore royal; mainmast carries mainsail, main topsail, main topgallant and occasionally a royal, PLUS a gaff-rigged fore-and-aft sail behind the square mainsail called the spanker or boom mainsail. This fore-and-aft sail on the main distinguishes brigs from brigantines, which have only the foremast fully square-rigged. Generally larger than a schooner, 75–165 ft, tonnage up to 480. Late 18th century onward; merchant vessels and small warships of 10–18 guns."
 
 canon_refs:
   - portlight-ships/canon/damage-tiers.md
+  - portlight-ships/canon/traditions.md
 ---
 
 # Brig

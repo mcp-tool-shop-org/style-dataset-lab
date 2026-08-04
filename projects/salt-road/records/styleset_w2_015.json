@@ -1,0 +1,60 @@
+{
+  "id": "styleset_w2_015",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T23:43:36.995Z",
+  "asset_path": "outputs/approved/styleset_w2_015.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1418224
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-set-v2-2026-07-30",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud official API via wave-runner.py (bridge transport)",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, oblique projection seen from slightly above with building fronts flat-on and parallel to the picture plane, minimal perspective recession, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between, narrow passage between leaning warehouse gables, walls faced in patchy limewash and oxide brick, tarred timber hoist beams stretching overhead to nearly touch, brass pulley blocks suspended from iron hooks, coiled hemp rope resting on quay stone curbs, stacked wool bales bound with sailcloth ties, cured hides stamped with burned cooper brands and chalk tallies, a bright vertical slot of open sky at the far end, raking low sun pooling across damp flagstones",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, half-timbered facades, exposed timber framing, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite",
+    "seed": 730515,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained)",
+    "loras": [],
+    "controlnet": null,
+    "enriched_by": "qwen3.6:35b-a3b",
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/wave-v2.json + formula.json + receipts.jsonl"
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-30T23:57:53.448Z",
+    "explanation": "Director ruling 2026-07-30: pool look approved ('looks good'), final set 50-75. Half-timber ADMITTED by his ruling.",
+    "criteria_scores": {
+      "director": 1
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "subject": "narrow passage between leaning warehouse gables, walls faced in patchy limewash and oxide brick, tarred timber hoist beams stretching overhead to nearly touch, brass pulley blocks suspended from iron hooks, coiled hemp rope resting on quay stone curbs, stacked wool bales bound with sailcloth ties, cured hides stamped with burned cooper brands and chalk tallies, a bright vertical slot of open sky at the far end, raking low sun pooling across damp flagstones",
+    "subject_source": "authored subject line (wave-v2.json / style-set-v1-manifest.json) — NOT provenance.prompt"
+  },
+  "tags": [
+    "style-set-v2",
+    "environment",
+    "salt-road"
+  ]
+}

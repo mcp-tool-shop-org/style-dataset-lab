@@ -1,0 +1,68 @@
+{
+  "id": "styleset_w2_r16_hull_brig",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T23:43:36.98Z",
+  "asset_path": "outputs/approved/styleset_w2_r16_hull_brig.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 874566
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-set-v2-2026-07-30",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud official API via wave-runner.py (bridge transport)",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained palette of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European trading harbour, memory-bright color, dense detail concentrated in a few focal clusters with calm flat areas between, a two-masted trading brig moored broadside at the stone quay, dark tarred hull with a pale scrubbed sheer strake and rope fenders, weather-stained patched sails loosed to dry from the square yards, hemp standing rigging and ratlines taut, deck crowded with branded casks, coiled lines and a tarpaulined hatch, heavy mooring hawsers running to worn stone bollards, gulls on the yardarms, morning mist thinning over grey-blue water, warm light catching the mastheads and canvas, the quay stones wet in a cooler ramp at the lip",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, identical repeating facades, half-timbered facades, exposed timber framing, empty bare quay, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite, flat single-color background, isolated object on plain background, turquoise, teal",
+    "seed": 730416,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained)",
+    "loras": [],
+    "controlnet": {
+      "model": "Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors",
+      "image": "1656636f4f74706a211d5875cd87fa5a0cec7d43d30c238db6e01d52667d6ce7.png",
+      "type": "depth",
+      "strength": 0.7,
+      "end": 0.6
+    },
+    "enriched_by": "hand-authored",
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/wave-v2.json + formula.json + receipts.jsonl",
+    "finishing_pass": "qwen_image_edit_2511_bf16 targeted edit (TextEncodeQwenImageEditPlus + CFGNorm, cfg 2.5 steps 24 euler/simple shift 3.1): blank white void -> pale grey-blue morning sky and calm water with reflections (seed 730814). Output 1328x800 cropped 18px inset and restored to 1344x768. Verified at full res by advisor; pre-edit original archived in inbox/generated/set-v2-2026-07-30/."
+  },
+  "judgment": {
+    "status": "approved",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-31T22:12:01.059Z",
+    "explanation": "Director conditional 2026-07-30 (approve near-keepers if the finishing pass green lights): finishing pass GREEN - named artifact removed, scene and register preserved, verified at full res.",
+    "criteria_scores": {
+      "director": 1,
+      "finishing": 1
+    },
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": {
+    "subject": "a two-masted trading brig moored broadside at the stone quay, dark tarred hull with a pale scrubbed sheer strake and rope fenders, weather-stained patched sails loosed to dry from the square yards, hemp standing rigging and ratlines taut, deck crowded with branded casks, coiled lines and a tarpaulined hatch, heavy mooring hawsers running to worn stone bollards, gulls on the yardarms, morning mist thinning over grey-blue water, warm light catching the mastheads and canvas, the quay stones wet in a cooler ramp at the lip",
+    "subject_source": "authored subject line (wave-v2.json / style-set-v1-manifest.json) — NOT provenance.prompt"
+  },
+  "tags": [
+    "style-set-v2",
+    "environment",
+    "salt-road"
+  ]
+}

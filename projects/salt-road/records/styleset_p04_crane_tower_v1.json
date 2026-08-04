@@ -1,0 +1,58 @@
+{
+  "id": "styleset_p04_crane_tower_v1",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T22:03:17.900Z",
+  "asset_path": "outputs/rejected/styleset_p04_crane_tower_v1.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 575819
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-v1",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud explicit submit_workflow graph",
+    "prompt": "(v1 — exact prompt in run manifest: depth-lock v1: crane geometry locked but painted as isolated asset on flat beige card (control far-black => void); superseded by p04v2)",
+    "negative_prompt": "(see manifest)",
+    "seed": 730104,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained; plates are the training set)",
+    "loras": [],
+    "controlnet": null,
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/style-set-v1-manifest.json",
+    "note": "depth-lock v1: crane geometry locked but painted as isolated asset on flat beige card (control far-black => void); superseded by p04v2"
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-30T22:04:12.170Z",
+    "explanation": "depth-lock v1: crane geometry locked but painted as isolated asset on flat beige card (control far-black => void); superseded by p04v2",
+    "criteria_scores": {},
+    "failure_modes": [
+      "flat_void_background",
+      "asset_card_register"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "tags": [
+    "style-set-v1",
+    "environment",
+    "salt-road"
+  ]
+}

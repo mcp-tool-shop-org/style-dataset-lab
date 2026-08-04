@@ -1,0 +1,58 @@
+{
+  "id": "styleset_w2_054",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T23:43:37.025Z",
+  "asset_path": "outputs/rejected/styleset_w2_054.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 1610294
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-set-v2-2026-07-30",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud official API via wave-runner.py (bridge transport)",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European harbour seas, memory-bright color, quiet spare composition, the broad slate water opening toward the stone harbour wall, the long white ship wake unfurling across the dark surface, frayed sailcloth strips caught in the troughs, rusted iron cleats in wet quay stone, thick hemp rope coiled on tarred timber bollards, stacks of oxide brick cargo crates marked with burned brands and chalk tallies, weathered oak hatches sealed with brass fastenings, patches of limewashed bulkhead planks in mismatched ochre batches, gull resting on a mooring ring, overcast flatness lying heavy on the water.",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, buildings, rooftops, town, houses, half-timbered facades, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, pixel art, pixelated, dithering, 8-bit sprite, turquoise, teal, tropical water, coral",
+    "seed": 730554,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained)",
+    "loras": [],
+    "controlnet": null,
+    "enriched_by": "qwen3.6:35b-a3b",
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/wave-v2.json + formula.json + receipts.jsonl"
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-30T23:44:22.862Z",
+    "explanation": "white lace unfurling literalized as torn cloth floating in the sea + unauthored fortress wall",
+    "criteria_scores": {},
+    "failure_modes": [
+      "subject_drift",
+      "unauthored_setting"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "tags": [
+    "style-set-v2",
+    "environment",
+    "salt-road"
+  ]
+}

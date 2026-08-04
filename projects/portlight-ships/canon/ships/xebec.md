@@ -3,11 +3,13 @@ id: xebec
 display_name: Xebec
 ship_class: xebec
 tonnage_class: brig-scale
-era: "1600s-1700s"
+tradition: sunward-sea
+patina: seasoned
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1600s-1700s"
   silhouette_cue: >-
     Low, long and sharp. Pronounced overhanging bow AND overhanging stern, both projecting well
     beyond the waterline, giving a hull that looks slung between two points. Very low freeboard.
@@ -73,13 +75,10 @@ forbidden_inputs:
   - a high stern castle or raised forecastle — the xebec is deliberately low and flush
   - a deep-bellied hull — she is long, lean and shallow with overhanging ends
   - omitting the oar ports along the side
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed — a furled lateen is bundled along its angled yard
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel
   - cropping any part of the vessel at the frame edge
   - text, numbers, labels, captions or panel borders
@@ -93,8 +92,9 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Xebec — later xebecs carried three masts (early ones two); lateen sails on angled yards; pronounced overhanging bow and stern; rarely displaced more than 200 tons; carried both lateen sails and oars, allowing them to close on becalmed vessels; Algerian origin, dominant in Mediterranean and Barbary waters 16th to mid-19th century. The polacre-xebec variant carried square rig on the foremast with lateens on the others plus a bowsprit and two headsails — NOT used for this entry, which is the pure lateen form."

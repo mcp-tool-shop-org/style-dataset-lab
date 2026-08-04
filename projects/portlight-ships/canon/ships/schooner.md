@@ -3,11 +3,13 @@ id: schooner
 display_name: Topsail Schooner
 ship_class: schooner
 tonnage_class: sloop-scale
-era: "1700s"
+tradition: longshore
+patina: seasoned
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1700s"
   silhouette_cue: >-
     Two masts, both FORE-AND-AFT rigged, with the FOREMAST SHORTER than the mainmast — that height
     order is the identifying fact and it is the reverse of what most people draw. Each mast carries
@@ -76,13 +78,10 @@ forbidden_inputs:
   - three or more masts
   - a stern castle, quarter gallery or carved ornament — she is low, flush and plain
   - gun ports
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel
   - cropping any part of the vessel at the frame edge
   - text, numbers, labels, captions or panel borders
@@ -96,8 +95,9 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Schooner — fore-and-aft rig on all of two or more masts, with the FOREMAST GENERALLY SHORTER THAN THE MAINMAST; gaff-rigged the most common variant; the topsail schooner adds a square topsail on the foremast, to which a topgallant may be added; term emerged in eastern North America in the early 1700s, though schooners appear in Dutch paintings by 1600, further developed in British North America from around 1713; used for coastal trading, privateering, fishing and passenger work; valued for good ability to windward."

@@ -3,11 +3,13 @@ id: carrack
 display_name: Carrack
 ship_class: carrack
 tonnage_class: great-ship-scale
-era: "1500s-1600s"
+tradition: cold-coast
+patina: weathered
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1500s-1600s"
   silhouette_cue: >-
     The old great ship, and the galleon's ancestor. Round-bellied hull with heavy tumblehome, and
     castles at BOTH ends — a towering aftcastle over a high rounded stern AND a tall forecastle
@@ -74,14 +76,10 @@ forbidden_inputs:
   - a low forecastle — the carrack's forecastle is TALL and built up over the bow; that double castle is what separates her from a galleon
   - a lean or fine-lined hull — she is round-bellied with heavy tumblehome
   - two continuous gun decks with regular square ports — that is the galleon's read, not hers
-  - all masts standing upright at 04-heavy or 05-destroyed
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed — furled means rolled and lashed along the yard
-  - bare masts with no canvas at all when the rig state is sails-closed
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel
   - cropping any part of the vessel at the frame edge
   - text, numbers, labels, captions or panel borders
@@ -95,8 +93,9 @@ signature_features:
 
 freeze:
   status: auto
-  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, era]
-  frozen_reason: DRAFT — awaiting Director ratification.
+  watch_fields: [visual.silhouette_cue, visual.palette, visual.rig_plan, visual.material_dominant, damage_ladder, signature_features, forbidden_inputs, ship_class, tradition, patina]
+  frozen_by: Director
+  frozen_reason: Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon. Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - "https://en.wikipedia.org/wiki/Carrack — three or four masts; later carracks square-rigged on foremast and mainmast, lateen-rigged on the mizzen; a typical three-masted carrack carried bowsprit, foresail, mainsail, mizzensail and two topsails; high rounded stern with aftcastle, plus forecastle and bowsprit at the stem; 14th–15th century origin, dominant in oceanic trade through the 16th century and still in use into the mid-17th; Portuguese carracks often over 1000 tons; direct predecessor of the galleon."

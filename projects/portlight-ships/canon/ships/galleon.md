@@ -3,11 +3,13 @@ id: galleon
 display_name: Galleon
 ship_class: galleon
 tonnage_class: great-ship-scale
-era: "1600s"
+tradition: crown-naval
+patina: new
 faction_of_origin: unassigned
 current_operator: independent
 
 visual:
+  reference_period: "1600s"
   silhouette_cue: >-
     High-sterned three-masted great ship. Deep curved hull with a pronounced sheer rising
     aft to a tall square stern castle; low forecastle; long bowsprit steeved well up. Two
@@ -79,14 +81,10 @@ narrative:
   current_status: in-service-playable
 
 forbidden_inputs:
-  - all masts standing upright at 04-heavy or 05-destroyed — the named broken masts must read as broken
-  - any mast whole at a later state than one where it is listed broken — damage never runs backwards
-  - sails still set, full or drawing when the rig state is sails-closed — furled means rolled and lashed along the yard
-  - bare masts with no canvas at all when the rig state is sails-closed — furled canvas is present as thick bundles, not absent
-  - the vessel mirrored — the bow points LEFT in every damage-state plate
+  - the vessel mirrored — the bow points LEFT in every plate
   - photorealistic rendering, photographic lighting or museum-artifact treatment
   - pixel-art conversion or visible pixel stair-stepping
-  - water, sea, ground plane, debris field or cast shadow in a damage-state plate
+  - water, sea, ground plane, debris field or cast shadow
   - any green anywhere on the vessel — the plate background is chroma key and despill would desaturate it
   - cool grey-blue canvas — the canvas is aged off-white
   - cropping any part of the vessel at the frame edge
@@ -110,10 +108,12 @@ freeze:
     - signature_features
     - forbidden_inputs
     - ship_class
-    - era
+    - tradition
+    - patina
+  frozen_by: Director
   frozen_reason: >-
-    DRAFT — awaiting Director ratification. Freeze once the rig plan and damage ladder are
-    correct; after that canon drift reports any change to a watched field.
+    Ratified by the Director 2026-07-25 — rig plan, silhouette and palette approved as canon.
+    Not sdlab-frozen; ratification records approval, freeze is a separate operation.
 
 sources:
   - portlight-ships 2026-07-25 generation run — the 8-subject galleon set, its meshes, and the four documented failure modes now recorded in forbidden_inputs

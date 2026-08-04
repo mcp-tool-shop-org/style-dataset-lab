@@ -1,0 +1,57 @@
+{
+  "id": "styleset_p19v2_sea_chart",
+  "schema_version": "2.0.0",
+  "created_at": "2026-07-30T22:03:17.898Z",
+  "asset_path": "outputs/rejected/styleset_p19v2_sea_chart.png",
+  "image": {
+    "format": "png",
+    "width": 1344,
+    "height": 768,
+    "bytes": 546034
+  },
+  "provenance": {
+    "source": "generated-qwen-cloud",
+    "wave": "salt-road-style-set-v1",
+    "base": "qwen-image-2512",
+    "backend": "comfy-cloud explicit submit_workflow graph",
+    "prompt": "Hand-painted 2D game environment art plate, painterly gouache texture with visible brushwork, restrained sixteen-bit palette discipline of about fifteen values per material family, flat readable silhouettes with crisp edges, early-modern North European harbour seas, memory-bright color, quiet spare composition, flat top-down view of open sea as a map layer, deliberately plain cool slate grey-blue northern water in two or three flat muted tones, restrained repeating wave marks, a small wooden ship seen from above with a white wake line, the plainness deliberate and calm like an old chart brought to life",
+    "negative_prompt": "anime, manga, cel shaded, chibi, fantasy, magic, dragons, glowing runes, wizards, pirate flag, skull and crossbones, tricorn hat, treasure chest, cutlass, grimdark, dystopian, ruined, neon signs, sodium vapor haze, cyberpunk, photograph, photorealistic, DSLR, glossy 3D render, CGI, octane render, vector art, flat design illustration, airbrushed smoothness, HD remaster, buildings, rooftops, town, houses, half-timbered facades, modern buildings, cars, shipping containers, streetlights, power lines, text, watermark, logo, signature, people, faces, portrait, turquoise, teal, tropical water, coral",
+    "seed": 730219,
+    "steps": 24,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "width": 1344,
+    "height": 768,
+    "unet": "qwen_image_2512_bf16.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "style_prefix": "saltroad (trigger reserved — LoRA not yet trained; plates are the training set)",
+    "loras": [],
+    "controlnet": null,
+    "gpu_model": "Comfy Cloud RTX 6000",
+    "run_manifest": "inputs/prompts/style-set-v1-manifest.json",
+    "note": "cropped 285,70 780x620 from p19v2_sea_chart.png to remove the painted chart border the model added"
+  },
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": "qwen-image-2512:qwen_image_2512_bf16",
+    "reviewed_at": "2026-07-30T22:20:31.792Z",
+    "explanation": "Director ruling 2026-07-30: cull the flat and crude. Flattest plate of the set — rebuild the map layer painterly-flat with visible brushwork.",
+    "criteria_scores": {},
+    "failure_modes": [
+      "director_cull_flat_crude"
+    ],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
+  "canon": null,
+  "tags": [
+    "style-set-v1",
+    "environment",
+    "salt-road"
+  ]
+}

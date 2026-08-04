@@ -5,7 +5,7 @@
   "title": "Portlight Ship Canon Entry",
   "description": "Schema for a named sailing vessel. Adapted from the Star Freight ship schema, which carried silhouette_cue + hull_repair_history + material_dominant as the heaviest trainable leverage. TWO ADDITIONS, both earned by a failed 2026-07-25 generation run that produced eight structurally inconsistent variants of one galleon: (1) `visual.rig_plan` enumerates masts and sails BY NAME, so a prompt can refer to 'the foremast' instead of 'one mast' and the model has a structural inventory to be consistent with. (2) `damage_ladder` declares which severity tiers the hull supports and what rig variants each produces — the tiers themselves are defined once in canon/damage-tiers.md, and which mast breaks is deliberately NOT scripted, because that is the judgement the anatomy training exists to produce. Both fields are freeze-watched.",
   "type": "object",
-  "required": ["id", "ship_class", "tonnage_class", "era", "visual", "damage_ladder", "narrative", "forbidden_inputs", "signature_features", "canon_refs"],
+  "required": ["id", "ship_class", "tonnage_class", "tradition", "visual", "damage_ladder", "narrative", "forbidden_inputs", "signature_features", "canon_refs"],
   "properties": {
     "id": {
       "type": "string",
@@ -19,6 +19,7 @@
       "enum": [
         "galleon", "carrack", "caravel", "fluyt", "brig", "brigantine",
         "schooner", "sloop", "frigate", "xebec", "cutter", "barque",
+        "junk", "galley", "cog",
         "derelict-unknown"
       ]
     },
@@ -26,14 +27,30 @@
       "type": "string",
       "enum": ["pinnace-scale", "sloop-scale", "brig-scale", "ship-scale", "great-ship-scale"]
     },
-    "era": { "type": "string", "description": "e.g. '1600s'. Keeps period drift out of the silhouette." },
-    "faction_of_origin": { "type": "string" },
+    "tradition": {
+      "type": "string",
+      "enum": ["cold-coast", "sunward-sea", "crown-naval", "longshore", "far-trade"],
+      "description": "The shipbuilding culture that produced this hull. REPLACED `era` (a real-world period string) on 2026-07-25. `era` was doing genuine work — it explained why hulls look different from each other, which a player must read at sprite size — but it asserted a historical timeline the fleet cannot satisfy: the ten hulls spanned 1500s to 1700s, so a caravel and a frigate could not both be current. The world is not tied to a date, so the axis was replaced with one native to it. Defined in canon/traditions.md. Anatomy is NOT invented to fit a tradition; every rig plan still traces to a documented vessel."
+    },
+    "patina": {
+      "type": "string",
+      "enum": ["new", "seasoned", "weathered", "ancient"],
+      "description": "How old and worked this hull looks, INDEPENDENT of damage. A vessel is (class, patina, damage tier). Exists because folding age into 01-pristine was rejected: it would have made 'pristine' mean different things per hull, softening the reference point the whole damage ladder is measured against, and it would have baked weathering permanently into the mesh texture — costing the newly-refitted flagship for no saving. Patina never implies structural loss and never alters severity. This value is the hull's DEFAULT, not a constraint. Defined in canon/traditions.md."
+    },
+    "faction_of_origin": {
+      "type": "string",
+      "description": "Reserved for named powers, houses and companies; stays 'unassigned' until those exist. Distinct from `tradition`: tradition is what yard-logic built her, faction is whose flag she flies. A captured hull flies the wrong one."
+    },
     "current_operator": { "type": "string" },
 
     "visual": {
       "type": "object",
-      "required": ["silhouette_cue", "palette", "material_dominant", "rig_plan", "art_lane"],
+      "required": ["silhouette_cue", "palette", "material_dominant", "rig_plan", "art_lane", "reference_period"],
       "properties": {
+        "reference_period": {
+          "type": "string",
+          "description": "ART DIRECTION ONLY — never lore, never player-facing. The hull's old `era` string, kept because it is used in exactly one place: the generation prompt. The image model knows what 'a 1600s sailing vessel' looks like and has never heard of a cold-coast vessel, so the prompt speaks the model's language while canon speaks the world's. This field makes NO claim about when the game is set. If it ever needs to surface in player-facing text, it is the wrong field to be reaching for."
+        },
         "silhouette_cue": {
           "type": "string",
           "description": "The read-at-a-glance shape. What makes this hull recognisable at sprite size."
@@ -82,7 +99,7 @@
                 "properties": {
                   "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
                   "mast": { "type": "string", "description": "id of the mast it is bent to, or 'bowsprit'." },
-                  "sail_type": { "type": "string", "enum": ["course", "topsail", "topgallant", "gaff", "lateen", "staysail", "jib", "spritsail"] }
+                  "sail_type": { "type": "string", "enum": ["course", "topsail", "topgallant", "gaff", "lateen", "staysail", "jib", "spritsail", "lugsail"] }
                 },
                 "additionalProperties": false
               }
