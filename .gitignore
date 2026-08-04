@@ -53,5 +53,18 @@ projects/*/outputs/**/*.jpg
 projects/*/outputs/**/*.jpeg
 projects/*/outputs/**/*.webp
 
+# Re-ingest staging images. `sdlab init` CREATES inbox/generated/ and
+# `reingest-selected` COPIES production images into it — so this directory
+# fills with blobs by design. It was uncovered until 2026-08-03, when 55 MB
+# of salt-road PNGs turned up staged for commit. The receipts and record
+# JSON alongside them ARE tracked; only the pixels are ignored.
+projects/*/inbox/**/*.png
+projects/*/inbox/**/*.jpg
+projects/*/inbox/**/*.jpeg
+projects/*/inbox/**/*.webp
+
+# Editor/scratch backups
+*.bak
+
 # Blender module renders + saved scenes (regenerable from the module .py sources)
 projects/*/inputs/blender/out/
