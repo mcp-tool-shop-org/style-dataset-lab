@@ -13,7 +13,7 @@
 import { writeFile, rename, readdir, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs, getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectRoot } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { result } from "../lib/log.js";
@@ -35,7 +35,7 @@ export async function run(argv = process.argv.slice(2)) {
   });
 
   const projectName = flags.project || getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const GAME_ROOT = getProjectRoot(projectName);
   const dryRun = flags['dry-run'] || flags.dryRun;
 
   if (flags.list) {

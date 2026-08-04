@@ -19,6 +19,7 @@ import { loadSchema } from '../lib/canon-build/load-schema.js';
 import { readFreezeStatus, resolveWatchFields, computeWatchHash } from '../lib/freeze-stamp.js';
 import { readEventsSince } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
+import { getProjectRoot } from '../lib/paths.js';
 
 export async function run(argv) {
   const parsed = parseArgs({
@@ -36,7 +37,9 @@ export async function run(argv) {
   const projectName = parsed.values.project || parsed.values.game;
   if (!projectName) throw inputError('INPUT_MISSING_FLAG', '--project required');
 
-  const projectRoot = join(process.cwd(), 'projects', projectName);
+  // SDL-H12: resolve via the hardened workspace-root-aware resolver, not
+  // process.cwd() (wrong base for a globally-installed sdlab).
+  const projectRoot = getProjectRoot(projectName);
   const config = await loadBuildConfig(join(projectRoot, 'canon-build', 'config.json'), projectRoot);
 
   // Load latest build manifest for the stamped watch-hashes

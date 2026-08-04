@@ -18,6 +18,7 @@ import { loadCanonEntriesInDir } from '../lib/canon-build/load-entry.js';
 import { appendOverrideToFreezeBlock, readFreezeStatus } from '../lib/freeze-stamp.js';
 import { appendEvent } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
+import { getProjectRoot } from '../lib/paths.js';
 
 export async function run(argv) {
   const parsed = parseArgs({
@@ -48,7 +49,9 @@ export async function run(argv) {
     );
   }
 
-  const projectRoot = join(process.cwd(), 'projects', projectName);
+  // SDL-H12: resolve via the hardened workspace-root-aware resolver, not
+  // process.cwd() (wrong base for a globally-installed sdlab).
+  const projectRoot = getProjectRoot(projectName);
   const config = await loadBuildConfig(join(projectRoot, 'canon-build', 'config.json'), projectRoot);
   const resolved = await findEntryFile(config, entityIdArg);
   if (!resolved) {

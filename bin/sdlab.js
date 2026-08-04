@@ -445,15 +445,19 @@ function printHelp() {
   console.log('Examples:');
   console.log('  sdlab init my-project --domain character-design');
   console.log('  sdlab generate --help');
-  console.log('  sdlab snapshot create --project star-freight');
-  console.log('  sdlab split build --dry-run --project star-freight');
-  console.log('  sdlab training-package build --debug --project star-freight');
+  console.log('  sdlab snapshot create --project my-project');
+  console.log('  sdlab split build --dry-run --project my-project');
+  console.log('  sdlab training-package build --debug --project my-project');
 }
 
 // All top-level command tokens users can type (including two-word heads).
 function allKnownCommands() {
   const oneWord = Object.keys(COMMANDS);
-  const heads = ['project', 'workflow', 'brief', 'run', 'critique', 'refine', 'batch', 'select', 'selection'];
+  // SDL-L8: 'canon' is a real two-word namespace (see CANON_COMMANDS / the
+  // `namespaces` table in main()) but was missing from this list, so a typo
+  // like "sdlab cannon build" had no candidate to suggest against — every
+  // other namespace head got a "Did you mean ...?" hint, canon did not.
+  const heads = ['project', 'workflow', 'brief', 'run', 'critique', 'refine', 'batch', 'select', 'selection', 'canon'];
   return [...new Set([...oneWord, ...heads])];
 }
 
@@ -526,6 +530,31 @@ async function main() {
       const mod = await import(table[args[1]]);
       await mod.run(commandArgs);
       return;
+    }
+  }
+
+  // SDL-L2: a bare or invalid namespace verb ("sdlab workflow", "sdlab batch
+  // bogus"). These heads only exist as two-word commands — falling through to
+  // the generic COMMANDS[command] lookup below used to hand `command` itself
+  // to findClosest() against a corpus that includes that same head, so the
+  // suggester matched itself at distance 0 and printed "Unknown command:
+  // workflow" / 'Did you mean "workflow"?' — a hint that echoes the very
+  // thing the user just typed. List the real subcommands instead.
+  for (const { head, table } of namespaces) {
+    if (command === head) {
+      const subs = Object.keys(table);
+      if (!args[1] || args[1] === '--help' || args[1] === '-h') {
+        console.log(`sdlab ${head} <${subs.join('|')}>\n`);
+        console.log('Subcommands:');
+        for (const s of subs) console.log(`  ${s}`);
+        console.log(`\nRun "sdlab ${head} <subcommand> --help" for details.`);
+        return;
+      }
+      const suggestion = findClosest(args[1], subs);
+      const hint = suggestion
+        ? `Did you mean "sdlab ${head} ${suggestion}"?`
+        : `Try: ${subs.map(s => `sdlab ${head} ${s}`).join(', ')}`;
+      throw inputError('INPUT_UNKNOWN_SUBCOMMAND', `Unknown ${head} subcommand: ${args[1]}`, hint);
     }
   }
 

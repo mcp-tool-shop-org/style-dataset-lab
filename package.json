@@ -40,10 +40,11 @@
   "files": [
     "bin/",
     "lib/",
+    "runtime/",
     "scripts/",
     "!scripts/bulk-curate-*.js",
     "!scripts/curate-wave*.js",
-    "!scripts/migrate-records.js",
+    "!scripts/__pycache__/**",
     "templates/",
     "README.md",
     "LICENSE",

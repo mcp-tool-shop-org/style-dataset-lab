@@ -18,7 +18,7 @@
 import { readdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { getProjectRoot } from '../lib/paths.js';
 import { handleCliError } from '../lib/errors.js';
 
 async function fileExists(p) {
@@ -94,7 +94,7 @@ async function migrateRecord(filePath, GAME_ROOT, DRY_RUN) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const GAME_ROOT = getProjectRoot(projectName);
   const RECORDS_DIR = join(GAME_ROOT, 'records');
   const DRY_RUN = argv.includes('--dry-run');
 

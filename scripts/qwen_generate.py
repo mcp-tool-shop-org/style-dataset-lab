@@ -22,6 +22,7 @@ import os
 import time
 import urllib.request
 import uuid
+from decimal import Decimal
 from pathlib import Path
 
 from PIL import Image
@@ -58,18 +59,69 @@ _KIND_SUBDIRS = {
 
 
 def _js_number(n) -> str:
-    """Format a number the way JS String(n) does, so the graph hash matches the JS
-    helper: integer-valued floats drop the decimal (1.0 -> "1"), others use the
-    shortest round-trip repr (3.1 -> "3.1")."""
+    """Format a number exactly the way JS Number::toString (ECMA-262
+    6.1.6.1.20) does, so the graph hash matches the JS helper
+    (lib/run-manifest.js stableStringify).
+
+    SDL-H3: the previous implementation delegated non-integer floats to
+    Python's repr(), which disagrees with JS in the [1e-6, 1e-4) magnitude
+    band and on exponent zero-padding:
+        0.00005   -> Python repr "5e-05"   vs JS "0.00005"
+        0.000001  -> Python repr "1e-06"   vs JS "0.000001"
+        9.9e-7    -> Python repr "9.9e-07" vs JS "9.9e-7"
+    Any wave with a LoRA weight or float param in that band produced a
+    different comfy_workflow_sha than the JS path for an identical graph.
+
+    Fix: Python's repr()/str() already compute the same "shortest
+    round-trip decimal digit string" JS engines use internally (both use a
+    Grisu/Ryu-class shortest-repr algorithm) — the two runtimes only
+    disagree on how that digit string is laid out (decimal point position,
+    when to switch to exponential, exponent zero-padding). So: borrow
+    Python's digit string via repr(), hand it to Decimal (which parses
+    repr()'s scientific-notation form natively, no manual string
+    splitting), then re-render per the ECMA spec's own branches.
+    """
     if isinstance(n, bool):
         return "true" if n else "false"
     if isinstance(n, int):
         return str(n)
     if isinstance(n, float):
-        if not math.isfinite(n):
+        if math.isnan(n) or math.isinf(n):
             return "null"
-        return str(int(n)) if n.is_integer() else repr(n)
+        if n == 0:
+            return "0"  # covers -0.0 too — JS String(-0) is "0"
+        sign = "-" if n < 0 else ""
+        _, digits_tuple, exponent = Decimal(repr(abs(n))).as_tuple()
+        m = len(digits_tuple)
+        # value == 0.<all m digits> * 10**point_pos (this is ECMA's "n")
+        point_pos = exponent + m
+        digits = "".join(map(str, digits_tuple)).rstrip("0") or "0"
+        k = len(digits)
+        if k <= point_pos <= 21:
+            return sign + digits + ("0" * (point_pos - k))
+        if 0 < point_pos <= 21:
+            return sign + digits[:point_pos] + "." + digits[point_pos:]
+        if -6 < point_pos <= 0:
+            return sign + "0." + ("0" * -point_pos) + digits
+        mantissa = digits[0] if k == 1 else digits[0] + "." + digits[1:]
+        e = point_pos - 1
+        esign = "+" if e >= 0 else "-"
+        return f"{sign}{mantissa}e{esign}{abs(e)}"
     return "null"
+
+
+def _js_nullish(value, default):
+    """Mirror JS `value ?? default` — substitutes only when value is None
+    (JS null/undefined), never for other falsy values like 0 or False.
+
+    SDL-H4: dict.get(key, default) is NOT equivalent — it only substitutes
+    when the KEY is missing, never when the key is present with an
+    explicit null. {"weight": None}.get("weight", 1.0) returns None, not
+    1.0, silently splitting the graph hash from the JS side's
+    `l.weight ?? 1.0` AND submitting a literal null strength_model to
+    ComfyUI's /prompt.
+    """
+    return default if value is None else value
 
 
 def _stable_stringify(value) -> str:
@@ -204,7 +256,7 @@ def _build_pinning(graph, models, loras, seed_policy, do_hash, cache) -> dict:
     lora_hashes = []
     for lora in loras or []:
         entry = _hash_model_file(lora.get("name"), "lora", do_hash, cache)
-        entry["weight"] = lora.get("weight", 1.0)
+        entry["weight"] = _js_nullish(lora.get("weight"), 1.0)  # SDL-H4
         lora_hashes.append(entry)
     return {
         "pinning_version": PINNING_VERSION,
@@ -216,11 +268,22 @@ def _build_pinning(graph, models, loras, seed_policy, do_hash, cache) -> dict:
 
 
 def qwen_graph(pos: str, neg: str, seed: int, w: int, h: int, steps: int, cfg: float, prefix: str,
-               loras: list | None = None) -> dict:
+               loras: list | None = None, sampler: str = "euler", scheduler: str = "simple",
+               shift: float = 3.1) -> dict:
     """loras: [{name, weight}] chained as DiT-only LoraLoaderModelOnly nodes (ids from
     "40", between UNETLoader and ModelSamplingAuraFlow) — mirrors sdlab buildQwenGraph.
     Model-only because studio Qwen style LoRAs train the transformer with the text
-    encoder frozen."""
+    encoder frozen.
+
+    SDL-H11: sampler/scheduler/shift used to be hardcoded literals here (always
+    "euler"/"simple"/3.1, regardless of what the wave declared) and were not
+    even accepted as parameters — so a wave asking for dpmpp_2m/karras/shift 5.0
+    silently generated with euler/simple/3.1 instead, produced a different
+    comfy_workflow_sha than the JS `sdlab generate` path for the "same" graph,
+    AND had those wrong values stamped into the provenance receipt. Defaults
+    here match QWEN_DEFAULTS in lib/adapters/comfyui-workflows.js — used only
+    when a wave omits the fields (mirrors JS's `rp.sampler || defaults.sampler
+    || QWEN_DEFAULTS.sampler` fallback chain)."""
     nodes = {
         "37": {"class_type": "UNETLoader", "inputs": {"unet_name": QWEN_UNET, "weight_dtype": "default"}},
         "38": {"class_type": "CLIPLoader", "inputs": {"clip_name": QWEN_CLIP, "type": "qwen_image"}},
@@ -232,13 +295,13 @@ def qwen_graph(pos: str, neg: str, seed: int, w: int, h: int, steps: int, cfg: f
     for i, lora in enumerate(loras or []):
         lid = str(40 + i)
         nodes[lid] = {"class_type": "LoraLoaderModelOnly", "inputs": {
-            "lora_name": lora["name"], "strength_model": lora.get("weight", 1.0), "model": model_out}}
+            "lora_name": lora["name"], "strength_model": _js_nullish(lora.get("weight"), 1.0), "model": model_out}}  # SDL-H4
         model_out = [lid, 0]
     nodes.update({
-        "66": {"class_type": "ModelSamplingAuraFlow", "inputs": {"shift": 3.1, "model": model_out}},
+        "66": {"class_type": "ModelSamplingAuraFlow", "inputs": {"shift": shift, "model": model_out}},
         "5": {"class_type": "EmptySD3LatentImage", "inputs": {"width": w, "height": h, "batch_size": 1}},
-        "3": {"class_type": "KSampler", "inputs": {"seed": seed, "steps": steps, "cfg": cfg, "sampler_name": "euler",
-              "scheduler": "simple", "denoise": 1.0, "model": ["66", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]}},
+        "3": {"class_type": "KSampler", "inputs": {"seed": seed, "steps": steps, "cfg": cfg, "sampler_name": sampler,
+              "scheduler": scheduler, "denoise": 1.0, "model": ["66", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]}},
         "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["39", 0]}},
         "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": prefix, "images": ["8", 0]}},
     })
@@ -251,7 +314,9 @@ def _post(path: str, payload: dict):
 
 
 def generate(pos: str, neg: str, seed: int, dst: Path, **kw) -> Path:
-    g = qwen_graph(pos, neg, seed, kw["w"], kw["h"], kw["steps"], kw["cfg"], dst.stem, loras=kw.get("loras"))
+    g = qwen_graph(pos, neg, seed, kw["w"], kw["h"], kw["steps"], kw["cfg"], dst.stem, loras=kw.get("loras"),
+                   sampler=kw.get("sampler", "euler"), scheduler=kw.get("scheduler", "simple"),
+                   shift=kw.get("shift", 3.1))
     pid = _post("/prompt", {"prompt": g, "client_id": uuid.uuid4().hex})["prompt_id"]
     for _ in range(1200):
         hist = json.loads(urllib.request.urlopen(f"{COMFY}/history/{pid}", timeout=30).read())
@@ -284,10 +349,16 @@ def main() -> None:
     steps, cfg = d.get("steps", 22), d.get("cfg", 3.5)
     base_seed = d.get("base_seed", 1000)
     loras = d.get("loras", [])
+    # SDL-H11: read sampler/scheduler/shift from the wave instead of hardcoding
+    # them — defaults match QWEN_DEFAULTS in lib/adapters/comfyui-workflows.js
+    # so an omitted field falls back to the same value the JS path would use.
+    sampler = d.get("sampler", "euler")
+    scheduler = d.get("scheduler", "simple")
+    shift = d.get("shift", 3.1)
     args.out.mkdir(parents=True, exist_ok=True)
 
     receipt = {"wave": wave.get("wave"), "base": "qwen-image", "unet": QWEN_UNET, "clip": QWEN_CLIP,
-               "vae": QWEN_VAE, "sampler": "euler", "scheduler": "simple", "shift": 3.1,
+               "vae": QWEN_VAE, "sampler": sampler, "scheduler": scheduler, "shift": shift,
                "steps": steps, "cfg": cfg, "size": [w, h], "style_prefix": prefix, "negative": neg,
                "loras": loras, "items": []}
 
@@ -296,7 +367,8 @@ def main() -> None:
     # out and recorded per item in items[]). seed_policy is "explicit-per-item"
     # because each item's seed is written verbatim below. Mirror of the JS contract.
     hash_cache = _load_hash_cache()
-    pin_graph = qwen_graph(prefix or "x", neg, base_seed, w, h, steps, cfg, "sdl", loras=loras)
+    pin_graph = qwen_graph(prefix or "x", neg, base_seed, w, h, steps, cfg, "sdl", loras=loras,
+                            sampler=sampler, scheduler=scheduler, shift=shift)
     receipt["pinning"] = _build_pinning(
         pin_graph,
         {"unet": QWEN_UNET, "clip": QWEN_CLIP, "vae": QWEN_VAE},
@@ -312,7 +384,8 @@ def main() -> None:
         pos = f"{prefix}, {subj['prompt']}" if prefix else subj["prompt"]
         for v in range(nvar):
             dst = args.out / f"{subj['id']}_v{v}.png"
-            generate(pos, neg, seed, dst, w=w, h=h, steps=steps, cfg=cfg, loras=loras)
+            generate(pos, neg, seed, dst, w=w, h=h, steps=steps, cfg=cfg, loras=loras,
+                     sampler=sampler, scheduler=scheduler, shift=shift)
             print(f"  {subj['id']} v{v} (seed {seed}) -> {dst.name}", flush=True)
             receipt["items"].append({"id": subj["id"], "variation": v, "seed": seed, "file": dst.name, "prompt": pos})
             seed += 1

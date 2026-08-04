@@ -11,7 +11,7 @@
 
 import { join } from 'node:path';
 import { parseArgs, getProjectName } from '../lib/args.js';
-import { REPO_ROOT, resolveSafeProjectPath } from '../lib/paths.js';
+import { REPO_ROOT, getProjectRoot, resolveSafeProjectPath } from '../lib/paths.js';
 import { inputError, handleCliError } from '../lib/errors.js';
 import { reingestGenerated, auditReingest } from '../lib/reingest.js';
 
@@ -29,7 +29,7 @@ export async function run(argv = process.argv.slice(2)) {
   });
 
   const projectName = flags.project || getProjectName(argv);
-  const projectRoot = join(REPO_ROOT, 'projects', projectName);
+  const projectRoot = getProjectRoot(projectName);
   const subcommand = positionals[0] || 'audit';
 
   if (subcommand === 'generated') {

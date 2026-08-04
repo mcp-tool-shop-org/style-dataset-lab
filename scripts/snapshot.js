@@ -13,7 +13,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs, getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { getProjectRoot } from '../lib/paths.js';
 import { loadSelectionProfile } from '../lib/config.js';
 import { inputError, handleCliError } from '../lib/errors.js';
 import { createSnapshot, loadSnapshot, listSnapshots, diffSnapshots } from '../lib/snapshot.js';
@@ -30,7 +30,7 @@ export async function run(argv = process.argv.slice(2)) {
   });
 
   const projectName = flags.project || getProjectName(argv);
-  const projectRoot = join(REPO_ROOT, 'projects', projectName);
+  const projectRoot = getProjectRoot(projectName);
   const subcommand = positionals[0] || 'list';
   const dryRun = flags['dry-run'] || flags.dryRun;
 

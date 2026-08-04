@@ -18,6 +18,7 @@ import { loadCanonEntriesInDir, entryId } from '../lib/canon-build/load-entry.js
 import { buildFreezeBlock, FREEZE_STATUSES, resolveWatchFields } from '../lib/freeze-stamp.js';
 import { appendEvent } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
+import { getProjectRoot } from '../lib/paths.js';
 
 export async function run(argv) {
   const parsed = parseArgs({
@@ -72,7 +73,13 @@ export async function run(argv) {
     );
   }
 
-  const projectRoot = join(process.cwd(), 'projects', projectName);
+  // SDL-H12: was join(process.cwd(), 'projects', projectName) — wrong base for
+  // a globally-installed sdlab. getProjectRoot() resolves from the workspace
+  // root (not cwd) and throws a clear INPUT_UNKNOWN_PROJECT before ever
+  // reaching loadBuildConfig(), instead of a deeper, misleading
+  // CANON_BUILD_CONFIG_NOT_FOUND pointed at a config that "already exists" —
+  // just under a different (correct) project root.
+  const projectRoot = getProjectRoot(projectName);
   const configPath = join(projectRoot, 'canon-build', 'config.json');
   const config = await loadBuildConfig(configPath, projectRoot);
 

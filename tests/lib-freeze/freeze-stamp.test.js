@@ -24,8 +24,20 @@ test('readFreezeStatus: missing block defaults to auto', () => {
   assert.equal(readFreezeStatus(undefined), 'auto');
 });
 
-test('readFreezeStatus: invalid status falls back to auto', () => {
-  assert.equal(readFreezeStatus({ freeze: { status: 'nonsense' } }), 'auto');
+// SDL-H2 (fixed): a `freeze` block that is PRESENT with a non-empty string
+// `status` outside FREEZE_STATUSES is malformed, not absent — it now throws
+// rather than silently coercing to 'auto' (which used to disable freeze
+// protection on a hand-edited typo with zero signal). A non-string status
+// (e.g. a stray number) is a different, still-permissive case: unchanged.
+// Full REFUSE-branch coverage lives in tests/lib-canon/freeze-stamp-invalid-status.test.js.
+test('readFreezeStatus: non-empty invalid string status throws CANON_FREEZE_STATUS_INVALID', () => {
+  assert.throws(
+    () => readFreezeStatus({ freeze: { status: 'nonsense' } }),
+    (err) => err.code === 'CANON_FREEZE_STATUS_INVALID',
+  );
+});
+
+test('readFreezeStatus: non-string status still falls back to auto', () => {
   assert.equal(readFreezeStatus({ freeze: { status: 42 } }), 'auto');
 });
 

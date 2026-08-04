@@ -19,7 +19,7 @@ import { writeFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { getProjectName, parseNumberFlag } from "../lib/args.js";
-import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { getProjectRoot, resolveSafeProjectPath } from "../lib/paths.js";
 import { runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
@@ -145,7 +145,7 @@ function buildImg2ImgWorkflow(imagePath, seed) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const GAME_ROOT = getProjectRoot(projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
   const dryRun = argv.includes("--dry-run");
@@ -163,7 +163,11 @@ export async function run(argv = process.argv.slice(2)) {
 
   const fullSourceDir = resolveSafeProjectPath(GAME_ROOT, sourceDir, { flagName: 'source' });
   const outDir = join(GAME_ROOT, "outputs/painterly");
-  await mkdir(outDir, { recursive: true });
+  // SDL-M11: only create the output dir on a real run — a --dry-run preview
+  // must be side-effect-free (README.md promises "preview the effect first").
+  if (!dryRun) {
+    await mkdir(outDir, { recursive: true });
+  }
 
   // Collect source PNGs
   const allFiles = (await readdir(fullSourceDir))

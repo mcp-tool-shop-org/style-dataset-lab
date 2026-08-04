@@ -12,7 +12,7 @@
 
 import { join } from 'node:path';
 import { parseArgs, getProjectName } from '../lib/args.js';
-import { REPO_ROOT, resolveSafeProjectPath } from '../lib/paths.js';
+import { REPO_ROOT, getProjectRoot, resolveSafeProjectPath } from '../lib/paths.js';
 import { inputError, handleCliError } from '../lib/errors.js';
 import { listTrainingManifests } from '../lib/training-manifests.js';
 import { listEvalPacks } from '../lib/eval-pack.js';
@@ -30,7 +30,7 @@ export async function run(argv = process.argv.slice(2)) {
   });
 
   const projectName = flags.project || getProjectName(argv);
-  const projectRoot = join(REPO_ROOT, 'projects', projectName);
+  const projectRoot = getProjectRoot(projectName);
   // First non-flag positional that isn't an er-id is the subcommand
   const subcommand = positionals.find(a => !a.startsWith('er-')) || 'list';
 

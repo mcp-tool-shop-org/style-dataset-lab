@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { getProjectRoot } from '../lib/paths.js';
 import { loadConstitution, loadLanes, loadRubric, loadTerminology, detectLane, detectGroup } from '../lib/config.js';
 import { inputError, handleCliError } from '../lib/errors.js';
 
@@ -155,7 +155,7 @@ function generateAssertions(record, constitutionRules, lanesConfig, rubricConfig
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const PROJECT_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const PROJECT_ROOT = getProjectRoot(projectName);
   const RECORDS_DIR = join(PROJECT_ROOT, 'records');
   const DRY_RUN = argv.includes('--dry-run');
   const STATS_ONLY = argv.includes('--stats');

@@ -15,7 +15,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getProjectName, parseNumberFlag } from "../lib/args.js";
-import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { getProjectRoot, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
@@ -169,7 +169,7 @@ function buildControlNetWorkflow(prompt, negativePrompt, seed, guideImagePath, c
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const GAME_ROOT = getProjectRoot(projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
   const opts = parseLocalArgs(argv);
@@ -236,7 +236,11 @@ export async function run(argv = process.argv.slice(2)) {
     console.log(`\x1b[32m+\x1b[0m Guide uploaded: ${guideFilename}`);
   }
 
-  await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
+  // SDL-M11: only create the output dir on a real run — a --dry-run preview
+  // must be side-effect-free (README.md promises "preview the effect first").
+  if (!opts.dryRun) {
+    await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
+  }
 
   let successes = 0, failures = 0;
   for (let si = 0; si < opts.seeds; si++) {

@@ -14,7 +14,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { REPO_ROOT, getProjectRoot, getRuntimeDir } from '../lib/paths.js';
 import { runtimeError, handleCliError } from '../lib/errors.js';
 
 const REQUIRED_CONFIG_FILES = [
@@ -65,7 +65,23 @@ function tryParseJson(filePath) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const projectDir = join(REPO_ROOT, 'projects', projectName);
+  // SDL-C3-completion: resolve through the hardened getProjectRoot() instead of
+  // a raw join(REPO_ROOT, 'projects', projectName) — the raw join let a
+  // --project value like "../../ai-eyes-mcp" escape the projects/ directory
+  // entirely (path traversal). getProjectRoot() rejects any name containing
+  // "/", "\" or ".." (INPUT_UNSAFE_PROJECT_NAME) and re-verifies containment,
+  // and throws INPUT_UNKNOWN_PROJECT (with the same "run sdlab init" hint this
+  // function used to print by hand) when the project does not exist.
+  //
+  // That second throw is also the SDL-C4 fix: this function used to check
+  // existence itself with `if (!existsSync(projectDir)) { fail(...); return; }`
+  // — a bare `return` that resolved the run() promise successfully, so
+  // handleCliError's process.exit() never ran and `sdlab project doctor
+  // --project <missing>` exited 0. getProjectRoot() throws instead of
+  // returning, so a missing project now rejects run() and reaches the CLI's
+  // normal nonzero-exit error path — the ANDON gate this command IS (it's
+  // exactly what `npm run verify` and the CI smoke-test step call).
+  const projectDir = getProjectRoot(projectName);
 
   console.log(`\x1b[1msdlab project doctor\x1b[0m — ${projectName}`);
   console.log(`  Path: ${projectDir}\n`);
@@ -75,11 +91,8 @@ export async function run(argv = process.argv.slice(2)) {
   let warnings = 0;
 
   // ── 1. Project directory exists ──
-  if (!existsSync(projectDir)) {
-    fail(`Project directory not found: ${projectDir}`);
-    console.log(`\n  Run: sdlab init ${projectName} --domain <domain>`);
-    return;
-  }
+  // Guaranteed true here — getProjectRoot() above already throws otherwise.
+  // Recorded as a pass so the check numbering below stays stable.
   pass('Project directory exists');
   passes++;
 
@@ -424,7 +437,11 @@ export async function run(argv = process.argv.slice(2)) {
   // ── 11. Runtime templates check ──
   {
     console.log('');
-    const runtimeDir = join(REPO_ROOT, 'runtime', 'comfyui');
+    // PACKAGE-relative, not workspace-relative — `runtime/` ships inside the
+    // npm tarball (see getPackageRoot() in lib/paths.js). Joining it to
+    // REPO_ROOT made doctor report "runtime/comfyui/ — directory not found"
+    // for every installed user while the templates sat in the package.
+    const runtimeDir = join(getRuntimeDir(), 'comfyui');
     if (existsSync(runtimeDir)) {
       const templateFiles = readdirSync(runtimeDir).filter(f => f.endsWith('.json'));
       if (templateFiles.length > 0) {

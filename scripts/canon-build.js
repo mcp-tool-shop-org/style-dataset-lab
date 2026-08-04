@@ -7,8 +7,7 @@
  */
 
 import { parseArgs } from 'node:util';
-import { join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { getProjectRoot } from '../lib/paths.js';
 import { runBuild } from '../lib/canon-build/build.js';
 import { inputError } from '../lib/errors.js';
 
@@ -38,14 +37,13 @@ export async function run(argv) {
     );
   }
 
-  const projectRoot = join(process.cwd(), 'projects', projectName);
-  if (!existsSync(projectRoot)) {
-    throw inputError(
-      'INPUT_PROJECT_NOT_FOUND',
-      `Project directory not found: ${projectRoot}`,
-      `Run from the style-dataset-lab repo root, or scaffold the project with "sdlab init ${projectName}".`,
-    );
-  }
+  // SDL-H12: resolve via the hardened workspace-root-aware resolver instead of
+  // join(process.cwd(), 'projects', projectName) — for a globally-installed
+  // sdlab the user is never inside the package directory, so process.cwd()
+  // silently pointed at the wrong place. getProjectRoot() also subsumes the
+  // existence check this used to do by hand (same INPUT_UNKNOWN_PROJECT shape
+  // as every other command, with an accurate "sdlab init" hint).
+  const projectRoot = getProjectRoot(projectName);
 
   const only = parsed.values.only
     ? parsed.values.only.split(',').map((s) => s.trim()).filter(Boolean)

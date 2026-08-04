@@ -12,7 +12,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getProjectName } from "../lib/args.js";
-import { REPO_ROOT } from "../lib/paths.js";
+import { getProjectRoot } from "../lib/paths.js";
 import { submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 
 const PAINTERLY_PROMPT = [
@@ -72,7 +72,7 @@ function buildWorkflow(imagePath, denoise, loraWeight, seed) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const GAME_ROOT = getProjectRoot(projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
   const outDir = join(GAME_ROOT, "outputs/painterly-test");

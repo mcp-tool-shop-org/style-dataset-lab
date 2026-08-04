@@ -14,7 +14,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs, getProjectName } from "../lib/args.js";
-import { REPO_ROOT, resolveSafeProjectPath } from "../lib/paths.js";
+import { getProjectRoot, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile, loadProjectMeta, resolveGpuModel } from "../lib/config.js";
 import { runtimeError, inputError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
@@ -264,7 +264,7 @@ function normalizeGenerationInput(raw, projectMeta) {
 
 export async function run(argv = process.argv.slice(2)) {
   const projectName = getProjectName(argv);
-  const GAME_ROOT = join(REPO_ROOT, 'projects', projectName);
+  const GAME_ROOT = getProjectRoot(projectName);
   const COMFY_URL = process.env.COMFY_URL || "http://127.0.0.1:8188";
 
   const parsed = parseArgs(argv, {
@@ -331,8 +331,12 @@ export async function run(argv = process.argv.slice(2)) {
     console.log("\x1b[32m✓\x1b[0m ComfyUI online");
   }
 
-  await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
-  await mkdir(join(GAME_ROOT, "records"), { recursive: true });
+  // SDL-M11: only create output dirs on a real run — a --dry-run preview must
+  // be side-effect-free (README.md promises "preview the effect first").
+  if (!dryRun) {
+    await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
+    await mkdir(join(GAME_ROOT, "records"), { recursive: true });
+  }
 
   let generated = 0;
   let errors = 0;

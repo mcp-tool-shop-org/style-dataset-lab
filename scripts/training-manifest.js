@@ -12,7 +12,7 @@
 
 import { join } from 'node:path';
 import { parseArgs, getProjectName } from '../lib/args.js';
-import { REPO_ROOT } from '../lib/paths.js';
+import { getProjectRoot } from '../lib/paths.js';
 import { inputError, handleCliError } from '../lib/errors.js';
 import { listExports } from '../lib/export.js';
 import {
@@ -35,7 +35,7 @@ export async function run(argv = process.argv.slice(2)) {
   });
 
   const projectName = flags.project || getProjectName(argv);
-  const projectRoot = join(REPO_ROOT, 'projects', projectName);
+  const projectRoot = getProjectRoot(projectName);
   const subcommand = positionals.find(a => !a.startsWith('tm-')) || 'list';
 
   if (subcommand === 'create') {
