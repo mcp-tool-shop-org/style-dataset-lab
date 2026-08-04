@@ -177,6 +177,47 @@ test('without anchors, palette conformance is null rather than invented', { skip
   });
 });
 
+// ── the Phase 9 regression ───────────────────────────────────────────────
+
+test('a perfectly flat image yields null, not NaN, and stays parseable', { skip: SKIP }, () => {
+  // Found in Phase 9, not by any unit test above: measuring three SOLID
+  // images produced `"band_hi": NaN` in the result. Python's json.dumps
+  // emits bare NaN, which RFC 8259 disallows and JS JSON.parse rejects —
+  // taking the entire result down, not just that field, with the useless
+  // message `Unexpected token 'N'`.
+  //
+  // Every test above paired a flat image WITH a textured one, so the flat
+  // image's undefined measures were never the whole story. This one measures
+  // nothing but flat.
+  withFixtures((dir) => {
+    const paths = [];
+    for (const [n, col] of [['a', [190, 130, 50]], ['b', [60, 90, 200]], ['c', [140, 120, 80]]]) {
+      const p = join(dir, `flat_${n}.png`);
+      writeFileSync(p, makePng(64, () => col));
+      paths.push({ id: `flat_${n}`, path: p });
+    }
+
+    // The assertion is simply that this returns at all — a NaN in the output
+    // makes runPythonMeasurement throw on parse.
+    const res = runPythonMeasurement(PYTHON, { images: paths, anchors: [] });
+    assert.equal(res.results.length, 3, 'all three flat images measured');
+
+    // And an undefined measure must be null — never 0, which would read as a
+    // real measurement of a real property.
+    for (const r of res.results) {
+      for (const [k, v] of Object.entries(r.texture)) {
+        assert.ok(
+          v === null || Number.isFinite(v),
+          `texture.${k} on a flat image must be null or finite, got ${JSON.stringify(v)}`,
+        );
+      }
+    }
+    // Round-trips through JSON cleanly, which is the actual contract with the
+    // Node caller.
+    assert.doesNotThrow(() => JSON.parse(JSON.stringify(res)));
+  });
+});
+
 // ── the environment contract ─────────────────────────────────────────────
 
 test('a missing interpreter is reported, not silently tolerated', () => {

@@ -91,6 +91,7 @@ from __future__ import annotations
 import argparse
 import colorsys
 import json
+import math
 import os
 import re
 import time
@@ -124,6 +125,36 @@ def _utc_now_iso() -> str:
         f"{datetime.now(timezone.utc).microsecond // 1000:03d}Z"
 
 
+def _json_safe(obj):
+    """Replace non-finite floats with None, recursively.
+
+    Python's json.dumps emits bare `NaN` / `Infinity` for these — a
+    non-standard extension that RFC 8259 does not allow and that JavaScript's
+    JSON.parse rejects outright, taking the WHOLE result down with it, not
+    just the offending field. The Node caller (lib/measure.js) then reports
+    `Unexpected token 'N'` and the operator learns nothing about which image
+    or which measure produced it.
+
+    Non-finite values are legitimate here rather than a bug to prevent: a
+    perfectly flat image has zero luminance variance, so a measure that
+    normalizes by it is genuinely undefined. Found in Phase 9 by measuring
+    three solid-colour images, which every unit test had missed because they
+    all paired a flat image with a textured one.
+
+    `null` is the honest encoding of "this measure is undefined for this
+    image" — the same choice palette conformance already makes when no
+    anchors are supplied. It is emphatically not 0, which would read as a
+    real measurement of a real property.
+    """
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    return obj
+
+
 def _atomic_write_json(path: Path, obj) -> None:
     """Temp file in the same dir + os.replace — the Python-side mirror of
     lib/runtime-runs.js's atomicWriteJson (temp+rename): a crash mid-write
@@ -133,7 +164,15 @@ def _atomic_write_json(path: Path, obj) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.parent / f"{path.name}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
     try:
-        tmp.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
+        # allow_nan=False makes a leaked non-finite value a loud Python-side
+        # ValueError here rather than a bare `NaN` token that only explodes
+        # later in the Node caller's JSON.parse, where the message names no
+        # image and no measure. _json_safe should have caught them all; this
+        # is the assertion that it did.
+        tmp.write_text(
+            json.dumps(_json_safe(obj), indent=2, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
         os.replace(tmp, path)
     except Exception:
         try:
