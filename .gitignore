@@ -63,6 +63,11 @@ projects/*/inbox/**/*.jpg
 projects/*/inbox/**/*.jpeg
 projects/*/inbox/**/*.webp
 
+# Contact sheets are a review surface regenerated from the images and records
+# they describe — `sdlab sheet` rebuilds one in seconds. Same reasoning as the
+# inbox rule above: the artifacts are tracked, the rendering of them is not.
+projects/*/outputs/sheets/
+
 # Editor/scratch backups
 *.bak
 

@@ -18,6 +18,21 @@ const COMMANDS = {
   'generate:controlnet': '../scripts/generate-controlnet.js',
   'generate:ipadapter':  '../scripts/generate-ipadapter.js',
   'curate':              '../scripts/curate.js',
+  // Bring images that were generated OUTSIDE sdlab into the pipeline. The
+  // documented production loop (brief→run→critique→batch→select→reingest) has
+  // never run on any project in this repo — real generation happens in
+  // external Python against Comfy Cloud, and until now those images had no
+  // CLI path in. `reingest generated` needs a trained LoRA's manifest;
+  // `reingest selected` needs a selection only the loop can mint.
+  'ingest':              '../scripts/ingest.js',
+  // Contact sheet over ANY directory of candidates. The renderer already
+  // existed (lib/batch-sheet-render.js) but was reachable only via
+  // `batch sheet`, which needs a batch manifest nothing has ever produced —
+  // so five hand-rolled PIL contact-sheet scripts grew up in projects/ instead.
+  'sheet':               '../scripts/sheet.js',
+  // Deterministic pixel measurement. Nothing in this tool opened an image
+  // before this: critique scores brief TEXT, not pixels.
+  'measure':             '../scripts/measure.js',
   'compare':             '../scripts/compare.js',
   'bind':                '../scripts/canon-bind.js',
   'canon-bind':          '../scripts/canon-bind.js',
@@ -362,7 +377,10 @@ function printHelp() {
   console.log('  generate:identity    Generate named-subject identity images');
   console.log('  generate:controlnet  ControlNet-guided structural generation');
   console.log('  generate:ipadapter   IP-Adapter reference-guided generation');
+  console.log('  ingest <dir>         Ingest externally-generated images as candidates');
   console.log('  curate               Move candidate to approved/rejected/borderline');
+  console.log('  sheet [<dir>]        Render an HTML contact sheet for visual review');
+  console.log('  measure <target>     Measure candidate pixels (palette, texture)');
   console.log('  compare              Record pairwise A-vs-B comparison');
   console.log('  canon-bind           Bind approved records to constitution rules');
   console.log('                       ("bind" is a short alias for canon-bind)');
