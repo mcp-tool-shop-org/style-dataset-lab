@@ -51,7 +51,31 @@ function findPython() {
   return null;
 }
 
-const PYTHON = findPython();
+/**
+ * An interpreter is not enough — the script has to be able to RUN.
+ *
+ * `qwen_generate.py:28` does `from PIL import Image`, and probing only for a
+ * python binary passed on ubuntu-latest (which ships python3) while Pillow was
+ * absent. The script then died with ModuleNotFoundError, exited 1, and these
+ * tests FAILED instead of skipping — red CI for an optional capability the
+ * runner was never expected to have. Caught on the v3.4.0 release commit,
+ * after passing locally where Pillow is installed.
+ *
+ * So: probe the imports the script actually needs, not just the interpreter.
+ * A missing optional dependency must skip; a genuine parity regression must
+ * fail. Conflating the two is how a suite teaches people to ignore it.
+ */
+function pythonCanRunScript(cmd) {
+  if (!cmd) return false;
+  const res = spawnSync(cmd, ['-c', 'import PIL; from PIL import Image'], { encoding: 'utf-8' });
+  return res.status === 0;
+}
+
+const PYTHON_BIN = findPython();
+const PYTHON = pythonCanRunScript(PYTHON_BIN) ? PYTHON_BIN : null;
+const SKIP_REASON = PYTHON_BIN
+  ? 'python found but Pillow is not installed — qwen_generate.py cannot run, skipping the optional cross-language parity check'
+  : 'python not found on PATH — skipping cross-language parity check';
 
 // A wave engineered to exercise all three findings in one pass:
 //   - sampler/scheduler/shift all non-default (H11)
@@ -127,7 +151,7 @@ function jsGraphForWave() {
   }).nodes;
 }
 
-test('qwen_generate.py comfy_workflow_sha matches the JS buildQwenGraph hash for a non-default sampler/scheduler/shift + null-weight + divergent-float-weight wave (SDL-H11/H3/H4)', { skip: PYTHON ? false : 'python not found on PATH — skipping cross-language parity check' }, () => {
+test('qwen_generate.py comfy_workflow_sha matches the JS buildQwenGraph hash for a non-default sampler/scheduler/shift + null-weight + divergent-float-weight wave (SDL-H11/H3/H4)', { skip: PYTHON ? false : SKIP_REASON }, () => {
   const receipt = runPythonPinning();
   const pyHash = receipt?.pinning?.comfy_workflow_sha;
   assert.ok(pyHash && pyHash.startsWith('sha256:'), `expected a sha256: hash, got ${JSON.stringify(pyHash)}`);
@@ -136,14 +160,14 @@ test('qwen_generate.py comfy_workflow_sha matches the JS buildQwenGraph hash for
   assert.equal(pyHash, jsHash, 'Python and JS produced different comfy_workflow_sha for the same wave — pinning contract is broken');
 });
 
-test('qwen_generate.py receipt records the WAVE\'s sampler/scheduler/shift, not hardcoded euler/simple/3.1 (SDL-H11)', { skip: PYTHON ? false : 'python not found on PATH — skipping' }, () => {
+test('qwen_generate.py receipt records the WAVE\'s sampler/scheduler/shift, not hardcoded euler/simple/3.1 (SDL-H11)', { skip: PYTHON ? false : SKIP_REASON }, () => {
   const receipt = runPythonPinning();
   assert.equal(receipt.sampler, 'dpmpp_2m');
   assert.equal(receipt.scheduler, 'karras');
   assert.equal(receipt.shift, 5.0);
 });
 
-test('qwen_generate.py resolves an explicit null LoRA weight to 1.0, mirroring JS `l.weight ?? 1.0` (SDL-H4)', { skip: PYTHON ? false : 'python not found on PATH — skipping' }, () => {
+test('qwen_generate.py resolves an explicit null LoRA weight to 1.0, mirroring JS `l.weight ?? 1.0` (SDL-H4)', { skip: PYTHON ? false : SKIP_REASON }, () => {
   const receipt = runPythonPinning();
   const detail = receipt.pinning.loras.find((l) => l.name === 'lora_detail.safetensors');
   assert.ok(detail, 'expected lora_detail.safetensors in pinning.loras');

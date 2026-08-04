@@ -42,7 +42,24 @@ function findPython() {
   return null;
 }
 
-const PYTHON = findPython();
+/**
+ * The interpreter existing is not the same as the script being runnable —
+ * qwen_generate.py imports Pillow. Probing only for a python binary passed on
+ * ubuntu-latest (which ships python3) while Pillow was absent, so this test
+ * FAILED with ModuleNotFoundError instead of skipping. A missing optional
+ * dependency must skip; a real regression must fail.
+ */
+function pythonCanRunScript(cmd) {
+  if (!cmd) return false;
+  const res = spawnSync(cmd, ['-c', 'import PIL; from PIL import Image'], { encoding: 'utf-8' });
+  return res.status === 0;
+}
+
+const PYTHON_BIN = findPython();
+const PYTHON = pythonCanRunScript(PYTHON_BIN) ? PYTHON_BIN : null;
+const SKIP_REASON = PYTHON_BIN
+  ? 'python found but Pillow is not installed — qwen_generate.py cannot run, skipping'
+  : 'python not found on PATH — skipping cross-language check';
 
 const WAVE = {
   wave: 'm3-partial-failure-check',
@@ -56,7 +73,7 @@ const WAVE = {
 
 test(
   'qwen_generate.py: a per-item generation failure still writes generation.json with per-item error detail, not an uncaught crash (M3)',
-  { skip: PYTHON ? false : 'python not found on PATH — skipping cross-language check', timeout: 60000 },
+  { skip: PYTHON ? false : SKIP_REASON, timeout: 60000 },
   () => {
     const dir = mkdtempSync(join(tmpdir(), 'sdlab-qwen-m3-'));
     try {
