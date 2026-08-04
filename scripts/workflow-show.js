@@ -11,6 +11,7 @@
 import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { getWorkflowProfile } from '../lib/workflow-profiles.js';
+import { handleCliError } from '../lib/errors.js';
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
@@ -93,5 +94,5 @@ export async function run(argv = process.argv.slice(2)) {
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('workflow-show.js') || process.argv[1].endsWith('workflow-show'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

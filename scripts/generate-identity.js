@@ -18,16 +18,20 @@
  *   --phase MODE    Generation phase: discovery | follow_on (default: discovery)
  *   --anchor FILE   Anchor source image path (required for --phase follow_on)
  *   --denoise N     Denoise strength for follow_on phase (default: 0.38)
+ *   --resume        Skip shots whose record + output image already exist
+ *                    (seed slots still advance, so a resumed run stays
+ *                    bit-identical to an uninterrupted one)
  */
 
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName, parseNumberFlag } from "../lib/args.js";
+import { getProjectName, parseNumberFlag, takeFlagValue } from "../lib/args.js";
 import { getProjectRoot, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile, loadProjectMeta, resolveGpuModel } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { assertNotFrozenBySubject } from "../lib/freeze-gate.js";
+import { isResumable, logResumedSkip } from "./_resume.js";
 
 // ── Defaults (match existing lab pipeline) ──
 
@@ -383,7 +387,7 @@ export async function run(argv = process.argv.slice(2)) {
   const gpuModel = resolveGpuModel(loadProjectMeta(GAME_ROOT)?.defaults);
 
   // Collect positionals, skipping values that belong to known flags
-  const knownFlagsWithValue = new Set(['--subject', '--seeds', '--phase', '--anchor', '--denoise', '--project', '--game']);
+  const knownFlagsWithValue = new Set(['--subject', '--seeds', '--phase', '--anchor', '--denoise', '--project', '--game', '--reason']);
   const positionals = [];
   for (let k = 0; k < argv.length; k++) {
     const a = argv[k];
@@ -395,16 +399,23 @@ export async function run(argv = process.argv.slice(2)) {
   }
   const packPath = positionals[0];
   const dryRun = argv.includes("--dry-run");
-  const subjectFilter = argv.includes("--subject")
-    ? argv[argv.indexOf("--subject") + 1]
-    : null;
+  const resume = argv.includes("--resume");
+
+  // H4: takeFlagValue() (lib/args.js) recognizes BOTH `--flag value` and
+  // `--flag=value`. The previous `argv.includes('--x') ?
+  // argv[argv.indexOf('--x')+1] : default` pattern checked argv for a token
+  // EXACTLY EQUAL to "--x" — false for the single token "--phase=follow_on",
+  // so the equals form silently fell back to the default. For --phase that
+  // meant `--phase=follow_on` ran the discovery (txt2img) workflow instead
+  // of follow_on (img2img) — silently, on an hours-long GPU job. Same gap
+  // closed here for --seeds / --anchor / --denoise / --subject / --reason.
+  const subjectFilter = takeFlagValue(argv, 'subject') ?? null;
 
   // Freeze gate (advisory): when --subject is given, refuse if that subject's
   // canon entry is frozen. No-op when --subject is absent (pack-driven) or
   // when the project has no canon-build config.
   if (subjectFilter) {
-    const reasonFlagIdx = argv.indexOf('--reason');
-    const bypassReason = reasonFlagIdx >= 0 && argv[reasonFlagIdx + 1] ? argv[reasonFlagIdx + 1] : null;
+    const bypassReason = takeFlagValue(argv, 'reason') ?? null;
     await assertNotFrozenBySubject(GAME_ROOT, subjectFilter, {
       action: 'generate:identity',
       allowSoftAdvisoryBypass: argv.includes('--i-know'),
@@ -412,17 +423,15 @@ export async function run(argv = process.argv.slice(2)) {
       by: 'mike',
     });
   }
-  const seedCount = argv.includes("--seeds")
-    ? parseNumberFlag('seeds', argv[argv.indexOf("--seeds") + 1], { int: true, min: 1 })
+  const seedsRaw = takeFlagValue(argv, 'seeds');
+  const seedCount = seedsRaw !== undefined
+    ? parseNumberFlag('seeds', seedsRaw, { int: true, min: 1 })
     : 3;
-  const phase = argv.includes("--phase")
-    ? argv[argv.indexOf("--phase") + 1]
-    : "discovery";
-  const anchorPath = argv.includes("--anchor")
-    ? argv[argv.indexOf("--anchor") + 1]
-    : null;
-  const denoise = argv.includes("--denoise")
-    ? parseNumberFlag('denoise', argv[argv.indexOf("--denoise") + 1], { min: 0, max: 1 })
+  const phase = takeFlagValue(argv, 'phase') ?? "discovery";
+  const anchorPath = takeFlagValue(argv, 'anchor') ?? null;
+  const denoiseRaw = takeFlagValue(argv, 'denoise');
+  const denoise = denoiseRaw !== undefined
+    ? parseNumberFlag('denoise', denoiseRaw, { min: 0, max: 1 })
     : 0.38;
 
   if (!packPath) {
@@ -483,6 +492,7 @@ export async function run(argv = process.argv.slice(2)) {
 
   let generated = 0;
   let errors = 0;
+  let skipped = 0;
   let imageIndex = 0;
 
   for (const subject of subjects) {
@@ -501,6 +511,21 @@ export async function run(argv = process.argv.slice(2)) {
         const seed = DEFAULTS.base_seed + imageIndex;
         const assetId = `${shot.id}_s${si}`;
         const destPath = `outputs/candidates/${assetId}.png`;
+
+        // H5: --resume skips a shot whose record AND output image already
+        // exist, but imageIndex (and therefore seed) still advances exactly
+        // as it would have if the shot had been processed — a resumed run
+        // reproduces the identical seed sequence an uninterrupted run would
+        // have produced. Ported from generate.js, the one generator that had
+        // this; generate-identity is the most expensive per-image generator
+        // in the pipeline, so it is the one that most needed it.
+        if (resume && !dryRun && isResumable(GAME_ROOT, assetId)) {
+          logResumedSkip(generated + 1, totalImages, assetId);
+          generated++;
+          skipped++;
+          imageIndex++;
+          continue;
+        }
 
         console.log(`    [${generated + 1}/${totalImages}] ${assetId} (seed: ${seed})`);
 
@@ -576,8 +601,9 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
-  const succeeded = generated - errors;
-  console.log(`\n\x1b[32m+\x1b[0m Generated ${succeeded} images (${errors} errors)`);
+  const succeeded = generated - errors - skipped;
+  const skippedSuffix = skipped > 0 ? `, ${skipped} resumed` : '';
+  console.log(`\n\x1b[32m+\x1b[0m Generated ${succeeded} images (${errors} errors${skippedSuffix})`);
   if (dryRun) console.log("  (dry run — no images produced)");
   if (!dryRun && errors > 0 && succeeded === 0) {
     throw runtimeError('RUNTIME_ALL_FAILED', `All ${generated} generation attempts failed.`);

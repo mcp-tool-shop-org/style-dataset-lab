@@ -10,23 +10,32 @@ import { parseArgs } from 'node:util';
 import { getProjectRoot } from '../lib/paths.js';
 import { runBuild } from '../lib/canon-build/build.js';
 import { inputError } from '../lib/errors.js';
+import { assertKnownOptions } from './_shared-args.js';
 
 export async function run(argv) {
+  const options = {
+    project:  { type: 'string' },
+    game:     { type: 'string' },           // deprecated alias
+    full:     { type: 'boolean', default: false },
+    'no-cache': { type: 'boolean', default: false },
+    'dry-run':  { type: 'boolean', default: false },
+    only:     { type: 'string' },
+    json:     { type: 'boolean', default: false },
+    quiet:    { type: 'boolean', default: false },
+  };
   const parsed = parseArgs({
     args: argv,
-    options: {
-      project:  { type: 'string' },
-      game:     { type: 'string' },           // deprecated alias
-      full:     { type: 'boolean', default: false },
-      'no-cache': { type: 'boolean', default: false },
-      'dry-run':  { type: 'boolean', default: false },
-      only:     { type: 'string' },
-      json:     { type: 'boolean', default: false },
-      quiet:    { type: 'boolean', default: false },
-    },
+    options,
     allowPositionals: true,
     strict: false,
   });
+  // H4: strict:false is deliberate (it lets the entity-id positional through
+  // unrejected) but its side effect is that ANY unrecognized --flag is
+  // silently accepted too — a misspelled OPTIONAL flag (--ful instead of
+  // --full, --dry-Run) produces no error, no warning, and the option you
+  // meant to set just quietly keeps its default. Post-validate instead of
+  // trusting strict:false's leniency for everything.
+  assertKnownOptions(parsed.values, options, { command: 'canon build' });
 
   const projectName = parsed.values.project || parsed.values.game;
   if (!projectName) {

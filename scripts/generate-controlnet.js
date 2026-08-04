@@ -14,12 +14,13 @@
 
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { getProjectName, parseNumberFlag } from "../lib/args.js";
+import { getProjectName, parseNumberFlag, takeFlagValue } from "../lib/args.js";
 import { getProjectRoot, resolveSafeProjectPath } from "../lib/paths.js";
 import { readJsonFile } from "../lib/config.js";
 import { inputError, runtimeError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
 import { assertNotFrozenBySubject } from "../lib/freeze-gate.js";
+import { isResumable, logResumedSkip } from "./_resume.js";
 
 const DEFAULTS = {
   checkpoint: "dreamshaperXL_v21TurboDPMSDE.safetensors",
@@ -33,27 +34,32 @@ const DEFAULTS = {
   base_seed: 27100,
 };
 
+// H4: takeFlagValue() (lib/args.js) recognizes BOTH `--flag value` and
+// `--flag=value`. The prior `argv.indexOf(flag)`-based get() only matched a
+// token EXACTLY equal to e.g. "--weight" — false for the single token
+// "--weight=1.1" — so the equals form silently fell back to the default
+// with no error and no warning.
 function parseLocalArgs(argv) {
-  const get = (flag, def) => {
-    const i = argv.indexOf(flag);
-    if (i < 0 || i + 1 >= argv.length) return def;
-    const v = argv[i + 1];
-    if (typeof v === 'string' && v.startsWith('--')) {
-      throw inputError('INPUT_MISSING_VALUE', `Flag ${flag} is missing its value (got another flag: ${v}).`);
-    }
-    return v;
+  const get = (flagName, def) => {
+    const v = takeFlagValue(argv, flagName);
+    return v === undefined ? def : v;
   };
   return {
-    subject: get("--subject", "unknown"),
-    guidePath: get("--guide", null),
-    prompt: get("--prompt", null),
-    promptFile: get("--prompt-file", null),
-    negative: get("--negative", null),
-    seeds: parseNumberFlag('seeds', get("--seeds", "4"), { int: true, min: 1 }),
-    weight: parseNumberFlag('weight', get("--weight", "0.70"), { min: 0, max: 2 }),
-    guidanceEnd: parseNumberFlag('guidance-end', get("--guidance-end", "0.65"), { min: 0, max: 1 }),
-    controlModel: get("--model", "controlnet-canny-sdxl-1.0.safetensors"),
+    subject: get("subject", "unknown"),
+    guidePath: get("guide", null),
+    prompt: get("prompt", null),
+    promptFile: get("prompt-file", null),
+    negative: get("negative", null),
+    seeds: parseNumberFlag('seeds', get("seeds", "4"), { int: true, min: 1 }),
+    weight: parseNumberFlag('weight', get("weight", "0.70"), { min: 0, max: 2 }),
+    guidanceEnd: parseNumberFlag('guidance-end', get("guidance-end", "0.65"), { min: 0, max: 1 }),
+    controlModel: get("model", "controlnet-canny-sdxl-1.0.safetensors"),
     dryRun: argv.includes("--dry-run"),
+    // H5: skip a seed slot whose output image already exists. This script
+    // (unlike generate.js / generate-identity.js) never writes a
+    // records/<id>.json — only the output PNG — so resumability here is
+    // image-existence only; see scripts/_resume.js's requireRecord doc.
+    resume: argv.includes("--resume"),
   };
 }
 
@@ -180,8 +186,7 @@ export async function run(argv = process.argv.slice(2)) {
 
   // Freeze gate (advisory): refuse if the subject's canon entry is frozen.
   // Supports --i-know + --reason bypass for soft-advisory entries.
-  const reasonFlagIdx = argv.indexOf('--reason');
-  const bypassReason = reasonFlagIdx >= 0 && argv[reasonFlagIdx + 1] ? argv[reasonFlagIdx + 1] : null;
+  const bypassReason = takeFlagValue(argv, 'reason') ?? null;
   await assertNotFrozenBySubject(GAME_ROOT, opts.subject, {
     action: 'generate:controlnet',
     allowSoftAdvisoryBypass: argv.includes('--i-know'),
@@ -242,11 +247,21 @@ export async function run(argv = process.argv.slice(2)) {
     await mkdir(join(GAME_ROOT, "outputs/candidates"), { recursive: true });
   }
 
-  let successes = 0, failures = 0;
+  let successes = 0, failures = 0, skipped = 0;
   for (let si = 0; si < opts.seeds; si++) {
     const seed = DEFAULTS.base_seed + si;
     const assetId = `${opts.subject}_cn_s${si}`;
     const destPath = `outputs/candidates/${assetId}.png`;
+
+    // H5: --resume skips a seed slot whose output image already exists.
+    // Seed here is derived from the loop index (si), not an externally
+    // mutated running counter, so skipping never desyncs a later seed — the
+    // for-loop's own si++ always fires regardless of this continue.
+    if (opts.resume && !opts.dryRun && isResumable(GAME_ROOT, assetId, { requireRecord: false })) {
+      logResumedSkip(si + 1, opts.seeds, assetId);
+      skipped++;
+      continue;
+    }
 
     console.log(`  [${si + 1}/${opts.seeds}] ${assetId} (seed: ${seed})`);
 
@@ -289,7 +304,8 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
-  console.log(`\n\x1b[32m+\x1b[0m ControlNet discovery complete (${successes} success, ${failures} failed)`);
+  const skippedSuffix = skipped > 0 ? `, ${skipped} resumed` : '';
+  console.log(`\n\x1b[32m+\x1b[0m ControlNet discovery complete (${successes} success, ${failures} failed${skippedSuffix})`);
   if (opts.dryRun) console.log("  (dry run)");
   if (!opts.dryRun && failures > 0 && successes === 0) {
     throw runtimeError('RUNTIME_ALL_FAILED', `All ${opts.seeds} ControlNet generation attempts failed.`);

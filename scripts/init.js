@@ -14,6 +14,7 @@ import { join, basename } from 'node:path';
 import { existsSync } from 'node:fs';
 import { REPO_ROOT, getPackageRoot } from '../lib/paths.js';
 import { inputError, handleCliError } from '../lib/errors.js';
+import { takeFlagValue } from '../lib/args.js';
 
 // Two DIFFERENT roots — see getPackageRoot() in lib/paths.js.
 // `templates/` ships inside the npm tarball, so it is package-relative;
@@ -69,11 +70,15 @@ async function listDomains() {
 export async function run(argv = process.argv.slice(2)) {
   const projectName = argv.find(a => !a.startsWith('--'));
 
-  // Parse --domain
+  // Parse --domain. H4: previously a hand-rolled `argv.indexOf('--domain')`
+  // that only recognized the space-separated form — `sdlab init foo
+  // --domain=game-art` silently fell through to the 'generic' default
+  // because no argv token was EXACTLY "--domain". takeFlagValue() (already
+  // hardened for both `--flag value` and `--flag=value`) closes that gap.
   let domain = 'generic';
-  const domainIdx = argv.indexOf('--domain');
-  if (domainIdx >= 0 && argv[domainIdx + 1]) {
-    domain = argv[domainIdx + 1];
+  const domainValue = takeFlagValue(argv, 'domain');
+  if (domainValue !== undefined) {
+    domain = domainValue;
   }
 
   if (!projectName) {
@@ -364,11 +369,22 @@ export async function run(argv = process.argv.slice(2)) {
   console.log('');
   console.log(`\x1b[32m✓\x1b[0m Project "${projectName}" initialized`);
   console.log('');
-  // Paths printed here must be copy-pasteable from the user's shell, so they
-  // are relative to the workspace root (where they ran `init`), not to the
-  // project directory. Printing `<name>/canon/...` sent people to a path that
-  // does not exist — the file is at `projects/<name>/canon/...`.
+  // Two DIFFERENT path bases are printed in this block, for two DIFFERENT
+  // audiences — do not collapse them back into one helper:
+  //   - "Edit <file>" / "Full quick-start" lines are opened by the user in
+  //     an editor/file-browser from wherever they ran `init` (the workspace
+  //     root), so they need workspace-relative paths: projects/<name>/....
+  //   - The `sdlab generate <pack>` line's argument is consumed by
+  //     generate.js via resolveSafeProjectPath(GAME_ROOT, packPath) — GAME_ROOT
+  //     IS projects/<name>, so that path must be PROJECT-relative
+  //     (inputs/prompts/...), not workspace-relative. Printing the
+  //     workspace-relative form here doubles the path
+  //     (projects/<name>/projects/<name>/...) and generate.js 404s with
+  //     INPUT_FILE_NOT_FOUND. Regression introduced in 27c42c6 while fixing
+  //     the sibling "Edit" lines (which legitimately needed the workspace-
+  //     relative switch) — see tests/cli-scripts/init-generate-path.test.js.
   const rel = (...segments) => ['projects', projectName, ...segments].join('/');
+  const projectRel = (...segments) => segments.join('/');
 
   console.log('Next steps:');
   let step = 1;
@@ -380,7 +396,7 @@ export async function run(argv = process.argv.slice(2)) {
   console.log(`     Encode those rules as machine-checkable entries for canon-bind.`);
   if (wroteExamplePack) {
     console.log(`  ${step++}. Generate your first candidates:`);
-    console.log(`     sdlab generate ${rel('inputs', 'prompts', 'example-wave.json')} --project ${projectName}`);
+    console.log(`     sdlab generate ${projectRel('inputs', 'prompts', 'example-wave.json')} --project ${projectName}`);
   } else {
     console.log(`  ${step++}. Add a prompt pack under ${rel('inputs', 'prompts')}/`);
     console.log(`  ${step++}. Generate your first candidates:`);

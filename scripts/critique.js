@@ -84,9 +84,24 @@ export async function run(argv = process.argv.slice(2)) {
     const action = report.recommended_action;
     console.log(`Critique saved to: runs/${flags.run}/critique.json`);
 
+    // H2: `refine_from_one` fires today purely from every candidate sitting
+    // at the unreviewed default overall_fit "usable" (nothing in the
+    // codebase currently sets it to anything else) — action.reviewed
+    // (lib/critique-engine.js recommendAction) distinguishes that from an
+    // actually-assessed run. Printing "Next: ..." with the same confidence
+    // either way presented brief-keyword drift tiebreaking as a considered
+    // recommendation. Qualify instead of suppressing outright — the pick is
+    // still a reasonable place to look first, it's just not a judgment.
     if (action.mode === 'refine_from_one' && action.preferred_candidate) {
       console.log('');
-      info(`Next: sdlab refine --run ${flags.run} --pick ${action.preferred_candidate}`);
+      if (action.reviewed) {
+        info(`Next: sdlab refine --run ${flags.run} --pick ${action.preferred_candidate}`);
+      } else {
+        info(`No candidate has been reviewed yet — every image is at the rule-based pass's default "usable" ` +
+          `until a human or LLM judge assesses fit.`);
+        info(`If you want to proceed anyway: sdlab refine --run ${flags.run} --pick ${action.preferred_candidate} ` +
+          `(picked by fewest rule-based drift issues, not by looking at the image).`);
+      }
     } else if (action.mode === 'accept_one' && action.preferred_candidate) {
       console.log('');
       info(`Preferred candidate: ${action.preferred_candidate}`);

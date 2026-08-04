@@ -14,6 +14,7 @@ import { parseArgs, getProjectName, parseNumberFlag } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { compileBrief, saveCompiledBrief } from '../lib/brief-compiler.js';
 import { info } from '../lib/log.js';
+import { handleCliError } from '../lib/errors.js';
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags } = parseArgs(argv, {
@@ -130,5 +131,5 @@ export async function run(argv = process.argv.slice(2)) {
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('brief-compile.js') || process.argv[1].endsWith('brief-compile'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

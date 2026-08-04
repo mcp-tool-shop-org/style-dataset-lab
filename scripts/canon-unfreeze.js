@@ -19,21 +19,26 @@ import { appendOverrideToFreezeBlock, readFreezeStatus } from '../lib/freeze-sta
 import { appendEvent } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
 import { getProjectRoot } from '../lib/paths.js';
+import { assertKnownOptions } from './_shared-args.js';
 
 export async function run(argv) {
+  const options = {
+    project: { type: 'string' },
+    game:    { type: 'string' },
+    reason:  { type: 'string' },
+    by:      { type: 'string', default: 'mike' },
+    build:   { type: 'string' },
+    json:    { type: 'boolean', default: false },
+  };
   const parsed = parseArgs({
     args: argv,
-    options: {
-      project: { type: 'string' },
-      game:    { type: 'string' },
-      reason:  { type: 'string' },
-      by:      { type: 'string', default: 'mike' },
-      build:   { type: 'string' },
-      json:    { type: 'boolean', default: false },
-    },
+    options,
     allowPositionals: true,
     strict: false,
   });
+  // H4: see canon-build.js's comment — strict:false's leniency on unknown
+  // flags means a typo'd optional flag silently no-ops instead of erroring.
+  assertKnownOptions(parsed.values, options, { command: 'canon unfreeze' });
 
   const entityIdArg = (parsed.positionals || [])[0];
   if (!entityIdArg) {

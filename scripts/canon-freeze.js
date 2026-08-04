@@ -19,23 +19,32 @@ import { buildFreezeBlock, FREEZE_STATUSES, resolveWatchFields } from '../lib/fr
 import { appendEvent } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
 import { getProjectRoot } from '../lib/paths.js';
+import { assertKnownOptions } from './_shared-args.js';
 
 export async function run(argv) {
+  const options = {
+    project: { type: 'string' },
+    game:    { type: 'string' },
+    reason:  { type: 'string' },
+    status:  { type: 'string', default: 'frozen' },
+    watch:   { type: 'string' },
+    build:   { type: 'string' },
+    by:      { type: 'string', default: 'mike' },
+    json:    { type: 'boolean', default: false },
+  };
   const parsed = parseArgs({
     args: argv,
-    options: {
-      project: { type: 'string' },
-      game:    { type: 'string' },
-      reason:  { type: 'string' },
-      status:  { type: 'string', default: 'frozen' },
-      watch:   { type: 'string' },
-      build:   { type: 'string' },
-      by:      { type: 'string', default: 'mike' },
-      json:    { type: 'boolean', default: false },
-    },
+    options,
     allowPositionals: true,
     strict: false,
   });
+  // H4: see canon-build.js's comment — strict:false's leniency on unknown
+  // flags means a typo'd optional flag silently no-ops instead of erroring.
+  // This one matters more than most: `sdlab canon freeze X --staus
+  // soft-advisory` (typo) would silently keep status at its default
+  // 'frozen' — a HARD block — instead of the 'soft-advisory' the operator
+  // typed, and a typo'd --watch/--build silently drops a real override too.
+  assertKnownOptions(parsed.values, options, { command: 'canon freeze' });
 
   const positional = parsed.positionals || [];
   const entityIdArg = positional[0];

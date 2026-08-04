@@ -13,6 +13,7 @@ import { parseArgs, getProjectName } from '../lib/args.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { loadCompiledBrief } from '../lib/brief-compiler.js';
 import { renderBriefText, renderBriefMarkdown } from '../lib/brief-render.js';
+import { handleCliError } from '../lib/errors.js';
 
 export async function run(argv = process.argv.slice(2)) {
   const { flags, positionals } = parseArgs(argv, {
@@ -49,5 +50,5 @@ export async function run(argv = process.argv.slice(2)) {
 }
 
 if (process.argv[1] && (process.argv[1].endsWith('brief-show.js') || process.argv[1].endsWith('brief-show'))) {
-  run().catch((err) => { console.error(err.message || err); process.exit(1); });
+  run().catch(handleCliError);
 }

@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { getProjectName } from "../lib/args.js";
 import { getProjectRoot } from "../lib/paths.js";
 import { submitAndWait, downloadImage, uploadImage } from "../lib/comfyui.js";
+import { handleCliError } from "../lib/errors.js";
 
 const PAINTERLY_PROMPT = [
   "oil painting, visible brushstrokes, painterly concept art,",
@@ -118,5 +119,5 @@ export async function run(argv = process.argv.slice(2)) {
 
 // Direct execution guard
 if (process.argv[1] && (process.argv[1].endsWith('painterly-test.js') || process.argv[1].endsWith('painterly-test'))) {
-  run().catch(e => { console.error(e.message || e); process.exit(1); });
+  run().catch(handleCliError);
 }

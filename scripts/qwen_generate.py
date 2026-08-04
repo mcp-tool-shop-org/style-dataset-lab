@@ -378,22 +378,67 @@ def main() -> None:
         hash_cache,
     )
 
+    receipt_path = args.out / "generation.json"
+
+    def _save_receipt() -> None:
+        # M3: incremental checkpoint (mirrors lib/batch-runs.js's per-slot
+        # atomicWriteJson pattern) — written after EVERY item, not once at
+        # the end. Before this fix, the subject loop called generate() with
+        # no try/except (it can raise the named ComfyUI timeout at its
+        # RuntimeError above), and generation.json was written exactly once,
+        # after the loop finished. A 200-image wave failing at item 130 left
+        # 129 rendered PNGs on disk with NO generation.json at all — the
+        # PIN_PER_STEP provenance this file's own docstring promises, fully
+        # lost, for every item including the ones that succeeded.
+        receipt_path.write_text(json.dumps(receipt, indent=2), encoding="utf-8")
+
     seed = base_seed
+    error_count = 0
     for subj in wave["subjects"]:
         nvar = args.variations if args.variations is not None else subj.get("variations", 1)
         pos = f"{prefix}, {subj['prompt']}" if prefix else subj["prompt"]
         for v in range(nvar):
             dst = args.out / f"{subj['id']}_v{v}.png"
-            generate(pos, neg, seed, dst, w=w, h=h, steps=steps, cfg=cfg, loras=loras,
-                     sampler=sampler, scheduler=scheduler, shift=shift)
-            print(f"  {subj['id']} v{v} (seed {seed}) -> {dst.name}", flush=True)
-            receipt["items"].append({"id": subj["id"], "variation": v, "seed": seed, "file": dst.name, "prompt": pos})
+            item = {"id": subj["id"], "variation": v, "seed": seed, "file": dst.name, "prompt": pos}
+            try:
+                generate(pos, neg, seed, dst, w=w, h=h, steps=steps, cfg=cfg, loras=loras,
+                         sampler=sampler, scheduler=scheduler, shift=shift)
+            except Exception as exc:
+                # A single item's failure no longer takes the whole wave's
+                # provenance down with it — record the failure and keep
+                # going. The receipt is checkpointed below regardless of
+                # per-item outcome.
+                item["status"] = "error"
+                item["error"] = str(exc)
+                error_count += 1
+                print(f"  {subj['id']} v{v} (seed {seed}) -> ERROR: {exc}", flush=True)
+            else:
+                item["status"] = "ok"
+                print(f"  {subj['id']} v{v} (seed {seed}) -> {dst.name}", flush=True)
+            receipt["items"].append(item)
             seed += 1
+            _save_receipt()
 
     if args.hash_models:
         _save_hash_cache(hash_cache)
-    (args.out / "generation.json").write_text(json.dumps(receipt, indent=2), encoding="utf-8")
-    print(f"\n{len(receipt['items'])} images -> {args.out}  (+ generation.json provenance)")
+    _save_receipt()
+    ok_count = len(receipt["items"]) - error_count
+    # Plain ASCII only (no em-dash) — matches the rest of this file's
+    # runtime print()/error strings. A Windows console not running in UTF-8
+    # mode mangles non-ASCII on stdout; the docstring/comments can afford
+    # Unicode since those never reach a terminal at runtime.
+    summary = f"\n{ok_count}/{len(receipt['items'])} images -> {args.out}  (+ generation.json provenance)"
+    if error_count:
+        summary += f"  ({error_count} error(s) - see generation.json for per-item detail)"
+    print(summary)
+
+    # Mirror scripts/generate.js's RUNTIME_ALL_FAILED convention: a run where
+    # EVERY item failed exits non-zero (nothing to salvage); a partial
+    # failure still exits 0 — the per-item errors are visible above and in
+    # the checkpointed receipt, and individual item failure is tolerated
+    # everywhere else in this pipeline.
+    if receipt["items"] and error_count == len(receipt["items"]):
+        raise SystemExit(f"all {error_count} generation attempt(s) failed - see generation.json for per-item errors")
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { pickOutputImage } from "../lib/comfyui-output.js";
 import { buildQwenGraph, QWEN_DEFAULTS } from "../lib/adapters/comfyui-workflows.js";
 import { buildPinning, SEED_POLICIES, createHashCache, flushHashCache } from "../lib/run-manifest.js";
-import { info, result } from "../lib/log.js";
+import { info, result, warn } from "../lib/log.js";
 
 /**
  * Format milliseconds as a human ETA string like "6m 12s" or "42s".
@@ -180,6 +180,34 @@ function buildWorkflow(prompt, negativePrompt, checkpoint, loras, seed, steps, c
 }
 
 /**
+ * Coordinator addendum (same session as H4/H5): every domain template's
+ * example-wave.json ships subject prompts with a literal `[DESCRIBE ...]`
+ * placeholder (e.g. "[DESCRIBE YOUR HERO — head and shoulders, ...]") that
+ * the user is meant to replace before generating. `sdlab init`'s own
+ * printed next-steps run generate before "edit the pack" is ever a
+ * mandatory step, so following them literally on an unedited pack burns a
+ * GPU wave on template text with no feedback until the images come back
+ * looking like a literal instruction string.
+ *
+ * All 5 domain templates use this exact "[DESCRIBE " shape (verified across
+ * templates/domains/*\/inputs/prompts/example-wave.json), so the check is
+ * narrow and specific to it — it does NOT flag ordinary SD prompt-editing
+ * bracket syntax such as "[word]" or "[from:to:0.5]", neither of which
+ * starts with the literal word DESCRIBE.
+ */
+const PLACEHOLDER_PROMPT_RE = /\[DESCRIBE\b/;
+
+function findPlaceholderPrompts(jobs) {
+  const hits = [];
+  for (const job of jobs) {
+    if (typeof job.prompt === 'string' && PLACEHOLDER_PROMPT_RE.test(job.prompt)) {
+      hits.push(job.assetId);
+    }
+  }
+  return hits;
+}
+
+/**
  * Detect the input schema and normalize to a unified shape:
  *   { lane, style_prefix, negative, defaults, base, jobs:[{assetId, subjectId, variationId, prompt, seed, loras}] }
  *
@@ -322,6 +350,17 @@ export async function run(argv = process.argv.slice(2)) {
   console.log(`  Subjects: ${raw.subjects.length}`);
   console.log(`  Total candidates: ${pack.jobs.length}`);
   console.log("");
+
+  // Coordinator addendum: catch unedited template text before it burns GPU
+  // time (or, under --dry-run, before the user thinks the pack is ready).
+  const placeholderHits = findPlaceholderPrompts(pack.jobs);
+  if (placeholderHits.length > 0) {
+    warn(
+      `${placeholderHits.length} of ${pack.jobs.length} prompt(s) still contain unedited "[DESCRIBE ...]" template ` +
+      `text (e.g. "${placeholderHits[0]}"). Edit the prompt pack before generating for real — otherwise you'll spend ` +
+      `GPU time rendering placeholder instructions instead of your subject.`
+    );
+  }
 
   if (!dryRun) {
     const online = await comfyHealth(COMFY_URL);

@@ -11,18 +11,23 @@ import { readFreezeStatus, resolveWatchFields } from '../lib/freeze-stamp.js';
 import { readEventsFor } from '../lib/freeze-events.js';
 import { inputError } from '../lib/errors.js';
 import { getProjectRoot } from '../lib/paths.js';
+import { assertKnownOptions } from './_shared-args.js';
 
 export async function run(argv) {
+  const options = {
+    project: { type: 'string' },
+    game:    { type: 'string' },
+    json:    { type: 'boolean', default: false },
+  };
   const parsed = parseArgs({
     args: argv,
-    options: {
-      project: { type: 'string' },
-      game:    { type: 'string' },
-      json:    { type: 'boolean', default: false },
-    },
+    options,
     allowPositionals: true,
     strict: false,
   });
+  // H4: see canon-build.js's comment — strict:false's leniency on unknown
+  // flags means a typo'd optional flag silently no-ops instead of erroring.
+  assertKnownOptions(parsed.values, options, { command: 'canon freeze-status' });
 
   const entityIdArg = (parsed.positionals || [])[0];
   if (!entityIdArg) throw inputError('INPUT_MISSING_ARG', 'sdlab canon freeze-status requires an entity id.');
