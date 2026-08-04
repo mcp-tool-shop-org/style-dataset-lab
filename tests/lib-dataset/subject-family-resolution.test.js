@@ -287,7 +287,15 @@ test('SDL-C2: dataset card cannot print "None (verified)" when a meaningful shar
   }
 });
 
-test('card.js gracefully defaults when loading a pre-SDL-C2b audit.json that lacks the new fields', async () => {
+test('F1: card.js does NOT claim "None (verified)" for a pre-SDL-C2b audit.json that lacks the new fields', async () => {
+  // F1 (HIGH): generateCard() previously defaulted a MISSING
+  // audit.stem_collision_check to {passed:true, issues:[]}, which made
+  // leakageVerified true for an audit that never ran the cross-check at
+  // all — printing "None (verified)" identically to a split the check
+  // actually ran on. Verified against real on-disk data:
+  // projects/tallow-fen/splits/split-20260609-201631-4586/audit.json has
+  // leakage_check.passed:true and NO stem_collision_check / family_resolution
+  // keys — it predates the check, and must render a visibly different label.
   const records = [
     makeRecord({ id: 'alpha_v1', identity: { subject_name: 'alpha' } }),
     makeRecord({ id: 'beta_v1', identity: { subject_name: 'beta' } }),
@@ -300,7 +308,8 @@ test('card.js gracefully defaults when loading a pre-SDL-C2b audit.json that lac
       train_ratio: 0.8, val_ratio: 0.1, test_ratio: 0.1, seed: 1,
     });
     // Simulate a legacy on-disk audit.json (pre-SDL-C2b) by stripping the
-    // new keys, mirroring what real projects/ artifacts look like today.
+    // new keys, mirroring what real projects/ artifacts look like today
+    // (e.g. tallow-fen's split-20260609-201631-4586/audit.json).
     const auditPath = join(proj.projectRoot, 'splits', r.splitId, 'audit.json');
     const audit = JSON.parse(await readFile(auditPath, 'utf-8'));
     delete audit.stem_collision_check;
@@ -309,10 +318,32 @@ test('card.js gracefully defaults when loading a pre-SDL-C2b audit.json that lac
     await writeFile(auditPath, JSON.stringify(audit, null, 2) + '\n');
 
     const { markdown, json } = await generateCard(proj.projectRoot, snap.snapshotId, r.splitId);
+    // The original (only) check still passed, so leakage_free stays true —
+    // this is not about hiding data, it's about not overclaiming verification.
     assert.equal(json.split.leakage_free, true);
-    assert.equal(json.split.leakage_verified, true);
-    assert.ok(markdown.includes('None (verified)'));
+    // But leakage_verified must be false: the cross-check never ran, so
+    // "verified" would be a claim about something that never happened.
+    assert.equal(json.split.leakage_verified, false,
+      'an audit missing stem_collision_check entirely must not be marked verified');
+    assert.equal(json.split.stem_collision_check_ran, false);
+    // Must render a VISIBLY DIFFERENT label from a fully-verified split —
+    // never the same string ("None (verified)") a split the cross-check
+    // actually ran on would print.
+    assert.ok(!markdown.includes('None (verified)'),
+      'card must not claim "None (verified)" for an audit that predates the subject-stem cross-check');
+    assert.ok(markdown.includes('predates the subject-stem cross-check'),
+      'card must render the distinct legacy label naming what did and did not run');
+    // A downstream script grepping for "verified" must not match this
+    // label at all — confirms the two labels share no matchable substring.
+    assert.ok(!/verified/i.test(leakageLabelFromMarkdown(markdown)),
+      'the legacy label itself must not contain the word "verified"');
   } finally {
     proj.cleanup();
   }
 });
+
+/** Pull the "Subject leakage: ..." line's value back out of rendered markdown. */
+function leakageLabelFromMarkdown(markdown) {
+  const match = /\*\*Subject leakage:\*\* (.+)/.exec(markdown);
+  return match ? match[1] : '';
+}
