@@ -1,0 +1,22 @@
+{
+  "name": "facet-assets",
+  "display_name": "TEMPLATE",
+  "domain": "character-design",
+  "version": "0.1.0",
+  "defaults": {
+    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "loras": [
+      {
+        "name": "classipeintxl_v21.safetensors",
+        "weight": 1
+      }
+    ],
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 2,
+    "sampler": "dpmpp_sde",
+    "scheduler": "karras",
+    "comfy_url": "http://127.0.0.1:8188"
+  }
+}

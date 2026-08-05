@@ -1,0 +1,77 @@
+{
+  "id": "w3_warrior__final_2",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-05T01:09:59.613Z",
+  "asset_path": "outputs/candidates/w3_warrior__final_2.png",
+  "image": {
+    "format": "png",
+    "width": 752,
+    "height": 1024,
+    "bytes": 796390
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-05T01:09:59.613Z",
+    "asset_id": "w3_warrior",
+    "asset_source": "facet/E08-ARMB",
+    "manifest_path": "assets/w3_warrior/asset-source.json",
+    "manifest_sha256": "26c87778650b0985225336db861a359afba8bcab79998097e6a635516ba177e6",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-04",
+      "record": "E:/AI/facet/docs/experiments/E08-task3-report.md (judged artifacts: out/GATE1_sheet_full.png, out/GATE1_sheet_ZOOM.png, out/gate1_dE.json)",
+      "by": "director"
+    },
+    "render_id": "final_2",
+    "camera": {
+      "yaw_deg": 90,
+      "elevation_deg": 0
+    },
+    "light": "flat",
+    "facing": "right profile",
+    "silhouette_mask": {
+      "path": "assets/w3_warrior/masks/final_2.png",
+      "sha256": "9a5cb7e58093a653e4490062eee04145aba9240d5fb4ce0ec63416c812048b79"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/w3_warrior/channels/provenance_view__final_2.png",
+        "sha256": "fe81ab594869682ad5f46c882aafaec8d2dafd1ec80e7defe63b3415bc4931b6"
+      }
+    },
+    "caption_fields": {
+      "subject": "an armored warrior with a red beard, gold pauldrons, and a dark green knitted tunic",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "right profile"
+    },
+    "generation_provenance_known": true
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 90553,
+      "offpalette_px": 1739,
+      "offpalette_pct": 1.9204,
+      "largest_blob_px": 447,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 100,
+        "hue_hi": 110,
+        "share_of_offpalette": 59.5,
+        "median_chroma": 26.7,
+        "median_rgb": [
+          255,
+          255,
+          129
+        ]
+      }
+    },
+    "class_shares": {}
+  }
+}

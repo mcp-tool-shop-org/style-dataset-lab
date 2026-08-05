@@ -1,0 +1,35 @@
+{
+  "default_lane": "full_body",
+  "lanes": [
+    {
+      "id": "portrait",
+      "label": "Portrait / Headshot",
+      "description": "Head and shoulders — face detail, expression, hair, accessories",
+      "id_patterns": ["^portrait_", "^head_", "^face_"]
+    },
+    {
+      "id": "full_body",
+      "label": "Full Body",
+      "description": "Full figure standing pose — proportions, costume, silhouette",
+      "id_patterns": ["^full_", "^body_", "^standing_"]
+    },
+    {
+      "id": "turnaround",
+      "label": "Turnaround / Orthographic",
+      "description": "Multi-angle orthographic views — front, side, back, three-quarter",
+      "id_patterns": ["^turn_", "^ortho_", "^rotation_"]
+    },
+    {
+      "id": "expression_sheet",
+      "label": "Expression Sheet",
+      "description": "Emotion range grid — consistent face across multiple expressions",
+      "id_patterns": ["^expr_", "^emotion_", "^face_sheet_"]
+    },
+    {
+      "id": "action_pose",
+      "label": "Action Pose",
+      "description": "Dynamic poses — combat, movement, gesture-driven character moments",
+      "id_patterns": ["^action_", "^pose_", "^dynamic_"]
+    }
+  ]
+}

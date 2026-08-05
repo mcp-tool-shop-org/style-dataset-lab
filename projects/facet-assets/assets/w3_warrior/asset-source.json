@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0.0",
+  "_authored": "2026-08-04 by the sdlab asset-lane skeleton session, by hand — the first real manifest against the contract in style-dataset-lab docs/asset-lane-design.md. The dense-turnaround exporter (facet-side, later) takes over authoring from here. Lives at ARMB/ rather than ARMB/out/ because the exact silhouettes live in ARMB/masks/ and manifest paths must stay inside the manifest's directory.",
+  "asset": {
+    "id": "w3_warrior",
+    "source": "facet/E08-ARMB",
+    "mesh": { "path": "out/W3_final.glb" },
+    "atlas": { "path": "out/atlas_final.png" }
+  },
+  "acceptance": {
+    "gate": "gate-1",
+    "verdict": "accepted",
+    "date": "2026-08-04",
+    "record": "E:/AI/facet/docs/experiments/E08-task3-report.md (judged artifacts: out/GATE1_sheet_full.png, out/GATE1_sheet_ZOOM.png, out/gate1_dE.json)",
+    "by": "director"
+  },
+  "palette": {
+    "source": "E:/AI/facet/docs/experiments/E08-W3-palette.json",
+    "min_chroma": 12.0,
+    "allowed_bands": [
+      { "name": "warm", "hue_deg": [0.0, 105.0] },
+      { "name": "green", "hue_deg": [125.0, 210.0] }
+    ],
+    "gate": {
+      "max_offpalette_pct": null,
+      "max_offpalette_blob_px": 800
+    }
+  },
+  "channels": [
+    {
+      "id": "provenance_atlas",
+      "space": "texture",
+      "encoding": "rgb",
+      "categorical": false,
+      "path": "out/provenance_atlas.png",
+      "note": "Pre-E09 truecolor export (IHDR color type 2, verified). The E09 indexed-PNG discipline (PLTE = declared palette) lands with the dense-turnaround exporter; until then this channel is hashed and carried, not proven."
+    },
+    {
+      "id": "styled_mask",
+      "space": "texture",
+      "encoding": "npy",
+      "categorical": false,
+      "path": "state/styled_mask.npy",
+      "dtype": "|b1",
+      "shape": [4096, 4096],
+      "note": "Styled/unstyled coverage only. The per-texel VIEW-OWNER sidecar the kickoff described (int8, -1 unstyled) does not exist in this export — owner-seam-aware exclusion activates when a future export declares a view_owner channel. Exporter-spec flag for facet."
+    },
+    {
+      "id": "provenance_view",
+      "space": "render",
+      "encoding": "rgba",
+      "categorical": false,
+      "note": "Antialiased display renders of the provenance texture (6241 unique colors on view 0, measured). facet's tools speak in texture-space claim indices (0=reference, 1..8=brush stroke n, 255=dilation); no render-space class palette was ever exported as a contract, so sdlab declares none — carried and hashed. Class shares activate when the exporter declares the palette (categorical + filter + tolerance)."
+    }
+  ],
+  "renders": [
+    {
+      "id": "final_0",
+      "path": "out/renders_flat/final_0.png",
+      "camera": { "yaw_deg": 0, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_0.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_0.png" },
+      "pair": { "clay": "out/renders_clay/clay_0.png" }
+    },
+    {
+      "id": "final_1",
+      "path": "out/renders_flat/final_1.png",
+      "camera": { "yaw_deg": 45, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_1.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_1.png" }
+    },
+    {
+      "id": "final_2",
+      "path": "out/renders_flat/final_2.png",
+      "camera": { "yaw_deg": 90, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_2.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_2.png" }
+    },
+    {
+      "id": "final_3",
+      "path": "out/renders_flat/final_3.png",
+      "camera": { "yaw_deg": 135, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_3.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_3.png" }
+    },
+    {
+      "id": "final_4",
+      "path": "out/renders_flat/final_4.png",
+      "camera": { "yaw_deg": 180, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_4.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_4.png" },
+      "pair": { "clay": "out/renders_clay/clay_4.png" }
+    },
+    {
+      "id": "final_5",
+      "path": "out/renders_flat/final_5.png",
+      "camera": { "yaw_deg": 225, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_5.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_5.png" }
+    },
+    {
+      "id": "final_6",
+      "path": "out/renders_flat/final_6.png",
+      "camera": { "yaw_deg": 270, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_6.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_6.png" },
+      "pair": { "clay": "out/renders_clay/clay_6.png" }
+    },
+    {
+      "id": "final_7",
+      "path": "out/renders_flat/final_7.png",
+      "camera": { "yaw_deg": 315, "elevation_deg": 0 },
+      "light": "flat",
+      "silhouette_mask": "masks/w3clay_7.png",
+      "channels": { "provenance_view": "out/renders_prov/prov_7.png" }
+    }
+  ],
+  "captions": {
+    "subject": "an armored warrior with a red beard, gold pauldrons, and a dark green knitted tunic",
+    "style_trigger": null,
+    "domain_tag": "3d asset"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "workflow_id": "character-portrait-set",
+  "label": "Character Portrait Set",
+  "description": "Generate portrait candidates for a named character.",
+  "lane_id": "portrait",
+  "subject_mode": "required",
+  "output_mode": "portrait_set",
+  "output_count": 4,
+  "required_reference_roles": ["anchor"],
+  "preferred_reference_tags": ["portrait", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [
+      "character portrait concept art",
+      "high fidelity facial detail",
+      "clean readable silhouette"
+    ],
+    "structure": "style_prefix, subject_identity, lane_goal, canon_focus, controlled_variation",
+    "must_include": [
+      "subject identity",
+      "costume logic",
+      "facial detail"
+    ],
+    "optional_blocks": [
+      "lighting note",
+      "expression note"
+    ]
+  },
+  "negative_strategy": {
+    "must_avoid": [
+      "off-model face",
+      "extra accessories",
+      "ornamental drift"
+    ],
+    "lane_specific_avoid": [
+      "full body composition",
+      "background complexity"
+    ],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": [
+    "silhouette",
+    "costume_logic",
+    "palette",
+    "anatomy",
+    "gesture"
+  ],
+  "drift_guards": [
+    "preserve face structure",
+    "preserve age read",
+    "preserve canonical materials"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfyui",
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "seed_mode": "increment"
+  }
+}

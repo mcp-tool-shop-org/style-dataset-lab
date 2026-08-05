@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "pre-registered-experiment",
+  "registered_at": "2026-08-04",
+  "status": "pre-registered — never run",
+  "doc": "docs/asset-lane-eval-preregistration.md",
+  "baseline": {
+    "co_visible_deltaE_mean": 17.97,
+    "co_visible_deltaE_median": 17.56,
+    "defect_class": "owner seam (E04 Ruling 1)",
+    "source": "E:/AI/facet/docs/experiments/E04-task4d-report.md",
+    "instrument": "e04_seam_sources.py — the instrument, not this file, defines the measurement"
+  },
+  "hypothesis": "A LoRA trained on provenance-gated asset turnaround packages reduces co-visible deltaE between independently generated views of a NEW near-canon subject, versus the identical pipeline without the LoRA. Scope: appearance lock + view-token vocabulary (Kumari 2024, Cheng 2024) — NOT cross-view consistency machinery, which the literature places at 30K+ objects with cross-view attention (SyncDreamer ablation).",
+  "prediction_support": "with-LoRA median co-visible deltaE < same-session no-LoRA arm's, on a majority of view pairs",
+  "prediction_falsified": "deltaE not reduced or worsened — kills the flywheel premise at its first link; the lane remains a packaging/provenance surface",
+  "controls": [
+    "same pipeline, same seed policy, same prompts — the LoRA is the only variable",
+    "the live no-LoRA arm outranks the historical 17.97 baseline",
+    "evaluation subject is NOT any training asset"
+  ],
+  "preconditions_before_running": [
+    "multi-subject style pool per the Q3 composition rules (never a single asset)",
+    "a watchdog-disciplined training session with the Director's go",
+    "facet's E04 instrument available unchanged"
+  ]
+}
