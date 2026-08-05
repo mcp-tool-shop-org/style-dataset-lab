@@ -104,6 +104,13 @@ const CANON_COMMANDS = {
   'drift':         '../scripts/canon-drift.js',
 };
 
+// Two-word commands under "asset" namespace — the asset lane
+// (docs/asset-lane-design.md): manifest-driven, gated ingest of
+// provenance-carrying asset exports, beside the bare `sdlab ingest`.
+const ASSET_COMMANDS = {
+  'ingest': '../scripts/asset-ingest.js',
+};
+
 // ─── Per-command help ─────────────────────────────────────────────────
 //
 // Keyed by the user-facing command (including two-word forms joined by
@@ -352,6 +359,29 @@ Subcommands:
 
 Flags:
   --project <name>     Project to operate on`,
+
+  'asset ingest': `sdlab asset ingest <dir> --project <name> [--dry-run] [--json]
+
+Register a provenance-carrying asset export into a project. The export
+directory must contain an asset-source.json manifest; ingest validates it
+end to end (schema, path containment, encoding proofs against actual file
+bytes, categorical palette proofs, the acceptance verdict) and refuses
+loudly on any violation — nothing registers on a bad manifest.
+
+Admitted renders land as uncurated candidate records (judgment: null,
+provenance.source: "asset") with per-render gate measurements attached.
+An ingest-receipt.json under assets/<asset-id>/ lists every written path.
+
+Positional:
+  dir                  Asset export directory (may live outside the
+                       workspace — read-only source)
+
+Flags:
+  --project <name>     Project to register into
+  --dry-run            Validate + run gates + report; write nothing
+  --json               Emit the result as JSON on stdout
+
+Contract reference: docs/asset-lane-design.md`,
 };
 
 // "bind" is a short alias for "canon-bind" — share help.
@@ -386,6 +416,9 @@ function printHelp() {
   console.log('                       ("bind" is a short alias for canon-bind)');
   console.log('  painterly            Post-processing painterly style pass');
   console.log('  painterly:test       Calibrate painterly denoise level on sample images');
+  console.log('');
+  console.log('Asset lane:');
+  console.log('  asset ingest <dir>   Register a provenance-carrying asset export (asset-source.json)');
   console.log('');
   console.log('Canon:');
   console.log('  canon build            Build dataset.jsonl + prompts/*.j2 + context/*.md from canon entries');
@@ -475,7 +508,7 @@ function allKnownCommands() {
   // `namespaces` table in main()) but was missing from this list, so a typo
   // like "sdlab cannon build" had no candidate to suggest against — every
   // other namespace head got a "Did you mean ...?" hint, canon did not.
-  const heads = ['project', 'workflow', 'brief', 'run', 'critique', 'refine', 'batch', 'select', 'selection', 'canon'];
+  const heads = ['project', 'workflow', 'brief', 'run', 'critique', 'refine', 'batch', 'select', 'selection', 'canon', 'asset'];
   return [...new Set([...oneWord, ...heads])];
 }
 
@@ -537,6 +570,7 @@ async function main() {
     twoWord('batch', BATCH_COMMANDS),
     twoWord('selection', SELECTION_COMMANDS),
     twoWord('canon', CANON_COMMANDS),
+    twoWord('asset', ASSET_COMMANDS),
   ];
 
   // "project", "workflow", "brief", "run", "batch", "selection" two-word forms

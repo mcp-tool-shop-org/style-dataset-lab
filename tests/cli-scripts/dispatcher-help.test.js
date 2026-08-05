@@ -73,3 +73,23 @@ test('root help shows canon-bind (not duplicated bind entry)', () => {
   assert.match(stdout, /canon-bind/);
   assert.match(stdout, /short alias for canon-bind/);
 });
+
+test('sdlab asset ingest --help prints the contract help (not a run)', () => {
+  const { stdout, status } = runCli(['asset', 'ingest', '--help']);
+  assert.equal(status, 0);
+  assert.match(stdout, /asset-source\.json/);
+  assert.match(stdout, /acceptance verdict/);
+  assert.match(stdout, /--dry-run/);
+});
+
+test('bare "sdlab asset" lists its subcommands like every other namespace head', () => {
+  const { stdout, status } = runCli(['asset']);
+  assert.equal(status, 0);
+  assert.match(stdout, /sdlab asset <ingest>/);
+});
+
+test('root help shows the asset lane section', () => {
+  const { stdout } = runCli(['--help']);
+  assert.match(stdout, /Asset lane:/);
+  assert.match(stdout, /asset ingest <dir>/);
+});
