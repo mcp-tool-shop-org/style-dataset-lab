@@ -1,0 +1,107 @@
+{
+  "id": "w3_warrior_dense__y300_e00",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-06T04:23:21.722Z",
+  "asset_path": "outputs/candidates/w3_warrior_dense__y300_e00.png",
+  "image": {
+    "format": "png",
+    "width": 752,
+    "height": 1024,
+    "bytes": 186594
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-06T04:23:21.722Z",
+    "asset_id": "w3_warrior_dense",
+    "asset_source": "facet/E08-ARMB",
+    "manifest_path": "assets/w3_warrior_dense/asset-source.json",
+    "manifest_sha256": "cb84d605b98121fff9ac99d1b7afebc1123ecf02c8f80a9ad4daaab4fec4d974",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-04",
+      "record": "E:/AI/facet/docs/experiments/E08-task3-report.md (judged artifacts: out/GATE1_sheet_full.png, out/GATE1_sheet_ZOOM.png, out/gate1_dE.json)",
+      "by": "director"
+    },
+    "render_id": "y300_e00",
+    "camera": {
+      "yaw_deg": 300,
+      "elevation_deg": 0
+    },
+    "light": "flat",
+    "facing": "three-quarter front-left",
+    "silhouette_mask": {
+      "path": "assets/w3_warrior_dense/masks/y300_e00.png",
+      "sha256": "ae2484b088c4c87f8fb43d7a8aebe8033ac2ccb0ecaa2748f62e9ea0881eacd5"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/w3_warrior_dense/channels/provenance_view__y300_e00.png",
+        "sha256": "5a3327ba5cc879136f530bf16fe1208a8ad39d38368dbcaa7f19f0d3764dafa6"
+      },
+      "prov_class": {
+        "path": "assets/w3_warrior_dense/channels/prov_class__y300_e00.png",
+        "sha256": "8d682c6c841c5e33c8e118f41810b89e198bfc5473dbe08c317455f5ea6c5463"
+      }
+    },
+    "caption_fields": {
+      "subject": "an armored warrior with a red beard, gold pauldrons, and a dark green knitted tunic",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "three-quarter front-left"
+    },
+    "generation_provenance_known": true
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 109078,
+      "offpalette_px": 657,
+      "offpalette_pct": 0.6023,
+      "largest_blob_px": 206,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 120,
+        "hue_hi": 130,
+        "share_of_offpalette": 56.5,
+        "median_chroma": 14.1,
+        "median_rgb": [
+          50,
+          56,
+          35
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 109078,
+        "classes": {
+          "background": {
+            "px": 675,
+            "share": 0.6188
+          },
+          "reference": {
+            "px": 100120,
+            "share": 91.7875
+          },
+          "brush": {
+            "px": 3391,
+            "share": 3.1088
+          },
+          "dilation": {
+            "px": 4892,
+            "share": 4.4849
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}

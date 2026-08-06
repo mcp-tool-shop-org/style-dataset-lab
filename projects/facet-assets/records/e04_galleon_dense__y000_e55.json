@@ -1,0 +1,115 @@
+{
+  "id": "e04_galleon_dense__y000_e55",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-06T04:23:11.439Z",
+  "asset_path": "outputs/candidates/e04_galleon_dense__y000_e55.png",
+  "image": {
+    "format": "png",
+    "width": 1072,
+    "height": 1024,
+    "bytes": 475778
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-06T04:23:11.439Z",
+    "asset_id": "e04_galleon_dense",
+    "asset_source": "facet/E04",
+    "manifest_path": "assets/e04_galleon_dense/asset-source.json",
+    "manifest_sha256": "396637d2030e7f01db69637276192ad3bb2178ab42fb3a20b7db9e61fcabe2f7",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-05",
+      "record": "E:/AI/facet/docs/experiments/E04-ruling.md Ruling 28 (\"Dude, it looks good to me.\") - judged artifacts: out/GATE1_sheet_beam.png, out/GATE1_sheet_deck.png, out/galleon_final.glb at the Director's zoom",
+      "by": "director"
+    },
+    "render_id": "y000_e55",
+    "camera": {
+      "yaw_deg": 0,
+      "elevation_deg": 55
+    },
+    "light": "flat",
+    "facing": "front, viewed from above",
+    "silhouette_mask": {
+      "path": "assets/e04_galleon_dense/masks/y000_e55.png",
+      "sha256": "4909f21cfa4de392e0afaed43f007ab337d117e2073c26b36bc2937886bd96b9"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/e04_galleon_dense/channels/provenance_view__y000_e55.png",
+        "sha256": "b8266ec8b84b0d312debbf02cbeb511f3e3fc5f319be91c5d69c42ba9ebd259d"
+      },
+      "prov_class": {
+        "path": "assets/e04_galleon_dense/channels/prov_class__y000_e55.png",
+        "sha256": "7b49c8c03ea13d6042bb001f25c16ce17bf013cd870b20e0922685c2e49e4f15"
+      },
+      "owner_view": {
+        "path": "assets/e04_galleon_dense/channels/owner_view__y000_e55.png",
+        "sha256": "eec4396ac806a3602600971b36e52447ddeb0dda256f953ce7aabed4a00b5df1"
+      }
+    },
+    "caption_fields": {
+      "subject": "a three-masted galleon with a gilded lion figurehead, warm oak-brown hull planking, black tarred strakes, weathered tan canvas sails, gilded stern scrollwork, red gun port lids, black iron cannon barrels, pale scrubbed deck planking, and a deep sea-blue frieze band along the bulwarks",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "front, viewed from above"
+    },
+    "generation_provenance_known": true,
+    "loss_mask": {
+      "path": "assets/e04_galleon_dense/loss-masks/y000_e55.png",
+      "sha256": "4ce209bd277bf582a93b59d9d830e75ed7af4e6c4c739dfb8d8deffc09903c06"
+    }
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 265028,
+      "offpalette_px": 9525,
+      "offpalette_pct": 3.594,
+      "largest_blob_px": 1367,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 30,
+        "hue_hi": 40,
+        "share_of_offpalette": 50.4,
+        "median_chroma": 32.4,
+        "median_rgb": [
+          94,
+          34,
+          25
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 265028,
+        "classes": {
+          "background": {
+            "px": 0,
+            "share": 0
+          },
+          "reference": {
+            "px": 164968,
+            "share": 62.2455
+          },
+          "brush": {
+            "px": 55231,
+            "share": 20.8397
+          },
+          "dilation": {
+            "px": 44829,
+            "share": 16.9148
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}

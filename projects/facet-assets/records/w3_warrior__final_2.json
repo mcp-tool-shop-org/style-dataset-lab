@@ -2,7 +2,7 @@
   "id": "w3_warrior__final_2",
   "schema_version": "2.0.0",
   "created_at": "2026-08-05T01:09:59.613Z",
-  "asset_path": "outputs/candidates/w3_warrior__final_2.png",
+  "asset_path": "outputs/rejected/w3_warrior__final_2.png",
   "image": {
     "format": "png",
     "width": 752,
@@ -48,7 +48,18 @@
     },
     "generation_provenance_known": true
   },
-  "judgment": null,
+  "judgment": {
+    "status": "rejected",
+    "reviewer": "human:mike",
+    "judged_by_model": "human",
+    "generator_model": null,
+    "reviewed_at": "2026-08-06T04:30:24.438Z",
+    "explanation": "superseded by w3_warrior_dense per facet E11 Ruling 4 - the emit generation is the ruled training input",
+    "criteria_scores": {},
+    "failure_modes": [],
+    "improvement_notes": null,
+    "confidence": 0.9
+  },
   "canon": null,
   "iteration": null,
   "asset_measurements": {

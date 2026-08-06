@@ -1,0 +1,1777 @@
+{
+  "schema_version": "1.0.0",
+  "tool": "sdlab-asset-ingest-v1",
+  "ingested_at": "2026-08-06T04:23:11.452Z",
+  "asset_id": "e04_galleon_dense",
+  "source_dir": "E:/AI/training/facet_next/E04_stroke/export/turnaround",
+  "manifest_sha256": "396637d2030e7f01db69637276192ad3bb2178ab42fb3a20b7db9e61fcabe2f7",
+  "files": [
+    {
+      "role": "mesh",
+      "source": "mesh.glb",
+      "dest": null,
+      "materialized": false,
+      "sha256": "8b3a6088bf2a8a46a116cd7ef604b0eac6316940820ebc215bbdfa3ba8cbabee",
+      "bytes": 43081760
+    },
+    {
+      "role": "atlas",
+      "source": "atlas.png",
+      "dest": null,
+      "materialized": false,
+      "sha256": "65b4c6a3d5fb8df17137fecbb46650b39d67ae0c0a5f092829cebf9e0de5c492",
+      "bytes": 7494385
+    },
+    {
+      "role": "channel:provenance_atlas",
+      "source": "provenance_atlas.png",
+      "dest": null,
+      "materialized": false,
+      "sha256": "f4a1d227c02933b940d64f7ba2652355f3cad48a459e339e1425bfb678ceaccd",
+      "bytes": 640923
+    },
+    {
+      "role": "channel:styled_mask",
+      "source": "styled_mask.npy",
+      "dest": null,
+      "materialized": false,
+      "sha256": "3bf150b78c1509b996c706c36c4cadcd1edf3c97c1f9047f5c0a49b94c7b16f1",
+      "bytes": 16777344
+    },
+    {
+      "role": "channel:view_owner",
+      "source": "view_owner.npy",
+      "dest": null,
+      "materialized": false,
+      "sha256": "e0684a8d2fe09f308ce8b146d9e97d883518d557594aca72288cdf10c306fe8f",
+      "bytes": 16777344
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y000_e00.png",
+      "materialized": true,
+      "sha256": "26b0ae990a7d553cf90c965eb99e52bb6799868e0bfe5a7eb8bde49c75c5e67d",
+      "bytes": 500082
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y000_e00.png",
+      "materialized": true,
+      "sha256": "2014f19baef1820db2a41884f7061f0be349011a1b43fe455ac1714fe30237b5",
+      "bytes": 18596
+    },
+    {
+      "role": "channel:provenance_view:y000_e00",
+      "source": "views/y+000_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y000_e00.png",
+      "materialized": true,
+      "sha256": "60f4723fe91991997c82def6a925e99dd92d1b809326154850eb0346d7b103a3",
+      "bytes": 178982
+    },
+    {
+      "role": "channel:prov_class:y000_e00",
+      "source": "views/y+000_e+00/prov_class_y+000_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y000_e00.png",
+      "materialized": true,
+      "sha256": "d4a2efd1f8006631f40aef9fe4fe9d65da077f44b12364e42a2f9216f0f2719e",
+      "bytes": 31444
+    },
+    {
+      "role": "channel:owner_view:y000_e00",
+      "source": "views/y+000_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y000_e00.png",
+      "materialized": true,
+      "sha256": "eb5406cac5477a36188603a79e4dd19271657f62d331aff15bcf2a294947874c",
+      "bytes": 323754
+    },
+    {
+      "role": "loss-mask:y000_e00",
+      "source": "views/y+000_e+00/loss_mask_y+000_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y000_e00.png",
+      "materialized": true,
+      "sha256": "6099a283e3989839e2a7fa6cc739be7cca1aac91cd9e884f69c6c355da6f1718",
+      "bytes": 119281
+    },
+    {
+      "role": "pair:clay:y000_e00",
+      "source": "pair_clay_y+000_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y000_e00.png",
+      "materialized": true,
+      "sha256": "12fdec417032da340e23a22c8fc5025fcc7d9b2b546d9371d8728461f1dc97e4",
+      "bytes": 1222131
+    },
+    {
+      "role": "pair:twin:y000_e00",
+      "source": "pair_twin_y+000_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y000_e00.png",
+      "materialized": true,
+      "sha256": "da6886740754524037bc2a65830bd12da7c7a2577a8f47c9165c84e1c28edf03",
+      "bytes": 839846
+    },
+    {
+      "role": "render",
+      "source": "views/y+015_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y015_e00.png",
+      "materialized": true,
+      "sha256": "9f48bc2bd39bc8917b82291d22c0969d19075538807626f76bf3e51ea87a4bab",
+      "bytes": 573579
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+015_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y015_e00.png",
+      "materialized": true,
+      "sha256": "04f0a70c7eac4436bd6d6317249b76b1ff41e426cbc57a43493edd1d4076a538",
+      "bytes": 19949
+    },
+    {
+      "role": "channel:provenance_view:y015_e00",
+      "source": "views/y+015_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y015_e00.png",
+      "materialized": true,
+      "sha256": "4bf3f33cd7b92668133fb3e7d1aa9192b41c3041b31396ae0b720e01fd23beec",
+      "bytes": 227604
+    },
+    {
+      "role": "channel:prov_class:y015_e00",
+      "source": "views/y+015_e+00/prov_class_y+015_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y015_e00.png",
+      "materialized": true,
+      "sha256": "af6c3cc18a4ee17e1908ca88c496610a36674afc87618e12015e4c4994eae97e",
+      "bytes": 36417
+    },
+    {
+      "role": "channel:owner_view:y015_e00",
+      "source": "views/y+015_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y015_e00.png",
+      "materialized": true,
+      "sha256": "82c3a30e5ffd5ba95e9f9ca4b55c201750b2a24465c0ba33d88723db0c64974d",
+      "bytes": 392176
+    },
+    {
+      "role": "loss-mask:y015_e00",
+      "source": "views/y+015_e+00/loss_mask_y+015_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y015_e00.png",
+      "materialized": true,
+      "sha256": "1bbf62aeac955066ac04d933c0a923a9af89215bfecf2fc74385f139ad967075",
+      "bytes": 131857
+    },
+    {
+      "role": "render",
+      "source": "views/y+030_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y030_e00.png",
+      "materialized": true,
+      "sha256": "dd8c476cc3086fcdc8b04f21e9b4ca942ec39384700bf4352312d60f4df16ac7",
+      "bytes": 595396
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+030_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y030_e00.png",
+      "materialized": true,
+      "sha256": "2d92c70137f973b1e09ebe7689d16ce4927599584092b6e3dd9bd1b5576ebe6e",
+      "bytes": 16991
+    },
+    {
+      "role": "channel:provenance_view:y030_e00",
+      "source": "views/y+030_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y030_e00.png",
+      "materialized": true,
+      "sha256": "fbfd645b60304cb7796373dcc4822ad144bd4a5129c19cd189208f12a376fe25",
+      "bytes": 231833
+    },
+    {
+      "role": "channel:prov_class:y030_e00",
+      "source": "views/y+030_e+00/prov_class_y+030_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y030_e00.png",
+      "materialized": true,
+      "sha256": "cf9395de640217b698d18aad052f90816c275e9b40724409310a175b0f41d651",
+      "bytes": 35271
+    },
+    {
+      "role": "channel:owner_view:y030_e00",
+      "source": "views/y+030_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y030_e00.png",
+      "materialized": true,
+      "sha256": "04a70487d135406b8201cf215afb438e1e4f64705a6b2614f2a98f1655c068b2",
+      "bytes": 409733
+    },
+    {
+      "role": "loss-mask:y030_e00",
+      "source": "views/y+030_e+00/loss_mask_y+030_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y030_e00.png",
+      "materialized": true,
+      "sha256": "aa77685f5370e99651019bc64873c152d02b031d92c09aed64308b4eab91550a",
+      "bytes": 134548
+    },
+    {
+      "role": "render",
+      "source": "views/y+045_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y045_e00.png",
+      "materialized": true,
+      "sha256": "92a21e7a317011cc0ea58f79fd77b1687b606ebc2d455d8cddee11adeb6e6255",
+      "bytes": 543920
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+045_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y045_e00.png",
+      "materialized": true,
+      "sha256": "be615f38d11e6c5e1897390e66de1207decf492480a875f3da4924b93ac45b17",
+      "bytes": 12610
+    },
+    {
+      "role": "channel:provenance_view:y045_e00",
+      "source": "views/y+045_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y045_e00.png",
+      "materialized": true,
+      "sha256": "88f824d203723ee89cd70ee4496e3c12e288222e6d9feb0f1794faa84ec76b3a",
+      "bytes": 195701
+    },
+    {
+      "role": "channel:prov_class:y045_e00",
+      "source": "views/y+045_e+00/prov_class_y+045_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y045_e00.png",
+      "materialized": true,
+      "sha256": "795f55db8c964f5643a9b26cafbbf87d2ae2d7686579095f683d5f09bdfea1a3",
+      "bytes": 29123
+    },
+    {
+      "role": "channel:owner_view:y045_e00",
+      "source": "views/y+045_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y045_e00.png",
+      "materialized": true,
+      "sha256": "e5c0082208a653042eb36c98dff9f3ab40d65bd5ed8ee059b416aa79d2f68b3f",
+      "bytes": 369540
+    },
+    {
+      "role": "loss-mask:y045_e00",
+      "source": "views/y+045_e+00/loss_mask_y+045_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y045_e00.png",
+      "materialized": true,
+      "sha256": "53db1c0ad67629baede82889f9e5d6577ba9489a0c0aead55ce9d81b6313ada2",
+      "bytes": 125407
+    },
+    {
+      "role": "pair:clay:y045_e00",
+      "source": "pair_clay_y+045_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y045_e00.png",
+      "materialized": true,
+      "sha256": "ade2289698af4f4f756f5cf809ddb04f77c6cc3a4f059348ba7c00ebcebe120d",
+      "bytes": 1219646
+    },
+    {
+      "role": "pair:twin:y045_e00",
+      "source": "pair_twin_y+045_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y045_e00.png",
+      "materialized": true,
+      "sha256": "049109073fbf03653bf9169b21e7addfa88709e0bfb4cb2ac69bfde12c8c2aac",
+      "bytes": 787827
+    },
+    {
+      "role": "render",
+      "source": "views/y+060_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y060_e00.png",
+      "materialized": true,
+      "sha256": "86f1237b3743637f864822dbcd14e5a65354c642edb7bb77fa034117102578d7",
+      "bytes": 448032
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+060_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y060_e00.png",
+      "materialized": true,
+      "sha256": "7e991e715d7ef707cb49ff816a729162eb3f19c81ae904187f270f122658f015",
+      "bytes": 9419
+    },
+    {
+      "role": "channel:provenance_view:y060_e00",
+      "source": "views/y+060_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y060_e00.png",
+      "materialized": true,
+      "sha256": "7b0b836ca24dfd8be2d1c5800f349f6a0bb6ff72c078f448b4b9f93ca729f1ae",
+      "bytes": 153686
+    },
+    {
+      "role": "channel:prov_class:y060_e00",
+      "source": "views/y+060_e+00/prov_class_y+060_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y060_e00.png",
+      "materialized": true,
+      "sha256": "317aabcbdc80044607d93b7ec82ab758f959d6cfddd546a6d1116001a09cd5e4",
+      "bytes": 23013
+    },
+    {
+      "role": "channel:owner_view:y060_e00",
+      "source": "views/y+060_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y060_e00.png",
+      "materialized": true,
+      "sha256": "65d89c0d1259a70c0b60c0d6fdf70ce5f379d7e9e243f2b31dd103bb5a2d5523",
+      "bytes": 288655
+    },
+    {
+      "role": "loss-mask:y060_e00",
+      "source": "views/y+060_e+00/loss_mask_y+060_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y060_e00.png",
+      "materialized": true,
+      "sha256": "6d78a3b82625473b48ef0858772dc865ec5be0ae2b079dc0a84da4518a557670",
+      "bytes": 105984
+    },
+    {
+      "role": "render",
+      "source": "views/y+075_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y075_e00.png",
+      "materialized": true,
+      "sha256": "6f6ab32aabf504281c3471abd92a45863bfeba7a10bfea08bae72743818fdec2",
+      "bytes": 364257
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+075_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y075_e00.png",
+      "materialized": true,
+      "sha256": "dcc48243deb6bde886cd2453232bcd22607c28fd398931ef2d821583d4d0a464",
+      "bytes": 6792
+    },
+    {
+      "role": "channel:provenance_view:y075_e00",
+      "source": "views/y+075_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y075_e00.png",
+      "materialized": true,
+      "sha256": "12b7507c299745b266e13f0b592584aa1e405ef95282cb8c72a8e3cc9e31deb0",
+      "bytes": 116618
+    },
+    {
+      "role": "channel:prov_class:y075_e00",
+      "source": "views/y+075_e+00/prov_class_y+075_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y075_e00.png",
+      "materialized": true,
+      "sha256": "a812b4937cf1b3c9f2497707040ca09230ec38f03856e8800b142b51e6533ac3",
+      "bytes": 18053
+    },
+    {
+      "role": "channel:owner_view:y075_e00",
+      "source": "views/y+075_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y075_e00.png",
+      "materialized": true,
+      "sha256": "5a3fef32ac6e9712e879c0ad0a36dda5fe0179f908cf282af53580bfcc945e9d",
+      "bytes": 223171
+    },
+    {
+      "role": "loss-mask:y075_e00",
+      "source": "views/y+075_e+00/loss_mask_y+075_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y075_e00.png",
+      "materialized": true,
+      "sha256": "70efd096c6d0b171a50c40fa3e8d9de9448fc3115e32f15c63cc0ffc1e601eda",
+      "bytes": 87959
+    },
+    {
+      "role": "render",
+      "source": "views/y+090_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y090_e00.png",
+      "materialized": true,
+      "sha256": "48cd754463afcb2177afc0f24ed0d845641e4ef728871eb4d52dd831519c8609",
+      "bytes": 310412
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+090_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y090_e00.png",
+      "materialized": true,
+      "sha256": "75d79301a6565a304dd7863d28b437e098ecb3deea2879e33aedeb199d3f247b",
+      "bytes": 6477
+    },
+    {
+      "role": "channel:provenance_view:y090_e00",
+      "source": "views/y+090_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y090_e00.png",
+      "materialized": true,
+      "sha256": "e1ecc76add8b457329456a394e316c9c4248fe43414a0e2a7752f01202aaf44f",
+      "bytes": 90525
+    },
+    {
+      "role": "channel:prov_class:y090_e00",
+      "source": "views/y+090_e+00/prov_class_y+090_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y090_e00.png",
+      "materialized": true,
+      "sha256": "aefd2914d3136112cc5e62c43981ea1ca68417c33a499611373cb6dce5030c30",
+      "bytes": 15234
+    },
+    {
+      "role": "channel:owner_view:y090_e00",
+      "source": "views/y+090_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y090_e00.png",
+      "materialized": true,
+      "sha256": "a5fe03ce1bc952a395287052b6765063296dd466ecf2993c84f091938a8e6377",
+      "bytes": 176350
+    },
+    {
+      "role": "loss-mask:y090_e00",
+      "source": "views/y+090_e+00/loss_mask_y+090_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y090_e00.png",
+      "materialized": true,
+      "sha256": "11ffa6ba27abada3c3957fb04d404f02fe3ce6a10425dc38382f7373e45caf8f",
+      "bytes": 80743
+    },
+    {
+      "role": "pair:clay:y090_e00",
+      "source": "pair_clay_y+090_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y090_e00.png",
+      "materialized": true,
+      "sha256": "d78182923fdfbbe8809f1b47b364d846604a097c14ae9ce498eebf95c2b11380",
+      "bytes": 1092007
+    },
+    {
+      "role": "pair:twin:y090_e00",
+      "source": "pair_twin_y+090_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y090_e00.png",
+      "materialized": true,
+      "sha256": "150f03efcf03d0bcc376c3d1623b509305cbf053691792e14c8381e02412deb9",
+      "bytes": 641146
+    },
+    {
+      "role": "render",
+      "source": "views/y+105_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y105_e00.png",
+      "materialized": true,
+      "sha256": "5b5ba38ef41e0e820ad7094543d701ccbae5d75f183b2ce3d66f20d444cc22ae",
+      "bytes": 365145
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+105_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y105_e00.png",
+      "materialized": true,
+      "sha256": "82c9c37188c5e7b92d69d8cec82893229848032c3e299b0518b7af8375215605",
+      "bytes": 6871
+    },
+    {
+      "role": "channel:provenance_view:y105_e00",
+      "source": "views/y+105_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y105_e00.png",
+      "materialized": true,
+      "sha256": "d5d356e761c240094c7cb8a1d0bf6943ca4088c9cb7bc4b21f552344509df67c",
+      "bytes": 118379
+    },
+    {
+      "role": "channel:prov_class:y105_e00",
+      "source": "views/y+105_e+00/prov_class_y+105_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y105_e00.png",
+      "materialized": true,
+      "sha256": "e20b32b8cf490b9c8ddd2da08cae9d34111e980bff9bcadf12af45bf20f79cf4",
+      "bytes": 18132
+    },
+    {
+      "role": "channel:owner_view:y105_e00",
+      "source": "views/y+105_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y105_e00.png",
+      "materialized": true,
+      "sha256": "e9e1ce2d2d2754b46aa201201bb6171bad819a5ebb9afc35accbc05ceab1cfed",
+      "bytes": 223341
+    },
+    {
+      "role": "loss-mask:y105_e00",
+      "source": "views/y+105_e+00/loss_mask_y+105_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y105_e00.png",
+      "materialized": true,
+      "sha256": "5a4730d79786cd7052fc479f4473090e9eaf0c7d8d634c293e32e05bb32f1301",
+      "bytes": 88905
+    },
+    {
+      "role": "render",
+      "source": "views/y+120_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y120_e00.png",
+      "materialized": true,
+      "sha256": "1a7d0e42081f456d9b5bfcf20cc1b6c24e8af0564b72ba897bbbe051ca2a3b02",
+      "bytes": 446259
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+120_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y120_e00.png",
+      "materialized": true,
+      "sha256": "b2cf93b0e885ea56b6cfc9ba23242813a8f999f6cbb56087000d6bfdc81d3d3b",
+      "bytes": 9353
+    },
+    {
+      "role": "channel:provenance_view:y120_e00",
+      "source": "views/y+120_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y120_e00.png",
+      "materialized": true,
+      "sha256": "c800554154d72fd3d1e419235728a3334704d018b3abf264c032ed2e130aee20",
+      "bytes": 152510
+    },
+    {
+      "role": "channel:prov_class:y120_e00",
+      "source": "views/y+120_e+00/prov_class_y+120_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y120_e00.png",
+      "materialized": true,
+      "sha256": "129fb02d3930a0ac1d2a230e0187d4b688d31b6a52edabddb78aa6218703e895",
+      "bytes": 22761
+    },
+    {
+      "role": "channel:owner_view:y120_e00",
+      "source": "views/y+120_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y120_e00.png",
+      "materialized": true,
+      "sha256": "58ccf4272bafbd26aa80bc63321cc8bb6af586ddd17b25251913f8c2ab9af2be",
+      "bytes": 283417
+    },
+    {
+      "role": "loss-mask:y120_e00",
+      "source": "views/y+120_e+00/loss_mask_y+120_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y120_e00.png",
+      "materialized": true,
+      "sha256": "204517a25bff9c7fbaef340d88db01caaa9f742b5507e8d1f9dfbe81b7d34930",
+      "bytes": 105844
+    },
+    {
+      "role": "render",
+      "source": "views/y+135_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y135_e00.png",
+      "materialized": true,
+      "sha256": "5ff0c4da8d19058c7a7b8361960b8d6f847873ce2575c323ef00ec20d93c1891",
+      "bytes": 542087
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+135_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y135_e00.png",
+      "materialized": true,
+      "sha256": "be493426a6ae94ab290cba1b3cb528e2a2340810de20e4a07a97ac18df4dfeb6",
+      "bytes": 12916
+    },
+    {
+      "role": "channel:provenance_view:y135_e00",
+      "source": "views/y+135_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y135_e00.png",
+      "materialized": true,
+      "sha256": "21817ec9c95be741f84d71a3f147b4309c09c311c3e090277af9ece39809452e",
+      "bytes": 193796
+    },
+    {
+      "role": "channel:prov_class:y135_e00",
+      "source": "views/y+135_e+00/prov_class_y+135_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y135_e00.png",
+      "materialized": true,
+      "sha256": "5fe730caaeac58413809e46b3f857901a8349de31c467cecbc5f85237e366e88",
+      "bytes": 28906
+    },
+    {
+      "role": "channel:owner_view:y135_e00",
+      "source": "views/y+135_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y135_e00.png",
+      "materialized": true,
+      "sha256": "58336149b0a4d4d2542f1eaaa5bc80484d381492f51eaeac32cde2df50c992a6",
+      "bytes": 361232
+    },
+    {
+      "role": "loss-mask:y135_e00",
+      "source": "views/y+135_e+00/loss_mask_y+135_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y135_e00.png",
+      "materialized": true,
+      "sha256": "7b6d189d84c87a2b01df733deb2560b5f72d702dcaa0c445ad4aab48a3e13f0c",
+      "bytes": 125855
+    },
+    {
+      "role": "pair:clay:y135_e00",
+      "source": "pair_clay_y+135_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y135_e00.png",
+      "materialized": true,
+      "sha256": "db413679509845c44b4c16a1a1406777d0d5d1cf334cb90ae7f3218484dcc828",
+      "bytes": 1216260
+    },
+    {
+      "role": "pair:twin:y135_e00",
+      "source": "pair_twin_y+135_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y135_e00.png",
+      "materialized": true,
+      "sha256": "5ad2fd1a1a4ca761557d9f5b82eae3047101673f4a76ff5524630822d8249015",
+      "bytes": 804928
+    },
+    {
+      "role": "render",
+      "source": "views/y+150_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y150_e00.png",
+      "materialized": true,
+      "sha256": "78245f83e473b754dd100ab9a87438fec183797b937f3e1881a13e023dcd5d1c",
+      "bytes": 586349
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+150_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y150_e00.png",
+      "materialized": true,
+      "sha256": "6e51d218a1006b080dd2ea628bd4383e56385ffd3648fc55d1b405a0b358f0ff",
+      "bytes": 17044
+    },
+    {
+      "role": "channel:provenance_view:y150_e00",
+      "source": "views/y+150_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y150_e00.png",
+      "materialized": true,
+      "sha256": "011084a0392d2b7e369f0dd4b6917c108c9956d94246b224d2dcd993075386da",
+      "bytes": 228054
+    },
+    {
+      "role": "channel:prov_class:y150_e00",
+      "source": "views/y+150_e+00/prov_class_y+150_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y150_e00.png",
+      "materialized": true,
+      "sha256": "b37aab1f5286752117873f185d4df631485c9f3777ad5560882e31217e01f866",
+      "bytes": 35094
+    },
+    {
+      "role": "channel:owner_view:y150_e00",
+      "source": "views/y+150_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y150_e00.png",
+      "materialized": true,
+      "sha256": "4f7ab79633b5a985e2e391f814d03a753278da4c2a486ee6a3decbc862e3af0b",
+      "bytes": 401274
+    },
+    {
+      "role": "loss-mask:y150_e00",
+      "source": "views/y+150_e+00/loss_mask_y+150_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y150_e00.png",
+      "materialized": true,
+      "sha256": "61dba87ee606e129ca8732ce18f5eb42cc44ba64b71f8bdf0f9a53eb13e550f3",
+      "bytes": 134901
+    },
+    {
+      "role": "render",
+      "source": "views/y+165_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y165_e00.png",
+      "materialized": true,
+      "sha256": "2e13181eb581ab065c1c35cc413e0a7fbed5ec7962974c03379fe7b6b86bdfbb",
+      "bytes": 562687
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+165_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y165_e00.png",
+      "materialized": true,
+      "sha256": "39b8b4a56961abf61326f3f4f167e7d670b83723071c5fb2c1d5d5ad849b71e9",
+      "bytes": 19663
+    },
+    {
+      "role": "channel:provenance_view:y165_e00",
+      "source": "views/y+165_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y165_e00.png",
+      "materialized": true,
+      "sha256": "a4a98982553163ec97d9a6c8fa41785f70a9c7391ffbdc37e7bc69df694b7910",
+      "bytes": 220208
+    },
+    {
+      "role": "channel:prov_class:y165_e00",
+      "source": "views/y+165_e+00/prov_class_y+165_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y165_e00.png",
+      "materialized": true,
+      "sha256": "51fd9a23888ee858548963f88905e6c2583fbeae1829f1831d2a830e244ccd72",
+      "bytes": 36021
+    },
+    {
+      "role": "channel:owner_view:y165_e00",
+      "source": "views/y+165_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y165_e00.png",
+      "materialized": true,
+      "sha256": "dd8d6ee480827de89750ed60927d64a49e2c19e02537f70e694ff8e09d4296c3",
+      "bytes": 381614
+    },
+    {
+      "role": "loss-mask:y165_e00",
+      "source": "views/y+165_e+00/loss_mask_y+165_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y165_e00.png",
+      "materialized": true,
+      "sha256": "97364cf2fd4febf51ffd44a0e3427dfbde78550cc2dc8b76cb408b46b1520d1b",
+      "bytes": 131090
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y180_e00.png",
+      "materialized": true,
+      "sha256": "9318466b9a0461bcd95d1f1b0c6660d60448cba0fc24ebc432d2093a267f7586",
+      "bytes": 489885
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y180_e00.png",
+      "materialized": true,
+      "sha256": "f76a36e06596d682f4881d3218503119fb9f048aff9c67df4a1a23eb90548af6",
+      "bytes": 18410
+    },
+    {
+      "role": "channel:provenance_view:y180_e00",
+      "source": "views/y+180_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y180_e00.png",
+      "materialized": true,
+      "sha256": "a0978819520289b142502047e1da4dd5f12b825cb1f2459bb1b8a8ed05ee7a29",
+      "bytes": 176108
+    },
+    {
+      "role": "channel:prov_class:y180_e00",
+      "source": "views/y+180_e+00/prov_class_y+180_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y180_e00.png",
+      "materialized": true,
+      "sha256": "160085e2caf21fbfc0673c1b3105a2b55f22915fc282d6b0fd4e053d10e4ab7e",
+      "bytes": 31769
+    },
+    {
+      "role": "channel:owner_view:y180_e00",
+      "source": "views/y+180_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y180_e00.png",
+      "materialized": true,
+      "sha256": "7873982817647df516daa6c29d42728ac031390ed6e912106100dd9514e4ff55",
+      "bytes": 315741
+    },
+    {
+      "role": "loss-mask:y180_e00",
+      "source": "views/y+180_e+00/loss_mask_y+180_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y180_e00.png",
+      "materialized": true,
+      "sha256": "6612d0df4e8093563e0f46f1cfd723939d00abb948907e361df44acfe41097f4",
+      "bytes": 119132
+    },
+    {
+      "role": "pair:clay:y180_e00",
+      "source": "pair_clay_y+180_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y180_e00.png",
+      "materialized": true,
+      "sha256": "a37d88edc6ec4b19f31be10c964aba1292b3b580f9eb3040c53df84a4ed72154",
+      "bytes": 1223412
+    },
+    {
+      "role": "pair:twin:y180_e00",
+      "source": "pair_twin_y+180_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y180_e00.png",
+      "materialized": true,
+      "sha256": "1d082ef06c8fca4791319853cad8700b9762f26aa1b911697124624f9dbd8591",
+      "bytes": 831043
+    },
+    {
+      "role": "render",
+      "source": "views/y+195_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y195_e00.png",
+      "materialized": true,
+      "sha256": "a05d5445c812e00c045dad031653a7542495a2ca5a9900882bdfafd4a3c92d9a",
+      "bytes": 555075
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+195_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y195_e00.png",
+      "materialized": true,
+      "sha256": "9187f710be0e64f30134e281c01c7546ec8be652e0b668730b90435f9f477c07",
+      "bytes": 19932
+    },
+    {
+      "role": "channel:provenance_view:y195_e00",
+      "source": "views/y+195_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y195_e00.png",
+      "materialized": true,
+      "sha256": "86f502609a6ac7c055d4348ad32c316f7703b92eb8112ffad42bdaee6a6207c2",
+      "bytes": 201493
+    },
+    {
+      "role": "channel:prov_class:y195_e00",
+      "source": "views/y+195_e+00/prov_class_y+195_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y195_e00.png",
+      "materialized": true,
+      "sha256": "b4add9d1bdb18a1d50f6736775149d8df6b9489689490b504cdc8298fbb28b22",
+      "bytes": 34973
+    },
+    {
+      "role": "channel:owner_view:y195_e00",
+      "source": "views/y+195_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y195_e00.png",
+      "materialized": true,
+      "sha256": "47b71fc21b48388e49ecfb6b4157d300d1da41d249a681d02015a53f516b896f",
+      "bytes": 348220
+    },
+    {
+      "role": "loss-mask:y195_e00",
+      "source": "views/y+195_e+00/loss_mask_y+195_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y195_e00.png",
+      "materialized": true,
+      "sha256": "4715f99c82d6fa47d699641df6fcf73c3d04bdca2f779e1b98850d66c66940fa",
+      "bytes": 130466
+    },
+    {
+      "role": "render",
+      "source": "views/y+210_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y210_e00.png",
+      "materialized": true,
+      "sha256": "0da20500438371ed4726e2f3884d849fd1e1e3ae1052f8664a64d2deb8119aab",
+      "bytes": 564708
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+210_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y210_e00.png",
+      "materialized": true,
+      "sha256": "72588df38e41c6b9334f7e5947eb825734435535d44eea99c15740855bd431c2",
+      "bytes": 17061
+    },
+    {
+      "role": "channel:provenance_view:y210_e00",
+      "source": "views/y+210_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y210_e00.png",
+      "materialized": true,
+      "sha256": "bd82d966f56cf27fe50aae30550bd9b5a8d030e59af1a4b01135e4b6c72c0d57",
+      "bytes": 195234
+    },
+    {
+      "role": "channel:prov_class:y210_e00",
+      "source": "views/y+210_e+00/prov_class_y+210_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y210_e00.png",
+      "materialized": true,
+      "sha256": "4ba152339f5bcdd3bb1811a609ca0afc94469912946df664e1fbcb0254805873",
+      "bytes": 32500
+    },
+    {
+      "role": "channel:owner_view:y210_e00",
+      "source": "views/y+210_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y210_e00.png",
+      "materialized": true,
+      "sha256": "c686436425c2e426894c4a44b42371d57e6dd1b950ab3ab2bad2ae89d6c54a54",
+      "bytes": 344849
+    },
+    {
+      "role": "loss-mask:y210_e00",
+      "source": "views/y+210_e+00/loss_mask_y+210_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y210_e00.png",
+      "materialized": true,
+      "sha256": "5fbfcc4d87706160efdfaff461374454dd90e86131ffd201edc04b8027a0de30",
+      "bytes": 130201
+    },
+    {
+      "role": "render",
+      "source": "views/y+225_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y225_e00.png",
+      "materialized": true,
+      "sha256": "079eb94383cddb72acc9a0c8bed6c96813d621d03255510420b4d4b2af1135c5",
+      "bytes": 510350
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+225_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y225_e00.png",
+      "materialized": true,
+      "sha256": "790ed33d488de649bc7dff608e3055ce41c5d51cd92ffda1f4066a2be318b361",
+      "bytes": 12838
+    },
+    {
+      "role": "channel:provenance_view:y225_e00",
+      "source": "views/y+225_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y225_e00.png",
+      "materialized": true,
+      "sha256": "d64213fa753e4080a0b0da309bb551d1a7f1f8522de029f79c1f4ce462e00537",
+      "bytes": 168874
+    },
+    {
+      "role": "channel:prov_class:y225_e00",
+      "source": "views/y+225_e+00/prov_class_y+225_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y225_e00.png",
+      "materialized": true,
+      "sha256": "6a63918ecd38a791a861f9010b9c30101442e97fe4a39faea0f8444ef2f85caa",
+      "bytes": 26702
+    },
+    {
+      "role": "channel:owner_view:y225_e00",
+      "source": "views/y+225_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y225_e00.png",
+      "materialized": true,
+      "sha256": "3e84c586bf95f7859238960cb1ff3c93ee2ef95f322659f173123109b4e01b3b",
+      "bytes": 310744
+    },
+    {
+      "role": "loss-mask:y225_e00",
+      "source": "views/y+225_e+00/loss_mask_y+225_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y225_e00.png",
+      "materialized": true,
+      "sha256": "b03400efe948461e63001816c8d331786e61bd6f66f7eab8620d72ffd9649627",
+      "bytes": 119914
+    },
+    {
+      "role": "pair:clay:y225_e00",
+      "source": "pair_clay_y+225_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y225_e00.png",
+      "materialized": true,
+      "sha256": "8eae839da1549514068541c8294c4df66c5143f0f945cfa727795da54129a7e0",
+      "bytes": 1200202
+    },
+    {
+      "role": "pair:twin:y225_e00",
+      "source": "pair_twin_y+225_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y225_e00.png",
+      "materialized": true,
+      "sha256": "a86b4c8b4b4171c2b61d1528b097b84aa22b615afaa41582ee216e75d4f909b9",
+      "bytes": 741237
+    },
+    {
+      "role": "render",
+      "source": "views/y+240_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y240_e00.png",
+      "materialized": true,
+      "sha256": "6711e45530b3fcb663ba526578c8ae5f6858c9c84227530f7f8ca6cdc9a55b18",
+      "bytes": 431560
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+240_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y240_e00.png",
+      "materialized": true,
+      "sha256": "090df32422f6389a5f496f8fb06fec5bf11a159f90c7b9ede4883a89b605d25e",
+      "bytes": 9516
+    },
+    {
+      "role": "channel:provenance_view:y240_e00",
+      "source": "views/y+240_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y240_e00.png",
+      "materialized": true,
+      "sha256": "70db07afb9eb16b61c044c9c704b8f36acbcfc7ec66360d9127ea9a9d7af3c31",
+      "bytes": 142329
+    },
+    {
+      "role": "channel:prov_class:y240_e00",
+      "source": "views/y+240_e+00/prov_class_y+240_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y240_e00.png",
+      "materialized": true,
+      "sha256": "11394cfc119b8d89cac5bd9f1bb52201ae996da620910f6b765d8feb2f9f161f",
+      "bytes": 22111
+    },
+    {
+      "role": "channel:owner_view:y240_e00",
+      "source": "views/y+240_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y240_e00.png",
+      "materialized": true,
+      "sha256": "1011dc127bc405b477fabf1b07c15419bf431de40977c0b56b98272ea90923fd",
+      "bytes": 259028
+    },
+    {
+      "role": "loss-mask:y240_e00",
+      "source": "views/y+240_e+00/loss_mask_y+240_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y240_e00.png",
+      "materialized": true,
+      "sha256": "898b994d5e57935a969e15525f660ac449b995c39bd743c39857669bd8bf1a7e",
+      "bytes": 101230
+    },
+    {
+      "role": "render",
+      "source": "views/y+255_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y255_e00.png",
+      "materialized": true,
+      "sha256": "2e65d82daf49119361fd55db763fe66478b5dd50f4f27565335a9412362a6e31",
+      "bytes": 352380
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+255_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y255_e00.png",
+      "materialized": true,
+      "sha256": "2101185271e17cdad9ed58731a8937ae88523f0e5f3706fdd2f93d1ce830ffbb",
+      "bytes": 6824
+    },
+    {
+      "role": "channel:provenance_view:y255_e00",
+      "source": "views/y+255_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y255_e00.png",
+      "materialized": true,
+      "sha256": "c614054965ce1bca9558c834d269baf0816a122ac8548e965388817827a9f0c5",
+      "bytes": 111064
+    },
+    {
+      "role": "channel:prov_class:y255_e00",
+      "source": "views/y+255_e+00/prov_class_y+255_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y255_e00.png",
+      "materialized": true,
+      "sha256": "9ee12d5fa824db38de84b1822ff8d62caee767884c74cdcf864d2c8d2fd3b16f",
+      "bytes": 17486
+    },
+    {
+      "role": "channel:owner_view:y255_e00",
+      "source": "views/y+255_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y255_e00.png",
+      "materialized": true,
+      "sha256": "d8020bbf5514164d826c1b0e1f53fc7e66499e9261caf03e430d7dd7e12cf514",
+      "bytes": 205993
+    },
+    {
+      "role": "loss-mask:y255_e00",
+      "source": "views/y+255_e+00/loss_mask_y+255_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y255_e00.png",
+      "materialized": true,
+      "sha256": "40f617714c5ad1f4f99f627b1357a993358dec14b834fac556e753948ec95cd6",
+      "bytes": 83456
+    },
+    {
+      "role": "render",
+      "source": "views/y+270_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y270_e00.png",
+      "materialized": true,
+      "sha256": "ea1af2ba355cbe540b618ab6512cfd9e369a8c3bf676aa1c3eaeaa36f20be37f",
+      "bytes": 312358
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+270_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y270_e00.png",
+      "materialized": true,
+      "sha256": "d5b0ddd56ec6d78a742f877674066fcde89bc8a1dcbdfba54d6e70be391d0f8f",
+      "bytes": 6510
+    },
+    {
+      "role": "channel:provenance_view:y270_e00",
+      "source": "views/y+270_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y270_e00.png",
+      "materialized": true,
+      "sha256": "4a8fdfdf91cfc5537b969306e3e77e92c910c49edb0299ceaa38708e8def3d3f",
+      "bytes": 86214
+    },
+    {
+      "role": "channel:prov_class:y270_e00",
+      "source": "views/y+270_e+00/prov_class_y+270_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y270_e00.png",
+      "materialized": true,
+      "sha256": "971da7e494d07af6a7eb7829ca9ff7e162260601d045c29ce1de779bfdb74abb",
+      "bytes": 14902
+    },
+    {
+      "role": "channel:owner_view:y270_e00",
+      "source": "views/y+270_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y270_e00.png",
+      "materialized": true,
+      "sha256": "1a5538c82d64fc11d7d9cb5f9cf9c97910c4c41e72674322bfc9577225374ee5",
+      "bytes": 173372
+    },
+    {
+      "role": "loss-mask:y270_e00",
+      "source": "views/y+270_e+00/loss_mask_y+270_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y270_e00.png",
+      "materialized": true,
+      "sha256": "7e631b9de52432de2692d4aa8445007a2d0495eedb4a745bade21dae3615ea4a",
+      "bytes": 77650
+    },
+    {
+      "role": "pair:clay:y270_e00",
+      "source": "pair_clay_y+270_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y270_e00.png",
+      "materialized": true,
+      "sha256": "9564b53609766b9216f468b4739e1a5413fc36e0b3e552eeb631efb5cda75e4e",
+      "bytes": 1088193
+    },
+    {
+      "role": "pair:twin:y270_e00",
+      "source": "pair_twin_y+270_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y270_e00.png",
+      "materialized": true,
+      "sha256": "682f8ec98b194bf5683ba2826c41f7146853da1cc1412d09561f4436d96d4f3c",
+      "bytes": 629575
+    },
+    {
+      "role": "render",
+      "source": "views/y+285_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y285_e00.png",
+      "materialized": true,
+      "sha256": "37e065694fae93119ee9780b5f69f2bf78a50a0f5d766ac63c3978464c2e8957",
+      "bytes": 356753
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+285_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y285_e00.png",
+      "materialized": true,
+      "sha256": "0186042332e2716fe0ab0a60d8a98d24074fcb424b5985b4cfa0fe2be5f41b3b",
+      "bytes": 6860
+    },
+    {
+      "role": "channel:provenance_view:y285_e00",
+      "source": "views/y+285_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y285_e00.png",
+      "materialized": true,
+      "sha256": "0d4c3acfd17d407524422694622a4494155fe88669e057f923aea8b671cfaaac",
+      "bytes": 108358
+    },
+    {
+      "role": "channel:prov_class:y285_e00",
+      "source": "views/y+285_e+00/prov_class_y+285_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y285_e00.png",
+      "materialized": true,
+      "sha256": "e132f6c3f611390c2d383b6b2580c69954243ce74ed1984825e99e2a4a04caf6",
+      "bytes": 17155
+    },
+    {
+      "role": "channel:owner_view:y285_e00",
+      "source": "views/y+285_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y285_e00.png",
+      "materialized": true,
+      "sha256": "068e08271103fbaa11bb0b6429bfc7245692b58918c119acb1915e80116d94e7",
+      "bytes": 208878
+    },
+    {
+      "role": "loss-mask:y285_e00",
+      "source": "views/y+285_e+00/loss_mask_y+285_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y285_e00.png",
+      "materialized": true,
+      "sha256": "5affef01f004494f4ae20656189055721d5b34f44ec402584469220889726c0a",
+      "bytes": 85548
+    },
+    {
+      "role": "render",
+      "source": "views/y+300_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y300_e00.png",
+      "materialized": true,
+      "sha256": "aafb572a095ea59aa599abcafb0dd569124e559548a1fed9e5fb07f35299aec2",
+      "bytes": 435778
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+300_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y300_e00.png",
+      "materialized": true,
+      "sha256": "9b9649d0b1ed4b2ee65c6de20832497c2df769598ab96a41872a9df262e399e0",
+      "bytes": 9225
+    },
+    {
+      "role": "channel:provenance_view:y300_e00",
+      "source": "views/y+300_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y300_e00.png",
+      "materialized": true,
+      "sha256": "0a9d112de0bf3c2e771a85f367b9027919e485fa380843cbbf9b20cfff4f4cbb",
+      "bytes": 138884
+    },
+    {
+      "role": "channel:prov_class:y300_e00",
+      "source": "views/y+300_e+00/prov_class_y+300_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y300_e00.png",
+      "materialized": true,
+      "sha256": "3109b560c4f3d09222da85bcc58600c1a9a287d0753011669a15534a69a5829f",
+      "bytes": 21491
+    },
+    {
+      "role": "channel:owner_view:y300_e00",
+      "source": "views/y+300_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y300_e00.png",
+      "materialized": true,
+      "sha256": "cfab2527f407cada053f3b701d83a24375641055127510ad5ac528d8aba071fc",
+      "bytes": 261173
+    },
+    {
+      "role": "loss-mask:y300_e00",
+      "source": "views/y+300_e+00/loss_mask_y+300_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y300_e00.png",
+      "materialized": true,
+      "sha256": "8f68e05fdd5a2a169f59f19213d108f576a245c1b8f15b4530e36080da2db75f",
+      "bytes": 103237
+    },
+    {
+      "role": "render",
+      "source": "views/y+315_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y315_e00.png",
+      "materialized": true,
+      "sha256": "968df0b70a96daf99b02a6dfa83ba25780a314189dbbe4a3ed574203d30b3cd6",
+      "bytes": 518897
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+315_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y315_e00.png",
+      "materialized": true,
+      "sha256": "20837997043980d83c27b2dffd91c646721b7b96aec3f445ff7fe94e96cf7cd8",
+      "bytes": 12777
+    },
+    {
+      "role": "channel:provenance_view:y315_e00",
+      "source": "views/y+315_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y315_e00.png",
+      "materialized": true,
+      "sha256": "bffebaa64f1ef75e9a4f0dc0d11d02ba22860bb9505a6abc4a77a882f442b271",
+      "bytes": 167737
+    },
+    {
+      "role": "channel:prov_class:y315_e00",
+      "source": "views/y+315_e+00/prov_class_y+315_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y315_e00.png",
+      "materialized": true,
+      "sha256": "0dea06becc2edd713abe504fcac54696031292fd73203ad48aad14591c0d09f6",
+      "bytes": 26031
+    },
+    {
+      "role": "channel:owner_view:y315_e00",
+      "source": "views/y+315_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y315_e00.png",
+      "materialized": true,
+      "sha256": "853913c81795842f6eb32ad9163e46015bf4ee3adca715f6adb8206413d4e2ee",
+      "bytes": 316918
+    },
+    {
+      "role": "loss-mask:y315_e00",
+      "source": "views/y+315_e+00/loss_mask_y+315_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y315_e00.png",
+      "materialized": true,
+      "sha256": "16a2f847cbfcb6e10ea8ac3662ad0164feda078bdbc09fb95d5cf4900fd35adc",
+      "bytes": 120123
+    },
+    {
+      "role": "pair:clay:y315_e00",
+      "source": "pair_clay_y+315_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/clay__y315_e00.png",
+      "materialized": true,
+      "sha256": "3dec7e4c8c2a8619d4aaa8afa5e4ccd3f6e782bd93b210643c2d05baedf20741",
+      "bytes": 1191046
+    },
+    {
+      "role": "pair:twin:y315_e00",
+      "source": "pair_twin_y+315_e+00.png",
+      "dest": "assets/e04_galleon_dense/pairs/twin__y315_e00.png",
+      "materialized": true,
+      "sha256": "0d9aa04bd8440a493a7ad4f9a6d41d0565bf177bb7472bad962ac03b4d9913b0",
+      "bytes": 816418
+    },
+    {
+      "role": "render",
+      "source": "views/y+330_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y330_e00.png",
+      "materialized": true,
+      "sha256": "3144ce8b3e1e3efa1d14166e78d00ac8098b27d8ba087fb045eade7327fdec8d",
+      "bytes": 571507
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+330_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y330_e00.png",
+      "materialized": true,
+      "sha256": "c38e08b576960515fb6ae7e149aa5cd108fbf95ebd989c87d6f616f6a969a3ff",
+      "bytes": 16854
+    },
+    {
+      "role": "channel:provenance_view:y330_e00",
+      "source": "views/y+330_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y330_e00.png",
+      "materialized": true,
+      "sha256": "ef06b0e178d0510d2929b363d7d24d69b12c55af193db2f33287141e2c12b589",
+      "bytes": 195866
+    },
+    {
+      "role": "channel:prov_class:y330_e00",
+      "source": "views/y+330_e+00/prov_class_y+330_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y330_e00.png",
+      "materialized": true,
+      "sha256": "609cee7edb3bfe30e31446b6601673fd06dd5e7d978d6880225dd6c1fff1edb0",
+      "bytes": 31860
+    },
+    {
+      "role": "channel:owner_view:y330_e00",
+      "source": "views/y+330_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y330_e00.png",
+      "materialized": true,
+      "sha256": "9e81b252e938a12c2f1846c0204921f724524e1c1aa684e9a2bab42e878e3212",
+      "bytes": 354063
+    },
+    {
+      "role": "loss-mask:y330_e00",
+      "source": "views/y+330_e+00/loss_mask_y+330_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y330_e00.png",
+      "materialized": true,
+      "sha256": "20346fa7400dc0d9fba6d79b267341254e44b4c43d64e601e6669125570eeb47",
+      "bytes": 130619
+    },
+    {
+      "role": "render",
+      "source": "views/y+345_e+00/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y345_e00.png",
+      "materialized": true,
+      "sha256": "d6a0731d2bb5709a14e3daef1398d42f2ee1dfba0b2cc4fb2aa8b3b7253123a5",
+      "bytes": 561993
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+345_e+00/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y345_e00.png",
+      "materialized": true,
+      "sha256": "841e17a1c206e0d66127eac59d2d742e213c2fc2975e8af66c561c7794700061",
+      "bytes": 19658
+    },
+    {
+      "role": "channel:provenance_view:y345_e00",
+      "source": "views/y+345_e+00/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y345_e00.png",
+      "materialized": true,
+      "sha256": "6b6f1036f7ab446441081dca0d4c9de80216fb87a4aa3618a016c4000756348a",
+      "bytes": 203086
+    },
+    {
+      "role": "channel:prov_class:y345_e00",
+      "source": "views/y+345_e+00/prov_class_y+345_e+00.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y345_e00.png",
+      "materialized": true,
+      "sha256": "4606810c54de55ee609a1fdcd3bc365299a14501d62df18a18e685b4b02c7b16",
+      "bytes": 34247
+    },
+    {
+      "role": "channel:owner_view:y345_e00",
+      "source": "views/y+345_e+00/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y345_e00.png",
+      "materialized": true,
+      "sha256": "96f5393acdd2f048775eb8e27af151bcd1581d497eb6bafc6af70d599a1122be",
+      "bytes": 358143
+    },
+    {
+      "role": "loss-mask:y345_e00",
+      "source": "views/y+345_e+00/loss_mask_y+345_e+00.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y345_e00.png",
+      "materialized": true,
+      "sha256": "966ed048e6cea642d668f43c1f158c366b31d9042c254ea0b53504cf92011995",
+      "bytes": 129872
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+40/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y000_e40.png",
+      "materialized": true,
+      "sha256": "e245cb4c43fa3f08b4c02e225ac006e29c079ebabcd0bf2d2397f9c3495e2a8d",
+      "bytes": 528112
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+40/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y000_e40.png",
+      "materialized": true,
+      "sha256": "8d98e6f11319e5ed01282541f6c31db63bbe1eee1c647cc602537ac24d1f3682",
+      "bytes": 14906
+    },
+    {
+      "role": "channel:provenance_view:y000_e40",
+      "source": "views/y+000_e+40/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y000_e40.png",
+      "materialized": true,
+      "sha256": "62d41b1adf198f782c5c1babcf19a9a7465f8ea0f30608e5b36bf83317518fd5",
+      "bytes": 218398
+    },
+    {
+      "role": "channel:prov_class:y000_e40",
+      "source": "views/y+000_e+40/prov_class_y+000_e+40.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y000_e40.png",
+      "materialized": true,
+      "sha256": "4b8feb00b268653bb5ff5e58cbb97bfe3a1cf00fe2dc1889fbc850b337e234f7",
+      "bytes": 33516
+    },
+    {
+      "role": "channel:owner_view:y000_e40",
+      "source": "views/y+000_e+40/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y000_e40.png",
+      "materialized": true,
+      "sha256": "9fdf2fd15fc37c65ccae2e06122fb1e06f3de464404af64aa615a995359e6546",
+      "bytes": 353675
+    },
+    {
+      "role": "loss-mask:y000_e40",
+      "source": "views/y+000_e+40/loss_mask_y+000_e+40.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y000_e40.png",
+      "materialized": true,
+      "sha256": "ce2c2c0caaed4d1b01869d181201505fed1071410092c05bb2e411756ac6d0a0",
+      "bytes": 109136
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+40/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y180_e40.png",
+      "materialized": true,
+      "sha256": "81d4c2d4bff323ad6d853fdf4cf00eb3de3cadc27940558a3740303e54b7dd59",
+      "bytes": 532336
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+40/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y180_e40.png",
+      "materialized": true,
+      "sha256": "df8b10fb7c19e9ea2d2e52196e68fff7d206588af0146994468bc9451a872f92",
+      "bytes": 16162
+    },
+    {
+      "role": "channel:provenance_view:y180_e40",
+      "source": "views/y+180_e+40/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y180_e40.png",
+      "materialized": true,
+      "sha256": "326a1cd9677d06f17096e60d21fd9c206df0136f58ba41525a98d4601ea51d85",
+      "bytes": 226837
+    },
+    {
+      "role": "channel:prov_class:y180_e40",
+      "source": "views/y+180_e+40/prov_class_y+180_e+40.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y180_e40.png",
+      "materialized": true,
+      "sha256": "11c9d9de06fc54eedb6c5afc0f3e209973bd4e7f95c16c0f167b50baccb9e9b9",
+      "bytes": 34958
+    },
+    {
+      "role": "channel:owner_view:y180_e40",
+      "source": "views/y+180_e+40/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y180_e40.png",
+      "materialized": true,
+      "sha256": "b773f10162700e50087f0cf6a3926a42568b70f02b320d7f84b2746c7c3a1b84",
+      "bytes": 362967
+    },
+    {
+      "role": "loss-mask:y180_e40",
+      "source": "views/y+180_e+40/loss_mask_y+180_e+40.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y180_e40.png",
+      "materialized": true,
+      "sha256": "2cb501bdb52817072ce691d0b5c714de174f57be55a7bc6528aea0bd2ad1975c",
+      "bytes": 111320
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+55/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y000_e55.png",
+      "materialized": true,
+      "sha256": "cbf2134e97b69978aaf4ae0ddd98ff72d055f0b737535ed6c354e2a90ab86e7d",
+      "bytes": 475778
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+55/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y000_e55.png",
+      "materialized": true,
+      "sha256": "4909f21cfa4de392e0afaed43f007ab337d117e2073c26b36bc2937886bd96b9",
+      "bytes": 12091
+    },
+    {
+      "role": "channel:provenance_view:y000_e55",
+      "source": "views/y+000_e+55/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y000_e55.png",
+      "materialized": true,
+      "sha256": "b8266ec8b84b0d312debbf02cbeb511f3e3fc5f319be91c5d69c42ba9ebd259d",
+      "bytes": 206422
+    },
+    {
+      "role": "channel:prov_class:y000_e55",
+      "source": "views/y+000_e+55/prov_class_y+000_e+55.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y000_e55.png",
+      "materialized": true,
+      "sha256": "7b49c8c03ea13d6042bb001f25c16ce17bf013cd870b20e0922685c2e49e4f15",
+      "bytes": 30870
+    },
+    {
+      "role": "channel:owner_view:y000_e55",
+      "source": "views/y+000_e+55/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y000_e55.png",
+      "materialized": true,
+      "sha256": "eec4396ac806a3602600971b36e52447ddeb0dda256f953ce7aabed4a00b5df1",
+      "bytes": 327120
+    },
+    {
+      "role": "loss-mask:y000_e55",
+      "source": "views/y+000_e+55/loss_mask_y+000_e+55.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y000_e55.png",
+      "materialized": true,
+      "sha256": "4ce209bd277bf582a93b59d9d830e75ed7af4e6c4c739dfb8d8deffc09903c06",
+      "bytes": 96912
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+55/asset.png",
+      "dest": "outputs/candidates/e04_galleon_dense__y180_e55.png",
+      "materialized": true,
+      "sha256": "12612cf7496258513a30efcf454197a353d7bc1b9a007000093f528df1668910",
+      "bytes": 483682
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+55/silhouette.png",
+      "dest": "assets/e04_galleon_dense/masks/y180_e55.png",
+      "materialized": true,
+      "sha256": "86e15c50f722a32fb722948067be25c6b42499fc1aaa7b4ffa3e1305b5f40f1c",
+      "bytes": 12646
+    },
+    {
+      "role": "channel:provenance_view:y180_e55",
+      "source": "views/y+180_e+55/prov.png",
+      "dest": "assets/e04_galleon_dense/channels/provenance_view__y180_e55.png",
+      "materialized": true,
+      "sha256": "2992a4b16d146bdedc19c3ebbca5f3858a9079cce6c30f3da5e44f2d7b939e88",
+      "bytes": 218042
+    },
+    {
+      "role": "channel:prov_class:y180_e55",
+      "source": "views/y+180_e+55/prov_class_y+180_e+55.png",
+      "dest": "assets/e04_galleon_dense/channels/prov_class__y180_e55.png",
+      "materialized": true,
+      "sha256": "b8a0132988b26c67796e8405939f300213c643793a4ff2aed2f369c69eb20772",
+      "bytes": 32176
+    },
+    {
+      "role": "channel:owner_view:y180_e55",
+      "source": "views/y+180_e+55/owner.png",
+      "dest": "assets/e04_galleon_dense/channels/owner_view__y180_e55.png",
+      "materialized": true,
+      "sha256": "6cee8a3bb143d1e52ce86cc5ef0b6d7feb9f0ae04d4b3fc47bae3bb657096a0c",
+      "bytes": 337780
+    },
+    {
+      "role": "loss-mask:y180_e55",
+      "source": "views/y+180_e+55/loss_mask_y+180_e+55.png",
+      "dest": "assets/e04_galleon_dense/loss-masks/y180_e55.png",
+      "materialized": true,
+      "sha256": "4434425e278442b6d5490701466a010c7b3fee10fcd52843208a3acf89e45944",
+      "bytes": 98091
+    },
+    {
+      "role": "manifest",
+      "source": "asset-source.json",
+      "dest": "assets/e04_galleon_dense/asset-source.json",
+      "materialized": true,
+      "sha256": "396637d2030e7f01db69637276192ad3bb2178ab42fb3a20b7db9e61fcabe2f7",
+      "bytes": 21208
+    }
+  ],
+  "records_created": [
+    "e04_galleon_dense__y000_e00",
+    "e04_galleon_dense__y015_e00",
+    "e04_galleon_dense__y030_e00",
+    "e04_galleon_dense__y045_e00",
+    "e04_galleon_dense__y060_e00",
+    "e04_galleon_dense__y075_e00",
+    "e04_galleon_dense__y090_e00",
+    "e04_galleon_dense__y105_e00",
+    "e04_galleon_dense__y120_e00",
+    "e04_galleon_dense__y135_e00",
+    "e04_galleon_dense__y150_e00",
+    "e04_galleon_dense__y165_e00",
+    "e04_galleon_dense__y180_e00",
+    "e04_galleon_dense__y195_e00",
+    "e04_galleon_dense__y210_e00",
+    "e04_galleon_dense__y225_e00",
+    "e04_galleon_dense__y240_e00",
+    "e04_galleon_dense__y255_e00",
+    "e04_galleon_dense__y270_e00",
+    "e04_galleon_dense__y285_e00",
+    "e04_galleon_dense__y300_e00",
+    "e04_galleon_dense__y315_e00",
+    "e04_galleon_dense__y330_e00",
+    "e04_galleon_dense__y345_e00",
+    "e04_galleon_dense__y000_e40",
+    "e04_galleon_dense__y180_e40",
+    "e04_galleon_dense__y000_e55",
+    "e04_galleon_dense__y180_e55"
+  ],
+  "records_skipped": [],
+  "rejected_renders": [],
+  "written": [
+    "outputs/candidates/e04_galleon_dense__y000_e00.png",
+    "assets/e04_galleon_dense/masks/y000_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y000_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y000_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y000_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y000_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y000_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y000_e00.png",
+    "records/e04_galleon_dense__y000_e00.json",
+    "outputs/candidates/e04_galleon_dense__y015_e00.png",
+    "assets/e04_galleon_dense/masks/y015_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y015_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y015_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y015_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y015_e00.png",
+    "records/e04_galleon_dense__y015_e00.json",
+    "outputs/candidates/e04_galleon_dense__y030_e00.png",
+    "assets/e04_galleon_dense/masks/y030_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y030_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y030_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y030_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y030_e00.png",
+    "records/e04_galleon_dense__y030_e00.json",
+    "outputs/candidates/e04_galleon_dense__y045_e00.png",
+    "assets/e04_galleon_dense/masks/y045_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y045_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y045_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y045_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y045_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y045_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y045_e00.png",
+    "records/e04_galleon_dense__y045_e00.json",
+    "outputs/candidates/e04_galleon_dense__y060_e00.png",
+    "assets/e04_galleon_dense/masks/y060_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y060_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y060_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y060_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y060_e00.png",
+    "records/e04_galleon_dense__y060_e00.json",
+    "outputs/candidates/e04_galleon_dense__y075_e00.png",
+    "assets/e04_galleon_dense/masks/y075_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y075_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y075_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y075_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y075_e00.png",
+    "records/e04_galleon_dense__y075_e00.json",
+    "outputs/candidates/e04_galleon_dense__y090_e00.png",
+    "assets/e04_galleon_dense/masks/y090_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y090_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y090_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y090_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y090_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y090_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y090_e00.png",
+    "records/e04_galleon_dense__y090_e00.json",
+    "outputs/candidates/e04_galleon_dense__y105_e00.png",
+    "assets/e04_galleon_dense/masks/y105_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y105_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y105_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y105_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y105_e00.png",
+    "records/e04_galleon_dense__y105_e00.json",
+    "outputs/candidates/e04_galleon_dense__y120_e00.png",
+    "assets/e04_galleon_dense/masks/y120_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y120_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y120_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y120_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y120_e00.png",
+    "records/e04_galleon_dense__y120_e00.json",
+    "outputs/candidates/e04_galleon_dense__y135_e00.png",
+    "assets/e04_galleon_dense/masks/y135_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y135_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y135_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y135_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y135_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y135_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y135_e00.png",
+    "records/e04_galleon_dense__y135_e00.json",
+    "outputs/candidates/e04_galleon_dense__y150_e00.png",
+    "assets/e04_galleon_dense/masks/y150_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y150_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y150_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y150_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y150_e00.png",
+    "records/e04_galleon_dense__y150_e00.json",
+    "outputs/candidates/e04_galleon_dense__y165_e00.png",
+    "assets/e04_galleon_dense/masks/y165_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y165_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y165_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y165_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y165_e00.png",
+    "records/e04_galleon_dense__y165_e00.json",
+    "outputs/candidates/e04_galleon_dense__y180_e00.png",
+    "assets/e04_galleon_dense/masks/y180_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y180_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y180_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y180_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y180_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y180_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y180_e00.png",
+    "records/e04_galleon_dense__y180_e00.json",
+    "outputs/candidates/e04_galleon_dense__y195_e00.png",
+    "assets/e04_galleon_dense/masks/y195_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y195_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y195_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y195_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y195_e00.png",
+    "records/e04_galleon_dense__y195_e00.json",
+    "outputs/candidates/e04_galleon_dense__y210_e00.png",
+    "assets/e04_galleon_dense/masks/y210_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y210_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y210_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y210_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y210_e00.png",
+    "records/e04_galleon_dense__y210_e00.json",
+    "outputs/candidates/e04_galleon_dense__y225_e00.png",
+    "assets/e04_galleon_dense/masks/y225_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y225_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y225_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y225_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y225_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y225_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y225_e00.png",
+    "records/e04_galleon_dense__y225_e00.json",
+    "outputs/candidates/e04_galleon_dense__y240_e00.png",
+    "assets/e04_galleon_dense/masks/y240_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y240_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y240_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y240_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y240_e00.png",
+    "records/e04_galleon_dense__y240_e00.json",
+    "outputs/candidates/e04_galleon_dense__y255_e00.png",
+    "assets/e04_galleon_dense/masks/y255_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y255_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y255_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y255_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y255_e00.png",
+    "records/e04_galleon_dense__y255_e00.json",
+    "outputs/candidates/e04_galleon_dense__y270_e00.png",
+    "assets/e04_galleon_dense/masks/y270_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y270_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y270_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y270_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y270_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y270_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y270_e00.png",
+    "records/e04_galleon_dense__y270_e00.json",
+    "outputs/candidates/e04_galleon_dense__y285_e00.png",
+    "assets/e04_galleon_dense/masks/y285_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y285_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y285_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y285_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y285_e00.png",
+    "records/e04_galleon_dense__y285_e00.json",
+    "outputs/candidates/e04_galleon_dense__y300_e00.png",
+    "assets/e04_galleon_dense/masks/y300_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y300_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y300_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y300_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y300_e00.png",
+    "records/e04_galleon_dense__y300_e00.json",
+    "outputs/candidates/e04_galleon_dense__y315_e00.png",
+    "assets/e04_galleon_dense/masks/y315_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y315_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y315_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y315_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y315_e00.png",
+    "assets/e04_galleon_dense/pairs/clay__y315_e00.png",
+    "assets/e04_galleon_dense/pairs/twin__y315_e00.png",
+    "records/e04_galleon_dense__y315_e00.json",
+    "outputs/candidates/e04_galleon_dense__y330_e00.png",
+    "assets/e04_galleon_dense/masks/y330_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y330_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y330_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y330_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y330_e00.png",
+    "records/e04_galleon_dense__y330_e00.json",
+    "outputs/candidates/e04_galleon_dense__y345_e00.png",
+    "assets/e04_galleon_dense/masks/y345_e00.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y345_e00.png",
+    "assets/e04_galleon_dense/channels/prov_class__y345_e00.png",
+    "assets/e04_galleon_dense/channels/owner_view__y345_e00.png",
+    "assets/e04_galleon_dense/loss-masks/y345_e00.png",
+    "records/e04_galleon_dense__y345_e00.json",
+    "outputs/candidates/e04_galleon_dense__y000_e40.png",
+    "assets/e04_galleon_dense/masks/y000_e40.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y000_e40.png",
+    "assets/e04_galleon_dense/channels/prov_class__y000_e40.png",
+    "assets/e04_galleon_dense/channels/owner_view__y000_e40.png",
+    "assets/e04_galleon_dense/loss-masks/y000_e40.png",
+    "records/e04_galleon_dense__y000_e40.json",
+    "outputs/candidates/e04_galleon_dense__y180_e40.png",
+    "assets/e04_galleon_dense/masks/y180_e40.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y180_e40.png",
+    "assets/e04_galleon_dense/channels/prov_class__y180_e40.png",
+    "assets/e04_galleon_dense/channels/owner_view__y180_e40.png",
+    "assets/e04_galleon_dense/loss-masks/y180_e40.png",
+    "records/e04_galleon_dense__y180_e40.json",
+    "outputs/candidates/e04_galleon_dense__y000_e55.png",
+    "assets/e04_galleon_dense/masks/y000_e55.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y000_e55.png",
+    "assets/e04_galleon_dense/channels/prov_class__y000_e55.png",
+    "assets/e04_galleon_dense/channels/owner_view__y000_e55.png",
+    "assets/e04_galleon_dense/loss-masks/y000_e55.png",
+    "records/e04_galleon_dense__y000_e55.json",
+    "outputs/candidates/e04_galleon_dense__y180_e55.png",
+    "assets/e04_galleon_dense/masks/y180_e55.png",
+    "assets/e04_galleon_dense/channels/provenance_view__y180_e55.png",
+    "assets/e04_galleon_dense/channels/prov_class__y180_e55.png",
+    "assets/e04_galleon_dense/channels/owner_view__y180_e55.png",
+    "assets/e04_galleon_dense/loss-masks/y180_e55.png",
+    "records/e04_galleon_dense__y180_e55.json",
+    "assets/e04_galleon_dense/asset-source.json"
+  ]
+}

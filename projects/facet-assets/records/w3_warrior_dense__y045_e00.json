@@ -1,0 +1,113 @@
+{
+  "id": "w3_warrior_dense__y045_e00",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-06T04:23:21.600Z",
+  "asset_path": "outputs/candidates/w3_warrior_dense__y045_e00.png",
+  "image": {
+    "format": "png",
+    "width": 752,
+    "height": 1024,
+    "bytes": 251993
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-06T04:23:21.600Z",
+    "asset_id": "w3_warrior_dense",
+    "asset_source": "facet/E08-ARMB",
+    "manifest_path": "assets/w3_warrior_dense/asset-source.json",
+    "manifest_sha256": "cb84d605b98121fff9ac99d1b7afebc1123ecf02c8f80a9ad4daaab4fec4d974",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-04",
+      "record": "E:/AI/facet/docs/experiments/E08-task3-report.md (judged artifacts: out/GATE1_sheet_full.png, out/GATE1_sheet_ZOOM.png, out/gate1_dE.json)",
+      "by": "director"
+    },
+    "render_id": "y045_e00",
+    "camera": {
+      "yaw_deg": 45,
+      "elevation_deg": 0
+    },
+    "light": "flat",
+    "facing": "three-quarter front-right",
+    "silhouette_mask": {
+      "path": "assets/w3_warrior_dense/masks/y045_e00.png",
+      "sha256": "1ea614d0c6c0dca8c8828aeec94714e2bf78bbac584bf375114fab26580a76f6"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/w3_warrior_dense/channels/provenance_view__y045_e00.png",
+        "sha256": "25f1f371bfddfeb74529893fb6f1c8e021836c6d843227b75309debe1d9aba08"
+      },
+      "prov_class": {
+        "path": "assets/w3_warrior_dense/channels/prov_class__y045_e00.png",
+        "sha256": "04afb4a7340cd1b0468c8b84ead98c123878d8449cfa8076d04bb6640e352926"
+      }
+    },
+    "caption_fields": {
+      "subject": "an armored warrior with a red beard, gold pauldrons, and a dark green knitted tunic",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "three-quarter front-right"
+    },
+    "generation_provenance_known": true,
+    "pair": {
+      "twin": {
+        "path": "assets/w3_warrior_dense/pairs/twin__y045_e00.png",
+        "sha256": "fe4836ffcf6aa0c107fa9b25a5885b6fbbfa6dcfdf3ba6039525cd73120bd070"
+      }
+    }
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 149780,
+      "offpalette_px": 468,
+      "offpalette_pct": 0.3125,
+      "largest_blob_px": 42,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 110,
+        "hue_hi": 120,
+        "share_of_offpalette": 43.6,
+        "median_chroma": 17.2,
+        "median_rgb": [
+          59,
+          68,
+          33
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 149780,
+        "classes": {
+          "background": {
+            "px": 1071,
+            "share": 0.715
+          },
+          "reference": {
+            "px": 139119,
+            "share": 92.8822
+          },
+          "brush": {
+            "px": 3738,
+            "share": 2.4957
+          },
+          "dilation": {
+            "px": 5852,
+            "share": 3.9071
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}

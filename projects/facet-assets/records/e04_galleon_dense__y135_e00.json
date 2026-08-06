@@ -1,0 +1,125 @@
+{
+  "id": "e04_galleon_dense__y135_e00",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-06T04:23:11.229Z",
+  "asset_path": "outputs/candidates/e04_galleon_dense__y135_e00.png",
+  "image": {
+    "format": "png",
+    "width": 1072,
+    "height": 1024,
+    "bytes": 542087
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-06T04:23:11.229Z",
+    "asset_id": "e04_galleon_dense",
+    "asset_source": "facet/E04",
+    "manifest_path": "assets/e04_galleon_dense/asset-source.json",
+    "manifest_sha256": "396637d2030e7f01db69637276192ad3bb2178ab42fb3a20b7db9e61fcabe2f7",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-05",
+      "record": "E:/AI/facet/docs/experiments/E04-ruling.md Ruling 28 (\"Dude, it looks good to me.\") - judged artifacts: out/GATE1_sheet_beam.png, out/GATE1_sheet_deck.png, out/galleon_final.glb at the Director's zoom",
+      "by": "director"
+    },
+    "render_id": "y135_e00",
+    "camera": {
+      "yaw_deg": 135,
+      "elevation_deg": 0
+    },
+    "light": "flat",
+    "facing": "three-quarter back-right",
+    "silhouette_mask": {
+      "path": "assets/e04_galleon_dense/masks/y135_e00.png",
+      "sha256": "be493426a6ae94ab290cba1b3cb528e2a2340810de20e4a07a97ac18df4dfeb6"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/e04_galleon_dense/channels/provenance_view__y135_e00.png",
+        "sha256": "21817ec9c95be741f84d71a3f147b4309c09c311c3e090277af9ece39809452e"
+      },
+      "prov_class": {
+        "path": "assets/e04_galleon_dense/channels/prov_class__y135_e00.png",
+        "sha256": "5fe730caaeac58413809e46b3f857901a8349de31c467cecbc5f85237e366e88"
+      },
+      "owner_view": {
+        "path": "assets/e04_galleon_dense/channels/owner_view__y135_e00.png",
+        "sha256": "58336149b0a4d4d2542f1eaaa5bc80484d381492f51eaeac32cde2df50c992a6"
+      }
+    },
+    "caption_fields": {
+      "subject": "a three-masted galleon with a gilded lion figurehead, warm oak-brown hull planking, black tarred strakes, weathered tan canvas sails, gilded stern scrollwork, red gun port lids, black iron cannon barrels, pale scrubbed deck planking, and a deep sea-blue frieze band along the bulwarks",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "three-quarter back-right"
+    },
+    "generation_provenance_known": true,
+    "loss_mask": {
+      "path": "assets/e04_galleon_dense/loss-masks/y135_e00.png",
+      "sha256": "7b6d189d84c87a2b01df733deb2560b5f72d702dcaa0c445ad4aab48a3e13f0c"
+    },
+    "pair": {
+      "clay": {
+        "path": "assets/e04_galleon_dense/pairs/clay__y135_e00.png",
+        "sha256": "db413679509845c44b4c16a1a1406777d0d5d1cf334cb90ae7f3218484dcc828"
+      },
+      "twin": {
+        "path": "assets/e04_galleon_dense/pairs/twin__y135_e00.png",
+        "sha256": "5ad2fd1a1a4ca761557d9f5b82eae3047101673f4a76ff5524630822d8249015"
+      }
+    }
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 322680,
+      "offpalette_px": 6387,
+      "offpalette_pct": 1.9794,
+      "largest_blob_px": 1451,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 40,
+        "hue_hi": 50,
+        "share_of_offpalette": 50.7,
+        "median_chroma": 27.3,
+        "median_rgb": [
+          89,
+          38,
+          26
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 322680,
+        "classes": {
+          "background": {
+            "px": 0,
+            "share": 0
+          },
+          "reference": {
+            "px": 278629,
+            "share": 86.3484
+          },
+          "brush": {
+            "px": 10005,
+            "share": 3.1006
+          },
+          "dilation": {
+            "px": 34046,
+            "share": 10.551
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}
