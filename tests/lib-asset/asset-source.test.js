@@ -243,3 +243,127 @@ test('facingFromCamera: deterministic 8-way vocabulary + elevation clauses', () 
   assert.equal(facingFromCamera({ yaw_deg: 180, elevation_deg: -40 }), 'back, viewed from below');
   assert.equal(facingFromCamera({ yaw_deg: 180, elevation_deg: 10 }), 'back', 'small elevations add nothing');
 });
+
+// ── Schema 1.1.0 — the E11 Ruling 6 sidecars become declarable ─────────
+//
+// The lane's promise does not change: declarations are proven against bytes.
+// What changes is that owner maps, admission sidecars and camera json can be
+// DECLARED, so they are contained, proven, hashed and carried into the record
+// instead of riding invisibly beside the export.
+
+const V11_BASE = () => ({
+  schema_version: '1.1.0',
+  asset: { id: 'x' },
+  acceptance: { gate: 'g', verdict: 'accepted', date: '2026-08-06', record: 'r' },
+  palette: {
+    min_chroma: 1,
+    allowed_bands: [{ name: 'w', hue_deg: [0, 10] }],
+    gate: { max_offpalette_blob_px: 1, max_offpalette_pct: null },
+  },
+  renders: [{ id: 'r0', path: 'r.png', camera: { yaw_deg: 0 }, silhouette_mask: 's.png' }],
+});
+
+test('1.1.0: render-space npy + json channels resolve, and identity is carried', async () => {
+  const { dir } = writeDegenerateAsset({ withOwnerId: true, withSidecar: true, subjectName: 'test_totem_subject' });
+  try {
+    const { manifest, resolved } = await validateAssetSource(manifestPathOf(dir));
+    assert.equal(manifest.identity.subject_name, 'test_totem_subject');
+    const r0 = resolved.renders.get('r0');
+    assert.ok(r0.instances.has('owner_id'), 'npy instance resolved into the render entry');
+    assert.equal(r0.instances.get('owner_id').meta.dtype, '|i1');
+    assert.deepEqual(r0.instances.get('owner_id').meta.shape, [TOTEM.H, TOTEM.W],
+      'the header shape is [height, width] — numpy is row-major');
+    assert.ok(r0.instances.has('admission'), 'json instance resolved into the render entry');
+    assert.deepEqual(r0.instances.get('admission').meta.keys, ['view', 'figure_px', 'owner_values_present']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: a TRANSPOSED render-space npy is refused — the axis proof is the point', async () => {
+  const { dir } = writeDegenerateAsset({ withOwnerId: true, transposedOwnerId: true });
+  try {
+    await expectRefusal(dir, 'ASSET_ENCODING_MISMATCH', /must open \[height, width\] = \[10, 12\]/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: an undeclared value in a categorical npy is refused exhaustively', async () => {
+  // Drop 'view_a' (value 0) from the declared classes. r0's owner map is full
+  // of 0s inside the figure, so the scan must find one and name it.
+  const { dir } = writeDegenerateAsset({
+    withOwnerId: true,
+    mutate: (m) => {
+      const c = m.channels.find((x) => x.id === 'owner_id');
+      c.classes = c.classes.filter((k) => k.value !== 0);
+    },
+  });
+  try {
+    await expectRefusal(dir, 'ASSET_PALETTE_PROOF_FAILED', /value 0 at flat index \d+ is not a declared class value/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: a categorical npy on an unreadable dtype is refused at declaration time', () => {
+  const m = V11_BASE();
+  m.channels = [{ id: 'owner', space: 'render', encoding: 'npy', categorical: true, dtype: '<i4', classes: [{ name: 'a', value: 0 }] }];
+  const violations = validateManifestShape(m);
+  assert.ok(violations.some((v) => /dtype/.test(v.path) && /values can be read/.test(v.message)),
+    'an unprovable dtype is refused rather than silently left unproven');
+});
+
+test('1.1.0: a json channel missing a declared required key is refused', async () => {
+  const { dir } = writeDegenerateAsset({
+    withSidecar: true,
+    mutate: (m) => {
+      m.channels.find((c) => c.id === 'admission').required_keys = ['view', 'figure_px', 'owner_boundary_px'];
+    },
+  });
+  try {
+    await expectRefusal(dir, 'ASSET_ENCODING_MISMATCH', /missing declared required key\(s\): owner_boundary_px/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: a json channel cannot be categorical — sdlab reads no values there', () => {
+  const m = V11_BASE();
+  m.channels = [{ id: 'side', space: 'render', encoding: 'json', categorical: true }];
+  assert.ok(validateManifestShape(m).some((v) => /cannot be categorical/.test(v.message)));
+});
+
+test('1.1.0: render-space npy declaring a channel-level shape is refused', () => {
+  const m = V11_BASE();
+  m.channels = [{ id: 'owner', space: 'render', encoding: 'npy', dtype: '|i1', shape: [10, 12] }];
+  const violations = validateManifestShape(m);
+  assert.ok(violations.some((v) => v.path === 'channels[0].shape' && /against its own render/.test(v.message)),
+    'one channel-level shape cannot describe instances across differently sized renders');
+});
+
+test('1.1.0: a 1.0.0 manifest still validates unchanged — every addition is optional', async () => {
+  const { dir, manifest } = writeDegenerateAsset({ withNpy: true });
+  try {
+    assert.equal(manifest.schema_version, '1.0.0');
+    const { resolved } = await validateAssetSource(manifestPathOf(dir));
+    assert.equal(resolved.renders.size, 2);
+    assert.ok(resolved.textureChannels.has('coverage'));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: a manifest declaring a NEWER minor is refused, not silently stripped', () => {
+  const m = V11_BASE();
+  m.schema_version = '1.9.0';
+  const violations = validateManifestShape(m);
+  assert.ok(violations.some((v) => v.path === 'schema_version' && /newer minor/.test(v.message)),
+    'accepting it would drop declared channels this build cannot see');
+});
+
+test('1.1.0: identity.subject_name must be a safe id — it is a split-family key', () => {
+  const m = V11_BASE();
+  m.identity = { subject_name: 'not a safe id!' };
+  assert.ok(validateManifestShape(m).some((v) => v.path === 'identity.subject_name'));
+});

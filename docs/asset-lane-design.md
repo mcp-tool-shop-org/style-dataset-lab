@@ -14,7 +14,7 @@ five parallel research agents, all findings source-verified).
 | NAMED_COMPENSATORS | 2 | No irreversible action: branch-only commits, local writes only. Compensator per ingest: delete `projects/<p>/assets/<asset_id>/` + the `<asset_id>__*` records + copied candidates (receipt lists every written path); undo is `git clean`/`git revert` once committed. Owner: user. |
 | DECOMPOSE_BY_SECRETS | 3 | Module boundaries are the design: `png-meta` (PNG format) / `npy-meta` (NPY format) / `asset-masks` (color math, ported gate) / `asset-source` (contract) / `asset-ingest` (registration side-effects). The manifest carries all semantics; sdlab carries none. |
 | UNCERTAINTY_GATED_HUMANS | 2 | Admission is gated on the Director's recorded Gate verdict (the acceptance block is mandatory); records land uncurated (`judgment: null`) so human curation still gates dataset entry; the session ends in a report, not a merge. |
-| EXTERNAL_VERIFIER | 1 | skip: deterministic validation only in the skeleton. The eventual experiment's verifier is the pre-registered ΔE measurement (below) against a baseline recorded before any training exists — a measurement, not a model grading itself. |
+| EXTERNAL_VERIFIER | 2 | Implementation-diverse rather than model-diverse, and it has now fired twice on real data: this lane's JS palette gate (`lib/asset-masks.js`) reproduced facet's independent Python gate digit-for-digit — largest off-palette blobs **1738 / 1495 / 263 px** on the galleon's `y000_e00` / `y000_e40` / `y180_e40` — first from the staged manifest (facet E11 Ruling 1 credits it) and again 2026-08-06 from the dense tree. Two codebases, one formula, same integers. Not 3: no model-family verifier and no replay harness; the eventual experiment's verifier is the pre-registered ΔE measurement (below) against a baseline recorded before any training exists — a measurement, not a model grading itself. |
 
 ## The seam (restated because everything hangs on it)
 
@@ -135,6 +135,13 @@ solid-color, varied, keep-alpha}`. (2) Caption material carries a **domain tag**
 70/30) and `regularization` flags. (4) **Exporter-spec flags for facet** (render-time, not
 sdlab's side): lighting variation across renders; 30–50 views; view-owner channel.
 
+> **Status 2026-08-06.** Two of those three are answered by E11's dense turnarounds: 28 and
+> 26 views (inside the 30–50 target's spirit, one subject just under), and the galleon ships
+> the first native per-texel `view_owner.npy`. Lighting variation stays open and is ruled
+> augmentation-side for now (E11 Ruling 5 ratifies flat-only export). Schema 1.1.0 below
+> makes the owner channel *declarable*; note that declaring it is not yet *consuming* it —
+> owner-seam exclusion remains unbuilt, and the channel rides as proven, hashed provenance.
+
 ### Q5 — conditioning pairs: raw material now, package type at ~1k pairs
 
 - Zhang et al. 2023, *ControlNet* (ICCV, DOI 10.1109/ICCV51070.2023.00355): robustness floor
@@ -156,11 +163,13 @@ accumulated pairs**, or earlier only if a UFC-class few-shot harness is adopted.
 renders already have inference-time value against pretrained depth/lineart ControlNets —
 no package needed for that.
 
-## The contract — `asset-source.json` (schema_version 1.0.0)
+## The contract — `asset-source.json` (schema_version 1.1.0)
 
 One manifest per exported asset, living in the export directory. All paths are relative to
 the manifest's directory and must resolve inside it (containment is enforced; the export
 dir is untrusted input).
+
+The block below is the 1.0.0 core, unchanged. The 1.1.0 additions follow it.
 
 ```jsonc
 {
@@ -220,6 +229,77 @@ dir is untrusted input).
 }
 ```
 
+### Schema 1.1.0 additions (facet E11 Ruling 6, authored 2026-08-06)
+
+E11's dense turnarounds ship per-view sidecars that rode **undeclared** beside the declared
+channels: `owner_id_*.npy` (which stage-1 view owns each texel, int8, −1 unowned),
+`admission_*.json` (facet's own per-view admission measurements) and `cam.json`. Undeclared
+means uncontained, unproven, unhashed and absent from the record. 1.1.0 makes them
+declarable. It does **not** make sdlab interpret them.
+
+```jsonc
+{
+  "schema_version": "1.1.0",
+  "identity": { "subject_name": "w3_warrior" },   // NEW — see below
+  "channels": [
+    {
+      "id": "owner_id",
+      "space": "render",            // NEW: npy is no longer texture-only
+      "encoding": "npy",
+      "categorical": true,          // NEW: categorical npy is supported
+      "dtype": "|i1",               // must be readable: |i1, |u1, |b1
+      "classes": [                  // NEW: integer classes, not an rgb palette
+        { "name": "unowned", "value": -1 },
+        { "name": "view_0",  "value":  0 }
+      ]
+      // NO channel-level "shape": each instance is proven against ITS render
+    },
+    {
+      "id": "admission",
+      "space": "render",
+      "encoding": "json",           // NEW encoding
+      "required_keys": ["view", "figure_px"]   // optional presence contract
+    }
+  ]
+}
+```
+
+**What each addition proves.**
+
+- **render-space `npy`** — header dtype matches the declaration, and the shape opens
+  `[height, width]` against that render's own decoded dimensions. numpy is row-major, so a
+  `[width, height]` export is a transpose; on a non-square render that is exactly the bug a
+  shape check catches and a byte-count check does not. Rank 2 or 3 (a trailing channel axis
+  is allowed). A channel-level `shape` is **refused** — one declaration cannot describe
+  instances across differently sized renders, and declaring one invites the two to disagree.
+- **categorical `npy`** — exhaustive value scan: every element must be a declared class
+  value, and the first offending value is named with its flat index. The array analogue of
+  the `filter: "nearest"` pixel proof: a class map has no antialiasing to forgive. Restricted
+  to single-byte dtypes, and a categorical channel declaring a dtype the reader cannot decode
+  is refused at declaration time rather than silently left unproven.
+- **`json`** — parses, is an object, carries every declared `required_key`. **This proof is
+  deliberately weak and the contract says so out loud**: sdlab does not read the values. A
+  number in an admission sidecar means what the asset says it means; verifying semantics the
+  lane does not own would be worse than declaring the boundary. `categorical: true` on a json
+  channel is refused for the same reason — there is nothing sdlab could prove.
+- **`identity.subject_name`** — the split engine's only *authored* subject-family key.
+  `lib/split.js` resolves families by `identity.subject_name` first and otherwise **guesses**
+  from the record-id stem. Two ingests of one subject under different asset ids (a re-export,
+  a superseded generation) strip to different stems, read as two families, and let the same
+  subject sit in train and test. Declaring it closes that. It is optional, and when absent
+  nothing is invented — the record simply has no identity block.
+
+**Why 1.1.0 and not 2.0.0.** Every addition is optional, so 1.0.0 manifests validate
+unchanged — verified against all three field manifests (both E11 dense trees and the staged
+W3). A major bump would refuse the very manifests E11 Ruling 2 named as the training input.
+The gate is minor-aware in the other direction: a manifest declaring a **higher** minor than
+the running sdlab is refused loudly, because accepting it would silently drop declared
+channels this build cannot see — and an asset lane that quietly discards provenance is the
+failure class the module exists to stop.
+
+**Still undeclared, by choice:** nothing. `cam.json` is declarable as a `json` channel on
+the same footing as `admission`. Whether a given export declares it is the exporter's call.
+
 ## Validation ladder (all violations collected, one loud refusal)
 
 1. **Schema** — required blocks present, types correct, ids pass `assertSafeId`, verdict
@@ -231,14 +311,18 @@ dir is untrusted input).
    and exists. Errors: `ASSET_PATH_ESCAPE`, `ASSET_FILE_MISSING`.
 3. **Encoding proofs** — PNG: IHDR color type must match the declared encoding
    (indexed=3, rgb=2, rgba=6, grayscale=0; interlace refused). NPY: header dtype/shape
-   must match declaration. A declared encoding that disagrees with the actual bytes is
+   must match declaration — texture-space against the declared `shape`, render-space
+   against its render's `[height, width]` (1.1.0), plus a payload-length check that catches
+   a file truncated below its declared shape. JSON (1.1.0): parses as an object and carries
+   every declared `required_key`. A declared encoding that disagrees with the actual bytes is
    `ASSET_ENCODING_MISMATCH` — the "wrong manifest that looks right" failure class.
 4. **Categorical proofs** — indexed: PLTE ⊆ declared palette (structural chunk proof, no
    pixel decode; the brand/E09 contract). Non-indexed + `filter: "nearest"`: exhaustive
    full-decode proof — every non-transparent pixel's color ∈ declared palette
    (`ASSET_PALETTE_PROOF_FAILED` names the first offending color). Non-indexed +
    `filter: "linear"`: no admission proof; classification happens at ingest as a
-   *measurement* with an honest `unclassified_share`.
+   *measurement* with an honest `unclassified_share`. npy (1.1.0): exhaustive value scan
+   against declared integer `classes`, naming the first offending value and its flat index.
 
 ## Registration (what `sdlab asset ingest` writes)
 

@@ -14,7 +14,7 @@ import { rmSync, writeFileSync, existsSync, readFileSync, unlinkSync } from 'nod
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ingestAssetSource, RECEIPT_FILENAME } from '../../lib/asset-ingest.js';
-import { writeDegenerateAsset } from './fixtures/make-asset.js';
+import { writeDegenerateAsset, TOTEM } from './fixtures/make-asset.js';
 import { createTmpProject } from '../lib-dataset/fixtures/make-project.js';
 
 const HEX64 = /^[0-9a-f]{64}$/;
@@ -66,9 +66,10 @@ test('end to end: a degenerate asset registers as uncurated records with honest 
     assert.ok(shares.figure_px > 0);
     assert.ok(shares.classes.class_a.px > shares.classes.class_b.px, 'class A covers most of the totem figure');
     assert.equal(shares.unclassified.px, 0, 'a nearest-filtered exact channel classifies fully');
-    // Image truth.
-    assert.equal(record.image.width, 12);
-    assert.equal(record.image.height, 12);
+    // Image truth — the fixture is non-square, so a w/h swap cannot pass.
+    assert.equal(record.image.width, TOTEM.W);
+    assert.equal(record.image.height, TOTEM.H);
+    assert.notEqual(TOTEM.W, TOTEM.H);
     assert.ok(record.image.bytes > 0);
 
     // Materialized files + receipt.
@@ -262,6 +263,75 @@ test('facing override in the manifest wins over the derived token', async () => 
     const record = JSON.parse(await readFile(join(proj.projectRoot, 'records', 'test_totem__r0.json'), 'utf-8'));
     assert.equal(record.provenance.facing, 'hero shot');
     assert.equal(record.provenance.caption_fields.facing, 'hero shot');
+  } finally {
+    proj.cleanup();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ── Schema 1.1.0 at ingest ─────────────────────────────────────────────
+
+test('1.1.0: declared npy/json sidecars are materialized, hashed and linked from the record', async () => {
+  const proj = createTmpProject();
+  const { dir } = writeDegenerateAsset({ withOwnerId: true, withSidecar: true });
+  try {
+    const report = await ingestAssetSource(proj.projectRoot, dir);
+    assert.deepEqual(report.rejected, []);
+
+    const assetDir = join(proj.projectRoot, 'assets', 'test_totem');
+    assert.ok(existsSync(join(assetDir, 'channels', 'owner_id__r0.npy')),
+      'a render-space npy instance lands beside the png channels, extension preserved');
+    assert.ok(existsSync(join(assetDir, 'channels', 'admission__r0.json')));
+
+    const prov = readJson(join(proj.projectRoot, 'records', 'test_totem__r0.json')).provenance;
+    assert.match(prov.channels.owner_id.sha256, HEX64);
+    assert.equal(prov.channels.owner_id.path, 'assets/test_totem/channels/owner_id__r0.npy');
+    assert.match(prov.channels.admission.sha256, HEX64);
+
+    // Byte-identical materialization — the receipt's hash is the file's hash.
+    const receipt = readJson(join(assetDir, RECEIPT_FILENAME));
+    const ownerRow = receipt.files.find((f) => f.role === 'channel:owner_id:r0');
+    assert.equal(ownerRow.materialized, true);
+    assert.ok(readFileSync(join(assetDir, 'channels', 'owner_id__r0.npy'))
+      .equals(readFileSync(join(dir, 'owner', 'r0.npy'))));
+
+    // Class shares are a PIXEL measurement: an npy categorical channel is
+    // proven but NOT share-counted, and the record says so by omission
+    // rather than by carrying an invented number.
+    const shares = readJson(join(proj.projectRoot, 'records', 'test_totem__r0.json')).asset_measurements.class_shares;
+    assert.ok('matclass' in shares, 'the pixel categorical channel is measured');
+    assert.equal('owner_id' in shares, false, 'the npy categorical channel is not');
+  } finally {
+    proj.cleanup();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: a declared identity.subject_name lands on every record as an AUTHORED family key', async () => {
+  const proj = createTmpProject();
+  const { dir } = writeDegenerateAsset({ subjectName: 'totem_prime' });
+  try {
+    await ingestAssetSource(proj.projectRoot, dir);
+    for (const id of ['test_totem__r0', 'test_totem__r180']) {
+      const record = readJson(join(proj.projectRoot, 'records', `${id}.json`));
+      assert.equal(record.identity.subject_name, 'totem_prime',
+        'without this, lib/split.js guesses the family from the id stem');
+      assert.equal(record.lineage, null, 'an asset render is not derived from another record');
+    }
+  } finally {
+    proj.cleanup();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('1.1.0: no declared identity leaves the record without one — nothing is invented', async () => {
+  const proj = createTmpProject();
+  const { dir } = writeDegenerateAsset();
+  try {
+    await ingestAssetSource(proj.projectRoot, dir);
+    const record = readJson(join(proj.projectRoot, 'records', 'test_totem__r0.json'));
+    assert.equal('identity' in record, false,
+      'an undeclared subject name is absent, not guessed from the asset id');
   } finally {
     proj.cleanup();
     rmSync(dir, { recursive: true, force: true });
