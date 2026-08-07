@@ -163,13 +163,13 @@ accumulated pairs**, or earlier only if a UFC-class few-shot harness is adopted.
 renders already have inference-time value against pretrained depth/lineart ControlNets —
 no package needed for that.
 
-## The contract — `asset-source.json` (schema_version 1.1.0)
+## The contract — `asset-source.json` (schema_version 1.2.0)
 
 One manifest per exported asset, living in the export directory. All paths are relative to
 the manifest's directory and must resolve inside it (containment is enforced; the export
 dir is untrusted input).
 
-The block below is the 1.0.0 core, unchanged. The 1.1.0 additions follow it.
+The block below is the 1.0.0 core, unchanged. The 1.1.0 and 1.2.0 additions follow it.
 
 ```jsonc
 {
@@ -299,6 +299,172 @@ failure class the module exists to stop.
 
 **Still undeclared, by choice:** nothing. `cam.json` is declarable as a `json` channel on
 the same footing as `admission`. Whether a given export declares it is the exporter's call.
+
+### Schema 1.2.0 additions (facet E12 Rulings 10b / 23f / 20a / 24b, authored 2026-08-07)
+
+Where 1.1.0 declared **sidecars that already existed**, 1.2.0 declares **decisions and
+measurements that were previously invisible to the lane** — three of them, each bought by a
+specific finding in facet's E12/E13 arc.
+
+```jsonc
+{
+  "schema_version": "1.2.0",
+  "asset": {
+    "id": "e12_dragon_dense",
+    "style": {                                    // NEW — E12 Ruling 10b
+      "register": {
+        "terms": ["ultra-realistic", "menacing"],
+        "ruling": "E12 Ruling 10b",
+        "record": "docs/experiments/E12-ruling.md#ruling-10"
+      },
+      "lora": { "declared": "none" }              // or {"declared":"card","card":"<live name>","weight":0.85}
+    },
+    "tone_transform": {                           // NEW — E12 Ruling 23f
+      "kind": "lab-stats-transfer",
+      "space": "CIELAB",
+      "scope": "figure-mask",
+      "reference": "y000_e00",                    // MUST be a render id in this manifest
+      "operands": "harmonize/operands_v3r.json",
+      "reversible": true,
+      "record": "docs/experiments/E12-ruling.md#ruling-23"
+    }
+  },
+  "renders": [{
+    "id": "y000_e00",
+    "generation": {                               // NEW — E12 Rulings 20a + 24b
+      "frame": "full",                            // closed enum: "full" | "crop"
+      "frame_detail": "route camera, yaw 0",
+      "seed": 770701,
+      "stem": "v9",
+      "reroll_of": "y000_e00_770700"
+    }
+    // "tone_transform": false  — optional per-render opt-out
+  }]
+}
+```
+
+#### `asset.style` — the register is subject data
+
+E12 Ruling 10b was bought by a rejection. The saltroad painterly register, which two
+subjects had *earned* acceptance under, was applied to a third that should read
+ultra-realistic — and the Director rejected it. In the ruling's words it was *"a style
+decision nobody made"*: it arrived by inheritance. The ruling: **the style register is
+subject data**, every fixture names its register and its LoRA (or names none), and *"no
+fixture may leave the section implicit again."*
+
+That last clause is the whole design of this block. `style.lora` carries a required
+`declared` discriminator with exactly two legal values:
+
+| declared | meaning | extra fields |
+|---|---|---|
+| `"none"` | this subject runs with **NO LoRA** — a ruled decision | `card` refused; `weight` must be absent or `0` |
+| `"card"` | this subject runs a named card | `card` required (the **live** library name); `weight` optional |
+
+A missing `lora` key is **refused**, not read as "no LoRA." The difference matters
+mechanically: a serializer that drops nulls, or an author who simply forgets, would
+otherwise turn a ruled NONE into silence — and silence is exactly what the ruling was
+bought to eliminate. `none` is a positive declaration.
+
+The block itself stays **optional** (1.0.0/1.1.0 manifests validate unchanged), but it is
+all-or-nothing once present: a register with no LoRA answer is the implicit section the
+ruling forbids. When absent, records carry `provenance.style: null` — a value that is
+*distinguishable from* a ruled no-LoRA register — and the ingest reports a **gap notice**.
+
+The class roadmap now splits classes **by register** (`docs/style-registers.md` in facet):
+a creature-companion is a different class from the beast because its register is tamer, not
+menacing. The lane does not model that taxonomy; it carries the terms each asset declares,
+which is what makes filtering a training pool by register possible at all.
+
+#### `asset.tone_transform` — declaring what sits under the colours
+
+Ruling 23f adopted facet's harmonization: a deterministic Lab colour-statistics transfer
+inside the figure mask, toward a reference view, applied per view **before projection**.
+Projection consumes the harmonized set; raw twins are retained beside it. The transfer is
+generation-free and reversible, and its identity test held at 0 of 1,835,008 elements.
+
+**The lane-side decision: yes, declare it.** The reason is not completeness — it is that
+this lane *measures colour*. The palette gate, the class shares and the pre-registered ΔE
+experiment all produce numbers that sit downstream of any upstream tone map. Pooling
+harmonized-source and raw-source assets in one training set is a legitimate choice; making
+it without knowing is not, and neither is comparing a ΔE from one against a ΔE from the
+other.
+
+The proof is structural and the boundary is stated out loud, exactly as with `json`:
+
+- **Checked:** `reference` names a render **this manifest declares** (a reference view
+  absent from the export is dangling provenance, and that is checkable); the `operands`
+  path is contained inside the export, parses as a JSON object, and is hashed.
+- **Not checked, deliberately:** that the transform was applied, that the operands are
+  correct, that the arithmetic is reversible. sdlab records the asset's claims; it does not
+  verify semantics it does not own.
+
+The operands sidecar is **materialized** into the project — unlike the mesh, atlas and
+texture channels beside it, which are hashed in place. It is small, and it is the only
+record of what the transform did to these colours; leaving it as a pointer would make the
+audit trail depend on the export tree surviving.
+
+Per-render, `tone_transform: false` opts a render out. The ingest **resolves** the boolean
+once and writes the answer into every record (`applied`, plus `reference_is_self` for the
+reference view, whose transfer toward itself is identity), so nothing downstream re-derives
+a default.
+
+#### `renders[].generation` — two measured phenomena need two fields
+
+Both of these were measured, not theorised, and both are **per-image**:
+
+1. **Bust/crop-framed generation drifts register** — three independent instances (Ruling
+   24b: companion orange → crop gloss → crop1 scarlet). Crop-owned regions read off-register
+   against the body they sit on.
+2. **Term binding is seed-dependent** — one seed resisted a prompt term across **three**
+   independent stem versions (unnamed, compound, split) while 82.23% of the image's pixels
+   moved, and the next seed bound it completely (Ruling 20a). Separately, one view's
+   flat-black limb reproduced three times at that same seed across three stem versions and
+   cured all three times at the next (Ruling 23d).
+
+A curator who cannot ask *"which records came from a crop frame"* or *"which came from that
+seed"* cannot act on either finding. Hence:
+
+- **`frame`** is a **closed two-value enum** — `"full"` (the whole subject in frame) or
+  `"crop"` (a sub-region at higher pixel density: bust, head-crop, detail). It is closed for
+  the same reason `facing` is a derived vocabulary: this is the axis the phenomenon was
+  measured on, and a free-text field where one asset writes `"bust"` and another
+  `"head-crop"` cannot be grouped. Everything finer rides in `frame_detail`, which is the
+  asset's own business.
+- **`seed`** accepts a safe integer **or a string of digits**. The string form is legal
+  because a seed too large for an exact JSON number would silently lose its low bits — and a
+  seed that cannot be grouped on exactly is useless for the purpose it is here for.
+- **`reroll_of`** names a superseded render. The bounded re-roll is the *lever* for
+  seed-resistance, so a record that is a re-roll is itself a marker that a seed resisted.
+  It is not required to resolve within the manifest: superseded artifacts are commonly
+  retained upstream rather than exported.
+
+#### Provenance notices — reported, never gated
+
+None of the above is enforced at the door, because E11 Ruling 2 named the existing 1.0.0
+dense manifests as the training input and refusing them is not on the table. What the ingest
+does instead is **refuse to be quiet**. Every ingest now returns `notices[]`, carried in the
+receipt and printed by the CLI, in two kinds:
+
+| kind | meaning |
+|---|---|
+| `gap` | the manifest did **not** declare something a curator needs. Closing it is export-side work. |
+| `info` | the manifest **did** declare something that changes how these records read. Nothing to fix. |
+
+| code | kind | fires when |
+|---|---|---|
+| `ASSET_STYLE_UNDECLARED` | gap | no `asset.style` — the register is unknown to the lane |
+| `ASSET_SUBJECT_NAME_ABSENT` | gap | no `identity.subject_name` — `lib/split.js` will guess families from id stems |
+| `ASSET_GENERATION_PROVENANCE_ABSENT` | gap | some/all admitted renders declare no `generation` (counted: *n* of *m*) |
+| `ASSET_TONE_TRANSFORM_DECLARED` | info | a tone transform sits under every colour measurement on these records |
+
+Notices replay from the stored receipt on a re-run rather than being recomputed, so a
+re-ingest reports the same gaps the original did — and a pre-1.2.0 receipt honestly has none.
+
+**Why 1.2.0 and not 2.0.0.** Same discipline as 1.1.0, same reason: every addition is
+optional, all three field manifests still validate, and a major bump would refuse the
+manifests E11 ruled to be the training input. The gate stays minor-aware upward — a higher
+declared minor is refused loudly rather than silently dropping channels this build cannot
+see.
 
 ## Validation ladder (all violations collected, one loud refusal)
 

@@ -125,6 +125,25 @@ export async function run(argv = process.argv.slice(2)) {
     }
   }
 
+  // Provenance notices — what the manifest left undeclared. Not failures:
+  // the ingest succeeded. These are facts about the training data that only
+  // the manifest could have supplied, printed so they are not discovered
+  // later by a split or a training run that quietly assumed them.
+  if (report.notices?.length > 0) {
+    const gaps = report.notices.filter((n) => n.kind === 'gap');
+    const infos = report.notices.filter((n) => n.kind !== 'gap');
+    console.log('');
+    console.log(`  \x1b[36mProvenance notices\x1b[0m (${report.notices.length}) — the ingest SUCCEEDED; these describe the records it created:`);
+    if (gaps.length > 0) {
+      console.log(`  \x1b[33m  gaps\x1b[0m (${gaps.length}) — declarations the manifest did not make; closing them is export-side work:`);
+      for (const n of gaps) console.log(`    • [${n.code}] ${n.message}`);
+    }
+    if (infos.length > 0) {
+      console.log(`    info (${infos.length}) — declarations it DID make that change how these records read:`);
+      for (const n of infos) console.log(`    • [${n.code}] ${n.message}`);
+    }
+  }
+
   if (!dryRun && report.created.length > 0) {
     console.log('');
     result(`Receipt: ${report.receiptPath}`);

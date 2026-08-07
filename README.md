@@ -65,6 +65,54 @@ sdlab reingest selected --selection selection_2026-04-16_001
 
 That last command is the point. Selected outputs come back through the same review process as everything else. The corpus grows and the rules hold.
 
+## The asset lane — 3D exports as training data
+
+`sdlab ingest` takes bare images on trust. `sdlab asset ingest` takes a **contract**.
+
+When a 3D asset passes its acceptance gate, re-rendering it from N angles gives you a
+turnaround that is view-consistent *by construction* — the property per-view diffusion
+can't guarantee. The asset lane admits those exports as provenance-carrying training data:
+
+```bash
+# Validate an export's manifest end to end, run the gates, write nothing
+sdlab asset ingest ~/exports/dragon_dense --project my-project --dry-run
+
+# Register it: records, candidates, masks, channels, receipt
+sdlab asset ingest ~/exports/dragon_dense --project my-project
+```
+
+The export directory carries an `asset-source.json` manifest (schema **1.2.0**) declaring
+its channels, palette bands, gate thresholds, acceptance verdict, style register and
+generation provenance. sdlab proves every declaration against the actual bytes and refuses
+the whole ingest on any violation — nothing registers on a bad manifest.
+
+**The seam:** sdlab supplies mechanism, the asset supplies semantics. sdlab never raycasts,
+never renders, and never learns that a channel called "provenance" is special. It proves,
+measures, registers and packages. What the numbers *mean* stays with the asset.
+
+What the contract enforces:
+
+| stage | what is proven |
+|---|---|
+| **schema** | shape, ids, well-formed palette bands, and an acceptance verdict that is literally `"accepted"` |
+| **containment** | every referenced path resolves *inside* the export directory (it is untrusted input) and exists |
+| **encoding** | a PNG's IHDR matches its declared encoding; an NPY header matches its declared dtype and shape. A manifest that "looks right" but disagrees with its bytes is the failure class this lane exists to stop |
+| **categorical** | indexed PNGs prove PLTE ⊆ declared palette; `nearest`-filtered channels get an *exhaustive* pixel decode; categorical NPYs get an exhaustive value scan |
+| **gates** | the palette gate runs per render, from the manifest's own bands and thresholds — a failing render is rejected loudly and reported, never quietly admitted |
+
+Records land **uncurated** (`judgment: null`) with `provenance.source: "asset"`, carrying
+the acceptance block verbatim, per-file hashes, camera and derived facing, the gate
+measurements, the declared style register, and per-image generation frame + seed. They then
+go through the same curation every other record does.
+
+Schema 1.2.0 also makes the ingest report what a manifest *didn't* declare — an unknown
+style register, a missing `identity.subject_name`, absent generation provenance — as
+**notices** rather than failures. They ride in the receipt and print at the CLI. A gap
+nobody is told about is a gap nobody can close.
+
+Full contract, the validation ladder, and the reasoning behind every field:
+[docs/asset-lane-design.md](docs/asset-lane-design.md).
+
 ## Canon authoring
 
 Before the dataset pipeline runs, the `sdlab canon *` namespace turns your project's canon entity store into the three projections training and production actually consume — and locks the entries that must not drift.

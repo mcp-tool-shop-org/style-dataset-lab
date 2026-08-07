@@ -32,6 +32,7 @@ export default defineConfig({
             { slug: 'handbook/production-loop' },
             { slug: 'handbook/security' },
             { slug: 'handbook/two-lora-stacking' },
+            { slug: 'handbook/asset-lane' },
             { slug: 'handbook/canon-build' },
             { slug: 'handbook/canon-freeze' },
           ],
