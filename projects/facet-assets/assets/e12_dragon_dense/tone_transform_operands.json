@@ -1,0 +1,376 @@
+{
+ "_what": "The per-view operands of the Lab colour-statistics harmonization (E12 Ruling 22e, ADOPTED at 23f) that produced the eight projection sources stage 1 consumed. ASSEMBLED, not original: the ruled input set is v9 x6 + view 3's 770701 cure + view 4-A, and the cure was harmonized in a second pass, so its row lives in a second file. Every row below is carried verbatim from the file named in its _source_file, and both source files ride beside this one under _operands_sources/ unchanged.",
+ "_assembled_from": {
+  "operands.json": {
+   "path": "_operands_sources/operands.json",
+   "sha256": "dd7d21076ab4509a84c3220430110e72ea88c3950a097122a91d21eae9d69ed5"
+  },
+  "operands_v3r.json": {
+   "path": "_operands_sources/operands_v3r.json",
+   "sha256": "257aec55e8cc260520305ccf8279a0e48fa95959bcf2b2f0003545e798db91d0"
+  }
+ },
+ "_the_recorded_invocation": "E:/AI/training/facet_next/E13_stage1/run_stage1.ps1 (the A0 run, ruled as stage 1 by E12 Ruling 24) names these eight files by view index.",
+ "_reference": {
+  "label": "v1",
+  "path": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_1_twin_v9.png",
+  "mask": "E:\\AI\\training\\facet_next\\E12_twins\\masks\\dragonclay_1.png",
+  "sha256": "fe08d19eaa69519f5486d6a79f5d59fe50a166cbc914bed0d2fcdeb997a0948e",
+  "view_index": 1
+ },
+ "_limit": "A first-and-second-moment transfer unifies TONE; it cannot move an element into a different colour family. If it appears to fix an element's colour, that is the instrument overreaching.",
+ "views": {
+  "view_0": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_0_twin_v9.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_0_twin_v9_harm.png",
+   "mask_px": 520644,
+   "is_reference": false,
+   "mean_before": [
+    36.2869,
+    -4.3859,
+    12.9947
+   ],
+   "sigma_before": [
+    18.0446,
+    9.0018,
+    9.0276
+   ],
+   "mean_after": [
+    38.2689,
+    -7.8211,
+    14.7314
+   ],
+   "sigma_after": [
+    21.0574,
+    8.0833,
+    11.7831
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    2.0477,
+    -3.6477,
+    1.8401
+   ],
+   "sha256_out": "7048fc8a9006f9b5f26214b23a4f22526068c9031cecc11547dc606453e6c813",
+   "_source_file": "operands.json",
+   "_source_key": "v0"
+  },
+  "view_1": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_1_twin_v9.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_1_twin_v9_harm.png",
+   "mask_px": 490941,
+   "is_reference": true,
+   "mean_before": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "sigma_before": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_after": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "sigma_after": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "sha256_out": "fe08d19eaa69519f5486d6a79f5d59fe50a166cbc914bed0d2fcdeb997a0948e",
+   "_source_file": "operands.json",
+   "_source_key": "v1"
+  },
+  "view_2": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_2_twin_v9.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_2_twin_v9_harm.png",
+   "mask_px": 363299,
+   "is_reference": false,
+   "mean_before": [
+    35.4427,
+    -7.7682,
+    10.9182
+   ],
+   "sigma_before": [
+    17.9571,
+    6.3204,
+    9.9086
+   ],
+   "mean_after": [
+    38.2688,
+    -8.0533,
+    14.5683
+   ],
+   "sigma_after": [
+    21.0776,
+    7.9422,
+    11.9412
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    2.8919,
+    -0.2653,
+    3.9167
+   ],
+   "sha256_out": "ad2249b1581db3cecda73b73d4ef54f89006b8c8af98e196960dfdf61207da5f",
+   "_source_file": "operands.json",
+   "_source_key": "v2"
+  },
+  "view_3": {
+   "source": "E:/AI/training/facet_next/E13_twins/twins/dragonclay_3_twin_v9_s770701.png",
+   "output": "E:/AI/training/facet_next/E13_twins/harmonize\\dragonclay_3_twin_v9_s770701_harm.png",
+   "mask_px": 490436,
+   "is_reference": false,
+   "mean_before": [
+    35.7967,
+    -8.0462,
+    13.164
+   ],
+   "sigma_before": [
+    16.4708,
+    8.2272,
+    8.4787
+   ],
+   "mean_after": [
+    38.5411,
+    -7.8492,
+    14.8975
+   ],
+   "sigma_after": [
+    21.1383,
+    8.0982,
+    11.6734
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    2.5378,
+    0.0126,
+    1.6708
+   ],
+   "sha256_out": "f43570b6108a50c894bf747efbf1f47abb90d2cd8fac363b721b3ada578ca48d",
+   "_source_file": "operands_v3r.json",
+   "_source_key": "v3r"
+  },
+  "view_4": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_4_twin_v8.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_4_twin_v8_harm.png",
+   "mask_px": 520644,
+   "is_reference": false,
+   "mean_before": [
+    47.5661,
+    -6.9779,
+    17.7226
+   ],
+   "sigma_before": [
+    18.8368,
+    8.8246,
+    8.8571
+   ],
+   "mean_after": [
+    38.6152,
+    -7.6774,
+    14.6125
+   ],
+   "sigma_after": [
+    20.998,
+    7.9998,
+    11.4101
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    -9.2315,
+    -1.0557,
+    -2.8878
+   ],
+   "sha256_out": "7eaf94bb483cd4ab565e36a70d7e9bc0634a7088b8912129e39b88d267ae60ac",
+   "_source_file": "operands.json",
+   "_source_key": "v4"
+  },
+  "view_5": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_5_twin_v9.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_5_twin_v9_harm.png",
+   "mask_px": 490941,
+   "is_reference": false,
+   "mean_before": [
+    39.5015,
+    -12.5624,
+    16.0361
+   ],
+   "sigma_before": [
+    16.2736,
+    12.445,
+    13.2942
+   ],
+   "mean_after": [
+    38.6314,
+    -7.9263,
+    14.619
+   ],
+   "sigma_after": [
+    20.9544,
+    7.974,
+    11.855
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    -1.1669,
+    4.5288,
+    -1.2013
+   ],
+   "sha256_out": "ea5d435d8706294dfd05d9798b0e212b461d3514f4f5f91928dacf7f47b14a0b",
+   "_source_file": "operands.json",
+   "_source_key": "v5"
+  },
+  "view_6": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_6_twin_v9.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_6_twin_v9_harm.png",
+   "mask_px": 363299,
+   "is_reference": false,
+   "mean_before": [
+    39.6927,
+    -9.2792,
+    11.8165
+   ],
+   "sigma_before": [
+    20.314,
+    11.5578,
+    11.2071
+   ],
+   "mean_after": [
+    38.3304,
+    -7.953,
+    14.6542
+   ],
+   "sigma_after": [
+    21.4581,
+    8.017,
+    11.9389
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    -1.3581,
+    1.2457,
+    3.0183
+   ],
+   "sha256_out": "b81b9a1727465f0b932fdf1c19d4c9a3451ef646fcccb94e275518eff55639df",
+   "_source_file": "operands.json",
+   "_source_key": "v6"
+  },
+  "view_7": {
+   "source": "E:\\AI\\training\\facet_next\\E13_twins\\twins\\dragonclay_7_twin_v9.png",
+   "output": "E:\\AI\\training\\facet_next\\E13_twins\\harmonize\\dragonclay_7_twin_v9_harm.png",
+   "mask_px": 490437,
+   "is_reference": false,
+   "mean_before": [
+    38.5367,
+    -10.6298,
+    15.6287
+   ],
+   "sigma_before": [
+    18.4572,
+    9.1759,
+    9.974
+   ],
+   "mean_after": [
+    38.5379,
+    -8.0499,
+    14.9145
+   ],
+   "sigma_after": [
+    21.1083,
+    7.9343,
+    11.6683
+   ],
+   "reference_mean": [
+    38.3346,
+    -8.0336,
+    14.8348
+   ],
+   "reference_sigma": [
+    21.5521,
+    7.9658,
+    11.8159
+   ],
+   "mean_correction": [
+    -0.2021,
+    2.5962,
+    -0.7938
+   ],
+   "sha256_out": "f06f88e5d2a12eae38db779d56283809c45b9091f5ff618ecfe8f7db23765e4c",
+   "_source_file": "operands.json",
+   "_source_key": "v7"
+  }
+ }
+}

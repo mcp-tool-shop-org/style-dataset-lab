@@ -1,0 +1,620 @@
+{
+ "schema_version": "1.3.0",
+ "_authored": "E11 dense-turnaround exporter, 2026-08-05. Self-contained tree: every referenced file lives under this directory, copies sha256-verified from the accepted artifacts. The subject root's staged 3-render manifest is untouched; which one the Director pastes into the lane is his call. Per-view owner_id_*.npy and admission_*.json ride undeclared beside the declared channels (render-space npy/json are not lane schema 1.x concepts).",
+ "identity": {
+  "subject_name": "dragon"
+ },
+ "asset": {
+  "id": "e12_dragon_dense",
+  "source": "facet/E12",
+  "mesh": {
+   "path": "mesh.glb"
+  },
+  "atlas": {
+   "path": "atlas.png"
+  },
+  "style": {
+   "register": {
+    "terms": [
+     "ultra-realistic",
+     "menacing"
+    ],
+    "ruling": "E12 Ruling 10b",
+    "record": "E:/AI/facet/canon/DRAGON-IDENTITY.md STYLE-SUPPLIED; E:/AI/facet/docs/style-registers.md"
+   },
+   "lora": {
+    "declared": "none"
+   }
+  },
+  "tone_transform": {
+   "kind": "lab-stats-transfer",
+   "space": "CIELAB",
+   "scope": "figure-mask",
+   "reversible": true,
+   "record": "E:/AI/facet/docs/experiments/E12-ruling.md Rulings 22e (the instrument), 23f (adopted - projection consumes the harmonized set). First and second moments only, inside the exact figure mask, toward reference view 1; sdlab records this claim and verifies neither application nor reversibility, which is the seam.",
+   "reference": "y045_e00",
+   "operands": "tone_transform_operands.json"
+  },
+  "render_derivation": {
+   "kind": "emit",
+   "generated": false,
+   "record": "E11 Ruling 2"
+  }
+ },
+ "acceptance": {
+  "gate": "gate-1",
+  "verdict": "accepted",
+  "date": "2026-08-07",
+  "record": "E:/AI/facet/docs/experiments/E12-ruling.md Ruling 28 (\"Fantastic!! This is really good!\") - judged artifact: E13_stroke/run/dragon_hero.glb at the Director's own zoom in Blender, three views returned with the verdict (three-quarter front, left profile, top-down rear over the wings - that last one mostly surface no eye-level camera reaches). Three items were named before his eye and none was named back.",
+  "by": "director"
+ },
+ "renders_are": "post-verdict derivations of the accepted asset by the anchored emit path \u2014 the Gate-1 verdict covers the asset (mesh + atlas), and these renders derive from it by the route's own anchored readout (E11 Ruling 3).",
+ "palette": {
+  "source": "E:/AI/facet/canon/E12-beast-palette.json",
+  "min_chroma": 12.0,
+  "allowed_bands": [
+   {
+    "name": "warm-olive",
+    "hue_deg": [
+     85.4,
+     147.3
+    ]
+   }
+  ],
+  "gate": {
+   "max_offpalette_pct": null,
+   "max_offpalette_blob_px": 16777216
+  },
+  "_max_offpalette_blob_px_IS_A_SUSPENSION_ENCODING": "NOT A DERIVED BOUND AND NOT A THRESHOLD. canon/E12-beast-palette.json declares BOTH bounds null on purpose (E12 Ruling 15: this subject had no clean twin baseline when its bands were derived, and inventing one while looking at the artifacts it would judge is the move this repo has paid for three times). The sdlab schema requires an integer here while allowing null for max_offpalette_pct, so this tool TRANSLATES the suspension at the boundary into 16777216 - the whole 4096x4096 atlas, a value no connected component can reach - so the consumer receives a bound that gates nothing and cannot be mistaken for a measured threshold. Canon keeps its nulls. Third application of the E04 Ruling 29 pattern.",
+  "_the_blue_violet_stratum_is_NOT_a_band": "canon records a suspended blue-violet stratum (273.4-293.4, pair-realised D3) in a key palette_gate.py does not read, so a suspended band can never be silently armed. It is not exported as an allowed band here for the same reason (E12 Ruling 15c)."
+ },
+ "channels": [
+  {
+   "id": "provenance_atlas",
+   "space": "texture",
+   "encoding": "indexed",
+   "categorical": true,
+   "filter": "nearest",
+   "path": "provenance_atlas.png",
+   "palette": [
+    {
+     "name": "background",
+     "rgb": [
+      16,
+      16,
+      18
+     ]
+    },
+    {
+     "name": "reference",
+     "rgb": [
+      118,
+      146,
+      110
+     ]
+    },
+    {
+     "name": "brush",
+     "rgb": [
+      240,
+      176,
+      48
+     ]
+    },
+    {
+     "name": "dilation",
+     "rgb": [
+      150,
+      90,
+      150
+     ]
+    }
+   ],
+   "note": "Indexed per E09 Amendment 1; conversion proven pixel-identical (the run json's leg for this subject)."
+  },
+  {
+   "id": "styled_mask",
+   "space": "texture",
+   "encoding": "npy",
+   "categorical": false,
+   "path": "styled_mask.npy",
+   "dtype": "|b1",
+   "shape": [
+    4096,
+    4096
+   ],
+   "note": "Styled/unstyled coverage before the finalize flood."
+  },
+  {
+   "id": "view_owner",
+   "space": "texture",
+   "encoding": "npy",
+   "categorical": false,
+   "path": "view_owner.npy",
+   "dtype": "|i1",
+   "shape": [
+    4096,
+    4096
+   ],
+   "note": "the native stage-1 view-owner sidecar"
+  },
+  {
+   "id": "provenance_view",
+   "space": "render",
+   "encoding": "rgb",
+   "categorical": false,
+   "note": "emit's flat readout of the provenance atlas \u2014 antialiased, display form; the exact per-pixel classes are prov_class."
+  },
+  {
+   "id": "prov_class",
+   "space": "render",
+   "encoding": "indexed",
+   "categorical": true,
+   "filter": "nearest",
+   "palette": [
+    {
+     "name": "background",
+     "rgb": [
+      16,
+      16,
+      18
+     ]
+    },
+    {
+     "name": "reference",
+     "rgb": [
+      118,
+      146,
+      110
+     ]
+    },
+    {
+     "name": "brush",
+     "rgb": [
+      240,
+      176,
+      48
+     ]
+    },
+    {
+     "name": "dilation",
+     "rgb": [
+      150,
+      90,
+      150
+     ]
+    }
+   ],
+   "note": "EXACT per-pixel class map by texel-id raycast \u2014 born indexed, no antialiasing, PLTE == this palette. The admission-mask source."
+  }
+ ],
+ "renders": [
+  {
+   "id": "y000_e00",
+   "path": "views/y+000_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 0.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+000_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+000_e+00/prov.png",
+    "prov_class": "views/y+000_e+00/prov_class_y+000_e+00.png"
+   },
+   "loss_mask": "views/y+000_e+00/loss_mask_y+000_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+000_e+00.png",
+    "twin": "pair_twin_y+000_e+00.png"
+   }
+  },
+  {
+   "id": "y015_e00",
+   "path": "views/y+015_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 15.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+015_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+015_e+00/prov.png",
+    "prov_class": "views/y+015_e+00/prov_class_y+015_e+00.png"
+   },
+   "loss_mask": "views/y+015_e+00/loss_mask_y+015_e+00.png"
+  },
+  {
+   "id": "y030_e00",
+   "path": "views/y+030_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 30.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+030_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+030_e+00/prov.png",
+    "prov_class": "views/y+030_e+00/prov_class_y+030_e+00.png"
+   },
+   "loss_mask": "views/y+030_e+00/loss_mask_y+030_e+00.png"
+  },
+  {
+   "id": "y045_e00",
+   "path": "views/y+045_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 45.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+045_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+045_e+00/prov.png",
+    "prov_class": "views/y+045_e+00/prov_class_y+045_e+00.png"
+   },
+   "loss_mask": "views/y+045_e+00/loss_mask_y+045_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+045_e+00.png",
+    "twin": "pair_twin_y+045_e+00.png"
+   }
+  },
+  {
+   "id": "y060_e00",
+   "path": "views/y+060_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 60.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+060_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+060_e+00/prov.png",
+    "prov_class": "views/y+060_e+00/prov_class_y+060_e+00.png"
+   },
+   "loss_mask": "views/y+060_e+00/loss_mask_y+060_e+00.png"
+  },
+  {
+   "id": "y075_e00",
+   "path": "views/y+075_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 75.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+075_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+075_e+00/prov.png",
+    "prov_class": "views/y+075_e+00/prov_class_y+075_e+00.png"
+   },
+   "loss_mask": "views/y+075_e+00/loss_mask_y+075_e+00.png"
+  },
+  {
+   "id": "y090_e00",
+   "path": "views/y+090_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 90.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+090_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+090_e+00/prov.png",
+    "prov_class": "views/y+090_e+00/prov_class_y+090_e+00.png"
+   },
+   "loss_mask": "views/y+090_e+00/loss_mask_y+090_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+090_e+00.png",
+    "twin": "pair_twin_y+090_e+00.png"
+   }
+  },
+  {
+   "id": "y105_e00",
+   "path": "views/y+105_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 105.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+105_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+105_e+00/prov.png",
+    "prov_class": "views/y+105_e+00/prov_class_y+105_e+00.png"
+   },
+   "loss_mask": "views/y+105_e+00/loss_mask_y+105_e+00.png"
+  },
+  {
+   "id": "y120_e00",
+   "path": "views/y+120_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 120.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+120_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+120_e+00/prov.png",
+    "prov_class": "views/y+120_e+00/prov_class_y+120_e+00.png"
+   },
+   "loss_mask": "views/y+120_e+00/loss_mask_y+120_e+00.png"
+  },
+  {
+   "id": "y135_e00",
+   "path": "views/y+135_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 135.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+135_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+135_e+00/prov.png",
+    "prov_class": "views/y+135_e+00/prov_class_y+135_e+00.png"
+   },
+   "loss_mask": "views/y+135_e+00/loss_mask_y+135_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+135_e+00.png",
+    "twin": "pair_twin_y+135_e+00.png"
+   }
+  },
+  {
+   "id": "y150_e00",
+   "path": "views/y+150_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 150.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+150_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+150_e+00/prov.png",
+    "prov_class": "views/y+150_e+00/prov_class_y+150_e+00.png"
+   },
+   "loss_mask": "views/y+150_e+00/loss_mask_y+150_e+00.png"
+  },
+  {
+   "id": "y165_e00",
+   "path": "views/y+165_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 165.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+165_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+165_e+00/prov.png",
+    "prov_class": "views/y+165_e+00/prov_class_y+165_e+00.png"
+   },
+   "loss_mask": "views/y+165_e+00/loss_mask_y+165_e+00.png"
+  },
+  {
+   "id": "y180_e00",
+   "path": "views/y+180_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 180.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+180_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+180_e+00/prov.png",
+    "prov_class": "views/y+180_e+00/prov_class_y+180_e+00.png"
+   },
+   "loss_mask": "views/y+180_e+00/loss_mask_y+180_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+180_e+00.png",
+    "twin": "pair_twin_y+180_e+00.png"
+   }
+  },
+  {
+   "id": "y195_e00",
+   "path": "views/y+195_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 195.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+195_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+195_e+00/prov.png",
+    "prov_class": "views/y+195_e+00/prov_class_y+195_e+00.png"
+   },
+   "loss_mask": "views/y+195_e+00/loss_mask_y+195_e+00.png"
+  },
+  {
+   "id": "y210_e00",
+   "path": "views/y+210_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 210.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+210_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+210_e+00/prov.png",
+    "prov_class": "views/y+210_e+00/prov_class_y+210_e+00.png"
+   },
+   "loss_mask": "views/y+210_e+00/loss_mask_y+210_e+00.png"
+  },
+  {
+   "id": "y225_e00",
+   "path": "views/y+225_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 225.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+225_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+225_e+00/prov.png",
+    "prov_class": "views/y+225_e+00/prov_class_y+225_e+00.png"
+   },
+   "loss_mask": "views/y+225_e+00/loss_mask_y+225_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+225_e+00.png",
+    "twin": "pair_twin_y+225_e+00.png"
+   }
+  },
+  {
+   "id": "y240_e00",
+   "path": "views/y+240_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 240.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+240_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+240_e+00/prov.png",
+    "prov_class": "views/y+240_e+00/prov_class_y+240_e+00.png"
+   },
+   "loss_mask": "views/y+240_e+00/loss_mask_y+240_e+00.png"
+  },
+  {
+   "id": "y255_e00",
+   "path": "views/y+255_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 255.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+255_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+255_e+00/prov.png",
+    "prov_class": "views/y+255_e+00/prov_class_y+255_e+00.png"
+   },
+   "loss_mask": "views/y+255_e+00/loss_mask_y+255_e+00.png"
+  },
+  {
+   "id": "y270_e00",
+   "path": "views/y+270_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 270.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+270_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+270_e+00/prov.png",
+    "prov_class": "views/y+270_e+00/prov_class_y+270_e+00.png"
+   },
+   "loss_mask": "views/y+270_e+00/loss_mask_y+270_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+270_e+00.png",
+    "twin": "pair_twin_y+270_e+00.png"
+   }
+  },
+  {
+   "id": "y285_e00",
+   "path": "views/y+285_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 285.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+285_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+285_e+00/prov.png",
+    "prov_class": "views/y+285_e+00/prov_class_y+285_e+00.png"
+   },
+   "loss_mask": "views/y+285_e+00/loss_mask_y+285_e+00.png"
+  },
+  {
+   "id": "y300_e00",
+   "path": "views/y+300_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 300.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+300_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+300_e+00/prov.png",
+    "prov_class": "views/y+300_e+00/prov_class_y+300_e+00.png"
+   },
+   "loss_mask": "views/y+300_e+00/loss_mask_y+300_e+00.png"
+  },
+  {
+   "id": "y315_e00",
+   "path": "views/y+315_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 315.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+315_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+315_e+00/prov.png",
+    "prov_class": "views/y+315_e+00/prov_class_y+315_e+00.png"
+   },
+   "loss_mask": "views/y+315_e+00/loss_mask_y+315_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+315_e+00.png",
+    "twin": "pair_twin_y+315_e+00.png"
+   }
+  },
+  {
+   "id": "y330_e00",
+   "path": "views/y+330_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 330.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+330_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+330_e+00/prov.png",
+    "prov_class": "views/y+330_e+00/prov_class_y+330_e+00.png"
+   },
+   "loss_mask": "views/y+330_e+00/loss_mask_y+330_e+00.png"
+  },
+  {
+   "id": "y345_e00",
+   "path": "views/y+345_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 345.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+345_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+345_e+00/prov.png",
+    "prov_class": "views/y+345_e+00/prov_class_y+345_e+00.png"
+   },
+   "loss_mask": "views/y+345_e+00/loss_mask_y+345_e+00.png"
+  },
+  {
+   "id": "y000_e55",
+   "path": "views/y+000_e+55/asset.png",
+   "camera": {
+    "yaw_deg": 0.0,
+    "elevation_deg": 55.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+000_e+55/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+000_e+55/prov.png",
+    "prov_class": "views/y+000_e+55/prov_class_y+000_e+55.png"
+   },
+   "loss_mask": "views/y+000_e+55/loss_mask_y+000_e+55.png"
+  },
+  {
+   "id": "y180_e55",
+   "path": "views/y+180_e+55/asset.png",
+   "camera": {
+    "yaw_deg": 180.0,
+    "elevation_deg": 55.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+180_e+55/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+180_e+55/prov.png",
+    "prov_class": "views/y+180_e+55/prov_class_y+180_e+55.png"
+   },
+   "loss_mask": "views/y+180_e+55/loss_mask_y+180_e+55.png"
+  }
+ ],
+ "captions": {
+  "subject": "a winged quadruped dragon with deep moss-green scaled hide, pale olive-tan banded ventral plates, leathery storm-grey wing membranes, bone-ivory back-swept horns, a bone-ivory crown and cheek spike ring, charcoal neck dorsal and tail spines, charcoal claws, ember-orange eyes, a dark wine-red tongue, pale ivory fangs and tooth rows, and a dark slate mouth interior",
+  "style_trigger": null,
+  "domain_tag": "3d asset"
+ }
+}

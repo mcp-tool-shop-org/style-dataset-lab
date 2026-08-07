@@ -1,0 +1,148 @@
+{
+  "id": "e12_dragon_dense__y000_e55",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-07T06:16:46.953Z",
+  "asset_path": "outputs/candidates/e12_dragon_dense__y000_e55.png",
+  "image": {
+    "format": "png",
+    "width": 1792,
+    "height": 1024,
+    "bytes": 586169
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-07T06:16:46.953Z",
+    "asset_id": "e12_dragon_dense",
+    "asset_source": "facet/E12",
+    "manifest_path": "assets/e12_dragon_dense/asset-source.json",
+    "manifest_sha256": "7ea3771013f1ee43c2e51d99cf40e25cb821a09b35ac5e60b01b6f62fe02f3fc",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-07",
+      "record": "E:/AI/facet/docs/experiments/E12-ruling.md Ruling 28 (\"Fantastic!! This is really good!\") - judged artifact: E13_stroke/run/dragon_hero.glb at the Director's own zoom in Blender, three views returned with the verdict (three-quarter front, left profile, top-down rear over the wings - that last one mostly surface no eye-level camera reaches). Three items were named before his eye and none was named back.",
+      "by": "director"
+    },
+    "render_id": "y000_e55",
+    "camera": {
+      "yaw_deg": 0,
+      "elevation_deg": 55
+    },
+    "light": "flat",
+    "facing": "front, viewed from above",
+    "silhouette_mask": {
+      "path": "assets/e12_dragon_dense/masks/y000_e55.png",
+      "sha256": "2c32ddbf66e69c8a2ea5e6589a194d7a04424c04822841f3c00c5f7828113e8e"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/e12_dragon_dense/channels/provenance_view__y000_e55.png",
+        "sha256": "52a3a205a78cbb683659e811ffd4fd307795c1c40f36639b1bebf9036513e0ce"
+      },
+      "prov_class": {
+        "path": "assets/e12_dragon_dense/channels/prov_class__y000_e55.png",
+        "sha256": "5f7ba6c4e72928b75908de79773c5b9bfba08cbbd92003b3580727abf3eff172"
+      }
+    },
+    "caption_fields": {
+      "subject": "a winged quadruped dragon with deep moss-green scaled hide, pale olive-tan banded ventral plates, leathery storm-grey wing membranes, bone-ivory back-swept horns, a bone-ivory crown and cheek spike ring, charcoal neck dorsal and tail spines, charcoal claws, ember-orange eyes, a dark wine-red tongue, pale ivory fangs and tooth rows, and a dark slate mouth interior",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "front, viewed from above"
+    },
+    "generation_provenance_known": true,
+    "style": {
+      "register_terms": [
+        "ultra-realistic",
+        "menacing"
+      ],
+      "register_ruling": "E12 Ruling 10b",
+      "register_record": "E:/AI/facet/canon/DRAGON-IDENTITY.md STYLE-SUPPLIED; E:/AI/facet/docs/style-registers.md",
+      "lora": {
+        "declared": "none",
+        "card": null,
+        "weight": 0
+      }
+    },
+    "tone_transform": {
+      "applied": true,
+      "kind": "lab-stats-transfer",
+      "space": "CIELAB",
+      "scope": "figure-mask",
+      "reference": "y045_e00",
+      "reference_is_self": false,
+      "reversible": true,
+      "record": "E:/AI/facet/docs/experiments/E12-ruling.md Rulings 22e (the instrument), 23f (adopted - projection consumes the harmonized set). First and second moments only, inside the exact figure mask, toward reference view 1; sdlab records this claim and verifies neither application nor reversibility, which is the seam.",
+      "operands": {
+        "path": "assets/e12_dragon_dense/tone_transform_operands.json",
+        "sha256": "1f2b8b6a7205a895e623a0dfaa9525946a08078a5c7537d28913b36737f80330"
+      }
+    },
+    "render_derivation": {
+      "kind": "emit",
+      "generated": false,
+      "record": "E11 Ruling 2"
+    },
+    "generation": null,
+    "loss_mask": {
+      "path": "assets/e12_dragon_dense/loss-masks/y000_e55.png",
+      "sha256": "bfdd246126da6f2d06c377044ea72ea25888fdf46e9fbddec172ab9aa0ecd69e"
+    }
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "identity": {
+    "subject_name": "dragon"
+  },
+  "lineage": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 322623,
+      "offpalette_px": 22795,
+      "offpalette_pct": 7.0655,
+      "largest_blob_px": 4142,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 150,
+        "hue_hi": 160,
+        "share_of_offpalette": 18.2,
+        "median_chroma": 15.7,
+        "median_rgb": [
+          42,
+          71,
+          68
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 322623,
+        "classes": {
+          "background": {
+            "px": 197,
+            "share": 0.0611
+          },
+          "reference": {
+            "px": 225705,
+            "share": 69.9594
+          },
+          "brush": {
+            "px": 25440,
+            "share": 7.8854
+          },
+          "dilation": {
+            "px": 71281,
+            "share": 22.0942
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}

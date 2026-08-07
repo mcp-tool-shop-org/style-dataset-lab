@@ -1,0 +1,1452 @@
+{
+  "schema_version": "1.1.0",
+  "tool": "sdlab-asset-ingest-v1",
+  "ingested_at": "2026-08-07T06:16:46.967Z",
+  "asset_id": "e12_dragon_dense",
+  "source_dir": "E:/AI/training/facet_next/E13_stroke/export/turnaround",
+  "manifest_sha256": "7ea3771013f1ee43c2e51d99cf40e25cb821a09b35ac5e60b01b6f62fe02f3fc",
+  "files": [
+    {
+      "role": "mesh",
+      "source": "mesh.glb",
+      "dest": null,
+      "materialized": false,
+      "sha256": "c1ca145526d17b68e7f47ce191c7d7e2fa21e48842cf550c61cf2e2543016483",
+      "bytes": 46072916
+    },
+    {
+      "role": "atlas",
+      "source": "atlas.png",
+      "dest": null,
+      "materialized": false,
+      "sha256": "fa06c9fbcc1bb11aa55faa102e3d9feb28b7d40c99e9e789196bd1cb6ffe7a10",
+      "bytes": 10958978
+    },
+    {
+      "role": "channel:provenance_atlas",
+      "source": "provenance_atlas.png",
+      "dest": null,
+      "materialized": false,
+      "sha256": "e92624730c6723ed98cdbaffb55939ec73084340f41d8cd5ad875a42b4fe9a70",
+      "bytes": 594229
+    },
+    {
+      "role": "channel:styled_mask",
+      "source": "styled_mask.npy",
+      "dest": null,
+      "materialized": false,
+      "sha256": "73f6aea78887b15427be7bbcf9fe5a7e03b4086fc3e0e34d4ebff917c5d52683",
+      "bytes": 16777344
+    },
+    {
+      "role": "channel:view_owner",
+      "source": "view_owner.npy",
+      "dest": null,
+      "materialized": false,
+      "sha256": "115e76b5963ff96c8a7d1852d76de89ff01a5d7f6ec8eb9236a97f9f0cfba01a",
+      "bytes": 16777344
+    },
+    {
+      "role": "tone_operands",
+      "source": "tone_transform_operands.json",
+      "dest": "assets/e12_dragon_dense/tone_transform_operands.json",
+      "materialized": true,
+      "sha256": "1f2b8b6a7205a895e623a0dfaa9525946a08078a5c7537d28913b36737f80330",
+      "bytes": 8705
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y000_e00.png",
+      "materialized": true,
+      "sha256": "f02ddccdef4e5ba057530cf92bff3dca7421cb66f60019f04a933e2cc3215c1c",
+      "bytes": 872452
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y000_e00.png",
+      "materialized": true,
+      "sha256": "2e4af5c4a592d133cd418114df31fd7e6040b3ff3a6cb2d19d137db4868c1f33",
+      "bytes": 11676
+    },
+    {
+      "role": "channel:provenance_view:y000_e00",
+      "source": "views/y+000_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y000_e00.png",
+      "materialized": true,
+      "sha256": "ab40d191741eead58093cfc96c43c50fa7716c9979e2ef29392232d2093f197f",
+      "bytes": 171810
+    },
+    {
+      "role": "channel:prov_class:y000_e00",
+      "source": "views/y+000_e+00/prov_class_y+000_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y000_e00.png",
+      "materialized": true,
+      "sha256": "f11a9b6f2a711c27ef2db281bdb053467e98c3daa458df977a361ce3e0c8f44f",
+      "bytes": 27612
+    },
+    {
+      "role": "loss-mask:y000_e00",
+      "source": "views/y+000_e+00/loss_mask_y+000_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y000_e00.png",
+      "materialized": true,
+      "sha256": "e2c10a33c034398f613a9ea08de92815f65c7a8d3baaba259cc603a716617847",
+      "bytes": 187632
+    },
+    {
+      "role": "pair:clay:y000_e00",
+      "source": "pair_clay_y+000_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y000_e00.png",
+      "materialized": true,
+      "sha256": "acdec2d4ae84bcad8f0df103593da979991f2e1e602fa824d3a61cfb8386cb9e",
+      "bytes": 1959575
+    },
+    {
+      "role": "pair:twin:y000_e00",
+      "source": "pair_twin_y+000_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y000_e00.png",
+      "materialized": true,
+      "sha256": "7048fc8a9006f9b5f26214b23a4f22526068c9031cecc11547dc606453e6c813",
+      "bytes": 1815207
+    },
+    {
+      "role": "render",
+      "source": "views/y+015_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y015_e00.png",
+      "materialized": true,
+      "sha256": "78d4a8c7908993df584466fe496bb56aad42d4ae4beaace1ef6e037c5b0a36ed",
+      "bytes": 880170
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+015_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y015_e00.png",
+      "materialized": true,
+      "sha256": "2d74aec132b2828c61d1b24ece872e58cd5665371ffbb48739fb0e66bd166f22",
+      "bytes": 12662
+    },
+    {
+      "role": "channel:provenance_view:y015_e00",
+      "source": "views/y+015_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y015_e00.png",
+      "materialized": true,
+      "sha256": "27bd14541e0c2040e507a7da93cd4a8d1c2d8509ceed4a375e5cc8e9fe9629c6",
+      "bytes": 182448
+    },
+    {
+      "role": "channel:prov_class:y015_e00",
+      "source": "views/y+015_e+00/prov_class_y+015_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y015_e00.png",
+      "materialized": true,
+      "sha256": "aa879285fe73925f15eeb05518d6ad747b314433735dd8e6b1b17fcf739c3807",
+      "bytes": 29090
+    },
+    {
+      "role": "loss-mask:y015_e00",
+      "source": "views/y+015_e+00/loss_mask_y+015_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y015_e00.png",
+      "materialized": true,
+      "sha256": "f606e5e22289f98e73123a9a15afe70f69e94d7858bab6fc9d75e73690689250",
+      "bytes": 190075
+    },
+    {
+      "role": "render",
+      "source": "views/y+030_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y030_e00.png",
+      "materialized": true,
+      "sha256": "14f430a9d6e1a9f656319a6c5ad63d06b225d6ca93187aff507068ce4ae690cb",
+      "bytes": 906507
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+030_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y030_e00.png",
+      "materialized": true,
+      "sha256": "b4314071c547643faafe0dc4478563fdf4e771af8ff79101b137e15260fe8df8",
+      "bytes": 14362
+    },
+    {
+      "role": "channel:provenance_view:y030_e00",
+      "source": "views/y+030_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y030_e00.png",
+      "materialized": true,
+      "sha256": "21b1032fe33c01e2ff95442babe1334f351ac135bdcddf94f7adb8f2fe8902f4",
+      "bytes": 202785
+    },
+    {
+      "role": "channel:prov_class:y030_e00",
+      "source": "views/y+030_e+00/prov_class_y+030_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y030_e00.png",
+      "materialized": true,
+      "sha256": "c390aab8afbe3d3e759cc8231aab6602457dfa75fb92eeb7fca8bc6e8335af50",
+      "bytes": 31824
+    },
+    {
+      "role": "loss-mask:y030_e00",
+      "source": "views/y+030_e+00/loss_mask_y+030_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y030_e00.png",
+      "materialized": true,
+      "sha256": "0fdad92d4316bbb437546e4b09f9eb1d4c9d5fb2d6bcde6b1b5408e5aec28672",
+      "bytes": 193445
+    },
+    {
+      "role": "render",
+      "source": "views/y+045_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y045_e00.png",
+      "materialized": true,
+      "sha256": "29995addd1a7e1d3a8d425cc2c81088f2522f3a5328bc147a28c0ad824cc183e",
+      "bytes": 872603
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+045_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y045_e00.png",
+      "materialized": true,
+      "sha256": "dc57b6475db465c91d0748787215f7cd8dcaa1e01695444b46d54e263d63901a",
+      "bytes": 13960
+    },
+    {
+      "role": "channel:provenance_view:y045_e00",
+      "source": "views/y+045_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y045_e00.png",
+      "materialized": true,
+      "sha256": "a38b65432bba8deacb929dd70ea754fe2527c51d89a37e0426c22cfd58a2866c",
+      "bytes": 199909
+    },
+    {
+      "role": "channel:prov_class:y045_e00",
+      "source": "views/y+045_e+00/prov_class_y+045_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y045_e00.png",
+      "materialized": true,
+      "sha256": "8e01bd104c91255782ea2af8144973a3af57b6b843505c0e8035ede17809713a",
+      "bytes": 31247
+    },
+    {
+      "role": "loss-mask:y045_e00",
+      "source": "views/y+045_e+00/loss_mask_y+045_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y045_e00.png",
+      "materialized": true,
+      "sha256": "1e52d5a8c630d63e2a1a45cebb7485ffd144c3b08251c85e645d7713002785cd",
+      "bytes": 189498
+    },
+    {
+      "role": "pair:clay:y045_e00",
+      "source": "pair_clay_y+045_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y045_e00.png",
+      "materialized": true,
+      "sha256": "736149bb7aebc13ee2b8a988d81ab2b2946a36b346379a28e544f7ede9b6398c",
+      "bytes": 1972624
+    },
+    {
+      "role": "pair:twin:y045_e00",
+      "source": "pair_twin_y+045_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y045_e00.png",
+      "materialized": true,
+      "sha256": "fe08d19eaa69519f5486d6a79f5d59fe50a166cbc914bed0d2fcdeb997a0948e",
+      "bytes": 1701111
+    },
+    {
+      "role": "render",
+      "source": "views/y+060_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y060_e00.png",
+      "materialized": true,
+      "sha256": "b43016c21ab2a44cb9a88f169927d13111252dda307f12f50a3cdab49cb435ad",
+      "bytes": 853651
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+060_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y060_e00.png",
+      "materialized": true,
+      "sha256": "9755077bc816f29a23516481a580f880edb177ff6e88c3df041d776c8d7b1f4a",
+      "bytes": 13686
+    },
+    {
+      "role": "channel:provenance_view:y060_e00",
+      "source": "views/y+060_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y060_e00.png",
+      "materialized": true,
+      "sha256": "3e36cd56cbcadff7ac9e6df603094c5167fa3f6cc73bcc24f0909ee342abe339",
+      "bytes": 195519
+    },
+    {
+      "role": "channel:prov_class:y060_e00",
+      "source": "views/y+060_e+00/prov_class_y+060_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y060_e00.png",
+      "materialized": true,
+      "sha256": "3da1a5ddbf4a9e639033aae156cc136a009d6a4da16d1e9fda2b4dbfd423bd04",
+      "bytes": 31199
+    },
+    {
+      "role": "loss-mask:y060_e00",
+      "source": "views/y+060_e+00/loss_mask_y+060_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y060_e00.png",
+      "materialized": true,
+      "sha256": "a215a4439783aeecb9ccdc039f9417ac0dba0610ba669bfbf3610d41eb5c9a7b",
+      "bytes": 185450
+    },
+    {
+      "role": "render",
+      "source": "views/y+075_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y075_e00.png",
+      "materialized": true,
+      "sha256": "978cb40d1925be19f0a6970b6abfb29daff48c61bf673ff82815a58f5df184ef",
+      "bytes": 831264
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+075_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y075_e00.png",
+      "materialized": true,
+      "sha256": "236d27f35e985296c8958f343501216a074e440925bad65c7ab6e1b0b761d916",
+      "bytes": 14100
+    },
+    {
+      "role": "channel:provenance_view:y075_e00",
+      "source": "views/y+075_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y075_e00.png",
+      "materialized": true,
+      "sha256": "fa4561effbab41916974ca3c0ddb7455be60df5515898430cff415289e9ec10b",
+      "bytes": 184912
+    },
+    {
+      "role": "channel:prov_class:y075_e00",
+      "source": "views/y+075_e+00/prov_class_y+075_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y075_e00.png",
+      "materialized": true,
+      "sha256": "bec9f6a2c2a97fc82fd28c0bbbc7940793cec4bc8e9e2814b11d96ece7a79c53",
+      "bytes": 30229
+    },
+    {
+      "role": "loss-mask:y075_e00",
+      "source": "views/y+075_e+00/loss_mask_y+075_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y075_e00.png",
+      "materialized": true,
+      "sha256": "43f65a69ac20e9b97963a8e5a21b7071c8b317f2448de78a8bdbaebea5cf1f76",
+      "bytes": 179244
+    },
+    {
+      "role": "render",
+      "source": "views/y+090_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y090_e00.png",
+      "materialized": true,
+      "sha256": "4230de39bd1ae1191d51053fad7d36c2e54750128a70edc2ef3c5e59c8d12a06",
+      "bytes": 674732
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+090_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y090_e00.png",
+      "materialized": true,
+      "sha256": "c6409ebbeb585f9bf0374ffad355d064ab4488d5bfcc4871290887c18c58567f",
+      "bytes": 12725
+    },
+    {
+      "role": "channel:provenance_view:y090_e00",
+      "source": "views/y+090_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y090_e00.png",
+      "materialized": true,
+      "sha256": "50432d64ecef8115f2826cab5c82565f9c11072a15ecc088fd1136bb60e44420",
+      "bytes": 127879
+    },
+    {
+      "role": "channel:prov_class:y090_e00",
+      "source": "views/y+090_e+00/prov_class_y+090_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y090_e00.png",
+      "materialized": true,
+      "sha256": "47ac575ae3707fa0d9fca5ce80c9fe97e323d1b573682f696d9bce760501c9f8",
+      "bytes": 23178
+    },
+    {
+      "role": "loss-mask:y090_e00",
+      "source": "views/y+090_e+00/loss_mask_y+090_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y090_e00.png",
+      "materialized": true,
+      "sha256": "0134a1fcf485373d1bdaa8db82da3662bb2497af80b2c31be4da3225c335c5ba",
+      "bytes": 148475
+    },
+    {
+      "role": "pair:clay:y090_e00",
+      "source": "pair_clay_y+090_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y090_e00.png",
+      "materialized": true,
+      "sha256": "e5925eb1089338bb6457857b5e02f062183abb2d5e9ecae1905e4b4bc64e45c3",
+      "bytes": 1872099
+    },
+    {
+      "role": "pair:twin:y090_e00",
+      "source": "pair_twin_y+090_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y090_e00.png",
+      "materialized": true,
+      "sha256": "ad2249b1581db3cecda73b73d4ef54f89006b8c8af98e196960dfdf61207da5f",
+      "bytes": 1301086
+    },
+    {
+      "role": "render",
+      "source": "views/y+105_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y105_e00.png",
+      "materialized": true,
+      "sha256": "062cc0e69516ae1e1891db5310821eda789b4f0dff1bd77f2795032a445e2122",
+      "bytes": 827761
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+105_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y105_e00.png",
+      "materialized": true,
+      "sha256": "ecc44e6e36f17b9e779cb3f8e8065a0d73cf7d9b64a577de0b5b49493a240827",
+      "bytes": 13557
+    },
+    {
+      "role": "channel:provenance_view:y105_e00",
+      "source": "views/y+105_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y105_e00.png",
+      "materialized": true,
+      "sha256": "341868251648d5316ac1d199edae0a8b92839a580c2f64f93cf92f515f424cbd",
+      "bytes": 160018
+    },
+    {
+      "role": "channel:prov_class:y105_e00",
+      "source": "views/y+105_e+00/prov_class_y+105_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y105_e00.png",
+      "materialized": true,
+      "sha256": "30f51a413f3d93568322c560fa7c3a7e2cf7f438eca63a83827e644db16ed3ac",
+      "bytes": 27077
+    },
+    {
+      "role": "loss-mask:y105_e00",
+      "source": "views/y+105_e+00/loss_mask_y+105_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y105_e00.png",
+      "materialized": true,
+      "sha256": "bcf4e1e319f2a1e685bedbd08f6add02a27600a7a345157047130cbccfaf30f1",
+      "bytes": 174078
+    },
+    {
+      "role": "render",
+      "source": "views/y+120_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y120_e00.png",
+      "materialized": true,
+      "sha256": "ef931b9f7675122e7ab775d0a79f388443cf75e827fc7b20922c8f11f41f3149",
+      "bytes": 830748
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+120_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y120_e00.png",
+      "materialized": true,
+      "sha256": "fbd4e06cd4a14bc5157d4a5646394aa22a92ed1c376e9690bc64f2afd84ccf3e",
+      "bytes": 13254
+    },
+    {
+      "role": "channel:provenance_view:y120_e00",
+      "source": "views/y+120_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y120_e00.png",
+      "materialized": true,
+      "sha256": "703a1f82e1616250ad3e785c8decaf51064b87ddb349f6d659d6dabde7a52fdf",
+      "bytes": 146729
+    },
+    {
+      "role": "channel:prov_class:y120_e00",
+      "source": "views/y+120_e+00/prov_class_y+120_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y120_e00.png",
+      "materialized": true,
+      "sha256": "bb9568a9977159582b62959db6ba423d9c9a34bafff6389ee076e143521d3095",
+      "bytes": 25335
+    },
+    {
+      "role": "loss-mask:y120_e00",
+      "source": "views/y+120_e+00/loss_mask_y+120_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y120_e00.png",
+      "materialized": true,
+      "sha256": "5e48818de86b87f83dfd492c9e9c3c9b7f1f848667039630d10e9a27f6230865",
+      "bytes": 172350
+    },
+    {
+      "role": "render",
+      "source": "views/y+135_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y135_e00.png",
+      "materialized": true,
+      "sha256": "3bb9fe4e28bd18f99289e84b57343397a27442bd2f4ad1cac61c5ca785452ebd",
+      "bytes": 854601
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+135_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y135_e00.png",
+      "materialized": true,
+      "sha256": "9e22550bc5e48bed2025b7528ab55b431e7f5aff174fdb9d997f9e6e6c74bd1f",
+      "bytes": 13660
+    },
+    {
+      "role": "channel:provenance_view:y135_e00",
+      "source": "views/y+135_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y135_e00.png",
+      "materialized": true,
+      "sha256": "c79c9937c2fadd7da425fa5e8a6fe435b512f7d8b5f8fdfc415aa567790120fc",
+      "bytes": 143411
+    },
+    {
+      "role": "channel:prov_class:y135_e00",
+      "source": "views/y+135_e+00/prov_class_y+135_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y135_e00.png",
+      "materialized": true,
+      "sha256": "28d1ee16191749f944465bbb3ca0ad0aef054c3d1feb9486b1f29873c9eba2c4",
+      "bytes": 25283
+    },
+    {
+      "role": "loss-mask:y135_e00",
+      "source": "views/y+135_e+00/loss_mask_y+135_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y135_e00.png",
+      "materialized": true,
+      "sha256": "598e0575d91130a6bd35b37d37f2e84c06331b9fa92d0f236071ba4234916d99",
+      "bytes": 176135
+    },
+    {
+      "role": "pair:clay:y135_e00",
+      "source": "pair_clay_y+135_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y135_e00.png",
+      "materialized": true,
+      "sha256": "fc311998ec1a75b25e70fd1fbd8c3cb3124562556955e3cf5204066aa23a1e61",
+      "bytes": 1916443
+    },
+    {
+      "role": "pair:twin:y135_e00",
+      "source": "pair_twin_y+135_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y135_e00.png",
+      "materialized": true,
+      "sha256": "f43570b6108a50c894bf747efbf1f47abb90d2cd8fac363b721b3ada578ca48d",
+      "bytes": 1853204
+    },
+    {
+      "role": "render",
+      "source": "views/y+150_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y150_e00.png",
+      "materialized": true,
+      "sha256": "e5c0f1635a83fab777fec6a9c24b2d71af823e7e8142ae4a7c42972cc055c945",
+      "bytes": 916001
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+150_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y150_e00.png",
+      "materialized": true,
+      "sha256": "d45d7fe72a5a4c6701db11479bae8face044c7a1ddcb37d0a4bf70c7500ca0c9",
+      "bytes": 14463
+    },
+    {
+      "role": "channel:provenance_view:y150_e00",
+      "source": "views/y+150_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y150_e00.png",
+      "materialized": true,
+      "sha256": "868cea70032674fdc75f762a55b1ca16cbaec103fd395086954bfde14d9828f0",
+      "bytes": 159669
+    },
+    {
+      "role": "channel:prov_class:y150_e00",
+      "source": "views/y+150_e+00/prov_class_y+150_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y150_e00.png",
+      "materialized": true,
+      "sha256": "3473cecfb4bd5222cefff22dda2a4366ce104173eb0258503b086d9ee301c405",
+      "bytes": 27757
+    },
+    {
+      "role": "loss-mask:y150_e00",
+      "source": "views/y+150_e+00/loss_mask_y+150_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y150_e00.png",
+      "materialized": true,
+      "sha256": "2793bf727d4bd7333f468a9dcb39fa48ee444e01e529b12a7eeefa4943659009",
+      "bytes": 185580
+    },
+    {
+      "role": "render",
+      "source": "views/y+165_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y165_e00.png",
+      "materialized": true,
+      "sha256": "55afc06dcc0cec9d73220ac4bdc65e6408f4618c3fe6be7d5a950560b45d493e",
+      "bytes": 930552
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+165_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y165_e00.png",
+      "materialized": true,
+      "sha256": "9d21cd40547a263655e28e16ccb8278920caa0d8af5618bb6b845aa55b00d526",
+      "bytes": 13018
+    },
+    {
+      "role": "channel:provenance_view:y165_e00",
+      "source": "views/y+165_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y165_e00.png",
+      "materialized": true,
+      "sha256": "bc354a65e5c7a9914607423f9599b908ab8d555b64cb043e7886da6822a91e3e",
+      "bytes": 163367
+    },
+    {
+      "role": "channel:prov_class:y165_e00",
+      "source": "views/y+165_e+00/prov_class_y+165_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y165_e00.png",
+      "materialized": true,
+      "sha256": "14c803d77653eb0955c2de0cc837dc7d72549f840b7685889cd8a96902b99bef",
+      "bytes": 27297
+    },
+    {
+      "role": "loss-mask:y165_e00",
+      "source": "views/y+165_e+00/loss_mask_y+165_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y165_e00.png",
+      "materialized": true,
+      "sha256": "d03d3a0dffbcc1a2ff4dc1d794ba204bc15952afb02c0103aebfe88a6f1dc187",
+      "bytes": 188309
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y180_e00.png",
+      "materialized": true,
+      "sha256": "e4c7a02603f1147a7fa04ddab1cf50a0716983cda844829352f69a12fe52a371",
+      "bytes": 886864
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y180_e00.png",
+      "materialized": true,
+      "sha256": "8f0e3d2816cde77a7a449326c78806e07a202530b150ce5b444ca557859c6ec1",
+      "bytes": 11708
+    },
+    {
+      "role": "channel:provenance_view:y180_e00",
+      "source": "views/y+180_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y180_e00.png",
+      "materialized": true,
+      "sha256": "6d50aeb029749414b50d338bed1e455fece58fe1516aee890b6266aa7d599153",
+      "bytes": 153820
+    },
+    {
+      "role": "channel:prov_class:y180_e00",
+      "source": "views/y+180_e+00/prov_class_y+180_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y180_e00.png",
+      "materialized": true,
+      "sha256": "294f540ecefe865f93c5feb073ee1647c06c8aa7c99e76499e3fdecc78dcf8a6",
+      "bytes": 25086
+    },
+    {
+      "role": "loss-mask:y180_e00",
+      "source": "views/y+180_e+00/loss_mask_y+180_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y180_e00.png",
+      "materialized": true,
+      "sha256": "4f2e6c0d88b34455fb8ba9b6524946a1602f93607cb75b062e18dee87bb360f9",
+      "bytes": 180343
+    },
+    {
+      "role": "pair:clay:y180_e00",
+      "source": "pair_clay_y+180_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y180_e00.png",
+      "materialized": true,
+      "sha256": "83e856d27549bd41f565ea7e635afac6db3bd0694c38aca91f6587a7a7d80d8a",
+      "bytes": 1895446
+    },
+    {
+      "role": "pair:twin:y180_e00",
+      "source": "pair_twin_y+180_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y180_e00.png",
+      "materialized": true,
+      "sha256": "7eaf94bb483cd4ab565e36a70d7e9bc0634a7088b8912129e39b88d267ae60ac",
+      "bytes": 1473458
+    },
+    {
+      "role": "render",
+      "source": "views/y+195_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y195_e00.png",
+      "materialized": true,
+      "sha256": "8174f5530faf247aa2ad5facc6b482c75e7c6929c74ddc6e9971bed85468b99f",
+      "bytes": 888373
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+195_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y195_e00.png",
+      "materialized": true,
+      "sha256": "f35e542bf69283af13f77cccb44b250186e203c930b557e655fef56935091c3a",
+      "bytes": 12775
+    },
+    {
+      "role": "channel:provenance_view:y195_e00",
+      "source": "views/y+195_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y195_e00.png",
+      "materialized": true,
+      "sha256": "42088fb6a6eb7da72689b8b510df0890e6702ba1634017dc65cb7519eef8a70d",
+      "bytes": 159542
+    },
+    {
+      "role": "channel:prov_class:y195_e00",
+      "source": "views/y+195_e+00/prov_class_y+195_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y195_e00.png",
+      "materialized": true,
+      "sha256": "796cdec7d79f7501148cc2fe3c48970ec0539e11105502118466547e79a278e4",
+      "bytes": 26105
+    },
+    {
+      "role": "loss-mask:y195_e00",
+      "source": "views/y+195_e+00/loss_mask_y+195_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y195_e00.png",
+      "materialized": true,
+      "sha256": "f95168c681b3cebc3609f6deb9183d74259205f537e7c30b61e83a84b8c69bcc",
+      "bytes": 181375
+    },
+    {
+      "role": "render",
+      "source": "views/y+210_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y210_e00.png",
+      "materialized": true,
+      "sha256": "22b896a187431d8913bb119d7cf88bacf1940100e116757203d89fc6c5254e6b",
+      "bytes": 904310
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+210_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y210_e00.png",
+      "materialized": true,
+      "sha256": "61f9e4bc8f64384bcc8c728bcde465b5b949e8a9ef7509f31015ab059c6e0669",
+      "bytes": 14475
+    },
+    {
+      "role": "channel:provenance_view:y210_e00",
+      "source": "views/y+210_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y210_e00.png",
+      "materialized": true,
+      "sha256": "dea7bdb151ab551d8c1adbe2b63cc7ac63e36b6134d0d624b645bf872941fc53",
+      "bytes": 165285
+    },
+    {
+      "role": "channel:prov_class:y210_e00",
+      "source": "views/y+210_e+00/prov_class_y+210_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y210_e00.png",
+      "materialized": true,
+      "sha256": "8f586751c20ea0c5f95a615e142605a240397260a2992b691d7c6a74296ef5bf",
+      "bytes": 27944
+    },
+    {
+      "role": "loss-mask:y210_e00",
+      "source": "views/y+210_e+00/loss_mask_y+210_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y210_e00.png",
+      "materialized": true,
+      "sha256": "cc996a59e1788c367df808d2d5d4a2aab37b9260c43f6631afa0795e4533bc86",
+      "bytes": 184820
+    },
+    {
+      "role": "render",
+      "source": "views/y+225_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y225_e00.png",
+      "materialized": true,
+      "sha256": "0bf3c038d92a7c42ce8603d53608c2461c5dab6121073e23afeda7ed604c15a0",
+      "bytes": 846810
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+225_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y225_e00.png",
+      "materialized": true,
+      "sha256": "6167615e7da26adf8076ec7e793256753b376c6fc39b1e5fc4087d8ed8e061f7",
+      "bytes": 14072
+    },
+    {
+      "role": "channel:provenance_view:y225_e00",
+      "source": "views/y+225_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y225_e00.png",
+      "materialized": true,
+      "sha256": "5d83c42940539b4b4f6bb4822ad6bd697ac993b401e7068553cc7dd530a3733b",
+      "bytes": 153405
+    },
+    {
+      "role": "channel:prov_class:y225_e00",
+      "source": "views/y+225_e+00/prov_class_y+225_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y225_e00.png",
+      "materialized": true,
+      "sha256": "013e71cac7385f02f1745f7c7f329691dce8222945d97644aaddfb11f95f5375",
+      "bytes": 26315
+    },
+    {
+      "role": "loss-mask:y225_e00",
+      "source": "views/y+225_e+00/loss_mask_y+225_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y225_e00.png",
+      "materialized": true,
+      "sha256": "fbfb2cfae213f4c0883c9fcdeaca7bfdca9341fbc5fc978976a4d3994e94d817",
+      "bytes": 175977
+    },
+    {
+      "role": "pair:clay:y225_e00",
+      "source": "pair_clay_y+225_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y225_e00.png",
+      "materialized": true,
+      "sha256": "2b34d661447e51c80fd3534df2570b50456bf9594fed2382030a29bd4df8eb4f",
+      "bytes": 1910753
+    },
+    {
+      "role": "pair:twin:y225_e00",
+      "source": "pair_twin_y+225_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y225_e00.png",
+      "materialized": true,
+      "sha256": "ea5d435d8706294dfd05d9798b0e212b461d3514f4f5f91928dacf7f47b14a0b",
+      "bytes": 1666801
+    },
+    {
+      "role": "render",
+      "source": "views/y+240_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y240_e00.png",
+      "materialized": true,
+      "sha256": "6f5f66da8e96f57500e90d2fb57f7786a8bd834645f225f812251b5a28d11e14",
+      "bytes": 832024
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+240_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y240_e00.png",
+      "materialized": true,
+      "sha256": "abff23d00d71878f17273260d1834249a7afe31133a36f0f7dba0fa53ce0d0c2",
+      "bytes": 13773
+    },
+    {
+      "role": "channel:provenance_view:y240_e00",
+      "source": "views/y+240_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y240_e00.png",
+      "materialized": true,
+      "sha256": "54e68a2ca9a42a4c7a65d21a00ca00f523a444b4067bee0b6e8aa4383ea8c88b",
+      "bytes": 160694
+    },
+    {
+      "role": "channel:prov_class:y240_e00",
+      "source": "views/y+240_e+00/prov_class_y+240_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y240_e00.png",
+      "materialized": true,
+      "sha256": "e07d15f8ae08a967e54fce5f952ca40b3777477d28be9bbc835f3697e0a5a437",
+      "bytes": 27078
+    },
+    {
+      "role": "loss-mask:y240_e00",
+      "source": "views/y+240_e+00/loss_mask_y+240_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y240_e00.png",
+      "materialized": true,
+      "sha256": "5fc05cbeee73641831427904032e7cca7004b296f16e0c2baf36dba82b886b8c",
+      "bytes": 173668
+    },
+    {
+      "role": "render",
+      "source": "views/y+255_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y255_e00.png",
+      "materialized": true,
+      "sha256": "199d09bdb090f6203cfb58593b3c80851c4d48f7abd1142d69d93e35119326c6",
+      "bytes": 832385
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+255_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y255_e00.png",
+      "materialized": true,
+      "sha256": "c11b10e8fede040d8819e7cda75bd91757c8f5c1cb945bff03ac5be684b446b2",
+      "bytes": 14165
+    },
+    {
+      "role": "channel:provenance_view:y255_e00",
+      "source": "views/y+255_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y255_e00.png",
+      "materialized": true,
+      "sha256": "2b1288917ce000589d4ce5148c9b83f250a85c73f2bf445eed5e4e27fa26c50a",
+      "bytes": 176095
+    },
+    {
+      "role": "channel:prov_class:y255_e00",
+      "source": "views/y+255_e+00/prov_class_y+255_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y255_e00.png",
+      "materialized": true,
+      "sha256": "39026223c0e0e97bbb1c1a85cebae71035bdd681aef40550f7614855816e0999",
+      "bytes": 29263
+    },
+    {
+      "role": "loss-mask:y255_e00",
+      "source": "views/y+255_e+00/loss_mask_y+255_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y255_e00.png",
+      "materialized": true,
+      "sha256": "d97bee4cb270697545c6814b2e66039ae00c0ac09da7641bb132b31ba404b7d0",
+      "bytes": 175520
+    },
+    {
+      "role": "render",
+      "source": "views/y+270_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y270_e00.png",
+      "materialized": true,
+      "sha256": "d2bc35c2ca3fce86bedef34bddc01c2ed29389ed410978b0ca31bf9dc7914225",
+      "bytes": 666915
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+270_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y270_e00.png",
+      "materialized": true,
+      "sha256": "98b438e6fa54820edafdd081acc28e803cbcf7273b9c61a879559e8c1c02a29a",
+      "bytes": 12954
+    },
+    {
+      "role": "channel:provenance_view:y270_e00",
+      "source": "views/y+270_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y270_e00.png",
+      "materialized": true,
+      "sha256": "e53a5695eeb5400656fb4ffe716b1613d0003e84282bd2f9dc75f8aad7db32d1",
+      "bytes": 139124
+    },
+    {
+      "role": "channel:prov_class:y270_e00",
+      "source": "views/y+270_e+00/prov_class_y+270_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y270_e00.png",
+      "materialized": true,
+      "sha256": "a493af4fe4d95cca155d59eb561a7499bd384d453217d740188009e5b8fb0f88",
+      "bytes": 24264
+    },
+    {
+      "role": "loss-mask:y270_e00",
+      "source": "views/y+270_e+00/loss_mask_y+270_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y270_e00.png",
+      "materialized": true,
+      "sha256": "3794b9b7a2eaab3bd3fa6255bf7363c67b0c5ec20f0f99f64e7bf57d192d9a18",
+      "bytes": 148773
+    },
+    {
+      "role": "pair:clay:y270_e00",
+      "source": "pair_clay_y+270_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y270_e00.png",
+      "materialized": true,
+      "sha256": "08b1930b1cde80d21c1686d669177dec048e60521cc8fe74d4a66ce65a5a6aeb",
+      "bytes": 1855932
+    },
+    {
+      "role": "pair:twin:y270_e00",
+      "source": "pair_twin_y+270_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y270_e00.png",
+      "materialized": true,
+      "sha256": "b81b9a1727465f0b932fdf1c19d4c9a3451ef646fcccb94e275518eff55639df",
+      "bytes": 1448877
+    },
+    {
+      "role": "render",
+      "source": "views/y+285_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y285_e00.png",
+      "materialized": true,
+      "sha256": "3f06af81ecd9ef6869a0037f7a5b32ef29feb5126c632eef0919d914b8881d12",
+      "bytes": 819062
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+285_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y285_e00.png",
+      "materialized": true,
+      "sha256": "a6157dc61993d5c9d055f41deddf60bab75ea9b0db10cc8a69dcdaef0ddaba43",
+      "bytes": 13748
+    },
+    {
+      "role": "channel:provenance_view:y285_e00",
+      "source": "views/y+285_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y285_e00.png",
+      "materialized": true,
+      "sha256": "719075b32043a1b9e7ca97099f1ba5235d56498a155101abf0543609775dbe45",
+      "bytes": 189468
+    },
+    {
+      "role": "channel:prov_class:y285_e00",
+      "source": "views/y+285_e+00/prov_class_y+285_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y285_e00.png",
+      "materialized": true,
+      "sha256": "308c3c43783b5a6a9a18fd4ec004d1775498608f2a1f0bc67b2663f7534bef7a",
+      "bytes": 30662
+    },
+    {
+      "role": "loss-mask:y285_e00",
+      "source": "views/y+285_e+00/loss_mask_y+285_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y285_e00.png",
+      "materialized": true,
+      "sha256": "a311f28e2c43c9d4025d3fc67f8cc59f3099f253256e28a6cac05488528d176e",
+      "bytes": 177626
+    },
+    {
+      "role": "render",
+      "source": "views/y+300_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y300_e00.png",
+      "materialized": true,
+      "sha256": "14e4d94dd70d3d4e381529f876bb68d2496447f814cd39c890ac58eb8b9ed906",
+      "bytes": 846210
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+300_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y300_e00.png",
+      "materialized": true,
+      "sha256": "d17fc9699d4b6e8eb581a186f3a068980bd3f22f0dcddc86028f070c61b6b1fb",
+      "bytes": 13354
+    },
+    {
+      "role": "channel:provenance_view:y300_e00",
+      "source": "views/y+300_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y300_e00.png",
+      "materialized": true,
+      "sha256": "9b6a8ad1ff562a6ad30d0cae5a0e136d3fcfd35dfa825a34c7ef13c622bbde03",
+      "bytes": 199680
+    },
+    {
+      "role": "channel:prov_class:y300_e00",
+      "source": "views/y+300_e+00/prov_class_y+300_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y300_e00.png",
+      "materialized": true,
+      "sha256": "2c1498efe34ed83ada799740ca2846edcb4f1dd66b27700b77991c6887819b01",
+      "bytes": 31292
+    },
+    {
+      "role": "loss-mask:y300_e00",
+      "source": "views/y+300_e+00/loss_mask_y+300_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y300_e00.png",
+      "materialized": true,
+      "sha256": "d2297224f978199d82cc5e13e0774863bf90af32f5fd2790f7904fd3481f955f",
+      "bytes": 183397
+    },
+    {
+      "role": "render",
+      "source": "views/y+315_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y315_e00.png",
+      "materialized": true,
+      "sha256": "b00fa875c1c440736791eb500070f7e786a0b10919bb8e99e7f8adca82ea0ad7",
+      "bytes": 874051
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+315_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y315_e00.png",
+      "materialized": true,
+      "sha256": "c4a867025495ca5ec30a11f92d092f393beec01296d1d6f04e1eb3794153332b",
+      "bytes": 13779
+    },
+    {
+      "role": "channel:provenance_view:y315_e00",
+      "source": "views/y+315_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y315_e00.png",
+      "materialized": true,
+      "sha256": "4a42c6d94d697d5f41adaf3a6de78e1291b2bd1d7dc52771e87950e5c0aa2d4f",
+      "bytes": 199940
+    },
+    {
+      "role": "channel:prov_class:y315_e00",
+      "source": "views/y+315_e+00/prov_class_y+315_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y315_e00.png",
+      "materialized": true,
+      "sha256": "40164551c53bcd3a92a1d074727a68fc1e798daed05f7f61c719d37f4f5b7a69",
+      "bytes": 30976
+    },
+    {
+      "role": "loss-mask:y315_e00",
+      "source": "views/y+315_e+00/loss_mask_y+315_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y315_e00.png",
+      "materialized": true,
+      "sha256": "a4f8354af29b0078530ba10b16818a0b2d1cb019d2f00990063c3b0d66cdbb7d",
+      "bytes": 188998
+    },
+    {
+      "role": "pair:clay:y315_e00",
+      "source": "pair_clay_y+315_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/clay__y315_e00.png",
+      "materialized": true,
+      "sha256": "58ef3469962594d1e54c8774bbd9441edc52252e2f6e8ba0db5156745289afc9",
+      "bytes": 1965929
+    },
+    {
+      "role": "pair:twin:y315_e00",
+      "source": "pair_twin_y+315_e+00.png",
+      "dest": "assets/e12_dragon_dense/pairs/twin__y315_e00.png",
+      "materialized": true,
+      "sha256": "f06f88e5d2a12eae38db779d56283809c45b9091f5ff618ecfe8f7db23765e4c",
+      "bytes": 1627233
+    },
+    {
+      "role": "render",
+      "source": "views/y+330_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y330_e00.png",
+      "materialized": true,
+      "sha256": "41cb72e3bc5ba271d68638e7203dfd952bd85a858f01b30d0001880b47b67ceb",
+      "bytes": 914210
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+330_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y330_e00.png",
+      "materialized": true,
+      "sha256": "42004b5fee0b25e49ca2fe4a3f793cff0e5618bec72bcc5287c6fad582ef752c",
+      "bytes": 14726
+    },
+    {
+      "role": "channel:provenance_view:y330_e00",
+      "source": "views/y+330_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y330_e00.png",
+      "materialized": true,
+      "sha256": "11f1e63bc663a9b951a043875b5bab394f60f57bbd0106ddc16fcc88b76e429b",
+      "bytes": 208803
+    },
+    {
+      "role": "channel:prov_class:y330_e00",
+      "source": "views/y+330_e+00/prov_class_y+330_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y330_e00.png",
+      "materialized": true,
+      "sha256": "b0e1507555d119cef352b0ab2acf531d01a066fc9f6d95c8228d42731c8fd4ad",
+      "bytes": 31982
+    },
+    {
+      "role": "loss-mask:y330_e00",
+      "source": "views/y+330_e+00/loss_mask_y+330_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y330_e00.png",
+      "materialized": true,
+      "sha256": "d0097dcf7e4616aa17ecbfb76a47866f950eefcef9498d18891e513e28199dde",
+      "bytes": 194640
+    },
+    {
+      "role": "render",
+      "source": "views/y+345_e+00/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y345_e00.png",
+      "materialized": true,
+      "sha256": "a22fba0071066249546f484434c33064f1db1eb7960cc7e9020bb1d86ed37730",
+      "bytes": 920785
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+345_e+00/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y345_e00.png",
+      "materialized": true,
+      "sha256": "90b1c1e5244c8c6625963a83c617ad4935f3add78981cff824518d997c63b177",
+      "bytes": 13188
+    },
+    {
+      "role": "channel:provenance_view:y345_e00",
+      "source": "views/y+345_e+00/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y345_e00.png",
+      "materialized": true,
+      "sha256": "e47cac694a456787db4135e8681fffcfe05a9bbd3422e9a74d79e9f948ba5aa8",
+      "bytes": 195673
+    },
+    {
+      "role": "channel:prov_class:y345_e00",
+      "source": "views/y+345_e+00/prov_class_y+345_e+00.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y345_e00.png",
+      "materialized": true,
+      "sha256": "aa804913e1d4b2e2a7e5517c33f80d3afa0690973001a3aa16dbccb36ada3657",
+      "bytes": 30204
+    },
+    {
+      "role": "loss-mask:y345_e00",
+      "source": "views/y+345_e+00/loss_mask_y+345_e+00.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y345_e00.png",
+      "materialized": true,
+      "sha256": "30759290c65e10e760b041b7b056d50c05ed7912205619a846e7a7fcbf0f1085",
+      "bytes": 197623
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+55/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y000_e55.png",
+      "materialized": true,
+      "sha256": "ed3cfa5b17889507d0f022c846144a4f1e9f63171745b3e2182402734b9741f0",
+      "bytes": 586169
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+55/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y000_e55.png",
+      "materialized": true,
+      "sha256": "2c32ddbf66e69c8a2ea5e6589a194d7a04424c04822841f3c00c5f7828113e8e",
+      "bytes": 10301
+    },
+    {
+      "role": "channel:provenance_view:y000_e55",
+      "source": "views/y+000_e+55/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y000_e55.png",
+      "materialized": true,
+      "sha256": "52a3a205a78cbb683659e811ffd4fd307795c1c40f36639b1bebf9036513e0ce",
+      "bytes": 183582
+    },
+    {
+      "role": "channel:prov_class:y000_e55",
+      "source": "views/y+000_e+55/prov_class_y+000_e+55.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y000_e55.png",
+      "materialized": true,
+      "sha256": "5f7ba6c4e72928b75908de79773c5b9bfba08cbbd92003b3580727abf3eff172",
+      "bytes": 25788
+    },
+    {
+      "role": "loss-mask:y000_e55",
+      "source": "views/y+000_e+55/loss_mask_y+000_e+55.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y000_e55.png",
+      "materialized": true,
+      "sha256": "bfdd246126da6f2d06c377044ea72ea25888fdf46e9fbddec172ab9aa0ecd69e",
+      "bytes": 125724
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+55/asset.png",
+      "dest": "outputs/candidates/e12_dragon_dense__y180_e55.png",
+      "materialized": true,
+      "sha256": "f05cf93ea329d8fea13013a1a558f40b4017ad8fe6158b4d6a5649e584bc7ebd",
+      "bytes": 886944
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+55/silhouette.png",
+      "dest": "assets/e12_dragon_dense/masks/y180_e55.png",
+      "materialized": true,
+      "sha256": "139137e89de14e16acffb881ded254620d5d2b17cf712699aee1e5a73c1d0e0b",
+      "bytes": 10128
+    },
+    {
+      "role": "channel:provenance_view:y180_e55",
+      "source": "views/y+180_e+55/prov.png",
+      "dest": "assets/e12_dragon_dense/channels/provenance_view__y180_e55.png",
+      "materialized": true,
+      "sha256": "4bdd10f8747c6c64631152a9f6b52c6c64789158fd96d485be3602b5748f668a",
+      "bytes": 179897
+    },
+    {
+      "role": "channel:prov_class:y180_e55",
+      "source": "views/y+180_e+55/prov_class_y+180_e+55.png",
+      "dest": "assets/e12_dragon_dense/channels/prov_class__y180_e55.png",
+      "materialized": true,
+      "sha256": "a09c40f88d38a181e94d9e388d2178d14223eb2d989fba2f4178f2740cea0dc6",
+      "bytes": 25865
+    },
+    {
+      "role": "loss-mask:y180_e55",
+      "source": "views/y+180_e+55/loss_mask_y+180_e+55.png",
+      "dest": "assets/e12_dragon_dense/loss-masks/y180_e55.png",
+      "materialized": true,
+      "sha256": "e840e2b0cbde0746a9d665b28a4fe3c2bac00a2b15508fc60ecef1947247115f",
+      "bytes": 174409
+    },
+    {
+      "role": "manifest",
+      "source": "asset-source.json",
+      "dest": "assets/e12_dragon_dense/asset-source.json",
+      "materialized": true,
+      "sha256": "7ea3771013f1ee43c2e51d99cf40e25cb821a09b35ac5e60b01b6f62fe02f3fc",
+      "bytes": 18399
+    }
+  ],
+  "records_created": [
+    "e12_dragon_dense__y000_e00",
+    "e12_dragon_dense__y015_e00",
+    "e12_dragon_dense__y030_e00",
+    "e12_dragon_dense__y045_e00",
+    "e12_dragon_dense__y060_e00",
+    "e12_dragon_dense__y075_e00",
+    "e12_dragon_dense__y090_e00",
+    "e12_dragon_dense__y105_e00",
+    "e12_dragon_dense__y120_e00",
+    "e12_dragon_dense__y135_e00",
+    "e12_dragon_dense__y150_e00",
+    "e12_dragon_dense__y165_e00",
+    "e12_dragon_dense__y180_e00",
+    "e12_dragon_dense__y195_e00",
+    "e12_dragon_dense__y210_e00",
+    "e12_dragon_dense__y225_e00",
+    "e12_dragon_dense__y240_e00",
+    "e12_dragon_dense__y255_e00",
+    "e12_dragon_dense__y270_e00",
+    "e12_dragon_dense__y285_e00",
+    "e12_dragon_dense__y300_e00",
+    "e12_dragon_dense__y315_e00",
+    "e12_dragon_dense__y330_e00",
+    "e12_dragon_dense__y345_e00",
+    "e12_dragon_dense__y000_e55",
+    "e12_dragon_dense__y180_e55"
+  ],
+  "records_skipped": [],
+  "rejected_renders": [],
+  "notices": [
+    {
+      "code": "ASSET_TONE_TRANSFORM_DECLARED",
+      "kind": "info",
+      "message": "Renders derive from sources carrying a declared \"lab-stats-transfer\" tone transform toward y045_e00. sdlab records the declaration and hashes the operands; it does NOT verify the transform was applied or is reversible. Colour measurements on these records — palette gate, class shares, ΔE — sit downstream of it."
+    },
+    {
+      "code": "ASSET_RENDERS_ARE_DERIVATIONS",
+      "kind": "info",
+      "message": "Renders are declared \"emit\" derivations of the accepted asset, not generated images — so they carry no seed or generation frame, correctly. Records carry generation: null by declaration rather than by omission. The generating provenance of any twins these were projected from belongs to those twins, not to these records."
+    }
+  ],
+  "written": [
+    "assets/e12_dragon_dense/tone_transform_operands.json",
+    "outputs/candidates/e12_dragon_dense__y000_e00.png",
+    "assets/e12_dragon_dense/masks/y000_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y000_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y000_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y000_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y000_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y000_e00.png",
+    "records/e12_dragon_dense__y000_e00.json",
+    "outputs/candidates/e12_dragon_dense__y015_e00.png",
+    "assets/e12_dragon_dense/masks/y015_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y015_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y015_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y015_e00.png",
+    "records/e12_dragon_dense__y015_e00.json",
+    "outputs/candidates/e12_dragon_dense__y030_e00.png",
+    "assets/e12_dragon_dense/masks/y030_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y030_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y030_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y030_e00.png",
+    "records/e12_dragon_dense__y030_e00.json",
+    "outputs/candidates/e12_dragon_dense__y045_e00.png",
+    "assets/e12_dragon_dense/masks/y045_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y045_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y045_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y045_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y045_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y045_e00.png",
+    "records/e12_dragon_dense__y045_e00.json",
+    "outputs/candidates/e12_dragon_dense__y060_e00.png",
+    "assets/e12_dragon_dense/masks/y060_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y060_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y060_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y060_e00.png",
+    "records/e12_dragon_dense__y060_e00.json",
+    "outputs/candidates/e12_dragon_dense__y075_e00.png",
+    "assets/e12_dragon_dense/masks/y075_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y075_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y075_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y075_e00.png",
+    "records/e12_dragon_dense__y075_e00.json",
+    "outputs/candidates/e12_dragon_dense__y090_e00.png",
+    "assets/e12_dragon_dense/masks/y090_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y090_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y090_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y090_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y090_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y090_e00.png",
+    "records/e12_dragon_dense__y090_e00.json",
+    "outputs/candidates/e12_dragon_dense__y105_e00.png",
+    "assets/e12_dragon_dense/masks/y105_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y105_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y105_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y105_e00.png",
+    "records/e12_dragon_dense__y105_e00.json",
+    "outputs/candidates/e12_dragon_dense__y120_e00.png",
+    "assets/e12_dragon_dense/masks/y120_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y120_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y120_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y120_e00.png",
+    "records/e12_dragon_dense__y120_e00.json",
+    "outputs/candidates/e12_dragon_dense__y135_e00.png",
+    "assets/e12_dragon_dense/masks/y135_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y135_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y135_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y135_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y135_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y135_e00.png",
+    "records/e12_dragon_dense__y135_e00.json",
+    "outputs/candidates/e12_dragon_dense__y150_e00.png",
+    "assets/e12_dragon_dense/masks/y150_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y150_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y150_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y150_e00.png",
+    "records/e12_dragon_dense__y150_e00.json",
+    "outputs/candidates/e12_dragon_dense__y165_e00.png",
+    "assets/e12_dragon_dense/masks/y165_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y165_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y165_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y165_e00.png",
+    "records/e12_dragon_dense__y165_e00.json",
+    "outputs/candidates/e12_dragon_dense__y180_e00.png",
+    "assets/e12_dragon_dense/masks/y180_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y180_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y180_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y180_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y180_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y180_e00.png",
+    "records/e12_dragon_dense__y180_e00.json",
+    "outputs/candidates/e12_dragon_dense__y195_e00.png",
+    "assets/e12_dragon_dense/masks/y195_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y195_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y195_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y195_e00.png",
+    "records/e12_dragon_dense__y195_e00.json",
+    "outputs/candidates/e12_dragon_dense__y210_e00.png",
+    "assets/e12_dragon_dense/masks/y210_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y210_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y210_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y210_e00.png",
+    "records/e12_dragon_dense__y210_e00.json",
+    "outputs/candidates/e12_dragon_dense__y225_e00.png",
+    "assets/e12_dragon_dense/masks/y225_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y225_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y225_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y225_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y225_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y225_e00.png",
+    "records/e12_dragon_dense__y225_e00.json",
+    "outputs/candidates/e12_dragon_dense__y240_e00.png",
+    "assets/e12_dragon_dense/masks/y240_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y240_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y240_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y240_e00.png",
+    "records/e12_dragon_dense__y240_e00.json",
+    "outputs/candidates/e12_dragon_dense__y255_e00.png",
+    "assets/e12_dragon_dense/masks/y255_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y255_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y255_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y255_e00.png",
+    "records/e12_dragon_dense__y255_e00.json",
+    "outputs/candidates/e12_dragon_dense__y270_e00.png",
+    "assets/e12_dragon_dense/masks/y270_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y270_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y270_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y270_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y270_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y270_e00.png",
+    "records/e12_dragon_dense__y270_e00.json",
+    "outputs/candidates/e12_dragon_dense__y285_e00.png",
+    "assets/e12_dragon_dense/masks/y285_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y285_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y285_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y285_e00.png",
+    "records/e12_dragon_dense__y285_e00.json",
+    "outputs/candidates/e12_dragon_dense__y300_e00.png",
+    "assets/e12_dragon_dense/masks/y300_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y300_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y300_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y300_e00.png",
+    "records/e12_dragon_dense__y300_e00.json",
+    "outputs/candidates/e12_dragon_dense__y315_e00.png",
+    "assets/e12_dragon_dense/masks/y315_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y315_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y315_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y315_e00.png",
+    "assets/e12_dragon_dense/pairs/clay__y315_e00.png",
+    "assets/e12_dragon_dense/pairs/twin__y315_e00.png",
+    "records/e12_dragon_dense__y315_e00.json",
+    "outputs/candidates/e12_dragon_dense__y330_e00.png",
+    "assets/e12_dragon_dense/masks/y330_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y330_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y330_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y330_e00.png",
+    "records/e12_dragon_dense__y330_e00.json",
+    "outputs/candidates/e12_dragon_dense__y345_e00.png",
+    "assets/e12_dragon_dense/masks/y345_e00.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y345_e00.png",
+    "assets/e12_dragon_dense/channels/prov_class__y345_e00.png",
+    "assets/e12_dragon_dense/loss-masks/y345_e00.png",
+    "records/e12_dragon_dense__y345_e00.json",
+    "outputs/candidates/e12_dragon_dense__y000_e55.png",
+    "assets/e12_dragon_dense/masks/y000_e55.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y000_e55.png",
+    "assets/e12_dragon_dense/channels/prov_class__y000_e55.png",
+    "assets/e12_dragon_dense/loss-masks/y000_e55.png",
+    "records/e12_dragon_dense__y000_e55.json",
+    "outputs/candidates/e12_dragon_dense__y180_e55.png",
+    "assets/e12_dragon_dense/masks/y180_e55.png",
+    "assets/e12_dragon_dense/channels/provenance_view__y180_e55.png",
+    "assets/e12_dragon_dense/channels/prov_class__y180_e55.png",
+    "assets/e12_dragon_dense/loss-masks/y180_e55.png",
+    "records/e12_dragon_dense__y180_e55.json",
+    "assets/e12_dragon_dense/asset-source.json"
+  ]
+}
