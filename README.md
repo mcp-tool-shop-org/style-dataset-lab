@@ -81,10 +81,11 @@ sdlab asset ingest ~/exports/dragon_dense --project my-project --dry-run
 sdlab asset ingest ~/exports/dragon_dense --project my-project
 ```
 
-The export directory carries an `asset-source.json` manifest (schema **1.2.0**) declaring
-its channels, palette bands, gate thresholds, acceptance verdict, style register and
-generation provenance. sdlab proves every declaration against the actual bytes and refuses
-the whole ingest on any violation — nothing registers on a bad manifest.
+The export directory carries an `asset-source.json` manifest (schema **1.3.0**) declaring
+its channels, palette bands, gate thresholds, acceptance verdict, style register, how the
+renders came to exist, and their generation provenance. sdlab proves every declaration
+against the actual bytes and refuses the whole ingest on any violation — nothing registers
+on a bad manifest.
 
 **The seam:** sdlab supplies mechanism, the asset supplies semantics. sdlab never raycasts,
 never renders, and never learns that a channel called "provenance" is special. It proves,
@@ -105,10 +106,12 @@ the acceptance block verbatim, per-file hashes, camera and derived facing, the g
 measurements, the declared style register, and per-image generation frame + seed. They then
 go through the same curation every other record does.
 
-Schema 1.2.0 also makes the ingest report what a manifest *didn't* declare — an unknown
-style register, a missing `identity.subject_name`, absent generation provenance — as
-**notices** rather than failures. They ride in the receipt and print at the CLI. A gap
-nobody is told about is a gap nobody can close.
+The ingest also reports what a manifest *didn't* declare — an unknown style register, a
+missing `identity.subject_name`, absent generation provenance — as **notices** rather than
+failures. They ride in the receipt and print at the CLI. A gap nobody is told about is a gap
+nobody can close; and because a manifest can *declare* that its renders are deterministic
+derivations with no seed of their own, the lane never reports a gap on an export that is
+correct.
 
 Full contract, the validation ladder, and the reasoning behind every field:
 [docs/asset-lane-design.md](docs/asset-lane-design.md).

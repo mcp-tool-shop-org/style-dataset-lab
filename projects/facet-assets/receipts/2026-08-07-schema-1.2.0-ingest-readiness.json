@@ -1,31 +1,85 @@
 {
-  "receipt": "asset-lane schema 1.2.0 + dragon ingest-readiness",
+  "receipt": "asset-lane schema 1.2.0 -> 1.3.0 + dragon ingest-readiness",
   "date": "2026-08-07",
   "branch": "feat/asset-lane-skeleton",
   "session": "dataset-lane",
   "note": "Every `measured: true` block was run against live files this session. Forward statements are marked `measured: false` and carry their source ruling.",
-
   "shipped": {
-    "asset_schema_version": { "from": "1.1.0", "to": "1.2.0" },
-    "receipt_schema_version": { "from": "1.0.0", "to": "1.1.0" },
-    "tests": { "from": 861, "to": 888, "failing": 0, "measured": true },
-    "verify": { "status": "HEALTHY", "passed": 29, "failed": 0, "warnings": 16, "measured": true },
-    "handbook": { "pages": 16, "new_page": "handbook/asset-lane", "builds": true, "measured": true },
+    "asset_schema_version": {
+      "from": "1.1.0",
+      "to": "1.3.0",
+      "steps": [
+        "1.2.0",
+        "1.3.0"
+      ]
+    },
+    "receipt_schema_version": {
+      "from": "1.0.0",
+      "to": "1.1.0"
+    },
+    "tests": {
+      "from": 861,
+      "to": 895,
+      "failing": 0,
+      "measured": true
+    },
+    "verify": {
+      "status": "HEALTHY",
+      "passed": 29,
+      "failed": 0,
+      "warnings": 16,
+      "measured": true
+    },
+    "handbook": {
+      "pages": 16,
+      "new_page": "handbook/asset-lane",
+      "builds": true,
+      "measured": true
+    },
     "additions": [
       {
         "field": "asset.style",
         "optional": true,
         "ruling": "facet E12 Ruling 10b",
-        "carries": ["register.terms", "register.ruling", "register.record", "lora.declared", "lora.card", "lora.weight"],
-        "discriminator": { "field": "lora.declared", "values": ["none", "card"], "why": "NO-LoRA is a positive declaration, not an omitted field; a dropped null cannot become silence" }
+        "carries": [
+          "register.terms",
+          "register.ruling",
+          "register.record",
+          "lora.declared",
+          "lora.card",
+          "lora.weight"
+        ],
+        "discriminator": {
+          "field": "lora.declared",
+          "values": [
+            "none",
+            "card"
+          ],
+          "why": "NO-LoRA is a positive declaration, not an omitted field; a dropped null cannot become silence"
+        }
       },
       {
         "field": "asset.tone_transform",
         "optional": true,
         "ruling": "facet E12 Rulings 23c/23f",
-        "carries": ["kind", "space", "scope", "reference", "operands", "reversible", "record"],
-        "checked": ["reference resolves to a render id declared in this manifest", "operands path contained + parses as object + hashed"],
-        "not_checked": ["that the transform was applied", "that the operands are correct", "that the arithmetic is reversible"],
+        "carries": [
+          "kind",
+          "space",
+          "scope",
+          "reference",
+          "operands",
+          "reversible",
+          "record"
+        ],
+        "checked": [
+          "reference resolves to a render id declared in this manifest",
+          "operands path contained + parses as object + hashed"
+        ],
+        "not_checked": [
+          "that the transform was applied",
+          "that the operands are correct",
+          "that the arithmetic is reversible"
+        ],
         "operands_materialized": true,
         "operands_materialized_why": "the only record of what the transform did to these colours; a pointer would make the audit trail depend on the export tree surviving"
       },
@@ -33,50 +87,155 @@
         "field": "renders[].generation",
         "optional": true,
         "ruling": "facet E12 Rulings 20a, 24b",
-        "carries": ["frame", "frame_detail", "seed", "stem", "model", "reroll_of"],
-        "frame_enum": ["full", "crop"],
+        "carries": [
+          "frame",
+          "frame_detail",
+          "seed",
+          "stem",
+          "model",
+          "reroll_of"
+        ],
+        "frame_enum": [
+          "full",
+          "crop"
+        ],
         "frame_enum_why": "the measured curation axis for register drift; free text cannot be grouped",
-        "seed_forms": ["safe integer", "digit-string"],
+        "seed_forms": [
+          "safe integer",
+          "digit-string"
+        ],
         "seed_forms_why": "a seed too large for an exact JSON number loses its low bits, and a seed that cannot be grouped on exactly is useless here"
       },
-      { "field": "renders[].tone_transform", "optional": true, "type": "boolean", "purpose": "per-render opt-out; resolved once at ingest into every record" }
+      {
+        "field": "renders[].tone_transform",
+        "optional": true,
+        "type": "boolean",
+        "purpose": "per-render opt-out; resolved once at ingest into every record"
+      },
+      {
+        "field": "asset.render_derivation",
+        "optional": true,
+        "schema": "1.3.0",
+        "ruling": "facet E11 Ruling 2 via E11 addenda 3",
+        "carries": [
+          "kind",
+          "generated",
+          "record"
+        ],
+        "why": "emit renders are deterministic derivations of an already-accepted asset, not generated images; an optional block that does not apply is left out, not filled in. Only the manifest can distinguish that from an export that lost its seeds.",
+        "when_generated_false": [
+          "per-render generation blocks are REFUSED as a category error",
+          "the ASSET_GENERATION_PROVENANCE_ABSENT gap is suppressed",
+          "ASSET_RENDERS_ARE_DERIVATIONS (info) is emitted instead"
+        ],
+        "when_absent": "1.2.0 behaviour preserved exactly — saying nothing is not saying \"these are derivations\"",
+        "principle": "same silence-vs-declaration law as style.lora.declared"
+      }
     ],
     "notice_codes": [
-      { "code": "ASSET_STYLE_UNDECLARED", "kind": "gap" },
-      { "code": "ASSET_SUBJECT_NAME_ABSENT", "kind": "gap" },
-      { "code": "ASSET_GENERATION_PROVENANCE_ABSENT", "kind": "gap" },
-      { "code": "ASSET_TONE_TRANSFORM_DECLARED", "kind": "info" }
+      {
+        "code": "ASSET_STYLE_UNDECLARED",
+        "kind": "gap"
+      },
+      {
+        "code": "ASSET_SUBJECT_NAME_ABSENT",
+        "kind": "gap"
+      },
+      {
+        "code": "ASSET_GENERATION_PROVENANCE_ABSENT",
+        "kind": "gap"
+      },
+      {
+        "code": "ASSET_TONE_TRANSFORM_DECLARED",
+        "kind": "info"
+      },
+      {
+        "code": "ASSET_RENDERS_ARE_DERIVATIONS",
+        "kind": "info",
+        "schema": "1.3.0"
+      }
     ]
   },
-
   "field_manifest_compatibility": {
     "measured": true,
     "measured_at": "2026-08-07",
-    "validator": "1.2.0",
+    "validator": "1.3.0",
     "result": "all validate unchanged, zero edits, zero refusals",
     "manifests": [
-      { "asset_id": "w3_warrior", "path": "E:/AI/training/facet_E08/ARMB/asset-source.json", "declared": "1.0.0", "renders": 8, "validates": true, "style": false, "tone_transform": false, "subject_name": null, "renders_with_generation": 0 },
-      { "asset_id": "w3_warrior_dense", "path": "E:/AI/training/facet_E08/ARMB/export/turnaround/asset-source.json", "declared": "1.0.0", "renders": 26, "validates": true, "style": false, "tone_transform": false, "subject_name": null, "renders_with_generation": 0 },
-      { "asset_id": "e04_galleon", "path": "E:/AI/training/facet_next/E04_stroke/asset-source.json", "declared": "1.0.0", "renders": 3, "validates": true, "style": false, "tone_transform": false, "subject_name": null, "renders_with_generation": 0 },
-      { "asset_id": "e04_galleon_dense", "path": "E:/AI/training/facet_next/E04_stroke/export/turnaround/asset-source.json", "declared": "1.0.0", "renders": 28, "validates": true, "style": false, "tone_transform": false, "subject_name": null, "renders_with_generation": 0 }
-    ]
+      {
+        "asset_id": "w3_warrior",
+        "path": "E:/AI/training/facet_E08/ARMB/asset-source.json",
+        "declared": "1.0.0",
+        "renders": 8,
+        "validates": true,
+        "style": false,
+        "tone_transform": false,
+        "subject_name": null,
+        "renders_with_generation": 0
+      },
+      {
+        "asset_id": "w3_warrior_dense",
+        "path": "E:/AI/training/facet_E08/ARMB/export/turnaround/asset-source.json",
+        "declared": "1.0.0",
+        "renders": 26,
+        "validates": true,
+        "style": false,
+        "tone_transform": false,
+        "subject_name": null,
+        "renders_with_generation": 0
+      },
+      {
+        "asset_id": "e04_galleon",
+        "path": "E:/AI/training/facet_next/E04_stroke/asset-source.json",
+        "declared": "1.0.0",
+        "renders": 3,
+        "validates": true,
+        "style": false,
+        "tone_transform": false,
+        "subject_name": null,
+        "renders_with_generation": 0
+      },
+      {
+        "asset_id": "e04_galleon_dense",
+        "path": "E:/AI/training/facet_next/E04_stroke/export/turnaround/asset-source.json",
+        "declared": "1.0.0",
+        "renders": 28,
+        "validates": true,
+        "style": false,
+        "tone_transform": false,
+        "subject_name": null,
+        "renders_with_generation": 0
+      }
+    ],
+    "revalidated_at_1_3_0": true
   },
-
   "project_state": {
     "measured": true,
     "measured_at": "2026-08-07",
     "project": "facet-assets",
     "records_total": 62,
-    "records_by_asset": { "e04_galleon_dense": 28, "w3_warrior_dense": 26, "w3_warrior": 8 },
+    "records_by_asset": {
+      "e04_galleon_dense": 28,
+      "w3_warrior_dense": 26,
+      "w3_warrior": 8
+    },
     "curated_rejected": 8,
     "uncurated": 54,
-    "carrying_1_2_0_fields": { "style": 0, "tone_transform": 0, "generation": 0, "identity_subject_name": 0 },
+    "carrying_1_2_0_fields": {
+      "style": 0,
+      "tone_transform": 0,
+      "generation": 0,
+      "identity_subject_name": 0
+    },
     "splits_cut": 0
   },
-
   "standing_errand": {
     "errand": "identity.subject_name must be in the data before any training split exists",
-    "subjects": ["galleon", "w3", "dragon (on ingest)"],
+    "subjects": [
+      "galleon",
+      "w3",
+      "dragon (on ingest)"
+    ],
     "schema_support_since": "1.1.0",
     "blocked_by": "export-side re-emit + re-ingest",
     "window_open": true,
@@ -93,7 +252,6 @@
       "retirement-by-curation does not generalise — it worked because a whole generation was superseded at once; two concurrent live exports of one subject have no such mechanism"
     ]
   },
-
   "dragon_readiness": {
     "ready_to_ingest": false,
     "reason": "has not reached Gate 1",
@@ -103,46 +261,122 @@
       "state": "E13 handoff 15 HALTED at step 0's gate",
       "detail": "e04_registry_sweep.py --profile profiles/beast.json returned 8 UNDECIDED, exit 1, against an expected 0; no stroke ran, no generation spent",
       "since": "Ruling 26 transcribed the seven brush entries + margin and released the strokes, so handoff 15 can re-run",
-      "remaining_route": ["strokes", "finalize", "pack", "Gate 1 at the exemplar bar"],
+      "remaining_route": [
+        "strokes",
+        "finalize",
+        "pack",
+        "Gate 1 at the exemplar bar"
+      ],
       "gate": "the E11 export lane and any dataset ingest wait on the Director's Gate-1 verdict"
     },
     "lane_support": [
-      { "arriving": "dense turnaround renders + exact silhouettes", "status": "supported", "since": "1.0.0" },
-      { "arriving": "native per-texel owner channel (view_owner, |i1, -1 unstyled)", "status": "declarable, carried, hashed, structurally proven — NOT CONSUMED", "since": "1.1.0", "caveat": "owner-seam exclusion does not exist as code" },
-      { "arriving": "admission/cam json sidecars", "status": "declarable (weak proof, stated out loud)", "since": "1.1.0" },
-      { "arriving": "register: ultra-realistic, menacing / LoRA NONE", "status": "declarable", "since": "1.2.0" },
-      { "arriving": "harmonization operands (Lab transfer toward reference view 1)", "status": "declarable, contained, hashed, materialized", "since": "1.2.0" },
-      { "arriving": "per-image generation frame + seed", "status": "declarable", "since": "1.2.0" },
-      { "arriving": "identity.subject_name: dragon", "status": "declarable — REQUIRED before any split", "since": "1.1.0" }
+      {
+        "arriving": "dense turnaround renders + exact silhouettes",
+        "status": "supported",
+        "since": "1.0.0"
+      },
+      {
+        "arriving": "native per-texel owner channel (view_owner, |i1, -1 unstyled)",
+        "status": "declarable, carried, hashed, structurally proven — NOT CONSUMED",
+        "since": "1.1.0",
+        "caveat": "owner-seam exclusion does not exist as code"
+      },
+      {
+        "arriving": "admission/cam json sidecars",
+        "status": "declarable (weak proof, stated out loud)",
+        "since": "1.1.0"
+      },
+      {
+        "arriving": "register: ultra-realistic, menacing / LoRA NONE",
+        "status": "declarable",
+        "since": "1.2.0"
+      },
+      {
+        "arriving": "harmonization operands (Lab transfer toward reference view 1)",
+        "status": "declarable, contained, hashed, materialized",
+        "since": "1.2.0"
+      },
+      {
+        "arriving": "per-image generation frame + seed",
+        "status": "declarable",
+        "since": "1.2.0"
+      },
+      {
+        "arriving": "identity.subject_name: dragon",
+        "status": "declarable — REQUIRED before any split",
+        "since": "1.1.0"
+      }
     ],
     "forward_notes": [
-      { "measured": false, "source": "E12 Ruling 24b", "note": "route renders should be frame: 'full' — the crop pass was NOT adopted; crop twins remain E13 measurement artifacts and nothing they painted is adopted. If exported for the record, mark them frame: 'crop' so they are not drawn into a training pool alongside the adopted set." },
-      { "measured": false, "source": "E12 Rulings 12e/13d", "note": "register-interaction law: colour-word density the painterly register tolerates, the realistic register renders literally. Caption-material guidance for package build — a reason register terms belong on the record." }
+      {
+        "measured": false,
+        "source": "E12 Ruling 24b",
+        "note": "route renders should be frame: 'full' — the crop pass was NOT adopted; crop twins remain E13 measurement artifacts and nothing they painted is adopted. If exported for the record, mark them frame: 'crop' so they are not drawn into a training pool alongside the adopted set."
+      },
+      {
+        "measured": false,
+        "source": "E12 Rulings 12e/13d",
+        "note": "register-interaction law: colour-word density the painterly register tolerates, the realistic register renders literally. Caption-material guidance for package build — a reason register terms belong on the record."
+      }
     ],
     "contract_authority": "the facet advisor rules the facet side of any contract change; every 1.2.0 field is optional and an export declaring none of them still ingests"
   },
-
   "corrections_this_session": [
     {
       "subject": "seed-resistance stem count",
-      "brief_said": "one seed resisted a term across four stems",
-      "ruled_figure": "three",
-      "evidence": "E12 Ruling 20a (wing-strut term across three stems: unnamed, compound, split) and Ruling 23d (view 3 flat-black limb across three independent stem versions, 43999/41985/42567 px, cured at 770701 all three times). The 'four stem generations' phrase in E12-twin-prompts.json describes the coverage of the seed x view map, not the resistance count.",
-      "schema_impact": "none — per-image seed provenance is warranted either way"
+      "status": "WITHDRAWN — this receipt's own correction was wrong",
+      "ruled": "both numbers live in the facet record on different bases: Ruling 20a counts THREE stems at handoff 10 (unnamed, compound, split); Ruling 21c records \"the struts' fourth stem\" at handoff 11",
+      "source": "facet E11 addenda 3 (780c1e7)",
+      "schema_impact": "none — per-image seed provenance is warranted under either count",
+      "note": "recorded because a correction that is itself wrong is worse than no correction — it would have propagated as the lane's authority on a fact the lane does not own"
     }
   ],
-
   "declared_but_not_consumed": [
     "view_owner — carried, hashed, proven; zero owner handling in lib/; owner-seam exclusion does not exist as code",
     "texture-space artifacts (mesh, atlas, texture channels) — sha-verified in place, NOT materialized; the lane's hold depends on E:/AI/training/facet_next/E04_stroke/export/turnaround/ surviving",
     "conditioning pairs — raw material until ~500-1,000 accumulated pairs; linkage lossless from day one so the threshold activates retroactively",
     "the pre-registered dE experiment — NEVER RUN; baseline 17.97 mean / 17.56 median recorded before any training exists"
   ],
-
   "compensator": {
     "wrote_project_data": false,
     "detail": "no records, ingests, snapshots or splits were written; this session added this receipt, library/test/doc changes and a handbook page",
     "undo": "git revert on branch feat/asset-lane-skeleton",
     "owner": "user"
+  },
+  "amended": {
+    "date": "2026-08-07",
+    "same_session": true,
+    "trigger": "1.2.0 accepted and endorsed facet-side as E11 addenda 3 (780c1e7); the endorsement recorded the dragon export requirements and surfaced a defect",
+    "amendments": [
+      "schema 1.3.0 adds asset.render_derivation — emit renders are deterministic derivations (E11 Ruling 2) and carry no generation block CORRECTLY; 1.2.0 reported that as a gap and would have fired on every render of a correct dragon export",
+      "the stem-count correction is WITHDRAWN — both numbers are right on different bases (20a three at handoff 10; 21c the struts fourth stem at handoff 11)",
+      "the twin-set question is answered: hold the default, emit-renders-only, twins ride as declared conditioning pairs"
+    ]
+  },
+  "defect_closed_by_1_3_0": {
+    "found_by": "facet endorsement (E11 addenda 3), not by this lane",
+    "defect": "ASSET_GENERATION_PROVENANCE_ABSENT (gap) would fire on every render of a correctly-formed dragon export, because emit renders correctly carry no generation block",
+    "why_it_mattered": "the gap message says closing it is export-side work; a notice channel that cries wolf on correct data stops being read, taking ASSET_SUBJECT_NAME_ABSENT — the standing errand's only automated alarm — with it",
+    "fix": "asset.render_derivation {kind, generated, record}",
+    "acceptance_test": "tests/lib-asset/asset-style-provenance.test.js :: \"THE DRAGON SHAPE\" — the addendum's exact requirements asserted to ingest with ZERO gap notices",
+    "test_passing": true,
+    "measured": true,
+    "why_minor_not_amendment": "1.2.0 is endorsed by name in facet's committed record; changing what that version means would break the reference. The lane's own rule — a changed export is a new truth, not an overwrite — applies to its own contract versions."
+  },
+  "twin_set_question": {
+    "question": "whether the E12/E13 twin set also enters the lane as a declared generated-image ingest",
+    "raised_in": "facet E11 addenda 3",
+    "decided_at": "the ingest paste — not now",
+    "recommendation": "HOLD THE DEFAULT — emit renders only; twins ride as declared conditioning pairs (renders[].pair), not as a second asset",
+    "reasoning": [
+      "they already have a home: renders[].pair declares a clay<->styled twin ON the emit render it corresponds to — lossless linkage carried from day one so the ~500-1,000-pair threshold activates retroactively",
+      "a separate ingest reopens the leakage the standing errand exists to close: twins are the SAME subject, so they either declare a different identity.subject_name (two families, one subject) or the same one (one family, two derivation classes — which renders[].pair expresses without ambiguity)",
+      "it would put per-view-inconsistent images (the owner-seam class, the dE 17.97 baseline) into a pool whose entire premise is view-consistency by construction",
+      "much of the set is superseded or rejected: Ruling 20b made it the E12 measurement record, superseded as production artifacts; Ruling 24b's crop twins — \"nothing they painted is adopted\"; style-registers.md law: nothing trains on rejected artifacts"
+    ],
+    "reopen_condition": "the conditioning-pair threshold (~500-1,000 accumulated pairs), where the design doc already anticipates a conditioning-pair package type",
+    "reopen_would_need": "renders[].pair currently carries a path only; twins as training material would want seed+stem on the pair, i.e. a richer {path, generation} pair form — a small additive minor, DELIBERATELY NOT BUILT this session (speculative until the threshold is in sight; the twins' generation provenance lives in facet sidecars until then)",
+    "reversible": true,
+    "reversible_note": "1.2.0/1.3.0 make the twins fully declarable either way; nothing here forecloses the Director's call"
   }
 }

@@ -163,13 +163,13 @@ accumulated pairs**, or earlier only if a UFC-class few-shot harness is adopted.
 renders already have inference-time value against pretrained depth/lineart ControlNets —
 no package needed for that.
 
-## The contract — `asset-source.json` (schema_version 1.2.0)
+## The contract — `asset-source.json` (schema_version 1.3.0)
 
 One manifest per exported asset, living in the export directory. All paths are relative to
 the manifest's directory and must resolve inside it (containment is enforced; the export
 dir is untrusted input).
 
-The block below is the 1.0.0 core, unchanged. The 1.1.0 and 1.2.0 additions follow it.
+The block below is the 1.0.0 core, unchanged. The 1.1.0, 1.2.0 and 1.3.0 additions follow it.
 
 ```jsonc
 {
@@ -456,15 +456,70 @@ receipt and printed by the CLI, in two kinds:
 | `ASSET_SUBJECT_NAME_ABSENT` | gap | no `identity.subject_name` — `lib/split.js` will guess families from id stems |
 | `ASSET_GENERATION_PROVENANCE_ABSENT` | gap | some/all admitted renders declare no `generation` (counted: *n* of *m*) |
 | `ASSET_TONE_TRANSFORM_DECLARED` | info | a tone transform sits under every colour measurement on these records |
+| `ASSET_RENDERS_ARE_DERIVATIONS` | info | renders are declared deterministic derivations, so a null `generation` is correct by declaration (1.3.0) |
 
 Notices replay from the stored receipt on a re-run rather than being recomputed, so a
 re-ingest reports the same gaps the original did — and a pre-1.2.0 receipt honestly has none.
 
 **Why 1.2.0 and not 2.0.0.** Same discipline as 1.1.0, same reason: every addition is
-optional, all three field manifests still validate, and a major bump would refuse the
+optional, all four field manifests still validate, and a major bump would refuse the
 manifests E11 ruled to be the training input. The gate stays minor-aware upward — a higher
 declared minor is refused loudly rather than silently dropping channels this build cannot
 see.
+
+### Schema 1.3.0 addition (facet E11 Ruling 2, via E11 addenda 3, authored 2026-08-07)
+
+**This closes a defect 1.2.0 shipped with**, found when facet endorsed 1.2.0 and recorded
+the dragon's export requirements against it.
+
+A dense turnaround's renders are **deterministic derivations** of an already-accepted asset,
+produced by the anchored emit path. They are not generated images. They therefore carry no
+`generation` block — and are *correct* not to. In the addendum's words: *"an optional block
+that does not apply is left out, not filled in."*
+
+1.2.0 could not tell that apart from an export that simply never recorded its seeds, so it
+reported `ASSET_GENERATION_PROVENANCE_ABSENT` on both. On a correctly-formed dragon export
+that notice would have fired on every render and told the operator that closing it was
+export-side work — for an export that was right by ruling. **A notice channel that cries
+wolf on correct data stops being read**, which would have cost the other three notices their
+credibility too.
+
+```jsonc
+"asset": {
+  "render_derivation": {          // NEW — E11 Ruling 2
+    "kind": "emit",               // the asset's own name for the path
+    "generated": false,           // load-bearing
+    "record": "E11 Ruling 2"
+  }
+}
+```
+
+`generated` is the whole point, and it is **the same principle as `style.lora.declared`**:
+the manifest *says* its renders are derivations rather than leaving the lane to infer it
+from an absence. Silence and declaration are different facts, and the lane refuses to
+collapse them — here as there.
+
+What the declaration changes:
+
+| `render_derivation` | a render's `generation` block | the notice |
+|---|---|---|
+| `generated: false` | **refused** — a category error | `ASSET_RENDERS_ARE_DERIVATIONS` (info) |
+| `generated: true` | validated as in 1.2.0 | gap notice when absent |
+| absent | validated as in 1.2.0 | gap notice when absent (1.2.0 behaviour, exactly) |
+
+The refusal under `generated: false` is deliberate rather than lenient. A deterministic
+derivation has no seed of its own; recording one would attribute a seed to an image no seed
+produced. The generating provenance of the twins such a render was *projected from* is real
+and matters — but it belongs to those twins, on the asset side, not to this record.
+
+Records carry `provenance.render_derivation` beside `provenance.generation`, which is what
+makes the two kinds of `null` distinguishable downstream: a curator filtering for
+unknown-seed records must not sweep up emit derivations that never had one.
+
+**Why 1.3.0 and not an amendment to 1.2.0.** 1.2.0 is endorsed by name in facet's committed
+record (E11 addenda 3). Changing what that version means after another repo has ruled
+against it would break the reference. The lane's own law about changed exports — *a changed
+export is a new truth, not an overwrite* — applies to its own contract versions too.
 
 ## Validation ladder (all violations collected, one loud refusal)
 

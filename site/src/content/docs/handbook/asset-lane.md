@@ -72,7 +72,7 @@ manifest.
 
 ## Declaring the subject's style register
 
-Schema **1.2.0** adds `asset.style`, and its shape encodes a hard-won rule: **the style
+The manifest declares `asset.style`, and its shape encodes a hard-won rule: **the style
 register is subject data.**
 
 The rule was bought by a rejection. A painterly LoRA that two subjects had *earned*
@@ -140,6 +140,38 @@ claims; it does not verify semantics it does not own.
 A render may opt out with `"tone_transform": false`. The ingest resolves that boolean once
 and writes the answer into every record, so nothing downstream re-derives a default.
 
+## Declaring how the renders came to exist
+
+Not every render is a generated image. A dense turnaround is a set of **deterministic
+derivations** of an already-accepted asset — re-renders by a fixed path. They have no seed
+and no generation frame, and an export that omits `generation` for that reason is *correct*.
+
+An export that omits it because nobody recorded the seeds is not. Only the manifest can tell
+those apart, so it says which:
+
+```jsonc
+"render_derivation": {
+  "kind": "emit",
+  "generated": false,
+  "record": "E11 Ruling 2"
+}
+```
+
+| `generated` | effect |
+|---|---|
+| `false` | a per-render `generation` block is **refused** as a category error; the missing-generation notice is replaced by an informational one |
+| `true` | `generation` blocks are validated normally; their absence is reported as a gap |
+| block absent | same as `true` — saying nothing is not the same as saying "these are derivations" |
+
+The refusal under `generated: false` is deliberate. A deterministic derivation has no seed
+of its own, so declaring one attributes a seed to an image no seed produced. The generating
+provenance of the twins a render was *projected from* is real and matters — but it belongs
+to those twins, not to this record.
+
+Records carry `render_derivation` beside `generation`, which is what makes the two kinds of
+`null` distinguishable: a curator filtering for unknown-seed records must not sweep up
+derivations that never had one.
+
 ## Declaring per-image generation provenance
 
 ```jsonc
@@ -183,6 +215,7 @@ The lane reports what a manifest did not declare, without refusing it:
 | `ASSET_SUBJECT_NAME_ABSENT` | gap | no `identity.subject_name` — splits will guess subject families from id stems |
 | `ASSET_GENERATION_PROVENANCE_ABSENT` | gap | some or all renders declare no `generation` |
 | `ASSET_TONE_TRANSFORM_DECLARED` | info | a tone transform sits under every colour measurement on these records |
+| `ASSET_RENDERS_ARE_DERIVATIONS` | info | renders are declared deterministic derivations, so a null `generation` is correct by declaration |
 
 A **gap** is something the export could close. **Info** is something the manifest correctly
 told you, which changes how the records should be read.
