@@ -566,6 +566,42 @@ Per-render palette-gate failures (against the asset's own declared gate) **rejec
 render** — reported loudly, never registered; the receipt records the rejection. If every
 render fails, the ingest fails.
 
+## ⚠ The durability dependency — the must-not-move list
+
+**Mesh, atlas and every texture-space channel are ingested as `materialized: false`** —
+sha-verified *pointers* into the exporting repo's own trees. That is deliberate (a 4096²
+atlas and a 44 MB GLB do not belong copied into every project that references them), and
+it has a consequence this lane owns: **pointers inherit the pointee's fragility.** If one
+of those directories moves, is renamed, or is lost, the dataset's hold on those channels
+goes with it — the records survive, the hashes survive, and the bytes they name do not.
+
+**These three trees must not move. They belong in any backup that claims to cover the
+dataset:**
+
+| tree | asset | pointer channels |
+|---|---|---|
+| `E:\AI\training\facet_next\E04_stroke\export\turnaround\` | `e04_galleon_dense` (28 renders) | mesh, atlas, provenance atlas, `view_owner.npy`, `styled_mask.npy` |
+| `E:\AI\training\facet_E08\ARMB\export\turnaround\` | `w3_warrior_dense` (26 renders) | mesh, atlas, provenance atlas, `styled_mask.npy` — no owner channel, honestly absent |
+| `E:\AI\training\facet_next\E13_stroke\export\turnaround\` | `e12_dragon_dense` (26 renders) | mesh, atlas, provenance atlas, `styled_mask.npy`, `view_owner.npy` — 87 MB across five pointers |
+
+Each asset's `ingest-receipt.json` is the authority for its own list: every entry with
+`materialized: false` names a file outside this repo, with the sha256 that must still
+match. A pointer whose bytes have silently changed is a worse failure than a pointer whose
+file is gone, and neither is detected until something reads it.
+
+**Why this section exists.** Until 2026-08-07 this dependency was recorded only in facet's
+own ruling — on the side that *owns* the files, never on the side whose pointers break.
+The gap was flagged from the facet seat at the dragon's ingest and ruled into both records
+(facet E12 Ruling 30). **A dependency only the healthy side knows about is not a recorded
+dependency:** the repo that would notice the loss is this one, and it was the repo with
+nothing written down.
+
+**The one exception, and why it is one.** `asset.tone_transform.operands` is
+**materialized** (schema 1.2.0) — copied into `assets/<id>/` and hashed, not pointed at.
+The operands are the only record of what an upstream tone transform did to the colours
+this lane measures, so they must outlive the export tree rather than depend on it. Every
+other texture-space channel is a pointer by design.
+
 ## Ported gates (formula-faithful, cited)
 
 - **Palette conformance** — ported from `E:\AI\facet\tools\palette_gate.py` (read-only):
