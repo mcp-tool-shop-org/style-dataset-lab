@@ -1,0 +1,157 @@
+{
+  "id": "e14_longsword_dense__y060_e00",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-08T10:24:13.832Z",
+  "asset_path": "outputs/candidates/e14_longsword_dense__y060_e00.png",
+  "image": {
+    "format": "png",
+    "width": 240,
+    "height": 1024,
+    "bytes": 72561
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-08T10:24:13.832Z",
+    "asset_id": "e14_longsword_dense",
+    "asset_source": "facet/E14",
+    "manifest_path": "assets/e14_longsword_dense/asset-source.json",
+    "manifest_sha256": "58ff010c1c372f9b0c6d4f3c3b9301d3ef09cc93e82307151f1559e99efa5ebd",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-08",
+      "record": "E:/AI/facet/docs/experiments/E14-ruling.md Ruling 32 (\"Fantastic! I accept\") - judged artifact: E14_strokes/run/final/longsword_hero.glb at the Director's own zoom in Blender, three screenshots returned with the verdict (the hero diagonal; near edge-on from the pommel down - the ribbon the whole stroke lane existed for, continuous steel to the tip at his own zoom; the hilt from above at the fixture's five elements). The route's FOURTH accepted asset and its fourth subject class - character, ship, beast, prop - at zero credits across the entire arc.",
+      "by": "director"
+    },
+    "render_id": "y060_e00",
+    "camera": {
+      "yaw_deg": 60,
+      "elevation_deg": 0
+    },
+    "light": "flat",
+    "facing": "three-quarter front-right",
+    "silhouette_mask": {
+      "path": "assets/e14_longsword_dense/masks/y060_e00.png",
+      "sha256": "00f55a4c425230e98f9039dff9d898649bd3f39ac94d7d5eef57a3135dd6a438"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/e14_longsword_dense/channels/provenance_view__y060_e00.png",
+        "sha256": "a22fb1f4c7a991b39bf837a69ddbc0aa421880489b4a2ef8baa994e8467137a5"
+      },
+      "prov_class": {
+        "path": "assets/e14_longsword_dense/channels/prov_class__y060_e00.png",
+        "sha256": "f29d0f580073ab3a9d33cec0d88d4465ff13bb69113a1299f5336820ed46ac96"
+      }
+    },
+    "caption_fields": {
+      "subject": "a tip-standing longsword with a battle-worn steel blade and a raised central ridge, a blackened iron crossguard, a gold diamond boss at the crossing, gold collar rings, an oxblood leather grip wrap, and a dark garnet gem pommel",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "three-quarter front-right"
+    },
+    "generation_provenance_known": true,
+    "style": {
+      "register_terms": [
+        "ultra-realistic",
+        "worn metal",
+        "harsh directional light"
+      ],
+      "register_ruling": "E14 Ruling 5a; EARNED at E14 Ruling 32a",
+      "register_record": "E:/AI/facet/canon/LONGSWORD-IDENTITY.md STYLE-SUPPLIED; E:/AI/facet/profiles/prop.json restylize_views.py.prompt tail; E:/AI/facet/docs/style-registers.md",
+      "lora": {
+        "declared": "none",
+        "card": null,
+        "weight": 0
+      }
+    },
+    "tone_transform": {
+      "applied": true,
+      "kind": "hue-rotation",
+      "space": "CIELAB",
+      "scope": "stone-mask on four of eight generation views (1/3/5/7), above the C* 12.0 chroma floor; 67,904 atlas texels = 1.854% of valid",
+      "reference": "y000_e00",
+      "reference_is_self": false,
+      "reversible": true,
+      "record": "E:/AI/facet/docs/experiments/E14-ruling.md Rulings 25d (the mechanism — the stone leaves the generation path), 26c (the five operands decisions: treatment T3, whole-mask population, no chroma operand, unweighted circular mean, six twins with the garnet pair UNROTATED), 27 (the run ratified). A per-view rotation of hue about the achromatic axis with C* and L preserved exactly — NOT the dragon's whole-figure lab-stats-transfer. sdlab records this claim and verifies neither application nor reversibility, which is the seam.",
+      "operands": {
+        "path": "assets/e14_longsword_dense/tone_transform_operands.json",
+        "sha256": "967906be05d9e8a941434bea8974d2a2046a2a103d348d5f9263bb97f29dc03e"
+      }
+    },
+    "render_derivation": {
+      "kind": "emit",
+      "generated": false,
+      "record": "E11 Ruling 2"
+    },
+    "generation": null,
+    "loss_mask": {
+      "path": "assets/e14_longsword_dense/loss-masks/y060_e00.png",
+      "sha256": "f04dbea1dc1cd762a30372e0f2825038277d535f999258fc9cefc6546524c061"
+    }
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "identity": {
+    "subject_name": "longsword"
+  },
+  "lineage": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 32815,
+      "offpalette_px": 119,
+      "offpalette_pct": 0.3626,
+      "largest_blob_px": 18,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 30,
+        "hue_hi": 40,
+        "share_of_offpalette": 37.8,
+        "median_chroma": 18.5,
+        "median_rgb": [
+          81,
+          58,
+          68
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 32815,
+        "classes": {
+          "background": {
+            "px": 289,
+            "share": 0.8807
+          },
+          "stage1b_projection": {
+            "px": 28865,
+            "share": 87.9628
+          },
+          "garnet_reprojection": {
+            "px": 1436,
+            "share": 4.376
+          },
+          "collar_repair": {
+            "px": 37,
+            "share": 0.1128
+          },
+          "brush": {
+            "px": 1174,
+            "share": 3.5776
+          },
+          "dilation": {
+            "px": 1014,
+            "share": 3.0901
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}

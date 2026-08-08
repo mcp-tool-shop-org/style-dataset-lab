@@ -1,0 +1,167 @@
+{
+  "id": "e14_longsword_dense__y315_e00",
+  "schema_version": "2.0.0",
+  "created_at": "2026-08-08T10:24:13.986Z",
+  "asset_path": "outputs/candidates/e14_longsword_dense__y315_e00.png",
+  "image": {
+    "format": "png",
+    "width": 240,
+    "height": 1024,
+    "bytes": 84107
+  },
+  "provenance": {
+    "source": "asset",
+    "ingested_at": "2026-08-08T10:24:13.986Z",
+    "asset_id": "e14_longsword_dense",
+    "asset_source": "facet/E14",
+    "manifest_path": "assets/e14_longsword_dense/asset-source.json",
+    "manifest_sha256": "58ff010c1c372f9b0c6d4f3c3b9301d3ef09cc93e82307151f1559e99efa5ebd",
+    "acceptance": {
+      "gate": "gate-1",
+      "verdict": "accepted",
+      "date": "2026-08-08",
+      "record": "E:/AI/facet/docs/experiments/E14-ruling.md Ruling 32 (\"Fantastic! I accept\") - judged artifact: E14_strokes/run/final/longsword_hero.glb at the Director's own zoom in Blender, three screenshots returned with the verdict (the hero diagonal; near edge-on from the pommel down - the ribbon the whole stroke lane existed for, continuous steel to the tip at his own zoom; the hilt from above at the fixture's five elements). The route's FOURTH accepted asset and its fourth subject class - character, ship, beast, prop - at zero credits across the entire arc.",
+      "by": "director"
+    },
+    "render_id": "y315_e00",
+    "camera": {
+      "yaw_deg": 315,
+      "elevation_deg": 0
+    },
+    "light": "flat",
+    "facing": "three-quarter front-left",
+    "silhouette_mask": {
+      "path": "assets/e14_longsword_dense/masks/y315_e00.png",
+      "sha256": "0949ff7e0dc7b4d061bd57c18da0bf2639acfa90f3659c684a31f7afd173e232"
+    },
+    "channels": {
+      "provenance_view": {
+        "path": "assets/e14_longsword_dense/channels/provenance_view__y315_e00.png",
+        "sha256": "ab08d268ee72a69860c8559a343ba28d66edb19919180ca7372090a77a43f202"
+      },
+      "prov_class": {
+        "path": "assets/e14_longsword_dense/channels/prov_class__y315_e00.png",
+        "sha256": "8674cf51f7edb91586ce1c3b22052543f9586532a801c2bd788a8bd7f3004c25"
+      }
+    },
+    "caption_fields": {
+      "subject": "a tip-standing longsword with a battle-worn steel blade and a raised central ridge, a blackened iron crossguard, a gold diamond boss at the crossing, gold collar rings, an oxblood leather grip wrap, and a dark garnet gem pommel",
+      "style_trigger": null,
+      "domain_tag": "3d asset",
+      "facing": "three-quarter front-left"
+    },
+    "generation_provenance_known": true,
+    "style": {
+      "register_terms": [
+        "ultra-realistic",
+        "worn metal",
+        "harsh directional light"
+      ],
+      "register_ruling": "E14 Ruling 5a; EARNED at E14 Ruling 32a",
+      "register_record": "E:/AI/facet/canon/LONGSWORD-IDENTITY.md STYLE-SUPPLIED; E:/AI/facet/profiles/prop.json restylize_views.py.prompt tail; E:/AI/facet/docs/style-registers.md",
+      "lora": {
+        "declared": "none",
+        "card": null,
+        "weight": 0
+      }
+    },
+    "tone_transform": {
+      "applied": true,
+      "kind": "hue-rotation",
+      "space": "CIELAB",
+      "scope": "stone-mask on four of eight generation views (1/3/5/7), above the C* 12.0 chroma floor; 67,904 atlas texels = 1.854% of valid",
+      "reference": "y000_e00",
+      "reference_is_self": false,
+      "reversible": true,
+      "record": "E:/AI/facet/docs/experiments/E14-ruling.md Rulings 25d (the mechanism — the stone leaves the generation path), 26c (the five operands decisions: treatment T3, whole-mask population, no chroma operand, unweighted circular mean, six twins with the garnet pair UNROTATED), 27 (the run ratified). A per-view rotation of hue about the achromatic axis with C* and L preserved exactly — NOT the dragon's whole-figure lab-stats-transfer. sdlab records this claim and verifies neither application nor reversibility, which is the seam.",
+      "operands": {
+        "path": "assets/e14_longsword_dense/tone_transform_operands.json",
+        "sha256": "967906be05d9e8a941434bea8974d2a2046a2a103d348d5f9263bb97f29dc03e"
+      }
+    },
+    "render_derivation": {
+      "kind": "emit",
+      "generated": false,
+      "record": "E11 Ruling 2"
+    },
+    "generation": null,
+    "loss_mask": {
+      "path": "assets/e14_longsword_dense/loss-masks/y315_e00.png",
+      "sha256": "f52e6409cb0c894855e6363e265338752131928fd1ddd786330f7337a8903755"
+    },
+    "pair": {
+      "clay": {
+        "path": "assets/e14_longsword_dense/pairs/clay__y315_e00.png",
+        "sha256": "b4ec63f8e3a9188ec0f8fb9bbc3da992cc7cbf1cf8f05397bbb1986eb4650cb1"
+      },
+      "twin": {
+        "path": "assets/e14_longsword_dense/pairs/twin__y315_e00.png",
+        "sha256": "aa20a316c87687343d5f054b9cd8fc47173d1ddabbd686c0f0f50c042a63aa59"
+      }
+    }
+  },
+  "judgment": null,
+  "canon": null,
+  "iteration": null,
+  "identity": {
+    "subject_name": "longsword"
+  },
+  "lineage": null,
+  "asset_measurements": {
+    "tool": "sdlab-asset-ingest-v1",
+    "palette_gate": {
+      "figure_px": 40331,
+      "offpalette_px": 87,
+      "offpalette_pct": 0.2157,
+      "largest_blob_px": 9,
+      "pass": true,
+      "withdrawn_pct_bound": true,
+      "dominant": {
+        "hue_lo": 30,
+        "hue_hi": 40,
+        "share_of_offpalette": 26.4,
+        "median_chroma": 18.1,
+        "median_rgb": [
+          88,
+          68,
+          85
+        ]
+      }
+    },
+    "class_shares": {
+      "prov_class": {
+        "figure_px": 40331,
+        "classes": {
+          "background": {
+            "px": 341,
+            "share": 0.8455
+          },
+          "stage1b_projection": {
+            "px": 36279,
+            "share": 89.9531
+          },
+          "garnet_reprojection": {
+            "px": 1341,
+            "share": 3.325
+          },
+          "collar_repair": {
+            "px": 26,
+            "share": 0.0645
+          },
+          "brush": {
+            "px": 1153,
+            "share": 2.8588
+          },
+          "dilation": {
+            "px": 1191,
+            "share": 2.9531
+          }
+        },
+        "unclassified": {
+          "px": 0,
+          "share": 0
+        }
+      }
+    }
+  }
+}

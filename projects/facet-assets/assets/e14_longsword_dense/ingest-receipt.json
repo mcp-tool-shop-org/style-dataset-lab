@@ -1,0 +1,1416 @@
+{
+  "schema_version": "1.1.0",
+  "tool": "sdlab-asset-ingest-v1",
+  "ingested_at": "2026-08-08T10:24:14.022Z",
+  "asset_id": "e14_longsword_dense",
+  "source_dir": "E:/AI/training/facet_next/E14_strokes/export/turnaround",
+  "manifest_sha256": "58ff010c1c372f9b0c6d4f3c3b9301d3ef09cc93e82307151f1559e99efa5ebd",
+  "files": [
+    {
+      "role": "mesh",
+      "source": "mesh.glb",
+      "dest": null,
+      "materialized": false,
+      "sha256": "ab62bb4bd753f2cef4db74d0f6c1128566e032e5d811f97b1b1abc5ad8e5cd90",
+      "bytes": 52046888
+    },
+    {
+      "role": "atlas",
+      "source": "atlas.png",
+      "dest": null,
+      "materialized": false,
+      "sha256": "a0f5110107d43b5d2ecf741df88a7bd8be22618ee46a56e562994547523458a9",
+      "bytes": 14581089
+    },
+    {
+      "role": "channel:provenance_atlas",
+      "source": "provenance_atlas.png",
+      "dest": null,
+      "materialized": false,
+      "sha256": "52ce85fd1d0483f898e6fc7b6094fe78e0ad64eb2ad0b030ca8af39c1a460f28",
+      "bytes": 958657
+    },
+    {
+      "role": "channel:styled_mask",
+      "source": "styled_mask.npy",
+      "dest": null,
+      "materialized": false,
+      "sha256": "322ebdf6b55055da7614e506e1a5716eb1f6619bab9a305a9407339f8050accf",
+      "bytes": 16777344
+    },
+    {
+      "role": "channel:view_owner",
+      "source": "view_owner.npy",
+      "dest": null,
+      "materialized": false,
+      "sha256": "a13a25b034b4a67682a9d723f0bcc6778420421b508910add14f05c09c0e7710",
+      "bytes": 16777344
+    },
+    {
+      "role": "tone_operands",
+      "source": "tone_transform_operands.json",
+      "dest": "assets/e14_longsword_dense/tone_transform_operands.json",
+      "materialized": true,
+      "sha256": "967906be05d9e8a941434bea8974d2a2046a2a103d348d5f9263bb97f29dc03e",
+      "bytes": 8782
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y000_e00.png",
+      "materialized": true,
+      "sha256": "c4800685c66318e0d63756e2bedc98d4bed26ee3105533d9aea4d3c4accdd504",
+      "bytes": 99448
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y000_e00.png",
+      "materialized": true,
+      "sha256": "b72c2cf9d5a4fb149fefbcd65bfb6e0d73706fe4742b3dfc4f7c1613bf03e0ce",
+      "bytes": 2533
+    },
+    {
+      "role": "channel:provenance_view:y000_e00",
+      "source": "views/y+000_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y000_e00.png",
+      "materialized": true,
+      "sha256": "dff5726eabf241cd8faf8d3fc466e2bc6b2ba51251b287fe380125c7a1fd75d3",
+      "bytes": 14066
+    },
+    {
+      "role": "channel:prov_class:y000_e00",
+      "source": "views/y+000_e+00/prov_class_y+000_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y000_e00.png",
+      "materialized": true,
+      "sha256": "8cbe267609a94fc606c29aa505f710d8938805f5fe8ebaf040ab64cfdbe92806",
+      "bytes": 4556
+    },
+    {
+      "role": "loss-mask:y000_e00",
+      "source": "views/y+000_e+00/loss_mask_y+000_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y000_e00.png",
+      "materialized": true,
+      "sha256": "d7a0de699e6088cf72508f8607929a6d7ab454e8c7cf8839cec2034ac8370656",
+      "bytes": 16516
+    },
+    {
+      "role": "pair:clay:y000_e00",
+      "source": "pair_clay_y+000_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/clay__y000_e00.png",
+      "materialized": true,
+      "sha256": "3e173a21d8a7ac02892018bcda9c03d9bb7d7d8203e4753fca82bb91400799ab",
+      "bytes": 243196
+    },
+    {
+      "role": "pair:twin:y000_e00",
+      "source": "pair_twin_y+000_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/twin__y000_e00.png",
+      "materialized": true,
+      "sha256": "386de04131ecf87a1b7405c5f69419407e126c3791778da01674794852663c72",
+      "bytes": 234313
+    },
+    {
+      "role": "render",
+      "source": "views/y+015_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y015_e00.png",
+      "materialized": true,
+      "sha256": "a3ed3eff689132784f42c648be8c65816fc8ad9003ef6c2192dfb7fe73d34a49",
+      "bytes": 99186
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+015_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y015_e00.png",
+      "materialized": true,
+      "sha256": "3caa422edd21d1a61bc5a3dc5d6e80de66384ae8e7311b87a6ae5771cb935b2e",
+      "bytes": 2515
+    },
+    {
+      "role": "channel:provenance_view:y015_e00",
+      "source": "views/y+015_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y015_e00.png",
+      "materialized": true,
+      "sha256": "9787776201feed17adbc4571c617a502b3adf026f96a3dd499f5395dd4e2f635",
+      "bytes": 14580
+    },
+    {
+      "role": "channel:prov_class:y015_e00",
+      "source": "views/y+015_e+00/prov_class_y+015_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y015_e00.png",
+      "materialized": true,
+      "sha256": "3443f8128728b9bd6a605af9ff6e72a16a3482d8bae1d143abbc8182d1054d85",
+      "bytes": 4824
+    },
+    {
+      "role": "loss-mask:y015_e00",
+      "source": "views/y+015_e+00/loss_mask_y+015_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y015_e00.png",
+      "materialized": true,
+      "sha256": "67256137a87423eb35ed85d82be6eb3f17316edbe361f076e03ae1f54f6d4465",
+      "bytes": 16322
+    },
+    {
+      "role": "render",
+      "source": "views/y+030_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y030_e00.png",
+      "materialized": true,
+      "sha256": "76e77f6ca1cf567555ac680aa4038e2dd8c886627a6fd270900c0b694183f6d5",
+      "bytes": 94511
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+030_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y030_e00.png",
+      "materialized": true,
+      "sha256": "355e4da817330a244d1fc54273c24600c8fe7060160bcfe9f2815038719d8f99",
+      "bytes": 2424
+    },
+    {
+      "role": "channel:provenance_view:y030_e00",
+      "source": "views/y+030_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y030_e00.png",
+      "materialized": true,
+      "sha256": "3e2db3e290ed4967caf5d55acf72a148c1e7faef3c83bac0a2a57ec6e1930545",
+      "bytes": 14826
+    },
+    {
+      "role": "channel:prov_class:y030_e00",
+      "source": "views/y+030_e+00/prov_class_y+030_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y030_e00.png",
+      "materialized": true,
+      "sha256": "68ec529395ac4a43ae9aaf95ab90eb00891e1833d762aea6709ffd1457298f78",
+      "bytes": 4697
+    },
+    {
+      "role": "loss-mask:y030_e00",
+      "source": "views/y+030_e+00/loss_mask_y+030_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y030_e00.png",
+      "materialized": true,
+      "sha256": "cb9b3e4fda654ddf9145508178b5a91337d25ed4539b22f78bd14834ae3aebb3",
+      "bytes": 15375
+    },
+    {
+      "role": "render",
+      "source": "views/y+045_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y045_e00.png",
+      "materialized": true,
+      "sha256": "1e738cae972abc8985480ca3e747b38e70b83902ea20bbf3354ea24f94075d57",
+      "bytes": 84943
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+045_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y045_e00.png",
+      "materialized": true,
+      "sha256": "14ec331c59bc210d92d75ef4099760acf85c33128e6b9045c7b929e7c9e228c1",
+      "bytes": 2343
+    },
+    {
+      "role": "channel:provenance_view:y045_e00",
+      "source": "views/y+045_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y045_e00.png",
+      "materialized": true,
+      "sha256": "30c61388e1da1d2daf289db0b1e395755c0d2b5db59ac693e02113d75ac45c1d",
+      "bytes": 14557
+    },
+    {
+      "role": "channel:prov_class:y045_e00",
+      "source": "views/y+045_e+00/prov_class_y+045_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y045_e00.png",
+      "materialized": true,
+      "sha256": "9038e9b980ff676ca7b2ff07cd14873be2451505cff0cb387dcfbc131d1e5913",
+      "bytes": 4375
+    },
+    {
+      "role": "loss-mask:y045_e00",
+      "source": "views/y+045_e+00/loss_mask_y+045_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y045_e00.png",
+      "materialized": true,
+      "sha256": "002e6997fd2227a5b38a578565132f6b92540b6204ac7754277378db7767a69d",
+      "bytes": 14341
+    },
+    {
+      "role": "pair:clay:y045_e00",
+      "source": "pair_clay_y+045_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/clay__y045_e00.png",
+      "materialized": true,
+      "sha256": "1a096b745c87dff71de0a76ad41e634f328904d9663a609d4bb63c9ca7de6b1d",
+      "bytes": 239835
+    },
+    {
+      "role": "pair:twin:y045_e00",
+      "source": "pair_twin_y+045_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/twin__y045_e00.png",
+      "materialized": true,
+      "sha256": "d1ebada2d38daaff060646f722f82634cc81dde8b5c819729cfafdd536b52ca6",
+      "bytes": 224175
+    },
+    {
+      "role": "render",
+      "source": "views/y+060_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y060_e00.png",
+      "materialized": true,
+      "sha256": "99f544396f9dc4d85bea1b450b1eb9fb1462b788a8b744f87e66792b77406b97",
+      "bytes": 72561
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+060_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y060_e00.png",
+      "materialized": true,
+      "sha256": "00f55a4c425230e98f9039dff9d898649bd3f39ac94d7d5eef57a3135dd6a438",
+      "bytes": 2295
+    },
+    {
+      "role": "channel:provenance_view:y060_e00",
+      "source": "views/y+060_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y060_e00.png",
+      "materialized": true,
+      "sha256": "a22fb1f4c7a991b39bf837a69ddbc0aa421880489b4a2ef8baa994e8467137a5",
+      "bytes": 14220
+    },
+    {
+      "role": "channel:prov_class:y060_e00",
+      "source": "views/y+060_e+00/prov_class_y+060_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y060_e00.png",
+      "materialized": true,
+      "sha256": "f29d0f580073ab3a9d33cec0d88d4465ff13bb69113a1299f5336820ed46ac96",
+      "bytes": 4120
+    },
+    {
+      "role": "loss-mask:y060_e00",
+      "source": "views/y+060_e+00/loss_mask_y+060_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y060_e00.png",
+      "materialized": true,
+      "sha256": "f04dbea1dc1cd762a30372e0f2825038277d535f999258fc9cefc6546524c061",
+      "bytes": 12646
+    },
+    {
+      "role": "render",
+      "source": "views/y+075_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y075_e00.png",
+      "materialized": true,
+      "sha256": "177dc8255a6c3eff0f9d85058af85277e9ef5aee48ab8c248fac82317c533bfe",
+      "bytes": 63463
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+075_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y075_e00.png",
+      "materialized": true,
+      "sha256": "e4922f59cc725d1edbfaecf66774dc5e059893b16f71c92d1c5add0bf28e45e5",
+      "bytes": 2151
+    },
+    {
+      "role": "channel:provenance_view:y075_e00",
+      "source": "views/y+075_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y075_e00.png",
+      "materialized": true,
+      "sha256": "6c6ac32d6a6abb114db9b83e81e27e6715d5bce7b7fa008de4b794b3546705ca",
+      "bytes": 13485
+    },
+    {
+      "role": "channel:prov_class:y075_e00",
+      "source": "views/y+075_e+00/prov_class_y+075_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y075_e00.png",
+      "materialized": true,
+      "sha256": "027bdd15d8cd117a58d57cf03ea775c605d500661a1d16ba236ad6b7a0073d96",
+      "bytes": 3636
+    },
+    {
+      "role": "loss-mask:y075_e00",
+      "source": "views/y+075_e+00/loss_mask_y+075_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y075_e00.png",
+      "materialized": true,
+      "sha256": "bbce509dda59b43bfbdda19b2efa6a6ee21f5dc01a4faf1910e0e63d915635f8",
+      "bytes": 12883
+    },
+    {
+      "role": "render",
+      "source": "views/y+090_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y090_e00.png",
+      "materialized": true,
+      "sha256": "04252c1041c3b4b5492042c715b78138d45276dd011a49481807b82fe01e5db1",
+      "bytes": 55858
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+090_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y090_e00.png",
+      "materialized": true,
+      "sha256": "ae1f779dc94eca92e663c894df071d628052a628fbb0a16f11e80f35a42014f2",
+      "bytes": 2019
+    },
+    {
+      "role": "channel:provenance_view:y090_e00",
+      "source": "views/y+090_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y090_e00.png",
+      "materialized": true,
+      "sha256": "450ed9161ff2aa9ad7d24eb45b372e6cf7d3fc6a65b6bb0470a8a7e6d217abe5",
+      "bytes": 12509
+    },
+    {
+      "role": "channel:prov_class:y090_e00",
+      "source": "views/y+090_e+00/prov_class_y+090_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y090_e00.png",
+      "materialized": true,
+      "sha256": "694fa63b251dac647b8283f33ad1968157eb7966d38b6b5e6082159b56739e8d",
+      "bytes": 3263
+    },
+    {
+      "role": "loss-mask:y090_e00",
+      "source": "views/y+090_e+00/loss_mask_y+090_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y090_e00.png",
+      "materialized": true,
+      "sha256": "0e06617e392b4e206be9a5d4cf4da33e4812f247c2ba226643752c8b4bbd1951",
+      "bytes": 11200
+    },
+    {
+      "role": "render",
+      "source": "views/y+105_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y105_e00.png",
+      "materialized": true,
+      "sha256": "c86fd0777ef6c689b7ac11ffdd93052364af0c946ee6ecd4eca067d0cf66f373",
+      "bytes": 62784
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+105_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y105_e00.png",
+      "materialized": true,
+      "sha256": "f51b0bff50c7107de1244af1bc3542e455ef0d5c1fb5aab26fa3e682b870f9c7",
+      "bytes": 2132
+    },
+    {
+      "role": "channel:provenance_view:y105_e00",
+      "source": "views/y+105_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y105_e00.png",
+      "materialized": true,
+      "sha256": "f321188551367ab09e14de8ba7bd0c6b0ea4eee916ecba20f82f3704f8aaa12a",
+      "bytes": 13611
+    },
+    {
+      "role": "channel:prov_class:y105_e00",
+      "source": "views/y+105_e+00/prov_class_y+105_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y105_e00.png",
+      "materialized": true,
+      "sha256": "a4c57006f4a04614e5928c9556053dd44e1ee283d9b17135b3c8ea06f9463104",
+      "bytes": 3634
+    },
+    {
+      "role": "loss-mask:y105_e00",
+      "source": "views/y+105_e+00/loss_mask_y+105_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y105_e00.png",
+      "materialized": true,
+      "sha256": "b7e62587271923eba607e8c3c50ef3e7a50d826540757d6fdd4df74eca53701a",
+      "bytes": 12455
+    },
+    {
+      "role": "render",
+      "source": "views/y+120_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y120_e00.png",
+      "materialized": true,
+      "sha256": "b3c1ebeb762203adcc491c82b352ecb2d25ab9b19257698c05c6b45313f79ae9",
+      "bytes": 71843
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+120_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y120_e00.png",
+      "materialized": true,
+      "sha256": "c08b02228bffb4f33b40b80e52b6560c3287512ea872d1b3d10db0b5f64d584a",
+      "bytes": 2312
+    },
+    {
+      "role": "channel:provenance_view:y120_e00",
+      "source": "views/y+120_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y120_e00.png",
+      "materialized": true,
+      "sha256": "d374dff9573c0fa859610f55f87fcfbb5c33f0bd2e11c4528d9da1c49c577a31",
+      "bytes": 14558
+    },
+    {
+      "role": "channel:prov_class:y120_e00",
+      "source": "views/y+120_e+00/prov_class_y+120_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y120_e00.png",
+      "materialized": true,
+      "sha256": "1020843b9a63b6ba99f974e289d6f6cbe2c7f8108849e23c51ddffe0b021dcfb",
+      "bytes": 4001
+    },
+    {
+      "role": "loss-mask:y120_e00",
+      "source": "views/y+120_e+00/loss_mask_y+120_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y120_e00.png",
+      "materialized": true,
+      "sha256": "aed0e82a892e68af9eecfdc165eba694adb6f61997e4c208cf86fd0f1afbd056",
+      "bytes": 13226
+    },
+    {
+      "role": "render",
+      "source": "views/y+135_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y135_e00.png",
+      "materialized": true,
+      "sha256": "3c42685e7b044127be11368a9de439b355b1ca611eaadb17bfe0e2b94601568e",
+      "bytes": 84510
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+135_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y135_e00.png",
+      "materialized": true,
+      "sha256": "3b266d5284141ea372a04f536a5bfc893111608cbea1e438631690e843843771",
+      "bytes": 2395
+    },
+    {
+      "role": "channel:provenance_view:y135_e00",
+      "source": "views/y+135_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y135_e00.png",
+      "materialized": true,
+      "sha256": "c440a845bd5b724bcb86b2432fc7dfb9fc857d34c0e0faabd6ec4d677cdb6fb9",
+      "bytes": 15134
+    },
+    {
+      "role": "channel:prov_class:y135_e00",
+      "source": "views/y+135_e+00/prov_class_y+135_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y135_e00.png",
+      "materialized": true,
+      "sha256": "b339551f0331598a8cba1713cb55190ac4d54dacef47339a52bf6e7f5741eef3",
+      "bytes": 4363
+    },
+    {
+      "role": "loss-mask:y135_e00",
+      "source": "views/y+135_e+00/loss_mask_y+135_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y135_e00.png",
+      "materialized": true,
+      "sha256": "6f586a8295bbda2c0c6a4495d66b9645f75adb2df6edef46647cc59110d01896",
+      "bytes": 14897
+    },
+    {
+      "role": "pair:clay:y135_e00",
+      "source": "pair_clay_y+135_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/clay__y135_e00.png",
+      "materialized": true,
+      "sha256": "f27e933a64c33ac9fa409d7ffec3d86db8efe8df1070621b1ecc89ae39aa20c7",
+      "bytes": 241070
+    },
+    {
+      "role": "pair:twin:y135_e00",
+      "source": "pair_twin_y+135_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/twin__y135_e00.png",
+      "materialized": true,
+      "sha256": "e4016adffa61e2373bc98aaa7d4a1b47f6b6e35b347c0ea9e2e017e73b79a983",
+      "bytes": 227063
+    },
+    {
+      "role": "render",
+      "source": "views/y+150_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y150_e00.png",
+      "materialized": true,
+      "sha256": "e6b2f2cf01e7f3683c7e01c2f581c07382e92d749675aefa578ecd699ae6b572",
+      "bytes": 93979
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+150_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y150_e00.png",
+      "materialized": true,
+      "sha256": "c8799fac6e1e6d310340ae170fe575e3736a55a86a9db972d41b3245a2b298c2",
+      "bytes": 2451
+    },
+    {
+      "role": "channel:provenance_view:y150_e00",
+      "source": "views/y+150_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y150_e00.png",
+      "materialized": true,
+      "sha256": "8ace0e8e3ac08849caefca5884ecfc358a81092cc36973bdc195a672310fc26e",
+      "bytes": 15196
+    },
+    {
+      "role": "channel:prov_class:y150_e00",
+      "source": "views/y+150_e+00/prov_class_y+150_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y150_e00.png",
+      "materialized": true,
+      "sha256": "485797f317b698811b56b33e7b976d463765fdd947a9eb9383eacced6db043b8",
+      "bytes": 4621
+    },
+    {
+      "role": "loss-mask:y150_e00",
+      "source": "views/y+150_e+00/loss_mask_y+150_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y150_e00.png",
+      "materialized": true,
+      "sha256": "9b718725ae8d3bd3dc365adc0fcb8f9ecc645996cc9910d14aaa280fec243af7",
+      "bytes": 16238
+    },
+    {
+      "role": "render",
+      "source": "views/y+165_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y165_e00.png",
+      "materialized": true,
+      "sha256": "37d4ed9ee550f98d8568dcefd0f04d2b26b7a64bcf4f103899a336f9951166bb",
+      "bytes": 99147
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+165_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y165_e00.png",
+      "materialized": true,
+      "sha256": "33e4afbd8525819f163d4b1baaa53ad40c0521617879d4d7f726341f1d282bb0",
+      "bytes": 2548
+    },
+    {
+      "role": "channel:provenance_view:y165_e00",
+      "source": "views/y+165_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y165_e00.png",
+      "materialized": true,
+      "sha256": "e3761163d2de4a55e3f6ae7e1ae011a029a8ec03cedb1b118d60a3dedf34e4bc",
+      "bytes": 14954
+    },
+    {
+      "role": "channel:prov_class:y165_e00",
+      "source": "views/y+165_e+00/prov_class_y+165_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y165_e00.png",
+      "materialized": true,
+      "sha256": "0299e37810da276b67b49e2b39becf0485d1bb890099f76d3ee3495fed59126a",
+      "bytes": 4799
+    },
+    {
+      "role": "loss-mask:y165_e00",
+      "source": "views/y+165_e+00/loss_mask_y+165_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y165_e00.png",
+      "materialized": true,
+      "sha256": "37e9f14e63f0fdba99354aa67992306c4ae276a932aec4b2bc18c81e51013cd7",
+      "bytes": 17144
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y180_e00.png",
+      "materialized": true,
+      "sha256": "6ac023ab78918d421daa1f3111166fa2325df9f1d276734b99facfdcbddc1cc0",
+      "bytes": 100171
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y180_e00.png",
+      "materialized": true,
+      "sha256": "e818b38a5e96aeedf5c88f23b0fc6f717b26030ce23e9c0653ce009aaa50547f",
+      "bytes": 2531
+    },
+    {
+      "role": "channel:provenance_view:y180_e00",
+      "source": "views/y+180_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y180_e00.png",
+      "materialized": true,
+      "sha256": "28d848911650e1ffe6c0938037c8cac23ec663a70888e4a842dcefd05252e07b",
+      "bytes": 14050
+    },
+    {
+      "role": "channel:prov_class:y180_e00",
+      "source": "views/y+180_e+00/prov_class_y+180_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y180_e00.png",
+      "materialized": true,
+      "sha256": "ac8b46d4b396627c5ddc36b9cbe0b2d6feba221ef8a06c8f7abfad2373d44c64",
+      "bytes": 4657
+    },
+    {
+      "role": "loss-mask:y180_e00",
+      "source": "views/y+180_e+00/loss_mask_y+180_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y180_e00.png",
+      "materialized": true,
+      "sha256": "bf93431ab995798309ca53b47737c728e2ea5229a0421d31a7f9fd62bc3c041f",
+      "bytes": 17495
+    },
+    {
+      "role": "pair:clay:y180_e00",
+      "source": "pair_clay_y+180_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/clay__y180_e00.png",
+      "materialized": true,
+      "sha256": "3774ca6dd36c01c9c9ec8c0e46a0ece97594fdae977fc53f0ec102be5264483c",
+      "bytes": 244948
+    },
+    {
+      "role": "pair:twin:y180_e00",
+      "source": "pair_twin_y+180_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/twin__y180_e00.png",
+      "materialized": true,
+      "sha256": "6d0a888f83ae161a44e42902a2c45240efe20c55936e1b28f5ac8fad4f419d5c",
+      "bytes": 234844
+    },
+    {
+      "role": "render",
+      "source": "views/y+195_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y195_e00.png",
+      "materialized": true,
+      "sha256": "fad3a6cb18c328b00acecbfc7513d27b04625048aa059478ca17a2c819e75b1d",
+      "bytes": 99534
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+195_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y195_e00.png",
+      "materialized": true,
+      "sha256": "03a3819901995a14fe78af206818bb3a87a1b73a667181690f2ca8241e96c8ec",
+      "bytes": 2510
+    },
+    {
+      "role": "channel:provenance_view:y195_e00",
+      "source": "views/y+195_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y195_e00.png",
+      "materialized": true,
+      "sha256": "f908db136eb6d9cda2072d99ab9b476fa34ccf67badcc4e1d9c3b9e4a0175a57",
+      "bytes": 14719
+    },
+    {
+      "role": "channel:prov_class:y195_e00",
+      "source": "views/y+195_e+00/prov_class_y+195_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y195_e00.png",
+      "materialized": true,
+      "sha256": "1c61929389422071c8ecaed26a6c4a8dc41440dab284792f2a5beaa10c99dea4",
+      "bytes": 4898
+    },
+    {
+      "role": "loss-mask:y195_e00",
+      "source": "views/y+195_e+00/loss_mask_y+195_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y195_e00.png",
+      "materialized": true,
+      "sha256": "ae78a9a4fd724f7b97af4f9515d66c6f68c06d67da85f9a91f8fcbec01a50652",
+      "bytes": 16598
+    },
+    {
+      "role": "render",
+      "source": "views/y+210_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y210_e00.png",
+      "materialized": true,
+      "sha256": "164f174ea31dfca421c171f7f2c537036d1c42a3309faa9909896bf7ff1dbfbc",
+      "bytes": 94904
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+210_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y210_e00.png",
+      "materialized": true,
+      "sha256": "c43d86b1877cdcf4b163f23c52bbb85b9d6ada7d81f9729912af13ae592d7b59",
+      "bytes": 2451
+    },
+    {
+      "role": "channel:provenance_view:y210_e00",
+      "source": "views/y+210_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y210_e00.png",
+      "materialized": true,
+      "sha256": "889f72f696d0a4b2df0c7d2c928eeb4be50d7a9856bdc9c906ca94390a2f60ef",
+      "bytes": 15051
+    },
+    {
+      "role": "channel:prov_class:y210_e00",
+      "source": "views/y+210_e+00/prov_class_y+210_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y210_e00.png",
+      "materialized": true,
+      "sha256": "a12f716df55a0b802405154af31afe6c2533284f92347a179dc650963338b63a",
+      "bytes": 4669
+    },
+    {
+      "role": "loss-mask:y210_e00",
+      "source": "views/y+210_e+00/loss_mask_y+210_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y210_e00.png",
+      "materialized": true,
+      "sha256": "5e64eeffa344d989d832dbd8919b77b4f80dd38913d3e2123de70c4234b51cd1",
+      "bytes": 15848
+    },
+    {
+      "role": "render",
+      "source": "views/y+225_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y225_e00.png",
+      "materialized": true,
+      "sha256": "bd3942cb07807851e6fdee07766354c4f835b7ce86d69d3a692e0e86cd2c1d49",
+      "bytes": 85274
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+225_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y225_e00.png",
+      "materialized": true,
+      "sha256": "19d3455baf3d41fe920ea15775a2d46d0f6e8d2c8a6c8dba83499e0cdc2ad0e5",
+      "bytes": 2335
+    },
+    {
+      "role": "channel:provenance_view:y225_e00",
+      "source": "views/y+225_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y225_e00.png",
+      "materialized": true,
+      "sha256": "9bd8e4e309345f34fd745a5ad9288e5f36d440163807e3b26b0a524b5e568457",
+      "bytes": 15095
+    },
+    {
+      "role": "channel:prov_class:y225_e00",
+      "source": "views/y+225_e+00/prov_class_y+225_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y225_e00.png",
+      "materialized": true,
+      "sha256": "2b1e6ef7e4c46973bcab0986c8c5aea8cafdb2dae58c53aa2417c4005bb88e12",
+      "bytes": 4465
+    },
+    {
+      "role": "loss-mask:y225_e00",
+      "source": "views/y+225_e+00/loss_mask_y+225_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y225_e00.png",
+      "materialized": true,
+      "sha256": "3dbbb9914b24e56f215a54e23287ed91e277da624afdf893f52333b087356570",
+      "bytes": 14782
+    },
+    {
+      "role": "pair:clay:y225_e00",
+      "source": "pair_clay_y+225_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/clay__y225_e00.png",
+      "materialized": true,
+      "sha256": "3796aeb921b1cbf05e92ded7ad43f5a6b45cb237c03a352f4e1b4e3325ad186c",
+      "bytes": 240310
+    },
+    {
+      "role": "pair:twin:y225_e00",
+      "source": "pair_twin_y+225_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/twin__y225_e00.png",
+      "materialized": true,
+      "sha256": "36d3ebc884dad4fa26c10b62a0ea85d44fcb06b4db04f8828613a605c05df279",
+      "bytes": 223839
+    },
+    {
+      "role": "render",
+      "source": "views/y+240_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y240_e00.png",
+      "materialized": true,
+      "sha256": "b38ce990faac606e7cf93758105e24ad652e796d9e9e93b9ab7ddb3f67bca25c",
+      "bytes": 72353
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+240_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y240_e00.png",
+      "materialized": true,
+      "sha256": "b30cf73935b6dfb1801ade9a74f74e7041751a861b625d178ebb0db0a2e67cab",
+      "bytes": 2274
+    },
+    {
+      "role": "channel:provenance_view:y240_e00",
+      "source": "views/y+240_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y240_e00.png",
+      "materialized": true,
+      "sha256": "dbecb345d3a13301b16415cf6bd6cfa4a93618f90a59c3b20ad54a018b9a3812",
+      "bytes": 14558
+    },
+    {
+      "role": "channel:prov_class:y240_e00",
+      "source": "views/y+240_e+00/prov_class_y+240_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y240_e00.png",
+      "materialized": true,
+      "sha256": "3b05c9a04392a187f9164d8bb6f27c122cf7c2ee31145dce3b8d63bcae0e8da7",
+      "bytes": 4095
+    },
+    {
+      "role": "loss-mask:y240_e00",
+      "source": "views/y+240_e+00/loss_mask_y+240_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y240_e00.png",
+      "materialized": true,
+      "sha256": "5d649d09f5ffc9f89fa7f2c82282b14a7664ce88dd49878fbbbce7f012111efd",
+      "bytes": 13030
+    },
+    {
+      "role": "render",
+      "source": "views/y+255_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y255_e00.png",
+      "materialized": true,
+      "sha256": "3307affc0780639969811b0383a6fc74a68bb5d6c198aecf6720c770c240ba61",
+      "bytes": 63181
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+255_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y255_e00.png",
+      "materialized": true,
+      "sha256": "e8f7ceb69660668d20872abfca939be6ff1b6344ad7056d62c6cc56a878ea90b",
+      "bytes": 2127
+    },
+    {
+      "role": "channel:provenance_view:y255_e00",
+      "source": "views/y+255_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y255_e00.png",
+      "materialized": true,
+      "sha256": "4e1c4306eabfeaedddad63ad49b96053353afdc8924883a0741189cbec602cfe",
+      "bytes": 13693
+    },
+    {
+      "role": "channel:prov_class:y255_e00",
+      "source": "views/y+255_e+00/prov_class_y+255_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y255_e00.png",
+      "materialized": true,
+      "sha256": "07a12ddecef999cfba85326a212ed51c82940540677212871c8bc874b88096c9",
+      "bytes": 3756
+    },
+    {
+      "role": "loss-mask:y255_e00",
+      "source": "views/y+255_e+00/loss_mask_y+255_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y255_e00.png",
+      "materialized": true,
+      "sha256": "29324d26b471951d457617198660e5c577e9cdb8cf6c5fc82c87076160c34c71",
+      "bytes": 12355
+    },
+    {
+      "role": "render",
+      "source": "views/y+270_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y270_e00.png",
+      "materialized": true,
+      "sha256": "1aa9a5e02313702a4c018ff7ca0f9a630174d0e3c58f207943a09bf0009ad5df",
+      "bytes": 55587
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+270_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y270_e00.png",
+      "materialized": true,
+      "sha256": "fab723529cfb47ed950bfc51c1ee6878381c8a624ffccd83e724b0221e3d9bb1",
+      "bytes": 2023
+    },
+    {
+      "role": "channel:provenance_view:y270_e00",
+      "source": "views/y+270_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y270_e00.png",
+      "materialized": true,
+      "sha256": "dbce507b1626b0dbcdd311adc830c7eee3fc10f8bcbb60c1d3556ed70b03941b",
+      "bytes": 12968
+    },
+    {
+      "role": "channel:prov_class:y270_e00",
+      "source": "views/y+270_e+00/prov_class_y+270_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y270_e00.png",
+      "materialized": true,
+      "sha256": "ebbd703a35b8d1b6bbf4423f363c0e5b2a07ea54f8ddfe15987b824a531ea333",
+      "bytes": 3244
+    },
+    {
+      "role": "loss-mask:y270_e00",
+      "source": "views/y+270_e+00/loss_mask_y+270_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y270_e00.png",
+      "materialized": true,
+      "sha256": "c4e2b057fc4d02a71659e88fac9229a54accb10c34944182c1970cdd7ba5f2d2",
+      "bytes": 11108
+    },
+    {
+      "role": "render",
+      "source": "views/y+285_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y285_e00.png",
+      "materialized": true,
+      "sha256": "8c01e4ce478b0647734a79b7b28cad013579eb65fcccd926510cac1342a38a88",
+      "bytes": 62347
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+285_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y285_e00.png",
+      "materialized": true,
+      "sha256": "29f5180793a535885561f6db3fa01ef388f76652a19a6b2fb4b5663c89f13a58",
+      "bytes": 2160
+    },
+    {
+      "role": "channel:provenance_view:y285_e00",
+      "source": "views/y+285_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y285_e00.png",
+      "materialized": true,
+      "sha256": "55ee1b54b4a01852e878ec418360a652910d012d90b4a41d360888ee87f360ef",
+      "bytes": 14049
+    },
+    {
+      "role": "channel:prov_class:y285_e00",
+      "source": "views/y+285_e+00/prov_class_y+285_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y285_e00.png",
+      "materialized": true,
+      "sha256": "267faed260ffc2e2ce9dd6291c0c0a3294b4b13f62a395e6c7ea5745afb0d4f6",
+      "bytes": 3687
+    },
+    {
+      "role": "loss-mask:y285_e00",
+      "source": "views/y+285_e+00/loss_mask_y+285_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y285_e00.png",
+      "materialized": true,
+      "sha256": "de04e958563c28b5b4ec868a65a9c67c7d94416944a7ee098cd07eb6bc5e86dd",
+      "bytes": 12372
+    },
+    {
+      "role": "render",
+      "source": "views/y+300_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y300_e00.png",
+      "materialized": true,
+      "sha256": "93cb4945fb5778e89b8c0e6a5b77f3ba36743733e497b0bbea9cd99bd1b9c410",
+      "bytes": 71160
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+300_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y300_e00.png",
+      "materialized": true,
+      "sha256": "e2bfea27e37a326eaab73f0d672c6c63b9c7661de222ae458d564e31e331a57b",
+      "bytes": 2329
+    },
+    {
+      "role": "channel:provenance_view:y300_e00",
+      "source": "views/y+300_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y300_e00.png",
+      "materialized": true,
+      "sha256": "5a2931f2d2cf52e83a67f454c8697b7061d9891ba1953b2a706a91b87a5b844e",
+      "bytes": 14922
+    },
+    {
+      "role": "channel:prov_class:y300_e00",
+      "source": "views/y+300_e+00/prov_class_y+300_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y300_e00.png",
+      "materialized": true,
+      "sha256": "64561d4e040efd81129aeb854e3f28d32bb88622f6b9c68f54332a5375b75a43",
+      "bytes": 4077
+    },
+    {
+      "role": "loss-mask:y300_e00",
+      "source": "views/y+300_e+00/loss_mask_y+300_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y300_e00.png",
+      "materialized": true,
+      "sha256": "47245e7c4c8788d251f94d3055d2debbb32d2c399763d1b606f1d52cd1965bbb",
+      "bytes": 12751
+    },
+    {
+      "role": "render",
+      "source": "views/y+315_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y315_e00.png",
+      "materialized": true,
+      "sha256": "49d8860a21d1020884a5b9e9e1886eaa61d16de7109aa52e4be256e52d5ef8c8",
+      "bytes": 84107
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+315_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y315_e00.png",
+      "materialized": true,
+      "sha256": "0949ff7e0dc7b4d061bd57c18da0bf2639acfa90f3659c684a31f7afd173e232",
+      "bytes": 2410
+    },
+    {
+      "role": "channel:provenance_view:y315_e00",
+      "source": "views/y+315_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y315_e00.png",
+      "materialized": true,
+      "sha256": "ab08d268ee72a69860c8559a343ba28d66edb19919180ca7372090a77a43f202",
+      "bytes": 15575
+    },
+    {
+      "role": "channel:prov_class:y315_e00",
+      "source": "views/y+315_e+00/prov_class_y+315_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y315_e00.png",
+      "materialized": true,
+      "sha256": "8674cf51f7edb91586ce1c3b22052543f9586532a801c2bd788a8bd7f3004c25",
+      "bytes": 4539
+    },
+    {
+      "role": "loss-mask:y315_e00",
+      "source": "views/y+315_e+00/loss_mask_y+315_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y315_e00.png",
+      "materialized": true,
+      "sha256": "f52e6409cb0c894855e6363e265338752131928fd1ddd786330f7337a8903755",
+      "bytes": 14427
+    },
+    {
+      "role": "pair:clay:y315_e00",
+      "source": "pair_clay_y+315_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/clay__y315_e00.png",
+      "materialized": true,
+      "sha256": "b4ec63f8e3a9188ec0f8fb9bbc3da992cc7cbf1cf8f05397bbb1986eb4650cb1",
+      "bytes": 239225
+    },
+    {
+      "role": "pair:twin:y315_e00",
+      "source": "pair_twin_y+315_e+00.png",
+      "dest": "assets/e14_longsword_dense/pairs/twin__y315_e00.png",
+      "materialized": true,
+      "sha256": "aa20a316c87687343d5f054b9cd8fc47173d1ddabbd686c0f0f50c042a63aa59",
+      "bytes": 224477
+    },
+    {
+      "role": "render",
+      "source": "views/y+330_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y330_e00.png",
+      "materialized": true,
+      "sha256": "302c206c5e3d2b7f45621ba311d8798fecfc706eb2ca07c0e453f4fb124581be",
+      "bytes": 93506
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+330_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y330_e00.png",
+      "materialized": true,
+      "sha256": "530f5a3075e38921a6dd1181c9ecfb210ebbdb98cb56c3d442ea4853c54d3eea",
+      "bytes": 2451
+    },
+    {
+      "role": "channel:provenance_view:y330_e00",
+      "source": "views/y+330_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y330_e00.png",
+      "materialized": true,
+      "sha256": "276881f550a2ac7443f58b7b0e8e2fe6d2021ec4de49fec1bd117927c42b027c",
+      "bytes": 15265
+    },
+    {
+      "role": "channel:prov_class:y330_e00",
+      "source": "views/y+330_e+00/prov_class_y+330_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y330_e00.png",
+      "materialized": true,
+      "sha256": "a54ead5a9d785e91588095cf5243ed16eb6242788b3b5ca99c0470fdc745c599",
+      "bytes": 4622
+    },
+    {
+      "role": "loss-mask:y330_e00",
+      "source": "views/y+330_e+00/loss_mask_y+330_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y330_e00.png",
+      "materialized": true,
+      "sha256": "01256505c97eb69dac48cf5f41e4fa469224eaebe46e3f64e7f300b5ffcb4561",
+      "bytes": 15400
+    },
+    {
+      "role": "render",
+      "source": "views/y+345_e+00/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y345_e00.png",
+      "materialized": true,
+      "sha256": "ce99319999f0ee0ca5e0272f0a2ea7816536823093c8202672f96ede1486f661",
+      "bytes": 98463
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+345_e+00/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y345_e00.png",
+      "materialized": true,
+      "sha256": "a2fbb4206d8165b80a1862ee98a0e53e343827075fd9442ae0473ea81cbd7627",
+      "bytes": 2535
+    },
+    {
+      "role": "channel:provenance_view:y345_e00",
+      "source": "views/y+345_e+00/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y345_e00.png",
+      "materialized": true,
+      "sha256": "af674a247ba3b1e43eb4b6ad3db5d2ed464e90a861909ce8b2a4dcf4dd78f5f6",
+      "bytes": 14852
+    },
+    {
+      "role": "channel:prov_class:y345_e00",
+      "source": "views/y+345_e+00/prov_class_y+345_e+00.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y345_e00.png",
+      "materialized": true,
+      "sha256": "1fd3475c2bb473e7adda7b6249fec9269a82c71ead132986bb94a5dd8a559b6d",
+      "bytes": 4816
+    },
+    {
+      "role": "loss-mask:y345_e00",
+      "source": "views/y+345_e+00/loss_mask_y+345_e+00.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y345_e00.png",
+      "materialized": true,
+      "sha256": "0ce7a5c399f82339d9e6449dbe5dad641f360f76132864a56e7e6609440fe800",
+      "bytes": 16423
+    },
+    {
+      "role": "render",
+      "source": "views/y+000_e+55/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y000_e55.png",
+      "materialized": true,
+      "sha256": "9cde94990f9699e092c8e5f94d4b5e4cbd38157da7c1d6b42a7f2ecb01aba6f1",
+      "bytes": 70231
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+000_e+55/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y000_e55.png",
+      "materialized": true,
+      "sha256": "958a33fbac551479ff98918e523232883a922b5a19160c1dcfa3d117cce37004",
+      "bytes": 1866
+    },
+    {
+      "role": "channel:provenance_view:y000_e55",
+      "source": "views/y+000_e+55/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y000_e55.png",
+      "materialized": true,
+      "sha256": "ad68c7865610a681cda0e617f974cc09afbdd514f2544083614ca6e13e3b6469",
+      "bytes": 13943
+    },
+    {
+      "role": "channel:prov_class:y000_e55",
+      "source": "views/y+000_e+55/prov_class_y+000_e+55.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y000_e55.png",
+      "materialized": true,
+      "sha256": "efb3fb44b72cfb7038ab90c4ba407172f9502305caa000334d0663ebea86bc74",
+      "bytes": 3899
+    },
+    {
+      "role": "loss-mask:y000_e55",
+      "source": "views/y+000_e+55/loss_mask_y+000_e+55.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y000_e55.png",
+      "materialized": true,
+      "sha256": "1a3e3159f8d3ec7792ec70e1935f74bd2213d94f84058721ffc910891bc76dfc",
+      "bytes": 13058
+    },
+    {
+      "role": "render",
+      "source": "views/y+180_e+55/asset.png",
+      "dest": "outputs/candidates/e14_longsword_dense__y180_e55.png",
+      "materialized": true,
+      "sha256": "c8fe0d6f06a71f84ab42d315e6cab777b4cfba596901b2cf7f45b56cd280613a",
+      "bytes": 70483
+    },
+    {
+      "role": "silhouette",
+      "source": "views/y+180_e+55/silhouette.png",
+      "dest": "assets/e14_longsword_dense/masks/y180_e55.png",
+      "materialized": true,
+      "sha256": "d4f304de196c9253c3ae9070c6ffb09719a9284710452ba49bb0f4b383a1dbaa",
+      "bytes": 1851
+    },
+    {
+      "role": "channel:provenance_view:y180_e55",
+      "source": "views/y+180_e+55/prov.png",
+      "dest": "assets/e14_longsword_dense/channels/provenance_view__y180_e55.png",
+      "materialized": true,
+      "sha256": "347d8756447300925bf84498e171413a9604372de9f509ef5b31b3ca39cbc015",
+      "bytes": 13912
+    },
+    {
+      "role": "channel:prov_class:y180_e55",
+      "source": "views/y+180_e+55/prov_class_y+180_e+55.png",
+      "dest": "assets/e14_longsword_dense/channels/prov_class__y180_e55.png",
+      "materialized": true,
+      "sha256": "c6375109f1e1e4cfe705341b2df00cb8bf8e59c7b651d4a46815fd4fd7518737",
+      "bytes": 3836
+    },
+    {
+      "role": "loss-mask:y180_e55",
+      "source": "views/y+180_e+55/loss_mask_y+180_e+55.png",
+      "dest": "assets/e14_longsword_dense/loss-masks/y180_e55.png",
+      "materialized": true,
+      "sha256": "142b7d39b1f22c01f7d12559465f663aac537c7931331b669d6464602d4af686",
+      "bytes": 13469
+    },
+    {
+      "role": "manifest",
+      "source": "asset-source.json",
+      "dest": "assets/e14_longsword_dense/asset-source.json",
+      "materialized": true,
+      "sha256": "58ff010c1c372f9b0c6d4f3c3b9301d3ef09cc93e82307151f1559e99efa5ebd",
+      "bytes": 20345
+    }
+  ],
+  "records_created": [
+    "e14_longsword_dense__y000_e00",
+    "e14_longsword_dense__y015_e00",
+    "e14_longsword_dense__y030_e00",
+    "e14_longsword_dense__y045_e00",
+    "e14_longsword_dense__y060_e00",
+    "e14_longsword_dense__y075_e00",
+    "e14_longsword_dense__y090_e00",
+    "e14_longsword_dense__y105_e00",
+    "e14_longsword_dense__y120_e00",
+    "e14_longsword_dense__y135_e00",
+    "e14_longsword_dense__y150_e00",
+    "e14_longsword_dense__y165_e00",
+    "e14_longsword_dense__y180_e00",
+    "e14_longsword_dense__y195_e00",
+    "e14_longsword_dense__y210_e00",
+    "e14_longsword_dense__y225_e00",
+    "e14_longsword_dense__y240_e00",
+    "e14_longsword_dense__y255_e00",
+    "e14_longsword_dense__y270_e00",
+    "e14_longsword_dense__y285_e00",
+    "e14_longsword_dense__y300_e00",
+    "e14_longsword_dense__y315_e00",
+    "e14_longsword_dense__y330_e00",
+    "e14_longsword_dense__y345_e00",
+    "e14_longsword_dense__y000_e55",
+    "e14_longsword_dense__y180_e55"
+  ],
+  "records_skipped": [],
+  "rejected_renders": [],
+  "notices": [
+    {
+      "code": "ASSET_TONE_TRANSFORM_DECLARED",
+      "kind": "info",
+      "message": "Renders derive from sources carrying a declared \"hue-rotation\" tone transform toward y000_e00. sdlab records the declaration and hashes the operands; it does NOT verify the transform was applied or is reversible. Colour measurements on these records — palette gate, class shares, ΔE — sit downstream of it."
+    },
+    {
+      "code": "ASSET_RENDERS_ARE_DERIVATIONS",
+      "kind": "info",
+      "message": "Renders are declared \"emit\" derivations of the accepted asset, not generated images — so they carry no seed or generation frame, correctly. Records carry generation: null by declaration rather than by omission. The generating provenance of any twins these were projected from belongs to those twins, not to these records."
+    }
+  ],
+  "written": [
+    "assets/e14_longsword_dense/tone_transform_operands.json",
+    "outputs/candidates/e14_longsword_dense__y000_e00.png",
+    "assets/e14_longsword_dense/masks/y000_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y000_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y000_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y000_e00.png",
+    "assets/e14_longsword_dense/pairs/clay__y000_e00.png",
+    "assets/e14_longsword_dense/pairs/twin__y000_e00.png",
+    "records/e14_longsword_dense__y000_e00.json",
+    "outputs/candidates/e14_longsword_dense__y015_e00.png",
+    "assets/e14_longsword_dense/masks/y015_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y015_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y015_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y015_e00.png",
+    "records/e14_longsword_dense__y015_e00.json",
+    "outputs/candidates/e14_longsword_dense__y030_e00.png",
+    "assets/e14_longsword_dense/masks/y030_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y030_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y030_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y030_e00.png",
+    "records/e14_longsword_dense__y030_e00.json",
+    "outputs/candidates/e14_longsword_dense__y045_e00.png",
+    "assets/e14_longsword_dense/masks/y045_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y045_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y045_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y045_e00.png",
+    "assets/e14_longsword_dense/pairs/clay__y045_e00.png",
+    "assets/e14_longsword_dense/pairs/twin__y045_e00.png",
+    "records/e14_longsword_dense__y045_e00.json",
+    "outputs/candidates/e14_longsword_dense__y060_e00.png",
+    "assets/e14_longsword_dense/masks/y060_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y060_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y060_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y060_e00.png",
+    "records/e14_longsword_dense__y060_e00.json",
+    "outputs/candidates/e14_longsword_dense__y075_e00.png",
+    "assets/e14_longsword_dense/masks/y075_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y075_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y075_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y075_e00.png",
+    "records/e14_longsword_dense__y075_e00.json",
+    "outputs/candidates/e14_longsword_dense__y090_e00.png",
+    "assets/e14_longsword_dense/masks/y090_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y090_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y090_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y090_e00.png",
+    "records/e14_longsword_dense__y090_e00.json",
+    "outputs/candidates/e14_longsword_dense__y105_e00.png",
+    "assets/e14_longsword_dense/masks/y105_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y105_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y105_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y105_e00.png",
+    "records/e14_longsword_dense__y105_e00.json",
+    "outputs/candidates/e14_longsword_dense__y120_e00.png",
+    "assets/e14_longsword_dense/masks/y120_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y120_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y120_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y120_e00.png",
+    "records/e14_longsword_dense__y120_e00.json",
+    "outputs/candidates/e14_longsword_dense__y135_e00.png",
+    "assets/e14_longsword_dense/masks/y135_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y135_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y135_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y135_e00.png",
+    "assets/e14_longsword_dense/pairs/clay__y135_e00.png",
+    "assets/e14_longsword_dense/pairs/twin__y135_e00.png",
+    "records/e14_longsword_dense__y135_e00.json",
+    "outputs/candidates/e14_longsword_dense__y150_e00.png",
+    "assets/e14_longsword_dense/masks/y150_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y150_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y150_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y150_e00.png",
+    "records/e14_longsword_dense__y150_e00.json",
+    "outputs/candidates/e14_longsword_dense__y165_e00.png",
+    "assets/e14_longsword_dense/masks/y165_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y165_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y165_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y165_e00.png",
+    "records/e14_longsword_dense__y165_e00.json",
+    "outputs/candidates/e14_longsword_dense__y180_e00.png",
+    "assets/e14_longsword_dense/masks/y180_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y180_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y180_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y180_e00.png",
+    "assets/e14_longsword_dense/pairs/clay__y180_e00.png",
+    "assets/e14_longsword_dense/pairs/twin__y180_e00.png",
+    "records/e14_longsword_dense__y180_e00.json",
+    "outputs/candidates/e14_longsword_dense__y195_e00.png",
+    "assets/e14_longsword_dense/masks/y195_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y195_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y195_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y195_e00.png",
+    "records/e14_longsword_dense__y195_e00.json",
+    "outputs/candidates/e14_longsword_dense__y210_e00.png",
+    "assets/e14_longsword_dense/masks/y210_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y210_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y210_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y210_e00.png",
+    "records/e14_longsword_dense__y210_e00.json",
+    "outputs/candidates/e14_longsword_dense__y225_e00.png",
+    "assets/e14_longsword_dense/masks/y225_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y225_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y225_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y225_e00.png",
+    "assets/e14_longsword_dense/pairs/clay__y225_e00.png",
+    "assets/e14_longsword_dense/pairs/twin__y225_e00.png",
+    "records/e14_longsword_dense__y225_e00.json",
+    "outputs/candidates/e14_longsword_dense__y240_e00.png",
+    "assets/e14_longsword_dense/masks/y240_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y240_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y240_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y240_e00.png",
+    "records/e14_longsword_dense__y240_e00.json",
+    "outputs/candidates/e14_longsword_dense__y255_e00.png",
+    "assets/e14_longsword_dense/masks/y255_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y255_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y255_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y255_e00.png",
+    "records/e14_longsword_dense__y255_e00.json",
+    "outputs/candidates/e14_longsword_dense__y270_e00.png",
+    "assets/e14_longsword_dense/masks/y270_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y270_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y270_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y270_e00.png",
+    "records/e14_longsword_dense__y270_e00.json",
+    "outputs/candidates/e14_longsword_dense__y285_e00.png",
+    "assets/e14_longsword_dense/masks/y285_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y285_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y285_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y285_e00.png",
+    "records/e14_longsword_dense__y285_e00.json",
+    "outputs/candidates/e14_longsword_dense__y300_e00.png",
+    "assets/e14_longsword_dense/masks/y300_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y300_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y300_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y300_e00.png",
+    "records/e14_longsword_dense__y300_e00.json",
+    "outputs/candidates/e14_longsword_dense__y315_e00.png",
+    "assets/e14_longsword_dense/masks/y315_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y315_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y315_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y315_e00.png",
+    "assets/e14_longsword_dense/pairs/clay__y315_e00.png",
+    "assets/e14_longsword_dense/pairs/twin__y315_e00.png",
+    "records/e14_longsword_dense__y315_e00.json",
+    "outputs/candidates/e14_longsword_dense__y330_e00.png",
+    "assets/e14_longsword_dense/masks/y330_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y330_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y330_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y330_e00.png",
+    "records/e14_longsword_dense__y330_e00.json",
+    "outputs/candidates/e14_longsword_dense__y345_e00.png",
+    "assets/e14_longsword_dense/masks/y345_e00.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y345_e00.png",
+    "assets/e14_longsword_dense/channels/prov_class__y345_e00.png",
+    "assets/e14_longsword_dense/loss-masks/y345_e00.png",
+    "records/e14_longsword_dense__y345_e00.json",
+    "outputs/candidates/e14_longsword_dense__y000_e55.png",
+    "assets/e14_longsword_dense/masks/y000_e55.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y000_e55.png",
+    "assets/e14_longsword_dense/channels/prov_class__y000_e55.png",
+    "assets/e14_longsword_dense/loss-masks/y000_e55.png",
+    "records/e14_longsword_dense__y000_e55.json",
+    "outputs/candidates/e14_longsword_dense__y180_e55.png",
+    "assets/e14_longsword_dense/masks/y180_e55.png",
+    "assets/e14_longsword_dense/channels/provenance_view__y180_e55.png",
+    "assets/e14_longsword_dense/channels/prov_class__y180_e55.png",
+    "assets/e14_longsword_dense/loss-masks/y180_e55.png",
+    "records/e14_longsword_dense__y180_e55.json",
+    "assets/e14_longsword_dense/asset-source.json"
+  ]
+}

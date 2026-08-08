@@ -1,0 +1,660 @@
+{
+ "schema_version": "1.3.0",
+ "_authored": "E11 dense-turnaround exporter, 2026-08-05. Self-contained tree: every referenced file lives under this directory, copies sha256-verified from the accepted artifacts. The subject root's staged 3-render manifest is untouched; which one the Director pastes into the lane is his call. Per-view owner_id_*.npy and admission_*.json ride undeclared beside the declared channels (render-space npy/json are not lane schema 1.x concepts).",
+ "identity": {
+  "subject_name": "longsword"
+ },
+ "asset": {
+  "id": "e14_longsword_dense",
+  "source": "facet/E14",
+  "mesh": {
+   "path": "mesh.glb"
+  },
+  "atlas": {
+   "path": "atlas.png"
+  },
+  "style": {
+   "register": {
+    "terms": [
+     "ultra-realistic",
+     "worn metal",
+     "harsh directional light"
+    ],
+    "ruling": "E14 Ruling 5a; EARNED at E14 Ruling 32a",
+    "record": "E:/AI/facet/canon/LONGSWORD-IDENTITY.md STYLE-SUPPLIED; E:/AI/facet/profiles/prop.json restylize_views.py.prompt tail; E:/AI/facet/docs/style-registers.md"
+   },
+   "lora": {
+    "declared": "none"
+   }
+  },
+  "tone_transform": {
+   "kind": "hue-rotation",
+   "space": "CIELAB",
+   "scope": "stone-mask on four of eight generation views (1/3/5/7), above the C* 12.0 chroma floor; 67,904 atlas texels = 1.854% of valid",
+   "reversible": true,
+   "record": "E:/AI/facet/docs/experiments/E14-ruling.md Rulings 25d (the mechanism \u2014 the stone leaves the generation path), 26c (the five operands decisions: treatment T3, whole-mask population, no chroma operand, unweighted circular mean, six twins with the garnet pair UNROTATED), 27 (the run ratified). A per-view rotation of hue about the achromatic axis with C* and L preserved exactly \u2014 NOT the dragon's whole-figure lab-stats-transfer. sdlab records this claim and verifies neither application nor reversibility, which is the seam.",
+   "reference": "y000_e00",
+   "operands": "tone_transform_operands.json"
+  },
+  "render_derivation": {
+   "kind": "emit",
+   "generated": false,
+   "record": "E11 Ruling 2"
+  }
+ },
+ "acceptance": {
+  "gate": "gate-1",
+  "verdict": "accepted",
+  "date": "2026-08-08",
+  "record": "E:/AI/facet/docs/experiments/E14-ruling.md Ruling 32 (\"Fantastic! I accept\") - judged artifact: E14_strokes/run/final/longsword_hero.glb at the Director's own zoom in Blender, three screenshots returned with the verdict (the hero diagonal; near edge-on from the pommel down - the ribbon the whole stroke lane existed for, continuous steel to the tip at his own zoom; the hilt from above at the fixture's five elements). The route's FOURTH accepted asset and its fourth subject class - character, ship, beast, prop - at zero credits across the entire arc.",
+  "by": "director"
+ },
+ "renders_are": "post-verdict derivations of the accepted asset by the anchored emit path \u2014 the Gate-1 verdict covers the asset (mesh + atlas), and these renders derive from it by the route's own anchored readout (E11 Ruling 3).",
+ "palette": {
+  "source": "E:/AI/facet/canon/E14-longsword-palette.json",
+  "min_chroma": 12.0,
+  "allowed_bands": [
+   {
+    "name": "wine",
+    "hue_deg": [
+     332.0,
+     32.0
+    ]
+   },
+   {
+    "name": "gold",
+    "hue_deg": [
+     42.0,
+     104.0
+    ]
+   },
+   {
+    "name": "lavender-rim",
+    "hue_deg": [
+     292.0,
+     314.0
+    ]
+   }
+  ],
+  "gate": {
+   "max_offpalette_pct": null,
+   "max_offpalette_blob_px": 16777216
+  },
+  "_max_offpalette_blob_px_IS_A_SUSPENSION_ENCODING": "NOT A DERIVED BOUND AND NOT A THRESHOLD. canon/E14-longsword-palette.json declares BOTH bounds null on purpose (E14 Ruling 17d: this subject had no clean twin baseline when its bands were derived, and its only known-bad artifact fails by OCCUPANCY - gold on the blackened-iron crossguard - which a colour-not-placement gate is structurally blind to). The sdlab schema requires an integer here while allowing null for max_offpalette_pct, so this tool TRANSLATES the suspension at the boundary into 16777216 - the whole 4096x4096 atlas, a value no connected component can reach - so the consumer receives a bound that gates nothing and cannot be mistaken for a measured threshold. Canon keeps its nulls. Fourth application of the E04 Ruling 29 pattern.",
+  "_the_lavender_rim_band_is_a_RIM_ADMISSION_not_a_material": "It IS exported (canon puts it in allowed_bands, which palette_gate.py reads - unlike the dragon's suspended blue-violet stratum, which canon deliberately keeps in a key the gate does not read). E14 Ruling 17c admitted it so the gate's numbers mean something on accepted work: the realised backdrop sits at C* 32.6-37.1, far above the floor, so its antialiased rim mixing is a real above-floor hue population INSIDE the silhouette. It covers NO declared material - 92.8% of its support is rim pixels at median depth 1.00 px, against wine at 8.0% and gold at 0.3%. The blindness it buys (interior backdrop-family arrivals, and a DRIFTED declared material - the gem did exactly that at seed 770701) is watched by the standing DEPTH diagnostic, not by hue.",
+  "_the_perimeter_law": null
+ },
+ "channels": [
+  {
+   "id": "provenance_atlas",
+   "space": "texture",
+   "encoding": "indexed",
+   "categorical": true,
+   "filter": "nearest",
+   "path": "provenance_atlas.png",
+   "palette": [
+    {
+     "name": "background",
+     "rgb": [
+      16,
+      16,
+      18
+     ]
+    },
+    {
+     "name": "stage1b_projection",
+     "rgb": [
+      118,
+      146,
+      110
+     ]
+    },
+    {
+     "name": "garnet_reprojection",
+     "rgb": [
+      220,
+      60,
+      220
+     ]
+    },
+    {
+     "name": "collar_repair",
+     "rgb": [
+      40,
+      230,
+      230
+     ]
+    },
+    {
+     "name": "brush",
+     "rgb": [
+      240,
+      176,
+      48
+     ]
+    },
+    {
+     "name": "dilation",
+     "rgb": [
+      150,
+      90,
+      150
+     ]
+    }
+   ],
+   "note": "Indexed per E09 Amendment 1; conversion proven pixel-identical (the run json's leg for this subject)."
+  },
+  {
+   "id": "styled_mask",
+   "space": "texture",
+   "encoding": "npy",
+   "categorical": false,
+   "path": "styled_mask.npy",
+   "dtype": "|b1",
+   "shape": [
+    4096,
+    4096
+   ],
+   "note": "Styled/unstyled coverage before the finalize flood."
+  },
+  {
+   "id": "view_owner",
+   "space": "texture",
+   "encoding": "npy",
+   "categorical": false,
+   "path": "view_owner.npy",
+   "dtype": "|i1",
+   "shape": [
+    4096,
+    4096
+   ],
+   "note": "Stage 1b's per-texel view-owner sidecar. OWNER VALUES ARE POSITIONAL INDICES INTO THE SIX-VIEW INPUT LIST [0,1,3,4,5,7], NOT route view indices \u2014 id 2 is view 3 and id 5 is view 7; views 2 and 6 have no accepted twin (E14 Ruling 20). Verified positionally against stage1b_provenance_legend.json's own per-view committed counts, every count exact. It owns exactly the 1,656,847 reference-class texels (stage-1b projection + garnet re-projection + collar repair) with zero owned outside them."
+  },
+  {
+   "id": "provenance_view",
+   "space": "render",
+   "encoding": "rgb",
+   "categorical": false,
+   "note": "emit's flat readout of the provenance atlas \u2014 antialiased, display form; the exact per-pixel classes are prov_class."
+  },
+  {
+   "id": "prov_class",
+   "space": "render",
+   "encoding": "indexed",
+   "categorical": true,
+   "filter": "nearest",
+   "palette": [
+    {
+     "name": "background",
+     "rgb": [
+      16,
+      16,
+      18
+     ]
+    },
+    {
+     "name": "stage1b_projection",
+     "rgb": [
+      118,
+      146,
+      110
+     ]
+    },
+    {
+     "name": "garnet_reprojection",
+     "rgb": [
+      220,
+      60,
+      220
+     ]
+    },
+    {
+     "name": "collar_repair",
+     "rgb": [
+      40,
+      230,
+      230
+     ]
+    },
+    {
+     "name": "brush",
+     "rgb": [
+      240,
+      176,
+      48
+     ]
+    },
+    {
+     "name": "dilation",
+     "rgb": [
+      150,
+      90,
+      150
+     ]
+    }
+   ],
+   "note": "EXACT per-pixel class map by texel-id raycast \u2014 born indexed, no antialiasing, PLTE == this palette. The admission-mask source."
+  }
+ ],
+ "renders": [
+  {
+   "id": "y000_e00",
+   "path": "views/y+000_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 0.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+000_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+000_e+00/prov.png",
+    "prov_class": "views/y+000_e+00/prov_class_y+000_e+00.png"
+   },
+   "loss_mask": "views/y+000_e+00/loss_mask_y+000_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+000_e+00.png",
+    "twin": "pair_twin_y+000_e+00.png"
+   }
+  },
+  {
+   "id": "y015_e00",
+   "path": "views/y+015_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 15.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+015_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+015_e+00/prov.png",
+    "prov_class": "views/y+015_e+00/prov_class_y+015_e+00.png"
+   },
+   "loss_mask": "views/y+015_e+00/loss_mask_y+015_e+00.png"
+  },
+  {
+   "id": "y030_e00",
+   "path": "views/y+030_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 30.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+030_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+030_e+00/prov.png",
+    "prov_class": "views/y+030_e+00/prov_class_y+030_e+00.png"
+   },
+   "loss_mask": "views/y+030_e+00/loss_mask_y+030_e+00.png"
+  },
+  {
+   "id": "y045_e00",
+   "path": "views/y+045_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 45.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+045_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+045_e+00/prov.png",
+    "prov_class": "views/y+045_e+00/prov_class_y+045_e+00.png"
+   },
+   "loss_mask": "views/y+045_e+00/loss_mask_y+045_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+045_e+00.png",
+    "twin": "pair_twin_y+045_e+00.png"
+   }
+  },
+  {
+   "id": "y060_e00",
+   "path": "views/y+060_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 60.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+060_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+060_e+00/prov.png",
+    "prov_class": "views/y+060_e+00/prov_class_y+060_e+00.png"
+   },
+   "loss_mask": "views/y+060_e+00/loss_mask_y+060_e+00.png"
+  },
+  {
+   "id": "y075_e00",
+   "path": "views/y+075_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 75.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+075_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+075_e+00/prov.png",
+    "prov_class": "views/y+075_e+00/prov_class_y+075_e+00.png"
+   },
+   "loss_mask": "views/y+075_e+00/loss_mask_y+075_e+00.png"
+  },
+  {
+   "id": "y090_e00",
+   "path": "views/y+090_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 90.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+090_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+090_e+00/prov.png",
+    "prov_class": "views/y+090_e+00/prov_class_y+090_e+00.png"
+   },
+   "loss_mask": "views/y+090_e+00/loss_mask_y+090_e+00.png"
+  },
+  {
+   "id": "y105_e00",
+   "path": "views/y+105_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 105.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+105_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+105_e+00/prov.png",
+    "prov_class": "views/y+105_e+00/prov_class_y+105_e+00.png"
+   },
+   "loss_mask": "views/y+105_e+00/loss_mask_y+105_e+00.png"
+  },
+  {
+   "id": "y120_e00",
+   "path": "views/y+120_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 120.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+120_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+120_e+00/prov.png",
+    "prov_class": "views/y+120_e+00/prov_class_y+120_e+00.png"
+   },
+   "loss_mask": "views/y+120_e+00/loss_mask_y+120_e+00.png"
+  },
+  {
+   "id": "y135_e00",
+   "path": "views/y+135_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 135.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+135_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+135_e+00/prov.png",
+    "prov_class": "views/y+135_e+00/prov_class_y+135_e+00.png"
+   },
+   "loss_mask": "views/y+135_e+00/loss_mask_y+135_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+135_e+00.png",
+    "twin": "pair_twin_y+135_e+00.png"
+   }
+  },
+  {
+   "id": "y150_e00",
+   "path": "views/y+150_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 150.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+150_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+150_e+00/prov.png",
+    "prov_class": "views/y+150_e+00/prov_class_y+150_e+00.png"
+   },
+   "loss_mask": "views/y+150_e+00/loss_mask_y+150_e+00.png"
+  },
+  {
+   "id": "y165_e00",
+   "path": "views/y+165_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 165.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+165_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+165_e+00/prov.png",
+    "prov_class": "views/y+165_e+00/prov_class_y+165_e+00.png"
+   },
+   "loss_mask": "views/y+165_e+00/loss_mask_y+165_e+00.png"
+  },
+  {
+   "id": "y180_e00",
+   "path": "views/y+180_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 180.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+180_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+180_e+00/prov.png",
+    "prov_class": "views/y+180_e+00/prov_class_y+180_e+00.png"
+   },
+   "loss_mask": "views/y+180_e+00/loss_mask_y+180_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+180_e+00.png",
+    "twin": "pair_twin_y+180_e+00.png"
+   }
+  },
+  {
+   "id": "y195_e00",
+   "path": "views/y+195_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 195.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+195_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+195_e+00/prov.png",
+    "prov_class": "views/y+195_e+00/prov_class_y+195_e+00.png"
+   },
+   "loss_mask": "views/y+195_e+00/loss_mask_y+195_e+00.png"
+  },
+  {
+   "id": "y210_e00",
+   "path": "views/y+210_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 210.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+210_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+210_e+00/prov.png",
+    "prov_class": "views/y+210_e+00/prov_class_y+210_e+00.png"
+   },
+   "loss_mask": "views/y+210_e+00/loss_mask_y+210_e+00.png"
+  },
+  {
+   "id": "y225_e00",
+   "path": "views/y+225_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 225.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+225_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+225_e+00/prov.png",
+    "prov_class": "views/y+225_e+00/prov_class_y+225_e+00.png"
+   },
+   "loss_mask": "views/y+225_e+00/loss_mask_y+225_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+225_e+00.png",
+    "twin": "pair_twin_y+225_e+00.png"
+   }
+  },
+  {
+   "id": "y240_e00",
+   "path": "views/y+240_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 240.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+240_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+240_e+00/prov.png",
+    "prov_class": "views/y+240_e+00/prov_class_y+240_e+00.png"
+   },
+   "loss_mask": "views/y+240_e+00/loss_mask_y+240_e+00.png"
+  },
+  {
+   "id": "y255_e00",
+   "path": "views/y+255_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 255.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+255_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+255_e+00/prov.png",
+    "prov_class": "views/y+255_e+00/prov_class_y+255_e+00.png"
+   },
+   "loss_mask": "views/y+255_e+00/loss_mask_y+255_e+00.png"
+  },
+  {
+   "id": "y270_e00",
+   "path": "views/y+270_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 270.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+270_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+270_e+00/prov.png",
+    "prov_class": "views/y+270_e+00/prov_class_y+270_e+00.png"
+   },
+   "loss_mask": "views/y+270_e+00/loss_mask_y+270_e+00.png"
+  },
+  {
+   "id": "y285_e00",
+   "path": "views/y+285_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 285.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+285_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+285_e+00/prov.png",
+    "prov_class": "views/y+285_e+00/prov_class_y+285_e+00.png"
+   },
+   "loss_mask": "views/y+285_e+00/loss_mask_y+285_e+00.png"
+  },
+  {
+   "id": "y300_e00",
+   "path": "views/y+300_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 300.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+300_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+300_e+00/prov.png",
+    "prov_class": "views/y+300_e+00/prov_class_y+300_e+00.png"
+   },
+   "loss_mask": "views/y+300_e+00/loss_mask_y+300_e+00.png"
+  },
+  {
+   "id": "y315_e00",
+   "path": "views/y+315_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 315.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+315_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+315_e+00/prov.png",
+    "prov_class": "views/y+315_e+00/prov_class_y+315_e+00.png"
+   },
+   "loss_mask": "views/y+315_e+00/loss_mask_y+315_e+00.png",
+   "pair": {
+    "clay": "pair_clay_y+315_e+00.png",
+    "twin": "pair_twin_y+315_e+00.png"
+   }
+  },
+  {
+   "id": "y330_e00",
+   "path": "views/y+330_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 330.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+330_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+330_e+00/prov.png",
+    "prov_class": "views/y+330_e+00/prov_class_y+330_e+00.png"
+   },
+   "loss_mask": "views/y+330_e+00/loss_mask_y+330_e+00.png"
+  },
+  {
+   "id": "y345_e00",
+   "path": "views/y+345_e+00/asset.png",
+   "camera": {
+    "yaw_deg": 345.0,
+    "elevation_deg": 0.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+345_e+00/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+345_e+00/prov.png",
+    "prov_class": "views/y+345_e+00/prov_class_y+345_e+00.png"
+   },
+   "loss_mask": "views/y+345_e+00/loss_mask_y+345_e+00.png"
+  },
+  {
+   "id": "y000_e55",
+   "path": "views/y+000_e+55/asset.png",
+   "camera": {
+    "yaw_deg": 0.0,
+    "elevation_deg": 55.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+000_e+55/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+000_e+55/prov.png",
+    "prov_class": "views/y+000_e+55/prov_class_y+000_e+55.png"
+   },
+   "loss_mask": "views/y+000_e+55/loss_mask_y+000_e+55.png"
+  },
+  {
+   "id": "y180_e55",
+   "path": "views/y+180_e+55/asset.png",
+   "camera": {
+    "yaw_deg": 180.0,
+    "elevation_deg": 55.0
+   },
+   "light": "flat",
+   "silhouette_mask": "views/y+180_e+55/silhouette.png",
+   "channels": {
+    "provenance_view": "views/y+180_e+55/prov.png",
+    "prov_class": "views/y+180_e+55/prov_class_y+180_e+55.png"
+   },
+   "loss_mask": "views/y+180_e+55/loss_mask_y+180_e+55.png"
+  }
+ ],
+ "captions": {
+  "subject": "a tip-standing longsword with a battle-worn steel blade and a raised central ridge, a blackened iron crossguard, a gold diamond boss at the crossing, gold collar rings, an oxblood leather grip wrap, and a dark garnet gem pommel",
+  "style_trigger": null,
+  "domain_tag": "3d asset"
+ }
+}

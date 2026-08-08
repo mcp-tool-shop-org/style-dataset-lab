@@ -1,0 +1,237 @@
+{
+ "_what": "The per-view operands of THE GARNET RE-PROJECTION's hue rotation (E14 Ruling 25d, operands RULED at 26c) \u2014 the deterministic, generation-free colour operation that produced four of the six projection sources the stone territory's paint came from. T3: a per-view rotation of hue about the achromatic axis with C* and L preserved exactly, computed over each twin's stone mask above the C* 12.0 chroma floor, toward the accepted pair's view-0 stone as reference, by the UNWEIGHTED CIRCULAR MEAN of the unit chromatic vector (an arithmetic median of hues reported +49.1 deg where the true direction was -8.4 \u2014 garnet straddles the 0/360 wrap).",
+ "_scope_stated_exactly": "FOUR of eight generation views (1/3/5/7 \u2014 the drifted twins), inside the stone mask only, reaching 67,904 atlas texels = 1.854% of valid. Views 0 and 4 carry COMPUTED rotations in _computed_not_applied below and went into the projection UNROTATED. Views 2 and 6 have no accepted twin at all. This is NOT a whole-figure transform.",
+ "_assembled_from": {
+  "garnet_operands_final.json": {
+   "path": "_operands_sources/garnet_operands_final.json",
+   "sha256": "652a2d42ed0feec9997a12e54589a859bfb72a870db59f095860aa89a50453f3"
+  },
+  "T3_rotations.npy": {
+   "path": "_operands_sources/T3_rotations.npy",
+   "sha256": "f2d2ee8ceb31eea282100a46a53c1d077b9f0baab3c17cd5fe2301f87d74be64"
+  },
+  "garnet_derivation.json": {
+   "path": "_operands_sources/garnet_derivation.json",
+   "sha256": "e358539a6426747cfbcd6a4aecb7b579bcb6e2d00ebf37cb74a5f1c3668ed4c5"
+  },
+  "TWIN_swordclay_1_garnet.png": {
+   "path": "_operands_sources/TWIN_swordclay_1_garnet.png",
+   "sha256": "61a5b464eb8fd1489180a9dc2fbce91c8bab21b7ba6e59d4e809d1dab7c70e7e"
+  },
+  "TWIN_swordclay_3_garnet.png": {
+   "path": "_operands_sources/TWIN_swordclay_3_garnet.png",
+   "sha256": "04c162743803a38210027769dcb34ea99f546aa6cf536e8258f8ad2f1b91706f"
+  },
+  "TWIN_swordclay_5_garnet.png": {
+   "path": "_operands_sources/TWIN_swordclay_5_garnet.png",
+   "sha256": "ae72895bd59b4b77047be2e83afec5b4df0204814d0f11eaed853009dda88238"
+  },
+  "TWIN_swordclay_7_garnet.png": {
+   "path": "_operands_sources/TWIN_swordclay_7_garnet.png",
+   "sha256": "1a495f9de3531e707faafc194b9b6b87d8e6971b838b3bb81115ec6239f23d3e"
+  }
+ },
+ "_the_recorded_invocation": "E:/AI/facet/docs/experiments/E14-handoff7-garnet-reprojection-report.md (the corrected M2 run, RATIFIED at E14 Ruling 27) \u2014 the restricted write whose set was territory AND holes exactly, 0 styled texels touched, 16,709,312 outside texels byte-identical.",
+ "_chroma_floor": 12.0,
+ "_hue_statistic": "circular mean of the unit chromatic vector",
+ "_reference": {
+  "path": "E:\\AI\\training\\facet_next\\E14_prep\\pair\\PAIR_swordclay_0.png",
+  "stone_px": 1863,
+  "above_floor": 277,
+  "hue_circular_unweighted": 8.185,
+  "hue_circular_chroma_weighted": 11.798,
+  "C_median": 19.87,
+  "L_median": 6.704,
+  "view_index": 0
+ },
+ "views": {
+  "view_1": {
+   "mode": "T3-hue-rotation",
+   "view": 1,
+   "n_stone_px": 1868,
+   "n_above_floor": 521,
+   "hue_before_circular": 316.39,
+   "rotation_deg": 51.8,
+   "hue_after_circular": 8.18,
+   "residual_to_reference": -0.0,
+   "C_before": 20.57,
+   "C_after": 20.57,
+   "L_before": 23.11,
+   "L_after": 23.11,
+   "median_dE_stone": 5.476,
+   "p90_dE_stone": 21.441,
+   "_source_file": "garnet_operands_final.json",
+   "_source_key": "T3|1",
+   "_applied": true,
+   "_projection_source": "_operands_sources/TWIN_swordclay_1_garnet.png",
+   "_projection_source_sha256": "61a5b464eb8fd1489180a9dc2fbce91c8bab21b7ba6e59d4e809d1dab7c70e7e"
+  },
+  "view_3": {
+   "mode": "T3-hue-rotation",
+   "view": 3,
+   "n_stone_px": 1866,
+   "n_above_floor": 410,
+   "hue_before_circular": 333.71,
+   "rotation_deg": 34.47,
+   "hue_after_circular": 8.18,
+   "residual_to_reference": -0.0,
+   "C_before": 26.12,
+   "C_after": 26.12,
+   "L_before": 25.21,
+   "L_after": 25.21,
+   "median_dE_stone": 3.712,
+   "p90_dE_stone": 16.384,
+   "_source_file": "garnet_operands_final.json",
+   "_source_key": "T3|3",
+   "_applied": true,
+   "_projection_source": "_operands_sources/TWIN_swordclay_3_garnet.png",
+   "_projection_source_sha256": "04c162743803a38210027769dcb34ea99f546aa6cf536e8258f8ad2f1b91706f"
+  },
+  "view_5": {
+   "mode": "T3-hue-rotation",
+   "view": 5,
+   "n_stone_px": 1868,
+   "n_above_floor": 451,
+   "hue_before_circular": 312.73,
+   "rotation_deg": 55.45,
+   "hue_after_circular": 8.18,
+   "residual_to_reference": -0.0,
+   "C_before": 16.84,
+   "C_after": 16.84,
+   "L_before": 23.4,
+   "L_after": 23.4,
+   "median_dE_stone": 4.622,
+   "p90_dE_stone": 16.859,
+   "_source_file": "garnet_operands_final.json",
+   "_source_key": "T3|5",
+   "_applied": true,
+   "_projection_source": "_operands_sources/TWIN_swordclay_5_garnet.png",
+   "_projection_source_sha256": "ae72895bd59b4b77047be2e83afec5b4df0204814d0f11eaed853009dda88238"
+  },
+  "view_7": {
+   "mode": "T3-hue-rotation",
+   "view": 7,
+   "n_stone_px": 1866,
+   "n_above_floor": 397,
+   "hue_before_circular": 320.17,
+   "rotation_deg": 48.01,
+   "hue_after_circular": 8.18,
+   "residual_to_reference": -0.0,
+   "C_before": 21.03,
+   "C_after": 21.03,
+   "L_before": 29.59,
+   "L_after": 29.59,
+   "median_dE_stone": 4.953,
+   "p90_dE_stone": 18.321,
+   "_source_file": "garnet_operands_final.json",
+   "_source_key": "T3|7",
+   "_applied": true,
+   "_projection_source": "_operands_sources/TWIN_swordclay_7_garnet.png",
+   "_projection_source_sha256": "1a495f9de3531e707faafc194b9b6b87d8e6971b838b3bb81115ec6239f23d3e"
+  }
+ },
+ "_computed_not_applied": {
+  "view_0": {
+   "mode": "T3-hue-rotation",
+   "view": 0,
+   "n_stone_px": 1863,
+   "n_above_floor": 276,
+   "hue_before_circular": 33.65,
+   "rotation_deg": -25.46,
+   "hue_after_circular": 8.18,
+   "residual_to_reference": -0.0,
+   "C_before": 18.61,
+   "C_after": 18.61,
+   "L_before": 9.66,
+   "L_after": 9.66,
+   "median_dE_stone": 2.143,
+   "p90_dE_stone": 6.727,
+   "_source_file": "garnet_operands_final.json",
+   "_source_key": "T3|0",
+   "_applied": false,
+   "_why": "COMPUTED AS A NEAR-NO-OP CONTROL AND DELIBERATELY NOT APPLIED. E14 Ruling 26c/5: the garnet pair's stones are the identity family already, and rotating accepted-family paint toward the reference's exact mean would 'correct' the medium's own roll variance (the measured ~25 deg same-seed floor), which is not a defect. The re-projection consumed the ORIGINAL files for these two views (E14-handoff7-garnet-reprojection-report.md section 2)."
+  },
+  "view_4": {
+   "mode": "T3-hue-rotation",
+   "view": 4,
+   "n_stone_px": 1863,
+   "n_above_floor": 388,
+   "hue_before_circular": 16.54,
+   "rotation_deg": -8.36,
+   "hue_after_circular": 8.18,
+   "residual_to_reference": 0.0,
+   "C_before": 20.23,
+   "C_after": 20.23,
+   "L_before": 7.21,
+   "L_after": 7.21,
+   "median_dE_stone": 0.76,
+   "p90_dE_stone": 3.006,
+   "_source_file": "garnet_operands_final.json",
+   "_source_key": "T3|4",
+   "_applied": false,
+   "_why": "COMPUTED AS A NEAR-NO-OP CONTROL AND DELIBERATELY NOT APPLIED. E14 Ruling 26c/5: the garnet pair's stones are the identity family already, and rotating accepted-family paint toward the reference's exact mean would 'correct' the medium's own roll variance (the measured ~25 deg same-seed floor), which is not a defect. The re-projection consumed the ORIGINAL files for these two views (E14-handoff7-garnet-reprojection-report.md section 2)."
+  }
+ },
+ "_rim": [
+  {
+   "view": 1,
+   "interior_px": 1465,
+   "rim_px": 403,
+   "interior_above": 328,
+   "rim_above": 193,
+   "interior_hue_circ": 315.2,
+   "rim_hue_circ": 319.0,
+   "delta": -3.8
+  },
+  {
+   "view": 3,
+   "interior_px": 1463,
+   "rim_px": 403,
+   "interior_above": 240,
+   "rim_above": 170,
+   "interior_hue_circ": 338.4,
+   "rim_hue_circ": 324.4,
+   "delta": 14.0
+  },
+  {
+   "view": 5,
+   "interior_px": 1465,
+   "rim_px": 403,
+   "interior_above": 266,
+   "rim_above": 185,
+   "interior_hue_circ": 308.7,
+   "rim_hue_circ": 320.4,
+   "delta": -11.7
+  },
+  {
+   "view": 7,
+   "interior_px": 1463,
+   "rim_px": 403,
+   "interior_above": 267,
+   "rim_above": 130,
+   "interior_hue_circ": 321.5,
+   "rim_hue_circ": 316.6,
+   "delta": 4.9
+  },
+  {
+   "view": 0,
+   "interior_px": 1457,
+   "rim_px": 406,
+   "interior_above": 206,
+   "rim_above": 70,
+   "interior_hue_circ": 25.5,
+   "rim_hue_circ": 70.9,
+   "delta": -45.3
+  },
+  {
+   "view": 4,
+   "interior_px": 1457,
+   "rim_px": 406,
+   "interior_above": 315,
+   "rim_above": 73,
+   "interior_hue_circ": 11.6,
+   "rim_hue_circ": 58.0,
+   "delta": -46.4
+  }
+ ]
+}
