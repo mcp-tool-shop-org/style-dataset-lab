@@ -90,7 +90,18 @@ study resolved it immediately. **Any hard-surface design question gets its own c
 before it is asked for inside a full-body composition.** This is a method rule, not a canon rule,
 and it applies to the outcast's repair grammar and the welded register's seams too.
 
-## Accepted cyclops head (head study, seed 208844)
+## 🔒 LOCKED cyclops head — headstudy_v2, seed 208844
+
+**Director: "that's perfect" (2026-08-22), with one correction — the aperture sits HIGHER.**
+`cyclops_headstudy_v2_higheye.png` is the locked reference. Everything below describes it.
+
+The aperture sits in the **upper third** of the front plate, at roughly the height a person's
+eyes would sit — NOT centred. The lower two thirds of the plate stay smooth and empty. Raising it
+also made the aperture read smaller and deeper, which strengthens OPT-003 rather than weakening it.
+
+Every ferrochrome cyclops from here carries this head. It is no longer an open question.
+
+### Original head study (seed 208844, aperture centred) — superseded
 
 A tapered faceted shell, wider at the crown, with a single smooth blank bone-white front plate.
 Black carbon twill in the flanking recesses, chrome edging the panel joins, countersunk fasteners
