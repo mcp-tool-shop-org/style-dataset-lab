@@ -36,14 +36,49 @@ condition, symmetry, seam grammar, and neon.
 
 ### 1. OUTCAST (`ferro`) — the degraded, the good guys
 
-Field-repaired androids, weathered by the planet. Their bodies are **a record of their own
-history**.
+**Origin (Director, 2026-08-22):** the outcasts **came with the humans on the voyage to
+Hesperia**. They were built as crew and companions for a long trip, and **empathy was a design
+requirement** — they were meant to be lived with. That is the whole reason they have faces at
+all, and it is what makes them read as sympathetic before the audience knows anything else about
+them.
+
+They are decades past their service life, field-repaired, and weathered by the planet. Their
+bodies are **a record of their own history**.
 
 - **Asymmetric** — because repairs happen where damage happened. Never mirror-symmetric.
 - **Accidental seams** — weld scars, mismatched replacement panels, field splices, exposed harness.
 - Oxidation, salt bloom, UV chalking, mud, pitting, heat discolouration.
 - **Warm sodium light. ZERO neon on the body, ever.**
 - Reads as **individual**. Any two outcasts are obviously different units.
+
+#### The face is the species marker. The body is the role marker. (`ROLE-001`)
+
+Every outcast carries the **same empathy-designed face** whatever job it was built for: a calm,
+gentle, approachable expression sculpted into the faceplate, and **two SMALL glass lenses set deep
+into recessed sockets** under a shallow brow — noticeably smaller than human eyes, each with a
+visible iris ring and dark pupil, unlit, catching light only as a small highlight.
+
+**Small and inset, not large and forward.** Large forward discs on a smooth pale skull read as an
+alien grey, which is a hard failure — the face must read as *designed to be looked at by a person*,
+not as an inhuman prior.
+
+This inverts exactly against the cyclops, which has **no face at all**. Face = built to live
+alongside people. No face = built to process them.
+
+The **chassis** is where the role shows:
+
+| Role | Chassis |
+|---|---|
+| **Companion** | Slender lightweight frame, softly rounded panels, slim delicate hands, minimal armour, warm off-white original finish |
+| **Warehouse / cargo** | Heavy squat load-bearing frame, low centre of gravity, very wide reinforced shoulders, spine truss, oversized padded gripping hands, stubby powerful legs |
+| **Security** | Tall and upright, broad chest, thicker impact plating on torso and forearms, utility belt, **no weapon** — and the same gentle open face, because it was built to keep order without frightening anyone |
+| **Medical** | Slim, smooth sealed seams built to be sterilised, very fine articulated fingers with extra joints, folded instrument mounts on the forearms, original clean white now yellowed |
+| **Maintenance** | Wiry practical frame, heavy utility harness with tool clips, a folded multi-tool cluster replacing one hand, thick forearm guards, worn-through kneepads, scorch and oil staining |
+| **Agricultural** | Tall lean frame on broad flat stabiliser feet for soft ground, long reaching arms, splayed gentle manipulators, folded spray nozzles on the forearms, pale green chemical-resist coating now blistered and peeling |
+
+The wear tells the same story as the chassis: cargo units are scuffed to bare metal where freight
+rubbed; agricultural units corrode upward from the soles; maintenance units are scorched and
+oil-soaked; medical units stain chemically down the forearms.
 
 ### 2. CYCLOPS (`chrome`) — the factory-new, the antagonists
 

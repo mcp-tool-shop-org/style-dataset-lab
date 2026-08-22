@@ -91,6 +91,24 @@
       "rationale_fail": "Outcast optics glow as emissive lamps — antagonist grammar on a protagonist face (${scorePct}%)"
     },
     {
+      "id": "ROLE-001",
+      "category": "register",
+      "desc": "The face is the species marker; the body is the role marker. The outcasts came with the humans on the voyage to Hesperia and empathy was a DESIGN REQUIREMENT — they were built to be lived with. So every outcast carries the same empathy-designed face regardless of the job it was built for: a calm, gentle, approachable expression sculpted into the faceplate. The CHASSIS is where the role shows — companion (slender, minimal armour, delicate hands), warehouse (squat, low centre of gravity, wide reinforced shoulders, oversized grip), security (tall, impact plating, utility belt, NO weapon), medical (slim, sealed sterilisable seams, fine multi-jointed fingers, forearm instrument mounts), maintenance (wiry, tool harness, multi-tool hand, scorch and oil), agricultural (lean, broad stabiliser feet, long reach, spray nozzles, peeling chemical coating). Wear must match the role: cargo scuffs where freight rubbed, agricultural corrodes upward from the soles, maintenance scorches, medical stains chemically down the forearms.",
+      "dims": ["register_read", "on_canon", "silhouette_read"],
+      "lanes": ["outcast", "contact"],
+      "rationale_pass": "Role reads from the chassis while the empathy-designed face is unchanged (${scorePct}%)",
+      "rationale_fail": "Chassis does not express a role, or the face changed with the role instead of staying constant (${scorePct}%)"
+    },
+    {
+      "id": "OPT-004",
+      "category": "register",
+      "desc": "Outcast optic SCALE and INSET — the mirror of OPT-003, which governs the cyclops. Outcast lenses are SMALL, distinctly smaller than human eyes, and set DEEP INTO recessed sockets under a shallow brow ridge, each showing a visible iris ring and dark pupil. Large forward-mounted discs on a smooth pale skull read as an ALIEN GREY, which is a hard failure: the face must read as designed to be looked at by a person. Small and inset reads as a made face; large and forward reads as an inhuman prior.",
+      "dims": ["register_read", "on_canon"],
+      "lanes": ["outcast", "welded", "contact"],
+      "rationale_pass": "Outcast optics are small and deeply inset with iris and pupil structure (${scorePct}%)",
+      "rationale_fail": "Optics are large forward discs — the face reads as an alien grey rather than a designed companion (${scorePct}%)"
+    },
+    {
       "id": "OPT-003",
       "category": "register",
       "desc": "Optic DEPTH and SHROUDING — the load-bearing variable is not diameter. The cyclops aperture is a dark shrouded WELL sunk into the plate: the opening reads as a black pit, overlapping iris blades sit inside its mouth, and the emitter burns at the BOTTOM OF THE SHAFT, never flush with the surface. Recessed and shrouded reads predatory at almost any size, because it reads as something that can focus on you. The same diameter sitting flush and bright on the surface is the infant signal and produces a friendly service-droid regardless of how immaculate the materials are. Corrected 2026-08-22: the earlier form of this rule said 'small', measured from a bright flush lens on a round head — that case still fails, but scale was the wrong variable. A pinpoint too small reads inert and distant.",
