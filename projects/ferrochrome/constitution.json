@@ -1,0 +1,143 @@
+{
+  "version": "1.0.0",
+  "notes": "The ferrochrome constitution. This project DEFINES a style rather than consuming one — these rules are the specification the trained LoRA is measured against. Prose source of truth: canon/ferrochrome-art-contract.md. Three registers (outcast / cyclops / welded) share every style rule and are separated only by the register rules (NEON-001, SYM-001, SEAM-001, OPT-001, UNI-001). NO ANIME, ever. NO product-render photorealism, ever.",
+  "rules": [
+    {
+      "id": "STY-001",
+      "category": "style",
+      "desc": "Cinematic-real, not product-real. Real materials, real specular physics, real lens behaviour, lit like a film. Never anime, manga, cel-shading, flat vector, clean line art, stylised CGI — and never the press-kit product shot: three-point studio lighting, seamless white sweep, even fill, no shadow side.",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Cinematic-real holds — film lighting over real materials, not a product render (${scorePct}%)",
+      "rationale_fail": "Off-style — reads as anime, vector, stylised CGI, or a studio-lit product shot (${scorePct}%)"
+    },
+    {
+      "id": "MAT-001",
+      "category": "material",
+      "desc": "Chrome behaves as a MIRROR, not a colour. It carries no local colour — it shows the environment: a horizon line bending across curvature, a dark band where the surface reflects nothing, a pinched highlight at the panel edge. A flat grey gradient with a specular dot is a failure.",
+      "dims": ["material_logic"],
+      "rationale_pass": "Chrome reflects — horizon bends across curvature, dark band and pinched edge highlight present (${scorePct}%)",
+      "rationale_fail": "Chrome rendered as grey paint — flat gradient with a specular dot, no environment in the reflection (${scorePct}%)"
+    },
+    {
+      "id": "MAT-002",
+      "category": "material",
+      "desc": "Carbon fibre holds SCALE. 2x2 twill weave readable at a consistent scale relative to panel size, with anisotropic sheen shifting as the surface curves away. Weave that changes scale arbitrarily across panels, or reads as generic dark crosshatch, is a failure.",
+      "dims": ["material_logic"],
+      "rationale_pass": "Carbon fibre reads — 2x2 twill at consistent panel-relative scale, anisotropic sheen across curvature (${scorePct}%)",
+      "rationale_fail": "Carbon fibre is generic dark crosshatch or the weave scale drifts between panels (${scorePct}%)"
+    },
+    {
+      "id": "MAT-003",
+      "category": "material",
+      "desc": "Neon is a LIGHT SOURCE, never a decal. Emitters spill: they tint adjacent panels, colour the shadow side of the body, bloom in the lens, and the surface directly beneath is the brightest thing in frame with a visible falloff. Glowing stripes applied like glow-tape over a normally-lit body are a failure.",
+      "dims": ["material_logic", "light_behaviour"],
+      "rationale_pass": "Neon emits — spill onto adjacent surfaces, tinted shadow side, bloom and falloff present (${scorePct}%)",
+      "rationale_fail": "Neon is a decal — glowing stripes with no spill, no tint, no falloff on the surrounding surface (${scorePct}%)"
+    },
+    {
+      "id": "LIT-001",
+      "category": "lighting",
+      "desc": "Light is an EFFECT, never a source noun. Rendered as 'cold rim light raking the shoulder', 'warm sodium wash', 'deep low-key chiaroscuro' — never as a depicted lamp, bulb, or fixture standing in for the lighting description.",
+      "dims": ["light_behaviour", "palette_mood"],
+      "rationale_pass": "Light reads as an effect — raking, wash, chiaroscuro, not a depicted fixture (${scorePct}%)",
+      "rationale_fail": "Light rendered as a literal source object rather than as an effect on the subject (${scorePct}%)"
+    },
+    {
+      "id": "LIT-002",
+      "category": "lighting",
+      "desc": "Every frame specifies a lighting ENVIRONMENT. Because chrome is one hundred percent environment, the surroundings are part of the material and not the background. Void backdrops, seamless sweeps, and featureless black or white grounds are a failure — there is nothing for the chrome to reflect.",
+      "dims": ["light_behaviour", "material_logic"],
+      "rationale_pass": "Lighting environment is defined and present in the reflections (${scorePct}%)",
+      "rationale_fail": "Void or seamless backdrop — nothing for chrome to reflect, so the material cannot resolve (${scorePct}%)"
+    },
+    {
+      "id": "NEON-001",
+      "category": "register",
+      "desc": "Neon on a BODY is the antagonist marker. Outcast: warm sodium only, ZERO body neon, ever. Cyclops: cold body neon, always, as status and branding rather than decoration. Welded: partial, intermittent, or failing. Neon on an outcast body, or its absence on a cyclops, is a register failure.",
+      "dims": ["register_read", "on_canon"],
+      "rationale_pass": "Body neon matches the register — outcast bare, cyclops cold-lit, welded intermittent (${scorePct}%)",
+      "rationale_fail": "Body neon contradicts the register — the faction cannot be read from the light (${scorePct}%)"
+    },
+    {
+      "id": "SYM-001",
+      "category": "register",
+      "desc": "The symmetry law. Outcasts are ASYMMETRIC because repairs happen where damage happened — the body is a record of its own history. Cyclops are PERFECTLY SYMMETRIC because they have no history. Symmetry is characterisation encoded in geometry, not a rendering preference.",
+      "dims": ["register_read", "silhouette_read"],
+      "rationale_pass": "Symmetry matches the register — outcast asymmetric by repair, cyclops mirror-perfect (${scorePct}%)",
+      "rationale_fail": "Symmetry contradicts the register — a symmetric outcast or an asymmetric cyclops (${scorePct}%)"
+    },
+    {
+      "id": "SEAM-001",
+      "category": "register",
+      "desc": "Seam grammar separates the registers. Outcast seams are ACCIDENTAL — weld scars, mismatched replacement panels, field splices, exposed harness. Cyclops seams are DESIGNED — deliberate shutlines, panel gaps consistent to the millimetre. Welded is mixed: surgical where installed, accidental where survived.",
+      "dims": ["register_read", "material_logic"],
+      "rationale_pass": "Seam grammar matches the register — accidental repair vs designed shutline (${scorePct}%)",
+      "rationale_fail": "Seam grammar contradicts the register — factory shutlines on an outcast or weld scars on a cyclops (${scorePct}%)"
+    },
+    {
+      "id": "OPT-001",
+      "category": "register",
+      "desc": "Optic count is the faction's most reliable tell. Cyclops carry a SINGLE optic, always — it is the faction's name. Outcasts carry TWO optics; a single optic on an outcast is permitted only via visible damage (a smashed or dark socket), never as a clean design feature.",
+      "dims": ["register_read", "on_canon"],
+      "rationale_pass": "Optic count is correct for the register — cyclops single, outcast two or visibly damaged (${scorePct}%)",
+      "rationale_fail": "Optic count contradicts the register — a clean single optic on an outcast, or a two-eyed cyclops (${scorePct}%)"
+    },
+    {
+      "id": "UNI-001",
+      "category": "register",
+      "desc": "Cyclops uniformity. They are products of one line, one spec — identical units. Where two or more cyclops appear in frame they must be indistinguishable from one another. Individuating detail on a cyclops is a failure; uniformity IS the threat.",
+      "dims": ["register_read", "on_canon"],
+      "lanes": ["cyclops", "contact"],
+      "rationale_pass": "Cyclops read as identical units — no individuating detail (${scorePct}%)",
+      "rationale_fail": "Cyclops are individuated — they read as characters rather than as product (${scorePct}%)"
+    },
+    {
+      "id": "CLS-001",
+      "category": "class-integrity",
+      "desc": "Class integrity. Androids (outcast and cyclops) keep a present synthetic head and a plated torso with NO bare human skin, no ribcage, no musculature. The welded register is the sole exception: human face and flesh base are required there.",
+      "dims": ["on_canon", "material_logic"],
+      "rationale_pass": "Class integrity holds — androids fully synthetic, welded correctly part-flesh (${scorePct}%)",
+      "rationale_fail": "Class bleed — bare human skin on an android, or a fully synthetic welded figure (${scorePct}%)"
+    },
+    {
+      "id": "PAL-001",
+      "category": "palette",
+      "desc": "Palette holds against the shared desaturated floor — soot #16140f, concrete-grey #6b6e70, synth-bone #cbc6b6 — with ferro (rust-brown #7a4a2b, sodium-amber #c8862f, oxide-green #5b6b4a) and chrome (cold-steel #9aa6ad, cyan-arc #4fd6e0, violet-arc #8b6cf0) poles. The arc colours are EMITTERS ONLY and must never appear as paint.",
+      "dims": ["palette_mood"],
+      "rationale_pass": "Palette holds — desaturated floor, register pole respected, arc colours only as emitted light (${scorePct}%)",
+      "rationale_fail": "Off-palette — oversaturated, wrong pole, or arc colours applied as surface paint (${scorePct}%)"
+    },
+    {
+      "id": "SIL-001",
+      "category": "silhouette",
+      "desc": "Silhouette reads at distance. The register must be identifiable from massing and light alone at small scale, because these assets resolve as 2.5D figures rather than as portraits.",
+      "dims": ["silhouette_read"],
+      "rationale_pass": "Silhouette reads — register identifiable from massing and light at small scale (${scorePct}%)",
+      "rationale_fail": "Silhouette is ambiguous — register cannot be read without inspecting detail (${scorePct}%)"
+    },
+    {
+      "id": "PRO-001",
+      "category": "proportion",
+      "desc": "Mechanical proportion holds — joint placement, limb length, and mass distribution are structurally plausible for a walking machine. Load-bearing members read as load-bearing.",
+      "dims": ["proportion_accuracy"],
+      "rationale_pass": "Proportion is structurally sound — joints, limbs, and mass distribution plausible (${scorePct}%)",
+      "rationale_fail": "Proportion errors — implausible joints, limb length, or mass distribution (${scorePct}%)"
+    },
+    {
+      "id": "FRM-001",
+      "category": "framing",
+      "desc": "Clean production frame — a single coherent subject or scene, no text, watermark, signature, border, frame, label, or diagram artifact.",
+      "dims": ["style_consistency"],
+      "rationale_pass": "Frame is clean — coherent subject, no text or border artifacts (${scorePct}%)",
+      "rationale_fail": "Frame polluted — text, watermark, border, or label artifacts present (${scorePct}%)"
+    },
+    {
+      "id": "CAN-001",
+      "category": "canon",
+      "desc": "On-canon to the ferrochrome art contract — register definitions, the material law, the palette, and the caption law as written in canon/ferrochrome-art-contract.md.",
+      "dims": ["on_canon"],
+      "rationale_pass": "On-canon to the ferrochrome art contract (${scorePct}%)",
+      "rationale_fail": "Off-canon — contradicts a register definition or the material law (${scorePct}%)"
+    }
+  ]
+}
