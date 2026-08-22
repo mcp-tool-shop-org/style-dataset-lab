@@ -1,0 +1,64 @@
+# Cyclops register — design convergence (2026-08-22)
+
+Five rounds, four wrong. Recorded so the wrong turns are not retaken, because each failure
+taught a rule the canon did not have.
+
+## The rounds
+
+| # | seed | Read as | Why it failed |
+|---|---|---|---|
+| v1 | 770422 | Egyptian cat god | "predatory like a hunting animal" pulled Bastet |
+| v2 | 770422 | The Predator (film) | "predatory" + "helm" + faceplate language |
+| v3a/b | 918337 / 442901 | Pixar service droid | large round optic on a round head = baby schema |
+| v4 | 615508 | Warframe alien bio-mech | "gaunt skeletal" produced literal ribcage anatomy |
+| **v5** | **331774** | **issued military equipment** | **accepted direction** |
+
+## Four rules earned, none of which were in the constitution
+
+1. **Never describe the optic as an addition to a face.** v1/v2 said "a single optic in the centre
+   of its faceplate." The word *faceplate* invites a face, so the model built two eye sockets and
+   put the optic above them as a forehead lamp — reading as two eyes plus a headlamp. The fix is
+   not a stronger negative; it is removing the face from the description entirely: a blank
+   armoured block with **no sockets, no nose, no jaw**, and one aperture set into it.
+
+2. **The optic must be SMALL and DEEP-SET.** This is the inverse of the first assumption. A large
+   round lens centred on a head is the infant signal — big eyes read as sympathetic, and v3 came
+   out adorable despite immaculate materials. A small pinpoint recessed far back in a dark housing
+   reads as a threat. **Encoded as OPT-003.**
+
+3. **Creature vocabulary produces creatures.** "Predatory," "hunting animal," "skeletal," "gaunt,"
+   "blade-like" each dragged the design toward an organism. The Cyclops is a **product**; it must
+   be described in manufacturing language — machined panels, countersunk fasteners, inspection
+   hatches, hinge pins, actuator rods. **Encoded as CLS-002.**
+
+4. **Uniformity has to be SHOWN, not stated.** UNI-001 says cyclops are indistinguishable units,
+   but a single figure cannot demonstrate that. Putting **a second identical unit out of focus
+   behind the first** is what finally made the register read as mass-produced rather than bespoke.
+   Every cyclops lane row should consider a second unit in frame.
+
+## The Director's design ruling
+
+The axis being overshot was **friendly toy ←→ industrial hardware ←→ alien organism**. Ruling
+(2026-08-22): **industrial product.** Manufactured military hardware, purposeful, uniform, zero
+creature reference. Menace comes from height, stillness and the dead optic — never from silhouette
+drama. This follows from UNI-001: mass-produced units cannot look bespoke or grown.
+
+## v5 scoring
+
+**Passes:** UNI-001 (two indistinguishable units in frame — first image to actually demonstrate
+it), OPT-001, OPT-002, OPT-003, CLS-002, SYM-001, SEAM-001, NEON-001 + MAT-003 (chest bar and
+forearm strips visibly spill cold blue onto adjacent white panels), MAT-002 (carbon weave at
+consistent panel-relative scale), LIT-002 (wet ground, sodium lamp reflection).
+
+**Open:** height did not land — reads near-human rather than two heads taller, and slightly bulky
+rather than lean. Head is a plain box: functional, arguably correct banality for issued equipment,
+but worth one more pass. Fix candidates: extreme low camera, a human figure in frame for scale, or
+longer shin-to-thigh ratio.
+
+## The contrast, which is the actual deliverable
+
+Held constant across both registers: same flooded scrapyard, same dusk, same distant warm sodium
+lamp, same lighting law. The outcast **belongs** to that warm light. The cyclops brings its own,
+and is colder than the world it walks through. Neither was prompted to contrast with the other —
+it falls out of one dataset under one rendering law, and it is the reason the `contact` lane
+exists.
