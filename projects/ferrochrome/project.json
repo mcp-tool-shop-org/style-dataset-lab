@@ -1,0 +1,43 @@
+{
+  "name": "ferrochrome",
+  "display_name": "Ferrochrome",
+  "domain": "character-design",
+  "version": "0.1.0",
+  "description": "The ferrochrome style — a photoreal android/cyborg material language (carbon fibre, chrome, neon) under cinematic-real light. DEFINES a style: this project's deliverable is a trained style LoRA, trigger 'ferrochrome'. Three registers (outcast / cyclops / welded) share ONE rendering law and differ by surface condition, symmetry, seam grammar, and neon. Style-scoped, not game-scoped — reusable by any studio project. GATED: do not generate until the base-model decision in _base_decision is settled by the Director.",
+  "defines_style": "ferrochrome",
+  "trigger": "ferrochrome",
+  "_base_decision": {
+    "status": "SETTLED 2026-08-22 by the Director — FLUX.2 [klein] base 4B",
+    "chosen": "flux-2-klein-base-4b.safetensors",
+    "rationale": "Apache 2.0 (weights AND outputs commercially usable), ~13GB VRAM, the only commercial-safe NON-DISTILLED FLUX.2 base — full training signal, which is the point for a LoRA base. Model KB wave 8 (2026-08-19) calls it 'the ideal game-asset training base on a 32 GB rig'.",
+    "supersedes": "visual-pipeline skill rule 0 (2026-06) named Qwen-Image as the base. That rule's PURPOSE is NO-ANIME (its forbidden list is Illustrious / Pony / NoobAI, plus SDXL / Chroma / DreamShaper) and FLUX.2 klein does not violate it. The KB row is fresher than the rule per the constitution's 30-day freshness rule. NO ANIME remains absolutely binding.",
+    "⛔_DO_NOT_USE": "flux-2-klein-base-9b-fp8.safetensors AND flux-2-klein-base-9b* in any form — the 9B klein line is NON-COMMERCIAL. It appears adjacent to the 4B in the same UNETLoader enum and was selected by mistake once already. A LoRA inherits its base licence: training on the 9B makes every downstream asset unsellable. VERIFY THE FILENAME SAYS 4b BEFORE EVERY RUN.",
+    "_text_encoder_TOCONFIRM": "Flux.2 has its own text-encoder loadout and does NOT reuse Flux.1's DualCLIPLoader wiring. Candidates present on Cloud: qwen_3_4b_fp4_flux2.safetensors, mistral_3_small_flux2_bf16.safetensors, mistral_3_small_flux2_fp8.safetensors, mistral_3_small_flux2_fp4_mixed.safetensors. Deliberately NOT guessed here — confirm the correct pairing when the wave-1 workflow is built, via the text_to_image_flux_2_dev subgraph blueprint (CLIPLoader + Flux2Scheduler + EmptyFlux2LatentImage + FluxGuidance + BasicGuider + SamplerCustomAdvanced)."
+  },
+  "_flux2_prompting_law": {
+    "negative_prompt": "IGNORED by Flux.2 — do not pass one. This removes the 'NOT THAT' negative-prompt technique the rustline/hesperia lineage depends on. Adherence is steered with a guidance node (FluxGuidance), never by raising KSampler cfg above 1.",
+    "prompt_weights": "(word:1.2) syntax is NOT honored.",
+    "style": "natural_language — describe the scene in full sentences, not keyword lists."
+  },
+  "_pipeline": {
+    "generation": "Comfy Cloud, OSS checkpoints only — bills as gpu_seconds, and sidesteps the unresolved partner-API training-rights question (Comfy consult #4 Q1: UNKNOWN, agent recommends OSS to make it moot).",
+    "training": "LOCAL on the 5090. Comfy Cloud has NO weight-export path — SaveLoRA / LoraSave / SaveLoraNode all absent from the catalog (verified 2026-08-22); LORA_MODEL's only consumer is the LoRA model loader, in-graph. Anything trained on Cloud evaporates with the job.",
+    "captioning": "Per-image captions confirmed supported — MakeTrainingDataset has an optional `texts` (STRING) input accepting a list of length n matching the image batch. Caption strip pass is mandatory before sidecar write (see art contract §Caption law)."
+  },
+  "defaults": {
+    "base": "flux-2-klein-base-4b",
+    "unet": "flux-2-klein-base-4b.safetensors",
+    "clip": "TOCONFIRM — see _base_decision._text_encoder_TOCONFIRM",
+    "vae": "TOCONFIRM — resolve alongside the text encoder",
+    "weight_dtype": "default",
+    "width": 1024,
+    "height": 1024,
+    "steps": 20,
+    "cfg": 1,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "negative_prompt": null,
+    "venue": "comfy-cloud",
+    "loras": []
+  }
+}

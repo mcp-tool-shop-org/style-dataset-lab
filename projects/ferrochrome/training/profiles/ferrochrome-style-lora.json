@@ -1,0 +1,26 @@
+{
+  "profile_id": "ferrochrome-style-lora",
+  "label": "Ferrochrome studio style LoRA",
+  "target_family": "flux-2-klein-base-4b",
+  "asset_type": "character-design",
+  "eligible_lanes": [],
+  "adapter_targets": ["diffusers-lora"],
+  "trigger_override": "ferrochrome",
+  "caption_strategy": "flux-natural-language",
+  "is_style_lora": true,
+  "base_model_recommendations": [
+    "black-forest-labs/FLUX.2-klein-base-4B",
+    "Qwen/Qwen-Image"
+  ],
+  "training_hyperparameters": {
+    "rank": 16,
+    "alpha": 16,
+    "steps": 2000,
+    "lr": "1e-4",
+    "optimizer": "adamw8bit",
+    "quantization": "uint3+ara, te qfloat8, low_vram"
+  },
+  "notes": "Photoreal android/cyborg material language — carbon fibre, chrome, neon, cinematic-real (NOT product-render photoreal). Three registers (outcast / cyclops / welded) plus contact and material-macro lanes, ONE LoRA. Captions are content-only prose, trigger-first ('ferrochrome, a <subject>, <scene>') — style vocabulary belongs to the trigger, never the caption. A machine captioner WILL emit style vocabulary; the strip pass is mandatory. eligible_lanes deliberately empty (lane-mismatch gotcha drops all rows otherwise). Hyperparameters are the SAME PINNED RECIPE as rustline-style-lora and tallow_fen_style_v3 — single lever is the dataset. Do not tune hyperparameters and dataset in the same wave.",
+  "_venue": "LOCAL (5090). Comfy Cloud has no LoRA weight-export path — SaveLoRA / LoraSave / SaveLoraNode all absent from the catalog, verified 2026-08-22, and confirmed independently by Comfy consult #4 Q2. A Cloud training run bills GPU time and leaves nothing behind.",
+  "_calibration_rule": "First training run is a SHORT calibration run (a few hundred steps), not the full 2000. It measures per-step burn and confirms the loss curve descends before the budget is committed. Adopted from Comfy consult #4."
+}

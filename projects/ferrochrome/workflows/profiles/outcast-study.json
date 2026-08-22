@@ -1,0 +1,51 @@
+{
+  "workflow_id": "outcast-study",
+  "label": "Outcast register study (ferro pole)",
+  "description": "Generate outcast-register candidates — field-repaired androids degraded by the planet. Asymmetric by repair history, accidental seams, warm sodium light, ZERO body neon.",
+  "lane_id": "outcast",
+  "subject_mode": "optional",
+  "output_mode": "variant_pack",
+  "output_count": 4,
+  "required_reference_roles": [],
+  "preferred_reference_tags": ["outcast", "approved"],
+  "prompt_strategy": {
+    "style_prefix": [],
+    "_style_prefix_law": "DELIBERATELY EMPTY. This is a style-DEFINING project — the style must come from the dataset and end up in the trigger, not be typed into every prompt. Style vocabulary in the prompt is the exact failure that makes a trigger learn nothing. Prompts describe SUBJECT and LIGHTING ENVIRONMENT only.",
+    "structure": "subject, pose_and_action, lighting_environment, framing",
+    "must_include": [
+      "a specified lighting environment (LIT-002 — chrome is 100% environment; a void backdrop cannot resolve the material)",
+      "visible repair history — weld scars, mismatched panels, field splices",
+      "asymmetry (SYM-001)"
+    ],
+    "optional_blocks": ["weathering note", "framing note"]
+  },
+  "negative_strategy": {
+    "_INERT_ON_FLUX2": "Flux.2 IGNORES negative prompts entirely. These entries are retained as CURATION criteria for the ai-eyes gate and human review, NOT as prompt text. Steer adherence with FluxGuidance, never with a negative or with cfg > 1.",
+    "must_avoid": [
+      "neon on the body (NEON-001 — outcasts carry zero body neon)",
+      "mirror symmetry (SYM-001)",
+      "factory shutlines or even panel gaps (SEAM-001 — those are cyclops grammar)",
+      "clean single optic (OPT-001 — permitted only via visible damage)",
+      "bare human skin (CLS-001)"
+    ],
+    "lane_specific_avoid": ["studio sweep", "seamless backdrop", "even three-point fill"],
+    "subject_specific_avoid": []
+  },
+  "canon_focus": ["material_logic", "register_read", "light_behaviour", "silhouette_read", "palette_mood"],
+  "drift_guards": [
+    "asymmetry must read as accumulated repair, not as random noise",
+    "warm sodium palette pole",
+    "cinematic-real, never product-render photoreal"
+  ],
+  "runtime_defaults": {
+    "adapter_target": "comfy-cloud",
+    "unet": "flux-2-klein-base-4b.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 20,
+    "cfg": 1,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "seed_mode": "increment"
+  }
+}
