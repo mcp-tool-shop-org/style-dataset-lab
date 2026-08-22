@@ -93,11 +93,11 @@
     {
       "id": "OPT-003",
       "category": "register",
-      "desc": "Optic SCALE and DEPTH. The cyclops aperture is SMALL relative to the head and RECESSED deep inside a dark housing — a hard pinpoint seen far back in shadow. A large round lens centred on a head is the infant signal (big eyes read as sympathetic) and produces a friendly service-droid, no matter how immaculate the materials are. Small and buried reads as a threat; large and forward reads as a friend.",
-      "dims": ["register_read", "silhouette_read"],
+      "desc": "Optic DEPTH and SHROUDING — the load-bearing variable is not diameter. The cyclops aperture is a dark shrouded WELL sunk into the plate: the opening reads as a black pit, overlapping iris blades sit inside its mouth, and the emitter burns at the BOTTOM OF THE SHAFT, never flush with the surface. Recessed and shrouded reads predatory at almost any size, because it reads as something that can focus on you. The same diameter sitting flush and bright on the surface is the infant signal and produces a friendly service-droid regardless of how immaculate the materials are. Corrected 2026-08-22: the earlier form of this rule said 'small', measured from a bright flush lens on a round head — that case still fails, but scale was the wrong variable. A pinpoint too small reads inert and distant.",
+      "dims": ["register_read", "silhouette_read", "light_behaviour"],
       "lanes": ["cyclops", "contact"],
-      "rationale_pass": "Optic is small and recessed deep in its housing — reads as an instrument, not a face (${scorePct}%)",
-      "rationale_fail": "Optic is large, round and forward — baby-schema, the unit reads friendly instead of threatening (${scorePct}%)"
+      "rationale_pass": "Optic is a shrouded well — dark recess, iris blades, emitter deep in the shaft (${scorePct}%)",
+      "rationale_fail": "Optic sits flush and bright on the surface, or is a pinpoint too small to read as attention (${scorePct}%)"
     },
     {
       "id": "CLS-002",

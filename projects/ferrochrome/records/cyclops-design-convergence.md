@@ -90,10 +90,32 @@ study resolved it immediately. **Any hard-surface design question gets its own c
 before it is asked for inside a full-body composition.** This is a method rule, not a canon rule,
 and it applies to the outcast's repair grammar and the welded register's seams too.
 
-## 🔒 LOCKED cyclops head — headstudy_v2, seed 208844
+## 🔒 LOCKED cyclops head — `cyclops_head_v3.png`, seed 208844
 
-**Director: "that's perfect" (2026-08-22), with one correction — the aperture sits HIGHER.**
-`cyclops_headstudy_v2_higheye.png` is the locked reference. Everything below describes it.
+**Director: "Take v3 as-is and lock it." (2026-08-22).** `cyclops_head_v3.png` is THE cyclops
+head. Every ferrochrome cyclops carries it. This supersedes headstudy_v2, which held the lock
+briefly and is retained below as the intermediate step.
+
+**The two changes that made v3 the answer:**
+
+1. **No jaw.** The Iron Man read came from a lower chin panel plus defined cheek edges plus chrome
+   side discs — that combination is a mask silhouette. The front of the head is now ONE continuous
+   unbroken plate from crown to base, with **no horizontal seam crossing it anywhere**, and nothing
+   on the sides.
+2. **The eye is a WELL, not a dot.** The aperture is roughly a third of the plate's width, sunk
+   into a dark shroud, with overlapping iris blades inside its mouth and a hard concentrated cyan
+   point burning at the bottom of the shaft. This forced the OPT-003 correction below.
+
+### The OPT-003 correction (important — the first version measured the wrong thing)
+
+The rule originally read "the aperture is SMALL", earned from v3a/b where a large bright flush lens
+on a round head came out adorable. That case still fails, but **scale was the wrong variable.**
+What makes an optic threatening is **depth and shrouding**: a dark recess, blades inside it, and
+the emitter at the bottom of the shaft rather than flush with the surface. Recessed reads
+predatory at almost any diameter; flush and bright reads friendly at almost any diameter. And a
+pinpoint too small reads inert — it has to be big enough to read as *attention*.
+
+### headstudy_v2 (intermediate — aperture raised, still centred-scale)
 
 The aperture sits in the **upper third** of the front plate, at roughly the height a person's
 eyes would sit — NOT centred. The lower two thirds of the plate stay smooth and empty. Raising it
