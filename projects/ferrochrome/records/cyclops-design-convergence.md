@@ -62,3 +62,41 @@ lamp, same lighting law. The outcast **belongs** to that warm light. The cyclops
 and is colder than the world it walks through. Neither was prompted to contrast with the other —
 it falls out of one dataset under one rendering law, and it is the reason the `contact` lane
 exists.
+
+## Rounds 6–8: two more rules, one of them about method
+
+| # | Read as | Why it failed |
+|---|---|---|
+| v6a | tank turret with a gun barrel | "like a tank turret" rendered literally, and the barrel broke SYM-001 |
+| v6b | giant telephoto lens on shoulders | "like a camera lens assembly" rendered literally |
+| v7 | faceted hood, aperture migrated to the CHEST | head shape improved; optic left the head entirely and became an arc reactor |
+| **head study** | **accepted** | **close-up; the head finally got the model's full capacity** |
+
+### 5. NEVER use a simile. Describe geometry.
+
+Qwen renders named objects literally. Every analogy became the object:
+"like a hunting animal" → an animal · "skeletal" → a ribcage · "like a tank turret" → a turret
+with a gun · "like a camera lens assembly" → a telephoto lens. The Director's diagnosis of the
+Predator and Egyptian-cat rounds was the same mechanism seen from the outside.
+
+**Rule: cyclops prompts describe form only** — plate count, angles, taper, what protrudes (nothing),
+where the aperture sits and how deep. No "like a", no real-world object names.
+
+### 6. Design the head at CLOSE RANGE first, then propagate.
+
+Seven full-body attempts all drifted on the head because at full-body framing the head is roughly
+8% of the frame and receives almost none of the model's capacity. One tight head-and-shoulders
+study resolved it immediately. **Any hard-surface design question gets its own close-up study
+before it is asked for inside a full-body composition.** This is a method rule, not a canon rule,
+and it applies to the outcast's repair grammar and the welded register's seams too.
+
+## Accepted cyclops head (head study, seed 208844)
+
+A tapered faceted shell, wider at the crown, with a single smooth blank bone-white front plate.
+Black carbon twill in the flanking recesses, chrome edging the panel joins, countersunk fasteners
+throughout. The ONLY feature is one circular aperture at centre, sunk deep so the opening reads as
+a dark pit, with a small hard cyan pinpoint at the bottom of it.
+
+It is head-SHAPED, which is what makes it work: the silhouette invites you to look for a face and
+there is nothing there but a hole with a light in it. Non-negotiable going forward — the aperture
+stays on the head and never migrates to the chest.
