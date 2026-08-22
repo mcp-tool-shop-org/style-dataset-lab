@@ -83,6 +83,14 @@
       "rationale_fail": "Optic count contradicts the register — a clean single optic on an outcast, or a two-eyed cyclops (${scorePct}%)"
     },
     {
+      "id": "OPT-002",
+      "category": "register",
+      "desc": "Optic EMISSION is the antagonist marker — NEON-001 applied to the face. Outcast optics do NOT glow: they are dark glass lenses with visible iris and pupil structure, catching ambient light as a REFLECTION. You can see into them, which is why the outcasts read as sympathetic. Cyclops optics EMIT — a cold light aimed at the viewer, with no depth behind the lens. A glowing lamp-eye on an outcast reads as hostile and is a hard failure, regardless of colour.",
+      "dims": ["register_read", "light_behaviour", "on_canon"],
+      "rationale_pass": "Optic emission matches the register — outcast eyes reflect and have depth, cyclops eyes emit (${scorePct}%)",
+      "rationale_fail": "Outcast optics glow as emissive lamps — antagonist grammar on a protagonist face (${scorePct}%)"
+    },
+    {
       "id": "UNI-001",
       "category": "register",
       "desc": "Cyclops uniformity. They are products of one line, one spec — identical units. Where two or more cyclops appear in frame they must be indistinguishable from one another. Individuating detail on a cyclops is a failure; uniformity IS the threat.",
