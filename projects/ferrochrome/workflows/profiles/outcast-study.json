@@ -9,8 +9,12 @@
   "required_reference_roles": [],
   "preferred_reference_tags": ["outcast", "approved"],
   "prompt_strategy": {
-    "style_prefix": [],
-    "_style_prefix_law": "DELIBERATELY EMPTY. This is a style-DEFINING project — the style must come from the dataset and end up in the trigger, not be typed into every prompt. Style vocabulary in the prompt is the exact failure that makes a trigger learn nothing. Prompts describe SUBJECT and LIGHTING ENVIRONMENT only.",
+    "style_prefix": [
+      "a cinematic film still",
+      "anamorphic lens, shallow depth of field, fine film grain",
+      "low-key lighting with a strong shadow side and a single warm key"
+    ],
+    "_style_prefix_law": "BOOTSTRAP PHASE ONLY. There is no trained LoRA yet, so the prompt is the ONLY source of style — the prefix carries it. Two hard boundaries: (1) this vocabulary must NEVER appear in a training caption, where style belongs to the `ferrochrome` trigger and nowhere else; (2) once the LoRA is trained, production prompts drop this prefix and lead with the trigger instead. Say 'cinematic film still', never 'photorealistic' — the latter pulls toward three-point studio product-render lighting, which is the opposite of this style (see art contract).",
     "structure": "subject, pose_and_action, lighting_environment, framing",
     "must_include": [
       "a specified lighting environment (LIT-002 — chrome is 100% environment; a void backdrop cannot resolve the material)",

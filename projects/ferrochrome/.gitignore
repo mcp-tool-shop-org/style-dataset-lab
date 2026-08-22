@@ -10,3 +10,7 @@ exports/
 snapshots/
 splits/
 canon-build/*/
+
+# wave-0 calibration image is kept as the pinned visual receipt
+!outputs/candidates/wave0-calibration/
+!outputs/candidates/wave0-calibration/*.png

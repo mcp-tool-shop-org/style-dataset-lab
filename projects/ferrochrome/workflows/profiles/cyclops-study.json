@@ -9,8 +9,12 @@
   "required_reference_roles": [],
   "preferred_reference_tags": ["cyclops", "approved"],
   "prompt_strategy": {
-    "style_prefix": [],
-    "_style_prefix_law": "DELIBERATELY EMPTY — see outcast-study. Style belongs to the trigger, never to the prompt.",
+    "style_prefix": [
+      "a cinematic film still",
+      "anamorphic lens, shallow depth of field, fine film grain",
+      "low-key lighting with a strong shadow side, lit by the environment's own emitters"
+    ],
+    "_style_prefix_law": "BOOTSTRAP PHASE ONLY — see outcast-study for the full law. The prompt carries the style until the LoRA exists; this vocabulary never enters a training caption, and production prompts drop it for the trigger once trained.",
     "structure": "subject, pose_and_action, lighting_environment, framing",
     "must_include": [
       "a specified lighting environment with something worth reflecting (LIT-002 — chrome is a mirror; neon signage above and wet ground below give it content)",
