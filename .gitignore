@@ -53,6 +53,16 @@ projects/*/outputs/**/*.jpg
 projects/*/outputs/**/*.jpeg
 projects/*/outputs/**/*.webp
 
+# Reference plates are pinned visual receipts, not regenerable candidates: a
+# record that cites a plate is worthless if the plate is not in the repo. Any
+# `outputs/*-ref/` directory is therefore un-ignored. Added 2026-08-22 after
+# the ferrochrome removal, where the rule above had silently kept a whole
+# session of generated plates OUT of git while the commits that described them
+# went in -- so "it is committed" was true of the records and false of the
+# pixels.
+!projects/*/outputs/*-ref/
+!projects/*/outputs/*-ref/*.png
+
 # Re-ingest staging images. `sdlab init` CREATES inbox/generated/ and
 # `reingest-selected` COPIES production images into it — so this directory
 # fills with blobs by design. It was uncovered until 2026-08-03, when 55 MB

@@ -1,3 +1,33 @@
+> **HARVESTED FROM THE RETIRED `ferrochrome` PROJECT, 2026-08-22.**
+>
+> `ferrochrome` was a from-scratch parallel rebuild of a style rustline already has trained. The
+> Director killed it and this is the one piece worth keeping, because rustline's own v3 changelog
+> defers exactly this work:
+>
+> > *"the sleek 'NOT THAT' enemy register (**Gen-2**) is deferred to a **separate future LoRA**"*
+> > and *"the cyclops mono-optic is a **Gen-2 enemy trait**, not Gen-1."*
+>
+> So this is design work for a hole rustline deliberately left open. **It is reference for a future
+> Gen-2 LoRA — it is NOT canon for the current grounded Gen-1 rustline model, and none of it should
+> leak into a Gen-1 caption or dataset row.** Mixing the registers in one model is the failure the
+> v2 Ironclad sleek-bleed already proved.
+>
+> **Reference plates:** `outputs/gen2-cyclops-ref/`
+> - `cyclops_head_v3.png` — the Director-locked head. The shrouded well: a dark recess with iris
+>   blades and the emitter at the bottom of the shaft, no face, mirror-symmetric machined shutlines.
+> - `cyclops_v5_331774.png` — the full body, and the **only** plate that actually demonstrates
+>   uniformity, because it has a second identical unit out of focus behind the first.
+>
+> ⚠ The two plates are **not consistent with each other** — the v3 head is a tapered shell with a
+> large shrouded well, the v5 body carries a boxy head with a small square optic. The v3 head is the
+> locked design; the v5 body was locked for its *composition*, not its head.
+>
+> **Rule 3 below ("creature vocabulary produces creatures") is the same finding as rustline's own
+> "literalism watch"** in the v3 changelog, arrived at independently. That agreement is worth more
+> than either record alone.
+
+---
+
 # Cyclops register — design convergence (2026-08-22)
 
 Five rounds, four wrong. Recorded so the wrong turns are not retaken, because each failure
