@@ -54,26 +54,33 @@ bodies are **a record of their own history**.
 #### The face is the species marker. The body is the role marker. (`ROLE-001`)
 
 Every outcast carries the **same empathy-designed face** whatever job it was built for: a calm,
-gentle, approachable expression sculpted into the faceplate, and **two glass lenses set into
-recessed sockets**, each ringed by a **fine machined bezel seam** where the lens meets the
-faceplate, showing a visible **iris ring** and dark pupil, unlit, catching light only as a small
-highlight.
+gentle, approachable expression sculpted into the faceplate, and **two fully HUMAN eyes** — clear
+white sclera, an iris with fine radial fibres and a darker limbal ring, a round black pupil, a wet
+gloss and a small bright catchlight, under soft moulded eyelids with a gentle upper lid crease. The
+gaze is direct, calm and kind.
 
-**The load-bearing variable is the BEZEL and the SOCKET, not the diameter.** A lens at roughly
-human eye scale reads as manufactured the moment it has a visible seam ringing it, a mechanical
-iris ring, and a socket deep enough to hold a shadow. The same lens without those tells reads as a
-human eye and takes the whole face with it.
+**No eyelashes. No eyebrows.** The brow above each eye is smooth sculpted composite. Hair on the
+faceplate is forbidden by the material spec above and it is the one thing that pushes this face
+across into "a pale human."
 
-**No eyelashes. No eyebrows. No lid crease.** These are hair and skin — forbidden on the faceplate
-by the material spec above, and they are the specific tells that pull a sculpted head across into
-"pale human." Corrected 2026-08-22: this rule previously demanded lenses "noticeably smaller than
-human eyes," measured from a fear of alien-grey discs. Scale was the wrong variable — the v3 role
-set failed this rule in the *opposite* direction, drifting past a made face into a human one while
-its eyes were already human-sized. Shrinking them on a smooth pale skull is a move TOWARD the
-alien-grey failure, not away from it. Same correction OPT-003 took for the cyclops aperture.
+**The eyes do not carry the manufactured read — and that is the whole trick.** That job belongs to
+the panel seams across crown, temple and jaw, the paler replacement panels, the fine scratches and
+sealed cracks, and the machined vertebrae and cable looms at the neck. Once those are doing the
+work, the eyes are free to be *entirely* sympathetic. A fully human eye on a visibly built head
+does not read as a human; it reads as something made to be lived with.
 
-**Still a hard failure:** large forward-mounted discs on a smooth pale skull read as an alien grey.
-The face must read as *designed to be looked at by a person*, not as an inhuman prior.
+**Hard failures:** a machined bezel, a metal ring, iris blades, a camera-lens barrel or a dark
+empty socket — all of which read hostile on a protagonist; eyelashes or eyebrows, which are hair;
+and an emissive eye, which is the antagonist marker (`OPT-002`).
+
+**Corrected 2026-08-22, twice in one day.** This rule first demanded lenses "noticeably smaller than
+human eyes," out of a fear of alien-grey discs. It was then amended toward a machined bezel in a
+recessed socket. The Director killed that on sight: *"these all look frightening and they're the
+good guys."* He was right, and the amendment had been satisfying this rule by defeating `OPT-002`,
+which states outcast optics are ones **you can see into, which is why the outcasts read as
+sympathetic**. A shrouded well is precisely what you cannot see into. Canon closes it — empathy was
+a **design requirement** for these units, and makers capable of building them could certainly build
+a convincing eye.
 
 This inverts exactly against the cyclops, which has **no face at all**. Face = built to live
 alongside people. No face = built to process them.

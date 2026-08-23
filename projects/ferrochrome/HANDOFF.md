@@ -4,6 +4,8 @@
 Repo `mcp-tool-shop-org/style-dataset-lab`, local `E:\AI\style-dataset-lab`, branch `main`,
 everything pushed through `530b8e2`.
 
+**Updated 2026-08-22 (second session)** — §4 `OPT-004`, §6 the graph, §7 the gotchas, §9 the next task.
+
 ---
 
 ## 1. What this is
@@ -65,7 +67,8 @@ Full text in `constitution.json`. The ones you will actually violate:
 - **`OPT-001`/`OPT-002`** — cyclops: ONE optic, EMITTING. Outcast: TWO, non-emitting.
 - **`OPT-003`** (cyclops) — the optic is a dark shrouded WELL with iris blades and the light at the
   bottom of the shaft. **Depth and shrouding, not diameter** — that correction is recorded.
-- **`OPT-004`** (outcast) — small lenses, deep in recessed sockets, iris ring and pupil.
+- **`OPT-004`** (outcast) — **fully HUMAN eyes**, no lashes, no brows. ⚠ REWRITTEN 2026-08-22; the old "small lenses in recessed sockets" text and its bezel-and-socket amendment are both
+  DEAD. The eyes do not carry the manufactured read — the seams, wear and neck do. See §9.
 - **`CLS-001`/`CLS-002`** — androids keep synthetic heads and plated torsos, no bare skin (welded
   excepted). The cyclops is a product, never an organism.
 - **`UNI-001`** — cyclops are indistinguishable. Show it with a second unit in frame; it cannot be
@@ -73,9 +76,10 @@ Full text in `constitution.json`. The ones you will actually violate:
 
 ---
 
-## 5. ⚠ Six prompt-craft laws earned the hard way
+## 5. ⚠ Eight prompt-craft laws earned the hard way
 
-These cost roughly fifteen wasted generations between them. Do not rediscover them.
+These cost roughly twenty wasted generations between them. Do not rediscover them. **Laws #7 and #8 are in §9** — they were earned after this
+section was written and they are the two most likely to bite next.
 
 1. **NEVER use a simile.** Qwen renders named objects literally. "like a hunting animal" → an
    animal. "skeletal" → a ribcage. "like a tank turret" → a turret with a gun barrel. "like a
@@ -191,34 +195,66 @@ job that dies there has already burned its GPU seconds. When a batch starts fail
 
 ## 9. ▶ START HERE — the next task
 
-**Fix the outcast eyes to satisfy `OPT-004`.**
+**The outcast eyes are SETTLED. Do not reopen them.** The current role set is
+`outputs/candidates/roles-v5/` and it is the good one.
 
-The v3 role set (`outputs/candidates/roles-v3/`, six roles, all alpha) is good and the Director
-approved it. The one rule still unsatisfied: the eyes read as *human eyes set into a mannequin
-face* rather than **small glass lenses deep in recessed sockets with a visible iris ring and dark
-pupil**.
+### What was settled 2026-08-22 (second session)
 
-Approach that is most likely to work, given law #4: **do a close-up head study first**, iterate the
-eyes there, then propagate to the six roles. Do NOT try to fix it inside a full-body prompt.
+The outcasts have **fully human eyes** — sclera, iris with radial fibres, black pupil, catchlight,
+soft moulded lids — with **no eyelashes and no eyebrows**. The brow is smooth composite.
 
-Alternative the Director may prefer: **amend `OPT-004`** if the current sculpted-face-with-humanlike
-eyes reads better to him than literal lenses would. Ask before assuming.
+**The load-bearing insight, and the thing most likely to be lost:** the eyes do **not** carry the
+manufactured read. That job belongs to the panel seams across crown/temple/jaw, the paler
+replacement cheek panel, the scratches and sealed cracks, and the machined vertebrae and cable
+looms at the neck. **Drop the HEAD_WEAR block and the human eyes will take the whole face human** —
+that was the v3 failure. Keep them separate and the eyes can be entirely sympathetic.
+
+Two full rounds were spent going the wrong way first: OPT-004 was amended toward a machined bezel
+in a recessed socket, which satisfied OPT-004 by defeating **OPT-002** (outcast optics are ones you
+can see *into*). The Director killed it on sight — *"these all look frightening and they're the
+good guys."* Read the amended `OPT-004` and `records/eye-study-2-human.md` before touching any of it.
+
+### The three things actually left on the role set
+
+1. **Framing — 2 of 6 still crop.** `warehouse` and `medical` come out mid-thigh despite the wide-shot
+   phrasing and the `cut off legs / cut off feet` negatives. They are also the two bulkiest
+   silhouettes. Try a wider latent or an explicit "small in frame, floor and headroom visible".
+2. **⚠ The face demographic has never been decided.** All six read young and feminine. That is
+   *consistent*, which ROLE-001 wants, but it was inherited from seed `770422` rather than chosen.
+   **Ask the Director before building the dataset on it** — every outcast in the game gets this face.
+3. **`agricultural` wear conflict.** The corrosion lands on the trousers instead of climbing the
+   metal of the legs, because the legs are covered. The wear clause and the clothing clause fight
+   on this role; either expose the shins or move the corrosion to an exposed surface.
 
 ### After that, in rough order
 
-1. Re-run the six roles at three-quarter and rear angles for turnaround coverage
+1. Turnaround angles — three-quarter and rear for the six roles
 2. Cyclops unit-class variants (the cyclops equivalent of roles)
 3. Welded register — only one exploration exists, and its optic was a blue dome stuck on a cheek
    rather than integrated into the orbital bone
-4. **The caption-strip lane — NOT YET BUILT OR TESTED.** This is the piece that silently ruins a
-   style LoRA: machine captioners emit style vocabulary, and if that lands in the caption the
-   `ferrochrome` trigger learns nothing. Plan is plain-sight/`TextGenerate` to caption → strip
-   style words → `prefix: "ferrochrome, "`. ai-eyes gates which images survive, not the captions.
+4. **The caption-strip lane — STILL NOT BUILT OR TESTED.** The piece that silently ruins a style
+   LoRA: machine captioners emit style vocabulary, and if that lands in the caption the
+   `ferrochrome` trigger learns nothing. Plan is plain-sight/`TextGenerate` to caption → strip style
+   words → `prefix: "ferrochrome, "`. ai-eyes gates which images survive, not the captions.
 5. Quotas for the real dataset: ~110 curated from ~450–550 generated (outcast 32 / cyclops 32 /
-   welded 24 / contact 14 / material 8) — though note the Director questioned multi-figure
-   contact rows for training, and he is right that single-subject is the correct default.
+   welded 24 / contact 14 / material 8) — though the Director questioned multi-figure contact rows
+   for training, and he is right that single-subject is the correct default.
 
----
+### Prompt discipline established this session — keep it
+
+Every generation now writes its prompts to `records/` **before** submitting, generated from one
+builder script so the record cannot drift from what ran. The v3 prompts were never written down and
+that set is permanently unreproducible. Do not regress this.
+
+Two prompt-craft laws earned here, in addition to the six in §5:
+
+- **Law #7 — propagate the DESIGN, not the WORD COUNT.** A dense paragraph written for a close-up
+  leaks at full-body framing: the head is ~8% of frame, cannot resolve the detail, and the spare
+  capacity spreads the vocabulary onto the largest blank surface available. v4's lens language
+  produced a camera lens on the chest of exactly the two roles with an exposed chest plate.
+- **Law #8 — aim the negative at the failure you ACTUALLY GOT.** Eye study 1's negative was built
+  against human-ness and produced something frightening. Rebuilding it around *frighteningness*
+  (`menacing, sinister, hostile, uncanny, creepy, dark empty socket`) is what turned the round.
 
 ## 10. Standing instructions from the Director
 
