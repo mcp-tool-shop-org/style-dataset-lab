@@ -102,6 +102,14 @@ welded negative.
    forbids augments.
 6. **Literalism watch** (rustline canon): structural nouns render literally. "rake-like
    manipulators" → garden rakes. Describe geometry, never simile.
+7. **⚠ CHECK THE LAWS PER CLASS, NEVER WITH A GLOBAL GREP.** Laws 1 and 2 are *android-scoped* —
+   they govern synthetic-faced androids only. A repo-wide grep for face-anatomy words or for
+   "bare" lights up red on `human`, `welded` and `overlord` and looks like a halt, when those
+   classes exist **precisely to show human faces and flesh**. `"a bare human face"` in the human
+   prompts IS Law 3's fix; `"bare human-flesh back and shoulders"` in welded is the class's
+   defining feature. Build a per-class law matrix; a global check produces false alarms on exactly
+   the classes whose defining trait is the thing it flags. (Earned 2026-08-23 — a global check
+   printed red on three of four classes and nearly stopped a correct wave.)
 
 ---
 
@@ -163,9 +171,17 @@ sampling patch**) → `ModelSamplingAuraFlow(shift 3.1)`; CLIP `qwen_2.5_vl_7b_f
 
 ## 7. ▶ NEXT ACTIONS
 
-1. **Fire v6c** — waves are built on ckpt_1000 with the cast direction applied:
-   `python cloud_run_density.py <items> E:/AI/training/rustline_thicken/out_v6c_cloud 8`
-   (build items first via `cloud_density_batch.py <lora> 3 <items.json> v6b`). ~30 min, 288 renders.
+1. ~~Fire v6c~~ — **DONE 2026-08-23 03:29**, rendering into `out_v6c_cloud/`.
+   ⚠ **The items JSON MUST be rebuilt first** — this was nearly missed. A stale
+   `cloud_density_items_v6b.json` (02:38) predated the cast-direction wave rebuild (03:16) and
+   contained ZERO of `pin-up` / `TANK`. Running against it would have submitted a duplicate of
+   round 2 into a v6c directory and looked like it worked. **Verify the direction survives into
+   the items file before submitting** (`grep -c pin-up`, `grep -c TANK`).
+   ⚠ **Pass `v6b` as the WAVE_SET arg, never `v6c`** — it selects wave FILENAMES, and anything
+   other than `"v6b"` also silently drops the **overlord** class via the `NAMES` ternary.
+   ⚠ **Pass all three runner args explicitly** — the default out_dir is `out_v6_cloud` (binned),
+   and because filenames carry no round marker, pointing at the wrong dir makes `dst.exists()`
+   skip all 288 and exit clean having done nothing.
 2. **Look at all four class sheets** before curating. Nothing is curated unopened.
 3. **Curate** with the repaired jury per class + prefix, then the reason breakdown.
 4. **Build the v6 dataset** — v5's 195 rows + the survivors. Target ~20 rows each for
