@@ -16,17 +16,50 @@ checkpoint series and progression sheets, and then **the proof harness their own
 was never run.** That is why neither appeared here: nothing was ever blessed, so nothing was ever
 written down. **`rustline_v3ckpt_1500 @ 1.0` remains the last gated production default.**
 
-**What is missing for both** (v1/v2/v3 each have all of it; v4 and v5 have none):
-`ckpt_grids_rustline_v4|v5/` · `_caliper_capture_rustline_v4|v5.py` · A/B waves · cross-family
-verdicts. The v4 config states the required order itself: *ckpt grids (8) → vector-caliper CLIP
-geometry → A/B (withneg / noneg / gating / base-control / dummy-trigger) → cross-family cloud
-verdicts → looked-at every image at full res*, and *"best ckpt by GEOMETRY + EYES, never CMMD-alone
-(CMMD ref == training set == circular)."*
+**⚠ CORRECTED 2026-08-22 (same day).** An earlier version of this section claimed neither version
+had A/B waves or cross-family verdicts. **That was wrong for v4** — `E:/AI/training/ab_rustline/`
+holds `v4_ab/` (81 files), `_v4_jury_1500.json` (81 cross-family verdicts), `_v3_vs_v4_1500.jpg`,
+a `_FACES` crop of the same, and `_v4_weight_sweep.jpg`. v4 got most of the harness. What v4 lacks
+is `ckpt_grids_rustline_v4/` and a caliper capture. **v5 has none of it — there is no `v5_ab/`.**
+
+### The v4 jury result, previously undocumented — and why v4 was never blessed
+
+81 verdicts, v3ckpt-1500 vs v4ckpt-1500, three model families:
+
+| | v4 | v3 | tie |
+|---|---|---|---|
+| **overall** | **37** | 32 | 12 |
+| gemini-3-flash-preview | 13 | 5 | 9 |
+| minimax-m3 | 15 | 9 | 3 |
+| **kimi-k2.6** | 9 | **18** | 0 |
+
+Two families prefer v4, one strongly prefers v3, and kimi never ties. **46% / 40% / 15% with the
+families split is not a gate pass**, which is the real reason v4 was never promoted.
+
+Per character it is sharper than the totals suggest. v4 clearly wins **gutterjack 7–1**,
+**hearthframe 5–2**, **hushwire 5–3**. v4 clearly LOSES **ironclad 2–7** and **scrap_saint 2–6** —
+and ironclad is the character v3 had just fixed in place with an anti-sleek prompt.
+
+**What the jury was actually measuring, in its own words:** *"more mechanical head/body, less human
+face"* · *"more fully mechanical body; Image 1 has a clearly human face"* · *"hood obscures humanoid
+face."* Every reason scores the human↔android flesh line — the distinction the canon calls
+load-bearing.
+
+**The finding: the full-precision base bought FIDELITY and cost MECHANICAL-NESS.** Visible directly
+in `_v3_vs_v4_1500_FACES.jpg` — v4's ironclad is sleeker, cleaner and legibly branded where v3's is
+a corroded broken-plate brute, and v4's hearthframe and rustblood drift toward human female faces.
+Both are canon violations: sleek is the **Gen-2** register that rustline must not learn, and a human
+face belongs to the **Welded**, not to androids.
+
+**This is why v5 exists.** v5's config states its goal as a *"tighter human↔android separation"* and
+a higher clean-face yield, with the dataset thickened by *"keep only clean synthetic-faced
+exemplars."* v5 is the corrective for a measured regression, not just more rows.
 
 ⚠ Do not cite `E:/AI/training/_contact_ab_v4.png` or `_contact_ab_v5.png` as evidence for either.
 `E:/AI/training/` is a shared flat workspace across projects and those two files belong to a
 different project entirely (sailing ships / locomotives). Only **path-scoped** artifacts —
-`rustline_v4_ckpts/`, `rustline_v5_ckpts/`, `dataset_rustline_v4|v5/` — are trustworthy for rustline.
+`ab_rustline/`, `rustline_v4_ckpts/`, `rustline_v5_ckpts/`, `dataset_rustline_v4|v5/` — are
+trustworthy for rustline.
 
 ### v5 — 2026-06-27 — expanded dataset, full-precision  *(ungated)*
 - **Single lever vs v4: the DATASET only**, 81 → **195 rows**, all captioned (195/195). Recipe
