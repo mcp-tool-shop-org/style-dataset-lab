@@ -4,8 +4,59 @@ Grounded grimy cyberpunk (SNES-Shadowrun register). Base **Qwen-Image**, identic
 recipe to tallow_fen (single-lever discipline: only the dataset changes between versions). Trigger
 word `rustline`. The visual canon for the game **Hesperia**.
 
-All versions trained on the RTX 5090 via ai-toolkit; ship checkpoints chosen by looked-at review +
-vector-caliper geometry (NOT auto-final, NOT CMMD-alone) + cross-family cloud-crew verdicts.
+**v1–v3** trained on the RTX 5090 via ai-toolkit against a uint3-quantised base; **v4–v5** on a
+>32 GB cloud GPU against the full bf16 base. Ship checkpoints are chosen by looked-at review +
+vector-caliper geometry (NOT auto-final, NOT CMMD-alone) + cross-family cloud-crew verdicts — a gate
+that **has not been run for v4 or v5**, see the UNRELEASED section below.
+
+## ⚠ UNRELEASED — v4 and v5 exist, TRAINED BUT NEVER GATED
+
+**Reconstructed 2026-08-22 from on-disk artifacts.** Both versions were trained, produced full
+checkpoint series and progression sheets, and then **the proof harness their own configs prescribe
+was never run.** That is why neither appeared here: nothing was ever blessed, so nothing was ever
+written down. **`rustline_v3ckpt_1500 @ 1.0` remains the last gated production default.**
+
+**What is missing for both** (v1/v2/v3 each have all of it; v4 and v5 have none):
+`ckpt_grids_rustline_v4|v5/` · `_caliper_capture_rustline_v4|v5.py` · A/B waves · cross-family
+verdicts. The v4 config states the required order itself: *ckpt grids (8) → vector-caliper CLIP
+geometry → A/B (withneg / noneg / gating / base-control / dummy-trigger) → cross-family cloud
+verdicts → looked-at every image at full res*, and *"best ckpt by GEOMETRY + EYES, never CMMD-alone
+(CMMD ref == training set == circular)."*
+
+⚠ Do not cite `E:/AI/training/_contact_ab_v4.png` or `_contact_ab_v5.png` as evidence for either.
+`E:/AI/training/` is a shared flat workspace across projects and those two files belong to a
+different project entirely (sailing ships / locomotives). Only **path-scoped** artifacts —
+`rustline_v4_ckpts/`, `rustline_v5_ckpts/`, `dataset_rustline_v4|v5/` — are trustworthy for rustline.
+
+### v5 — 2026-06-27 — expanded dataset, full-precision  *(ungated)*
+- **Single lever vs v4: the DATASET only**, 81 → **195 rows**, all captioned (195/195). Recipe
+  byte-identical to v4.
+- Built by the **volume + curation flywheel**: generate with v4 → cross-family jury → keep only
+  clean synthetic-faced exemplars. Intent was a tighter human↔android separation and a higher
+  clean-face yield.
+- **Same cast, deeper** — no new subjects. The 10 androids + welded + welded_overlord + human + 3
+  neutral objects, thickened with a/b/c/d/g series per character.
+- ⚠ **The sample-monitor prompts were also rewritten** (more canon-specific: *"a plated mask-face
+  with two optics one a smashed dark socket, full body"*). Training signal is still single-lever,
+  but this **breaks the cross-version sample comparability** v3 deliberately preserved — v5's
+  progression sheet cannot be compared like-for-like against v1–v4's.
+- Artifacts: `rustline_v5_ckpts/` (250→2000 @ 250), `_v5_progression.jpg`, `dataset_rustline_v5/`.
+
+### v4 — 2026-06-27 — full-precision base retrain  *(ungated)*
+- **Single lever vs v3: BASE PRECISION.** Dataset byte-identical to v3's 81 exemplars.
+- v1→v3 were all trained against Qwen-Image crushed to **uint3 (3-bit) + qfloat8 text encoder** — a
+  hard 32 GB necessity on the 5090. The config names that 3-bit base as *"the real quality ceiling
+  (NOT the dataset, NOT fp8 inference)."*
+- v4 moved to the **full bf16 base, no quantisation**, on a >32 GB cloud GPU. **The studio's first
+  full-precision house-style LoRA.** `quantize: false`, `quantize_te: false`, `low_vram: false`.
+- Artifacts: `rustline_v4_ckpts/`, `_progression_sheet.jpg`, `dataset_rustline_v4/`.
+
+### Also found: an uncaptioned row in the v3 training set
+`dataset_rustline_v3/` holds **82 images against 81 captions** — `_v3_STAGED_full.png` is a staging
+artifact with no `.txt`, sitting in the dataset behind the current production default. v4 inherited
+the clean 81. v5 is clean at 195/195.
+
+---
 
 ## [1.0.0] — 2026-06-19 — v3 PRODUCTION DEFAULT
 
