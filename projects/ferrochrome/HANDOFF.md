@@ -131,6 +131,33 @@ Repaired in place by `fix-alpha-polarity.py` — a lossless channel flip, verifi
 against git HEAD on all 21 files. The script is idempotent (it detects polarity from the border
 ring) so it is safe to re-run over any future batch as a post-fetch guard.
 
+### ⚠ RMBG: pass EVERY optional input explicitly
+
+`search_nodes` marks `sensitivity`, `process_res`, `mask_blur`, `mask_offset`, `invert_output`,
+`refine_foreground`, `background` and `background_color` as **optional**. They are not. Omitting
+them fails the job with:
+
+```
+Error in image processing: Error in batch processing: 'process_res'
+```
+
+The node reads its optionals as required dict keys. This is deterministic, not flaky — it cost the
+whole first v4 batch. The known-good node:
+
+```json
+{"class_type": "RMBG", "inputs": {"image": ["9", 0], "model": "RMBG-2.0",
+ "sensitivity": 1, "process_res": 1024, "mask_blur": 0, "mask_offset": 0,
+ "invert_output": false, "refine_foreground": true,
+ "background": "Alpha", "background_color": "#222222"}}
+```
+
+Keep `invert_output` **false** — it inverts the IMAGE as well as the mask. The polarity fix belongs
+in the separate `InvertMask` node, where it only touches the mask.
+
+**Failures cost nothing, but they cost sampler time.** RMBG runs *after* the 30-step sample, so a
+job that dies there has already burned its GPU seconds. When a batch starts failing this way,
+`cancel_job` the ones still `pending` immediately — jobs already `in_progress` return `no_op`.
+
 ---
 
 ## 7. ⚠ Tooling gotchas that will waste your time
