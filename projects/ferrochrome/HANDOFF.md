@@ -110,10 +110,26 @@ CLIPLoader(qwen_2.5_vl_7b_fp8_scaled, type=qwen_image) → CLIPTextEncode ×2 (p
 VAELoader(qwen_image_vae)
 EmptySD3LatentImage(960×1536) → KSampler(euler/simple/30/cfg 2.5) → VAEDecode
    → RMBG(model=RMBG-2.0, background=Alpha, refine_foreground=true)
-   → SaveImageWithAlpha(images=VAEDecode[0], mask=RMBG[1])
+   → InvertMask(RMBG[1])                    ← ⚠ REQUIRED, see below
+   → SaveImageWithAlpha(images=VAEDecode[0], mask=InvertMask[0])
 ```
 
 Use `submit_batch` for 2+ items — 24/24 succeeded across three batches this session.
+
+### ⚠ The `InvertMask` is load-bearing — read this before you rewire
+
+`RMBG` emits `[IMAGE, MASK, IMAGE]` and its **MASK output is background-positive**. Handed straight
+to `SaveImageWithAlpha.mask` it punches the android OUT and keeps the studio backdrop: the subject
+becomes a transparent hole in an opaque grey rectangle.
+
+**Every alpha PNG generated before 2026-08-22 had this bug — all 21 of them, across `isolated/`,
+`roles/` and `roles-v3/`.** It survived a whole session undetected because the RGB channels are
+perfect (images come from `VAEDecode[0]`, never from RMBG), so every image looks right in any
+viewer that ignores alpha, and looks right composited on grey. Only the alpha channel was wrong.
+
+Repaired in place by `fix-alpha-polarity.py` — a lossless channel flip, verified RGB byte-identical
+against git HEAD on all 21 files. The script is idempotent (it detects polarity from the border
+ring) so it is safe to re-run over any future batch as a post-fetch guard.
 
 ---
 
@@ -129,6 +145,10 @@ Use `submit_batch` for 2+ items — 24/24 succeeded across three batches this se
 - Bash heredocs choke on the long prompt/URL content — use the Write tool for scripts.
 - Verify alpha on disk, don't assume: the image viewer composites transparency onto grey, so a
   matted PNG looks like it has a grey background. Check with `System.Drawing` pixel sampling.
+- **Checking that alpha EXISTS is not checking that its POLARITY is right.** That distinction cost
+  this project 21 files. Sample the border ring, not just "is there a mask": on an isolated subject
+  the frame border must be TRANSPARENT. `python fix-alpha-polarity.py --dry-run` does exactly this
+  and is the cheapest possible guard — run it after every fetch.
 
 ---
 
