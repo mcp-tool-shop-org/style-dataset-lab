@@ -54,13 +54,26 @@ bodies are **a record of their own history**.
 #### The face is the species marker. The body is the role marker. (`ROLE-001`)
 
 Every outcast carries the **same empathy-designed face** whatever job it was built for: a calm,
-gentle, approachable expression sculpted into the faceplate, and **two SMALL glass lenses set deep
-into recessed sockets** under a shallow brow — noticeably smaller than human eyes, each with a
-visible iris ring and dark pupil, unlit, catching light only as a small highlight.
+gentle, approachable expression sculpted into the faceplate, and **two glass lenses set into
+recessed sockets**, each ringed by a **fine machined bezel seam** where the lens meets the
+faceplate, showing a visible **iris ring** and dark pupil, unlit, catching light only as a small
+highlight.
 
-**Small and inset, not large and forward.** Large forward discs on a smooth pale skull read as an
-alien grey, which is a hard failure — the face must read as *designed to be looked at by a person*,
-not as an inhuman prior.
+**The load-bearing variable is the BEZEL and the SOCKET, not the diameter.** A lens at roughly
+human eye scale reads as manufactured the moment it has a visible seam ringing it, a mechanical
+iris ring, and a socket deep enough to hold a shadow. The same lens without those tells reads as a
+human eye and takes the whole face with it.
+
+**No eyelashes. No eyebrows. No lid crease.** These are hair and skin — forbidden on the faceplate
+by the material spec above, and they are the specific tells that pull a sculpted head across into
+"pale human." Corrected 2026-08-22: this rule previously demanded lenses "noticeably smaller than
+human eyes," measured from a fear of alien-grey discs. Scale was the wrong variable — the v3 role
+set failed this rule in the *opposite* direction, drifting past a made face into a human one while
+its eyes were already human-sized. Shrinking them on a smooth pale skull is a move TOWARD the
+alien-grey failure, not away from it. Same correction OPT-003 took for the cyclops aperture.
+
+**Still a hard failure:** large forward-mounted discs on a smooth pale skull read as an alien grey.
+The face must read as *designed to be looked at by a person*, not as an inhuman prior.
 
 This inverts exactly against the cyclops, which has **no face at all**. Face = built to live
 alongside people. No face = built to process them.

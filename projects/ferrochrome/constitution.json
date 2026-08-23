@@ -102,11 +102,11 @@
     {
       "id": "OPT-004",
       "category": "register",
-      "desc": "Outcast optic SCALE and INSET — the mirror of OPT-003, which governs the cyclops. Outcast lenses are SMALL, distinctly smaller than human eyes, and set DEEP INTO recessed sockets under a shallow brow ridge, each showing a visible iris ring and dark pupil. Large forward-mounted discs on a smooth pale skull read as an ALIEN GREY, which is a hard failure: the face must read as designed to be looked at by a person. Small and inset reads as a made face; large and forward reads as an inhuman prior.",
+      "desc": "Outcast optic BEZEL and SOCKET — the mirror of OPT-003, which governs the cyclops. The load-bearing variable is NOT diameter. An outcast lens sits in a recessed socket deep enough to hold a shadow, and is ringed by a fine machined BEZEL SEAM where the lens meets the faceplate, showing a visible iris ring and dark pupil, unlit, catching light only as a small highlight. A lens at roughly human eye scale reads as MANUFACTURED the moment it has that seam, that iris ring and that socket depth; the same lens without them reads as a human eye and takes the whole face with it. NO EYELASHES, NO EYEBROWS, NO LID CREASE — these are hair and skin, forbidden on the faceplate by CLS-001, and they are the specific tells that pull a sculpted head across into 'pale human'. Large forward-mounted discs on a smooth pale skull remain a hard failure: they read as an ALIEN GREY, and the face must read as designed to be looked at by a person. Corrected 2026-08-22: this rule previously demanded lenses 'noticeably smaller than human eyes', measured from the alien-grey fear. Scale was the wrong variable — the v3 role set failed this rule in the OPPOSITE direction, drifting past a made face into a human one while its eyes were already human-sized, and shrinking them on a smooth pale skull is a move TOWARD alien grey rather than away from it. Same correction OPT-003 took for the cyclops aperture.",
       "dims": ["register_read", "on_canon"],
       "lanes": ["outcast", "welded", "contact"],
-      "rationale_pass": "Outcast optics are small and deeply inset with iris and pupil structure (${scorePct}%)",
-      "rationale_fail": "Optics are large forward discs — the face reads as an alien grey rather than a designed companion (${scorePct}%)"
+      "rationale_pass": "Outcast optics sit in shadowed sockets with a machined bezel seam and iris ring, and the faceplate carries no lashes or brows (${scorePct}%)",
+      "rationale_fail": "Optics read as human eyes — no bezel seam, no socket shadow, or lashes/brows/lid creases on the faceplate — or as large forward discs (${scorePct}%)"
     },
     {
       "id": "OPT-003",
