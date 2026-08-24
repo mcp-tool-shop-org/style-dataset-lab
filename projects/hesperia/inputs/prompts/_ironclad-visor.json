@@ -1,0 +1,27 @@
+{
+  "wave": "ironclad-visor",
+  "description": "Ironclad variant A — the visor slit as his record currently stands. Authored under the BARE-PROMPT RULE: zero face-anatomy words in the head description, because naming a jaw/nose/mouth/brow — even to negate it — summons a human face (measured yield verbose ~4-25% vs bare ~57-66%). One subject, one directory, one receipt. Paired with _ironclad-two-optics.json at the same base_seed so the face atom is the only variable.",
+  "base": "qwen-image",
+  "style_prefix": "rustline style",
+  "defaults": {
+    "negative": "cyclops, single eye, one eye, monocular, single optic, smooth blank faceplate, human skin, bare skin, human face, realistic human, pretty face, beautiful, fashion model, catsuit, latex, sleek bodysuit, clean, pristine, glossy, chrome, shiny, new, polished, neon, bright even daylight, blood, gore, wet wound, deformed, mutated, extra limbs, extra fingers, fused fingers, bad anatomy, malformed face, skull, skeleton, skeletal, anime, manga, cel shading, chibi, flat vector illustration, clean line art, 3d render, cgi, glossy photoreal photograph, oversaturated, cartoon, text, watermark, signature, label",
+    "width": 896,
+    "height": 1152,
+    "steps": 26,
+    "cfg": 3.5,
+    "base_seed": 10400,
+    "loras": [
+      {
+        "name": "rustline_v6ckpt_1000.safetensors",
+        "weight": 1.25
+      }
+    ]
+  },
+  "subjects": [
+    {
+      "id": "ironclad_visor",
+      "variations": 2,
+      "prompt": "a heavy plated android veteran in a stripped tower carapace, a narrow amber visor slit across a dented faceplate, mismatched shoulder plates one heavier than the other, one arm rebuilt from a different make in another colour, a torn rectangular hole cut in the chest plate with hydraulic hoses standing free, rust-eaten and patched with under-city scrap, in the under-city, full-figure character concept, grounded painterly, dim sodium light"
+    }
+  ]
+}
