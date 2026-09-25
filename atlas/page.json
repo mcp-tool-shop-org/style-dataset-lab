@@ -1,0 +1,747 @@
+{
+  "authored": [
+    ".github/",
+    "docs/",
+    "root",
+    "runtime/",
+    "schemas/",
+    "site/",
+    "templates/",
+    "workflows/"
+  ],
+  "breaks": [
+    {
+      "doors": 3,
+      "importedBy": [
+        "bin",
+        "scripts"
+      ],
+      "importedByTests": [
+        "tests"
+      ],
+      "kind": "part",
+      "name": "lib",
+      "partLabel": "lib"
+    },
+    {
+      "doors": 3,
+      "importedBy": [
+        "bin"
+      ],
+      "importedByTests": [
+        "tests"
+      ],
+      "kind": "part",
+      "name": "scripts",
+      "partLabel": "scripts"
+    },
+    {
+      "doors": 3,
+      "importedBy": [],
+      "importedByTests": [],
+      "kind": "part",
+      "name": "bin",
+      "partLabel": "bin"
+    },
+    {
+      "doors": 2,
+      "importedBy": [],
+      "importedByTests": [],
+      "kind": "part",
+      "name": "tests",
+      "partLabel": "tests"
+    },
+    {
+      "kind": "place",
+      "readers": [
+        "projects"
+      ],
+      "target": "projects/salt-road/records/",
+      "writers": [
+        "projects"
+      ]
+    },
+    {
+      "kind": "place",
+      "readers": [
+        "projects"
+      ],
+      "target": "projects/salt-road/inputs/prompts/wave-v2.json",
+      "writers": [
+        "projects"
+      ]
+    }
+  ],
+  "changes": {
+    "first": true
+  },
+  "changesTogether": [],
+  "changesTogetherNote": [
+    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
+  ],
+  "changesTogetherWithTests": 0,
+  "commit": "b0426acebeb7a9f90efa809b7d54e0aba05ad0c4",
+  "defaultBranch": "main",
+  "derived": "13 parts, mostly JavaScript (233 files), Python (30) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. People run sdlab.",
+  "doors": [
+    {
+      "checks": [],
+      "checksCount": 0,
+      "checksMore": 0,
+      "file": ".github/workflows/ci.yml",
+      "id": ".github/workflows/ci.yml",
+      "landings": [
+        "projects/"
+      ],
+      "name": "CI",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "bin",
+          "depth": 0,
+          "files": 1
+        },
+        {
+          "boundary": "tests",
+          "depth": 0,
+          "files": 100
+        },
+        {
+          "boundary": "lib",
+          "depth": 1,
+          "files": 73
+        },
+        {
+          "boundary": "scripts",
+          "depth": 1,
+          "files": 13
+        }
+      ],
+      "runs": [
+        "bin/sdlab.js",
+        "tests/canon-star-freight/",
+        "tests/cli-scripts/",
+        "tests/lib-asset/asset-ingest.test.js",
+        "tests/lib-asset/asset-masks.test.js",
+        "tests/lib-asset/asset-source.test.js",
+        "tests/lib-asset/asset-style-provenance.test.js",
+        "tests/lib-asset/npy-meta.test.js",
+        "tests/lib-asset/png-meta.test.js",
+        "tests/lib-canon-build/",
+        "tests/lib-canon/",
+        "tests/lib-dataset/atomic-id-claim.test.js",
+        "tests/lib-dataset/candidate-sheet.test.js",
+        "tests/lib-dataset/eligibility-categorization.test.js",
+        "tests/lib-dataset/eval-runs.test.js",
+        "tests/lib-dataset/export.test.js",
+        "tests/lib-dataset/humanization.test.js",
+        "tests/lib-dataset/implementation-pack-wiring.test.js",
+        "tests/lib-dataset/ingest.test.js",
+        "tests/lib-dataset/judgment-provenance.test.js",
+        "tests/lib-dataset/lineage-resolution-performance.test.js",
+        "tests/lib-dataset/measure.test.js",
+        "tests/lib-dataset/missing-records-ledger.test.js",
+        "tests/lib-dataset/snapshot.test.js",
+        "tests/lib-dataset/split.test.js",
+        "tests/lib-dataset/subject-family-resolution.test.js",
+        "tests/lib-dataset/training-manifest-checksums-binding.test.js",
+        "tests/lib-dataset/training-package-safety.test.js",
+        "tests/lib-freeze/",
+        "tests/lib-pipeline/",
+        "tests/lib-runtime/"
+      ],
+      "runsCount": 31,
+      "runsMore": 70,
+      "sends": [],
+      "stages": [],
+      "triggers": [
+        "on a pull request touching 13 paths",
+        "on a push touching 13 paths",
+        "or by hand"
+      ]
+    },
+    {
+      "checks": [],
+      "checksCount": 0,
+      "checksMore": 0,
+      "file": ".github/workflows/publish.yml",
+      "id": ".github/workflows/publish.yml",
+      "landings": [
+        "projects/"
+      ],
+      "name": "Publish",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "bin",
+          "depth": 0,
+          "files": 1
+        },
+        {
+          "boundary": "tests",
+          "depth": 0,
+          "files": 100
+        },
+        {
+          "boundary": "lib",
+          "depth": 1,
+          "files": 73
+        },
+        {
+          "boundary": "scripts",
+          "depth": 1,
+          "files": 13
+        }
+      ],
+      "runs": [
+        "bin/sdlab.js",
+        "tests/canon-star-freight/",
+        "tests/cli-scripts/",
+        "tests/lib-asset/asset-ingest.test.js",
+        "tests/lib-asset/asset-masks.test.js",
+        "tests/lib-asset/asset-source.test.js",
+        "tests/lib-asset/asset-style-provenance.test.js",
+        "tests/lib-asset/npy-meta.test.js",
+        "tests/lib-asset/png-meta.test.js",
+        "tests/lib-canon-build/",
+        "tests/lib-canon/",
+        "tests/lib-dataset/atomic-id-claim.test.js",
+        "tests/lib-dataset/candidate-sheet.test.js",
+        "tests/lib-dataset/eligibility-categorization.test.js",
+        "tests/lib-dataset/eval-runs.test.js",
+        "tests/lib-dataset/export.test.js",
+        "tests/lib-dataset/humanization.test.js",
+        "tests/lib-dataset/implementation-pack-wiring.test.js",
+        "tests/lib-dataset/ingest.test.js",
+        "tests/lib-dataset/judgment-provenance.test.js",
+        "tests/lib-dataset/lineage-resolution-performance.test.js",
+        "tests/lib-dataset/measure.test.js",
+        "tests/lib-dataset/missing-records-ledger.test.js",
+        "tests/lib-dataset/snapshot.test.js",
+        "tests/lib-dataset/split.test.js",
+        "tests/lib-dataset/subject-family-resolution.test.js",
+        "tests/lib-dataset/training-manifest-checksums-binding.test.js",
+        "tests/lib-dataset/training-package-safety.test.js",
+        "tests/lib-freeze/",
+        "tests/lib-pipeline/",
+        "tests/lib-runtime/"
+      ],
+      "runsCount": 31,
+      "runsMore": 70,
+      "sends": [
+        "publishes to npm"
+      ],
+      "stages": [],
+      "triggers": [
+        "when a release is published",
+        "or by hand"
+      ]
+    },
+    {
+      "checks": [],
+      "checksCount": 0,
+      "checksMore": 0,
+      "file": ".github/workflows/pages.yml",
+      "id": ".github/workflows/pages.yml",
+      "landings": [],
+      "name": "Deploy site to GitHub Pages",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "site",
+          "depth": 0,
+          "files": 3
+        }
+      ],
+      "runs": [
+        "site/astro.config.mjs",
+        "site/src/"
+      ],
+      "runsCount": 2,
+      "runsMore": 0,
+      "sends": [
+        "deploys the site"
+      ],
+      "stages": [],
+      "triggers": [
+        "on a push to main touching 2 paths",
+        "or by hand"
+      ]
+    },
+    {
+      "checks": [],
+      "checksCount": 0,
+      "checksMore": 0,
+      "file": "package.json",
+      "id": "package.json#sdlab",
+      "kind": "command",
+      "landings": [],
+      "name": "sdlab",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "bin",
+          "depth": 0,
+          "files": 1
+        },
+        {
+          "boundary": "lib",
+          "depth": 1,
+          "files": 22
+        },
+        {
+          "boundary": "scripts",
+          "depth": 1,
+          "files": 3
+        }
+      ],
+      "runs": [
+        "bin/sdlab.js"
+      ],
+      "runsCount": 1,
+      "runsMore": 0,
+      "sends": [],
+      "stages": [],
+      "triggers": []
+    }
+  ],
+  "duplicates": [],
+  "duplicatesLead": null,
+  "duplicatesNote": [],
+  "edges": [
+    {
+      "from": "bin",
+      "fromTests": false,
+      "to": "lib"
+    },
+    {
+      "from": "bin",
+      "fromTests": false,
+      "to": "scripts"
+    },
+    {
+      "from": "scripts",
+      "fromTests": false,
+      "to": "lib"
+    },
+    {
+      "from": "tests",
+      "fromTests": true,
+      "to": "lib"
+    },
+    {
+      "from": "tests",
+      "fromTests": true,
+      "to": "scripts"
+    }
+  ],
+  "generated": [
+    {
+      "place": "projects/",
+      "writers": [
+        "scripts/init.js"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2/",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2b_build.py"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inbox/generated/set-v2-2026-07-30/",
+      "writers": [
+        "projects/salt-road/inputs/prompts/wave-runner.py"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inputs/control-guides/",
+      "writers": [
+        "projects/salt-road/inputs/control-guides/blockouts.py"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inputs/prompts/curate-plan.json",
+      "writers": [
+        "projects/salt-road/inputs/prompts/ingest-styleset-records.mjs"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inputs/prompts/wave-v2.json",
+      "writers": [
+        "projects/salt-road/inputs/prompts/prompt-foundry.mjs"
+      ]
+    },
+    {
+      "place": "projects/salt-road/outputs/style-set-v2-review.html",
+      "writers": [
+        "projects/salt-road/inputs/prompts/build-review-page.mjs"
+      ]
+    },
+    {
+      "place": "projects/salt-road/records/",
+      "writers": [
+        "projects/salt-road/inputs/prompts/ingest-styleset-records.mjs",
+        "projects/salt-road/inputs/prompts/ingest-wave.mjs",
+        "projects/salt-road/inputs/prompts/populate-canon-subjects.mjs"
+      ]
+    }
+  ],
+  "generatedAt": "2026-09-25T02:17:10.382Z",
+  "limits": [
+    "18 import sites could not be resolved.",
+    "45 writes and 76 reads use paths built at run time and are not named here.",
+    "2 writes go to places this repository does not track, so they are not listed as generated.",
+    "108 writes and 216 reads go to a path their caller passes, not to this repository.",
+    "6 reads go to the directory the command is run in, not to this repository.",
+    "1 write and 2 reads go to a temporary directory, not to this repository.",
+    "1 read goes to the directory the command is run in (projects/) or a path its caller passes, not to this repository.",
+    "11 commands are built at run time and not followed, 8 of them in tests.",
+    "Statistics confidence is low: fewer than 20 source files reach 10 revisions in the window."
+  ],
+  "mainDoor": ".github/workflows/ci.yml",
+  "partLabels": {
+    ".github": ".github",
+    "bin": "bin",
+    "docs": "docs",
+    "lib": "lib",
+    "projects": "projects",
+    "root": "the repository root",
+    "runtime": "runtime",
+    "schemas": "schemas",
+    "scripts": "scripts",
+    "site": "the site",
+    "templates": "templates",
+    "tests": "tests",
+    "workflows": "workflows"
+  },
+  "parts": 13,
+  "readers": [
+    {
+      "readers": [
+        "lib/paths.js"
+      ],
+      "target": "projects/",
+      "tests": 3
+    }
+  ],
+  "repo": "mcp-tool-shop-org/style-dataset-lab",
+  "sequences": [
+    {
+      "alternatives": [
+        {
+          "steps": [
+            {
+              "name": "findClosest",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "find closest"
+            },
+            {
+              "name": "inputError",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "input error"
+            }
+          ],
+          "when": "command === head"
+        },
+        {
+          "steps": [
+            {
+              "name": "run",
+              "part": "scripts",
+              "partLabel": "scripts",
+              "phrase": "run"
+            }
+          ],
+          "when": "command === 'critique'"
+        },
+        {
+          "steps": [
+            {
+              "name": "run",
+              "part": "scripts",
+              "partLabel": "scripts",
+              "phrase": "run"
+            }
+          ],
+          "when": "command === 'refine'"
+        },
+        {
+          "steps": [
+            {
+              "name": "run",
+              "part": "scripts",
+              "partLabel": "scripts",
+              "phrase": "run"
+            }
+          ],
+          "when": "command === 'select'"
+        },
+        {
+          "steps": [
+            {
+              "name": "findClosest",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "find closest"
+            },
+            {
+              "name": "inputError",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "input error"
+            }
+          ],
+          "when": "!modulePath"
+        }
+      ],
+      "entry": "main",
+      "file": "bin/sdlab.js",
+      "inner": [
+        {
+          "file": "scripts/critique.js",
+          "name": "run",
+          "part": "scripts",
+          "partLabel": "scripts",
+          "phrase": "run",
+          "steps": [
+            {
+              "name": "parseArgs",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "parse args"
+            },
+            {
+              "name": "getProjectName",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get project name"
+            },
+            {
+              "name": "getProjectRoot",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get project root"
+            },
+            {
+              "name": "critiqueRun",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "critique run"
+            },
+            {
+              "name": "renderCritiqueMarkdown",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "render critique markdown"
+            },
+            {
+              "name": "saveCritique",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "save critique"
+            },
+            {
+              "name": "renderCritiqueText",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "render critique text"
+            },
+            {
+              "name": "info",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "info"
+            }
+          ]
+        },
+        {
+          "file": "scripts/refine.js",
+          "name": "run",
+          "part": "scripts",
+          "partLabel": "scripts",
+          "phrase": "run",
+          "steps": [
+            {
+              "name": "parseArgs",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "parse args"
+            },
+            {
+              "name": "getProjectName",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get project name"
+            },
+            {
+              "name": "getProjectRoot",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get project root"
+            },
+            {
+              "name": "loadCritique",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "load critique"
+            },
+            {
+              "name": "getRunsDir",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get runs dir"
+            },
+            {
+              "count": 3,
+              "name": null,
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "refine briefs"
+            },
+            {
+              "name": "info",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "info"
+            }
+          ]
+        },
+        {
+          "file": "scripts/select.js",
+          "name": "run",
+          "part": "scripts",
+          "partLabel": "scripts",
+          "phrase": "run",
+          "steps": [
+            {
+              "name": "parseArgs",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "parse args"
+            },
+            {
+              "name": "getProjectName",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get project name"
+            },
+            {
+              "name": "getProjectRoot",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "get project root"
+            },
+            {
+              "count": 3,
+              "name": null,
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "selections"
+            },
+            {
+              "name": "info",
+              "part": "lib",
+              "partLabel": "lib",
+              "phrase": "info"
+            }
+          ]
+        }
+      ],
+      "part": "bin",
+      "partLabel": "bin",
+      "phrase": "main",
+      "steps": [
+        {
+          "name": "enableDebug",
+          "part": "lib",
+          "partLabel": "lib",
+          "phrase": "enable debug"
+        },
+        {
+          "name": "setLogLevel",
+          "part": "lib",
+          "partLabel": "lib",
+          "phrase": "set log level"
+        }
+      ]
+    }
+  ],
+  "spawnTested": [
+    "bin"
+  ],
+  "startDoor": ".github/workflows/ci.yml",
+  "startHere": [
+    ".github/workflows/ci.yml",
+    "bin/sdlab.js",
+    "lib/args.js"
+  ],
+  "summary": null,
+  "summaryFrom": null,
+  "testFiles": 102,
+  "testedBy": {
+    "bin": 9,
+    "lib": 93,
+    "scripts": 19
+  },
+  "unnamedWrites": 45,
+  "unread": [
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2/",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2b_build.py"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inputs/control-guides/",
+      "writers": [
+        "projects/salt-road/inputs/control-guides/blockouts.py"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inputs/prompts/curate-plan.json",
+      "writers": [
+        "projects/salt-road/inputs/prompts/ingest-styleset-records.mjs"
+      ]
+    },
+    {
+      "place": "projects/salt-road/outputs/style-set-v2-review.html",
+      "writers": [
+        "projects/salt-road/inputs/prompts/build-review-page.mjs"
+      ]
+    }
+  ],
+  "unreadFiles": 0,
+  "unreadNote": [],
+  "untested": [],
+  "untestedNote": [
+    "bin is touched by tests only through a spawn: a test runs its files as a child process."
+  ],
+  "written": 10
+}

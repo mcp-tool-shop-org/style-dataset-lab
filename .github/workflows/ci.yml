@@ -15,6 +15,7 @@ on:
       - 'site/package.json'
       - 'site/package-lock.json'
       - 'site/astro.config.mjs'
+      - 'atlas/**'
   pull_request:
     paths:
       - 'bin/**'
@@ -29,6 +30,7 @@ on:
       - 'site/package.json'
       - 'site/package-lock.json'
       - 'site/astro.config.mjs'
+      - 'atlas/**'
   workflow_dispatch:
 
 permissions:
@@ -52,6 +54,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+      # Atlas requires Node 22 or later, so the check runs on the 22 cell only.
+      - name: Atlas check
+        if: matrix.node-version == 22
+        run: npx --yes @dogfood-lab/atlas@1.20.0 check
       - run: npm ci --ignore-scripts
       - name: Smoke test — help
         run: node bin/sdlab.js --help

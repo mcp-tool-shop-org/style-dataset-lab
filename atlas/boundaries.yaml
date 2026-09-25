@@ -1,0 +1,54 @@
+summary: ""
+boundaries:
+  - name: .github
+    globs:
+      - .github/**
+    role: config
+  - name: bin
+    globs:
+      - bin/**
+    role: code
+  - name: docs
+    globs:
+      - docs/**
+    role: docs
+  - name: lib
+    globs:
+      - lib/**
+    role: code
+  - name: projects
+    globs:
+      - projects/**
+    role: config
+  - name: root
+    globs:
+      - "*"
+    role: config
+  - name: runtime
+    globs:
+      - runtime/**
+    role: data
+  - name: schemas
+    globs:
+      - schemas/**
+    role: data
+  - name: scripts
+    globs:
+      - scripts/**
+    role: code
+  - name: site
+    globs:
+      - site/**
+    role: site
+  - name: templates
+    globs:
+      - templates/**
+    role: data
+  - name: tests
+    globs:
+      - tests/**
+    role: test
+  - name: workflows
+    globs:
+      - workflows/**
+    role: docs
