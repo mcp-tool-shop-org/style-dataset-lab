@@ -14,6 +14,7 @@
       "doors": 3,
       "importedBy": [
         "bin",
+        "projects",
         "scripts"
       ],
       "importedByTests": [
@@ -73,16 +74,85 @@
     }
   ],
   "changes": {
-    "first": true
+    "fileCounts": {
+      "added": 1,
+      "changed": 1,
+      "moved": 0,
+      "parts": 2,
+      "removed": 0
+    },
+    "items": [
+      {
+        "kind": "import-added",
+        "sentence": "projects now imports lib.",
+        "subjects": [
+          "projects",
+          "lib"
+        ]
+      },
+      {
+        "kind": "door",
+        "sentence": "CI's pull request trigger now also names `codecov.yml`.",
+        "subjects": [
+          ".github/workflows/ci.yml"
+        ]
+      },
+      {
+        "kind": "door",
+        "sentence": "CI's push trigger now also names `codecov.yml`.",
+        "subjects": [
+          ".github/workflows/ci.yml"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "projects/ai-eye-test/outputs/synthetic/phase1/ is now written by projects/ai-eye-test/compositor/compositor.py.",
+        "subjects": [
+          "projects/ai-eye-test/outputs/synthetic/phase1/",
+          "projects/ai-eye-test/compositor/compositor.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "projects/salt-road/inbox/generated/set-v2-2026-07-30/*.png is now written by projects/salt-road/inputs/prompts/wave-runner.py.",
+        "subjects": [
+          "projects/salt-road/inbox/generated/set-v2-2026-07-30/*.png",
+          "projects/salt-road/inputs/prompts/wave-runner.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl is now written by projects/salt-road/inputs/prompts/wave-runner.py.",
+        "subjects": [
+          "projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl",
+          "projects/salt-road/inputs/prompts/wave-runner.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "And 3 more new writers and readers of places.",
+        "subjects": []
+      },
+      {
+        "kind": "counts",
+        "sentence": "1 file added and 1 changed content, across 2 parts.",
+        "subjects": []
+      }
+    ],
+    "since": {
+      "commit": "b0426acebeb7a9f90efa809b7d54e0aba05ad0c4",
+      "generatedAt": "2026-09-25T02:17:10.382Z"
+    },
+    "unchanged": false
   },
   "changesTogether": [],
   "changesTogetherNote": [
     "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "b0426acebeb7a9f90efa809b7d54e0aba05ad0c4",
+  "commit": "f7b4973768c843655383d17005a6353a4ef2de74",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JavaScript (233 files), Python (30) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (233), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -90,9 +160,7 @@
       "checksMore": 0,
       "file": ".github/workflows/ci.yml",
       "id": ".github/workflows/ci.yml",
-      "landings": [
-        "projects/"
-      ],
+      "landings": [],
       "name": "CI",
       "pushes": false,
       "reach": [
@@ -109,12 +177,12 @@
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 73
+          "files": 74
         },
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 13
+          "files": 39
         }
       ],
       "runs": [
@@ -152,11 +220,13 @@
       ],
       "runsCount": 31,
       "runsMore": 70,
-      "sends": [],
+      "sends": [
+        "uploads coverage to Codecov"
+      ],
       "stages": [],
       "triggers": [
-        "on a pull request touching 13 paths",
-        "on a push touching 13 paths",
+        "on a pull request touching 14 paths",
+        "on a push touching 14 paths",
         "or by hand"
       ]
     },
@@ -166,9 +236,7 @@
       "checksMore": 0,
       "file": ".github/workflows/publish.yml",
       "id": ".github/workflows/publish.yml",
-      "landings": [
-        "projects/"
-      ],
+      "landings": [],
       "name": "Publish",
       "pushes": false,
       "reach": [
@@ -185,12 +253,12 @@
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 73
+          "files": 74
         },
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 13
+          "files": 39
         }
       ],
       "runs": [
@@ -250,7 +318,7 @@
         {
           "boundary": "site",
           "depth": 0,
-          "files": 3
+          "files": 7
         }
       ],
       "runs": [
@@ -287,12 +355,12 @@
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 22
+          "files": 49
         },
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 3
+          "files": 32
         }
       ],
       "runs": [
@@ -335,11 +403,12 @@
       "to": "scripts"
     }
   ],
+  "engine": "1.24.0",
   "generated": [
     {
-      "place": "projects/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase1/",
       "writers": [
-        "scripts/init.js"
+        "projects/ai-eye-test/compositor/compositor.py"
       ]
     },
     {
@@ -361,7 +430,7 @@
       ]
     },
     {
-      "place": "projects/salt-road/inbox/generated/set-v2-2026-07-30/",
+      "place": "projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl",
       "writers": [
         "projects/salt-road/inputs/prompts/wave-runner.py"
       ]
@@ -399,17 +468,17 @@
       ]
     }
   ],
-  "generatedAt": "2026-09-25T02:17:10.382Z",
+  "generatedAt": "2026-09-30T20:14:07.142Z",
   "limits": [
-    "18 import sites could not be resolved.",
-    "45 writes and 76 reads use paths built at run time and are not named here.",
-    "2 writes go to places this repository does not track, so they are not listed as generated.",
-    "108 writes and 216 reads go to a path their caller passes, not to this repository.",
-    "6 reads go to the directory the command is run in, not to this repository.",
+    "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
+    "38 writes and 72 reads use paths built at run time and are not named here.",
+    "3 writes go to places this repository does not track, so they are not listed as generated.",
+    "112 writes and 220 reads go to a path their caller passes, not to this repository.",
+    "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
+    "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
-    "1 read goes to the directory the command is run in (projects/) or a path its caller passes, not to this repository.",
-    "11 commands are built at run time and not followed, 8 of them in tests.",
-    "Statistics confidence is low: fewer than 20 source files reach 10 revisions in the window."
+    "11 commands are built at run time and not followed, 9 of them in tests.",
+    "Statistics confidence is low: fewer than 25 source files reach 10 revisions in the window."
   ],
   "mainDoor": ".github/workflows/ci.yml",
   "partLabels": {
@@ -428,32 +497,25 @@
     "workflows": "workflows"
   },
   "parts": 13,
-  "readers": [
-    {
-      "readers": [
-        "lib/paths.js"
-      ],
-      "target": "projects/",
-      "tests": 3
-    }
-  ],
+  "readers": [],
   "repo": "mcp-tool-shop-org/style-dataset-lab",
   "sequences": [
     {
       "alternatives": [
         {
+          "over": "namespaces",
           "steps": [
             {
               "name": "findClosest",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "find closest"
+              "phrase": "`findClosest`"
             },
             {
               "name": "inputError",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "input error"
+              "phrase": "`inputError`"
             }
           ],
           "when": "command === head"
@@ -464,7 +526,7 @@
               "name": "run",
               "part": "scripts",
               "partLabel": "scripts",
-              "phrase": "run"
+              "phrase": "`run`"
             }
           ],
           "when": "command === 'critique'"
@@ -475,7 +537,7 @@
               "name": "run",
               "part": "scripts",
               "partLabel": "scripts",
-              "phrase": "run"
+              "phrase": "`run`"
             }
           ],
           "when": "command === 'refine'"
@@ -486,7 +548,7 @@
               "name": "run",
               "part": "scripts",
               "partLabel": "scripts",
-              "phrase": "run"
+              "phrase": "`run`"
             }
           ],
           "when": "command === 'select'"
@@ -497,13 +559,13 @@
               "name": "findClosest",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "find closest"
+              "phrase": "`findClosest`"
             },
             {
               "name": "inputError",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "input error"
+              "phrase": "`inputError`"
             }
           ],
           "when": "!modulePath"
@@ -517,55 +579,55 @@
           "name": "run",
           "part": "scripts",
           "partLabel": "scripts",
-          "phrase": "run",
+          "phrase": "`run`",
           "steps": [
             {
               "name": "parseArgs",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "parse args"
+              "phrase": "`parseArgs`"
             },
             {
               "name": "getProjectName",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get project name"
+              "phrase": "`getProjectName`"
             },
             {
               "name": "getProjectRoot",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get project root"
+              "phrase": "`getProjectRoot`"
             },
             {
               "name": "critiqueRun",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "critique run"
+              "phrase": "`critiqueRun`"
             },
             {
               "name": "renderCritiqueMarkdown",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "render critique markdown"
+              "phrase": "`renderCritiqueMarkdown`"
             },
             {
               "name": "saveCritique",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "save critique"
+              "phrase": "`saveCritique`"
             },
             {
               "name": "renderCritiqueText",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "render critique text"
+              "phrase": "`renderCritiqueText`"
             },
             {
               "name": "info",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "info"
+              "phrase": "`info`"
             }
           ]
         },
@@ -574,50 +636,50 @@
           "name": "run",
           "part": "scripts",
           "partLabel": "scripts",
-          "phrase": "run",
+          "phrase": "`run`",
           "steps": [
             {
               "name": "parseArgs",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "parse args"
+              "phrase": "`parseArgs`"
             },
             {
               "name": "getProjectName",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get project name"
+              "phrase": "`getProjectName`"
             },
             {
               "name": "getProjectRoot",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get project root"
+              "phrase": "`getProjectRoot`"
             },
             {
               "name": "loadCritique",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "load critique"
+              "phrase": "`loadCritique`"
             },
             {
               "name": "getRunsDir",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get runs dir"
+              "phrase": "`getRunsDir`"
             },
             {
               "count": 3,
               "name": null,
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "refine briefs"
+              "phrase": "`refine-briefs.js`"
             },
             {
               "name": "info",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "info"
+              "phrase": "`info`"
             }
           ]
         },
@@ -626,57 +688,57 @@
           "name": "run",
           "part": "scripts",
           "partLabel": "scripts",
-          "phrase": "run",
+          "phrase": "`run`",
           "steps": [
             {
               "name": "parseArgs",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "parse args"
+              "phrase": "`parseArgs`"
             },
             {
               "name": "getProjectName",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get project name"
+              "phrase": "`getProjectName`"
             },
             {
               "name": "getProjectRoot",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "get project root"
+              "phrase": "`getProjectRoot`"
             },
             {
               "count": 3,
               "name": null,
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "selections"
+              "phrase": "`selections.js`"
             },
             {
               "name": "info",
               "part": "lib",
               "partLabel": "lib",
-              "phrase": "info"
+              "phrase": "`info`"
             }
           ]
         }
       ],
       "part": "bin",
       "partLabel": "bin",
-      "phrase": "main",
+      "phrase": "`main`",
       "steps": [
         {
           "name": "enableDebug",
           "part": "lib",
           "partLabel": "lib",
-          "phrase": "enable debug"
+          "phrase": "`enableDebug`"
         },
         {
           "name": "setLogLevel",
           "part": "lib",
           "partLabel": "lib",
-          "phrase": "set log level"
+          "phrase": "`setLogLevel`"
         }
       ]
     }
@@ -688,7 +750,7 @@
   "startHere": [
     ".github/workflows/ci.yml",
     "bin/sdlab.js",
-    "lib/args.js"
+    "lib/errors.js"
   ],
   "summary": null,
   "summaryFrom": null,
@@ -698,7 +760,7 @@
     "lib": 93,
     "scripts": 19
   },
-  "unnamedWrites": 45,
+  "unnamedWrites": 38,
   "unread": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase2/",
@@ -716,6 +778,12 @@
       "place": "projects/ai-eye-test/outputs/synthetic/phase2b/",
       "writers": [
         "projects/ai-eye-test/compositor/phase2b_build.py"
+      ]
+    },
+    {
+      "place": "projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl",
+      "writers": [
+        "projects/salt-road/inputs/prompts/wave-runner.py"
       ]
     },
     {
@@ -741,7 +809,8 @@
   "unreadNote": [],
   "untested": [],
   "untestedNote": [
-    "bin is touched by tests only through a spawn: a test runs its files as a child process."
+    "bin is touched by tests only through a spawn: a test runs its files as a child process.",
+    "2 test files run in no workflow: projects/ai-eye-test/compositor/test_compositor.py and projects/ai-eye-test/compositor/test_phase2.py."
   ],
   "written": 10
 }
