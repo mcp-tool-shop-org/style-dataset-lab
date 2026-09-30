@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "801f66ae43c4ca3b48f887bb887c7a2ba822030d0ec652e5777faecabf70bcc5",
+          "hash": "bd4e1ad0937def7881c40c4b8934ae2c79aa17b0b4cc25c665208b8a1500ecd9",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -60,14 +60,53 @@
         {
           "entry": "main",
           "entryRule": 1,
+          "failurePaths": [
+            {
+              "in": "main",
+              "kind": "throw",
+              "line": 609
+            },
+            {
+              "in": "main",
+              "kind": "throw",
+              "line": 650
+            }
+          ],
           "hash": "1937a03ccd7331e9e510202aa4d18efff89aa281619a43847710ba5675d24cd6",
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
             "lib/log.js",
+            "scripts/canon-bind.js",
+            "scripts/card.js",
+            "scripts/compare.js",
+            "scripts/critique-show.js",
             "scripts/critique.js",
+            "scripts/curate.js",
+            "scripts/eligibility.js",
+            "scripts/eval-pack.js",
+            "scripts/eval-run.js",
+            "scripts/export.js",
+            "scripts/generate-controlnet.js",
+            "scripts/generate-identity.js",
+            "scripts/generate-ipadapter.js",
+            "scripts/generate.js",
+            "scripts/implementation-pack.js",
+            "scripts/ingest.js",
+            "scripts/init.js",
+            "scripts/measure.js",
+            "scripts/migrate-records.js",
+            "scripts/painterly-test.js",
+            "scripts/painterly.js",
             "scripts/refine.js",
-            "scripts/select.js"
+            "scripts/reingest.js",
+            "scripts/select.js",
+            "scripts/sheet.js",
+            "scripts/snapshot.js",
+            "scripts/split.js",
+            "scripts/training-manifest.js",
+            "scripts/training-package.js",
+            "scripts/training-profile.js"
           ],
           "path": "bin/sdlab.js",
           "sequences": [
@@ -91,6 +130,7 @@
                   "branch": "command === head",
                   "line": 605,
                   "name": "findClosest",
+                  "over": "namespaces",
                   "target": {
                     "file": "lib/args.js"
                   }
@@ -99,6 +139,7 @@
                   "branch": "command === head",
                   "line": 609,
                   "name": "inputError",
+                  "over": "namespaces",
                   "target": {
                     "file": "lib/errors.js"
                   }
@@ -365,9 +406,19 @@
       "name": "bin",
       "origin": "authored",
       "role": "code",
+      "testRunners": [
+        "node --test"
+      ],
       "testedBy": 9,
       "testedThroughSpawn": true,
-      "unresolvedSites": 3
+      "unresolvedNamed": [
+        {
+          "path": "bin/sdlab.js",
+          "specifier": null,
+          "why": "dynamic"
+        }
+      ],
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 0,
@@ -402,7 +453,7 @@
     },
     {
       "dynamicReads": 60,
-      "dynamicSpawns": 3,
+      "dynamicSpawns": 2,
       "dynamicSpawnsInTests": 0,
       "dynamicWrites": 22,
       "entryPoints": [],
@@ -413,7 +464,26 @@
             "buildAiToolkitConfig",
             "buildPackage"
           ],
+          "failurePaths": [
+            {
+              "in": "buildPackage",
+              "kind": "throw",
+              "line": 33
+            },
+            {
+              "in": "buildPackage",
+              "kind": "catch",
+              "line": 88
+            }
+          ],
           "hash": "f8dd4e50107278a6725179c632f81366ebbca81ff21d7039ec4d390e96a22b22",
+          "importOrder": [
+            "lib/captions.js",
+            "lib/rows.js",
+            "lib/errors.js",
+            "lib/export.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/captions.js",
             "lib/errors.js",
@@ -427,7 +497,35 @@
           "exports": [
             "executeRun"
           ],
+          "failurePaths": [
+            {
+              "in": "executeRun",
+              "kind": "throw",
+              "line": 77
+            },
+            {
+              "in": "executeRun",
+              "kind": "catch",
+              "line": 190
+            },
+            {
+              "in": "executeRun",
+              "kind": "catch",
+              "line": 236
+            }
+          ],
           "hash": "c5941f8a07a80371e084b87884a0ae8ad2894da33430c05c9d8b0b082feda267",
+          "importOrder": [
+            "lib/comfyui.js",
+            "lib/adapters/comfyui-workflows.js",
+            "lib/runtime-runs.js",
+            "lib/config.js",
+            "lib/comfyui-output.js",
+            "lib/run-manifest.js",
+            "lib/snapshot.js",
+            "lib/log.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/adapters/comfyui-workflows.js",
             "lib/comfyui-output.js",
@@ -458,7 +556,19 @@
           "exports": [
             "buildPackage"
           ],
+          "failurePaths": [
+            {
+              "in": "buildPackage",
+              "kind": "catch",
+              "line": 83
+            }
+          ],
           "hash": "22f1d456e189d281db2720a877a0e6ebe0992217d771dcef674305c5a2e448b6",
+          "importOrder": [
+            "lib/rows.js",
+            "lib/export.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/export.js",
             "lib/log.js",
@@ -470,7 +580,19 @@
           "exports": [
             "buildPackage"
           ],
+          "failurePaths": [
+            {
+              "in": "buildPackage",
+              "kind": "catch",
+              "line": 74
+            }
+          ],
           "hash": "88c542f651dad8c70d9dae0bb1123e2813835997f36419ae90ad858e394b3d8b",
+          "importOrder": [
+            "lib/rows.js",
+            "lib/export.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/export.js",
             "lib/log.js",
@@ -490,6 +612,63 @@
             "sliceAfterSubcommand",
             "takeFlagValue"
           ],
+          "failurePaths": [
+            {
+              "in": "parseArgs",
+              "kind": "throw",
+              "line": 40
+            },
+            {
+              "in": "parseArgs",
+              "kind": "throw",
+              "line": 95
+            },
+            {
+              "in": "parseArgs",
+              "kind": "throw",
+              "line": 112
+            },
+            {
+              "in": "getProjectName",
+              "kind": "throw",
+              "line": 159
+            },
+            {
+              "in": "getProjectName",
+              "kind": "throw",
+              "line": 162
+            },
+            {
+              "in": "parseNumberFlag",
+              "kind": "throw",
+              "line": 245
+            },
+            {
+              "in": "parseNumberFlag",
+              "kind": "throw",
+              "line": 253
+            },
+            {
+              "in": "parseNumberFlag",
+              "kind": "throw",
+              "line": 260
+            },
+            {
+              "in": "parseNumberFlag",
+              "kind": "throw",
+              "line": 263
+            },
+            {
+              "in": "takeFlagValue",
+              "kind": "throw",
+              "line": 283
+            },
+            {
+              "in": "takeFlagValue",
+              "kind": "throw",
+              "line": 286
+            }
+          ],
           "hash": "fa45b1e0edee66418ea2ece9bbc577815f1ec5287a5ba3b92de37e9916bd5e77",
           "importsFiles": [
             "lib/deprecation.js",
@@ -503,6 +682,7 @@
                   "branch": "aliasIndex[def.alias]",
                   "line": 40,
                   "name": "inputError",
+                  "over": "Object.entries(flagDefs)",
                   "target": {
                     "file": "lib/errors.js"
                   }
@@ -643,7 +823,61 @@
           "exports": [
             "ingestAssetSource"
           ],
+          "failurePaths": [
+            {
+              "in": "atomicWriteFile",
+              "kind": "catch",
+              "line": 71
+            },
+            {
+              "in": "atomicWriteFile",
+              "kind": "catch",
+              "line": 72
+            },
+            {
+              "in": "atomicWriteFile",
+              "kind": "throw",
+              "line": 73
+            },
+            {
+              "in": "ingestAssetSource",
+              "kind": "catch",
+              "line": 115
+            },
+            {
+              "in": "ingestAssetSource",
+              "kind": "throw",
+              "line": 116
+            },
+            {
+              "in": "ingestAssetSource",
+              "kind": "throw",
+              "line": 128
+            },
+            {
+              "in": "ingestAssetSource",
+              "kind": "throw",
+              "line": 176
+            },
+            {
+              "in": "ingestAssetSource",
+              "kind": "catch",
+              "line": 222
+            },
+            {
+              "in": "ingestAssetSource",
+              "kind": "throw",
+              "line": 230
+            }
+          ],
           "hash": "cb5d986d31979e297949f6314109fa2beffbed5ff73b9427893c7a54f39466ae",
+          "importOrder": [
+            "lib/records.js",
+            "lib/errors.js",
+            "lib/png-meta.js",
+            "lib/asset-masks.js",
+            "lib/asset-source.js"
+          ],
           "importsFiles": [
             "lib/asset-masks.js",
             "lib/asset-source.js",
@@ -663,6 +897,28 @@
             "silhouetteToMask",
             "srgbToLab"
           ],
+          "failurePaths": [
+            {
+              "in": "rgbAt",
+              "kind": "throw",
+              "line": 93
+            },
+            {
+              "in": "silhouetteToMask",
+              "kind": "throw",
+              "line": 109
+            },
+            {
+              "in": "paletteGate",
+              "kind": "throw",
+              "line": 181
+            },
+            {
+              "in": "classShares",
+              "kind": "throw",
+              "line": 285
+            }
+          ],
           "hash": "13b5f4bd0f33dbbe504c363755c70a4bb537c90c21d0cbc6355cb831bf16c777",
           "importsFiles": [
             "lib/errors.js"
@@ -676,7 +932,81 @@
             "validateAssetSource",
             "validateManifestShape"
           ],
+          "failurePaths": [
+            {
+              "in": "provePng",
+              "kind": "catch",
+              "line": 697
+            },
+            {
+              "in": "provePng",
+              "kind": "catch",
+              "line": 704
+            },
+            {
+              "in": "proveNpy",
+              "kind": "catch",
+              "line": 732
+            },
+            {
+              "in": "proveNpy",
+              "kind": "catch",
+              "line": 739
+            },
+            {
+              "in": "proveJson",
+              "kind": "catch",
+              "line": 777
+            },
+            {
+              "in": "proveJson",
+              "kind": "catch",
+              "line": 784
+            },
+            {
+              "in": "proveFiles",
+              "kind": "catch",
+              "line": 851
+            },
+            {
+              "in": "proveCategorical",
+              "kind": "catch",
+              "line": 1041
+            },
+            {
+              "in": "proveCategorical",
+              "kind": "catch",
+              "line": 1073
+            },
+            {
+              "in": "throwViolations",
+              "kind": "throw",
+              "line": 1099
+            },
+            {
+              "in": "validateAssetSource",
+              "kind": "throw",
+              "line": 1116
+            },
+            {
+              "in": "validateAssetSource",
+              "kind": "catch",
+              "line": 1126
+            },
+            {
+              "in": "validateAssetSource",
+              "kind": "throw",
+              "line": 1127
+            }
+          ],
           "hash": "836a04cdbee7f77ecb07f363d00f91e8f4085dd654d5ae059df46c06586b0a81",
+          "importOrder": [
+            "lib/errors.js",
+            "lib/export.js",
+            "lib/png-meta.js",
+            "lib/npy-meta.js",
+            "lib/asset-masks.js"
+          ],
           "importsFiles": [
             "lib/asset-masks.js",
             "lib/errors.js",
@@ -691,7 +1021,25 @@
             "applySlotDelta",
             "compileBatch"
           ],
+          "failurePaths": [
+            {
+              "in": "compileBatch",
+              "kind": "throw",
+              "line": 88
+            },
+            {
+              "in": "compileBatch",
+              "kind": "throw",
+              "line": 95
+            }
+          ],
           "hash": "481066aaac7251dd17ffd0ede80939b7519d12f8878e93abdb7ca3c90f9eafca",
+          "importOrder": [
+            "lib/brief-compiler.js",
+            "lib/batch-modes.js",
+            "lib/workflow-profiles.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/batch-modes.js",
             "lib/brief-compiler.js",
@@ -707,7 +1055,33 @@
             "listBatchModes",
             "validateBatchMode"
           ],
+          "failurePaths": [
+            {
+              "in": "listBatchModes",
+              "kind": "catch",
+              "line": 53
+            },
+            {
+              "in": "getBatchMode",
+              "kind": "throw",
+              "line": 69
+            },
+            {
+              "in": "getBatchMode",
+              "kind": "catch",
+              "line": 81
+            },
+            {
+              "in": "getBatchMode",
+              "kind": "throw",
+              "line": 82
+            }
+          ],
           "hash": "1d0af0f2892422036e1c3c81e3bc84bc72542e3afecb26ef8e56f93e055f91e7",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/errors.js",
             "lib/paths.js"
@@ -726,7 +1100,71 @@
             "openBatchDirForResume",
             "saveBatchManifest"
           ],
+          "failurePaths": [
+            {
+              "in": "atomicWriteJson",
+              "kind": "catch",
+              "line": 33
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "catch",
+              "line": 34
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "throw",
+              "line": 35
+            },
+            {
+              "in": "openBatchDirForResume",
+              "kind": "throw",
+              "line": 126
+            },
+            {
+              "in": "openBatchDirForResume",
+              "kind": "throw",
+              "line": 138
+            },
+            {
+              "in": "openBatchDirForResume",
+              "kind": "throw",
+              "line": 149
+            },
+            {
+              "in": "executeBatchRuns",
+              "kind": "throw",
+              "line": 183
+            },
+            {
+              "in": "executeBatchRuns",
+              "kind": "catch",
+              "line": 247
+            },
+            {
+              "in": "executeBatchRuns",
+              "kind": "catch",
+              "line": 273
+            },
+            {
+              "in": "loadBatchManifest",
+              "kind": "throw",
+              "line": 295
+            },
+            {
+              "in": "loadBatchManifest",
+              "kind": "throw",
+              "line": 306
+            }
+          ],
           "hash": "ef6af3ea058bdb6814cc28a3e04b7af7f6edaf74b2950bdc860a32fb3e5eec0d",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/adapters/comfyui-runner.js",
+            "lib/run-summary.js",
+            "lib/log.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/adapters/comfyui-runner.js",
             "lib/errors.js",
@@ -759,7 +1197,61 @@
             "loadCompiledBrief",
             "saveCompiledBrief"
           ],
+          "failurePaths": [
+            {
+              "in": "resolveSubject",
+              "kind": "catch",
+              "line": 135
+            },
+            {
+              "in": "resolveReferences",
+              "kind": "throw",
+              "line": 203
+            },
+            {
+              "in": "resolveReferences",
+              "kind": "throw",
+              "line": 212
+            },
+            {
+              "in": "compileBrief",
+              "kind": "throw",
+              "line": 450
+            },
+            {
+              "in": "compileBrief",
+              "kind": "throw",
+              "line": 460
+            },
+            {
+              "in": "compileBrief",
+              "kind": "throw",
+              "line": 467
+            },
+            {
+              "in": "compileBrief",
+              "kind": "throw",
+              "line": 499
+            },
+            {
+              "in": "loadCompiledBrief",
+              "kind": "throw",
+              "line": 606
+            },
+            {
+              "in": "listCompiledBriefs",
+              "kind": "catch",
+              "line": 638
+            }
+          ],
           "hash": "0b24b805111320be69b7482c05ad709d855dc9483dab98c3bb40f2072dc86ea1",
+          "importOrder": [
+            "lib/config.js",
+            "lib/workflow-profiles.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/brief-render.js"
+          ],
           "importsFiles": [
             "lib/brief-render.js",
             "lib/config.js",
@@ -787,6 +1279,33 @@
             "slugifyRelPath",
             "walkImages"
           ],
+          "failurePaths": [
+            {
+              "in": "walk",
+              "kind": "catch",
+              "line": 65
+            },
+            {
+              "in": "walk",
+              "kind": "throw",
+              "line": 67
+            },
+            {
+              "in": "buildAssetPathIndex",
+              "kind": "catch",
+              "line": 104
+            },
+            {
+              "in": "buildAssetPathIndex",
+              "kind": "throw",
+              "line": 106
+            },
+            {
+              "in": "buildAssetPathIndex",
+              "kind": "catch",
+              "line": 114
+            }
+          ],
           "hash": "967788f2bb0fbc1093294f65116c3653909473bd3fc1ce3e14261a33f8d2ef5c",
           "importsFiles": [
             "lib/batch-sheet-render.js"
@@ -797,7 +1316,93 @@
           "exports": [
             "runBuild"
           ],
+          "failurePaths": [
+            {
+              "in": "runBuild",
+              "kind": "throw",
+              "line": 60
+            },
+            {
+              "in": "runBuild",
+              "kind": "throw",
+              "line": 112
+            },
+            {
+              "in": "runBuild",
+              "kind": "throw",
+              "line": 151
+            },
+            {
+              "in": "runBuild",
+              "kind": "throw",
+              "line": 225
+            },
+            {
+              "in": "runBuild",
+              "kind": "catch",
+              "line": 360
+            },
+            {
+              "in": "runBuild",
+              "kind": "catch",
+              "line": 363
+            },
+            {
+              "in": "runBuild",
+              "kind": "throw",
+              "line": 364
+            },
+            {
+              "in": "detectSchemaChange",
+              "kind": "catch",
+              "line": 422
+            },
+            {
+              "in": "loadPreviousManifest",
+              "kind": "catch",
+              "line": 442
+            },
+            {
+              "in": "loadPreviousManifest",
+              "kind": "catch",
+              "line": 455
+            },
+            {
+              "in": "resolveGeneratedFrom",
+              "kind": "catch",
+              "line": 473
+            },
+            {
+              "in": "contentShaOfTree",
+              "kind": "catch",
+              "line": 486
+            },
+            {
+              "in": "walkFiles",
+              "kind": "catch",
+              "line": 494
+            },
+            {
+              "in": "walkFiles",
+              "kind": "catch",
+              "line": 499
+            }
+          ],
           "hash": "a28a713572fb5f97a44989c2690e56d871367da56cacebafbf2bf1d1b07eea21",
+          "importOrder": [
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/load-schema.js",
+            "lib/canon-build/load-entry.js",
+            "lib/canon-build/lane-resolve.js",
+            "lib/canon-build/emitters/index.js",
+            "lib/canon-build/emitters/base.js",
+            "lib/rows.js",
+            "lib/snapshot.js",
+            "lib/training-profiles.js",
+            "lib/captions.js",
+            "lib/errors.js",
+            "lib/freeze-stamp.js"
+          ],
           "importsFiles": [
             "lib/canon-build/emitters/base.js",
             "lib/canon-build/emitters/index.js",
@@ -870,6 +1475,16 @@
             "getEmitter"
           ],
           "hash": "caeb25c8e40b07827206af158c774524d939fac85d3ff2d870ec2853666ce1f7",
+          "importOrder": [
+            "lib/canon-build/emitters/monster.js",
+            "lib/canon-build/emitters/character.js",
+            "lib/canon-build/emitters/deity.js",
+            "lib/canon-build/emitters/location.js",
+            "lib/canon-build/emitters/relic.js",
+            "lib/canon-build/emitters/faction.js",
+            "lib/canon-build/emitters/ship.js",
+            "lib/canon-build/emitters/species.js"
+          ],
           "importsFiles": [
             "lib/canon-build/emitters/character.js",
             "lib/canon-build/emitters/deity.js",
@@ -951,6 +1566,38 @@
           "exports": [
             "parseFrontmatter"
           ],
+          "failurePaths": [
+            {
+              "in": "parseFrontmatter",
+              "kind": "throw",
+              "line": 38
+            },
+            {
+              "in": "parseFrontmatter",
+              "kind": "throw",
+              "line": 46
+            },
+            {
+              "in": "parseFrontmatter",
+              "kind": "throw",
+              "line": 53
+            },
+            {
+              "in": "parseFrontmatter",
+              "kind": "catch",
+              "line": 63
+            },
+            {
+              "in": "parseFrontmatter",
+              "kind": "throw",
+              "line": 64
+            },
+            {
+              "in": "parseFrontmatter",
+              "kind": "throw",
+              "line": 68
+            }
+          ],
           "hash": "00dca14e0fbe686e2dec810e3fe464ca91041509bbf332826e8b80d3e97541db",
           "path": "lib/canon-build/frontmatter.js"
         },
@@ -958,7 +1605,33 @@
           "exports": [
             "resolveLane"
           ],
+          "failurePaths": [
+            {
+              "in": "resolveLane",
+              "kind": "throw",
+              "line": 28
+            },
+            {
+              "in": "resolveLane",
+              "kind": "throw",
+              "line": 42
+            },
+            {
+              "in": "resolveLane",
+              "kind": "throw",
+              "line": 49
+            },
+            {
+              "in": "resolveLane",
+              "kind": "throw",
+              "line": 59
+            }
+          ],
           "hash": "462c18a8f3bdc4b81c234ebec3eef40446a1ef4dad7044feae7694322c6d6ba3",
+          "importOrder": [
+            "lib/errors.js",
+            "lib/canon-build/load-config.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/errors.js"
@@ -969,6 +1642,28 @@
           "exports": [
             "getByPath",
             "loadBuildConfig"
+          ],
+          "failurePaths": [
+            {
+              "in": "loadBuildConfig",
+              "kind": "throw",
+              "line": 29
+            },
+            {
+              "in": "loadBuildConfig",
+              "kind": "catch",
+              "line": 40
+            },
+            {
+              "in": "loadBuildConfig",
+              "kind": "throw",
+              "line": 41
+            },
+            {
+              "in": "loadBuildConfig",
+              "kind": "throw",
+              "line": 79
+            }
           ],
           "hash": "605524212e678ef18ed9f418c13fe1f0afe8d30e2a17e3dd7765a1a5e9795f0d",
           "importsFiles": [
@@ -992,6 +1687,18 @@
           "exports": [
             "loadSchema"
           ],
+          "failurePaths": [
+            {
+              "in": "loadSchema",
+              "kind": "catch",
+              "line": 29
+            },
+            {
+              "in": "loadSchema",
+              "kind": "throw",
+              "line": 30
+            }
+          ],
           "hash": "5bead6bb0fe9dfb572d9c01d6bdfaeb67bf6cfb595162a5ced6026b20caee4a3",
           "importsFiles": [
             "lib/errors.js"
@@ -1002,6 +1709,13 @@
           "exports": [
             "buildCaption",
             "deriveStyleTrigger"
+          ],
+          "failurePaths": [
+            {
+              "in": "buildSubjectNaturalLanguageCaption",
+              "kind": "throw",
+              "line": 212
+            }
           ],
           "hash": "18a2d1fce5191aad8653a4d2a66e73d4768550c828bf54559f2b5c536d3908a9",
           "importsFiles": [
@@ -1014,6 +1728,11 @@
             "generateCard"
           ],
           "hash": "2b59bcc9b60ac3553ab73be8f8757f6f61111440eac319a761462cb94e1c6f57",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/config.js"
+          ],
           "importsFiles": [
             "lib/config.js",
             "lib/snapshot.js",
@@ -1035,6 +1754,98 @@
             "downloadImage",
             "submitAndWait",
             "uploadImage"
+          ],
+          "failurePaths": [
+            {
+              "in": "fetchWithTimeout",
+              "kind": "catch",
+              "line": 46
+            },
+            {
+              "in": "fetchWithTimeout",
+              "kind": "throw",
+              "line": 49
+            },
+            {
+              "in": "fetchWithTimeout",
+              "kind": "throw",
+              "line": 53
+            },
+            {
+              "in": "comfyHealthDetailed",
+              "kind": "catch",
+              "line": 80
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 130
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 148
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "catch",
+              "line": 157
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 160
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 169
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "catch",
+              "line": 182
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 185
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 228
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 232
+            },
+            {
+              "in": "submitAndWait",
+              "kind": "throw",
+              "line": 242
+            },
+            {
+              "in": "downloadImage",
+              "kind": "throw",
+              "line": 264
+            },
+            {
+              "in": "downloadImage",
+              "kind": "throw",
+              "line": 267
+            },
+            {
+              "in": "downloadImage",
+              "kind": "throw",
+              "line": 271
+            },
+            {
+              "in": "uploadImage",
+              "kind": "throw",
+              "line": 296
+            }
           ],
           "hash": "117aa3802affacaf4a04ff21ea5774580f372ed12a1335aee41311b56af53599",
           "importsFiles": [
@@ -1058,6 +1869,68 @@
             "readJsonFile",
             "resolveGpuModel"
           ],
+          "failurePaths": [
+            {
+              "in": "loadJsonFile",
+              "kind": "catch",
+              "line": 19
+            },
+            {
+              "in": "loadJsonFile",
+              "kind": "throw",
+              "line": 20
+            },
+            {
+              "in": "validateRegexPattern",
+              "kind": "catch",
+              "line": 50
+            },
+            {
+              "in": "validateRegexPattern",
+              "kind": "throw",
+              "line": 51
+            },
+            {
+              "in": "readJsonFile",
+              "kind": "catch",
+              "line": 114
+            },
+            {
+              "in": "readJsonFile",
+              "kind": "throw",
+              "line": 116
+            },
+            {
+              "in": "readJsonFile",
+              "kind": "throw",
+              "line": 122
+            },
+            {
+              "in": "readJsonFile",
+              "kind": "catch",
+              "line": 127
+            },
+            {
+              "in": "readJsonFile",
+              "kind": "throw",
+              "line": 128
+            },
+            {
+              "in": "readJsonFile",
+              "kind": "throw",
+              "line": 139
+            },
+            {
+              "in": "loadConstitution",
+              "kind": "throw",
+              "line": 203
+            },
+            {
+              "in": "loadLanes",
+              "kind": "throw",
+              "line": 225
+            }
+          ],
           "hash": "efcf7f53c743ea6807bddb8f5f7072184aa420942c01b30876920b8cdba46264",
           "importsFiles": [
             "lib/errors.js",
@@ -1075,7 +1948,32 @@
             "saveCritique",
             "triageCandidates"
           ],
+          "failurePaths": [
+            {
+              "in": "critiqueRun",
+              "kind": "throw",
+              "line": 402
+            },
+            {
+              "in": "critiqueRun",
+              "kind": "throw",
+              "line": 422
+            },
+            {
+              "in": "loadCritique",
+              "kind": "throw",
+              "line": 485
+            }
+          ],
           "hash": "70f6fb09aa76edd7c6ea50d16bf645d5db2c75f451f9d221a068a1de15b3a1f4",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/runtime-runs.js",
+            "lib/workflow-profiles.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/verifier.js"
+          ],
           "importsFiles": [
             "lib/config.js",
             "lib/errors.js",
@@ -1131,6 +2029,23 @@
             "listEvalPacks",
             "loadEvalPack"
           ],
+          "failurePaths": [
+            {
+              "in": "buildEvalPack",
+              "kind": "catch",
+              "line": 56
+            },
+            {
+              "in": "listEvalPacks",
+              "kind": "catch",
+              "line": 354
+            },
+            {
+              "in": "loadEvalPack",
+              "kind": "throw",
+              "line": 368
+            }
+          ],
           "hash": "839c3969387396cccf2c89e955b85a347bc8c4088c2e90618a69296c1f7e2335",
           "importsFiles": [
             "lib/config.js",
@@ -1146,7 +2061,36 @@
             "loadEvalRun",
             "scoreEvalRun"
           ],
+          "failurePaths": [
+            {
+              "in": "scoreEvalRun",
+              "kind": "throw",
+              "line": 101
+            },
+            {
+              "in": "scoreEvalRun",
+              "kind": "throw",
+              "line": 150
+            },
+            {
+              "in": "loadEvalRun",
+              "kind": "throw",
+              "line": 324
+            },
+            {
+              "in": "listEvalRuns",
+              "kind": "catch",
+              "line": 353
+            }
+          ],
           "hash": "29bed1c73b090a964a0e124a1cb47d090fae2c230aa20a0ca5985dd650b28436",
+          "importOrder": [
+            "lib/training-manifests.js",
+            "lib/eval-pack.js",
+            "lib/config.js",
+            "lib/snapshot.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/config.js",
             "lib/errors.js",
@@ -1164,7 +2108,63 @@
             "listExports",
             "loadExport"
           ],
+          "failurePaths": [
+            {
+              "in": "assertSafeAssetPath",
+              "kind": "throw",
+              "line": 55
+            },
+            {
+              "in": "assertSafeAssetPath",
+              "kind": "throw",
+              "line": 65
+            },
+            {
+              "in": "assertSafeId",
+              "kind": "throw",
+              "line": 88
+            },
+            {
+              "in": "buildExport",
+              "kind": "throw",
+              "line": 123
+            },
+            {
+              "in": "buildExport",
+              "kind": "throw",
+              "line": 227
+            },
+            {
+              "in": "buildExport",
+              "kind": "throw",
+              "line": 253
+            },
+            {
+              "in": "buildExport",
+              "kind": "catch",
+              "line": 285
+            },
+            {
+              "in": "listExports",
+              "kind": "catch",
+              "line": 438
+            },
+            {
+              "in": "loadExport",
+              "kind": "throw",
+              "line": 452
+            }
+          ],
           "hash": "84d9ba3b0ea7ec7742680817fa2e3892f3dce182d8629c0b663885ac716d4b59",
+          "importOrder": [
+            "lib/config.js",
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/records.js",
+            "lib/card.js",
+            "lib/errors.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/card.js",
             "lib/config.js",
@@ -1184,6 +2184,38 @@
             "readEventsFor",
             "readEventsSince"
           ],
+          "failurePaths": [
+            {
+              "in": "appendEvent",
+              "kind": "throw",
+              "line": 33
+            },
+            {
+              "in": "appendEvent",
+              "kind": "throw",
+              "line": 35
+            },
+            {
+              "in": "appendEvent",
+              "kind": "throw",
+              "line": 36
+            },
+            {
+              "in": "appendEvent",
+              "kind": "throw",
+              "line": 37
+            },
+            {
+              "in": "readEvents",
+              "kind": "catch",
+              "line": 75
+            },
+            {
+              "in": "readEvents",
+              "kind": "throw",
+              "line": 76
+            }
+          ],
           "hash": "1f812585e82ad83e7f58ede54f732f2fdc64f1361de4068a3f230cca174c549a",
           "path": "lib/freeze-events.js"
         },
@@ -1196,7 +2228,42 @@
             "resolveEntryByAssetPath",
             "resolveEntryBySubject"
           ],
+          "failurePaths": [
+            {
+              "in": "latestFreezeAt",
+              "kind": "catch",
+              "line": 43
+            },
+            {
+              "in": "loadAllCanonEntries",
+              "kind": "catch",
+              "line": 78
+            },
+            {
+              "in": "assertNotFrozen",
+              "kind": "throw",
+              "line": 166
+            },
+            {
+              "in": "assertNotFrozen",
+              "kind": "throw",
+              "line": 175
+            },
+            {
+              "in": "assertNotFrozen",
+              "kind": "throw",
+              "line": 182
+            }
+          ],
           "hash": "97384b7683e771fad2c04f81902895661eb694da7c69e40b90b89da6fcdf277a",
+          "importOrder": [
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/load-entry.js",
+            "lib/freeze-stamp.js",
+            "lib/freeze-events.js",
+            "lib/errors.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
@@ -1218,6 +2285,13 @@
             "readFreezeStatus",
             "resolveWatchFields"
           ],
+          "failurePaths": [
+            {
+              "in": "readFreezeStatus",
+              "kind": "throw",
+              "line": 44
+            }
+          ],
           "hash": "cab287e9a040c01abe5f7534d9009ebc8fbb1bfc0777088473ae400dedd5159f",
           "importsFiles": [
             "lib/canon-build/load-config.js",
@@ -1228,6 +2302,13 @@
         {
           "exports": [
             "buildGeneratedProvenance"
+          ],
+          "failurePaths": [
+            {
+              "in": "buildGeneratedProvenance",
+              "kind": "catch",
+              "line": 72
+            }
           ],
           "hash": "3cdd225e4938eccfad018a896bf84f4be79f532cf69d37fda3f8acbaf059794a",
           "importsFiles": [
@@ -1241,7 +2322,33 @@
             "listImplementationPacks",
             "loadImplementationPack"
           ],
+          "failurePaths": [
+            {
+              "in": "buildImplementationPack",
+              "kind": "catch",
+              "line": 118
+            },
+            {
+              "in": "listImplementationPacks",
+              "kind": "catch",
+              "line": 391
+            },
+            {
+              "in": "loadImplementationPack",
+              "kind": "throw",
+              "line": 403
+            }
+          ],
           "hash": "1bb1c52c5924f121d7d99e336094d06ed50e7afa8717ee245a6207d2584118dd",
+          "importOrder": [
+            "lib/training-manifests.js",
+            "lib/training-profiles.js",
+            "lib/config.js",
+            "lib/split.js",
+            "lib/records.js",
+            "lib/snapshot.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/config.js",
             "lib/log.js",
@@ -1259,7 +2366,75 @@
             "loadReceiptsIndex",
             "loadWaveIndex"
           ],
+          "failurePaths": [
+            {
+              "in": "atomicWriteFile",
+              "kind": "catch",
+              "line": 84
+            },
+            {
+              "in": "atomicWriteFile",
+              "kind": "catch",
+              "line": 85
+            },
+            {
+              "in": "atomicWriteFile",
+              "kind": "throw",
+              "line": 86
+            },
+            {
+              "in": "atomicCopyFile",
+              "kind": "catch",
+              "line": 102
+            },
+            {
+              "in": "atomicCopyFile",
+              "kind": "catch",
+              "line": 103
+            },
+            {
+              "in": "atomicCopyFile",
+              "kind": "throw",
+              "line": 104
+            },
+            {
+              "in": "loadWaveIndex",
+              "kind": "throw",
+              "line": 130
+            },
+            {
+              "in": "loadWaveIndex",
+              "kind": "catch",
+              "line": 140
+            },
+            {
+              "in": "loadWaveIndex",
+              "kind": "throw",
+              "line": 141
+            },
+            {
+              "in": "loadReceiptsIndex",
+              "kind": "catch",
+              "line": 190
+            },
+            {
+              "in": "ingestDirectory",
+              "kind": "throw",
+              "line": 276
+            },
+            {
+              "in": "ingestDirectory",
+              "kind": "catch",
+              "line": 337
+            }
+          ],
           "hash": "e3d327ae8c98aa94ba2c01264a7d4df9a64427964fdd4f3bcbbe14f40fdb9bb0",
+          "importOrder": [
+            "lib/records.js",
+            "lib/export.js",
+            "lib/errors.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/errors.js",
             "lib/export.js",
@@ -1305,7 +2480,83 @@
             "resolveMeasureTargets",
             "runPythonMeasurement"
           ],
+          "failurePaths": [
+            {
+              "in": "checkPythonDeps",
+              "kind": "catch",
+              "line": 101
+            },
+            {
+              "in": "assertMeasurementPrereqs",
+              "kind": "throw",
+              "line": 120
+            },
+            {
+              "in": "assertMeasurementPrereqs",
+              "kind": "throw",
+              "line": 130
+            },
+            {
+              "in": "resolveMeasureTargets",
+              "kind": "throw",
+              "line": 180
+            },
+            {
+              "in": "resolveMeasureTargets",
+              "kind": "throw",
+              "line": 229
+            },
+            {
+              "in": "loadAnchors",
+              "kind": "throw",
+              "line": 278
+            },
+            {
+              "in": "loadAnchors",
+              "kind": "catch",
+              "line": 283
+            },
+            {
+              "in": "loadAnchors",
+              "kind": "throw",
+              "line": 284
+            },
+            {
+              "in": "loadAnchors",
+              "kind": "throw",
+              "line": 288
+            },
+            {
+              "in": "loadAnchors",
+              "kind": "throw",
+              "line": 296
+            },
+            {
+              "in": "runPythonMeasurement",
+              "kind": "throw",
+              "line": 336
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "catch",
+              "line": 366
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "catch",
+              "line": 369
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "throw",
+              "line": 372
+            }
+          ],
           "hash": "163989f94fcdfdebcf9b335740d5606a2df4a72d755327d0c7b237a4ea320714",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/errors.js",
             "lib/paths.js"
@@ -1316,6 +2567,48 @@
           "exports": [
             "parseNpyHeader",
             "readNpyValues"
+          ],
+          "failurePaths": [
+            {
+              "in": "parseNpyHeader",
+              "kind": "throw",
+              "line": 43
+            },
+            {
+              "in": "parseNpyHeader",
+              "kind": "throw",
+              "line": 53
+            },
+            {
+              "in": "parseNpyHeader",
+              "kind": "throw",
+              "line": 57
+            },
+            {
+              "in": "parseNpyHeader",
+              "kind": "throw",
+              "line": 60
+            },
+            {
+              "in": "parseNpyHeader",
+              "kind": "throw",
+              "line": 69
+            },
+            {
+              "in": "parseNpyHeader",
+              "kind": "throw",
+              "line": 79
+            },
+            {
+              "in": "readNpyValues",
+              "kind": "throw",
+              "line": 116
+            },
+            {
+              "in": "readNpyValues",
+              "kind": "throw",
+              "line": 124
+            }
           ],
           "hash": "78d4a779bc1494d7f33802c005da32b7a1b3cb98a1ebb69122fbe80f23b7e56c",
           "importsFiles": [
@@ -1337,6 +2630,38 @@
             "resolveSafeProjectPath",
             "resolveWorkspaceRootFrom"
           ],
+          "failurePaths": [
+            {
+              "in": "assertNotInNodeModules",
+              "kind": "throw",
+              "line": 50
+            },
+            {
+              "in": "getProjectRoot",
+              "kind": "throw",
+              "line": 187
+            },
+            {
+              "in": "getProjectRoot",
+              "kind": "throw",
+              "line": 194
+            },
+            {
+              "in": "getProjectRoot",
+              "kind": "throw",
+              "line": 208
+            },
+            {
+              "in": "resolveSafeProjectPath",
+              "kind": "throw",
+              "line": 246
+            },
+            {
+              "in": "resolveSafeProjectPath",
+              "kind": "throw",
+              "line": 253
+            }
+          ],
           "hash": "2571964837a6f5ea5957c4c0d0a4ae006a15202ff0f19d1718e57d03bae13ee4",
           "importsFiles": [
             "lib/errors.js"
@@ -1347,6 +2672,83 @@
           "exports": [
             "decodePng",
             "parsePngMeta"
+          ],
+          "failurePaths": [
+            {
+              "in": "chunks",
+              "kind": "throw",
+              "line": 60
+            },
+            {
+              "in": "chunks",
+              "kind": "throw",
+              "line": 68
+            },
+            {
+              "in": "parsePngMeta",
+              "kind": "throw",
+              "line": 93
+            },
+            {
+              "in": "parsePngMeta",
+              "kind": "throw",
+              "line": 102
+            },
+            {
+              "in": "parsePngMeta",
+              "kind": "throw",
+              "line": 114
+            },
+            {
+              "in": "parsePngMeta",
+              "kind": "throw",
+              "line": 116
+            },
+            {
+              "in": "unfilter",
+              "kind": "throw",
+              "line": 163
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 208
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 215
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 221
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 224
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 232
+            },
+            {
+              "in": "decodePng",
+              "kind": "catch",
+              "line": 236
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 237
+            },
+            {
+              "in": "decodePng",
+              "kind": "throw",
+              "line": 247
+            }
           ],
           "hash": "1b3d3b3193c51490e40c9f6eb57a0e79985263b744182d1a4b2624290868079f",
           "importsFiles": [
@@ -1361,6 +2763,18 @@
             "loadRecord",
             "saveRecord"
           ],
+          "failurePaths": [
+            {
+              "in": "loadRecord",
+              "kind": "catch",
+              "line": 54
+            },
+            {
+              "in": "loadRecord",
+              "kind": "throw",
+              "line": 56
+            }
+          ],
           "hash": "107a7e5986ef29aae8b98ce524aaeaa3342721934752e9f2ed460d9653028093",
           "path": "lib/records.js"
         },
@@ -1373,7 +2787,18 @@
             "renderRefinedPrompt",
             "saveRefinedBrief"
           ],
+          "failurePaths": [
+            {
+              "in": "extractDelta",
+              "kind": "throw",
+              "line": 112
+            }
+          ],
           "hash": "f39da3bc7a18859a176536168157c737586b369658509ab6588c921d3320f4fd",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/errors.js",
             "lib/paths.js"
@@ -1384,7 +2809,52 @@
           "exports": [
             "reingestSelection"
           ],
+          "failurePaths": [
+            {
+              "in": "atomicWriteText",
+              "kind": "catch",
+              "line": 42
+            },
+            {
+              "in": "atomicWriteText",
+              "kind": "catch",
+              "line": 43
+            },
+            {
+              "in": "atomicWriteText",
+              "kind": "throw",
+              "line": 44
+            },
+            {
+              "in": "reingestSelection",
+              "kind": "throw",
+              "line": 60
+            },
+            {
+              "in": "reingestSelection",
+              "kind": "throw",
+              "line": 70
+            },
+            {
+              "in": "reingestSelection",
+              "kind": "catch",
+              "line": 130
+            },
+            {
+              "in": "reingestSelection",
+              "kind": "throw",
+              "line": 158
+            }
+          ],
           "hash": "99d4f64575c56acf4a26a88d2e0c866ddcfdcb65f1a25c432b2d1b1e588a9781",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/batch-runs.js",
+            "lib/selections.js",
+            "lib/generated-provenance.js",
+            "lib/records.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/batch-runs.js",
             "lib/errors.js",
@@ -1401,6 +2871,10 @@
             "reingestGenerated"
           ],
           "hash": "7fd953a23600850efd5163a86d8f210eeb02881e6b5cf586b8d5a89b2db0426d",
+          "importOrder": [
+            "lib/training-manifests.js",
+            "lib/records.js"
+          ],
           "importsFiles": [
             "lib/records.js",
             "lib/training-manifests.js"
@@ -1416,6 +2890,23 @@
             "readDatasetJsonl",
             "recordToRow",
             "serializeRow"
+          ],
+          "failurePaths": [
+            {
+              "in": "readDatasetJsonl",
+              "kind": "catch",
+              "line": 155
+            },
+            {
+              "in": "readDatasetJsonl",
+              "kind": "throw",
+              "line": 156
+            },
+            {
+              "in": "readDatasetJsonl",
+              "kind": "throw",
+              "line": 159
+            }
           ],
           "hash": "47c7e21922e6521b3ee21f7230262ad89ba3813e590658e0ddc8e8c156ceba67",
           "importsFiles": [
@@ -1437,6 +2928,33 @@
             "seedPolicyFromMode",
             "sha256File",
             "stableStringify"
+          ],
+          "failurePaths": [
+            {
+              "in": "hashModelFile",
+              "kind": "catch",
+              "line": 268
+            },
+            {
+              "in": "hashModelFile",
+              "kind": "catch",
+              "line": 275
+            },
+            {
+              "in": "hashModelFile",
+              "kind": "catch",
+              "line": 285
+            },
+            {
+              "in": "createHashCache",
+              "kind": "catch",
+              "line": 329
+            },
+            {
+              "in": "flushHashCache",
+              "kind": "catch",
+              "line": 342
+            }
           ],
           "hash": "0bcc254c73ba2199360e65ae66100be608a1485f0bd40998a260d8132194c0ae",
           "importsFiles": [
@@ -1464,7 +2982,44 @@
             "prepareRunDir",
             "saveRunManifest"
           ],
+          "failurePaths": [
+            {
+              "in": "atomicWriteJson",
+              "kind": "catch",
+              "line": 128
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "catch",
+              "line": 130
+            },
+            {
+              "in": "atomicWriteJson",
+              "kind": "throw",
+              "line": 131
+            },
+            {
+              "in": "loadRun",
+              "kind": "throw",
+              "line": 183
+            },
+            {
+              "in": "loadRun",
+              "kind": "throw",
+              "line": 194
+            },
+            {
+              "in": "listRuns",
+              "kind": "catch",
+              "line": 243
+            }
+          ],
           "hash": "b9779e476a9509d4b9fa797e3b8de7e9c65d0f4d40176d3924e3495fbfa89667",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/errors.js",
             "lib/log.js",
@@ -1483,7 +3038,69 @@
             "loadSelection",
             "saveSelection"
           ],
+          "failurePaths": [
+            {
+              "in": "assertSafeFilename",
+              "kind": "throw",
+              "line": 23
+            },
+            {
+              "in": "claimSelectionId",
+              "kind": "catch",
+              "line": 79
+            },
+            {
+              "in": "claimSelectionId",
+              "kind": "throw",
+              "line": 81
+            },
+            {
+              "in": "claimSelectionId",
+              "kind": "throw",
+              "line": 84
+            },
+            {
+              "in": "createSelectionFromRun",
+              "kind": "throw",
+              "line": 113
+            },
+            {
+              "in": "createSelectionFromRun",
+              "kind": "throw",
+              "line": 123
+            },
+            {
+              "in": "createSelectionFromRun",
+              "kind": "catch",
+              "line": 173
+            },
+            {
+              "in": "createSelectionFromBatch",
+              "kind": "throw",
+              "line": 201
+            },
+            {
+              "in": "createSelectionFromBatch",
+              "kind": "throw",
+              "line": 219
+            },
+            {
+              "in": "createSelectionFromBatch",
+              "kind": "throw",
+              "line": 229
+            },
+            {
+              "in": "loadSelection",
+              "kind": "throw",
+              "line": 356
+            }
+          ],
           "hash": "ef41d8ca65c65fbc5f0cfd729bd739236c49d3bc5af81b215650e25fb07fb4eb",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/batch-runs.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/batch-runs.js",
             "lib/errors.js",
@@ -1502,6 +3119,53 @@
             "listSnapshots",
             "loadSnapshot",
             "loadSnapshotIncluded"
+          ],
+          "failurePaths": [
+            {
+              "in": "claimIdDir",
+              "kind": "catch",
+              "line": 88
+            },
+            {
+              "in": "claimIdDir",
+              "kind": "throw",
+              "line": 90
+            },
+            {
+              "in": "claimIdDir",
+              "kind": "throw",
+              "line": 93
+            },
+            {
+              "in": "claimIdFile",
+              "kind": "catch",
+              "line": 126
+            },
+            {
+              "in": "claimIdFile",
+              "kind": "throw",
+              "line": 128
+            },
+            {
+              "in": "claimIdFile",
+              "kind": "throw",
+              "line": 131
+            },
+            {
+              "in": "createSnapshot",
+              "kind": "catch",
+              "line": 219
+            },
+            {
+              "in": "loadSnapshot",
+              "kind": "throw",
+              "line": 350
+            },
+            {
+              "in": "listSnapshots",
+              "kind": "catch",
+              "line": 389
+            }
           ],
           "hash": "efa8166575e75671ef64893a9588d49a2f44315be732950322e9a5fbc26c38af",
           "importsFiles": [
@@ -1522,7 +3186,30 @@
             "loadSplitPartition",
             "normalizeIdStem"
           ],
+          "failurePaths": [
+            {
+              "in": "createSplit",
+              "kind": "throw",
+              "line": 499
+            },
+            {
+              "in": "loadSplit",
+              "kind": "throw",
+              "line": 831
+            },
+            {
+              "in": "listSplits",
+              "kind": "catch",
+              "line": 880
+            }
+          ],
           "hash": "a9c2e0858276933fa51d90f4e32234d4f6250fabdca75bf334ecd93056b77802",
+          "importOrder": [
+            "lib/config.js",
+            "lib/snapshot.js",
+            "lib/records.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/config.js",
             "lib/log.js",
@@ -1537,6 +3224,23 @@
             "listAdapters",
             "loadAdapter"
           ],
+          "failurePaths": [
+            {
+              "in": "loadAdapter",
+              "kind": "throw",
+              "line": 66
+            },
+            {
+              "in": "loadAdapter",
+              "kind": "catch",
+              "line": 75
+            },
+            {
+              "in": "loadAdapter",
+              "kind": "throw",
+              "line": 78
+            }
+          ],
           "hash": "88394975ff0d655b43d3524bc7147c938d88445dea9bce97720b61a5db8098a4",
           "importsFiles": [
             "lib/errors.js"
@@ -1550,7 +3254,30 @@
             "loadTrainingManifest",
             "validateTrainingManifest"
           ],
+          "failurePaths": [
+            {
+              "in": "createTrainingManifest",
+              "kind": "throw",
+              "line": 85
+            },
+            {
+              "in": "loadTrainingManifest",
+              "kind": "throw",
+              "line": 245
+            },
+            {
+              "in": "listTrainingManifests",
+              "kind": "catch",
+              "line": 273
+            }
+          ],
           "hash": "96e05cb34c5812fa5349c6b5bbbe6bcc50891fdbbd7bb01511c161125ba35e69",
+          "importOrder": [
+            "lib/export.js",
+            "lib/training-profiles.js",
+            "lib/snapshot.js",
+            "lib/eval-pack.js"
+          ],
           "importsFiles": [
             "lib/eval-pack.js",
             "lib/export.js",
@@ -1565,7 +3292,56 @@
             "listTrainingPackages",
             "loadTrainingPackage"
           ],
+          "failurePaths": [
+            {
+              "in": "buildTrainingPackage",
+              "kind": "catch",
+              "line": 100
+            },
+            {
+              "in": "buildTrainingPackage",
+              "kind": "throw",
+              "line": 104
+            },
+            {
+              "in": "buildTrainingPackage",
+              "kind": "throw",
+              "line": 121
+            },
+            {
+              "in": "buildTrainingPackage",
+              "kind": "throw",
+              "line": 136
+            },
+            {
+              "in": "buildTrainingPackage",
+              "kind": "throw",
+              "line": 164
+            },
+            {
+              "in": "listTrainingPackages",
+              "kind": "catch",
+              "line": 363
+            },
+            {
+              "in": "loadTrainingPackage",
+              "kind": "throw",
+              "line": 375
+            }
+          ],
           "hash": "a9aa1576113cb08e557a5bb2708e7fa582242f6010759580b2bdc7116eb3dc34",
+          "importOrder": [
+            "lib/training-manifests.js",
+            "lib/training-profiles.js",
+            "lib/split.js",
+            "lib/records.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/snapshot.js",
+            "lib/training-adapters.js",
+            "lib/rows.js",
+            "lib/export.js"
+          ],
           "importsFiles": [
             "lib/config.js",
             "lib/errors.js",
@@ -1586,6 +3362,28 @@
             "loadTrainingProfile",
             "saveTrainingProfile",
             "validateProfile"
+          ],
+          "failurePaths": [
+            {
+              "in": "loadTrainingProfile",
+              "kind": "throw",
+              "line": 87
+            },
+            {
+              "in": "loadTrainingProfile",
+              "kind": "throw",
+              "line": 92
+            },
+            {
+              "in": "listTrainingProfiles",
+              "kind": "catch",
+              "line": 118
+            },
+            {
+              "in": "saveTrainingProfile",
+              "kind": "throw",
+              "line": 132
+            }
           ],
           "hash": "fca4245c0a39bcbed8381c32205d58217600dbfd402ef16049476532e8375250",
           "importsFiles": [
@@ -1612,7 +3410,43 @@
             "saveWorkflowProfile",
             "validateWorkflowProfile"
           ],
+          "failurePaths": [
+            {
+              "in": "getWorkflowProfile",
+              "kind": "throw",
+              "line": 109
+            },
+            {
+              "in": "getWorkflowProfile",
+              "kind": "catch",
+              "line": 121
+            },
+            {
+              "in": "getWorkflowProfile",
+              "kind": "throw",
+              "line": 122
+            },
+            {
+              "in": "getWorkflowProfile",
+              "kind": "throw",
+              "line": 130
+            },
+            {
+              "in": "listWorkflowProfiles",
+              "kind": "catch",
+              "line": 160
+            },
+            {
+              "in": "saveWorkflowProfile",
+              "kind": "throw",
+              "line": 174
+            }
+          ],
           "hash": "42ebc9f79aebf530bf79404f3082307fa48b249c147974c27610595cb0fd229e",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/errors.js",
             "lib/paths.js"
@@ -1667,14 +3501,24 @@
       "outsideReads": 203,
       "outsideWrites": 96,
       "role": "code",
+      "testRunners": [
+        "node --test"
+      ],
       "testedBy": 93,
+      "unresolvedNamed": [
+        {
+          "path": "lib/training-adapters.js",
+          "specifier": null,
+          "why": "dynamic"
+        }
+      ],
       "unresolvedSites": 1
     },
     {
-      "dynamicReads": 4,
+      "dynamicReads": 1,
       "dynamicSpawns": 0,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 3,
+      "dynamicWrites": 0,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -1709,6 +3553,18 @@
             "solid_bg",
             "tight_crop_alpha"
           ],
+          "failurePaths": [
+            {
+              "in": "sample_non_overlapping",
+              "kind": "raise",
+              "line": 82
+            },
+            {
+              "in": "sample_non_overlapping",
+              "kind": "raise",
+              "line": 91
+            }
+          ],
           "hash": "5ba317cdb7bf12352592ad7bb88520dc7f60f9eb4bba6b30ca01bce9a89746e7",
           "path": "projects/ai-eye-test/compositor/compositor.py"
         },
@@ -1716,7 +3572,16 @@
           "exports": [
             "main"
           ],
+          "failurePaths": [
+            {
+              "kind": "raise",
+              "line": 64
+            }
+          ],
           "hash": "ac7a7ca3a3bde14cd4d7187098a67f890e8d644e276a56f6f12dcbc86cb49632",
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/compositor.py"
+          ],
           "path": "projects/ai-eye-test/compositor/phase1_smoke.py"
         },
         {
@@ -1727,7 +3592,32 @@
             "compose_v2",
             "seamless_paste"
           ],
+          "failurePaths": [
+            {
+              "in": "seamless_paste",
+              "kind": "except",
+              "line": 128
+            },
+            {
+              "in": "from_dir",
+              "kind": "raise",
+              "line": 178
+            },
+            {
+              "in": "compose_v2",
+              "kind": "raise",
+              "line": 211
+            },
+            {
+              "in": "compose_v2",
+              "kind": "raise",
+              "line": 228
+            }
+          ],
           "hash": "0d80c4e80cb63d482fca99782793b3c6a68dff10b193c2aa347d087546cb772c",
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/compositor.py"
+          ],
           "path": "projects/ai-eye-test/compositor/phase2.py"
         },
         {
@@ -1735,7 +3625,22 @@
             "ensure_cutout",
             "main"
           ],
+          "failurePaths": [
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 88
+            },
+            {
+              "kind": "raise",
+              "line": 135
+            }
+          ],
           "hash": "ad1ee2747ac19f05e8ef6ea0f55d805851dbfec554addf2e8bfa9f29e910120b",
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/compositor.py",
+            "projects/ai-eye-test/compositor/phase2.py"
+          ],
           "path": "projects/ai-eye-test/compositor/phase2_build.py"
         },
         {
@@ -1743,7 +3648,17 @@
             "ensure_cutout",
             "main"
           ],
+          "failurePaths": [
+            {
+              "kind": "raise",
+              "line": 97
+            }
+          ],
           "hash": "dd101f18f7b047cf3e44edfe814074c4b31990148ae0f2dd00ca765f6e683191",
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/compositor.py",
+            "projects/ai-eye-test/compositor/phase2.py"
+          ],
           "path": "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
         },
         {
@@ -1751,7 +3666,17 @@
             "ensure_cutout",
             "main"
           ],
+          "failurePaths": [
+            {
+              "kind": "raise",
+              "line": 109
+            }
+          ],
           "hash": "d75be95f57a2587c24c4e179aba8f0a989f3800f8e4392b10d0cc85ad619ec66",
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/compositor.py",
+            "projects/ai-eye-test/compositor/phase2.py"
+          ],
           "path": "projects/ai-eye-test/compositor/phase2b_build.py"
         },
         {
@@ -1772,7 +3697,11 @@
             "tiny_cutout"
           ],
           "hash": "5e04612ef9fc1851a6b48f30b98b4a96d7ac81bb0b9f6ceb30312f6dd0572040",
-          "path": "projects/ai-eye-test/compositor/test_compositor.py"
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/compositor.py"
+          ],
+          "path": "projects/ai-eye-test/compositor/test_compositor.py",
+          "testFramework": "pytest"
         },
         {
           "exports": [
@@ -1792,7 +3721,11 @@
             "test_seamless_paste_falls_back_at_edge"
           ],
           "hash": "701af440c12c4bba528fc8a2d90b303e6100c2f939fe1ad6231e4bc05119872e",
-          "path": "projects/ai-eye-test/compositor/test_phase2.py"
+          "importsFiles": [
+            "projects/ai-eye-test/compositor/phase2.py"
+          ],
+          "path": "projects/ai-eye-test/compositor/test_phase2.py",
+          "testFramework": "pytest"
         },
         {
           "hash": "bc77b0167441bdc0bb575364c14c9e60d2b310e0670a121588797ac8a0cc1adb",
@@ -4079,26 +6012,62 @@
           "path": "projects/hesperia/lanes.json"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 16
+            }
+          ],
           "hash": "19a310c4e437f50fc86c48ef3476ddf01956fe10d819a9fb4abc32ba0a33883f",
           "path": "projects/hesperia/outputs/_contact_sheet.py"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 16
+            }
+          ],
           "hash": "7ad645a5e10d5a9f61975eec05eea2db33f5a5c9848655d70a7b3d167dbd3e94",
           "path": "projects/hesperia/outputs/_make_art_contact.py"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 21
+            }
+          ],
           "hash": "0bd9338647536617e071329a2a9e7882478c9a03ab3177453be189565a4a0b6d",
           "path": "projects/hesperia/outputs/_make_cast_contact.py"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 22
+            }
+          ],
           "hash": "0e86f52a1a23711d8879394f291905a90f25925b726399022c803648dd03aab8",
           "path": "projects/hesperia/outputs/_make_npc2_contact.py"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 22
+            }
+          ],
           "hash": "0e993a05f6e05900a3e189647108fa0de51ec8e585840902e5baa73c48d7b0ca",
           "path": "projects/hesperia/outputs/_make_npc_contact.py"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 21
+            }
+          ],
           "hash": "cfe44e91661a5a8da38cc37d891b9d43bad0da8f13fe32de42fb0d7b9493b537",
           "path": "projects/hesperia/outputs/_make_wave3_contact.py"
         },
@@ -6207,7 +8176,16 @@
           "path": "projects/salt-road/inputs/prompts/build-review-page.mjs"
         },
         {
+          "failurePaths": [
+            {
+              "kind": "throw",
+              "line": 45
+            }
+          ],
           "hash": "0614c54da11ed17a5c01809003c5db950f6937d4bdfa20c115c37db54d405a51",
+          "importsFiles": [
+            "lib/captions.js"
+          ],
           "path": "projects/salt-road/inputs/prompts/build-training-package.mjs"
         },
         {
@@ -6274,6 +8252,12 @@
             "subject_of",
             "summarise"
           ],
+          "failurePaths": [
+            {
+              "kind": "except",
+              "line": 276
+            }
+          ],
           "hash": "269c5c2d6e37893ec8985b3705112c34bc35031ae7769827b0d1c9fb9d9d50ad",
           "path": "projects/salt-road/inputs/prompts/measure-texture.py"
         },
@@ -6286,6 +8270,17 @@
           "path": "projects/salt-road/inputs/prompts/populate-canon-subjects.mjs"
         },
         {
+          "failurePaths": [
+            {
+              "in": "enrich",
+              "kind": "throw",
+              "line": 151
+            },
+            {
+              "kind": "catch",
+              "line": 189
+            }
+          ],
           "hash": "a70c3540fc56b9edc77682ce3030f144aa609c0c372ccfcc0a7bdf27ae8d82ef",
           "path": "projects/salt-road/inputs/prompts/prompt-foundry.mjs"
         },
@@ -6306,6 +8301,23 @@
             "build_graph",
             "main",
             "receipt"
+          ],
+          "failurePaths": [
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 102
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 112
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 127
+            }
           ],
           "hash": "b7186bccf5eb518a26b8d6a30743c1477c9b476f37240a51dac87080abbc1542",
           "path": "projects/salt-road/inputs/prompts/wave-runner.py"
@@ -13395,18 +15407,25 @@
       "origin": "mixed",
       "outsidePlaces": [
         {
-          "reads": 3,
+          "reads": 6,
           "where": [
             "caller"
           ],
           "writes": 7
         }
       ],
-      "outsideReads": 3,
+      "outsideReads": 6,
       "outsideWrites": 7,
       "role": "config",
       "testedBy": 2,
-      "unresolvedSites": 12
+      "unresolvedNamed": [
+        {
+          "path": "projects/salt-road/inputs/prompts/wave-runner.py",
+          "specifier": null,
+          "why": "dynamic"
+        }
+      ],
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 0,
@@ -13485,6 +15504,10 @@
           "path": "SHIP_GATE.md"
         },
         {
+          "hash": "59ca3f6a5be96b80fee73bebf2b778211208d17cd3fb82e2134608dff0729c76",
+          "path": "codecov.yml"
+        },
+        {
           "hash": "f5f7ce4eb92b89be2b08c0341db2c9a3d93af01b5df6d8a1e99ef910ec2c9cec",
           "path": "package-lock.json"
         },
@@ -13500,7 +15523,8 @@
       "name": "root",
       "origin": "authored",
       "role": "config",
-      "testedBy": 0,
+      "testedBy": 1,
+      "testedByScript": true,
       "unresolvedSites": 0
     },
     {
@@ -13574,10 +15598,10 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 12,
+      "dynamicReads": 11,
       "dynamicSpawns": 0,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 20,
+      "dynamicWrites": 16,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -13587,6 +15611,13 @@
             "graph",
             "main",
             "post"
+          ],
+          "failurePaths": [
+            {
+              "in": "cut_one",
+              "kind": "raise",
+              "line": 50
+            }
           ],
           "hash": "b6ca8563ae7898859c196767845e5d64e55e5a655ece1fb1307db5fa73cba051",
           "path": "scripts/_batch_cut.py"
@@ -13606,6 +15637,13 @@
             "post",
             "run_one"
           ],
+          "failurePaths": [
+            {
+              "in": "run_one",
+              "kind": "raise",
+              "line": 59
+            }
+          ],
           "hash": "25914590dd46468059c4354806ef90adb405ac4ffb8fd0174e7527a8e27758d5",
           "path": "scripts/_seam_cutout.py"
         },
@@ -13613,7 +15651,18 @@
           "exports": [
             "assertKnownOptions"
           ],
+          "failurePaths": [
+            {
+              "in": "assertKnownOptions",
+              "kind": "throw",
+              "line": 42
+            }
+          ],
           "hash": "9f1ac88aad3e67d304c378e7eb8916a0b8d4faae00aa9f95ead653595573e6df",
+          "importOrder": [
+            "lib/errors.js",
+            "lib/args.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js"
@@ -13624,7 +15673,21 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 80
+            }
+          ],
           "hash": "cb619e1db706ef514b3bbf0808a27b70425d8cee292236dc65ceef128ca48611",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/asset-ingest.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/asset-ingest.js",
@@ -13639,6 +15702,15 @@
             "run"
           ],
           "hash": "7d987690e414c81b3cd73ce3eb27236d952b5aeb945e725a686b9cfb6cd35721",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/batch-compiler.js",
+            "lib/batch-modes.js",
+            "lib/batch-runs.js",
+            "lib/batch-sheet-render.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/batch-compiler.js",
@@ -13655,6 +15727,15 @@
             "run"
           ],
           "hash": "e9cd80a476c929f21e023f3a11b14070f8df953b165092024ebaed53ad90ab8d",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/batch-runs.js",
+            "lib/batch-modes.js",
+            "lib/batch-sheet-render.js",
+            "lib/errors.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/batch-modes.js",
@@ -13670,7 +15751,19 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 48
+            }
+          ],
           "hash": "1b5c8f77005329ff9b5de87644929abc3cb700ee5f4d2bc226afd73eb7645cb8",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/batch-runs.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/batch-runs.js",
@@ -13683,6 +15776,13 @@
             "run"
           ],
           "hash": "3742505040b71d2f9ffbdc127202ceb2a51ad56bb84347c83a7a583b224d6b8c",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/brief-compiler.js",
+            "lib/log.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/brief-compiler.js",
@@ -13697,6 +15797,13 @@
             "run"
           ],
           "hash": "711af3bee8200a9103c3ffb37450d2b4b6166884fb2b4a663c7b0143aeaaecb2",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/brief-compiler.js",
+            "lib/brief-render.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/brief-compiler.js",
@@ -13710,7 +15817,25 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 166
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 179
+            }
+          ],
           "hash": "2cba0ee3ca906350a347b9c846e9cac29add74e0e031cec97275da7d9d29e511",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/config.js",
@@ -13723,7 +15848,20 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 42
+            }
+          ],
           "hash": "302d4b88498924bfbfb592e991644c8b07cd57e70babf6c4491ee9a855238089",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/canon-build/build.js",
+            "lib/errors.js",
+            "scripts/_shared-args.js"
+          ],
           "importsFiles": [
             "lib/canon-build/build.js",
             "lib/errors.js",
@@ -13736,7 +15874,29 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 44
+            },
+            {
+              "in": "findLatestBuildManifest",
+              "kind": "catch",
+              "line": 197
+            }
+          ],
           "hash": "70f5c9cd05e5247e7901b9147f73819cc5b5b893628eae57512bba3335ee8ad0",
+          "importOrder": [
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/load-entry.js",
+            "lib/canon-build/load-schema.js",
+            "lib/freeze-stamp.js",
+            "lib/freeze-events.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "scripts/_shared-args.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
@@ -13753,7 +15913,33 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 33
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 35
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 49
+            }
+          ],
           "hash": "e74379d83a40f84d281add3ef668f40b042ed3ddc0bea05413e7317aa2419014",
+          "importOrder": [
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/load-entry.js",
+            "lib/freeze-stamp.js",
+            "lib/freeze-events.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "scripts/_shared-args.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
@@ -13769,7 +15955,58 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 52
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 61
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 65
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 73
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 79
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 98
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 108
+            },
+            {
+              "in": "findLatestBuildHash",
+              "kind": "catch",
+              "line": 209
+            }
+          ],
           "hash": "cd9554a5c516f8dd5afd9dc1fdde0808e991ad91b0dc1a3796fd12b1699cf082",
+          "importOrder": [
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/load-entry.js",
+            "lib/freeze-stamp.js",
+            "lib/freeze-events.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "scripts/_shared-args.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
@@ -13785,7 +16022,43 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 45
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 48
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 50
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 63
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 69
+            }
+          ],
           "hash": "304b62093a9036d7051c59483113d3813019d1182eb46006fb253791f2d3d6ce",
+          "importOrder": [
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/load-entry.js",
+            "lib/freeze-stamp.js",
+            "lib/freeze-events.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "scripts/_shared-args.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
@@ -13801,7 +16074,32 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 37
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 44
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 64
+            }
+          ],
           "hash": "04c12d7ad9f7d31e20dcfa5a61f6fb643e71678c59bc95d6f44e0e87dac3f1b1",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/card.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/card.js",
@@ -13816,7 +16114,45 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 33
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 40
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 53
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 68
+            },
+            {
+              "in": "loadRecord",
+              "kind": "catch",
+              "line": 113
+            },
+            {
+              "in": "countComparisons",
+              "kind": "catch",
+              "line": 123
+            }
+          ],
           "hash": "89e30e50074de8c8ac837d100db524c1289e219c85fca4d92c80af14ce6b6973",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/config.js",
@@ -13830,6 +16166,12 @@
             "run"
           ],
           "hash": "443abdd6d065e95633b8cc12f7730dc6b4b104ea1188f6b2da8f9b7343b92a41",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/critique-engine.js",
+            "lib/critique-render.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/critique-engine.js",
@@ -13948,7 +16290,78 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 48
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 55
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 72
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 90
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 92
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 94
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 127
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 128
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 159
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 161
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 162
+            },
+            {
+              "in": "listUncurated",
+              "kind": "catch",
+              "line": 195
+            }
+          ],
           "hash": "2855592b729a3ed0e1aea8b9ac6d46474a2e3702aec7c26d57b3fd81d8b2bfe5",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/log.js",
+            "lib/freeze-gate.js",
+            "lib/verifier.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/config.js",
@@ -13964,7 +16377,39 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "tryParseJson",
+              "kind": "catch",
+              "line": 70
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 240
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 362
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 372
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 610
+            }
+          ],
           "hash": "27ba0ec6980c6adfa9f34b0b6a6cf7449c5b1c38bfec153af76374602cde3a54",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -13977,6 +16422,14 @@
             "run"
           ],
           "hash": "e41a5d7d91b06279fa74112fb979ae5a6d19a5ffc7aed534f494bfc0c5df775a",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/eligibility.js",
+            "lib/judgment-provenance.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/config.js",
@@ -13991,7 +16444,25 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 57
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 88
+            }
+          ],
           "hash": "5f851b02c2921e53dd74c32cea4f8bab63dd60ad82bb3152c035eee2baaadb83",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/eval-pack.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14004,7 +16475,47 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 41
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 48
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 63
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 65
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 85
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 116
+            }
+          ],
           "hash": "2e69022d0ffb9f31e3095f668770041c6acda83a8023a4be5ffd88bc00e00180",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/training-manifests.js",
+            "lib/eval-pack.js",
+            "lib/eval-runs.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14019,7 +16530,32 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 39
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 46
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 75
+            }
+          ],
           "hash": "a8c36ffe07870070837e1099ee60c19bb3860d87d7de8f804cab27d5b011f647",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/export.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14034,7 +16570,43 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 184
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 212
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 231
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 301
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 311
+            }
+          ],
           "hash": "0f9f76e6cb7ff30648278edb6b0127a224df8b537015fa3ff160094a9cd57afc",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/comfyui.js",
+            "lib/freeze-gate.js",
+            "scripts/_resume.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/comfyui.js",
@@ -14050,7 +16622,53 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 438
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 442
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 451
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 458
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 481
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 593
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 609
+            }
+          ],
           "hash": "9354beeee2ec3378fc9eb0bb1002b67d3f4030e6dd36ae11f11bd0fc7b8eeeb9",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/comfyui.js",
+            "lib/freeze-gate.js",
+            "scripts/_resume.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/comfyui.js",
@@ -14066,7 +16684,37 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 190
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 193
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 224
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 287
+            }
+          ],
           "hash": "70a440fcfae33e69472d88b32716b99fccb311abc710f63c93ac039c3142b394",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/comfyui.js",
+            "lib/freeze-gate.js",
+            "scripts/_resume.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/comfyui.js",
@@ -14081,7 +16729,45 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "normalizeGenerationInput",
+              "kind": "throw",
+              "line": 231
+            },
+            {
+              "in": "normalizeGenerationInput",
+              "kind": "throw",
+              "line": 251
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 368
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 517
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 555
+            }
+          ],
           "hash": "622d98b512b8f6d82f7892fa832a5f0b916a3fb0c51ddb5559868bf637aec76a",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/comfyui.js",
+            "lib/comfyui-output.js",
+            "lib/adapters/comfyui-workflows.js",
+            "lib/run-manifest.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/adapters/comfyui-workflows.js",
             "lib/args.js",
@@ -14099,7 +16785,31 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 36
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 53
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 77
+            }
+          ],
           "hash": "9506afa14430cf20b06c4efb63c4895acb3682e513ae00c6858867ce59c6a45d",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/training-manifests.js",
+            "lib/implementation-packs.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14113,7 +16823,21 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 68
+            }
+          ],
           "hash": "d7a5b04e902ee02039daabdd3856f60037dd9bee8b30687b54a3029c06adc518",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/ingest.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14127,7 +16851,34 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 96
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 105
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 114
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 126
+            }
+          ],
           "hash": "aee7b3c866c9c667f86b1774fe16627fd24853eeb0fd69935215e217fa607c36",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/args.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14140,6 +16891,13 @@
             "run"
           ],
           "hash": "ab5e3b2ce934ea53cd00a958356bb25c62f8ae2a06ae8cc80637341f87da9453",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/log.js",
+            "lib/measure.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14156,6 +16914,88 @@
             "measure_palette",
             "measure_texture"
           ],
+          "failurePaths": [
+            {
+              "in": "_atomic_write_json",
+              "kind": "except",
+              "line": 177
+            },
+            {
+              "in": "_atomic_write_json",
+              "kind": "except",
+              "line": 180
+            },
+            {
+              "in": "_atomic_write_json",
+              "kind": "raise",
+              "line": 182
+            },
+            {
+              "in": "_validate_anchors",
+              "kind": "raise",
+              "line": 191
+            },
+            {
+              "in": "_validate_anchors",
+              "kind": "raise",
+              "line": 194
+            },
+            {
+              "in": "_validate_anchors",
+              "kind": "raise",
+              "line": 196
+            },
+            {
+              "in": "measure_texture",
+              "kind": "raise",
+              "line": 311
+            },
+            {
+              "in": "measure_texture",
+              "kind": "raise",
+              "line": 317
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 404
+            },
+            {
+              "in": "main",
+              "kind": "raise",
+              "line": 405
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 406
+            },
+            {
+              "in": "main",
+              "kind": "raise",
+              "line": 407
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 417
+            },
+            {
+              "in": "main",
+              "kind": "raise",
+              "line": 418
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 429
+            },
+            {
+              "in": "main",
+              "kind": "raise",
+              "line": 454
+            }
+          ],
           "hash": "097a1ee6c4dd076e5241a13b7b88efcd11668308e531a5c6a2b3cf7c155db05f",
           "path": "scripts/measure_image.py"
         },
@@ -14163,7 +17003,24 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "fileExists",
+              "kind": "catch",
+              "line": 25
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 124
+            }
+          ],
           "hash": "e2213d81b1578656bd76c6d1221a8871fcb43c476af91947cc83f19dc8801947",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14176,6 +17033,12 @@
             "run"
           ],
           "hash": "cb2b58adb51d017147388ed03dc8b084f57f98b71a634bdfe1f5ffb045cf584c",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/comfyui.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/comfyui.js",
@@ -14188,7 +17051,25 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 203
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 257
+            }
+          ],
           "hash": "fea63fc282456feba4038e41ca040a842bb818db9eee96c036a052a905ac238a",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/comfyui.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/comfyui.js",
@@ -14202,6 +17083,43 @@
             "generate",
             "main",
             "qwen_graph"
+          ],
+          "failurePaths": [
+            {
+              "in": "_load_hash_cache",
+              "kind": "except",
+              "line": 210
+            },
+            {
+              "in": "_save_hash_cache",
+              "kind": "except",
+              "line": 218
+            },
+            {
+              "in": "_hash_model_file",
+              "kind": "except",
+              "line": 235
+            },
+            {
+              "in": "_hash_model_file",
+              "kind": "except",
+              "line": 244
+            },
+            {
+              "in": "generate",
+              "kind": "raise",
+              "line": 332
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 406
+            },
+            {
+              "in": "main",
+              "kind": "raise",
+              "line": 441
+            }
           ],
           "hash": "c9dd214eaccef245dee351b378589e758489d48f68f09e600b7041fc32a9a0d5",
           "path": "scripts/qwen_generate.py"
@@ -14300,6 +17218,12 @@
             "run"
           ],
           "hash": "d18f4d33cf5268a6389b446fb13872dbe70896434485abde7bed8760e4f18c5a",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/reingest-selected.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/log.js",
@@ -14312,7 +17236,31 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 37
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 40
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 99
+            }
+          ],
           "hash": "fe2deb8cfb8bf576bf4d8dd9e036528d97e90a6b1f5b3689d3567ae420eea617",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/reingest.js",
+            "scripts/reingest-selected.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14327,6 +17275,14 @@
             "run"
           ],
           "hash": "8232d6015943f7e2c641c728a978ce755d6485e0773ba0493f0cf1b3b3b790fd",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/brief-compiler.js",
+            "lib/adapters/comfyui-runner.js",
+            "lib/run-summary.js",
+            "lib/log.js"
+          ],
           "importsFiles": [
             "lib/adapters/comfyui-runner.js",
             "lib/args.js",
@@ -14354,6 +17310,12 @@
             "run"
           ],
           "hash": "63006a3bf8219bb6f9c4a9f257f23c11ad26716ebada08b49d67df5cd78284dc",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/runtime-runs.js",
+            "lib/run-summary.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/paths.js",
@@ -14367,6 +17329,13 @@
           "entryRule": 3,
           "exports": [
             "run"
+          ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 75
+            }
           ],
           "hash": "0ee7d173006696a4d6fa4b5f573f1056ef42cfae8bfc3f85938ca7ba704cef67",
           "importsFiles": [
@@ -14449,6 +17418,13 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 49
+            }
+          ],
           "hash": "a6a36e473557924e3ed3c11c87831f50c63d6df2c1fdb268f39e1a32351cf2ae",
           "importsFiles": [
             "lib/args.js",
@@ -14461,7 +17437,21 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 75
+            }
+          ],
           "hash": "081628e48f2fc22c5c76957ed1aa20be8fbc103f1afe53f24e3b436fc280b75f",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/log.js",
+            "lib/candidate-sheet.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/candidate-sheet.js",
@@ -14475,7 +17465,32 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 88
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 107
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 127
+            }
+          ],
           "hash": "d6a62583dda9c108cc73bf016dea8295bc7a6d785ca4a5c66a886821d8f1ad22",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/snapshot.js",
+            "lib/eligibility.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/config.js",
@@ -14490,7 +17505,37 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 42
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 91
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 117
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 144
+            }
+          ],
           "hash": "55df20987b579f015e2e7b9a2a86d893348a093268d12fdd1a272800adaba5e7",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/snapshot.js",
+            "lib/split.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/config.js",
@@ -14505,7 +17550,41 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 45
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 49
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 71
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 87
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 118
+            }
+          ],
           "hash": "d53ac49ff939551ddaa43fd4991eba998b03b6860cfcc4e8066d4c9614311fa6",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/export.js",
+            "lib/training-manifests.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14519,7 +17598,31 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 38
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 58
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 82
+            }
+          ],
           "hash": "7704a0ca87cd618098ac2fe6f5b3c130c1d163ef664b2a4a2e3241556123c3a5",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/training-manifests.js",
+            "lib/training-packages.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14533,7 +17636,25 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 40
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 62
+            }
+          ],
           "hash": "57a6839c013688f1d3a22ac9de8178a626fae782ebe1e5817381a53daccf2c3a",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/training-profiles.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14547,6 +17668,12 @@
             "run"
           ],
           "hash": "245d2214f843abc51fbd90ee4efec05585e3f599cd7856c76af94c06fe8ef567",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/workflow-profiles.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14560,6 +17687,12 @@
             "run"
           ],
           "hash": "be219a68582485386ed9831ff0c67310d3b8b1e8d72c8fba6643da8523384a75",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/workflow-profiles.js",
+            "lib/errors.js"
+          ],
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -14577,16 +17710,34 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 19,
+          "reads": 20,
           "where": [
             "caller"
           ],
-          "writes": 6
+          "writes": 10
+        },
+        {
+          "reads": 2,
+          "where": [
+            "caller",
+            "cwd"
+          ],
+          "writes": 12
+        },
+        {
+          "reads": 1,
+          "where": [
+            "cwd:README.md"
+          ],
+          "writes": 0
         }
       ],
-      "outsideReads": 19,
-      "outsideWrites": 6,
+      "outsideReads": 23,
+      "outsideWrites": 22,
       "role": "code",
+      "testRunners": [
+        "node --test"
+      ],
       "testedBy": 19,
       "unresolvedSites": 0
     },
@@ -14615,6 +17766,7 @@
           "path": "site/public/robots.txt"
         },
         {
+          "constantOnly": true,
           "hash": "ee756dfba4122d2acc94a39b2555d9f200fff56a87a8c0b10f9cd01df26a8b62",
           "path": "site/src/content.config.ts"
         },
@@ -14680,13 +17832,34 @@
         },
         {
           "hash": "22d1a7e5cf637cc8032b29cfd10d71d1f0aa5d85eede6072bf4171a8e3d5fd16",
+          "importOrder": [
+            "site/src/styles/global.css",
+            "site/src/layouts/SiteLayout.astro",
+            "site/src/site-config.ts"
+          ],
+          "importsFiles": [
+            "site/src/layouts/SiteLayout.astro",
+            "site/src/site-config.ts",
+            "site/src/styles/global.css"
+          ],
           "path": "site/src/pages/404.astro"
         },
         {
           "hash": "851c407daae29e28aa8948da9f068bbed551921b5a1855e0fd3ff460d03a511d",
+          "importOrder": [
+            "site/src/styles/global.css",
+            "site/src/layouts/SiteLayout.astro",
+            "site/src/site-config.ts"
+          ],
+          "importsFiles": [
+            "site/src/layouts/SiteLayout.astro",
+            "site/src/site-config.ts",
+            "site/src/styles/global.css"
+          ],
           "path": "site/src/pages/index.astro"
         },
         {
+          "constantOnly": true,
           "hash": "ad0964566b6457cc47ac4ac9af0774218a00ac8fdc1d978654f0e9e2e0a787b3",
           "path": "site/src/site-config.ts"
         },
@@ -14902,8 +18075,8 @@
     },
     {
       "dynamicReads": 0,
-      "dynamicSpawns": 8,
-      "dynamicSpawnsInTests": 8,
+      "dynamicSpawns": 9,
+      "dynamicSpawnsInTests": 9,
       "dynamicWrites": 0,
       "entryPoints": [],
       "externals": 0,
@@ -14913,7 +18086,8 @@
           "importsFiles": [
             "lib/canon-build/build.js"
           ],
-          "path": "tests/canon-star-freight/sf-build.test.js"
+          "path": "tests/canon-star-freight/sf-build.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c7a891fa9389cd90630c17118e8e2dee750f1f76cda87aaae8b197aa2c522821",
@@ -14921,30 +18095,59 @@
             "lib/canon-build/build.js",
             "lib/freeze-events.js"
           ],
-          "path": "tests/canon-star-freight/sf-drift.test.js"
+          "path": "tests/canon-star-freight/sf-drift.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "d8867f0f76f17291a568a8953a2ff133b62c97a496c6ef71ad64a7cca776aa3f",
+          "importOrder": [
+            "lib/canon-build/load-schema.js",
+            "lib/canon-build/load-entry.js"
+          ],
           "importsFiles": [
             "lib/canon-build/load-entry.js",
             "lib/canon-build/load-schema.js"
           ],
-          "path": "tests/canon-star-freight/sf-schemas.test.js"
+          "path": "tests/canon-star-freight/sf-schemas.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "d5b4dac1ff0e676aa0d520b4f5983d1edc5935d32ad31b253a6af21bc2691b54",
           "importsFiles": [
             "lib/args.js"
           ],
-          "path": "tests/cli-scripts/args.test.js"
+          "path": "tests/cli-scripts/args.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "e4ff20c7cd0ccc582bb7d592d9a46633723fb775d7cbb10153a87cf1e11f95c1",
-          "path": "tests/cli-scripts/bulk-curate-removed.test.js"
+          "names": [
+            "bin/sdlab.js"
+          ],
+          "path": "tests/cli-scripts/bulk-curate-removed.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c6369f42eaf9b026804bb7bd72c68acbd397898b6741b297588cd8b04ac87d7a",
-          "path": "tests/cli-scripts/canon-cwd-independence.test.js"
+          "importOrder": [
+            "scripts/canon-build.js",
+            "scripts/canon-freeze.js",
+            "scripts/canon-unfreeze.js",
+            "scripts/canon-freeze-status.js",
+            "scripts/canon-drift.js"
+          ],
+          "importsFiles": [
+            "scripts/canon-build.js",
+            "scripts/canon-drift.js",
+            "scripts/canon-freeze-status.js",
+            "scripts/canon-freeze.js",
+            "scripts/canon-unfreeze.js"
+          ],
+          "path": "tests/cli-scripts/canon-cwd-independence.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "b3780d1bcfb412c964eacdf9344ee00fb3e3b2da8787dbe23e1958c204327684",
@@ -14952,7 +18155,8 @@
             "lib/critique-engine.js",
             "lib/critique-render.js"
           ],
-          "path": "tests/cli-scripts/critique-triage.test.js"
+          "path": "tests/cli-scripts/critique-triage.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "afa4acf1d781b912eeff11d62dff292d3f8ae5e55a0889a6890c1a16760127b6",
@@ -14960,34 +18164,70 @@
             "lib/critique-engine.js",
             "lib/paths.js"
           ],
-          "path": "tests/cli-scripts/critique-unreviewed-honesty.test.js"
+          "path": "tests/cli-scripts/critique-unreviewed-honesty.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "467204ee1f3f03b70f06107152ab9c09520ef6c63d540fce60ab90e625b75150",
-          "path": "tests/cli-scripts/deprecation.test.js"
+          "names": [
+            "lib/deprecation.js"
+          ],
+          "path": "tests/cli-scripts/deprecation.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "e17e3b8c4d0039041312412500b1752680af7e5eb80c0cb811c73c1ebcdb7b37",
-          "path": "tests/cli-scripts/dispatcher-help.test.js"
+          "path": "tests/cli-scripts/dispatcher-help.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "f35ad23d511dcb8f0fe28c05353c7d735389322df5799321a2053bed660318ca",
+          "importOrder": [
+            "scripts/doctor.js",
+            "lib/paths.js"
+          ],
           "importsFiles": [
             "lib/paths.js",
             "scripts/doctor.js"
           ],
-          "path": "tests/cli-scripts/doctor-hints.test.js"
+          "path": "tests/cli-scripts/doctor-hints.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "937af257f22bcdbd219bff6a4f5a97e92fc3f80f85f94d6308a89f5645bb81a7",
+          "importOrder": [
+            "scripts/doctor.js",
+            "lib/paths.js"
+          ],
           "importsFiles": [
             "lib/paths.js",
             "scripts/doctor.js"
           ],
-          "path": "tests/cli-scripts/doctor.test.js"
+          "path": "tests/cli-scripts/doctor.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "cbe083046aff430ac7d5c05a72efc3dbce2ecbbc7f710fc535fc514385d4410e",
+          "importOrder": [
+            "lib/paths.js",
+            "scripts/generate.js",
+            "scripts/generate-identity.js",
+            "scripts/generate-controlnet.js",
+            "scripts/generate-ipadapter.js",
+            "scripts/painterly.js"
+          ],
           "importsFiles": [
             "lib/paths.js",
             "scripts/generate-controlnet.js",
@@ -14996,84 +18236,160 @@
             "scripts/generate.js",
             "scripts/painterly.js"
           ],
-          "path": "tests/cli-scripts/dry-run-no-side-effects.test.js"
+          "path": "tests/cli-scripts/dry-run-no-side-effects.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "dbad6f1ddfac7ed4405508b7b977a0609517a891a582a56093c998f10bafbee6",
           "importsFiles": [
             "lib/errors.js"
           ],
-          "path": "tests/cli-scripts/errors.test.js"
+          "path": "tests/cli-scripts/errors.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "47c5e857fc51a446348d8f19b22b2b41ec0434052da1c92ff759a2afc212afb4",
           "importsFiles": [
             "lib/paths.js"
           ],
-          "path": "tests/cli-scripts/h4-equals-form-args.test.js"
+          "names": [
+            "scripts/generate-controlnet.js",
+            "scripts/generate-identity.js",
+            "scripts/generate-ipadapter.js"
+          ],
+          "path": "tests/cli-scripts/h4-equals-form-args.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "1cea244e8ff0dbd0a7087962dca9230fd6d21a7d27e6a485c7ce28d7e1011b7d",
           "importsFiles": [
             "lib/paths.js"
           ],
-          "path": "tests/cli-scripts/h5-resume.test.js"
+          "names": [
+            "scripts/generate-controlnet.js",
+            "scripts/generate-identity.js",
+            "scripts/generate-ipadapter.js"
+          ],
+          "path": "tests/cli-scripts/h5-resume.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "cde275d1f7fc77aab10c008583ecf31c4378545501334b31f33929374d54b36a",
           "importsFiles": [
             "lib/paths.js"
           ],
-          "path": "tests/cli-scripts/init-generate-path.test.js"
+          "path": "tests/cli-scripts/init-generate-path.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "d6bb4cfc23ffe45b81a325e1a971d5ee6622b032da13b13aa371317c9e505da9",
+          "importOrder": [
+            "scripts/init.js",
+            "lib/paths.js"
+          ],
           "importsFiles": [
             "lib/paths.js",
             "scripts/init.js"
           ],
-          "path": "tests/cli-scripts/init-gitignore.test.js"
+          "path": "tests/cli-scripts/init-gitignore.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "e3834d2d2b56648b913ce7f11f2d8bc2a26d624a6e9e6ecb352a01c8deaf766a",
           "importsFiles": [
             "lib/args.js"
           ],
-          "path": "tests/cli-scripts/levenshtein.test.js"
+          "path": "tests/cli-scripts/levenshtein.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "667b533345cabad3eefefbca2947b9d34d999546891b24abc8e2d56ffa2b081e",
           "importsFiles": [
             "lib/log.js"
           ],
-          "path": "tests/cli-scripts/log.test.js"
+          "path": "tests/cli-scripts/log.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "2804df9d595e11d75d5e5b68adca6284ced3dbc9a45fc27ac1481b70070711c8",
-          "path": "tests/cli-scripts/m4-handle-cli-error.test.js"
+          "names": [
+            "scripts/brief-compile.js",
+            "scripts/brief-show.js",
+            "scripts/painterly-test.js",
+            "scripts/workflow-list.js",
+            "scripts/workflow-show.js"
+          ],
+          "path": "tests/cli-scripts/m4-handle-cli-error.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "3667aa526d7d6e757fc7f35154775e1bb676da62f8812d43ef5f1339cf2e2638",
-          "path": "tests/cli-scripts/namespace-suggester.test.js"
+          "path": "tests/cli-scripts/namespace-suggester.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
         },
         {
           "hash": "97dd0facf1284307c1bd14f6bc3a9c3d822168397df1a8599d5d7ccaa88591f2",
           "importsFiles": [
             "lib/paths.js"
           ],
-          "path": "tests/cli-scripts/paths.test.js"
+          "path": "tests/cli-scripts/paths.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "473d65dd487fb311d94aca1508996e966a0be7fd5ecce6b82d379dbef961fd8c",
+          "importOrder": [
+            "scripts/init.js",
+            "scripts/eligibility.js"
+          ],
           "importsFiles": [
             "scripts/eligibility.js",
             "scripts/init.js"
           ],
-          "path": "tests/cli-scripts/project-root-traversal.test.js"
+          "names": [
+            "scripts/canon-bind.js",
+            "scripts/card.js",
+            "scripts/compare.js",
+            "scripts/curate.js",
+            "scripts/eval-pack.js",
+            "scripts/eval-run.js",
+            "scripts/export.js",
+            "scripts/generate-controlnet.js",
+            "scripts/generate-identity.js",
+            "scripts/generate-ipadapter.js",
+            "scripts/generate.js",
+            "scripts/implementation-pack.js",
+            "scripts/migrate-records.js",
+            "scripts/painterly-test.js",
+            "scripts/painterly.js",
+            "scripts/reingest.js",
+            "scripts/snapshot.js",
+            "scripts/split.js",
+            "scripts/training-manifest.js",
+            "scripts/training-package.js",
+            "scripts/training-profile.js"
+          ],
+          "path": "tests/cli-scripts/project-root-traversal.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "0688b3f86e5c04d73e4ec3243b14c469115c69d1cc5d91741c216e05b954d19b",
-          "path": "tests/cli-scripts/qwen-generate-partial-failure.test.js"
+          "names": [
+            "scripts/qwen_generate.py"
+          ],
+          "path": "tests/cli-scripts/qwen-generate-partial-failure.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "d26e74bb42855d3e2cf9a63db36a34645a766600fdf7d0820c48d1bb68c67ba3",
@@ -15081,7 +18397,11 @@
             "lib/adapters/comfyui-workflows.js",
             "lib/run-manifest.js"
           ],
-          "path": "tests/cli-scripts/qwen-python-parity.test.js"
+          "names": [
+            "scripts/qwen_generate.py"
+          ],
+          "path": "tests/cli-scripts/qwen-python-parity.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "2494c82673dea71514b707801c820353d9a7a79aa2620e55a8f87a731b6b7b13",
@@ -15090,14 +18410,19 @@
             "tests/lib-asset/fixtures/make-asset.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-asset/asset-ingest.test.js"
+          "names": [
+            "lib/split.js"
+          ],
+          "path": "tests/lib-asset/asset-ingest.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "6d2a4a1c3a2c932a2991de51e6ae280d96803bf1dc6271f923d0177b3c8e3d8c",
           "importsFiles": [
             "lib/asset-masks.js"
           ],
-          "path": "tests/lib-asset/asset-masks.test.js"
+          "path": "tests/lib-asset/asset-masks.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "22ebaca7338a91f8030768344100e2288cc80b4f64846a851b4db8a7f6b90d84",
@@ -15106,17 +18431,25 @@
             "tests/lib-asset/fixtures/make-asset.js",
             "tests/lib-asset/fixtures/make-png.js"
           ],
-          "path": "tests/lib-asset/asset-source.test.js"
+          "path": "tests/lib-asset/asset-source.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "28195b25e8b9e4edba44107034e802554c9845a653524d2c3ca38975b69027f6",
+          "importOrder": [
+            "lib/asset-source.js",
+            "lib/asset-ingest.js",
+            "tests/lib-asset/fixtures/make-asset.js",
+            "tests/lib-dataset/fixtures/make-project.js"
+          ],
           "importsFiles": [
             "lib/asset-ingest.js",
             "lib/asset-source.js",
             "tests/lib-asset/fixtures/make-asset.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-asset/asset-style-provenance.test.js"
+          "path": "tests/lib-asset/asset-style-provenance.test.js",
+          "testFramework": "node --test"
         },
         {
           "exports": [
@@ -15144,7 +18477,8 @@
             "lib/npy-meta.js",
             "tests/lib-asset/fixtures/make-asset.js"
           ],
-          "path": "tests/lib-asset/npy-meta.test.js"
+          "path": "tests/lib-asset/npy-meta.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c9d7da9c71b0ed67b2d7afaf9df5c97c0b7f2620e51998556d308c71bded9d33",
@@ -15152,7 +18486,8 @@
             "lib/png-meta.js",
             "tests/lib-asset/fixtures/make-png.js"
           ],
-          "path": "tests/lib-asset/png-meta.test.js"
+          "path": "tests/lib-asset/png-meta.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "811706b52c670aa8d37caabdb1cd78320b67df6217947746c8e8777b512e9006",
@@ -15160,10 +18495,18 @@
             "lib/canon-build/build.js",
             "lib/rows.js"
           ],
-          "path": "tests/lib-canon-build/build.test.js"
+          "path": "tests/lib-canon-build/build.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c847225619cf8baec6efbbe9747b5ceafc7d0eb7f622f678ee91c2c70b3dc277",
+          "importOrder": [
+            "lib/canon-build/emitters/monster.js",
+            "lib/canon-build/emitters/character.js",
+            "lib/canon-build/emitters/deity.js",
+            "lib/canon-build/emitters/location.js",
+            "lib/canon-build/emitters/relic.js"
+          ],
           "importsFiles": [
             "lib/canon-build/emitters/character.js",
             "lib/canon-build/emitters/deity.js",
@@ -15171,17 +18514,26 @@
             "lib/canon-build/emitters/monster.js",
             "lib/canon-build/emitters/relic.js"
           ],
-          "path": "tests/lib-canon-build/emitters.test.js"
+          "path": "tests/lib-canon-build/emitters.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c7d31cfb6d262dbfe6c0c2fca02b16d676f243422526a5543d7028653d6d3ca8",
           "importsFiles": [
             "lib/canon-build/build.js"
           ],
-          "path": "tests/lib-canon-build/freeze-drift.test.js"
+          "path": "tests/lib-canon-build/freeze-drift.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "adda24d2f7e858361cb246c5173dba1a9e1d48c81047d47ad742c24e53b2c2a3",
+          "importOrder": [
+            "lib/canon-build/frontmatter.js",
+            "lib/canon-build/load-entry.js",
+            "lib/canon-build/load-schema.js",
+            "lib/canon-build/load-config.js",
+            "lib/canon-build/lane-resolve.js"
+          ],
           "importsFiles": [
             "lib/canon-build/frontmatter.js",
             "lib/canon-build/lane-resolve.js",
@@ -15189,7 +18541,8 @@
             "lib/canon-build/load-entry.js",
             "lib/canon-build/load-schema.js"
           ],
-          "path": "tests/lib-canon-build/loaders.test.js"
+          "path": "tests/lib-canon-build/loaders.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "fcebf94f93ce4b856554400a6fae74af951ab502ad146c4528bc79b63f30df27",
@@ -15197,14 +18550,16 @@
             "lib/brief-compiler.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-canon/brief-subject-required.test.js"
+          "path": "tests/lib-canon/brief-subject-required.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "b4b6dadc8a11ee9160e6996eb4f06ba34f0ef16dae08d3ca98a40795545ff0ea",
           "importsFiles": [
             "lib/canon-build/build.js"
           ],
-          "path": "tests/lib-canon/build-duplicate-id.test.js"
+          "path": "tests/lib-canon/build-duplicate-id.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "a669589810f58db31beb7c52ae56c4e39cb19644ae6268fc6fa5f65e445f0782",
@@ -15212,43 +18567,53 @@
             "lib/canon-build/build.js",
             "lib/rows.js"
           ],
-          "path": "tests/lib-canon/build-row-resolved-id.test.js"
+          "path": "tests/lib-canon/build-row-resolved-id.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "fb7346e00313b3e6935e9d688f4dd1975648e514d7f17d8fc0a08489dc370bb9",
           "importsFiles": [
             "lib/canon-build/build.js"
           ],
-          "path": "tests/lib-canon/build-staging-cleanup.test.js"
+          "path": "tests/lib-canon/build-staging-cleanup.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "eb932eaa7bd16f53f209ba4e1d56f60f6f30248401614058fafb0ef2ae96b32e",
           "importsFiles": [
             "lib/captions.js"
           ],
-          "path": "tests/lib-canon/captions-subject-natural-language.test.js"
+          "path": "tests/lib-canon/captions-subject-natural-language.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "46886ca69e0ace9d406fb4b58c0b1cda2396f0ba6c624d5fe7d1b0a2121a1219",
           "importsFiles": [
             "lib/eligibility.js"
           ],
-          "path": "tests/lib-canon/eligibility-pass-count-guard.test.js"
+          "path": "tests/lib-canon/eligibility-pass-count-guard.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "147eedc3a44c57c93346e40fe7252652c17942ee0cc81fbf080bbff83910a01d",
           "importsFiles": [
             "lib/freeze-gate.js"
           ],
-          "path": "tests/lib-canon/freeze-gate-broken-config-warns.test.js"
+          "path": "tests/lib-canon/freeze-gate-broken-config-warns.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "460f02bdd3d76987034c58df8884d331d982fd97824eddc081941ea9588b2668",
+          "importOrder": [
+            "lib/freeze-stamp.js",
+            "lib/freeze-gate.js"
+          ],
           "importsFiles": [
             "lib/freeze-gate.js",
             "lib/freeze-stamp.js"
           ],
-          "path": "tests/lib-canon/freeze-stamp-invalid-status.test.js"
+          "path": "tests/lib-canon/freeze-stamp-invalid-status.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "057fae60da450fabdd5ea66e2ce3ebd9affc1aa411c90734d73e5176af060b3e",
@@ -15256,10 +18621,18 @@
             "lib/training-packages.js",
             "tests/lib-dataset/fixtures/make-training-package-project.js"
           ],
-          "path": "tests/lib-canon/training-package-caption-batch.test.js"
+          "path": "tests/lib-canon/training-package-caption-batch.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "1f4ab2c33e407438800eac4769c9cc130f532016ffbfb9882d8290aefc72a18f",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/eval-pack.js",
+            "lib/training-packages.js",
+            "tests/lib-dataset/fixtures/make-project.js",
+            "tests/lib-dataset/fixtures/make-training-package-project.js"
+          ],
           "importsFiles": [
             "lib/eval-pack.js",
             "lib/snapshot.js",
@@ -15267,10 +18640,18 @@
             "tests/lib-dataset/fixtures/make-project.js",
             "tests/lib-dataset/fixtures/make-training-package-project.js"
           ],
-          "path": "tests/lib-dataset/atomic-id-claim.test.js"
+          "path": "tests/lib-dataset/atomic-id-claim.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "bb7baad0d8bd872f685205f359447ae8a1f44b5273d268d45f257252ebb9526e",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/batch-sheet-render.js",
+            "lib/candidate-sheet.js",
+            "tests/lib-dataset/fixtures/make-project.js",
+            "scripts/sheet.js"
+          ],
           "importsFiles": [
             "lib/batch-sheet-render.js",
             "lib/candidate-sheet.js",
@@ -15278,7 +18659,8 @@
             "scripts/sheet.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/candidate-sheet.test.js"
+          "path": "tests/lib-dataset/candidate-sheet.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "20fa4ca8bfe2ab815bfca9e35e580a0ed78cdf618934adabac5bba37386812e5",
@@ -15287,26 +18669,40 @@
             "lib/snapshot.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/eligibility-categorization.test.js"
+          "path": "tests/lib-dataset/eligibility-categorization.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "30ef67d5324bf1232f4f6aa0b083b8ef41682272c2985a655497edf3b35d2146",
+          "importOrder": [
+            "tests/lib-dataset/fixtures/make-project.js",
+            "lib/eval-pack.js",
+            "lib/eval-runs.js"
+          ],
           "importsFiles": [
             "lib/eval-pack.js",
             "lib/eval-runs.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/eval-runs.test.js"
+          "path": "tests/lib-dataset/eval-runs.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "20f3ee0670fb37c0141516ccbf713dff5a905abeb604410958bba1825a2100a6",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/export.js",
+            "tests/lib-dataset/fixtures/make-project.js"
+          ],
           "importsFiles": [
             "lib/export.js",
             "lib/snapshot.js",
             "lib/split.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/export.test.js"
+          "path": "tests/lib-dataset/export.test.js",
+          "testFramework": "node --test"
         },
         {
           "exports": [
@@ -15321,6 +18717,11 @@
             "createTrainingPackageProject"
           ],
           "hash": "40f0118d56d04af333c08849e21a8654f5c2554bbc518284ca69b37831f79edb",
+          "importOrder": [
+            "tests/lib-dataset/fixtures/make-project.js",
+            "lib/snapshot.js",
+            "lib/split.js"
+          ],
           "importsFiles": [
             "lib/snapshot.js",
             "lib/split.js",
@@ -15330,6 +18731,15 @@
         },
         {
           "hash": "1939da0c7d2b2cc30abacea2f32154affcbdd50753fb1266925068a1cdd3dd09",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/export.js",
+            "lib/eval-pack.js",
+            "lib/eval-runs.js",
+            "tests/lib-dataset/fixtures/make-project.js",
+            "lib/training-manifests.js"
+          ],
           "importsFiles": [
             "lib/eval-pack.js",
             "lib/eval-runs.js",
@@ -15339,7 +18749,8 @@
             "lib/training-manifests.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/humanization.test.js"
+          "path": "tests/lib-dataset/humanization.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "a7c56041e0001064d886410beb4fc0600517fed8f56cc0f5ba502045807e8a57",
@@ -15348,7 +18759,8 @@
             "lib/split.js",
             "tests/lib-dataset/fixtures/make-training-package-project.js"
           ],
-          "path": "tests/lib-dataset/implementation-pack-wiring.test.js"
+          "path": "tests/lib-dataset/implementation-pack-wiring.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "92d17366a5384be604b5b9709a8db12d02cf68c63381c046eaffa58397483062",
@@ -15356,14 +18768,19 @@
             "lib/ingest.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/ingest.test.js"
+          "names": [
+            "lib/export.js"
+          ],
+          "path": "tests/lib-dataset/ingest.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "0e2ff169f5329287e7fdc58aa22f5ef2eb5639f445e4e64209454166f6b314e7",
           "importsFiles": [
             "lib/judgment-provenance.js"
           ],
-          "path": "tests/lib-dataset/judgment-provenance.test.js"
+          "path": "tests/lib-dataset/judgment-provenance.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c2d64bd52df2e5e4bbf5867ced73f012bf27276e776686f010a9aeea08f51551",
@@ -15372,17 +18789,28 @@
             "lib/split.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/lineage-resolution-performance.test.js"
+          "path": "tests/lib-dataset/lineage-resolution-performance.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "e15e98563dafab70f573b81e522f0e31dfa6f6164842cc7e0ef7b3103071d8de",
           "importsFiles": [
             "lib/measure.js"
           ],
-          "path": "tests/lib-dataset/measure.test.js"
+          "path": "tests/lib-dataset/measure.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "6d890331ff621f63daa448ddb73099177859a2baa0cc50ca73a132382d2eadc8",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/export.js",
+            "lib/training-packages.js",
+            "lib/implementation-packs.js",
+            "tests/lib-dataset/fixtures/make-project.js",
+            "tests/lib-dataset/fixtures/make-training-package-project.js"
+          ],
           "importsFiles": [
             "lib/export.js",
             "lib/implementation-packs.js",
@@ -15392,7 +18820,8 @@
             "tests/lib-dataset/fixtures/make-project.js",
             "tests/lib-dataset/fixtures/make-training-package-project.js"
           ],
-          "path": "tests/lib-dataset/missing-records-ledger.test.js"
+          "path": "tests/lib-dataset/missing-records-ledger.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "ecc08b9b9bbeec0652bf74e0c0fb5d1a188e46b1595af4fbab3665b11137cc64",
@@ -15400,7 +18829,8 @@
             "lib/snapshot.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/snapshot.test.js"
+          "path": "tests/lib-dataset/snapshot.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "badd648284beee81660efb4a8d06d3c2c9abc022a7dbbc10db4e1fb1e3507151",
@@ -15409,20 +18839,35 @@
             "lib/split.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/split.test.js"
+          "path": "tests/lib-dataset/split.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "9ef27775d57d2a037bc63272dcbfd1c83fe189104cae10476d752a713bce006a",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/card.js",
+            "tests/lib-dataset/fixtures/make-project.js"
+          ],
           "importsFiles": [
             "lib/card.js",
             "lib/snapshot.js",
             "lib/split.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/subject-family-resolution.test.js"
+          "path": "tests/lib-dataset/subject-family-resolution.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "516a26f2b7dc2097508502e088fc87bd264a8edd8a73548217bc283f4b74a4fb",
+          "importOrder": [
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/export.js",
+            "lib/training-manifests.js",
+            "tests/lib-dataset/fixtures/make-project.js"
+          ],
           "importsFiles": [
             "lib/export.js",
             "lib/snapshot.js",
@@ -15430,10 +18875,22 @@
             "lib/training-manifests.js",
             "tests/lib-dataset/fixtures/make-project.js"
           ],
-          "path": "tests/lib-dataset/training-manifest-checksums-binding.test.js"
+          "path": "tests/lib-dataset/training-manifest-checksums-binding.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "d8e330630be6d5b6f1b8ad6d2f8e65be01d13145d251e6570bd3494096cdc4b8",
+          "importOrder": [
+            "lib/training-packages.js",
+            "lib/export.js",
+            "lib/snapshot.js",
+            "lib/split.js",
+            "lib/adapters/generic-image-caption.js",
+            "lib/adapters/diffusers-lora.js",
+            "lib/adapters/ai-toolkit.js",
+            "tests/lib-dataset/fixtures/make-project.js",
+            "tests/lib-dataset/fixtures/make-training-package-project.js"
+          ],
           "importsFiles": [
             "lib/adapters/ai-toolkit.js",
             "lib/adapters/diffusers-lora.js",
@@ -15445,126 +18902,159 @@
             "tests/lib-dataset/fixtures/make-project.js",
             "tests/lib-dataset/fixtures/make-training-package-project.js"
           ],
-          "path": "tests/lib-dataset/training-package-safety.test.js"
+          "path": "tests/lib-dataset/training-package-safety.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "bc3f8767e060a90369e78bbc69fd36195cad5579bed27ec1294265530ccab8be",
           "importsFiles": [
             "lib/freeze-events.js"
           ],
-          "path": "tests/lib-freeze/freeze-events.test.js"
+          "path": "tests/lib-freeze/freeze-events.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c938b449965a49478b3a5f55729087934145287f66a779a09d76a3c2543cda93",
+          "importOrder": [
+            "lib/freeze-gate.js",
+            "lib/freeze-events.js"
+          ],
           "importsFiles": [
             "lib/freeze-events.js",
             "lib/freeze-gate.js"
           ],
-          "path": "tests/lib-freeze/freeze-gate.test.js"
+          "path": "tests/lib-freeze/freeze-gate.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "a365ad5cf406fb78526b26efd53d6e18bb77265215f7907a68061f1837e0a0ce",
           "importsFiles": [
             "lib/freeze-stamp.js"
           ],
-          "path": "tests/lib-freeze/freeze-stamp.test.js"
+          "path": "tests/lib-freeze/freeze-stamp.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "30ce86bddd44f50af737bd57d5b124f04b2695ddf34305b9efb7e3b0c47a973a",
           "importsFiles": [
             "lib/adapters/ai-toolkit.js"
           ],
-          "path": "tests/lib-pipeline/ai-toolkit-adapter.test.js"
+          "path": "tests/lib-pipeline/ai-toolkit-adapter.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "6c5e5b65567dfb54e7f0fabb5637970c8c13c776bc508e552de9df9f9145075e",
           "importsFiles": [
             "lib/batch-compiler.js"
           ],
-          "path": "tests/lib-pipeline/batch-compiler.test.js"
+          "path": "tests/lib-pipeline/batch-compiler.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "178e75f4059f1eafb9fc5fa8de4aba1e893172f46ae15011c2b40a36b5e0a4e7",
           "importsFiles": [
             "lib/batch-runs.js"
           ],
-          "path": "tests/lib-pipeline/batch-resume.test.js"
+          "path": "tests/lib-pipeline/batch-resume.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "a23da26a01126d51ddcc0dd87d016c73d285e60f2602bda42f8b25aa32bcfaa4",
           "importsFiles": [
             "lib/brief-compiler.js"
           ],
-          "path": "tests/lib-pipeline/brief-compiler.test.js"
+          "path": "tests/lib-pipeline/brief-compiler.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "e05c8fd2444eebfe076c794e1ba875e2c720a6332be04d25b0aba51eba2a2018",
           "importsFiles": [
             "lib/captions.js"
           ],
-          "path": "tests/lib-pipeline/captions.test.js"
+          "path": "tests/lib-pipeline/captions.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "d6b1214ff222322189b7b23f32e118955895528fcdf02743f3db002f1a07759a",
           "importsFiles": [
             "lib/comfyui-output.js"
           ],
-          "path": "tests/lib-pipeline/comfyui-output.test.js"
+          "path": "tests/lib-pipeline/comfyui-output.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "937c0dff3da8d1502868789bc0cbf3a56f280c16d41a4f7b89375e7303cbdce6",
           "importsFiles": [
             "lib/comfyui.js"
           ],
-          "path": "tests/lib-pipeline/comfyui-schema-drift.test.js"
+          "path": "tests/lib-pipeline/comfyui-schema-drift.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "7bff53b118ef1628f6848eb1e4f304d3c4e1209d431e513a1357a3ae72157098",
           "importsFiles": [
             "lib/adapters/comfyui-workflows.js"
           ],
-          "path": "tests/lib-pipeline/comfyui-workflows.test.js"
+          "names": [
+            "scripts/qwen_generate.py"
+          ],
+          "path": "tests/lib-pipeline/comfyui-workflows.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "75b1cf9edae82b2ebd21bc49ede408f3958c54a1f0a971a252d23e81d55c797f",
+          "importOrder": [
+            "lib/training-profiles.js",
+            "lib/captions.js"
+          ],
           "importsFiles": [
             "lib/captions.js",
             "lib/training-profiles.js"
           ],
-          "path": "tests/lib-pipeline/flux-profiles.test.js"
+          "path": "tests/lib-pipeline/flux-profiles.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "ddc9b4d1efc41fdb63548508abf54009b9c1b0383cd0f62dc9808a6d2456e49b",
-          "path": "tests/lib-pipeline/flux-workflow-profiles.test.js"
+          "path": "tests/lib-pipeline/flux-workflow-profiles.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "7ba090032b48ce3799a1729cfbaa224789a95b33d55eac5e3a70ab56ca82d2f6",
           "importsFiles": [
             "lib/refine-briefs.js"
           ],
-          "path": "tests/lib-pipeline/refine-briefs.test.js"
+          "path": "tests/lib-pipeline/refine-briefs.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "35d602e4fcf6b4a4d0d792246b01b0948564d2688fd9f62bf025c4513b3a83d4",
           "importsFiles": [
             "lib/rows.js"
           ],
-          "path": "tests/lib-pipeline/rows.test.js"
+          "path": "tests/lib-pipeline/rows.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "182fa5d6a3425528eb11e71f06e3380dd6b884d32256fc4b64bbd3c7dc5c299f",
+          "importOrder": [
+            "lib/run-manifest.js",
+            "lib/adapters/comfyui-workflows.js"
+          ],
           "importsFiles": [
             "lib/adapters/comfyui-workflows.js",
             "lib/run-manifest.js"
           ],
-          "path": "tests/lib-pipeline/run-manifest.test.js"
+          "path": "tests/lib-pipeline/run-manifest.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "3c73876524011c32665556ce2c6ddda83e52f94763eda19aa173fd034889eb7d",
           "importsFiles": [
             "lib/runtime-runs.js"
           ],
-          "path": "tests/lib-pipeline/runtime-runs-atomic.test.js"
+          "path": "tests/lib-pipeline/runtime-runs-atomic.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "e3ef4380653b2de874cc3dad0052ab2e64c9819e804c398c89a18492a4b2dcf0",
@@ -15572,30 +19062,39 @@
             "lib/training-adapters.js",
             "lib/training-profiles.js"
           ],
-          "path": "tests/lib-pipeline/training-adapters.test.js"
+          "path": "tests/lib-pipeline/training-adapters.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "105cb29b88c254ca6e3d9df141077a9d2b45a165970db7307061bfa5cb644722",
           "importsFiles": [
             "lib/training-profiles.js"
           ],
-          "path": "tests/lib-pipeline/training-profiles.test.js"
+          "path": "tests/lib-pipeline/training-profiles.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "5c3f61422bb2312c9e2f0cbc887b68401fa33c12c401e8384c7719a3ea67bcea",
+          "importOrder": [
+            "lib/verifier.js",
+            "lib/critique-engine.js",
+            "lib/snapshot.js"
+          ],
           "importsFiles": [
             "lib/critique-engine.js",
             "lib/snapshot.js",
             "lib/verifier.js"
           ],
-          "path": "tests/lib-pipeline/verifier.test.js"
+          "path": "tests/lib-pipeline/verifier.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "7fe1a24a8b0f7c295e7f2c1dbceff3b8f4ef0c754fd709532e57dea4c4f7cc54",
           "importsFiles": [
             "lib/args.js"
           ],
-          "path": "tests/lib-runtime/args-project-flag.test.js"
+          "path": "tests/lib-runtime/args-project-flag.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "74aff98ef274ba7b10aaa1c2c3cfcc5a0a2e5f2d11f91a562de2f02e08416c8d",
@@ -15603,94 +19102,116 @@
             "lib/adapters/comfyui-runner.js",
             "lib/runtime-runs.js"
           ],
-          "path": "tests/lib-runtime/b01-checkpoint-and-listruns.test.js"
+          "path": "tests/lib-runtime/b01-checkpoint-and-listruns.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "14e0a219258a3709f842278db45cdf3200d086ee41ed946dbf5b50150294d722",
           "importsFiles": [
             "lib/config.js"
           ],
-          "path": "tests/lib-runtime/b02-b05-config-loaders.test.js"
+          "path": "tests/lib-runtime/b02-b05-config-loaders.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "af1eb3d308245669784681f38754eab4790dcd9d6eeb80b538d3b30974e31ba9",
           "importsFiles": [
             "lib/reingest-selected.js"
           ],
-          "path": "tests/lib-runtime/b03-reingest-provenance-checkpoint.test.js"
+          "path": "tests/lib-runtime/b03-reingest-provenance-checkpoint.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "b95e455a3ad0eeb2c86db6eb3ed9781468d46386f35b49b0c34858a812e2dba3",
           "importsFiles": [
             "lib/comfyui.js"
           ],
-          "path": "tests/lib-runtime/b04-comfy-health-reason.test.js"
+          "path": "tests/lib-runtime/b04-comfy-health-reason.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "750b1e4190d4c663fd24fdaa9c1b07f5a687ecdde419dec2efb7e78e76071a57",
+          "importOrder": [
+            "lib/workflow-profiles.js",
+            "lib/batch-modes.js"
+          ],
           "importsFiles": [
             "lib/batch-modes.js",
             "lib/workflow-profiles.js"
           ],
-          "path": "tests/lib-runtime/b06-json-parse-guards.test.js"
+          "path": "tests/lib-runtime/b06-json-parse-guards.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "5a0f4a8178311751adb526ade138a7b41ffba66066aa0df921277f398a94a8ca",
           "importsFiles": [
             "lib/run-manifest.js"
           ],
-          "path": "tests/lib-runtime/b07-pinning-hash-warn.test.js"
+          "path": "tests/lib-runtime/b07-pinning-hash-warn.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "c9bcc240ed3d6ad45de9fe83c60352cee84b009076b40085ddcffd75b96fafb1",
           "importsFiles": [
             "lib/generated-provenance.js"
           ],
-          "path": "tests/lib-runtime/b08-lineage-incomplete.test.js"
+          "path": "tests/lib-runtime/b08-lineage-incomplete.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "7254aa5345f08e969806d0d56e616de3ee712912e7f919c9a36d733271db5f85",
           "importsFiles": [
             "lib/run-summary.js"
           ],
-          "path": "tests/lib-runtime/b10-run-summary-defaults.test.js"
+          "path": "tests/lib-runtime/b10-run-summary-defaults.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "271611e8c22895b560738f5314c550744901a9ee2bbc31277e641812397445cb",
           "importsFiles": [
             "lib/comfyui.js"
           ],
-          "path": "tests/lib-runtime/comfyui-resilience.test.js"
+          "path": "tests/lib-runtime/comfyui-resilience.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "55eadae26b8af5af1b631064a711967233821247990304e89ba3608c4612cf95",
+          "importOrder": [
+            "lib/runtime-runs.js",
+            "lib/batch-runs.js",
+            "lib/reingest-selected.js"
+          ],
           "importsFiles": [
             "lib/batch-runs.js",
             "lib/reingest-selected.js",
             "lib/runtime-runs.js"
           ],
-          "path": "tests/lib-runtime/id-traversal.test.js"
+          "path": "tests/lib-runtime/id-traversal.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "778e28d0b549472bcd17eacf3c12e51ed2424c4c2901e2b15e98dabaae7e4846",
           "importsFiles": [
             "lib/paths.js"
           ],
-          "path": "tests/lib-runtime/package-vs-workspace-root.test.js"
+          "path": "tests/lib-runtime/package-vs-workspace-root.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "a622a11eee5cc4924263286e29239c89d7f513c4206cc64c1ff2390ee3d05f90",
           "importsFiles": [
             "lib/paths.js"
           ],
-          "path": "tests/lib-runtime/paths-workspace-root.test.js"
+          "path": "tests/lib-runtime/paths-workspace-root.test.js",
+          "testFramework": "node --test"
         },
         {
           "hash": "63bb60508f9e1f519ab37ed461f82cac194d7ea70abfbb2497a7d7286e9e124a",
           "importsFiles": [
             "lib/run-manifest.js"
           ],
-          "path": "tests/lib-runtime/run-manifest-model-identity.test.js"
+          "path": "tests/lib-runtime/run-manifest-model-identity.test.js",
+          "testFramework": "node --test"
         }
       ],
       "globs": [
@@ -15700,8 +19221,18 @@
       "name": "tests",
       "origin": "authored",
       "role": "test",
+      "testRunners": [
+        "node --test"
+      ],
       "testedBy": 0,
-      "unresolvedSites": 2
+      "unresolvedNamed": [
+        {
+          "path": "tests/cli-scripts/project-root-traversal.test.js",
+          "specifier": null,
+          "why": "dynamic"
+        }
+      ],
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 0,
@@ -15736,65 +19267,145 @@
       "checksCount": 0,
       "commands": [
         {
+          "dir": "",
           "job": "verify",
-          "step": "Atlas check",
-          "text": "npx --yes @dogfood-lab/atlas@1.20.0 check"
+          "programs": [
+            "npx"
+          ],
+          "step": "Atlas check"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "3",
-          "text": "npm ci --ignore-scripts"
+          "programs": [
+            "npm"
+          ],
+          "step": "3"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Smoke test — help",
-          "text": "node bin/sdlab.js --help"
+          "programs": [
+            "node"
+          ],
+          "step": "Smoke test — help"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Smoke test — doctor",
-          "text": "node bin/sdlab.js project doctor --project star-freight"
+          "programs": [
+            "node"
+          ],
+          "step": "Smoke test — doctor"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Smoke test — snapshot dry-run",
-          "text": "node bin/sdlab.js snapshot create --dry-run --project star-freight"
+          "programs": [
+            "node"
+          ],
+          "step": "Smoke test — snapshot dry-run"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Smoke test — eligibility",
-          "text": "node bin/sdlab.js eligibility audit --project star-freight"
+          "programs": [
+            "node"
+          ],
+          "step": "Smoke test — eligibility"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Smoke test — training profiles",
-          "text": "node bin/sdlab.js training-profile list --project star-freight"
+          "programs": [
+            "node"
+          ],
+          "step": "Smoke test — training profiles"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Verify script",
-          "text": "npm run verify"
+          "programs": [
+            "npm"
+          ],
+          "step": "Verify script"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Tests",
-          "text": "npm test"
+          "programs": [
+            "npm"
+          ],
+          "step": "Tests"
         },
         {
+          "dir": "",
           "job": "verify",
-          "step": "Coverage (Node 22 only)",
-          "text": "npm run coverage"
+          "programs": [
+            "npm"
+          ],
+          "step": "Coverage (Node 22 only)"
         }
       ],
       "elsewhere": [],
       "file": ".github/workflows/ci.yml",
-      "landings": [
-        "projects"
+      "jobs": [
+        {
+          "basis": "declared",
+          "name": "verify",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ],
+          "setup": [
+            {
+              "ranges": [
+                {
+                  "from": "20",
+                  "range": ">=20.0.0 <21.0.0-0"
+                },
+                {
+                  "from": "22",
+                  "range": ">=22.0.0 <23.0.0-0"
+                }
+              ],
+              "step": "1",
+              "uses": "actions/setup-node",
+              "version": "${{ matrix.node-version }}"
+            }
+          ]
+        },
+        {
+          "basis": "declared",
+          "name": "codecov",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ]
+        }
       ],
+      "landings": [],
       "mentions": [],
       "name": "CI",
       "permissions": [
-        "contents:read"
+        "contents:read",
+        "id-token:write"
       ],
       "pushes": false,
       "reach": [
@@ -15815,185 +19426,19 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 73
+          "files": 74
         },
         {
           "boundary": "scripts",
           "depth": 1,
           "enters": {
-            "file": "scripts/critique.js",
+            "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 13
+          "files": 39
         }
       ],
-      "readers": [
-        {
-          "by": "lib/paths.js",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase1_smoke.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase2_build.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase2_noshadow_build.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase2b_build.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/outputs/synthetic/phase2/manifest.json",
-          "call": "configuration",
-          "confidence": "config",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/manifest.json",
-          "call": "configuration",
-          "confidence": "config",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/outputs/synthetic/phase2b/manifest.json",
-          "call": "configuration",
-          "confidence": "config",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-review-page.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-review-page.mjs",
-          "call": "readdir",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
-          "call": "readdir",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-styleset-records.mjs",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-wave.mjs",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-wave.mjs",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-wave.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/populate-canon-subjects.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/populate-canon-subjects.mjs",
-          "call": "readdir",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/prompt-foundry.mjs",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/prompt-foundry.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/wave-runner.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/wave-runner.py",
-          "call": "open",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "scripts/init.js",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "tests/cli-scripts/init-generate-path.test.js",
-          "call": "literal",
-          "confidence": "ast",
-          "fromTests": true,
-          "target": "projects"
-        },
-        {
-          "by": "tests/lib-pipeline/flux-profiles.test.js",
-          "call": "readFile",
-          "confidence": "ast",
-          "fromTests": true,
-          "target": "projects"
-        },
-        {
-          "by": "tests/lib-runtime/paths-workspace-root.test.js",
-          "call": "literal",
-          "confidence": "ast",
-          "fromTests": true,
-          "target": "projects"
-        }
-      ],
+      "readers": [],
       "runs": [
         {
           "job": "verify",
@@ -16201,6 +19646,69 @@
         "releases": false
       },
       "stages": [],
+      "tests": [
+        {
+          "job": "verify",
+          "ran": [
+            "bin/sdlab.js"
+          ],
+          "runner": null,
+          "step": "Smoke test — help"
+        },
+        {
+          "job": "verify",
+          "ran": [
+            "bin/sdlab.js"
+          ],
+          "runner": null,
+          "step": "Smoke test — doctor"
+        },
+        {
+          "job": "verify",
+          "ran": [
+            "bin/sdlab.js"
+          ],
+          "runner": null,
+          "step": "Smoke test — snapshot dry-run"
+        },
+        {
+          "job": "verify",
+          "ran": [
+            "bin/sdlab.js"
+          ],
+          "runner": null,
+          "step": "Smoke test — eligibility"
+        },
+        {
+          "job": "verify",
+          "ran": [
+            "bin/sdlab.js"
+          ],
+          "runner": null,
+          "step": "Smoke test — training profiles"
+        },
+        {
+          "files": 96,
+          "job": "verify",
+          "runner": "node --test",
+          "step": "Tests",
+          "through": [
+            "npm test"
+          ]
+        },
+        {
+          "coverage": true,
+          "files": 96,
+          "job": "verify",
+          "junit": true,
+          "runner": "node --test",
+          "step": "Coverage (Node 22 only)",
+          "through": [
+            "npm run coverage",
+            "npm test"
+          ]
+        }
+      ],
       "triggers": [
         {
           "event": "pull_request",
@@ -16208,6 +19716,7 @@
             ".github/workflows/ci.yml",
             "atlas/**",
             "bin/**",
+            "codecov.yml",
             "lib/**",
             "package-lock.json",
             "package.json",
@@ -16226,6 +19735,7 @@
             ".github/workflows/ci.yml",
             "atlas/**",
             "bin/**",
+            "codecov.yml",
             "lib/**",
             "package-lock.json",
             "package.json",
@@ -16244,7 +19754,9 @@
       ],
       "uses": [
         "actions/checkout",
+        "actions/download-artifact",
         "actions/setup-node",
+        "actions/upload-artifact",
         "codecov/codecov-action"
       ],
       "usesWorkflowToken": false
@@ -16253,18 +19765,74 @@
       "checksCount": 0,
       "commands": [
         {
+          "dir": "site",
           "job": "build",
-          "step": "Install site dependencies",
-          "text": "npm ci"
+          "programs": [
+            "npm"
+          ],
+          "step": "Install site dependencies"
         },
         {
+          "dir": "site",
           "job": "build",
-          "step": "Build site",
-          "text": "npm run build"
+          "programs": [
+            "npm"
+          ],
+          "step": "Build site"
         }
       ],
       "elsewhere": [],
       "file": ".github/workflows/pages.yml",
+      "jobs": [
+        {
+          "basis": "declared",
+          "name": "build",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ],
+          "setup": [
+            {
+              "ranges": [
+                {
+                  "from": "22",
+                  "range": ">=22.0.0 <23.0.0-0"
+                }
+              ],
+              "step": "1",
+              "uses": "actions/setup-node",
+              "version": "22"
+            }
+          ]
+        },
+        {
+          "basis": "declared",
+          "environment": {
+            "name": "github-pages"
+          },
+          "name": "deploy",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ]
+        }
+      ],
       "landings": [],
       "mentions": [],
       "name": "Deploy site to GitHub Pages",
@@ -16278,7 +19846,7 @@
         {
           "boundary": "site",
           "depth": 0,
-          "files": 3
+          "files": 7
         }
       ],
       "readers": [],
@@ -16339,41 +19907,89 @@
       "checksCount": 0,
       "commands": [
         {
+          "dir": "",
           "job": "publish",
-          "step": "Verify tag matches package.json version",
-          "text": "PKG_VERSION=$(node -p \"require('./package.json').version\")\nTAG=\"${{ github.event.release.tag_name }}\"\nif [[ \"v$PKG_VERSION\" != \"$TAG\" ]]; then\n  echo \"::error::Tag $TAG does not match package.json version v$PKG_VERSION\"\n  exit 1\nfi\n"
+          "programs": [
+            "echo",
+            "node"
+          ],
+          "step": "Verify tag matches package.json version"
         },
         {
+          "dir": "",
           "job": "publish",
-          "step": "3",
-          "text": "npm ci --ignore-scripts"
+          "programs": [
+            "npm"
+          ],
+          "step": "3"
         },
         {
+          "dir": "",
           "job": "publish",
-          "step": "Verify",
-          "text": "npm run verify"
+          "programs": [
+            "npm"
+          ],
+          "step": "Verify"
         },
         {
+          "dir": "",
           "job": "publish",
-          "step": "Tests",
-          "text": "npm test"
+          "programs": [
+            "npm"
+          ],
+          "step": "Tests"
         },
         {
+          "dir": "",
           "job": "publish",
-          "step": "Upgrade npm for OIDC trusted publishing (>= 11.5.1)",
-          "text": "npm install -g npm@latest"
+          "programs": [
+            "npm"
+          ],
+          "step": "Upgrade npm for OIDC trusted publishing (>= 11.5.1)"
         },
         {
+          "dir": "",
           "job": "publish",
-          "step": "7",
-          "text": "npm publish --provenance --access public"
+          "programs": [
+            "npm"
+          ],
+          "step": "7"
         }
       ],
       "elsewhere": [],
       "file": ".github/workflows/publish.yml",
-      "landings": [
-        "projects"
+      "jobs": [
+        {
+          "basis": "declared",
+          "name": "publish",
+          "runsOn": [
+            {
+              "labels": [
+                "ubuntu-latest"
+              ],
+              "platform": {
+                "cpu": "x64",
+                "libc": "glibc",
+                "os": "linux"
+              }
+            }
+          ],
+          "setup": [
+            {
+              "ranges": [
+                {
+                  "from": "22",
+                  "range": ">=22.0.0 <23.0.0-0"
+                }
+              ],
+              "step": "1",
+              "uses": "actions/setup-node",
+              "version": "22"
+            }
+          ]
+        }
       ],
+      "landings": [],
       "mentions": [
         {
           "job": "publish",
@@ -16404,185 +20020,19 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 73
+          "files": 74
         },
         {
           "boundary": "scripts",
           "depth": 1,
           "enters": {
-            "file": "scripts/critique.js",
+            "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 13
+          "files": 39
         }
       ],
-      "readers": [
-        {
-          "by": "lib/paths.js",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase1_smoke.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase2_build.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase2_noshadow_build.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/compositor/phase2b_build.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/outputs/synthetic/phase2/manifest.json",
-          "call": "configuration",
-          "confidence": "config",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/manifest.json",
-          "call": "configuration",
-          "confidence": "config",
-          "target": "projects"
-        },
-        {
-          "by": "projects/ai-eye-test/outputs/synthetic/phase2b/manifest.json",
-          "call": "configuration",
-          "confidence": "config",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-review-page.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-review-page.mjs",
-          "call": "readdir",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
-          "call": "readdir",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-styleset-records.mjs",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-wave.mjs",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-wave.mjs",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/ingest-wave.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/populate-canon-subjects.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/populate-canon-subjects.mjs",
-          "call": "readdir",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/prompt-foundry.mjs",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/prompt-foundry.mjs",
-          "call": "readFile",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/wave-runner.py",
-          "call": "literal",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "projects/salt-road/inputs/prompts/wave-runner.py",
-          "call": "open",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "scripts/init.js",
-          "call": "existsSync",
-          "confidence": "ast",
-          "target": "projects"
-        },
-        {
-          "by": "tests/cli-scripts/init-generate-path.test.js",
-          "call": "literal",
-          "confidence": "ast",
-          "fromTests": true,
-          "target": "projects"
-        },
-        {
-          "by": "tests/lib-pipeline/flux-profiles.test.js",
-          "call": "readFile",
-          "confidence": "ast",
-          "fromTests": true,
-          "target": "projects"
-        },
-        {
-          "by": "tests/lib-runtime/paths-workspace-root.test.js",
-          "call": "literal",
-          "confidence": "ast",
-          "fromTests": true,
-          "target": "projects"
-        }
-      ],
+      "readers": [],
       "runs": [
         {
           "job": "publish",
@@ -16799,6 +20249,17 @@
         "releases": false
       },
       "stages": [],
+      "tests": [
+        {
+          "files": 96,
+          "job": "publish",
+          "runner": "node --test",
+          "step": "Tests",
+          "through": [
+            "npm test"
+          ]
+        }
+      ],
       "triggers": [
         {
           "event": "release",
@@ -16840,16 +20301,16 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 22
+          "files": 49
         },
         {
           "boundary": "scripts",
           "depth": 1,
           "enters": {
-            "file": "scripts/critique.js",
+            "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 3
+          "files": 32
         }
       ],
       "readers": [],
@@ -16889,6 +20350,11 @@
       "to": "scripts"
     },
     {
+      "from": "projects",
+      "kind": "file",
+      "to": "lib"
+    },
+    {
       "from": "scripts",
       "kind": "file",
       "to": "lib"
@@ -16906,19 +20372,14 @@
       "to": "scripts"
     }
   ],
+  "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "b0426acebeb7a9f90efa809b7d54e0aba05ad0c4",
-    "tracked": 3230
+    "commit": "f7b4973768c843655383d17005a6353a4ef2de74",
+    "tracked": 3231
   },
   "landings": [
     {
-      "readers": [
-        {
-          "by": "scripts/init.js",
-          "call": "literal",
-          "confidence": "ast"
-        }
-      ],
+      "readers": [],
       "target": "README.md",
       "writers": [
         {
@@ -17005,12 +20466,12 @@
     {
       "readers": [
         {
-          "by": "projects/salt-road/inputs/prompts/build-training-package.mjs",
+          "by": "projects/facet-assets/eval/consistency-preregistration.json",
           "call": "literal",
-          "confidence": "ast"
+          "confidence": "text"
         }
       ],
-      "target": "lib/captions.js",
+      "target": "docs/asset-lane-eval-preregistration.md",
       "writers": []
     },
     {
@@ -17028,7 +20489,8 @@
     {
       "readers": [
         {
-          "by": ".github/workflows/publish.yml"
+          "by": ".github/workflows/publish.yml",
+          "confidence": "config"
         },
         {
           "by": "tests/cli-scripts/deprecation.test.js",
@@ -17048,11 +20510,6 @@
           "confidence": "ast"
         },
         {
-          "by": "scripts/init.js",
-          "call": "existsSync",
-          "confidence": "ast"
-        },
-        {
           "by": "tests/cli-scripts/init-generate-path.test.js",
           "call": "literal",
           "confidence": "ast",
@@ -17060,12 +20517,7 @@
         }
       ],
       "target": "projects",
-      "writers": [
-        {
-          "by": "scripts/init.js",
-          "confidence": "ast"
-        }
-      ]
+      "writers": []
     },
     {
       "readers": [
@@ -17086,6 +20538,17 @@
         }
       ],
       "target": "projects/ai-eye-test/backgrounds",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "projects/ai-eye-test/compositor/compositor.py",
+          "call": "read_bytes",
+          "confidence": "ast"
+        }
+      ],
+      "target": "projects/ai-eye-test/outputs/candidates/hero_green_apple_v1.png",
       "writers": []
     },
     {
@@ -17149,7 +20612,12 @@
         }
       ],
       "target": "projects/ai-eye-test/outputs/synthetic/phase1",
-      "writers": []
+      "writers": [
+        {
+          "by": "projects/ai-eye-test/compositor/compositor.py",
+          "confidence": "ast"
+        }
+      ]
     },
     {
       "readers": [],
@@ -19177,7 +22645,8 @@
           "confidence": "ast"
         }
       ],
-      "target": "projects/salt-road/inbox/generated/set-v2-2026-07-30",
+      "target": "projects/salt-road/inbox/generated/set-v2-2026-07-30/*.png",
+      "tracked": false,
       "writers": [
         {
           "by": "projects/salt-road/inputs/prompts/wave-runner.py",
@@ -19194,7 +22663,12 @@
         }
       ],
       "target": "projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl",
-      "writers": []
+      "writers": [
+        {
+          "by": "projects/salt-road/inputs/prompts/wave-runner.py",
+          "confidence": "ast"
+        }
+      ]
     },
     {
       "readers": [],
@@ -19711,5 +23185,9 @@
   "submodules": [],
   "symlinks": [],
   "testFiles": 102,
+  "testsNotRun": [
+    "projects/ai-eye-test/compositor/test_compositor.py",
+    "projects/ai-eye-test/compositor/test_phase2.py"
+  ],
   "unassigned": []
 }

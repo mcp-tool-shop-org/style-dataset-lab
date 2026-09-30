@@ -65,7 +65,7 @@ jobs:
       # Atlas requires Node 22 or later, so the check runs on the 22 cell only.
       - name: Atlas check
         if: matrix.node-version == 22
-        run: npx --yes @dogfood-lab/atlas@1.20.0 check
+        run: npx --yes @dogfood-lab/atlas@1.24.0 check
       - run: npm ci --ignore-scripts
       - name: Smoke test — help
         run: node bin/sdlab.js --help
