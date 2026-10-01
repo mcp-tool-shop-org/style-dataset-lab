@@ -1,25 +1,19 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-09-30 from commit f7b4973 by Atlas 1.24.0.
+Mapped at 2026-10-01 from commit dfeac64 by Atlas 1.24.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2616 files); code in JavaScript (233), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-09-25 (b0426ac)
+## What changed since 2026-09-30 (f7b4973)
 
-- projects now imports lib.
-- CI's pull request trigger now also names `codecov.yml`.
-- CI's push trigger now also names `codecov.yml`.
-- projects/ai-eye-test/outputs/synthetic/phase1/ is now written by projects/ai-eye-test/compositor/compositor.py.
-- projects/salt-road/inbox/generated/set-v2-2026-07-30/*.png is now written by projects/salt-road/inputs/prompts/wave-runner.py.
-- projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl is now written by projects/salt-road/inputs/prompts/wave-runner.py.
-- And 3 more new writers and readers of places.
-- 1 file added and 1 changed content, across 2 parts.
+- CI's pull request trigger no longer names `.github/workflows/ci.yml`, `atlas/**`, `bin/**`, `codecov.yml`, `lib/**`, `package-lock.json`, `package.json`, `runtime/**`, `schemas/**`, `scripts/**`, `site/astro.config.mjs`, `site/package-lock.json`, `site/package.json` and `tests/**`.
+- 2 files changed content, across 2 parts.
 
 ## What comes in
 
-1. **CI.** On a pull request touching 14 paths; on a push touching 14 paths; or by hand. Runs bin/sdlab.js, tests/canon-star-freight/, tests/cli-scripts/ and 70 more.
+1. **CI.** On a pull request; on a push touching 14 paths; or by hand. Runs bin/sdlab.js, tests/canon-star-freight/, tests/cli-scripts/ and 70 more.
 2. **Publish.** When a release is published; or by hand. Runs bin/sdlab.js, tests/canon-star-freight/, tests/cli-scripts/ and 70 more.
 3. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 4. **sdlab** (a command people run). Runs bin/sdlab.js.
