@@ -151,6 +151,7 @@ export async function run(argv = process.argv.slice(2)) {
 
     if (meta.domain) { pass(`project.json: domain = "${meta.domain}"`); passes++; }
     else { warn('project.json: no "domain" set'); warnings++; }
+    if (meta.display_name === 'TEMPLATE') { fail('project.json: display_name is still "TEMPLATE"', 'Set a real display_name in project.json instead of the unedited template placeholder.'); failures++; }
   }
 
   // ── 5. Constitution validation ──

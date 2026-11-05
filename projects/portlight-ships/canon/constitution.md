@@ -1,5 +1,7 @@
 # Style Constitution
 
+> TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)
+
 > Define the visual rules that every generated asset must follow.
 > Each rule gets an ID, category, and description. The curation scripts score assets against these rules.
 

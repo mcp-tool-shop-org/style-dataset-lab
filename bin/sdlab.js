@@ -51,6 +51,7 @@ const COMMANDS = {
   'eval-run':            '../scripts/eval-run.js',
   'implementation-pack': '../scripts/implementation-pack.js',
   'reingest':            '../scripts/reingest.js',
+  'verify':              '../scripts/verify.js',
 };
 
 // Two-word commands under "project" namespace
@@ -360,6 +361,18 @@ Subcommands:
 Flags:
   --project <name>     Project to operate on`,
 
+  'verify': `sdlab verify --project <name> [--record <id>] [--snapshot <id>] [--json]
+
+Verify the full offline provenance chain for CC-BY-4.0 release:
+  record (G5 owner + CC-BY-4.0) -> canon (G6 canon_sha + entry_sha256)
+  -> model licence (G4 SPDX id + licence_url + date_read) -> run manifest (workflow sha).
+
+Flags:
+  --project <name>     Project to verify
+  --record <id>        Verify a single record id
+  --snapshot <id>      Verify all records in a snapshot
+  --json               Emit machine-readable JSON report`,
+
   'asset ingest': `sdlab asset ingest <dir> --project <name> [--dry-run] [--json]
 
 Register a provenance-carrying asset export into a project. The export
@@ -401,6 +414,7 @@ function printHelp() {
   console.log('  init <name>          Scaffold a new project from a domain template');
   console.log('  project doctor       Validate project config and structure');
   console.log('  project migrate      Migrate record schemas');
+  console.log('  verify               Verify full provenance chain (record -> canon -> licence -> run)');
   console.log('');
   console.log('Pipeline:');
   console.log('  generate             Generate candidates from a prompt pack');

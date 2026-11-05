@@ -64,15 +64,15 @@
             {
               "in": "main",
               "kind": "throw",
-              "line": 609
+              "line": 623
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 650
+              "line": 664
             }
           ],
-          "hash": "1937a03ccd7331e9e510202aa4d18efff89aa281619a43847710ba5675d24cd6",
+          "hash": "3c7a588496a82b2a1f2d1c85a348612f7bebe64054c4ae7e89fc66380b964ba6",
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -106,21 +106,22 @@
             "scripts/split.js",
             "scripts/training-manifest.js",
             "scripts/training-package.js",
-            "scripts/training-profile.js"
+            "scripts/training-profile.js",
+            "scripts/verify.js"
           ],
           "path": "bin/sdlab.js",
           "sequences": [
             {
               "calls": [
                 {
-                  "line": 548,
+                  "line": 562,
                   "name": "enableDebug",
                   "target": {
                     "file": "lib/errors.js"
                   }
                 },
                 {
-                  "line": 549,
+                  "line": 563,
                   "name": "setLogLevel",
                   "target": {
                     "file": "lib/log.js"
@@ -128,7 +129,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 605,
+                  "line": 619,
                   "name": "findClosest",
                   "over": "namespaces",
                   "target": {
@@ -137,7 +138,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 609,
+                  "line": 623,
                   "name": "inputError",
                   "over": "namespaces",
                   "target": {
@@ -228,7 +229,7 @@
                       }
                     }
                   ],
-                  "line": 624,
+                  "line": 638,
                   "name": "run",
                   "target": {
                     "file": "scripts/critique.js"
@@ -301,7 +302,7 @@
                       }
                     }
                   ],
-                  "line": 632,
+                  "line": 646,
                   "name": "run",
                   "target": {
                     "file": "scripts/refine.js"
@@ -368,7 +369,7 @@
                       }
                     }
                   ],
-                  "line": 640,
+                  "line": 654,
                   "name": "run",
                   "target": {
                     "file": "scripts/select.js"
@@ -376,7 +377,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 646,
+                  "line": 660,
                   "name": "findClosest",
                   "target": {
                     "file": "lib/args.js"
@@ -384,7 +385,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 650,
+                  "line": 664,
                   "name": "inputError",
                   "target": {
                     "file": "lib/errors.js"
@@ -409,7 +410,7 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 9,
+      "testedBy": 10,
       "testedThroughSpawn": true,
       "unresolvedNamed": [
         {
@@ -2301,18 +2302,30 @@
         },
         {
           "exports": [
-            "buildGeneratedProvenance"
+            "buildGeneratedProvenance",
+            "resolveCanonLink"
           ],
           "failurePaths": [
             {
+              "in": "resolveCanonLink",
+              "kind": "catch",
+              "line": 47
+            },
+            {
+              "in": "resolveCanonLink",
+              "kind": "catch",
+              "line": 101
+            },
+            {
               "in": "buildGeneratedProvenance",
               "kind": "catch",
-              "line": 72
+              "line": 229
             }
           ],
-          "hash": "3cdd225e4938eccfad018a896bf84f4be79f532cf69d37fda3f8acbaf059794a",
+          "hash": "484d0fe4e1380424ba05d3abded6b8b6206affce5b57adef1555dd4b0dc2f2f9",
           "importsFiles": [
-            "lib/log.js"
+            "lib/log.js",
+            "lib/records.js"
           ],
           "path": "lib/generated-provenance.js"
         },
@@ -2565,6 +2578,28 @@
         },
         {
           "exports": [
+            "assertClearedPinningLicences",
+            "hasModelSha256",
+            "isClearedLicenceEntry",
+            "isQuarantinedName",
+            "normalizeModelFamilyKey",
+            "resolveModelLicence"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertClearedPinningLicences",
+              "kind": "throw",
+              "line": 299
+            }
+          ],
+          "hash": "9cb33cbaa94986789258ff20ffc99b3c01205bea3ce81594e83161908cd22e66",
+          "importsFiles": [
+            "lib/errors.js"
+          ],
+          "path": "lib/model-licences.js"
+        },
+        {
+          "exports": [
             "parseNpyHeader",
             "readNpyValues"
           ],
@@ -2759,6 +2794,7 @@
         {
           "exports": [
             "buildBaseRecord",
+            "buildDefaultRights",
             "buildIdentityRecord",
             "loadRecord",
             "saveRecord"
@@ -2767,15 +2803,15 @@
             {
               "in": "loadRecord",
               "kind": "catch",
-              "line": 54
+              "line": 100
             },
             {
               "in": "loadRecord",
               "kind": "throw",
-              "line": 56
+              "line": 102
             }
           ],
-          "hash": "107a7e5986ef29aae8b98ce524aaeaa3342721934752e9f2ed460d9653028093",
+          "hash": "991cf87b748d1be5a626d18150aef3a2ca2c7b1fd0f9e675adff31e93659112f",
           "path": "lib/records.js"
         },
         {
@@ -2846,7 +2882,7 @@
               "line": 158
             }
           ],
-          "hash": "99d4f64575c56acf4a26a88d2e0c866ddcfdcb65f1a25c432b2d1b1e588a9781",
+          "hash": "8cae755bfb1c016c088e72446826cc405b86703b7041704db8e6b83c04d32bb2",
           "importOrder": [
             "lib/paths.js",
             "lib/batch-runs.js",
@@ -2870,12 +2906,16 @@
             "auditReingest",
             "reingestGenerated"
           ],
-          "hash": "7fd953a23600850efd5163a86d8f210eeb02881e6b5cf586b8d5a89b2db0426d",
+          "hash": "a1eb6dba23e2d4f3a094c8f119057629692b80cd8fbab7611023f2cc1204daa7",
           "importOrder": [
             "lib/training-manifests.js",
-            "lib/records.js"
+            "lib/records.js",
+            "lib/generated-provenance.js",
+            "lib/model-licences.js"
           ],
           "importsFiles": [
+            "lib/generated-provenance.js",
+            "lib/model-licences.js",
             "lib/records.js",
             "lib/training-manifests.js"
           ],
@@ -2933,32 +2973,33 @@
             {
               "in": "hashModelFile",
               "kind": "catch",
-              "line": 268
+              "line": 292
             },
             {
               "in": "hashModelFile",
               "kind": "catch",
-              "line": 275
+              "line": 299
             },
             {
               "in": "hashModelFile",
               "kind": "catch",
-              "line": 285
+              "line": 309
             },
             {
               "in": "createHashCache",
               "kind": "catch",
-              "line": 329
+              "line": 353
             },
             {
               "in": "flushHashCache",
               "kind": "catch",
-              "line": 342
+              "line": 366
             }
           ],
-          "hash": "0bcc254c73ba2199360e65ae66100be608a1485f0bd40998a260d8132194c0ae",
+          "hash": "1260e7734d93b78de6fa5a1726f23146fc2a20474878c9448d5ae709ca663a31",
           "importsFiles": [
-            "lib/log.js"
+            "lib/log.js",
+            "lib/model-licences.js"
           ],
           "path": "lib/run-manifest.js"
         },
@@ -3405,6 +3446,34 @@
         },
         {
           "exports": [
+            "verifyProvenanceChain",
+            "verifyRecordProvenance"
+          ],
+          "failurePaths": [
+            {
+              "in": "verifyRecordProvenance",
+              "kind": "catch",
+              "line": 104
+            },
+            {
+              "in": "verifyRecordProvenance",
+              "kind": "catch",
+              "line": 148
+            }
+          ],
+          "hash": "70341e5233301df09dd370779040c2fd5b77e291565729dfbac09cd2145c6317",
+          "importOrder": [
+            "lib/records.js",
+            "lib/model-licences.js"
+          ],
+          "importsFiles": [
+            "lib/model-licences.js",
+            "lib/records.js"
+          ],
+          "path": "lib/verify-chain.js"
+        },
+        {
+          "exports": [
             "getWorkflowProfile",
             "listWorkflowProfiles",
             "saveWorkflowProfile",
@@ -3462,7 +3531,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 194,
+          "reads": 214,
           "where": [
             "caller"
           ],
@@ -3498,13 +3567,13 @@
           "writes": 1
         }
       ],
-      "outsideReads": 203,
+      "outsideReads": 223,
       "outsideWrites": 96,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 93,
+      "testedBy": 94,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -6924,7 +6993,7 @@
           "path": "projects/hesperia/terminology.json"
         },
         {
-          "hash": "73f93d1483e59e6825c9522544ab2435020493b29288a73ca2421ccd28cfda78",
+          "hash": "ce8aecbd9191ca553f34dc75951ff668ef90ab783ddcd8913c97eff6f1eb6c87",
           "path": "projects/portlight-ships/README.md"
         },
         {
@@ -6932,7 +7001,7 @@
           "path": "projects/portlight-ships/canon-build/config.json"
         },
         {
-          "hash": "c14f0360a5c161709ddd42a16d4f53724deec37ee996f96706f9624c7994ec1e",
+          "hash": "c93fcde875b921abdae20a9a06f435fffc68d40f00fdff366b3be48ec03a2664",
           "path": "projects/portlight-ships/canon/constitution.md"
         },
         {
@@ -6940,7 +7009,7 @@
           "path": "projects/portlight-ships/canon/damage-tiers.md"
         },
         {
-          "hash": "76f1a098db620cb45d11ba31b0cb13b44aba8ff426e790bde66194d86489841c",
+          "hash": "9de416654d85b03dc86f23d63506248d307023364571651dead571bed03834da",
           "path": "projects/portlight-ships/canon/review-rubric.md"
         },
         {
@@ -7008,35 +7077,35 @@
           "path": "projects/portlight-ships/canon/traditions.md"
         },
         {
-          "hash": "a459e85f4f75fd8ce9564655951e58f0fa8e948c32613b2727f28e1a3829beed",
+          "hash": "26bd2d040baee5fb11a4baa2f93522fd7c0c4de50b7316d1812764cd952e1ab4",
           "path": "projects/portlight-ships/constitution.json"
         },
         {
-          "hash": "906bc8474139b099f0a9e55352e305791642e0d804fb63313ff5e913a36f07c2",
+          "hash": "0bac6620d8b909a156f091c380090c1d376429f9b92a75e23f96c45b8f59b8e2",
           "path": "projects/portlight-ships/inputs/prompts/example-wave.json"
         },
         {
-          "hash": "bf73d9c6f15b970566b9bf43eac8a5525fefa6317103c7ef079f19c8f945b04a",
+          "hash": "c1193a0992e5e2ed10a1c74924c204d53f54f62d0d8e88586861d7929d857fde",
           "path": "projects/portlight-ships/lanes.json"
         },
         {
-          "hash": "201bfe9dde5de0328d423e6a09ead36ec08ac1144f022127972687397cb125f3",
+          "hash": "ce9a2c9d31e6f19f4ff0553325591d72d501f99c6679608c753514baf84d6af6",
           "path": "projects/portlight-ships/project.json"
         },
         {
-          "hash": "c6a9a41d1efb36d32b217594b75f15a5857926369eb1d94e3070fa874aa2185b",
+          "hash": "6862934583025e0e2683ec88ffa5a808bbed2c67e228c4636e0448bf82dc653f",
           "path": "projects/portlight-ships/rubric.json"
         },
         {
-          "hash": "d50214c333f0e050050a6c06bc654516d36cbe367aa7a27447a152209514d45f",
+          "hash": "660af10a49a1ca362ae8d46416a9f70f02d668b41ca54e75eeff100167ebc39c",
           "path": "projects/portlight-ships/terminology.json"
         },
         {
-          "hash": "b9a515411de67ac412bbcd39791f3c926a025b331253baed534bc312ade9c3aa",
+          "hash": "0368930c82901ee86b9e2b18c7905444c9ad0ec2f1f3e4790c38a2918355f1f7",
           "path": "projects/portlight-ships/workflows/profiles/variant-pack.json"
         },
         {
-          "hash": "3d342ea3c4d021ae0c0fe56825324936db44ead2788d16795cb2e5fff23148ac",
+          "hash": "21122a070fc6b47e60dcd74dbe89731371703d08741a556e6f57266d6aa6e28c",
           "path": "projects/portlight-ships/workflows/profiles/vehicle-silhouette-pack.json"
         },
         {
@@ -15575,7 +15644,7 @@
           "path": "schemas/critique-report.schema.json"
         },
         {
-          "hash": "4ef44ec6f635edf82b56bac14604aeb89b6e77cb4cee0b91f8f6b96da6fa21d9",
+          "hash": "2c823158eb7fb01c1b0b80fc9956c7da86ed521a5ca4d413ba359a4d245371d6",
           "path": "schemas/generated-record.schema.json"
         },
         {
@@ -16386,25 +16455,25 @@
             {
               "in": "run",
               "kind": "catch",
-              "line": 240
+              "line": 241
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 362
+              "line": 363
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 372
+              "line": 373
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 610
+              "line": 611
             }
           ],
-          "hash": "27ba0ec6980c6adfa9f34b0b6a6cf7449c5b1c38bfec153af76374602cde3a54",
+          "hash": "bb1b9ceca78b13d725414490ac18d37cf93af7b4a4cc1c7e5e29b8abaceaab98",
           "importOrder": [
             "lib/args.js",
             "lib/paths.js",
@@ -16733,30 +16802,30 @@
             {
               "in": "normalizeGenerationInput",
               "kind": "throw",
-              "line": 231
+              "line": 233
             },
             {
               "in": "normalizeGenerationInput",
               "kind": "throw",
-              "line": 251
+              "line": 253
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 368
+              "line": 372
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 517
+              "line": 539
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 555
+              "line": 577
             }
           ],
-          "hash": "622d98b512b8f6d82f7892fa832a5f0b916a3fb0c51ddb5559868bf637aec76a",
+          "hash": "16b6a2ca8017b40b74249e42c2bb184ace5c0e0340111b0ff83032bc4f96ee0a",
           "importOrder": [
             "lib/args.js",
             "lib/paths.js",
@@ -16766,6 +16835,8 @@
             "lib/comfyui-output.js",
             "lib/adapters/comfyui-workflows.js",
             "lib/run-manifest.js",
+            "lib/records.js",
+            "lib/generated-provenance.js",
             "lib/log.js"
           ],
           "importsFiles": [
@@ -16775,8 +16846,10 @@
             "lib/comfyui.js",
             "lib/config.js",
             "lib/errors.js",
+            "lib/generated-provenance.js",
             "lib/log.js",
             "lib/paths.js",
+            "lib/records.js",
             "lib/run-manifest.js"
           ],
           "path": "scripts/generate.js"
@@ -17667,6 +17740,32 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 55
+            }
+          ],
+          "hash": "df36b4832349f95b57c13e18328b295307d90c58d62f090b1db1b469040293a6",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/verify-chain.js"
+          ],
+          "importsFiles": [
+            "lib/args.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "lib/verify-chain.js"
+          ],
+          "path": "scripts/verify.js"
+        },
+        {
+          "exports": [
+            "run"
+          ],
           "hash": "245d2214f843abc51fbd90ee4efec05585e3f599cd7856c76af94c06fe8ef567",
           "importOrder": [
             "lib/args.js",
@@ -17738,7 +17837,7 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 19,
+      "testedBy": 20,
       "unresolvedSites": 0
     },
     {
@@ -17754,7 +17853,7 @@
           "path": "site/astro.config.mjs"
         },
         {
-          "hash": "97a3922330418d28bbd96b7eeb26366e537bb321a961cc7ccf83fad0979893a3",
+          "hash": "5ec4d99a215539afd0754989ab5f620558f5a98d8c4244a9c801246d4b1165cf",
           "path": "site/package-lock.json"
         },
         {
@@ -19020,6 +19119,36 @@
           "testFramework": "node --test"
         },
         {
+          "hash": "f06c6d8760d8469f4f178e0dfce06a703e38f8ba75a8457be99145f3c2d981a7",
+          "importOrder": [
+            "lib/run-manifest.js",
+            "lib/model-licences.js",
+            "lib/records.js",
+            "lib/generated-provenance.js",
+            "lib/reingest-selected.js",
+            "lib/reingest.js",
+            "lib/verify-chain.js",
+            "lib/canon-build/build.js",
+            "lib/paths.js"
+          ],
+          "importsFiles": [
+            "lib/canon-build/build.js",
+            "lib/generated-provenance.js",
+            "lib/model-licences.js",
+            "lib/paths.js",
+            "lib/records.js",
+            "lib/reingest-selected.js",
+            "lib/reingest.js",
+            "lib/run-manifest.js",
+            "lib/verify-chain.js"
+          ],
+          "path": "tests/lib-pipeline/provenance-chain.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
+        },
+        {
           "hash": "7ba090032b48ce3799a1729cfbaa224789a95b33d55eac5e3a70ab56ca82d2f6",
           "importsFiles": [
             "lib/refine-briefs.js"
@@ -19417,7 +19546,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -19426,7 +19555,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
@@ -19435,7 +19564,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 40
         }
       ],
       "readers": [],
@@ -19688,7 +19817,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -19698,7 +19827,7 @@
         },
         {
           "coverage": true,
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -19995,7 +20124,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -20004,7 +20133,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
@@ -20013,7 +20142,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 40
         }
       ],
       "readers": [],
@@ -20235,7 +20364,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 96,
+          "files": 97,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20285,7 +20414,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 49
+          "files": 51
         },
         {
           "boundary": "scripts",
@@ -20294,7 +20423,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 32
+          "files": 33
         }
       ],
       "readers": [],
@@ -20358,8 +20487,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "dfeac64ea1a2585b65d88e6ee8a64fd02a185090",
-    "tracked": 3231
+    "commit": "abfd3b8ffe7a8d48f2ccac6807f9ec586268126e",
+    "tracked": 3235
   },
   "landings": [
     {
@@ -20439,6 +20568,12 @@
         },
         {
           "by": "tests/cli-scripts/namespace-suggester.test.js",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        },
+        {
+          "by": "tests/lib-pipeline/provenance-chain.test.js",
           "call": "literal",
           "confidence": "ast",
           "fromTests": true
@@ -23168,7 +23303,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 102,
+  "testFiles": 103,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

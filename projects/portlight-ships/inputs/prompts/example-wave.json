@@ -1,4 +1,5 @@
 {
+  "_todo_canon": "TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)",
   "wave": "wave1",
   "description": "Vehicle / mech — first wave. Subject IDs match this domain's lane id_patterns (ext_, cockpit_, component_, schematic_) so `sdlab generate` will route each candidate into the correct lane instead of default_lane.",
   "defaults": {
