@@ -8,7 +8,9 @@ on:
       - 'runtime/**'
       - 'schemas/**'
       - 'scripts/**'
+      - 'scripts/colab/**'
       - 'tests/**'
+      - 'tests/**/*.py'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/ci.yml'
@@ -78,7 +80,23 @@ jobs:
         # unset.
         env:
           NODE_OPTIONS: ${{ env.COVERAGE_LEG == 'true' && '--test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=junit.xml' || '' }}
-      # The codecov job below uploads what these two steps save; this job
+      - name: Python tests and coverage (Node 22 only)
+        id: pytest
+        if: matrix.node-version == 22
+        run: |
+          python3 -m pip install --user "uv==0.13.5" || pipx install "uv==0.13.5"
+          export PATH="$HOME/.local/bin:$PATH"
+          if uv python install 3.15.1; then
+            PY_TARGET=3.15.1
+          else
+            uv python install 3.13
+            PY_TARGET=3.13
+          fi
+          uv venv .venv-ci --python "${PY_TARGET}"
+          uv pip install --python .venv-ci/bin/python pytest pytest-cov
+          .venv-ci/bin/python --version
+          SDLAB_PYTHON="$(pwd)/.venv-ci/bin/python" .venv-ci/bin/python -m pytest tests/colab             --cov=scripts/colab             --cov-report=term-missing             --cov-report=xml:coverage/coverage-python.xml             --cov-fail-under=90
+      # The codecov job below uploads what these steps save; this job
       # never holds an OIDC token. Coverage is saved when the tests passed,
       # and test results whenever they ran, failures included, because a
       # failing test is what that report exists to show. A save step with no
@@ -90,6 +108,15 @@ jobs:
         with:
           name: codecov-coverage
           path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 3
+          overwrite: true
+      - name: Save Python coverage for Codecov
+        if: ${{ env.COVERAGE_LEG == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codecov-python-coverage
+          path: coverage/coverage-python.xml
           if-no-files-found: error
           retention-days: 3
           overwrite: true
@@ -131,6 +158,11 @@ jobs:
         with:
           pattern: codecov-coverage
           path: coverage
+      - name: Download Python coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: codecov-python-coverage
+          path: coverage
       - name: Download test results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -149,7 +181,18 @@ jobs:
           use_oidc: true
           fail_ci_if_error: true
           disable_search: true
+          flags: javascript
           files: ./coverage/lcov.info
+      - name: Upload Python coverage to Codecov
+        if: ${{ needs.verify.result == 'success' || hashFiles('coverage/coverage-python.xml') != '' }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          version: v11.3.1
+          use_oidc: true
+          fail_ci_if_error: true
+          disable_search: true
+          flags: python
+          files: ./coverage/coverage-python.xml
       - name: Upload test results to Codecov
         if: ${{ needs.verify.result == 'success' || hashFiles('junit.xml') != '' }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
