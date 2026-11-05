@@ -97,6 +97,32 @@ sdlab ingest <dir> --project <name> [--wave <wave.json>] [--dry-run] [--json]
 
 Records land with `judgment: null`, `canon: null`, `provenance.source: "external"`. Never fabricates a judgment, score or caption. Idempotent — existing records are skipped.
 
+### sdlab asset ingest
+
+Register a 3D asset export (a re-rendered turnaround) as provenance-carrying training data. Unlike `sdlab ingest`, which takes images on trust, this takes a contract: the export directory must carry an `asset-source.json` manifest (schema 1.3.0).
+
+```bash
+sdlab asset ingest <dir> --project <name> [--dry-run] [--json]
+```
+
+| Flag | Meaning |
+|---|---|
+| `<dir>` | Export directory containing `asset-source.json` |
+| `--dry-run` | Validate the manifest and run every gate; writes nothing |
+| `--json` | Machine-readable result |
+
+Every declaration is proven against the bytes (schema, path containment, PNG and NPY encodings, categorical channels, and the per-render palette gate). Any violation refuses the whole ingest; nothing registers on a bad manifest. Records land uncurated with `provenance.source: "asset"`, and an `ingest-receipt.json` under `assets/<asset-id>/` lists every written path. Optional fields the manifest left out are reported as notices. Full contract: `docs/asset-lane-design.md`.
+
+### sdlab verify
+
+Verify the release provenance chain offline, record by record.
+
+```bash
+sdlab verify --project <name> [--record <id>] [--snapshot <id>] [--json]
+```
+
+For each record it checks: the owner and CC-BY-4.0 licence on the record; the bound canon entry (`canon_sha` and entry hash); every model and LoRA licence (SPDX id, licence URL, the date it was read, and the file's sha256); and the workflow hash in the run manifest. Any missing link fails the check. Use `--snapshot` to verify everything a release will contain.
+
 ### sdlab sheet
 
 Render an HTML contact sheet over any directory of candidates, for visual triage.
@@ -389,6 +415,18 @@ For every frozen or on-canon-change entry, recompute the watch-field hash and co
 ```bash
 sdlab canon drift --project <name> [--since <build_hash>] [--json]
 ```
+
+### sdlab canon draft
+
+Ask a local model to draft a canon entry and prompts for one class. The model drafts; a person decides.
+
+```bash
+sdlab canon draft <class_id> --endpoint <url> --brief "<text>" --out <path>
+```
+
+The endpoint must be a loopback, OpenAI-compatible server (for example a local `llama-server`); anything else is refused. Output goes to `prompts.jsonl` (plus a `.sha256` file) with `status: "draft"`, `judgment: null`, and `drafted_by_model` / `author_model` on every entry. Any key the model writes that could pre-fill a ratification, judgment or status is stripped.
+
+A draft cannot be frozen until a person ratifies it. The freeze gate refuses a model-drafted entry unless its ratification records `status: "accepted"`, a `human:` approver, a reason, and the sha256 of the exact draft that was approved. Edit the draft after approval and the hash no longer matches, so it must be ratified again.
 
 ---
 
