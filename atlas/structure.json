@@ -1379,7 +1379,7 @@
               "line": 258
             }
           ],
-          "hash": "fa96ad49350b2f65e0093e7ca2c0e4b221198979074f9f5c1083c986705c0806",
+          "hash": "3c692056cfc21ccd20b275bb965d552ec77755f7ef93a6e57aac282f940dcaf5",
           "importOrder": [
             "lib/freeze-stamp.js",
             "lib/errors.js"
@@ -1787,46 +1787,47 @@
           "exports": [
             "assertDirectorRatifiedForFreeze",
             "assertNoSelfVerification",
+            "normalizeModelFamilyKey",
             "ratifyCanonDraft"
           ],
           "failurePaths": [
             {
               "in": "assertNoSelfVerification",
               "kind": "throw",
-              "line": 57
+              "line": 88
             },
             {
               "in": "ratifyCanonDraft",
               "kind": "throw",
-              "line": 83
+              "line": 114
             },
             {
               "in": "ratifyCanonDraft",
               "kind": "throw",
-              "line": 87
+              "line": 118
             },
             {
               "in": "ratifyCanonDraft",
               "kind": "throw",
-              "line": 94
+              "line": 125
             },
             {
               "in": "assertDirectorRatifiedForFreeze",
               "kind": "throw",
-              "line": 130
+              "line": 161
             },
             {
               "in": "assertDirectorRatifiedForFreeze",
               "kind": "throw",
-              "line": 154
+              "line": 186
             },
             {
               "in": "assertDirectorRatifiedForFreeze",
               "kind": "throw",
-              "line": 164
+              "line": 196
             }
           ],
-          "hash": "3d33b590b2a637988a91e321c7c782705bd56a535e92333d23037bc045e61cbd",
+          "hash": "8f6634f583a476779bc152994fd14021c0c3320fd02ed8b8efea335470c2260c",
           "importsFiles": [
             "lib/canon-author.js",
             "lib/errors.js"
@@ -2825,30 +2826,35 @@
             {
               "in": "recordVisionVerdict",
               "kind": "throw",
-              "line": 587
+              "line": 578
             },
             {
               "in": "recordVisionVerdict",
               "kind": "throw",
-              "line": 590
+              "line": 592
             },
             {
               "in": "recordVisionVerdict",
               "kind": "throw",
-              "line": 596
+              "line": 595
             },
             {
               "in": "recordVisionVerdict",
               "kind": "throw",
-              "line": 605
+              "line": 601
             },
             {
               "in": "recordVisionVerdict",
               "kind": "throw",
-              "line": 613
+              "line": 610
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 618
             }
           ],
-          "hash": "74b2056594bef38e8edba80684d0548d50cdf68ccd8550d7f30cc6a3a009f557",
+          "hash": "5b2c98e22fde1282ee09a40665e27a4868dca558dda9f375fa959a6330133cce",
           "importOrder": [
             "lib/freeze-stamp.js",
             "lib/canon-review-gate.js",
@@ -19349,7 +19355,7 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "f2d58e3999f0a54a386d7ca01c085af95af6e5fc08ef807e0815c71da1a46d88",
+          "hash": "f5f3220e4e06f9c98c8dd68ced0c4339c38c312cafbbaf04f87d28eff13e7675",
           "importsFiles": [
             "lib/canon-author.js",
             "lib/canon-review-gate.js",
@@ -20697,7 +20703,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+    "commit": "faf076fa6bd7825f4bbd1321d123ac26cd219e42",
     "tracked": 3236
   },
   "landings": [

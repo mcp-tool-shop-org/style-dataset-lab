@@ -148,6 +148,8 @@ describe('Part C — Lane 2 canon authoring, review gate, and persistent memory 
       assert.equal(draft.class_id, 'cargo_barge');
       assert.equal(draft.status, 'draft');
       assert.equal(draft.judgment, null);
+      assert.equal(draft.canon_entry_draft.status, 'draft');
+      assert.ok(draft.canon_entry_draft.author_model);
       assert.equal(draft.author_model.licence_id, 'Apache-2.0');
       assert.match(draft.messages_sha256, /^sha256:[0-9a-f]{64}$/);
       assert.match(draft.draft_sha256, /^sha256:[0-9a-f]{64}$/);
@@ -161,9 +163,21 @@ describe('Part C — Lane 2 canon authoring, review gate, and persistent memory 
       assert.equal(loaded[0].status, 'draft');
       assert.equal(loaded[0].judgment, null);
 
-      // Gate refuses to freeze while status === 'draft'
+      // Gate refuses to freeze while status === 'draft' (both top-level draft, inner canon_entry_draft, and frontmatter with status: 'draft')
       assert.throws(
         () => assertDirectorRatifiedForFreeze(draft),
+        /CANON_DRAFT_UNRATIFIED/
+      );
+      assert.throws(
+        () => assertDirectorRatifiedForFreeze(draft.canon_entry_draft),
+        /CANON_DRAFT_UNRATIFIED/
+      );
+      assert.throws(
+        () => assertDirectorRatifiedForFreeze({ id: 'cargo_barge_v1', status: 'draft' }),
+        /CANON_DRAFT_UNRATIFIED/
+      );
+      assert.throws(
+        () => assertDirectorRatifiedForFreeze({ id: 'cargo_barge_v1', status: 'ratified' }),
         /CANON_DRAFT_UNRATIFIED/
       );
 
@@ -226,7 +240,45 @@ describe('Part C — Lane 2 canon authoring, review gate, and persistent memory 
       /SELF_VERIFICATION_FORBIDDEN/
     );
 
+    assert.throws(
+      () =>
+        assertNoSelfVerification({
+          authorModel: 'qwen-image:qwen_image_fp8_e4m3fn.safetensors',
+          verifierModel: 'qwen3-vl-30b-a3b-instruct',
+          context: 'render brig_001',
+        }),
+      /SELF_VERIFICATION_FORBIDDEN/
+    );
+
+    assert.throws(
+      () =>
+        assertNoSelfVerification({
+          authorModel: 'google/gemma-4-31B-it',
+          verifierModel: 'gemma-4-9b-it',
+          context: 'canon entry brig_001',
+        }),
+      /SELF_VERIFICATION_FORBIDDEN/
+    );
+
+    assert.throws(
+      () =>
+        assertNoSelfVerification({
+          authorModel: 'internlm/CapRL-InternVL3.5-8B',
+          verifierModel: 'OpenGVLab/InternVL3_5-8B',
+          context: 'caption brig_001',
+        }),
+      /SELF_VERIFICATION_FORBIDDEN/
+    );
+
     // Cross-family or human verifier is allowed
+    const okGemmaOnQwen = assertNoSelfVerification({
+      authorModel: 'qwen-image:qwen_image_fp8_e4m3fn.safetensors',
+      verifierModel: 'gemma-4-31b-it',
+      context: 'render brig_001',
+    });
+    assert.equal(okGemmaOnQwen.ok, true);
+    assert.equal(okGemmaOnQwen.authorFamily, 'family:qwen');
+    assert.equal(okGemmaOnQwen.verifierFamily, 'family:gemma');
     const okHuman = assertNoSelfVerification({
       authorModel: 'Muse-Glimmer-30B-A3B-Q4_K_M.gguf',
       verifierModel: 'human:director',
@@ -531,6 +583,7 @@ describe('Part C — Lane 2 canon authoring, review gate, and persistent memory 
       const verdictsPath = join(tmp, 'verdicts.jsonl');
       assert.ok(ALLOWED_FAILURE_MODES.includes('silhouette_drift'));
 
+      // Omitting authorModel is refused so assertNoSelfVerification cannot be bypassed
       assert.throws(
         () =>
           recordVisionVerdict({
@@ -539,6 +592,45 @@ describe('Part C — Lane 2 canon authoring, review gate, and persistent memory 
             imageSha256: FAKE_SHA_B,
             canonSha: FAKE_SHA_C,
             memorySnapshot: snap2,
+            verifierModel: {
+              name: GLIMMER_DEFAULT_MODEL.name,
+              digest: FAKE_SHA_A,
+              licence_id: 'Apache-2.0',
+            },
+            verdict: 'pass',
+          }),
+        /VERDICT_AUTHOR_MODEL_REQUIRED/
+      );
+
+      // Same-family authorModel and verifierModel is refused in recordVisionVerdict
+      assert.throws(
+        () =>
+          recordVisionVerdict({
+            verdictsPath,
+            windowId: 'win_lane2_02',
+            imageSha256: FAKE_SHA_B,
+            canonSha: FAKE_SHA_C,
+            memorySnapshot: snap2,
+            authorModel: 'qwen-image:qwen_image_fp8_e4m3fn.safetensors',
+            verifierModel: {
+              name: 'qwen3-vl-30b-a3b-instruct',
+              digest: FAKE_SHA_A,
+              licence_id: 'Apache-2.0',
+            },
+            verdict: 'pass',
+          }),
+        /SELF_VERIFICATION_FORBIDDEN/
+      );
+
+      assert.throws(
+        () =>
+          recordVisionVerdict({
+            verdictsPath,
+            windowId: 'win_lane2_02',
+            imageSha256: FAKE_SHA_B,
+            canonSha: FAKE_SHA_C,
+            memorySnapshot: snap2,
+            authorModel: 'qwen-image:qwen_image_fp8_e4m3fn.safetensors',
             verifierModel: {
               name: GLIMMER_DEFAULT_MODEL.name,
               digest: FAKE_SHA_A,
@@ -556,6 +648,7 @@ describe('Part C — Lane 2 canon authoring, review gate, and persistent memory 
         imageSha256: FAKE_SHA_B,
         canonSha: FAKE_SHA_C,
         memorySnapshot: snap2,
+        authorModel: 'qwen-image:qwen_image_fp8_e4m3fn.safetensors',
         verifierModel: {
           name: GLIMMER_DEFAULT_MODEL.name,
           digest: FAKE_SHA_A,

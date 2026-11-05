@@ -75,31 +75,31 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 5,
-      "changed": 5,
+      "added": 0,
+      "changed": 4,
       "moved": 0,
-      "parts": 5,
+      "parts": 2,
       "removed": 0
     },
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-10-01; 5 files added and 5 changed content.",
+        "sentence": "Nothing structural changed since 2026-11-05; 4 files changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "dfeac64ea1a2585b65d88e6ee8a64fd02a185090",
-      "generatedAt": "2026-10-01T02:14:18.418Z"
+      "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+      "generatedAt": "2026-11-05T11:50:38.495Z"
     },
     "unchanged": true
   },
   "changesTogether": [],
   "changesTogetherNote": [
-    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+  "commit": "faf076fa6bd7825f4bbd1321d123ac26cd219e42",
   "defaultBranch": "main",
   "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (238), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
@@ -417,7 +417,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T11:50:38.495Z",
+  "generatedAt": "2026-11-05T14:56:34.042Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 72 reads use paths built at run time and are not named here.",

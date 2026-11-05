@@ -1,14 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit a881cb5 by Atlas 1.24.0.
+Mapped at 2026-11-05 from commit faf076f by Atlas 1.24.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2616 files); code in JavaScript (238), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-10-01 (dfeac64)
+## What changed since 2026-11-05 (a881cb5)
 
-Nothing structural changed since 2026-10-01; 5 files added and 5 changed content.
+Nothing structural changed since 2026-11-05; 4 files changed content.
 
 ## What comes in
 
@@ -64,7 +64,7 @@ CI writes nothing this map can see.
 
 No two source files changed together often enough to name.
 
-Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do.
+Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do.
 
 ## What no test touches
 
