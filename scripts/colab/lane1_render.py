@@ -24,21 +24,71 @@ import time
 import urllib.parse
 import urllib.request
 import zlib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-from comfy_headless import (
-    ComfyClient,
-    __version__ as COMFY_HEADLESS_VERSION,
-    read_png_text_chunks,
-    read_workflow_metadata,
-)
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PY_VERSION_EXPECTED = "3.15.1"
 UV_PIN = "uv==0.13.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
 CLEARED_LICENCES = {"Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "CC-BY-4.0"}
+
+
+@dataclass
+class _WorkflowMetadataFallback:
+    has_prompt: bool
+    prompt: dict[str, Any] | None = None
+
+
+def _read_png_text_chunks_fallback(png_source: Path | bytes) -> dict[str, str]:
+    data = png_source.read_bytes() if isinstance(png_source, Path) else bytes(png_source)
+    if not data.startswith(PNG_SIGNATURE):
+        raise ValueError("PNG_INVALID: bad PNG signature")
+    chunks: dict[str, str] = {}
+    offset = len(PNG_SIGNATURE)
+    size = len(data)
+    while offset + 8 <= size:
+        (length,) = struct.unpack(">I", data[offset : offset + 4])
+        ctype = data[offset + 4 : offset + 8]
+        chunk_end = offset + 8 + length + 4
+        if chunk_end > size:
+            break
+        payload = data[offset + 8 : offset + 8 + length]
+        offset = chunk_end
+        if ctype == b"tEXt":
+            kw, sep, val = payload.partition(b"\x00")
+            if sep:
+                chunks[kw.decode("latin-1", errors="replace")] = val.decode("latin-1", errors="replace")
+        elif ctype == b"IEND":
+            break
+    return chunks
+
+
+def _read_workflow_metadata_fallback(png_source: Path | bytes) -> _WorkflowMetadataFallback:
+    chunks = _read_png_text_chunks_fallback(png_source)
+    raw_prompt = chunks.get("prompt")
+    if not raw_prompt:
+        return _WorkflowMetadataFallback(has_prompt=False, prompt=None)
+    try:
+        parsed = json.loads(raw_prompt)
+        return _WorkflowMetadataFallback(has_prompt=isinstance(parsed, dict) and bool(parsed), prompt=parsed)
+    except Exception:
+        return _WorkflowMetadataFallback(has_prompt=False, prompt=None)
+
+
+try:
+    from comfy_headless import (
+        ComfyClient,
+        __version__ as COMFY_HEADLESS_VERSION,
+        read_png_text_chunks,
+        read_workflow_metadata,
+    )
+except ImportError:
+    ComfyClient = None  # type: ignore[assignment]
+    COMFY_HEADLESS_VERSION = "0.1.0-fallback"
+    read_png_text_chunks = _read_png_text_chunks_fallback
+    read_workflow_metadata = _read_workflow_metadata_fallback
 
 STAMP_KEYS = {
     "owner": "sdlab:owner",
@@ -318,11 +368,13 @@ def write_window_json(
     cap: float = 0.05,
     wall_s: int = 3000,
     margin: float = 0.01,
+    expected_python: str | None = None,
 ) -> dict[str, Any]:
     host, port = assert_loopback_url(comfy_url)
     py_ver = sys.version.split()[0]
-    if py_ver != PY_VERSION_EXPECTED:
-        raise ValueError(f"LANE1_PYTHON_VERSION_MISMATCH: venv python is {py_ver}, expected {PY_VERSION_EXPECTED}")
+    exp_py = expected_python or os.environ.get("SDLAB_EXPECTED_PYTHON", PY_VERSION_EXPECTED)
+    if py_ver != exp_py:
+        raise ValueError(f"LANE1_PYTHON_VERSION_MISMATCH: venv python is {py_ver}, expected {exp_py}")
     py_sha = sha256_file(Path(sys.executable))
     try:
         uv_out = subprocess.run(["uv", "--version"], capture_output=True, text=True, timeout=10, check=False).stdout.strip()
@@ -430,6 +482,9 @@ def run_queue(
     copy_back_dir: Path | None = None,
     copy_back_every: int = 5,
     kill_after: int | None = None,
+    client: Any | None = None,
+    image_downloader: Any | None = None,
+    system_stats_fetcher: Any | None = None,
 ) -> dict[str, Any]:
     assert_loopback_url(comfy_url)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -437,11 +492,15 @@ def run_queue(
     current_json = renders_path.parent / "current.json"
 
     # Query /system_stats to log device & prove CPU execution
-    with urllib.request.urlopen(f"{comfy_url.rstrip('/')}/system_stats", timeout=15) as resp:
-        sys_stats = json.loads(resp.read().decode("utf-8"))
+    if system_stats_fetcher is not None:
+        sys_stats = system_stats_fetcher(comfy_url)
+    else:
+        with urllib.request.urlopen(f"{comfy_url.rstrip('/')}/system_stats", timeout=15) as resp:
+            sys_stats = json.loads(resp.read().decode("utf-8"))
     print(f"COMFY_SYSTEM_STATS {json.dumps(sys_stats)}", flush=True)
 
-    client = ComfyClient(base_url=comfy_url)
+    active_client = client if client is not None else ComfyClient(base_url=comfy_url)
+    active_downloader = image_downloader if image_downloader is not None else download_comfy_image
     jobs = [json.loads(line) for line in jobs_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     completed = load_completed(renders_path, out_dir)
     completed_files = {r["output_file"] for r in completed.values()}
@@ -478,15 +537,15 @@ def run_queue(
         }
         extra_pnginfo = {STAMP_KEYS[k]: v for k, v in stamp_meta.items() if v}
 
-        prompt_id = client.queue_prompt(workflow, extra_pnginfo=extra_pnginfo)
+        prompt_id = active_client.queue_prompt(workflow, extra_pnginfo=extra_pnginfo)
         if not prompt_id:
             raise RuntimeError(f"Failed to queue prompt for job {job_id}")
-        history_entry = client.wait_for_completion(prompt_id, timeout=120.0, poll_interval=0.2)
+        history_entry = active_client.wait_for_completion(prompt_id, timeout=120.0, poll_interval=0.2)
         if not history_entry:
             raise RuntimeError(f"Timed out waiting for prompt {prompt_id} (job {job_id})")
 
         img_info = pick_history_image(history_entry)
-        raw_png = download_comfy_image(
+        raw_png = active_downloader(
             comfy_url,
             img_info["filename"],
             img_info.get("subfolder", ""),
@@ -571,7 +630,7 @@ def run_queue(
     return summary
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="sdlab Lane 1 headless ComfyUI render driver")
     parser.add_argument("--cpu", action="store_true", help="Force CPU-only mode (CUDA_VISIBLE_DEVICES='')")
     parser.add_argument("--bootstrap", action="store_true", help="Write window.json and verify weight manifest")
@@ -587,7 +646,7 @@ def main() -> int:
     parser.add_argument("--copy-back-dir", type=Path, help="Optional periodic copy-back directory")
     parser.add_argument("--copy-back-every", type=int, default=2, help="Copy-back interval (number of renders)")
     parser.add_argument("--kill-after", type=int, default=None, help="Stop after K rendered jobs to test resume")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.cpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
