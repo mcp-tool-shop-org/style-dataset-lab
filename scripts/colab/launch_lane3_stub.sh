@@ -15,9 +15,10 @@ PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_AI_TOOLKIT_REPO="https://github.com/ostris/ai-toolkit.git"
 PINNED_AI_TOOLKIT_COMMIT="73ebae1334d2c98089f1b90f8cb19257825f891a"
 PINNED_OVERRIDE_SHA="42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc9e3a9"
-PINNED_LAUNCH_GUARDS_SHA="82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25"
-PINNED_COLAB_WINDOW_SHA="7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372"
-PINNED_SELF_SHA="337a7a4d984f47e1888f03f50ef64cfb6b80a84b6322933056be4a029572e7e0"
+PINNED_LAUNCH_GUARDS_SHA="579381561d719b7c09fedd3e879fd45945c71c8415b93544ebceb7fd0656f973"
+PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
+PINNED_COLAB_WINDOW_SHA="6de52d3e18ce87995834e3976a0e5d258176cd1d5175aa81a22248695123977f"
+PINNED_SELF_SHA="eb24de781870e1f025344eac0b047ffbbcc5e72b3a58719a50f6102d1cc17e74"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -56,18 +57,21 @@ mkdir -p "${OUT_DIR}"
 PY_BIN="$(colab_resolve_python)"
 GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
 OVERRIDE_TXT="${SCRIPT_DIR}/ai-toolkit-override-py315.txt"
+RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 
 colab_guard_fake_cli_if_test
 
 EXP_OVERRIDE_SHA="${EXPECTED_OVERRIDE_SHA:-${PINNED_OVERRIDE_SHA}}"
 EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
+EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${PINNED_REMOTE_RUNNER_SHA}}"
 EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
 EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE3_STUB_SHA:-${PINNED_SELF_SHA}}"
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${OVERRIDE_TXT}=${EXP_OVERRIDE_SHA}" \
   "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
+  "${RUNNER_PY}=${EXP_RUNNER_SHA}" \
   "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
   "${SELF_SH}=${EXP_SELF_SHA}")"
 
@@ -131,11 +135,11 @@ set -euo pipefail
 export CUDA_VISIBLE_DEVICES=""
 mkdir -p /content/lane3_out /content/lane3_out/checkpoints
 
-PINNED_UV_VERSION="${PINNED_UV_VERSION}"
-PINNED_PYTHON_VERSION="${PINNED_PYTHON_VERSION}"
-PINNED_PYTORCH_INDEX_URL="${PINNED_PYTORCH_INDEX_URL}"
-PINNED_AI_TOOLKIT_REPO="${PINNED_AI_TOOLKIT_REPO}"
-PINNED_AI_TOOLKIT_COMMIT="${PINNED_AI_TOOLKIT_COMMIT}"
+: "\${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
+: "\${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
+: "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
+: "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
+: "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 
 (
   while true; do
@@ -307,9 +311,19 @@ colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null
 colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 
 colab_run_exec_with_live_guards \
-  "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "bash /content/remote_lane3_stub.sh" \
-  "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
+  "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \
+  "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}" \
+  "SDLAB_REMOTE_SCRIPT=/content/remote_lane3_stub.sh" \
+  "PINNED_UV_VERSION=${PINNED_UV_VERSION}" \
+  "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
+  "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
+  "PINNED_AI_TOOLKIT_REPO=${PINNED_AI_TOOLKIT_REPO}" \
+  "PINNED_AI_TOOLKIT_COMMIT=${PINNED_AI_TOOLKIT_COMMIT}"
 
 # Download result tar before EXIT trap stops the session
 colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+if [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
+  echo "REFUSED: downloaded bundle ${OUT_DIR}/lane3_stub_bundle.tar.gz is missing or empty" >&2
+  exit 1
+fi
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"

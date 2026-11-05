@@ -1,4 +1,4 @@
-"""Tests for scripts/colab/launch_lane1_stub.sh against a fake colab CLI (Part C)."""
+"""Tests for scripts/colab/launch_lane1_stub.sh against the contract-checked fake colab CLI."""
 
 from __future__ import annotations
 
@@ -7,12 +7,19 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LAUNCHER = REPO_ROOT / "scripts" / "colab" / "launch_lane1_stub.sh"
+RUNNER_PY = REPO_ROOT / "scripts" / "colab" / "remote_runner.py"
+sys.path.insert(0, str(REPO_ROOT / "tests" / "colab" / "fixtures"))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "colab"))
+
+import fake_colab as fc  # noqa: E402
+import remote_runner as rr  # noqa: E402
 
 
 def _find_bash() -> str:
@@ -25,153 +32,11 @@ def _find_bash() -> str:
 
 
 def _to_posix(p: Path) -> str:
-    s = p.resolve().as_posix()
-    if len(s) >= 2 and s[1] == ":":
-        return f"/{s[0].lower()}{s[2:]}"
-    return s
+    return fc._to_posix(p)
 
 
 def _make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
-    bin_dir = tmp_path / "fake_bin"
-    bin_dir.mkdir(parents=True, exist_ok=True)
-    state_dir = tmp_path / "colab_state"
-    state_dir.mkdir(parents=True, exist_ok=True)
-    lock_file = tmp_path / "colab-window-open.lock"
-
-    fake_colab = bin_dir / "colab"
-    fake_colab.write_text(
-        """#!/usr/bin/env bash
-#SDLAB_FAKE_COLAB_CLI=1
-set -euo pipefail
-
-STATE_DIR="${FAKE_COLAB_STATE_DIR:?missing FAKE_COLAB_STATE_DIR}"
-LOCK_FILE="${COLAB_OPEN_LOCK:-/tmp/colab-window-open.lock}"
-echo "CALL $*" >> "${STATE_DIR}/calls.log"
-
-sub="${1:-}"
-shift || true
-
-case "${sub}" in
-  usage)
-    count_file="${STATE_DIR}/usage_count.txt"
-    c=0
-    if [ -f "${count_file}" ]; then
-      c="$(cat "${count_file}")"
-    fi
-    c=$((c + 1))
-    echo "${c}" > "${count_file}"
-    if [ "${FAKE_COLAB_MODE:-success}" = "cap_burn" ] && [ "${c}" -ge 2 ]; then
-      echo '{"balance_ccu": 9.75, "rate_ccu_per_hour": 0.26}'
-    else
-      echo '{"balance_ccu": 9.85, "rate_ccu_per_hour": 0.26}'
-    fi
-    ;;
-  sessions)
-    echo "SESSION_LIST_AFTER_STOP" >> "${STATE_DIR}/sessions.log"
-    echo "No active sessions."
-    ;;
-  new)
-    if command -v flock >/dev/null 2>&1; then
-      if flock -n "${LOCK_FILE}" -c "true" 2>/dev/null; then
-        echo "LOCK_HELD=0" >> "${STATE_DIR}/lock.log"
-      else
-        echo "LOCK_HELD=1" >> "${STATE_DIR}/lock.log"
-      fi
-    else
-      if [ -d "${LOCK_FILE}.lockdir" ] || [ -f "${LOCK_FILE}.held" ]; then
-        echo "LOCK_HELD=1" >> "${STATE_DIR}/lock.log"
-      else
-        echo "LOCK_HELD=0" >> "${STATE_DIR}/lock.log"
-      fi
-    fi
-    echo "Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_lane1_999&port=8188"
-    echo "OAuth access_token=ya29.secret_oauth_lane1_888"
-    ;;
-  upload)
-    echo "UPLOAD_OK $*" >> "${STATE_DIR}/uploads.log"
-    ;;
-  exec)
-    if [ "${FAKE_COLAB_MODE:-success}" = "fail" ]; then
-      echo "Simulated remote failure with colab-runtime-proxy-token=secret_proxy_tok_lane1_999" >&2
-      exit 42
-    elif [ "${FAKE_COLAB_MODE:-success}" = "wall" ]; then
-      echo "Simulated hung child ignoring inner timeout"
-      for _ in $(seq 1 40); do
-        sleep 0.2
-      done
-      exit 0
-    elif [ "${FAKE_COLAB_MODE:-success}" = "dead_harness" ]; then
-      echo "=== VITALS 2026-11-05T12:01:00Z ==="
-      echo "CGROUP_MEM: oom_kill 0"
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      echo "=== VITALS 2026-11-05T12:01:15Z ==="
-      echo "CGROUP_MEM: oom_kill 0"
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      for _ in $(seq 1 60); do
-        sleep 0.2
-      done
-      exit 0
-    elif [ "${FAKE_COLAB_MODE:-success}" = "stall" ]; then
-      echo "=== VITALS 2026-11-05T12:00:00Z ==="
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      for _ in $(seq 1 60); do
-        sleep 0.2
-      done
-      exit 0
-    elif [ "${FAKE_COLAB_MODE:-success}" = "cap_burn" ]; then
-      echo "=== VITALS 2026-11-05T12:00:00Z ==="
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      for _ in $(seq 1 60); do
-        sleep 0.2
-      done
-      exit 0
-    fi
-    echo "=== VITALS 2026-11-05T12:00:00Z ==="
-    echo "CGROUP_MEM_CURRENT: 536870912"
-    echo "CGROUP_MEM_MAX: 12884901888"
-    echo "MEM: MemTotal: 12582912 kB"
-    echo "PROC:"
-    echo "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-    echo 'HARNESS: {"phase": "run", "step": 1}'
-    echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
-    echo "LANE1_STUB_OK python=3.15.1 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
-    ;;
-  download)
-    # Last arg is local destination path
-    dest="${@: -1}"
-    mkdir -p "$(dirname "${dest}")"
-    printf 'FAKE_TAR_BYTES' > "${dest}"
-    ;;
-  stop)
-    echo "STOP $*" >> "${STATE_DIR}/stops.log"
-    ;;
-  *)
-    echo "UNKNOWN_SUBCOMMAND ${sub}" >&2
-    exit 2
-    ;;
-esac
-""",
-        encoding="utf-8",
-        newline="\n",
-    )
-    fake_colab.chmod(fake_colab.stat().st_mode | stat.S_IEXEC)
-
-    env = os.environ.copy()
-    env["PATH"] = f"{_to_posix(bin_dir)}:{bin_dir}{os.pathsep}{env.get('PATH', '')}"
-    env["FAKE_COLAB_STATE_DIR"] = _to_posix(state_dir)
-    env["COLAB_OPEN_LOCK"] = _to_posix(lock_file)
-    env["SDLAB_TEST_FAKE_COLAB"] = "1"
-    return bin_dir, state_dir, env
+    return fc.make_fake_colab_env(tmp_path)
 
 
 def test_real_colab_cli_guard_refuses_when_not_fake(tmp_path: Path) -> None:
@@ -287,12 +152,21 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
     # Independent wall guard stops session even when child sleeps past wall
     _, state_dir_wall, env_wall = _make_fake_colab_env(tmp_path / "wall_case")
     env_wall["FAKE_COLAB_MODE"] = "wall"
-    env_wall["WALL_S"] = "2"
-    env_wall["GRACE_S"] = "1"
     out_wall = tmp_path / "out_wall"
 
     res_wall = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_wall), "--session", "sdlab-l1-wall"],
+        [
+            _find_bash(),
+            _to_posix(LAUNCHER),
+            "--out-dir",
+            _to_posix(out_wall),
+            "--session",
+            "sdlab-l1-wall",
+            "--wall-s",
+            "2",
+            "--grace-s",
+            "1",
+        ],
         env=env_wall,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -315,12 +189,12 @@ def test_kit_pins_self_sha_comfyui_commit_comfy_headless_and_pytorch_index(tmp_p
         "PINNED_COMFY_HEADLESS_SPEC=",
         "PINNED_LANE1_RENDER_SHA=",
         "PINNED_LAUNCH_GUARDS_SHA=",
+        "PINNED_REMOTE_RUNNER_SHA=",
         "PINNED_COLAB_WINDOW_SHA=",
         "PINNED_SELF_SHA=",
     ):
         assert required_var in kit_text, f"Missing top-of-kit pin variable {required_var}"
 
-    # Must not use unpinned `git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git` without checkout
     assert "comfy-headless==" in kit_text
     assert "https://download.pytorch.org/whl/cu130" in kit_text
     assert "git -C /content/ComfyUI checkout" in kit_text
@@ -381,7 +255,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert "STALL_GUARD_TRIPPED" in (out_st / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l1-stall" in (state_st / "stops.log").read_text(encoding="utf-8")
 
-    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session
+    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session (in text format)
     _, state_cap, env_cap = _make_fake_colab_env(tmp_path / "cap_case")
     env_cap["FAKE_COLAB_MODE"] = "cap_burn"
     env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
@@ -398,6 +272,10 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert res_cap.returncode != 0
     assert "CAP_GUARD_TRIPPED" in (out_cap / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l1-cap" in (state_cap / "stops.log").read_text(encoding="utf-8")
+    usage_log_cap = (out_cap / "usage.log").read_text(encoding="utf-8")
+    assert "Current balance: 9.85 compute units" in usage_log_cap
+    assert "Current balance: 9.75 compute units" in usage_log_cap
+    assert "balance_ccu" not in usage_log_cap
 
     # 4. Normal success merges VM facts, balances, rate_measured, downloaded_files sha, and logs sessions + closing usage
     _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "merge_case")
@@ -420,8 +298,189 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert win["start_balance"] == 9.85
     assert win["end_balance"] == 9.85
     assert win["rate_measured"] == 0.26
+    assert win["rate_source"] == "measured"
+    assert win["usage_parse_error"] is None
     assert "lane1_stub_bundle.tar.gz" in win["downloaded_files"]
     assert (state_ok / "sessions.log").exists()
     remote_sh = (out_ok / "remote_lane1_stub.sh").read_text(encoding="utf-8")
     assert "--scrub-file" in remote_sh
 
+
+def test_fake_colab_refuses_positional_exec_command(tmp_path: Path) -> None:
+    _, _, env = _make_fake_colab_env(tmp_path)
+    os.environ["FAKE_COLAB_STATE_DIR"] = env["FAKE_COLAB_STATE_DIR"]
+    rc = fc.main(["exec", "-s", "X", "bash /content/remote_lane1_stub.sh"])
+    assert rc != 0
+
+
+def test_fake_colab_refuses_unknown_flag_on_each_subcommand(tmp_path: Path) -> None:
+    _, _, env = _make_fake_colab_env(tmp_path)
+    os.environ["FAKE_COLAB_STATE_DIR"] = env["FAKE_COLAB_STATE_DIR"]
+    for subcmd in ("sessions", "new", "upload", "exec", "download", "stop", "usage"):
+        rc = fc.main([subcmd, "--not-a-real-colab-flag"])
+        assert rc != 0, f"Expected fake_colab to refuse unknown flag on {subcmd}"
+
+
+def test_lane1_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: Path) -> None:
+    _, state_dir, env = _make_fake_colab_env(tmp_path)
+    out_dir = tmp_path / "out_contract"
+    res = subprocess.run(
+        [
+            _find_bash(),
+            _to_posix(LAUNCHER),
+            "--out-dir",
+            _to_posix(out_dir),
+            "--session",
+            "sdlab-l1-contract",
+            "--wall-s",
+            "900",
+            "--grace-s",
+            "60",
+        ],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res.returncode == 0, f"STDERR:\n{res.stderr}"
+    calls = [
+        json.loads(line)
+        for line in (state_dir / "calls.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    exec_calls = [c for c in calls if c["subcmd"] == "exec"]
+    assert len(exec_calls) == 1
+    ec = exec_calls[0]
+    assert ec["positionals"] == []
+    f_vals = ec["parsed_opts"].get("-f") or ec["parsed_opts"].get("--file")
+    assert f_vals and f_vals[-1].endswith(".py")
+    timeout_val = float(ec["parsed_opts"]["--timeout"][-1])
+    assert timeout_val > 900.0
+    assert timeout_val == 1020.0
+    env_kv = ec["parsed_opts"].get("--env", [])
+    assert any(kv.endswith("/content/remote_lane1_stub.sh") and kv.startswith("SDLAB_REMOTE_SCRIPT=") for kv in env_kv)
+    assert any(kv.startswith("PINNED_COMFYUI_COMMIT=") for kv in env_kv)
+
+
+def test_remote_runner_py_streams_output_and_prints_sdlab_remote_rc(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, _, env = _make_fake_colab_env(tmp_path)
+    script = tmp_path / "sample_remote.sh"
+    script.write_text(
+        "#!/usr/bin/env bash\n"
+        "echo 'LINE_ONE_FROM_SH'\n"
+        "echo 'LINE_TWO_STDERR' >&2\n"
+        "exit 7\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    rc = rr.run_remote_script(_to_posix(script), env=env)
+    captured = capsys.readouterr()
+    assert rc == 7
+    assert "LINE_ONE_FROM_SH" in captured.out
+    assert "LINE_TWO_STDERR" in captured.out
+    assert "SDLAB_REMOTE_RC=7" in captured.out.splitlines()[-1]
+
+    # Missing SDLAB_REMOTE_SCRIPT returns 2 and prints SDLAB_REMOTE_RC=2
+    rc_missing = rr.run_remote_script("", env={})
+    cap_missing = capsys.readouterr()
+    assert rc_missing == 2
+    assert "SDLAB_REMOTE_RC=2" in cap_missing.out
+
+    # Direct CLI invocation of remote_runner.py covers __main__ entrypoint
+    cli_env = dict(env)
+    cli_env["SDLAB_REMOTE_SCRIPT"] = _to_posix(script)
+    cli_res = subprocess.run(
+        [sys.executable, str(RUNNER_PY)],
+        env=cli_env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cli_res.returncode == 0
+    assert "SDLAB_REMOTE_RC=7" in cli_res.stdout
+
+
+def test_usage_text_parsed_into_live_balance_and_rate_in_window_json(tmp_path: Path) -> None:
+    _, _, env = _make_fake_colab_env(tmp_path)
+    env["FAKE_COLAB_USAGE_TEXT"] = (
+        "Current balance: 14.32 compute units\n"
+        "Usage rate: 0.42/hr\n"
+        "Active assignments: 2"
+    )
+    out_dir = tmp_path / "out_usage_ok"
+    res = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-usage"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res.returncode == 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["start_balance"] == 14.32
+    assert win["end_balance"] == 14.32
+    assert win["rate_measured"] == 0.42
+    assert win["rate_for_projection"] == 0.42
+    assert win["rate_source"] == "measured"
+    assert win["usage_parse_error"] is None
+
+
+def test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0(tmp_path: Path) -> None:
+    # 1. Refuses to START (before `colab new`, so no session is opened) when first usage read fails to parse
+    _, state_start, env_start = _make_fake_colab_env(tmp_path / "usage_start_case")
+    env_start["FAKE_COLAB_MODE"] = "usage_fail_start"
+    out_start = tmp_path / "out_usage_start"
+    res_start = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_start), "--session", "sdlab-l1-ustart"],
+        env=env_start,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_start.returncode != 0
+    guards_start = (out_start / "guards.log").read_text(encoding="utf-8")
+    assert "COLAB_USAGE_PARSE_FAILED" in guards_start
+    calls_start = (state_start / "calls.log").read_text(encoding="utf-8")
+    assert "CALL new" not in calls_start, "colab new must not be called when initial usage read fails"
+    assert not (state_start / "stops.log").exists()
+
+    win_start_raw = (out_start / "window.json").read_text(encoding="utf-8")
+    win_start = json.loads(win_start_raw)
+    assert win_start["start_balance"] is None
+    assert win_start["end_balance"] is None
+    assert "COLAB_USAGE_PARSE_FAILED" in (win_start["usage_parse_error"] or "")
+    assert "10.0" not in win_start_raw
+
+    # 2. Stops mid-run on a later failed usage read and closes the session
+    _, state_mid, env_mid = _make_fake_colab_env(tmp_path / "usage_mid_case")
+    env_mid["FAKE_COLAB_MODE"] = "usage_fail_midrun"
+    env_mid["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_mid = tmp_path / "out_usage_mid"
+    res_mid = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_mid), "--session", "sdlab-l1-umid"],
+        env=env_mid,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_mid.returncode != 0
+    guards_mid = (out_mid / "guards.log").read_text(encoding="utf-8")
+    assert "COLAB_USAGE_PARSE_FAILED" in guards_mid
+    assert "STOP -s sdlab-l1-umid" in (state_mid / "stops.log").read_text(encoding="utf-8")
+    win_mid_raw = (out_mid / "window.json").read_text(encoding="utf-8")
+    win_mid = json.loads(win_mid_raw)
+    assert win_mid["start_balance"] == 9.85
+    assert win_mid["end_balance"] is None
+    assert "COLAB_USAGE_PARSE_FAILED" in (win_mid["usage_parse_error"] or "")
+    assert "10.0" not in win_mid_raw
