@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+# Stub launch kit for Lane 1 (render) Colab CPU high-mem window (Part C, PR #45).
+# Checks pinned input sha256s (including itself) before opening, holds /tmp/colab-window-open.lock,
+# opens CPU --high-mem, runs CPython 3.15.1 uv venv + pinned ComfyUI --cpu + comfy-headless + 64x64
+# fixture render + stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap,
+# vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges
+# VM facts/balances/rate/downloaded shas into window.json, and stops its own session in an EXIT trap.
+set -euo pipefail
+
+PINNED_UV_VERSION="0.13.5"
+PINNED_PYTHON_VERSION="3.15.1"
+PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
+PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
+PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
+PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
+PINNED_LANE1_RENDER_SHA="75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013"
+PINNED_LAUNCH_GUARDS_SHA="82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25"
+PINNED_COLAB_WINDOW_SHA="7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372"
+PINNED_SELF_SHA="80c723ad4c72532ed0394abd493a93e750b5106122581f883b910db53edbd880"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
+# shellcheck source=scripts/colab/colab_window.sh
+source "${SCRIPT_DIR}/colab_window.sh"
+
+CARD="${CARD:-CPU-high-mem}"
+SESSION="sdlab-lane1-stub-$(date -u +%Y%m%dT%H%M%SZ)"
+OUT_DIR=""
+CAP="${CAP:-0.05}"
+WALL_S="${WALL_S:-900}"
+GRACE_S="${GRACE_S:-60}"
+MARGIN="${MARGIN:-0.01}"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --card) CARD="$2"; shift 2 ;;
+    --session) SESSION="$2"; shift 2 ;;
+    --out-dir) OUT_DIR="$2"; shift 2 ;;
+    --cap) CAP="$2"; shift 2 ;;
+    --wall-s) WALL_S="$2"; shift 2 ;;
+    --grace-s) GRACE_S="$2"; shift 2 ;;
+    --margin) MARGIN="$2"; shift 2 ;;
+    *)
+      echo "REFUSED: unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [ -z "${OUT_DIR}" ]; then
+  OUT_DIR="/tmp/${SESSION}"
+fi
+mkdir -p "${OUT_DIR}"
+
+PY_BIN="$(colab_resolve_python)"
+GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
+LANE1_PY="${SCRIPT_DIR}/lane1_render.py"
+WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
+
+colab_guard_fake_cli_if_test
+
+EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${PINNED_LANE1_RENDER_SHA}}"
+EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
+EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
+EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE1_STUB_SHA:-${PINNED_SELF_SHA}}"
+
+SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
+  "${LANE1_PY}=${EXP_LANE1_SHA}" \
+  "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
+  "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
+  "${SELF_SH}=${EXP_SELF_SHA}")"
+
+OPENED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+START_EPOCH="$(date -u +%s)"
+SESSION_OPENED=0
+WALL_WATCHER_PID=""
+EXEC_PID=""
+
+cleanup_on_exit() {
+  local rc=$?
+  trap - EXIT TERM INT
+  if [ -n "${EXEC_PID}" ]; then
+    pkill -P "${EXEC_PID}" 2>/dev/null || true
+    kill -9 "${EXEC_PID}" 2>/dev/null || true
+  fi
+  if [ -n "${WALL_WATCHER_PID}" ]; then
+    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
+    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
+  fi
+  if [ "${SESSION_OPENED}" -eq 1 ]; then
+    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
+  fi
+  local closed_at
+  closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  colab_write_window_and_outcome \
+    "${PY_BIN}" "${OUT_DIR}" "render" "${SESSION}" "${CARD}" \
+    "${CAP}" "${WALL_S}" "${GRACE_S}" "${MARGIN}" \
+    "${OPENED_AT}" "${closed_at}" "${rc}" "${SHAS_JSON}" || true
+  colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" || true
+  exit "${rc}"
+}
+trap cleanup_on_exit EXIT
+trap 'exit 143' TERM INT
+
+# Pre-open cap and host-RAM check via launch_guards.py
+colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
+
+# Independent wall watcher (cannot be blocked by a child timeout)
+WALL_INT="${WALL_S%.*}"
+GRACE_INT="${GRACE_S%.*}"
+WALL_LIMIT_S="$(( WALL_INT > GRACE_INT ? WALL_INT - GRACE_INT : 1 ))"
+MAIN_PID="$$"
+(
+  exec >/dev/null 2>&1 </dev/null
+  sleep "${WALL_LIMIT_S}"
+  echo "WALL_GUARD_TRIPPED after ${WALL_LIMIT_S}s" >> "${OUT_DIR}/guards.log"
+  kill -TERM "${MAIN_PID}" 2>/dev/null || true
+) &
+WALL_WATCHER_PID="$!"
+
+# Hold /tmp/colab-window-open.lock while opening with colab new (--high-mem default)
+SESSION_OPENED=1
+colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
+colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
+
+REMOTE_RUNNER="${OUT_DIR}/remote_lane1_stub.sh"
+cat > "${REMOTE_RUNNER}" << REMOTEEOF
+#!/usr/bin/env bash
+set -euo pipefail
+export CUDA_VISIBLE_DEVICES=""
+mkdir -p /content/lane1_out
+
+PINNED_UV_VERSION="${PINNED_UV_VERSION}"
+PINNED_PYTHON_VERSION="${PINNED_PYTHON_VERSION}"
+PINNED_PYTORCH_INDEX_URL="${PINNED_PYTORCH_INDEX_URL}"
+PINNED_COMFYUI_REPO="${PINNED_COMFYUI_REPO}"
+PINNED_COMFYUI_COMMIT="${PINNED_COMFYUI_COMMIT}"
+PINNED_COMFY_HEADLESS_SPEC="${PINNED_COMFY_HEADLESS_SPEC}"
+
+(
+  while true; do
+    {
+      echo "=== VITALS \$(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+      if [ -f /sys/fs/cgroup/memory.current ]; then
+        echo "CGROUP_MEM_CURRENT: \$(cat /sys/fs/cgroup/memory.current)" || true
+      fi
+      if [ -f /sys/fs/cgroup/memory.max ]; then
+        echo "CGROUP_MEM_MAX: \$(cat /sys/fs/cgroup/memory.max)" || true
+      fi
+      if [ -f /sys/fs/cgroup/memory.events ]; then
+        sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
+      fi
+      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      echo "PROC:"
+      ps -ef | grep -E "comfy|main\.py|lane1_render\.py" | grep -v grep || true
+      echo 'HARNESS: {"phase": "run"}'
+    } | tee -a /content/lane1_out/vitals.log
+    sleep 15
+  done
+) &
+VITALS_PID="\$!"
+trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
+
+pip install --quiet "uv==\${PINNED_UV_VERSION}"
+uv python install "\${PINNED_PYTHON_VERSION}"
+uv venv /content/venv-lane1 --python "\${PINNED_PYTHON_VERSION}" --seed
+source /content/venv-lane1/bin/activate
+
+if [ ! -d /content/ComfyUI ]; then
+  git clone "\${PINNED_COMFYUI_REPO}" /content/ComfyUI
+fi
+git -C /content/ComfyUI fetch --depth 1 origin "\${PINNED_COMFYUI_COMMIT}" || true
+git -C /content/ComfyUI checkout "\${PINNED_COMFYUI_COMMIT}"
+ACTUAL_COMFYUI_COMMIT="\$(git -C /content/ComfyUI rev-parse HEAD)"
+if [ "\${ACTUAL_COMFYUI_COMMIT}" != "\${PINNED_COMFYUI_COMMIT}" ]; then
+  echo "REFUSED: ComfyUI commit mismatch: got \${ACTUAL_COMFYUI_COMMIT}, expected \${PINNED_COMFYUI_COMMIT}" >&2
+  exit 1
+fi
+
+uv pip install -r /content/ComfyUI/requirements.txt \
+  --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
+  --index-strategy unsafe-best-match
+uv pip install "\${PINNED_COMFY_HEADLESS_SPEC}"
+python -c "from comfy_headless import ComfyClient; assert ComfyClient is not None"
+
+python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \
+  > /content/lane1_out/comfyui.log 2>&1 &
+COMFY_PID="\$!"
+
+for _ in \$(seq 1 60); do
+  if curl -sf http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
+cat > /content/lane1_out/jobs.jsonl << 'JOBSEOF'
+{"job_id":"stub_01","run_id":"run_stub_01","template_id":"stub_fixture_64","seed":101,"width":64,"height":64,"canon_sha":"a881cb5ba656e0618080d2269498fda7f36ac93a","entry_id":"ships/brig","entry_sha256":"sha256:1111111111111111111111111111111111111111111111111111111111111111","workflow_sha":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+{"job_id":"stub_02","run_id":"run_stub_01","template_id":"stub_fixture_64","seed":102,"width":64,"height":64,"canon_sha":"a881cb5ba656e0618080d2269498fda7f36ac93a","entry_id":"ships/brig","entry_sha256":"sha256:1111111111111111111111111111111111111111111111111111111111111111","workflow_sha":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+JOBSEOF
+
+set +e
+python /content/lane1_render.py \
+  --cpu --bootstrap \
+  --comfy-pid "\${COMFY_PID}" \
+  --comfyui-commit "\${PINNED_COMFYUI_COMMIT}" \
+  --window-json /content/lane1_out/vm_window.json \
+  --jobs /content/lane1_out/jobs.jsonl \
+  --renders /content/lane1_out/renders.jsonl \
+  --out-dir /content/lane1_out/pngs \
+  --copy-back-dir /content/lane1_out/copy_back \
+  --copy-back-every 1 \
+  --kill-after 1
+RC1=\$?
+set -e
+if [ "\${RC1}" -ne 75 ]; then
+  echo "Expected exit 75 on deliberate kill-after=1, got \${RC1}" >&2
+  exit 1
+fi
+
+SHA_BEFORE="\$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print \$1}')"
+
+python /content/lane1_render.py \
+  --cpu \
+  --jobs /content/lane1_out/jobs.jsonl \
+  --renders /content/lane1_out/renders.jsonl \
+  --out-dir /content/lane1_out/pngs \
+  --copy-back-dir /content/lane1_out/copy_back \
+  --copy-back-every 1
+
+SHA_AFTER="\$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print \$1}')"
+SHA_COPY="\$(sha256sum /content/lane1_out/copy_back/stub_01.png | awk '{print \$1}')"
+if [ "\${SHA_BEFORE}" != "\${SHA_AFTER}" ] || [ "\${SHA_BEFORE}" != "\${SHA_COPY}" ]; then
+  echo "Resume hash mismatch: before=\${SHA_BEFORE} after=\${SHA_AFTER} copy=\${SHA_COPY}" >&2
+  exit 1
+fi
+
+kill "\${COMFY_PID}" 2>/dev/null || true
+while IFS= read -r -d '' f; do
+  python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
+tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
+REMOTEEOF
+
+colab upload -s "${SESSION}" "${LANE1_PY}" /content/lane1_render.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+
+colab_run_exec_with_live_guards \
+  "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "bash /content/remote_lane1_stub.sh" \
+  "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
+
+# Download result tar before EXIT trap stops the session
+colab download -s "${SESSION}" /content/lane1_stub_bundle.tar.gz "${OUT_DIR}/lane1_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"

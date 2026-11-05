@@ -19,8 +19,10 @@ import { readJsonFile, loadProjectMeta, resolveGpuModel } from "../lib/config.js
 import { runtimeError, inputError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { pickOutputImage } from "../lib/comfyui-output.js";
-import { buildQwenGraph, QWEN_DEFAULTS } from "../lib/adapters/comfyui-workflows.js";
+import { buildQwenGraph, QWEN_DEFAULTS, resolveQwenLoras } from "../lib/adapters/comfyui-workflows.js";
 import { buildPinning, SEED_POLICIES, createHashCache, flushHashCache } from "../lib/run-manifest.js";
+import { STUDIO_OWNER, STUDIO_LICENCE, buildDefaultRights } from "../lib/records.js";
+import { resolveCanonLink } from "../lib/generated-provenance.js";
 import { info, result, warn } from "../lib/log.js";
 
 /**
@@ -226,7 +228,7 @@ function findPlaceholderPrompts(jobs) {
  * `base` resolves: input.base → input.defaults.base → project.json defaults.base
  * → "sdxl". `"qwen-image"` routes to the non-anime Qwen graph.
  */
-function normalizeGenerationInput(raw, projectMeta) {
+export function normalizeGenerationInput(raw, projectMeta) {
   if (!Array.isArray(raw.subjects) || raw.subjects.length === 0) {
     throw inputError(
       'INPUT_MISSING_FIELDS',
@@ -260,10 +262,11 @@ function normalizeGenerationInput(raw, projectMeta) {
         jobs.push({
           assetId: `${subject.id}_${variation.id}`,
           subjectId: subject.id,
+          entryId: subject.entry_id || subject.id,
           variationId: variation.id,
           prompt: compose(subject.prompt),
           seed: baseSeed + k + (variation.seed_offset || 0),
-          loras: variation.loras || [],
+          loras: variation.loras || subject.loras || [],
         });
         k++;
       }
@@ -275,14 +278,16 @@ function normalizeGenerationInput(raw, projectMeta) {
   const negative = raw.negative ?? defaults.negative ?? '';
   for (const subject of raw.subjects) {
     const nvar = Number.isFinite(subject.variations) ? subject.variations : 1;
+    const subjectLoras = subject.loras || defaults.loras || raw.loras || [];
     for (let v = 0; v < nvar; v++) {
       jobs.push({
         assetId: `${subject.id}_v${v}`,
         subjectId: subject.id,
+        entryId: subject.entry_id || subject.id,
         variationId: `v${v}`,
         prompt: compose(subject.prompt),
         seed: baseSeed + k,
-        loras: [],
+        loras: subjectLoras,
       });
       k++;
     }
@@ -384,7 +389,10 @@ export async function run(argv = process.argv.slice(2)) {
   const runStartMs = Date.now();
 
   for (const job of pack.jobs) {
-    const { assetId, prompt: fullPrompt, seed, loras } = job;
+    const { assetId, entryId, prompt: fullPrompt, seed, loras } = job;
+    const effectiveLoras = isQwen
+      ? resolveQwenLoras({ projectDefaults: d, loras })
+      : loras;
 
     // --resume: skip jobs whose record + image are both already on disk.
     // Seeds are precomputed per job index, so skipping never shifts later seeds.
@@ -399,7 +407,7 @@ export async function run(argv = process.argv.slice(2)) {
       }
     }
 
-    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${isQwen ? (d.loras || []).length : loras.length})`);
+    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${effectiveLoras.length})`);
 
     if (dryRun) {
       generated++;
@@ -424,12 +432,12 @@ export async function run(argv = process.argv.slice(2)) {
           vae: d.vae || QWEN_DEFAULTS.vae,
           clipType: d.clip_type || QWEN_DEFAULTS.clip_type,
           weightDtype: d.weight_dtype || QWEN_DEFAULTS.weight_dtype,
-          loras: d.loras || [],
+          loras: effectiveLoras,
           filenamePrefix: 'sdl',
         })
       : buildWorkflow(
           fullPrompt, pack.negative,
-          d.checkpoint, loras, seed,
+          d.checkpoint, effectiveLoras, seed,
           resolved.steps, resolved.cfg, resolved.sampler, resolved.scheduler,
           resolved.width, resolved.height,
         );
@@ -452,9 +460,16 @@ export async function run(argv = process.argv.slice(2)) {
       const destPath = `outputs/candidates/${assetId}.png`;
       await writeFile(join(GAME_ROOT, destPath), imgData);
 
+      const canonLink = resolveCanonLink(GAME_ROOT, {
+        canonSha: raw.canon_sha || null,
+        entryId,
+      });
+
       // Write provenance record (base-aware: Qwen records unet/clip/vae/shift,
       // SDXL records checkpoint/loras).
       const provenance = {
+        owner: STUDIO_OWNER,
+        licence: STUDIO_LICENCE,
         workflow_id: pack.lane,
         workflow_version: "1.0.0",
         base,
@@ -470,16 +485,23 @@ export async function run(argv = process.argv.slice(2)) {
         generation_time_ms: elapsed,
         gpu_model: gpuModel,
         batch_index: generated,
+        ...(canonLink
+          ? {
+              canon_sha: canonLink.canon_sha,
+              entry_id: canonLink.entry_id,
+              entry_sha256: canonLink.entry_sha256,
+            }
+          : {}),
       };
       if (isQwen) {
         provenance.unet = d.unet || QWEN_DEFAULTS.unet;
         provenance.clip = d.clip || QWEN_DEFAULTS.clip;
         provenance.vae = d.vae || QWEN_DEFAULTS.vae;
         provenance.shift = d.shift ?? QWEN_DEFAULTS.shift;
-        provenance.loras = d.loras || [];
+        provenance.loras = effectiveLoras;
       } else {
         provenance.checkpoint = d.checkpoint;
-        provenance.loras = loras;
+        provenance.loras = effectiveLoras;
       }
 
       // PIN_PER_STEP: pin the exact graph + model/LoRA content identity + seed
@@ -490,21 +512,25 @@ export async function run(argv = process.argv.slice(2)) {
         models: isQwen
           ? { unet: provenance.unet, clip: provenance.clip, vae: provenance.vae }
           : { checkpoint: d.checkpoint },
-        loras: isQwen ? (d.loras || []) : loras,
+        loras: effectiveLoras,
         seedPolicy: SEED_POLICIES.BASE_INCREMENT,
         hashModels,
         cache: hashCache,
       });
+      provenance.comfy_workflow_sha = provenance.pinning.comfy_workflow_sha;
 
       const record = {
         id: assetId,
         schema_version: "1.0.0",
         created_at: new Date().toISOString(),
+        owner: STUDIO_OWNER,
+        licence: STUDIO_LICENCE,
+        rights: buildDefaultRights(),
         asset_path: destPath,
         image: { format: "png", width: resolved.width, height: resolved.height, bytes: imgData.length },
         provenance,
         judgment: null,
-        canon: null,
+        canon: canonLink,
         iteration: null,
       };
 

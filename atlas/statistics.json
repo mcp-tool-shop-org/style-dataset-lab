@@ -153,7 +153,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "scripts",
-      "qualifyingSourceCommits": 12,
+      "qualifyingSourceCommits": 13,
       "rebaseline": null
     },
     {
@@ -201,7 +201,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "tests",
-      "qualifyingSourceCommits": 14,
+      "qualifyingSourceCommits": 15,
       "rebaseline": null
     },
     {
@@ -305,8 +305,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 6,
-        "lines": 349,
+        "commits": 7,
+        "lines": 370,
         "path": "atlas/README.md"
       },
       {
@@ -315,18 +315,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 6,
-        "lines": 1354,
+        "commits": 7,
+        "lines": 1402,
         "path": "atlas/page.json"
       },
       {
-        "commits": 6,
-        "lines": 26612,
+        "commits": 7,
+        "lines": 52321,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 6,
-        "lines": 29221,
+        "commits": 7,
+        "lines": 29362,
         "path": "atlas/structure.json"
       },
       {
@@ -7040,18 +7040,18 @@
         "path": "scripts/colab/ai-toolkit-override-py315.txt"
       },
       {
-        "commits": 1,
-        "lines": 189,
+        "commits": 2,
+        "lines": 423,
         "path": "scripts/colab/colab_window.sh"
       },
       {
-        "commits": 2,
-        "lines": 398,
+        "commits": 3,
+        "lines": 419,
         "path": "scripts/colab/launch_guards.py"
       },
       {
-        "commits": 1,
-        "lines": 220,
+        "commits": 2,
+        "lines": 419,
         "path": "scripts/colab/launch_lane3_stub.sh"
       },
       {
@@ -7350,8 +7350,8 @@
         "path": "tests/colab/test_launch_guards.py"
       },
       {
-        "commits": 1,
-        "lines": 249,
+        "commits": 2,
+        "lines": 434,
         "path": "tests/colab/test_launch_lane3_stub.py"
       },
       {
@@ -7620,11 +7620,54 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T15:02:56.106Z",
+  "generatedAt": "2026-11-05T18:18:21.440Z",
   "generatedFrom": {
-    "commit": "8004ec888e5c50c7a1a4e1c2526869659e6faaac"
+    "commit": "dbf8473fe4e2fcf4dd5dead382f84084932d661c"
   },
-  "pairs": [],
+  "pairs": [
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/page.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/statistics.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/page.json",
+      "b": "atlas/statistics.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/page.json",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/statistics.json",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    }
+  ],
   "parameters": {
     "appliedChangesetLimit": 50,
     "changeset": 50,
@@ -7635,16 +7678,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T09:01:23-05:00",
-    "inScopeFiles": 3246,
+    "headDate": "2026-11-05T10:03:32-05:00",
+    "inScopeFiles": 3269,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 102,
+    "qualifyingCommits": 103,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T14:01:23.000Z",
+    "since": "2026-05-09T15:03:32.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",
