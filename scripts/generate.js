@@ -19,7 +19,7 @@ import { readJsonFile, loadProjectMeta, resolveGpuModel } from "../lib/config.js
 import { runtimeError, inputError, handleCliError } from "../lib/errors.js";
 import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { pickOutputImage } from "../lib/comfyui-output.js";
-import { buildQwenGraph, QWEN_DEFAULTS } from "../lib/adapters/comfyui-workflows.js";
+import { buildQwenGraph, QWEN_DEFAULTS, resolveQwenLoras } from "../lib/adapters/comfyui-workflows.js";
 import { buildPinning, SEED_POLICIES, createHashCache, flushHashCache } from "../lib/run-manifest.js";
 import { STUDIO_OWNER, STUDIO_LICENCE, buildDefaultRights } from "../lib/records.js";
 import { resolveCanonLink } from "../lib/generated-provenance.js";
@@ -228,7 +228,7 @@ function findPlaceholderPrompts(jobs) {
  * `base` resolves: input.base → input.defaults.base → project.json defaults.base
  * → "sdxl". `"qwen-image"` routes to the non-anime Qwen graph.
  */
-function normalizeGenerationInput(raw, projectMeta) {
+export function normalizeGenerationInput(raw, projectMeta) {
   if (!Array.isArray(raw.subjects) || raw.subjects.length === 0) {
     throw inputError(
       'INPUT_MISSING_FIELDS',
@@ -266,7 +266,7 @@ function normalizeGenerationInput(raw, projectMeta) {
           variationId: variation.id,
           prompt: compose(subject.prompt),
           seed: baseSeed + k + (variation.seed_offset || 0),
-          loras: variation.loras || [],
+          loras: variation.loras || subject.loras || [],
         });
         k++;
       }
@@ -278,6 +278,7 @@ function normalizeGenerationInput(raw, projectMeta) {
   const negative = raw.negative ?? defaults.negative ?? '';
   for (const subject of raw.subjects) {
     const nvar = Number.isFinite(subject.variations) ? subject.variations : 1;
+    const subjectLoras = subject.loras || defaults.loras || raw.loras || [];
     for (let v = 0; v < nvar; v++) {
       jobs.push({
         assetId: `${subject.id}_v${v}`,
@@ -286,7 +287,7 @@ function normalizeGenerationInput(raw, projectMeta) {
         variationId: `v${v}`,
         prompt: compose(subject.prompt),
         seed: baseSeed + k,
-        loras: [],
+        loras: subjectLoras,
       });
       k++;
     }
@@ -389,6 +390,9 @@ export async function run(argv = process.argv.slice(2)) {
 
   for (const job of pack.jobs) {
     const { assetId, entryId, prompt: fullPrompt, seed, loras } = job;
+    const effectiveLoras = isQwen
+      ? resolveQwenLoras({ projectDefaults: d, loras })
+      : loras;
 
     // --resume: skip jobs whose record + image are both already on disk.
     // Seeds are precomputed per job index, so skipping never shifts later seeds.
@@ -403,7 +407,7 @@ export async function run(argv = process.argv.slice(2)) {
       }
     }
 
-    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${isQwen ? (d.loras || []).length : loras.length})`);
+    console.log(`  [${generated + 1}/${totalExpected}] ${assetId} (seed: ${seed}, loras: ${effectiveLoras.length})`);
 
     if (dryRun) {
       generated++;
@@ -428,12 +432,12 @@ export async function run(argv = process.argv.slice(2)) {
           vae: d.vae || QWEN_DEFAULTS.vae,
           clipType: d.clip_type || QWEN_DEFAULTS.clip_type,
           weightDtype: d.weight_dtype || QWEN_DEFAULTS.weight_dtype,
-          loras: d.loras || [],
+          loras: effectiveLoras,
           filenamePrefix: 'sdl',
         })
       : buildWorkflow(
           fullPrompt, pack.negative,
-          d.checkpoint, loras, seed,
+          d.checkpoint, effectiveLoras, seed,
           resolved.steps, resolved.cfg, resolved.sampler, resolved.scheduler,
           resolved.width, resolved.height,
         );
@@ -494,10 +498,10 @@ export async function run(argv = process.argv.slice(2)) {
         provenance.clip = d.clip || QWEN_DEFAULTS.clip;
         provenance.vae = d.vae || QWEN_DEFAULTS.vae;
         provenance.shift = d.shift ?? QWEN_DEFAULTS.shift;
-        provenance.loras = d.loras || [];
+        provenance.loras = effectiveLoras;
       } else {
         provenance.checkpoint = d.checkpoint;
-        provenance.loras = loras;
+        provenance.loras = effectiveLoras;
       }
 
       // PIN_PER_STEP: pin the exact graph + model/LoRA content identity + seed
@@ -508,7 +512,7 @@ export async function run(argv = process.argv.slice(2)) {
         models: isQwen
           ? { unet: provenance.unet, clip: provenance.clip, vae: provenance.vae }
           : { checkpoint: d.checkpoint },
-        loras: isQwen ? (d.loras || []) : loras,
+        loras: effectiveLoras,
         seedPolicy: SEED_POLICIES.BASE_INCREMENT,
         hashModels,
         cache: hashCache,

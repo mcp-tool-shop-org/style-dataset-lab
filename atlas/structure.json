@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "d7404db0fa4a252237e72499c4169e0275ed60395fbbb42907daf200037ddfbf",
+          "hash": "58fb1f6438a692063c31e0c43a8c8e1c7a8911ee1f72fdba7814950f16c98829",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -543,11 +543,13 @@
         {
           "exports": [
             "buildQwenGraph",
+            "buildStubFixtureGraph",
             "buildWorkflowGraph",
             "listWorkflowTemplates",
+            "resolveQwenLoras",
             "resolveTemplateId"
           ],
-          "hash": "58ed4c864fb9ab0c80bd0f6ba9ba591cdd8dda2d391290a0836aceded5bccc47",
+          "hash": "34e45be48f92851b926cc43224874df0a64a9d3f0829510f7715d0e6a6162f61",
           "importsFiles": [
             "lib/paths.js"
           ],
@@ -2156,7 +2158,7 @@
               "line": 452
             }
           ],
-          "hash": "84d9ba3b0ea7ec7742680817fa2e3892f3dce182d8629c0b663885ac716d4b59",
+          "hash": "d9405f25885a9c9d591f4910274b9f40e621026f0a15871efc1385fce6cd3700",
           "importOrder": [
             "lib/config.js",
             "lib/snapshot.js",
@@ -2467,6 +2469,164 @@
           "path": "lib/judgment-provenance.js"
         },
         {
+          "exports": [
+            "assertLoopbackComfyUrl",
+            "buildWindowRecord",
+            "compileLane1Jobs",
+            "readJobsJsonl",
+            "runLane1Queue",
+            "stageWeightsFromManifest",
+            "verifyLoopbackSockets",
+            "writeJobsJsonl"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertLoopbackComfyUrl",
+              "kind": "catch",
+              "line": 66
+            },
+            {
+              "in": "assertLoopbackComfyUrl",
+              "kind": "throw",
+              "line": 67
+            },
+            {
+              "in": "assertLoopbackComfyUrl",
+              "kind": "throw",
+              "line": 74
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 92
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 124
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 131
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 139
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 160
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 167
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 171
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 185
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 195
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 202
+            },
+            {
+              "in": "buildWindowRecord",
+              "kind": "throw",
+              "line": 259
+            },
+            {
+              "in": "buildWindowRecord",
+              "kind": "throw",
+              "line": 262
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 299
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 303
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 306
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 312
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 349
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 353
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 356
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 371
+            },
+            {
+              "in": "readJobsJsonl",
+              "kind": "throw",
+              "line": 472
+            },
+            {
+              "in": "loadCompletedRenders",
+              "kind": "catch",
+              "line": 510
+            },
+            {
+              "in": "runLane1Queue",
+              "kind": "throw",
+              "line": 556
+            }
+          ],
+          "hash": "7ae98a64f3049ca6e21b8157f74a8f0228444b319d8d8b599b7745ffd009aeb0",
+          "importOrder": [
+            "lib/errors.js",
+            "lib/run-manifest.js",
+            "lib/adapters/comfyui-workflows.js",
+            "lib/png-meta.js"
+          ],
+          "importsFiles": [
+            "lib/adapters/comfyui-workflows.js",
+            "lib/errors.js",
+            "lib/png-meta.js",
+            "lib/run-manifest.js"
+          ],
+          "path": "lib/lane1-render.js"
+        },
+        {
           "entry": "log",
           "entryRule": 3,
           "exports": [
@@ -2705,8 +2865,14 @@
         },
         {
           "exports": [
+            "crc32Png",
             "decodePng",
-            "parsePngMeta"
+            "parsePngMeta",
+            "readPngProvenance",
+            "readPngTextChunks",
+            "stampPngProvenance",
+            "verifyPngProvenance",
+            "writePngTextChunks"
           ],
           "failurePaths": [
             {
@@ -2783,9 +2949,34 @@
               "in": "decodePng",
               "kind": "throw",
               "line": 247
+            },
+            {
+              "in": "unwrapTextValue",
+              "kind": "catch",
+              "line": 428
+            },
+            {
+              "in": "stampPngProvenance",
+              "kind": "throw",
+              "line": 445
+            },
+            {
+              "in": "stampPngProvenance",
+              "kind": "throw",
+              "line": 450
+            },
+            {
+              "in": "verifyPngProvenance",
+              "kind": "throw",
+              "line": 495
+            },
+            {
+              "in": "verifyPngProvenance",
+              "kind": "throw",
+              "line": 505
             }
           ],
-          "hash": "1b3d3b3193c51490e40c9f6eb57a0e79985263b744182d1a4b2624290868079f",
+          "hash": "41bfab0ddb147094796930b321185eef18acd355dc9ab5c06443a4fd57780521",
           "importsFiles": [
             "lib/errors.js"
           ],
@@ -3531,11 +3722,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 214,
+          "reads": 227,
           "where": [
             "caller"
           ],
-          "writes": 95
+          "writes": 107
         },
         {
           "reads": 1,
@@ -3567,13 +3758,13 @@
           "writes": 1
         }
       ],
-      "outsideReads": 223,
-      "outsideWrites": 96,
+      "outsideReads": 236,
+      "outsideWrites": 108,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 94,
+      "testedBy": 95,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -7113,7 +7304,7 @@
           "path": "projects/rustline/CHANGELOG.md"
         },
         {
-          "hash": "4663352ac4ae6882ffd5c1faf6fe302525482122180cc4f320bf8a9fb93cdcb0",
+          "hash": "92dade4e6a7118b43b7f7bd9a1d2a689b74e801323ff734c9e375b720595dcb4",
           "path": "projects/rustline/HANDOFF.md"
         },
         {
@@ -7361,7 +7552,7 @@
           "path": "projects/rustline/records/comfy-cloud-lora-export-request.md"
         },
         {
-          "hash": "520248de8519a4b8147876217383f4b0b3c48c35786700043fe70b0e8c9bfe3b",
+          "hash": "0cfee8d6cd87d8105ff5e75c158fd131e5425a0ebc24e1e55e1b3fa7d572627a",
           "path": "projects/rustline/records/comfy-cloud-model-import-resolution.md"
         },
         {
@@ -8294,7 +8485,7 @@
           "path": "projects/salt-road/inputs/prompts/finishing-uploads.json"
         },
         {
-          "hash": "59bf88e022a408cd6ddaff4887c0e2093fe62f6967a06d02e69d7b79ad18068c",
+          "hash": "fb6ae1ae6aea7761013f8046ab6ab12922f95eec485bbc6e91e2f99f7d3799cc",
           "path": "projects/salt-road/inputs/prompts/formula.json"
         },
         {
@@ -15505,7 +15696,11 @@
       "externals": 0,
       "files": [
         {
-          "hash": "425ad7b1ef1d88fa45f25078420c7c417b2e8c345d4799ba5b3c0a5a69c6eba7",
+          "hash": "f657b35f0a7c8d7e27db46b0a965ada347f4c79d55a6e69e920728ea82ec47e3",
+          "path": ".gitattributes"
+        },
+        {
+          "hash": "65e64ecb33c5f4ec9d7af6103c1b0d90beee7b55b79115f138ef76b594ffdace",
           "path": ".gitignore"
         },
         {
@@ -15573,7 +15768,7 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "59ca3f6a5be96b80fee73bebf2b778211208d17cd3fb82e2134608dff0729c76",
+          "hash": "9a956260d11b53d157c882bfcc6af84eccff7df59da3fc89cbaef07da0bedcdb",
           "path": "codecov.yml"
         },
         {
@@ -15667,7 +15862,7 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 11,
+      "dynamicReads": 12,
       "dynamicSpawns": 0,
       "dynamicSpawnsInTests": 0,
       "dynamicWrites": 16,
@@ -16178,6 +16373,288 @@
             "lib/split.js"
           ],
           "path": "scripts/card.js"
+        },
+        {
+          "hash": "7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372",
+          "path": "scripts/colab/colab_window.sh"
+        },
+        {
+          "exports": [
+            "assert_loopback_url",
+            "build_qwen_lora_graph",
+            "build_stub_fixture_graph",
+            "build_text_chunk",
+            "download_comfy_image",
+            "inspect_comfy_listeners",
+            "load_completed",
+            "main",
+            "normalize_sha256",
+            "parse_proc_net_tcp",
+            "parse_proc_net_tcp_records",
+            "parse_ss_tln",
+            "pick_history_image",
+            "probe_listening_socket_records",
+            "probe_listening_sockets",
+            "probe_pid_socket_inodes",
+            "probe_system_python",
+            "run_queue",
+            "sha256_bytes",
+            "sha256_file",
+            "stage_weights",
+            "stamp_png_provenance",
+            "sync_copy_back",
+            "unwrap_text_val",
+            "verify_loopback_sockets",
+            "verify_png_provenance",
+            "write_png_text_chunks",
+            "write_window_json"
+          ],
+          "failurePaths": [
+            {
+              "in": "_read_png_text_chunks_fallback",
+              "kind": "raise",
+              "line": 47
+            },
+            {
+              "in": "_read_workflow_metadata_fallback",
+              "kind": "except",
+              "line": 76
+            },
+            {
+              "kind": "except",
+              "line": 87
+            },
+            {
+              "in": "assert_loopback_url",
+              "kind": "raise",
+              "line": 134
+            },
+            {
+              "in": "parse_proc_net_tcp_records",
+              "kind": "except",
+              "line": 161
+            },
+            {
+              "in": "probe_pid_socket_inodes",
+              "kind": "raise",
+              "line": 212
+            },
+            {
+              "in": "probe_pid_socket_inodes",
+              "kind": "except",
+              "line": 218
+            },
+            {
+              "in": "probe_pid_socket_inodes",
+              "kind": "raise",
+              "line": 219
+            },
+            {
+              "in": "probe_pid_socket_inodes",
+              "kind": "except",
+              "line": 228
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "except",
+              "line": 260
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "raise",
+              "line": 265
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "raise",
+              "line": 282
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "raise",
+              "line": 293
+            },
+            {
+              "in": "probe_listening_socket_records",
+              "kind": "except",
+              "line": 346
+            },
+            {
+              "in": "probe_system_python",
+              "kind": "except",
+              "line": 388
+            },
+            {
+              "in": "probe_system_python",
+              "kind": "raise",
+              "line": 389
+            },
+            {
+              "in": "probe_system_python",
+              "kind": "raise",
+              "line": 394
+            },
+            {
+              "in": "write_png_text_chunks",
+              "kind": "raise",
+              "line": 406
+            },
+            {
+              "in": "write_png_text_chunks",
+              "kind": "raise",
+              "line": 418
+            },
+            {
+              "in": "unwrap_text_val",
+              "kind": "except",
+              "line": 449
+            },
+            {
+              "in": "stamp_png_provenance",
+              "kind": "raise",
+              "line": 458
+            },
+            {
+              "in": "verify_png_provenance",
+              "kind": "raise",
+              "line": 477
+            },
+            {
+              "in": "verify_png_provenance",
+              "kind": "raise",
+              "line": 482
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 568
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 575
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 577
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 582
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 585
+            },
+            {
+              "in": "write_window_json",
+              "kind": "raise",
+              "line": 616
+            },
+            {
+              "in": "write_window_json",
+              "kind": "except",
+              "line": 620
+            },
+            {
+              "in": "write_window_json",
+              "kind": "raise",
+              "line": 638
+            },
+            {
+              "in": "pick_history_image",
+              "kind": "raise",
+              "line": 697
+            },
+            {
+              "in": "load_completed",
+              "kind": "except",
+              "line": 725
+            },
+            {
+              "in": "run_queue",
+              "kind": "raise",
+              "line": 809
+            },
+            {
+              "in": "run_queue",
+              "kind": "raise",
+              "line": 812
+            },
+            {
+              "in": "run_queue",
+              "kind": "raise",
+              "line": 825
+            },
+            {
+              "kind": "raise",
+              "line": 970
+            }
+          ],
+          "hash": "75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013",
+          "path": "scripts/colab/lane1_render.py"
+        },
+        {
+          "exports": [
+            "check_host_ram_projection",
+            "evaluate_cap_guard",
+            "evaluate_vitals_and_stall_guard",
+            "evaluate_wall_guard",
+            "main",
+            "normalize_hex_sha",
+            "parse_vitals_log",
+            "run_between_item_fetch",
+            "scrub_colab_tokens",
+            "scrub_file_in_place",
+            "sha256_file",
+            "sha256_self_normalized",
+            "verify_input_shas"
+          ],
+          "failurePaths": [
+            {
+              "in": "verify_input_shas",
+              "kind": "raise",
+              "line": 70
+            },
+            {
+              "in": "verify_input_shas",
+              "kind": "raise",
+              "line": 78
+            },
+            {
+              "in": "parse_vitals_log",
+              "kind": "except",
+              "line": 172
+            },
+            {
+              "in": "check_host_ram_projection",
+              "kind": "raise",
+              "line": 257
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 323
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 342
+            },
+            {
+              "kind": "raise",
+              "line": 371
+            }
+          ],
+          "hash": "82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25",
+          "path": "scripts/colab/launch_guards.py"
+        },
+        {
+          "hash": "a1c7ccbb34446ea53a52b2775b71357ec8b685a80990f1df82c70c84dc3e9dfc",
+          "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
           "exports": [
@@ -16796,6 +17273,7 @@
         },
         {
           "exports": [
+            "normalizeGenerationInput",
             "run"
           ],
           "failurePaths": [
@@ -16812,20 +17290,20 @@
             {
               "in": "run",
               "kind": "throw",
-              "line": 372
+              "line": 373
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 539
+              "line": 543
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 577
+              "line": 581
             }
           ],
-          "hash": "16b6a2ca8017b40b74249e42c2bb184ace5c0e0340111b0ff83032bc4f96ee0a",
+          "hash": "1dbd50f933537b0c1ab799aee65541868274de4f37fd100d8877c47db53350da",
           "importOrder": [
             "lib/args.js",
             "lib/paths.js",
@@ -17809,11 +18287,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 20,
+          "reads": 31,
           "where": [
             "caller"
           ],
-          "writes": 10
+          "writes": 20
         },
         {
           "reads": 2,
@@ -17831,13 +18309,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 23,
-      "outsideWrites": 22,
+      "outsideReads": 34,
+      "outsideWrites": 32,
       "role": "code",
       "testRunners": [
-        "node --test"
+        "node --test",
+        "pytest"
       ],
-      "testedBy": 20,
+      "testedBy": 23,
       "unresolvedSites": 0
     },
     {
@@ -18503,6 +18982,54 @@
           "testFramework": "node --test"
         },
         {
+          "exports": [
+            "make_minimal_png_with_prompt",
+            "test_comfy_pid_fd_fail_closed_and_socket_match_mode_recorded",
+            "test_copy_back_cadence_and_resume_after_deliberate_kill_with_fake_client",
+            "test_hermetic_proc_comfy_socket_guard_and_other_listeners",
+            "test_job_compilation_qwen_lora_and_stub_fixture",
+            "test_loopback_guards_and_weight_staging_and_window_json",
+            "test_real_vm_facts_proc_net_tcp_ss_and_system_python_without_defaults",
+            "test_stamp_write_and_read_back_and_validation"
+          ],
+          "hash": "e8ad54a385c329c98a771b23f52702d1babc3360a3038ea4ad45235ebbe597bb",
+          "importsFiles": [
+            "scripts/colab/lane1_render.py"
+          ],
+          "path": "tests/colab/test_lane1_render.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_between_item_fetch_copies_files_before_resetting_current_json",
+            "test_cap_guard_trips_on_fixture_and_stays_quiet_just_under",
+            "test_dead_harness_on_cgroup_oom_fixture_trips_and_stays_quiet_just_under",
+            "test_host_ram_projection_trips_and_stays_quiet_just_under",
+            "test_verify_input_shas_and_scrub_tokens_and_cli",
+            "test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under",
+            "test_wall_guard_trips_on_fixture_and_stays_quiet_just_under"
+          ],
+          "hash": "a0d6b87dadb20ea2c47f76a1744f9d5249aa21ae5d1510435906c5e23e71a9f1",
+          "importsFiles": [
+            "scripts/colab/launch_guards.py"
+          ],
+          "path": "tests/colab/test_launch_guards.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_kit_pins_self_sha_comfyui_commit_comfy_headless_and_pytorch_index",
+            "test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json",
+            "test_real_colab_cli_guard_refuses_when_not_fake",
+            "test_sha_refusal_before_opening_session",
+            "test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap",
+            "test_trap_stops_session_on_command_failure_and_wall"
+          ],
+          "hash": "63ca80e444156540104b2847d2e9c791c4070207fb444348989643c0ecab3168",
+          "path": "tests/colab/test_launch_lane1_stub.py",
+          "testFramework": "pytest"
+        },
+        {
           "hash": "2494c82673dea71514b707801c820353d9a7a79aa2620e55a8f87a731b6b7b13",
           "importsFiles": [
             "lib/asset-ingest.js",
@@ -18978,7 +19505,7 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "d8e330630be6d5b6f1b8ad6d2f8e65be01d13145d251e6570bd3494096cdc4b8",
+          "hash": "75df872801372441d6c9356a281ddcf8537a36b260dbf3b9d88d62e6f91ccfe0",
           "importOrder": [
             "lib/training-packages.js",
             "lib/export.js",
@@ -19116,6 +19643,25 @@
         {
           "hash": "ddc9b4d1efc41fdb63548508abf54009b9c1b0383cd0f62dc9808a6d2456e49b",
           "path": "tests/lib-pipeline/flux-workflow-profiles.test.js",
+          "testFramework": "node --test"
+        },
+        {
+          "hash": "79a7b6b0d3e9fdfd2fcd85528089ce2d35767cf7c4821f8dedc1d6c0e0d98413",
+          "importOrder": [
+            "lib/png-meta.js",
+            "tests/lib-asset/fixtures/make-png.js",
+            "lib/adapters/comfyui-workflows.js",
+            "scripts/generate.js",
+            "lib/lane1-render.js"
+          ],
+          "importsFiles": [
+            "lib/adapters/comfyui-workflows.js",
+            "lib/lane1-render.js",
+            "lib/png-meta.js",
+            "scripts/generate.js",
+            "tests/lib-asset/fixtures/make-png.js"
+          ],
+          "path": "tests/lib-pipeline/lane1-render.test.js",
           "testFramework": "node --test"
         },
         {
@@ -19351,7 +19897,8 @@
       "origin": "authored",
       "role": "test",
       "testRunners": [
-        "node --test"
+        "node --test",
+        "pytest"
       ],
       "testedBy": 0,
       "unresolvedNamed": [
@@ -19474,6 +20021,18 @@
             "npm"
           ],
           "step": "Coverage (Node 22 only)"
+        },
+        {
+          "dir": "",
+          "job": "verify",
+          "programs": [
+            ".venv-ci/bin/python",
+            "pipx",
+            "pwd",
+            "python3",
+            "uv"
+          ],
+          "step": "Python tests and coverage (Node 22 only)"
         }
       ],
       "elsewhere": [],
@@ -19546,7 +20105,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 101
+          "files": 105
         },
         {
           "boundary": "lib",
@@ -19555,7 +20114,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 76
+          "files": 77
         },
         {
           "boundary": "scripts",
@@ -19564,7 +20123,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 40
+          "files": 42
         }
       ],
       "readers": [],
@@ -19586,6 +20145,12 @@
           "job": "verify",
           "matched": true,
           "path": "tests/cli-scripts/",
+          "runKind": "executes"
+        },
+        {
+          "directory": true,
+          "job": "verify",
+          "path": "tests/colab/",
           "runKind": "executes"
         },
         {
@@ -19762,7 +20327,7 @@
           "runKind": "executes"
         }
       ],
-      "runsCount": 31,
+      "runsCount": 32,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -19817,7 +20382,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 97,
+          "files": 98,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -19827,7 +20392,7 @@
         },
         {
           "coverage": true,
-          "files": 97,
+          "files": 98,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -19836,6 +20401,13 @@
             "npm run coverage",
             "npm test"
           ]
+        },
+        {
+          "coverage": true,
+          "files": 3,
+          "job": "verify",
+          "runner": "pytest",
+          "step": "Python tests and coverage (Node 22 only)"
         }
       ],
       "triggers": [
@@ -19855,10 +20427,12 @@
             "runtime/**",
             "schemas/**",
             "scripts/**",
+            "scripts/colab/**",
             "site/astro.config.mjs",
             "site/package-lock.json",
             "site/package.json",
-            "tests/**"
+            "tests/**",
+            "tests/**/*.py"
           ]
         },
         {
@@ -20124,7 +20698,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 101
+          "files": 102
         },
         {
           "boundary": "lib",
@@ -20133,7 +20707,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 76
+          "files": 77
         },
         {
           "boundary": "scripts",
@@ -20364,7 +20938,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 97,
+          "files": 98,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20487,10 +21061,24 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "abfd3b8ffe7a8d48f2ccac6807f9ec586268126e",
-    "tracked": 3235
+    "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003",
+    "tracked": 3245
   },
   "landings": [
+    {
+      "readers": [
+        {
+          "by": "tests/lib-pipeline/lane1-render.test.js",
+          "call": "raw-url",
+          "confidence": "ast",
+          "fromTests": true,
+          "ref": "main",
+          "repo": "QwenLM/Qwen2.5-VL"
+        }
+      ],
+      "target": "LICENSE",
+      "writers": []
+    },
     {
       "readers": [],
       "target": "README.md",
@@ -23303,7 +23891,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 103,
+  "testFiles": 107,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

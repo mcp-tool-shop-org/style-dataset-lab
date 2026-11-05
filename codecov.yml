@@ -12,6 +12,16 @@ coverage:
       default:
         informational: true
 
+flags:
+  javascript:
+    paths:
+      - lib/
+    carryforward: true
+  python:
+    paths:
+      - scripts/colab/
+    carryforward: true
+
 comment:
   layout: "condensed_header, condensed_files, condensed_footer"
   hide_project_coverage: true
