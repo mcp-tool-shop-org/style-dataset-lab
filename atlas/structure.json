@@ -90,6 +90,7 @@
             "scripts/generate-controlnet.js",
             "scripts/generate-identity.js",
             "scripts/generate-ipadapter.js",
+            "scripts/generate.js",
             "scripts/implementation-pack.js",
             "scripts/ingest.js",
             "scripts/init.js",
@@ -416,14 +417,9 @@
           "path": "bin/sdlab.js",
           "specifier": null,
           "why": "dynamic"
-        },
-        {
-          "path": "bin/sdlab.js",
-          "specifier": "../scripts/generate.js",
-          "why": "missing"
         }
       ],
-      "unresolvedSites": 2
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 0,
@@ -15866,10 +15862,10 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 10,
+      "dynamicReads": 12,
       "dynamicSpawns": 0,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 14,
+      "dynamicWrites": 16,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -17277,6 +17273,67 @@
         },
         {
           "exports": [
+            "normalizeGenerationInput",
+            "run"
+          ],
+          "failurePaths": [
+            {
+              "in": "normalizeGenerationInput",
+              "kind": "throw",
+              "line": 233
+            },
+            {
+              "in": "normalizeGenerationInput",
+              "kind": "throw",
+              "line": 253
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 373
+            },
+            {
+              "in": "run",
+              "kind": "catch",
+              "line": 543
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 581
+            }
+          ],
+          "hash": "1dbd50f933537b0c1ab799aee65541868274de4f37fd100d8877c47db53350da",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/comfyui.js",
+            "lib/comfyui-output.js",
+            "lib/adapters/comfyui-workflows.js",
+            "lib/run-manifest.js",
+            "lib/records.js",
+            "lib/generated-provenance.js",
+            "lib/log.js"
+          ],
+          "importsFiles": [
+            "lib/adapters/comfyui-workflows.js",
+            "lib/args.js",
+            "lib/comfyui-output.js",
+            "lib/comfyui.js",
+            "lib/config.js",
+            "lib/errors.js",
+            "lib/generated-provenance.js",
+            "lib/log.js",
+            "lib/paths.js",
+            "lib/records.js",
+            "lib/run-manifest.js"
+          ],
+          "path": "scripts/generate.js"
+        },
+        {
+          "exports": [
             "run"
           ],
           "failurePaths": [
@@ -18259,7 +18316,7 @@
         "node --test",
         "pytest"
       ],
-      "testedBy": 22,
+      "testedBy": 23,
       "unresolvedSites": 0
     },
     {
@@ -18743,6 +18800,7 @@
           "hash": "cbe083046aff430ac7d5c05a72efc3dbce2ecbbc7f710fc535fc514385d4410e",
           "importOrder": [
             "lib/paths.js",
+            "scripts/generate.js",
             "scripts/generate-identity.js",
             "scripts/generate-controlnet.js",
             "scripts/generate-ipadapter.js",
@@ -18753,6 +18811,7 @@
             "scripts/generate-controlnet.js",
             "scripts/generate-identity.js",
             "scripts/generate-ipadapter.js",
+            "scripts/generate.js",
             "scripts/painterly.js"
           ],
           "path": "tests/cli-scripts/dry-run-no-side-effects.test.js",
@@ -18887,6 +18946,7 @@
             "scripts/generate-controlnet.js",
             "scripts/generate-identity.js",
             "scripts/generate-ipadapter.js",
+            "scripts/generate.js",
             "scripts/implementation-pack.js",
             "scripts/migrate-records.js",
             "scripts/painterly-test.js",
@@ -19591,12 +19651,14 @@
             "lib/png-meta.js",
             "tests/lib-asset/fixtures/make-png.js",
             "lib/adapters/comfyui-workflows.js",
+            "scripts/generate.js",
             "lib/lane1-render.js"
           ],
           "importsFiles": [
             "lib/adapters/comfyui-workflows.js",
             "lib/lane1-render.js",
             "lib/png-meta.js",
+            "scripts/generate.js",
             "tests/lib-asset/fixtures/make-png.js"
           ],
           "path": "tests/lib-pipeline/lane1-render.test.js",
@@ -19841,22 +19903,12 @@
       "testedBy": 0,
       "unresolvedNamed": [
         {
-          "path": "tests/cli-scripts/dry-run-no-side-effects.test.js",
-          "specifier": "../../scripts/generate.js",
-          "why": "missing"
-        },
-        {
           "path": "tests/cli-scripts/project-root-traversal.test.js",
           "specifier": null,
           "why": "dynamic"
-        },
-        {
-          "path": "tests/lib-pipeline/lane1-render.test.js",
-          "specifier": "../../scripts/generate.js",
-          "why": "missing"
         }
       ],
-      "unresolvedSites": 3
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 0,
@@ -20071,7 +20123,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 41
+          "files": 42
         }
       ],
       "readers": [],
@@ -20664,7 +20716,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 40
         }
       ],
       "readers": [],
@@ -20945,7 +20997,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 32
+          "files": 33
         }
       ],
       "readers": [],
@@ -21009,8 +21061,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8",
-    "tracked": 3244
+    "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003",
+    "tracked": 3245
   },
   "landings": [
     {

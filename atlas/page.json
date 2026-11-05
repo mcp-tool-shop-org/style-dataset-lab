@@ -75,41 +75,33 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 4,
-      "changed": 27,
+      "added": 1,
+      "changed": 0,
       "moved": 0,
-      "parts": 6,
-      "removed": 1
+      "parts": 1,
+      "removed": 0
     },
     "items": [
       {
-        "kind": "landing",
-        "sentence": "bin/sdlab.js is now also read by tests/lib-pipeline/provenance-chain.test.js.",
-        "subjects": [
-          "bin/sdlab.js",
-          "tests/lib-pipeline/provenance-chain.test.js"
-        ]
-      },
-      {
         "kind": "counts",
-        "sentence": "4 files added, 1 removed and 27 changed content, across 6 parts.",
+        "sentence": "Nothing structural changed since 2026-11-05; 1 file added.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "be87587f3f9811b6362e55070531a715d31ea8ea",
-      "generatedAt": "2026-11-05T14:53:19.294Z"
+      "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8",
+      "generatedAt": "2026-11-05T17:24:04.421Z"
     },
-    "unchanged": false
+    "unchanged": true
   },
   "changesTogether": [],
   "changesTogetherNote": [
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8",
+  "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (238), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (239), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -139,7 +131,7 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 41
+          "files": 42
         }
       ],
       "runs": [
@@ -216,7 +208,7 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 39
+          "files": 40
         }
       ],
       "runs": [
@@ -318,7 +310,7 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 32
+          "files": 33
         }
       ],
       "runs": [
@@ -426,10 +418,10 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T17:24:04.421Z",
+  "generatedAt": "2026-11-05T17:37:51.183Z",
   "limits": [
-    "7 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `bin/sdlab.js` imports `../scripts/generate.js`, which is not in this repository; `lib/training-adapters.js` imports a path built at run time; and 4 more.",
-    "36 writes and 71 reads use paths built at run time and are not named here.",
+    "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
+    "38 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
     "134 writes and 264 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
@@ -716,9 +708,9 @@
   "testedBy": {
     "bin": 10,
     "lib": 95,
-    "scripts": 22
+    "scripts": 23
   },
-  "unnamedWrites": 36,
+  "unnamedWrites": 38,
   "unread": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase2/",

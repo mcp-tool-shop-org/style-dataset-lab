@@ -33,7 +33,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "bin",
-      "qualifyingSourceCommits": 2,
+      "qualifyingSourceCommits": 3,
       "rebaseline": null
     },
     {
@@ -70,7 +70,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "lib",
-      "qualifyingSourceCommits": 13,
+      "qualifyingSourceCommits": 15,
       "rebaseline": null
     },
     {
@@ -153,7 +153,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "scripts",
-      "qualifyingSourceCommits": 15,
+      "qualifyingSourceCommits": 16,
       "rebaseline": null
     },
     {
@@ -201,7 +201,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "tests",
-      "qualifyingSourceCommits": 17,
+      "qualifyingSourceCommits": 19,
       "rebaseline": null
     },
     {
@@ -305,8 +305,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 7,
-        "lines": 370,
+        "commits": 9,
+        "lines": 422,
         "path": "atlas/README.md"
       },
       {
@@ -315,23 +315,23 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 7,
-        "lines": 1406,
+        "commits": 9,
+        "lines": 1526,
         "path": "atlas/page.json"
       },
       {
-        "commits": 7,
-        "lines": 52341,
+        "commits": 9,
+        "lines": 78116,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 7,
-        "lines": 29712,
+        "commits": 9,
+        "lines": 30451,
         "path": "atlas/structure.json"
       },
       {
-        "commits": 3,
-        "lines": 91,
+        "commits": 5,
+        "lines": 119,
         "path": "bin/sdlab.js"
       },
       {
@@ -495,8 +495,8 @@
         "path": "lib/eval-runs.js"
       },
       {
-        "commits": 2,
-        "lines": 156,
+        "commits": 4,
+        "lines": 160,
         "path": "lib/export.js"
       },
       {
@@ -510,8 +510,8 @@
         "path": "lib/freeze-stamp.js"
       },
       {
-        "commits": 1,
-        "lines": 17,
+        "commits": 3,
+        "lines": 383,
         "path": "lib/generated-provenance.js"
       },
       {
@@ -541,6 +541,11 @@
       },
       {
         "commits": 2,
+        "lines": 610,
+        "path": "lib/model-licences.js"
+      },
+      {
+        "commits": 2,
         "lines": 130,
         "path": "lib/npy-meta.js"
       },
@@ -556,12 +561,22 @@
       },
       {
         "commits": 2,
-        "lines": 114,
+        "lines": 124,
+        "path": "lib/records.js"
+      },
+      {
+        "commits": 4,
+        "lines": 146,
         "path": "lib/reingest-selected.js"
       },
       {
-        "commits": 3,
-        "lines": 426,
+        "commits": 2,
+        "lines": 60,
+        "path": "lib/reingest.js"
+      },
+      {
+        "commits": 5,
+        "lines": 566,
         "path": "lib/run-manifest.js"
       },
       {
@@ -598,6 +613,11 @@
         "commits": 1,
         "lines": 67,
         "path": "lib/verifier.js"
+      },
+      {
+        "commits": 2,
+        "lines": 734,
+        "path": "lib/verify-chain.js"
       },
       {
         "commits": 1,
@@ -2965,8 +2985,8 @@
         "path": "projects/hesperia/terminology.json"
       },
       {
-        "commits": 2,
-        "lines": 90,
+        "commits": 4,
+        "lines": 94,
         "path": "projects/portlight-ships/README.md"
       },
       {
@@ -2975,8 +2995,8 @@
         "path": "projects/portlight-ships/canon-build/config.json"
       },
       {
-        "commits": 2,
-        "lines": 88,
+        "commits": 4,
+        "lines": 92,
         "path": "projects/portlight-ships/canon/constitution.md"
       },
       {
@@ -2985,8 +3005,8 @@
         "path": "projects/portlight-ships/canon/damage-tiers.md"
       },
       {
-        "commits": 2,
-        "lines": 60,
+        "commits": 4,
+        "lines": 64,
         "path": "projects/portlight-ships/canon/review-rubric.md"
       },
       {
@@ -3070,43 +3090,43 @@
         "path": "projects/portlight-ships/canon/traditions.md"
       },
       {
-        "commits": 2,
-        "lines": 174,
+        "commits": 4,
+        "lines": 176,
         "path": "projects/portlight-ships/constitution.json"
       },
       {
-        "commits": 2,
-        "lines": 74,
+        "commits": 4,
+        "lines": 76,
         "path": "projects/portlight-ships/inputs/prompts/example-wave.json"
       },
       {
-        "commits": 2,
-        "lines": 82,
+        "commits": 4,
+        "lines": 92,
         "path": "projects/portlight-ships/lanes.json"
       },
       {
-        "commits": 2,
-        "lines": 44,
+        "commits": 4,
+        "lines": 164,
         "path": "projects/portlight-ships/project.json"
       },
       {
-        "commits": 2,
-        "lines": 80,
+        "commits": 4,
+        "lines": 82,
         "path": "projects/portlight-ships/rubric.json"
       },
       {
-        "commits": 2,
-        "lines": 42,
+        "commits": 4,
+        "lines": 44,
         "path": "projects/portlight-ships/terminology.json"
       },
       {
-        "commits": 2,
-        "lines": 120,
+        "commits": 4,
+        "lines": 138,
         "path": "projects/portlight-ships/workflows/profiles/variant-pack.json"
       },
       {
-        "commits": 2,
-        "lines": 118,
+        "commits": 4,
+        "lines": 136,
         "path": "projects/portlight-ships/workflows/profiles/vehicle-silhouette-pack.json"
       },
       {
@@ -3115,8 +3135,8 @@
         "path": "projects/rustline/CHANGELOG.md"
       },
       {
-        "commits": 2,
-        "lines": 228,
+        "commits": 4,
+        "lines": 236,
         "path": "projects/rustline/HANDOFF.md"
       },
       {
@@ -3415,8 +3435,8 @@
         "path": "projects/rustline/records/comfy-cloud-lora-export-request.md"
       },
       {
-        "commits": 1,
-        "lines": 95,
+        "commits": 3,
+        "lines": 115,
         "path": "projects/rustline/records/comfy-cloud-model-import-resolution.md"
       },
       {
@@ -4495,8 +4515,8 @@
         "path": "projects/salt-road/inputs/prompts/finishing-uploads.json"
       },
       {
-        "commits": 3,
-        "lines": 536,
+        "commits": 5,
+        "lines": 540,
         "path": "projects/salt-road/inputs/prompts/formula.json"
       },
       {
@@ -6950,6 +6970,11 @@
         "path": "rustline/records/gen2-cyclops-design-convergence.md}"
       },
       {
+        "commits": 2,
+        "lines": 58,
+        "path": "schemas/generated-record.schema.json"
+      },
+      {
         "commits": 1,
         "lines": 71,
         "path": "scripts/_batch_cut.py"
@@ -7070,8 +7095,8 @@
         "path": "scripts/curate.js"
       },
       {
-        "commits": 2,
-        "lines": 236,
+        "commits": 4,
+        "lines": 238,
         "path": "scripts/doctor.js"
       },
       {
@@ -7110,8 +7135,8 @@
         "path": "scripts/generate-ipadapter.js"
       },
       {
-        "commits": 6,
-        "lines": 443,
+        "commits": 8,
+        "lines": 495,
         "path": "scripts/generate.js"
       },
       {
@@ -7198,6 +7223,11 @@
         "commits": 1,
         "lines": 4,
         "path": "scripts/training-profile.js"
+      },
+      {
+        "commits": 2,
+        "lines": 134,
+        "path": "scripts/verify.js"
       },
       {
         "commits": 1,
@@ -7510,8 +7540,8 @@
         "path": "tests/lib-dataset/training-manifest-checksums-binding.test.js"
       },
       {
-        "commits": 1,
-        "lines": 341,
+        "commits": 3,
+        "lines": 349,
         "path": "tests/lib-dataset/training-package-safety.test.js"
       },
       {
@@ -7533,6 +7563,11 @@
         "commits": 1,
         "lines": 639,
         "path": "tests/lib-pipeline/lane1-render.test.js"
+      },
+      {
+        "commits": 2,
+        "lines": 1696,
+        "path": "tests/lib-pipeline/provenance-chain.test.js"
       },
       {
         "commits": 1,
@@ -7620,51 +7655,51 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T17:24:04.421Z",
+  "generatedAt": "2026-11-05T17:37:51.183Z",
   "generatedFrom": {
-    "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8"
+    "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003"
   },
   "pairs": [
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
-      "either": 5,
-      "shared": 5,
+      "either": 6,
+      "shared": 6,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/statistics.json",
-      "either": 5,
-      "shared": 5,
+      "either": 6,
+      "shared": 6,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/structure.json",
-      "either": 5,
-      "shared": 5,
+      "either": 6,
+      "shared": 6,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/statistics.json",
-      "either": 5,
-      "shared": 5,
+      "either": 6,
+      "shared": 6,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/structure.json",
-      "either": 5,
-      "shared": 5,
+      "either": 6,
+      "shared": 6,
       "strength": 1
     },
     {
       "a": "atlas/statistics.json",
       "b": "atlas/structure.json",
-      "either": 5,
-      "shared": 5,
+      "either": 6,
+      "shared": 6,
       "strength": 1
     }
   ],
@@ -7678,16 +7713,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T11:45:35-05:00",
-    "inScopeFiles": 3260,
+    "headDate": "2026-11-05T12:29:49-05:00",
+    "inScopeFiles": 3250,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 105,
+    "qualifyingCommits": 107,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T16:45:35.000Z",
+    "since": "2026-05-09T17:29:49.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

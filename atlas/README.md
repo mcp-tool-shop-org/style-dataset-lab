@@ -1,15 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit ef9ec0b by Atlas 1.24.0.
+Mapped at 2026-11-05 from commit 1ecf000 by Atlas 1.24.0.
 
 ## What this is
 
-13 parts, mostly JSON data (2616 files); code in JavaScript (238), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
+13 parts, mostly JSON data (2616 files); code in JavaScript (239), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-05 (be87587)
+## What changed since 2026-11-05 (ef9ec0b)
 
-- bin/sdlab.js is now also read by tests/lib-pipeline/provenance-chain.test.js.
-- 4 files added, 1 removed and 27 changed content, across 6 parts.
+Nothing structural changed since 2026-11-05; 1 file added.
 
 ## What comes in
 
@@ -37,7 +36,7 @@ Mapped at 2026-11-05 from commit ef9ec0b by Atlas 1.24.0.
       8. `info`
    7. **`run`** (scripts) runs, in order: `parseArgs` (lib), `getProjectName`, `getProjectRoot`, `loadCritique`, `getRunsDir`, `refine-briefs.js` (3 steps) and `info`.
    8. **`run`** (scripts) runs, in order: `parseArgs` (lib), `getProjectName`, `getProjectRoot`, `selections.js` (3 steps) and `info`.
-2. That reaches lib (77 files) and scripts (41 files).
+2. That reaches lib (77 files) and scripts (42 files).
 3. It uploads coverage to Codecov.
 
 ## Who reads the results
@@ -104,7 +103,7 @@ No two parts export a helper that looks alike.
 
 ## Hand-authored
 
-People write .github/, docs/, the repository root, runtime/, schemas/, site/, templates/ and workflows/; 36 writes with paths built at run time may land here.
+People write .github/, docs/, the repository root, runtime/, schemas/, site/, templates/ and workflows/; 38 writes with paths built at run time may land here.
 
 ## Where to start
 
@@ -114,8 +113,8 @@ Read those in order to follow one pull request end to end.
 
 ## What this map cannot see
 
-- 7 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `bin/sdlab.js` imports `../scripts/generate.js`, which is not in this repository; `lib/training-adapters.js` imports a path built at run time; and 4 more.
-- 36 writes and 71 reads use paths built at run time and are not named here.
+- 4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.
+- 38 writes and 73 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
 - 134 writes and 264 reads go to a path their caller passes, not to this repository.
 - 12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.
