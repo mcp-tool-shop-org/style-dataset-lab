@@ -2,8 +2,7 @@
   "name": "portlight-ships",
   "display_name": "Portlight Ships",
   "version": "1.0.0",
-  "description": "Portlight Ships — maritime age-of-sail merchant and naval vessel visual canon and dataset project on Apache-2.0 Qwen-Image",
-  "domain": "maritime-vessel",
+  "domain": "vehicle-mech",
   "rights": {
     "owner": "mcp-tool-shop",
     "licence": "CC-BY-4.0",

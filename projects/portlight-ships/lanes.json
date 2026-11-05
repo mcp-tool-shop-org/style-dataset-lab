@@ -1,42 +1,46 @@
 {
-  "version": "1.0.0",
-  "default_lane": "damage-state-plate",
+  "default_lane": "exterior",
   "lanes": [
     {
+      "id": "exterior",
+      "label": "Exterior / Hull",
+      "description": "Full vehicle exterior views — hull design, body panels, overall form language",
+      "id_patterns": ["^ext_", "^vehicle_", "^hull_"]
+    },
+    {
+      "id": "cockpit",
+      "label": "Cockpit / Cabin",
+      "description": "Cockpit interiors, bridge layouts, cabin instruments, pilot seating",
+      "id_patterns": ["^cockpit_", "^cabin_", "^bridge_"]
+    },
+    {
+      "id": "component",
+      "label": "Component / Part Detail",
+      "description": "Individual mechanical components — engines, weapons, joints, thrusters, subsystems",
+      "id_patterns": ["^component_", "^part_", "^mechanism_"]
+    },
+    {
+      "id": "schematic",
+      "label": "Schematic / Blueprint",
+      "description": "Technical diagrams, orthographic breakdowns, cross-sections, exploded views",
+      "id_patterns": ["^schematic_", "^blueprint_", "^diagram_"]
+    },
+    {
+      "id": "silhouette_sheet",
+      "label": "Silhouette / Profile Sheet",
+      "description": "Silhouette studies, profile comparisons, class lineup sheets, scale charts",
+      "id_patterns": ["^silhouette_", "^profile_", "^outline_"]
+    },
+    {
+      "id": "damage_variant",
+      "label": "Damage / Battle Variant",
+      "description": "Battle-damaged states, wear progression, field-repaired configurations",
+      "id_patterns": ["^damage_", "^battle_", "^wear_"]
+    },
+    {
       "id": "damage-state-plate",
-      "name": "Damage-State & Hull Profile Plate",
-      "description": "Broadside or three-quarter hull plate illustrating intact, sea-worn, or battle-damaged vessel state with clear rigging and planking anatomy",
-      "patterns": ["damage_state", "plate", "broadside", "hull_plate", "ship"]
-    },
-    {
-      "id": "exterior-establishing",
-      "name": "Exterior Establishing",
-      "description": "Three-quarter bow or quartering view of the vessel under sail or oars in open coastal or ocean swell",
-      "patterns": ["exterior", "establishing", "hero_ship", "under_sail"]
-    },
-    {
-      "id": "sprite-turnaround",
-      "name": "Orthographic Hull Turnaround",
-      "description": "Orthographic broadside, bow-on, and stern-on elevation views for shipwright reference and 3D/2D asset alignment",
-      "patterns": ["turnaround", "ortho", "elevation", "side_view"]
-    },
-    {
-      "id": "dock-approach",
-      "name": "Dock & Harbour Approach",
-      "description": "Vessel moored alongside a stone mole or timber quay showing cargo handling, furled sails, and deck activity",
-      "patterns": ["dock", "harbour", "quay", "moored"]
-    },
-    {
-      "id": "nav-chart-silhouette",
-      "name": "Navigation Chart Silhouette",
-      "description": "High-contrast side recognition silhouette for harbour master ledgers and sea charts",
-      "patterns": ["silhouette", "chart", "recognition", "profile"]
-    },
-    {
-      "id": "cutaway-detail",
-      "name": "Shipwright Cutaway & Deck Detail",
-      "description": "Focused structural study of hold framing, gun deck, capstan, helm, or mast step",
-      "patterns": ["cutaway", "detail", "deck_plan", "rigging_detail"]
+      "label": "Damage-State Plate",
+      "id_patterns": ["^damage_state_", "^plate_"]
     }
   ]
 }

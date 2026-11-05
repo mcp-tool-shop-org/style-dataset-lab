@@ -1,52 +1,52 @@
 {
   "workflow_id": "variant-pack",
-  "label": "Ship Hull & Rig Variant Pack",
-  "description": "Generate controlled damage-state and weather variants for a named Portlight vessel hull.",
-  "lane_id": "damage-state-plate",
+  "label": "Vehicle Variant Pack",
+  "description": "Generate controlled design variants for a named vehicle subject.",
+  "lane_id": "exterior",
   "subject_mode": "required",
   "output_mode": "variant_pack",
   "output_count": 4,
   "required_reference_roles": ["anchor"],
-  "preferred_reference_tags": ["damage-state-plate", "approved"],
+  "preferred_reference_tags": ["exterior", "approved"],
   "prompt_strategy": {
     "style_prefix": [
-      "portlight ship age-of-sail naval architecture plate",
-      "consistent hull sheer and sail plan",
-      "controlled damage and weather variation"
+      "vehicle design variant concept art",
+      "consistent form language",
+      "controlled variation"
     ],
     "structure": "style_prefix, subject_identity, lane_goal, canon_focus, controlled_variation",
     "must_include": [
-      "vessel hull class identity",
-      "shipwright tradition continuity",
-      "timber and canvas material palette"
+      "vehicle identity",
+      "form language continuity",
+      "material palette"
     ],
     "optional_blocks": [
-      "sea state note",
-      "damage tier note"
+      "color scheme note",
+      "loadout variant note"
     ]
   },
   "negative_strategy": {
     "must_avoid": [
-      "silhouette drift from vessel canon",
-      "wrong shipwright tradition materials",
-      "modern steel or steam elements"
+      "silhouette drift from reference",
+      "wrong faction materials",
+      "scale inconsistency"
     ],
     "lane_specific_avoid": [
-      "interior cabin focus"
+      "interior focus"
     ],
     "subject_specific_avoid": []
   },
   "canon_focus": [
     "silhouette",
-    "material_contrast",
+    "material_language",
     "palette",
-    "propulsion_clarity",
-    "scale_cues"
+    "faction_read",
+    "scale_logic"
   ],
   "drift_guards": [
-    "preserve core hull sheer and mast plan from canon",
-    "preserve shipwright tradition timber and canvas language",
-    "preserve gunport and rail scale relationship"
+    "preserve core silhouette from reference",
+    "preserve faction material language",
+    "preserve scale relationship"
   ],
   "runtime_defaults": {
     "adapter_target": "comfyui",

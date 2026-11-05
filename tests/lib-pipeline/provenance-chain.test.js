@@ -9,7 +9,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, cp } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -28,6 +28,7 @@ import { buildGeneratedProvenance, resolveCanonLink } from '../../lib/generated-
 import { reingestSelection } from '../../lib/reingest-selected.js';
 import { reingestGenerated } from '../../lib/reingest.js';
 import { verifyProvenanceChain, verifyRecordProvenance } from '../../lib/verify-chain.js';
+import { runBuild } from '../../lib/canon-build/build.js';
 import { REPO_ROOT } from '../../lib/paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -552,48 +553,68 @@ test('G9-cli: `sdlab verify` exits 0 on valid chain and exits non-zero when any 
   }
 });
 
-// ─── G14: projects/portlight-ships is a real project, not TEMPLATE ──
+// ─── G14 + Part A: projects/portlight-ships has no invented canon and walks G9 offline ──
 
-test('G14: projects/portlight-ships is configured as a real Apache-2.0 Qwen-Image maritime project with zero TEMPLATE placeholders or held data', () => {
+const TODO_CANON_MARKER = 'TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)';
+
+test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, restores template files with TODO-canon marker, contains zero invented canon or held data, and walks G9 sdlab verify offline', async () => {
   const portlightDir = join(REPO_ROOT, 'projects', 'portlight-ships');
   const proj = JSON.parse(readFileSync(join(portlightDir, 'project.json'), 'utf-8'));
 
   assert.notEqual(proj.display_name, 'TEMPLATE', 'portlight-ships display_name must not be TEMPLATE');
   assert.equal(proj.display_name, 'Portlight Ships');
-  assert.equal(proj.domain, 'maritime-vessel');
+  assert.equal(proj.rights?.owner, 'mcp-tool-shop');
+  assert.equal(proj.rights?.licence, 'CC-BY-4.0');
   assert.equal(proj.generation?.base, 'qwen-image');
   assert.equal(proj.generation?.unet, 'qwen_image_fp8_e4m3fn.safetensors');
   assert.equal(proj.generation?.clip, 'qwen_2.5_vl_7b_fp8_scaled.safetensors');
   assert.equal(proj.generation?.vae, 'qwen_image_vae.safetensors');
   assert.equal('checkpoint' in (proj.generation || {}), false, 'must not default to SDXL dreamshaper checkpoint');
 
-  // Verify no [DESCRIBE: placeholders remain in canon markdown or JSON configs
-  for (const rel of [
-    'project.json',
-    'constitution.json',
-    'lanes.json',
-    'rubric.json',
-    'terminology.json',
+  // Restored template files must carry the TODO-canon marker and zero builder-invented canon
+  const templateFiles = [
     'README.md',
     'canon/constitution.md',
     'canon/review-rubric.md',
+    'constitution.json',
+    'rubric.json',
+    'terminology.json',
     'inputs/prompts/example-wave.json',
-  ]) {
+  ];
+  for (const rel of templateFiles) {
     const text = readFileSync(join(portlightDir, rel), 'utf-8');
-    assert.doesNotMatch(text, /\[DESCRIBE:/, `${rel} still contains template [DESCRIBE: placeholder`);
+    assert.ok(
+      text.includes(TODO_CANON_MARKER),
+      `${rel} must carry "${TODO_CANON_MARKER}" instead of builder-invented canon`,
+    );
+    assert.doesNotMatch(
+      text,
+      /Distinct Hull & Rig Silhouette|Cold-Coast Shipwrights|Sunward-Sea Yards|Crown Naval Dockyards|greeble_spam/i,
+      `${rel} still contains builder-invented canon prose`,
+    );
     assert.doesNotMatch(text, /plsvessel|nano[-_ ]banana/i, `${rel} must not reference held Portlight data`);
   }
 
-  // Verify lanes include the ship canon's damage-state-plate lane
+  // Configuration files must have no invented creative prose or held data
+  for (const rel of [
+    'project.json',
+    'lanes.json',
+    'workflows/profiles/variant-pack.json',
+    'workflows/profiles/vehicle-silhouette-pack.json',
+  ]) {
+    const text = readFileSync(join(portlightDir, rel), 'utf-8');
+    assert.doesNotMatch(
+      text,
+      /age-of-sail|shipwright tradition|gunport|taffrail|maintruck/i,
+      `${rel} must not contain invented creative prose`,
+    );
+    assert.doesNotMatch(text, /plsvessel|nano[-_ ]banana/i, `${rel} must not reference held Portlight data`);
+  }
+
+  // Verify lanes include damage-state-plate referenced by canon/ships/*.md
   const lanes = JSON.parse(readFileSync(join(portlightDir, 'lanes.json'), 'utf-8'));
   const laneIds = lanes.lanes.map((l) => l.id);
   assert.ok(laneIds.includes('damage-state-plate'), 'lanes.json must include damage-state-plate used by canon/ships/*.md');
-
-  // Verify terminology includes the 5 maritime traditions from canon/traditions.md
-  const term = JSON.parse(readFileSync(join(portlightDir, 'terminology.json'), 'utf-8'));
-  for (const trad of ['cold-coast', 'sunward-sea', 'crown-naval', 'longshore', 'far-trade']) {
-    assert.ok(term.groups?.[trad], `terminology.json must define group "${trad}"`);
-  }
 
   // Doctor + canon build --dry-run both exit 0
   const docRes = runCli(['project', 'doctor', '--project', 'portlight-ships']);
@@ -603,4 +624,100 @@ test('G14: projects/portlight-ships is configured as a real Apache-2.0 Qwen-Imag
   const buildRes = runCli(['canon', 'build', '--project', 'portlight-ships', '--dry-run']);
   assert.equal(buildRes.status, 0, `canon build --dry-run failed: ${buildRes.stderr}`);
   assert.match(buildRes.stdout, /14 entities/);
+
+  // Part A.4: G9 `sdlab verify` walks the chain on a copy of portlight-ships offline
+  const tmpRoot = await mkdtemp(join(tmpdir(), 'sdl-portlight-verify-'));
+  try {
+    const tmpProjectRoot = join(tmpRoot, 'projects', 'portlight-ships');
+    await mkdir(join(tmpRoot, 'projects'), { recursive: true });
+    await cp(portlightDir, tmpProjectRoot, { recursive: true });
+
+    const buildSummary = await runBuild({ projectRoot: tmpProjectRoot });
+    const currentSha = buildSummary.generated_from;
+    const canonManifest = JSON.parse(
+      await readFile(join(buildSummary.output_dir, 'manifest.json'), 'utf-8'),
+    );
+    const brigSha = canonManifest.per_entity_hashes['brig'] || canonManifest.per_entity_hashes['ships/brig'];
+    assert.match(brigSha, /^(sha256:)?[0-9a-f]{64}$/);
+
+    const sampleGraph = {
+      37: { class_type: 'UNETLoader', inputs: { unet_name: proj.generation.unet, weight_dtype: 'default' } },
+      38: { class_type: 'CLIPLoader', inputs: { clip_name: proj.generation.clip, type: 'qwen_image' } },
+      39: { class_type: 'VAELoader', inputs: { vae_name: proj.generation.vae } },
+    };
+    const pinning = buildPinning({
+      graph: sampleGraph,
+      models: {
+        unet: proj.generation.unet,
+        clip: proj.generation.clip,
+        vae: proj.generation.vae,
+      },
+      loras: [],
+      seedPolicy: 'explicit-per-item',
+      modelsDir: join(tmpRoot, 'empty-models'),
+      doHash: false,
+    });
+
+    const runId = 'run_2026-11-05_001';
+    const selectionId = 'selection_2026-11-05_001';
+    await mkdir(join(tmpProjectRoot, 'runs', runId), { recursive: true });
+    await writeFile(
+      join(tmpProjectRoot, 'runs', runId, 'manifest.json'),
+      JSON.stringify({
+        schema_version: '2.3.0',
+        run_id: runId,
+        brief_id: 'brief_brig_01',
+        workflow_template_id: 'damage_state_plate',
+        canon_sha: currentSha,
+        entry_id: 'ships/brig',
+        entry_sha256: brigSha,
+        created_at: '2026-11-05T00:00:00.000Z',
+        pinning,
+        outputs: [{ filename: 'sel_001.png', seed: 1001, prompt: 'brig plate' }],
+      }, null, 2),
+    );
+
+    const selectionDir = join(tmpProjectRoot, 'selections', selectionId);
+    await mkdir(join(selectionDir, 'chosen'), { recursive: true });
+    await writeFile(join(selectionDir, 'chosen', 'sel_001.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    await writeFile(
+      join(selectionDir, 'manifest.json'),
+      JSON.stringify({
+        selection_id: selectionId,
+        project_id: 'portlight-ships',
+        source_type: 'run',
+        source_id: runId,
+        workflow_id: 'damage_state_plate',
+        canon_sha: currentSha,
+        created_at: '2026-11-05T00:00:00.000Z',
+        items: [
+          {
+            slot_or_output: '001.png',
+            filename: 'sel_001.png',
+            seed: 1001,
+            entry_id: 'ships/brig',
+            prompt: 'brig plate',
+            reason: 'approved silhouette',
+            tags: ['ship', 'brig'],
+          },
+        ],
+        reingest_ready: true,
+      }, null, 2),
+    );
+
+    await reingestSelection({
+      projectRoot: tmpProjectRoot,
+      projectId: 'portlight-ships',
+      selectionId,
+      dryRun: false,
+    });
+
+    const verifyRes = runCli(['verify', '--project', 'portlight-ships', '--json'], { SDLAB_ROOT: tmpRoot });
+    assert.equal(verifyRes.status, 0, `sdlab verify failed on portlight-ships: ${verifyRes.stderr}\n${verifyRes.stdout}`);
+    const verifyReport = JSON.parse(verifyRes.stdout);
+    assert.equal(verifyReport.ok, true);
+    assert.equal(verifyReport.records_checked, 1);
+  } finally {
+    await rm(tmpRoot, { recursive: true, force: true });
+  }
 });

@@ -1,19 +1,47 @@
-# Portlight Ships (`portlight-ships`)
+# portlight-ships
 
-Age-of-sail merchant and naval vessel visual canon and dataset project for **Portlight**, built on the Apache-2.0 **Qwen-Image** base model (`qwen_image_fp8_e4m3fn.safetensors`, `qwen_2.5_vl_7b_fp8_scaled.safetensors`, `qwen_image_vae.safetensors`) and released under **CC-BY-4.0** (`owner: mcp-tool-shop`).
+> TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)
 
-## Shipwright Traditions & 14 Canonical Hulls
+A `style-dataset-lab` project — domain: **vehicle-mech**.
 
-1. **Cold-Coast (`cold-coast`)**: `cog`, `fluyt`, `carrack`
-2. **Sunward-Sea (`sunward-sea`)**: `galley`, `xebec`, `caravel`
-3. **Crown Naval (`crown-naval`)**: `brig`, `barque`, `frigate`, `galleon`
-4. **Longshore (`longshore`)**: `sloop`, `schooner`, `brigantine`
-5. **Far-Trade (`far-trade`)**: `junk`
-
-## Quick Start
+## Quick commands
 
 ```bash
+# Validate that the scaffold is healthy
 sdlab project doctor --project portlight-ships
-sdlab canon build --project portlight-ships --dry-run
-sdlab verify --project portlight-ships
+
+# Generate candidates from the example prompt pack
+sdlab generate inputs/prompts/example-wave.json --project portlight-ships
+
+# Curate a candidate (approved | rejected | borderline)
+sdlab curate <asset_id> approved "reads clean" --project portlight-ships
+
+# Bind approved records to constitution rules
+sdlab canon-bind --project portlight-ships
+
+# Create a frozen dataset snapshot
+sdlab snapshot create --project portlight-ships
 ```
+
+## Project layout
+
+- `project.json` — defaults (checkpoint, width, height, sampler)
+- `constitution.json` — machine-readable style rules
+- `canon/` — human-authored style reference (constitution.md, review-rubric.md)
+- `inputs/prompts/` — generation prompt packs
+- `outputs/candidates/` — raw generated PNGs
+- `outputs/approved/` · `outputs/rejected/` · `outputs/borderline/` — curated outputs
+- `records/` — provenance + judgment records (one JSON per candidate)
+- `snapshots/` · `splits/` · `exports/` — frozen dataset artifacts
+
+## Docs
+
+- Handbook: https://mcp-tool-shop-org.github.io/style-dataset-lab/
+- CLI reference: `sdlab --help` (or `sdlab <cmd> --help` for any command)
+
+## TODO
+
+- [ ] Fill in `canon/constitution.md` with your style rules
+- [ ] Encode those rules in `constitution.json` for canon-bind
+- [ ] Add at least one prompt pack under `inputs/prompts/`
+- [ ] Run `sdlab project doctor` and fix any warnings

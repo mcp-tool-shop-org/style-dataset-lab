@@ -1,61 +1,41 @@
 {
-  "version": "1.0.0",
+  "_todo_canon": "TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)",
   "dimensions": [
-    "silhouette",
-    "scale_cues",
+    "mechanical_logic",
+    "proportion",
     "surface_detail",
-    "propulsion_clarity",
-    "functional_design",
-    "material_contrast",
-    "palette",
-    "weathering",
-    "composition",
-    "structural_logic"
+    "silhouette_read",
+    "scale_reference",
+    "functional_read",
+    "access_logic",
+    "wear_logic",
+    "style_consistency",
+    "damage_narrative"
   ],
   "thresholds": {
-    "approved": { "pass": 0.7 },
-    "borderline": { "pass": 0.5 }
-  },
-  "failure_modes": {
-    "generic_silhouette": {
-      "rule": "R1",
-      "description": "Hull sheer and mast plan blur into an indistinct generic sailboat without class-specific profile"
+    "approved": {
+      "pass": 0.7,
+      "partial": 0.5
     },
-    "scale_ambiguity": {
-      "rule": "R2",
-      "description": "Missing or contradictory rail, hatch, or gunport sizes make a frigate look like a skiff or vice versa"
+    "borderline": {
+      "pass": 0.7,
+      "partial": 0.5
     },
-    "greeble_spam": {
-      "rule": "R3",
-      "description": "Tangled spaghetti rigging or random plank noise with no shipwright structural purpose"
-    },
-    "unclear_propulsion": {
-      "rule": "R4",
-      "description": "Sails float detached from yards/stays or oar banks intersect the waterline impossibly"
-    },
-    "form_without_function": {
-      "rule": "R5",
-      "description": "Superstructure or hull proportions contradict the vessel's declared maritime tradition and role"
-    },
-    "uniform_material": {
-      "rule": "R6",
-      "description": "Oak hull planking, pine spars, flax canvas, and iron fittings all share the same plastic sheen"
-    },
-    "palette_violation": {
-      "rule": "R7",
-      "description": "Neon or synthetic modern hull colors outside the declared maritime tradition palette"
-    },
-    "uniform_weathering": {
-      "rule": "R8",
-      "description": "Random grime distribution instead of waterline fouling, salt spray at the bow, and sun-faded canvas"
-    },
-    "cropped_subject": {
-      "rule": "R9",
-      "description": "Maintruck, bowsprit tip, or stern lantern clipped by the frame edge"
-    },
-    "floating_parts": {
-      "rule": "R10",
-      "description": "Disjointed masts, impossible hull twist, or unseaworthy waterline trim"
+    "rejected": {
+      "fail_ceiling": 0.4,
+      "partial_ceiling": 0.6
     }
+  },
+  "failure_to_rules": {
+    "impossible_mechanism": ["MEC-001"],
+    "wrong_scale": ["SCL-001"],
+    "generic_vehicle": ["SIL-001"],
+    "random_damage": ["DMG-001"],
+    "proportion_drift": ["PRO-001"],
+    "no_surface_detail": ["SUR-001"],
+    "unclear_function": ["FUN-001"],
+    "no_access_points": ["ACC-001"],
+    "random_wear": ["WEA-001"],
+    "style_drift": ["STY-001"]
   }
 }
