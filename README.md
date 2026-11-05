@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
+  <a href="README.md">English</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
 </p>
 
 <p align="center">
@@ -134,6 +134,8 @@ sdlab canon freeze kael_maren --project my-project --reason "prologue portrait l
 sdlab canon drift --project my-project
 ```
 
+A local model can draft canon too, but it never decides it. `sdlab canon draft <class_id> --endpoint <url> --brief "<text>" --out <path>` asks a loopback-only, OpenAI-compatible server for a canon entry and prompts, and writes them with `status: "draft"`, `judgment: null` and the drafting model stamped on every output. A draft cannot be frozen until a person ratifies it: the freeze gate refuses any model-drafted entry without a human approval, a reason, and the hash of the exact draft that was approved.
+
 `canon build` is content-addressable — its output is keyed by a `canon_sha` and cached, so an unchanged canon rebuilds instantly. `canon freeze` witnesses each freeze against a specific build and appends to a `freeze-events.jsonl` audit trail: `frozen` entries refuse regeneration outright, `soft-advisory` entries refuse by default (bypass with `--i-know`). `canon drift` recomputes every watched entry's hash and flags anything that moved since the last clean build.
 
 Full workflow in the handbook: [Canon build](handbook/canon-build/), [Canon freeze](handbook/canon-freeze/), and [Two-LoRA stacking](handbook/two-lora-stacking/).
@@ -227,6 +229,7 @@ These are not aspirational. They are enforced.
 - **No model verifies its own output.** Judgments record `judged_by_model` and `generator_model`; a warning fires if they are ever the same model.
 - **A judgment says who made it.** `eligibility audit` distinguishes judgments a person wrote from judgments a bulk script minted, so a rationale that describes a category rather than an image cannot pass as curation.
 - **Measurement is not verdict.** `sdlab measure` attaches numbers to a record. It never sets a judgment, a fit, or an approval — and where a measure is undefined for an image it records `null` rather than a plausible number.
+- **A release can prove where every image came from.** `sdlab verify --project <name>` walks the chain offline for each record: the owner and licence on the record, the canon entry it was bound to (by hash), the licence of every model and LoRA that made it (SPDX id, licence URL, the date it was read, and the file hash), and the workflow hash in the run manifest. A missing link fails the check rather than passing it.
 - **Adapters cannot mutate truth.** Different layout, same records. No additions, no removals, no reclassification.
 - **Generated outputs re-enter through review.** No bypass. Curate and bind like everything else. Externally-generated images enter the same way via `sdlab ingest`, uncurated.
 - **Failures are visible.** A missing record, an unplaceable image, or a caption that cannot be built stops an export or training package rather than quietly shrinking it.
@@ -317,7 +320,9 @@ File an issue at https://github.com/mcp-tool-shop-org/style-dataset-lab/issues w
 
 ## Security
 
-Local-only. No telemetry, no analytics, no external requests. Images stay on your GPU and filesystem.
+Local by default. No telemetry, no analytics, and no external requests from the `sdlab` CLI: images stay on your GPU and filesystem, and `canon draft` refuses any endpoint that isn't loopback.
+
+The one exception is opt-in. `scripts/colab/` holds launch kits for running a render or a LoRA training step on your own Google Colab account. They upload only the files you point them at, run under a spending cap read from your live Colab balance, and stop their own session on exit. These kits are **experimental**: they have not yet completed a live window end to end.
 
 ## License
 
