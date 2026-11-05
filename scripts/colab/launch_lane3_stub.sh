@@ -15,10 +15,10 @@ PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_AI_TOOLKIT_REPO="https://github.com/ostris/ai-toolkit.git"
 PINNED_AI_TOOLKIT_COMMIT="73ebae1334d2c98089f1b90f8cb19257825f891a"
 PINNED_OVERRIDE_SHA="42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc9e3a9"
-PINNED_LAUNCH_GUARDS_SHA="0c846d1bd21b0459ba4845f89adca9a75b80d5ded14abba510d51a81afdb9391"
+PINNED_LAUNCH_GUARDS_SHA="06364ffcf95879ef8c5d0d62b517f23b898abc28f960209aaaacc89f46623406"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="95869133e5d51b7b7db6719dbfe7c3e7a776fd1e97329e93523093d36e5b6449"
-PINNED_SELF_SHA="68b9e700fb88a2843dcc59f26fc53628f1a26ef0675c4872d03e78d5ca7ada4e"
+PINNED_COLAB_WINDOW_SHA="ade565b71c17da2e7c63370d1d39cc3badc017f2a88188fa6e314b6151a9b3ff"
+PINNED_SELF_SHA="87b021c42ec720bf3a5c34215f36ffdbfd375248cbadd644ddd903d5475406a4"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -142,6 +142,7 @@ mkdir -p /content/lane3_out /content/lane3_out/checkpoints
 : "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
 : "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 
+echo "setup" > /content/lane3_out/phase.txt
 (
   while true; do
     {
@@ -158,7 +159,8 @@ mkdir -p /content/lane3_out /content/lane3_out/checkpoints
       grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
       echo "PROC:"
       ps -ef | grep -E "ai-toolkit|run\.py" | grep -v grep || true
-      echo 'HARNESS: {"phase": "run"}'
+      CUR_PHASE="\$(cat /content/lane3_out/phase.txt 2>/dev/null || echo setup)"
+      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
     } | tee -a /content/lane3_out/vitals.log
     sleep 15
   done
@@ -261,6 +263,7 @@ config:
         dtype: fp32
 YAMLEOF
 
+echo "run" > /content/lane3_out/phase.txt
 python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml \
   > /content/lane3_out/train.log 2>&1
 

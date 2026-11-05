@@ -138,43 +138,68 @@ def parse_usage_text(
     *,
     usage_rc: int = 0,
     configured_rate: float = 0.26,
+    session_opened: bool = True,
+    post_open_rate: float | None = None,
+    pre_open_rate: float | None = None,
 ) -> dict[str, Any]:
+    cfg = float(configured_rate)
+
+    def _select_rate(
+        cur_measured: float | None,
+    ) -> tuple[float | None, float | None, float, str]:
+        eff_pre = cur_measured if not session_opened else pre_open_rate
+        eff_post = post_open_rate if post_open_rate is not None else (cur_measured if session_opened else None)
+        if eff_post is not None:
+            return eff_pre, eff_post, float(eff_post), "post_open_measured"
+        if eff_pre is not None:
+            return eff_pre, None, max(float(eff_pre), cfg), "max_of_pre_open_and_configured"
+        return None, None, cfg, "configured"
+
     if usage_rc != 0:
+        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
             "balance": None,
             "rate_measured": None,
-            "rate_for_projection": float(configured_rate),
-            "rate_used_for_cap_and_projection": float(configured_rate),
-            "rate_source": "configured_RATE_CCU_PER_HOUR",
+            "rate_measured_pre_open": eff_pre,
+            "rate_measured_post_open": eff_post,
+            "rate_for_projection": rate_used,
+            "rate_used_for_cap_and_projection": rate_used,
+            "rate_source": rate_src,
             "active_assignments": None,
             "error": f"COLAB_USAGE_PARSE_FAILED: colab usage exited with status {usage_rc}",
         }
     text = raw_usage or ""
     m_bal = CURRENT_BALANCE_RE.search(text)
     if not m_bal:
+        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
             "balance": None,
             "rate_measured": None,
-            "rate_for_projection": float(configured_rate),
-            "rate_used_for_cap_and_projection": float(configured_rate),
-            "rate_source": "configured_RATE_CCU_PER_HOUR",
+            "rate_measured_pre_open": eff_pre,
+            "rate_measured_post_open": eff_post,
+            "rate_for_projection": rate_used,
+            "rate_used_for_cap_and_projection": rate_used,
+            "rate_source": rate_src,
             "active_assignments": None,
             "error": "COLAB_USAGE_PARSE_FAILED: missing 'Current balance: <float> compute units'",
         }
     balance = float(m_bal.group(1))
     if balance < 0.0:
+        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
             "balance": None,
             "rate_measured": None,
-            "rate_for_projection": float(configured_rate),
-            "rate_used_for_cap_and_projection": float(configured_rate),
-            "rate_source": "configured_RATE_CCU_PER_HOUR",
+            "rate_measured_pre_open": eff_pre,
+            "rate_measured_post_open": eff_post,
+            "rate_for_projection": rate_used,
+            "rate_used_for_cap_and_projection": rate_used,
+            "rate_source": rate_src,
             "active_assignments": None,
             "error": f"COLAB_USAGE_PARSE_FAILED: negative balance {balance} is impossible",
         }
@@ -182,23 +207,23 @@ def parse_usage_text(
     if m_rate:
         rate_measured: float | None = float(m_rate.group(1))
         if rate_measured < 0.0:
+            eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
             return {
                 "ok": False,
                 "code": "COLAB_USAGE_PARSE_FAILED",
                 "balance": None,
                 "rate_measured": None,
-                "rate_for_projection": float(configured_rate),
-                "rate_used_for_cap_and_projection": float(configured_rate),
-                "rate_source": "configured_RATE_CCU_PER_HOUR",
+                "rate_measured_pre_open": eff_pre,
+                "rate_measured_post_open": eff_post,
+                "rate_for_projection": rate_used,
+                "rate_used_for_cap_and_projection": rate_used,
+                "rate_source": rate_src,
                 "active_assignments": None,
                 "error": f"COLAB_USAGE_PARSE_FAILED: negative usage rate {rate_measured} is impossible",
             }
-        rate_for_projection = rate_measured
-        rate_source = "measured"
     else:
         rate_measured = None
-        rate_for_projection = float(configured_rate)
-        rate_source = "configured_RATE_CCU_PER_HOUR"
+    eff_pre, eff_post, rate_for_projection, rate_source = _select_rate(rate_measured)
     m_assign = ACTIVE_ASSIGNMENTS_RE.search(text)
     active_assignments = int(m_assign.group(1)) if m_assign else None
     return {
@@ -206,6 +231,8 @@ def parse_usage_text(
         "code": None,
         "balance": balance,
         "rate_measured": rate_measured,
+        "rate_measured_pre_open": eff_pre,
+        "rate_measured_post_open": eff_post,
         "rate_for_projection": rate_for_projection,
         "rate_used_for_cap_and_projection": rate_for_projection,
         "rate_source": rate_source,
@@ -318,13 +345,17 @@ def evaluate_vitals_and_stall_guard(
     vitals_text: str,
     idle_seconds: float = 0.0,
     stall_s: float = 300.0,
+    setup_stall_s: float = 600.0,
 ) -> dict[str, Any]:
     samples = parse_vitals_log(vitals_text)
+    current_phase = "setup"
     if samples:
         last = samples[-1]
+        if isinstance(last["phase"], str) and last["phase"].strip():
+            current_phase = last["phase"].strip()
         if (
             isinstance(last["phase"], str)
-            and last["phase"].startswith("run")
+            and (last["phase"].startswith("run") or last["phase"].startswith("setup"))
             and last["worker_proc_count"] == 0
             and last.get("oom_kill")
         ):
@@ -332,7 +363,7 @@ def evaluate_vitals_and_stall_guard(
                 "tripped": True,
                 "code": "DEAD_HARNESS_TRIPPED",
                 "cgroup_oom": True,
-                "reason": "cgroup OOM kill detected in phase=run with 0 active worker processes",
+                "reason": f"cgroup OOM kill detected in phase={last['phase']} with 0 active worker processes",
                 "samples_count": len(samples),
             }
     if len(samples) >= 2:
@@ -348,7 +379,16 @@ def evaluate_vitals_and_stall_guard(
                 "reason": "2 consecutive vitals samples in phase=run with 0 active worker processes",
                 "samples_count": len(samples),
             }
-    if float(idle_seconds) >= float(stall_s):
+    if current_phase.startswith("setup"):
+        if float(idle_seconds) >= float(setup_stall_s):
+            return {
+                "tripped": True,
+                "code": "SETUP_STALL_TRIPPED",
+                "cgroup_oom": False,
+                "reason": f"No new output in phase=setup for {idle_seconds}s (setup_stall_s={setup_stall_s}s)",
+                "samples_count": len(samples),
+            }
+    elif float(idle_seconds) >= float(stall_s):
         return {
             "tripped": True,
             "code": "STALL_GUARD_TRIPPED",
@@ -427,6 +467,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--vitals-file", type=Path, default=None, help="Evaluate vitals.log and stall guard")
     parser.add_argument("--idle-seconds", type=float, default=0.0)
     parser.add_argument("--stall-s", type=float, default=300.0)
+    parser.add_argument("--setup-stall-s", type=float, default=600.0)
     parser.add_argument("--check-ram", action="store_true", help="Run host/cgroup RAM projection check")
     parser.add_argument("--current-anon-mb", type=float, default=512.0)
     parser.add_argument("--projected-delta-mb", type=float, default=1024.0)
@@ -475,6 +516,7 @@ def main(argv: list[str] | None = None) -> int:
             vitals_text=txt,
             idle_seconds=args.idle_seconds,
             stall_s=args.stall_s,
+            setup_stall_s=args.setup_stall_s,
         )
         print(json.dumps(vit))
         return 1 if vit["tripped"] else 0

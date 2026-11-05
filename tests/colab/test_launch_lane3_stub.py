@@ -300,8 +300,10 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert win["start_balance"] == 9.85
     assert win["end_balance"] == 9.85
     assert win["rate_measured"] == 0.26
+    assert win["rate_measured_pre_open"] == 0.26
+    assert win["rate_measured_post_open"] == 0.26
     assert win["rate_used_for_cap_and_projection"] == 0.26
-    assert win["rate_source"] == "measured"
+    assert win["rate_source"] == "post_open_measured"
     assert win["usage_parse_error"] is None
     assert "lane3_stub_bundle.tar.gz" in win["downloaded_files"]
     assert (state_ok / "sessions.log").exists()
@@ -445,3 +447,53 @@ def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(t
     assert res_neg.returncode == 91
     assert "COLAB_USAGE_PARSE_FAILED" in (out_neg / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-negmid" in (state_neg / "stops.log").read_text(encoding="utf-8")
+
+
+def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: Path) -> None:
+    # 1. Setup phase with no workers and steady output succeeds, then switches to run
+    _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "l3_setup_ok")
+    env_ok["FAKE_COLAB_MODE"] = "setup_phase"
+    env_ok["FAKE_COLAB_SETUP_DURATION_S"] = "60"
+    env_ok["FAKE_COLAB_SETUP_SCALE"] = "0.01"
+    env_ok["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
+    env_ok["FAKE_COLAB_POST_OPEN_RATE_STR"] = "0.29/hr"
+    env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_ok = tmp_path / "out_l3_setup_ok"
+    res_ok = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_ok), "--session", "sdlab-l3-setup-ok"],
+        env=env_ok,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
+    vitals_txt = (out_ok / "vitals.log").read_text(encoding="utf-8")
+    assert '"phase": "setup"' in vitals_txt
+    assert '"phase": "run"' in vitals_txt
+    win_ok = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
+    assert win_ok["rate_measured_pre_open"] == 0.0
+    assert win_ok["rate_measured_post_open"] == 0.29
+    assert win_ok["rate_used_for_cap_and_projection"] == 0.29
+    assert win_ok["rate_source"] == "post_open_measured"
+    assert "STOP -s sdlab-l3-setup-ok" in (state_ok / "stops.log").read_text(encoding="utf-8")
+
+    # 2. Silent setup trips SETUP_STALL_TRIPPED and trap stops session
+    _, state_stall, env_stall = _make_fake_colab_env(tmp_path / "l3_setup_stall")
+    env_stall["FAKE_COLAB_MODE"] = "setup_stall"
+    env_stall["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_stall["SETUP_STALL_S"] = "1"
+    out_stall = tmp_path / "out_l3_setup_stall"
+    res_stall = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_stall), "--session", "sdlab-l3-setup-stall"],
+        env=env_stall,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_stall.returncode == 93
+    assert "SETUP_STALL_TRIPPED" in (out_stall / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-setup-stall" in (state_stall / "stops.log").read_text(encoding="utf-8")

@@ -210,6 +210,31 @@ elif [ "${mode}" = "dead_harness" ]; then
     sleep 0.2
   done
   exit 0
+elif [ "${mode}" = "setup_phase" ]; then
+  setup_total="${FAKE_COLAB_SETUP_DURATION_S:-60}"
+  scale="${FAKE_COLAB_SETUP_SCALE:-1.0}"
+  step_sleep="$(awk -v t="${setup_total}" -v s="${scale}" 'BEGIN { printf "%.4f", (t * s) / 4.0 }')"
+  for idx in 1 2 3 4; do
+    echo "=== VITALS 2026-11-05T12:00:$((idx * 15))Z ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "MEM: MemTotal: 12582912 kB"
+    echo "PROC:"
+    echo 'HARNESS: {"phase": "setup"}'
+    echo "SETUP_PROGRESS step=${idx}/4"
+    sleep "${step_sleep}"
+  done
+elif [ "${mode}" = "setup_stall" ]; then
+  echo "=== VITALS 2026-11-05T12:00:00Z ==="
+  echo "CGROUP_MEM_CURRENT: 536870912"
+  echo "CGROUP_MEM_MAX: 12884901888"
+  echo "MEM: MemTotal: 12582912 kB"
+  echo "PROC:"
+  echo 'HARNESS: {"phase": "setup"}'
+  for _ in $(seq 1 60); do
+    sleep 0.2
+  done
+  exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "=== VITALS 2026-11-05T12:00:00Z ==="
   echo "MEM: MemTotal: 13290000 kB"
@@ -262,6 +287,31 @@ elif [ "${mode}" = "dead_harness" ]; then
   echo "MEM: MemTotal: 13290000 kB"
   echo "PROC:"
   echo 'HARNESS: {"phase": "run", "step": 1}'
+  for _ in $(seq 1 60); do
+    sleep 0.2
+  done
+  exit 0
+elif [ "${mode}" = "setup_phase" ]; then
+  setup_total="${FAKE_COLAB_SETUP_DURATION_S:-60}"
+  scale="${FAKE_COLAB_SETUP_SCALE:-1.0}"
+  step_sleep="$(awk -v t="${setup_total}" -v s="${scale}" 'BEGIN { printf "%.4f", (t * s) / 4.0 }')"
+  for idx in 1 2 3 4; do
+    echo "=== VITALS 2026-11-05T12:00:$((idx * 15))Z ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "MEM: MemTotal: 12582912 kB"
+    echo "PROC:"
+    echo 'HARNESS: {"phase": "setup"}'
+    echo "SETUP_PROGRESS step=${idx}/4"
+    sleep "${step_sleep}"
+  done
+elif [ "${mode}" = "setup_stall" ]; then
+  echo "=== VITALS 2026-11-05T12:00:00Z ==="
+  echo "CGROUP_MEM_CURRENT: 536870912"
+  echo "CGROUP_MEM_MAX: 12884901888"
+  echo "MEM: MemTotal: 12582912 kB"
+  echo "PROC:"
+  echo 'HARNESS: {"phase": "setup"}'
   for _ in $(seq 1 60); do
     sleep 0.2
   done
@@ -475,7 +525,19 @@ def main(argv: list[str] | None = None) -> int:
             print(raw_override)
             return 0
         bal = "9.75" if (mode == "cap_burn" and c >= 2) else os.environ.get("FAKE_COLAB_BALANCE", "9.85")
-        rate_str = os.environ.get("FAKE_COLAB_RATE_STR", "0.26/hr")
+        session_opened = (state_dir / "session_opened.txt").is_file()
+        pre_rate_str = os.environ.get("FAKE_COLAB_PRE_OPEN_RATE_STR")
+        post_rate_str = os.environ.get("FAKE_COLAB_POST_OPEN_RATE_STR")
+        if not session_opened and pre_rate_str is not None:
+            rate_str = pre_rate_str
+        elif session_opened and post_rate_str is not None:
+            rate_str = post_rate_str
+        else:
+            rate_str = os.environ.get("FAKE_COLAB_RATE_STR", "0.26/hr")
+        if rate_str == "OMIT":
+            print(f"Current balance: {bal} compute units")
+            print("Active assignments: 1")
+            return 0
         print(f"Current balance: {bal} compute units")
         print(f"Usage rate: {rate_str}")
         print("Active assignments: 1")
@@ -500,6 +562,7 @@ def main(argv: list[str] | None = None) -> int:
             held = res.returncode != 0
         with (state_dir / "lock.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
+        (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
         print(
             f"Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_{lane_tag}_999&port=8188"

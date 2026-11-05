@@ -87,14 +87,38 @@ guards_py = Path(sys.argv[5])
 sys.path.insert(0, str(guards_py.parent))
 import launch_guards as lg
 
-parsed = lg.parse_usage_text(raw_usage, usage_rc=usage_rc, configured_rate=default_rate)
+
+def _read_float(p: Path) -> float | None:
+    if not p.exists():
+        return None
+    try:
+        return float(p.read_text(encoding="utf-8").strip())
+    except Exception:
+        return None
+
 
 start_f = out_dir / "start_balance.txt"
 end_f = out_dir / "end_balance.txt"
 rate_f = out_dir / "rate_measured.txt"
+rate_pre_f = out_dir / "rate_measured_pre_open.txt"
+rate_post_f = out_dir / "rate_measured_post_open.txt"
 rate_proj_f = out_dir / "rate_for_projection.txt"
 rate_src_f = out_dir / "rate_source.txt"
 err_f = out_dir / "usage_parse_error.txt"
+opened_marker = out_dir / "session_opened.txt"
+
+session_opened = opened_marker.exists()
+existing_pre = _read_float(rate_pre_f)
+existing_post = _read_float(rate_post_f)
+
+parsed = lg.parse_usage_text(
+    raw_usage,
+    usage_rc=usage_rc,
+    configured_rate=default_rate,
+    session_opened=session_opened,
+    post_open_rate=existing_post,
+    pre_open_rate=existing_pre,
+)
 
 if parsed["ok"]:
     bal = parsed["balance"]
@@ -103,8 +127,14 @@ if parsed["ok"]:
     start_bal_str = start_f.read_text(encoding="utf-8").strip()
     end_f.write_text(f"{bal}\n", encoding="utf-8", newline="\n")
     cur_bal_str = f"{bal}"
-    if parsed["rate_measured"] is not None:
-        rate_f.write_text(f"{parsed['rate_measured']}\n", encoding="utf-8", newline="\n")
+    if parsed["rate_measured_pre_open"] is not None:
+        rate_pre_f.write_text(f"{parsed['rate_measured_pre_open']}\n", encoding="utf-8", newline="\n")
+    if parsed["rate_measured_post_open"] is not None:
+        rate_post_f.write_text(f"{parsed['rate_measured_post_open']}\n", encoding="utf-8", newline="\n")
+    if parsed["rate_measured_post_open"] is not None:
+        rate_f.write_text(f"{parsed['rate_measured_post_open']}\n", encoding="utf-8", newline="\n")
+    elif parsed["rate_measured_pre_open"] is not None:
+        rate_f.write_text(f"{parsed['rate_measured_pre_open']}\n", encoding="utf-8", newline="\n")
     rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
     err_tok = "NONE"
@@ -235,6 +265,7 @@ colab_run_exec_with_live_guards() {
 
   local poll_s="${GUARD_POLL_INTERVAL_S:-2}"
   local stall_s="${STALL_S:-300}"
+  local setup_stall_s="${SETUP_STALL_S:-600}"
   local last_size=0
   local last_progress_epoch
   last_progress_epoch="$(date -u +%s)"
@@ -281,7 +312,8 @@ colab_run_exec_with_live_guards() {
     "${py_bin}" "${guards_py}" \
       --vitals-file "${out_dir}/vitals.log" \
       --idle-seconds "${idle_s}" \
-      --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log" || vitals_rc=$?
+      --stall-s "${stall_s}" \
+      --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log" || vitals_rc=$?
     if [ "${vitals_rc}" -ne 0 ]; then
       pkill -P "${EXEC_PID}" 2>/dev/null || true
       kill -9 "${EXEC_PID}" 2>/dev/null || true
@@ -312,7 +344,7 @@ colab_run_exec_with_live_guards() {
     return "${remote_rc}"
   fi
 
-  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log"
+  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log"
   local end_epoch elapsed_final
   end_epoch="$(date -u +%s)"
   elapsed_final="$((end_epoch - start_epoch))"
@@ -363,6 +395,7 @@ colab_open_session_locked() {
       return "${rc}"
     fi
   fi
+  printf '1\n' > "${out_dir}/session_opened.txt"
 }
 
 colab_scrub_all_logs() {
@@ -478,11 +511,23 @@ for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.saf
         downloaded_files[artifact.name] = sha256_path(artifact)
 
 usage_parse_error = read_text_file(out_dir / "usage_parse_error.txt")
-rate_measured = read_float_file(out_dir / "rate_measured.txt")
+rate_measured_pre_open = read_float_file(out_dir / "rate_measured_pre_open.txt")
+rate_measured_post_open = read_float_file(out_dir / "rate_measured_post_open.txt")
+rate_measured = (
+    rate_measured_post_open
+    if rate_measured_post_open is not None
+    else read_float_file(out_dir / "rate_measured.txt")
+)
 rate_for_projection = read_float_file(out_dir / "rate_for_projection.txt")
 rate_used_for_cap_and_projection = rate_for_projection
 rate_source = read_text_file(out_dir / "rate_source.txt") or (
-    "measured" if rate_measured is not None else "configured_RATE_CCU_PER_HOUR"
+    "post_open_measured"
+    if rate_measured_post_open is not None
+    else (
+        "max_of_pre_open_and_configured"
+        if rate_measured_pre_open is not None
+        else "configured"
+    )
 )
 
 window_payload = {
@@ -498,6 +543,8 @@ window_payload = {
     "start_balance": read_float_file(out_dir / "start_balance.txt"),
     "end_balance": read_float_file(out_dir / "end_balance.txt"),
     "rate_measured": rate_measured,
+    "rate_measured_pre_open": rate_measured_pre_open,
+    "rate_measured_post_open": rate_measured_post_open,
     "rate_used_for_cap_and_projection": rate_used_for_cap_and_projection,
     "rate_for_projection": rate_for_projection,
     "rate_source": rate_source,

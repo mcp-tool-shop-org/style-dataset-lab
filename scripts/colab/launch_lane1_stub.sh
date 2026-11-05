@@ -14,10 +14,10 @@ PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LANE1_RENDER_SHA="75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013"
-PINNED_LAUNCH_GUARDS_SHA="0c846d1bd21b0459ba4845f89adca9a75b80d5ded14abba510d51a81afdb9391"
+PINNED_LAUNCH_GUARDS_SHA="06364ffcf95879ef8c5d0d62b517f23b898abc28f960209aaaacc89f46623406"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="95869133e5d51b7b7db6719dbfe7c3e7a776fd1e97329e93523093d36e5b6449"
-PINNED_SELF_SHA="799da74546ed0de7d141efcd25d3499baf290759ef12c2f88ab22ad36c9ebcd6"
+PINNED_COLAB_WINDOW_SHA="ade565b71c17da2e7c63370d1d39cc3badc017f2a88188fa6e314b6151a9b3ff"
+PINNED_SELF_SHA="f0ac9fe51857cfbf59b26b30a4c594cf0deec2a4f19e67af2654111134d174a7"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -142,6 +142,7 @@ mkdir -p /content/lane1_out
 : "\${PINNED_COMFYUI_COMMIT:?missing PINNED_COMFYUI_COMMIT}"
 : "\${PINNED_COMFY_HEADLESS_SPEC:?missing PINNED_COMFY_HEADLESS_SPEC}"
 
+echo "setup" > /content/lane1_out/phase.txt
 (
   while true; do
     {
@@ -158,7 +159,8 @@ mkdir -p /content/lane1_out
       grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
       echo "PROC:"
       ps -ef | grep -E "comfy|main\.py|lane1_render\.py" | grep -v grep || true
-      echo 'HARNESS: {"phase": "run"}'
+      CUR_PHASE="\$(cat /content/lane1_out/phase.txt 2>/dev/null || echo setup)"
+      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
     } | tee -a /content/lane1_out/vitals.log
     sleep 15
   done
@@ -188,6 +190,7 @@ uv pip install -r /content/ComfyUI/requirements.txt \
 uv pip install "\${PINNED_COMFY_HEADLESS_SPEC}"
 python -c "from comfy_headless import ComfyClient; assert ComfyClient is not None"
 
+echo "run" > /content/lane1_out/phase.txt
 python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \
   > /content/lane1_out/comfyui.log 2>&1 &
 COMFY_PID="\$!"

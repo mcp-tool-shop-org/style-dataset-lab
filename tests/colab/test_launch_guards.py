@@ -143,8 +143,9 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert ok_hr["ok"] is True
     assert ok_hr["balance"] == 9.85
     assert ok_hr["rate_measured"] == 0.26
+    assert ok_hr["rate_measured_post_open"] == 0.26
     assert ok_hr["rate_for_projection"] == 0.26
-    assert ok_hr["rate_source"] == "measured"
+    assert ok_hr["rate_source"] == "post_open_measured"
     assert ok_hr["active_assignments"] == 1
 
     # Accepts /h as well, and falls back to configured RATE_CCU_PER_HOUR only when rate is absent
@@ -156,7 +157,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert ok_h["ok"] is True
     assert ok_h["balance"] == 12.5
     assert ok_h["rate_measured"] == 0.08
-    assert ok_h["rate_source"] == "measured"
+    assert ok_h["rate_source"] == "post_open_measured"
 
     fallback_rate = lg.parse_usage_text(
         "Current balance: 7.25 compute units\nActive assignments: 0\n",
@@ -167,7 +168,44 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert fallback_rate["balance"] == 7.25
     assert fallback_rate["rate_measured"] is None
     assert fallback_rate["rate_for_projection"] == 0.33
-    assert fallback_rate["rate_source"] == "configured_RATE_CCU_PER_HOUR"
+    assert fallback_rate["rate_source"] == "configured"
+
+    # Pre-open measured 0.00/hr must never lower configured rate; uses max(pre_open, configured)
+    pre_zero = lg.parse_usage_text(
+        "Current balance: 9.85 compute units\nUsage rate: 0.00/hr\nActive assignments: 0\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=False,
+    )
+    assert pre_zero["ok"] is True
+    assert pre_zero["rate_measured_pre_open"] == 0.0
+    assert pre_zero["rate_measured_post_open"] is None
+    assert pre_zero["rate_used_for_cap_and_projection"] == 0.26
+    assert pre_zero["rate_source"] == "max_of_pre_open_and_configured"
+
+    pre_higher = lg.parse_usage_text(
+        "Current balance: 9.85 compute units\nUsage rate: 0.80/hr\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=False,
+    )
+    assert pre_higher["ok"] is True
+    assert pre_higher["rate_measured_pre_open"] == 0.80
+    assert pre_higher["rate_used_for_cap_and_projection"] == 0.80
+    assert pre_higher["rate_source"] == "max_of_pre_open_and_configured"
+
+    post_after_pre = lg.parse_usage_text(
+        "Current balance: 9.80 compute units\nUsage rate: 0.24/hr\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=True,
+        pre_open_rate=0.0,
+    )
+    assert post_after_pre["ok"] is True
+    assert post_after_pre["rate_measured_pre_open"] == 0.0
+    assert post_after_pre["rate_measured_post_open"] == 0.24
+    assert post_after_pre["rate_used_for_cap_and_projection"] == 0.24
+    assert post_after_pre["rate_source"] == "post_open_measured"
 
     # Rejects JSON or unparseable output or non-zero exit code without any 10.0 fallback
     bad_json = lg.parse_usage_text('{"balance_ccu": 10.0, "rate_ccu_per_hour": 0.26}', usage_rc=0)
@@ -276,6 +314,56 @@ HARNESS: {"phase": "run", "step": 1}
     assert tripped_oom["tripped"] is True
     assert tripped_oom["code"] == "DEAD_HARNESS_TRIPPED"
     assert tripped_oom.get("cgroup_oom") is True
+
+
+def test_setup_phase_zero_workers_does_not_trip_dead_harness_and_trips_setup_stall_or_oom() -> None:
+    setup_two_zero_fixture = """=== VITALS 2026-11-05T12:00:00Z ===
+CGROUP_MEM: oom_kill 0
+PROC:
+HARNESS: {"phase": "setup"}
+=== VITALS 2026-11-05T12:00:15Z ===
+CGROUP_MEM: oom_kill 0
+PROC:
+HARNESS: {"phase": "setup"}
+=== VITALS 2026-11-05T12:00:30Z ===
+CGROUP_MEM: oom_kill 0
+PROC:
+HARNESS: {"phase": "setup"}
+"""
+    quiet_setup = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=setup_two_zero_fixture,
+        idle_seconds=599.9,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert quiet_setup["tripped"] is False
+    assert quiet_setup["code"] is None
+
+    tripped_setup_stall = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=setup_two_zero_fixture,
+        idle_seconds=600.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert tripped_setup_stall["tripped"] is True
+    assert tripped_setup_stall["code"] == "SETUP_STALL_TRIPPED"
+
+    # cgroup OOM remains active in setup phase too
+    setup_oom_fixture = """=== VITALS 2026-11-05T12:00:00Z ===
+CGROUP_MEM: oom 1
+CGROUP_MEM: oom_kill 1
+PROC:
+HARNESS: {"phase": "setup"}
+"""
+    tripped_setup_oom = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=setup_oom_fixture,
+        idle_seconds=5.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert tripped_setup_oom["tripped"] is True
+    assert tripped_setup_oom["code"] == "DEAD_HARNESS_TRIPPED"
+    assert tripped_setup_oom["cgroup_oom"] is True
 
 
 def test_host_ram_projection_trips_and_stays_quiet_just_under() -> None:
