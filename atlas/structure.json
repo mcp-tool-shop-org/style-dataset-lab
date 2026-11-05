@@ -106,7 +106,8 @@
             "scripts/split.js",
             "scripts/training-manifest.js",
             "scripts/training-package.js",
-            "scripts/training-profile.js"
+            "scripts/training-profile.js",
+            "scripts/verify.js"
           ],
           "path": "bin/sdlab.js",
           "sequences": [
@@ -409,21 +410,16 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 9,
+      "testedBy": 10,
       "testedThroughSpawn": true,
       "unresolvedNamed": [
         {
           "path": "bin/sdlab.js",
           "specifier": null,
           "why": "dynamic"
-        },
-        {
-          "path": "bin/sdlab.js",
-          "specifier": "../scripts/verify.js",
-          "why": "missing"
         }
       ],
-      "unresolvedSites": 2
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 0,
@@ -2582,6 +2578,26 @@
         },
         {
           "exports": [
+            "assertClearedPinningLicences",
+            "isClearedLicenceEntry",
+            "isQuarantinedName",
+            "resolveModelLicence"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertClearedPinningLicences",
+              "kind": "throw",
+              "line": 245
+            }
+          ],
+          "hash": "d4cd863656070d509f3dd0bc5a373276e4ae74968d771fb1ee251fbd568d6fdb",
+          "importsFiles": [
+            "lib/errors.js"
+          ],
+          "path": "lib/model-licences.js"
+        },
+        {
+          "exports": [
             "parseNpyHeader",
             "readNpyValues"
           ],
@@ -2892,10 +2908,12 @@
           "importOrder": [
             "lib/training-manifests.js",
             "lib/records.js",
-            "lib/generated-provenance.js"
+            "lib/generated-provenance.js",
+            "lib/model-licences.js"
           ],
           "importsFiles": [
             "lib/generated-provenance.js",
+            "lib/model-licences.js",
             "lib/records.js",
             "lib/training-manifests.js"
           ],
@@ -2978,7 +2996,8 @@
           ],
           "hash": "1260e7734d93b78de6fa5a1726f23146fc2a20474878c9448d5ae709ca663a31",
           "importsFiles": [
-            "lib/log.js"
+            "lib/log.js",
+            "lib/model-licences.js"
           ],
           "path": "lib/run-manifest.js"
         },
@@ -3425,6 +3444,34 @@
         },
         {
           "exports": [
+            "verifyProvenanceChain",
+            "verifyRecordProvenance"
+          ],
+          "failurePaths": [
+            {
+              "in": "verifyRecordProvenance",
+              "kind": "catch",
+              "line": 94
+            },
+            {
+              "in": "verifyRecordProvenance",
+              "kind": "catch",
+              "line": 138
+            }
+          ],
+          "hash": "4b1ba737f28191445d76ea608b870bde6637acdbf8f2e3fc5035d1cd70d28e96",
+          "importOrder": [
+            "lib/records.js",
+            "lib/model-licences.js"
+          ],
+          "importsFiles": [
+            "lib/model-licences.js",
+            "lib/records.js"
+          ],
+          "path": "lib/verify-chain.js"
+        },
+        {
+          "exports": [
             "getWorkflowProfile",
             "listWorkflowProfiles",
             "saveWorkflowProfile",
@@ -3482,7 +3529,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 198,
+          "reads": 212,
           "where": [
             "caller"
           ],
@@ -3518,31 +3565,21 @@
           "writes": 1
         }
       ],
-      "outsideReads": 207,
+      "outsideReads": 221,
       "outsideWrites": 96,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 93,
+      "testedBy": 94,
       "unresolvedNamed": [
-        {
-          "path": "lib/reingest.js",
-          "specifier": "./model-licences.js",
-          "why": "missing"
-        },
-        {
-          "path": "lib/run-manifest.js",
-          "specifier": "./model-licences.js",
-          "why": "missing"
-        },
         {
           "path": "lib/training-adapters.js",
           "specifier": null,
           "why": "dynamic"
         }
       ],
-      "unresolvedSites": 3
+      "unresolvedSites": 1
     },
     {
       "dynamicReads": 1,
@@ -17701,6 +17738,32 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 55
+            }
+          ],
+          "hash": "df36b4832349f95b57c13e18328b295307d90c58d62f090b1db1b469040293a6",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/verify-chain.js"
+          ],
+          "importsFiles": [
+            "lib/args.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "lib/verify-chain.js"
+          ],
+          "path": "scripts/verify.js"
+        },
+        {
+          "exports": [
+            "run"
+          ],
           "hash": "245d2214f843abc51fbd90ee4efec05585e3f599cd7856c76af94c06fe8ef567",
           "importOrder": [
             "lib/args.js",
@@ -17772,7 +17835,7 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 19,
+      "testedBy": 20,
       "unresolvedSites": 0
     },
     {
@@ -19054,6 +19117,32 @@
           "testFramework": "node --test"
         },
         {
+          "hash": "93af43c81fe255d9d409b24ea3cfb0b26759a78e6ca467ebb53145852b16aa01",
+          "importOrder": [
+            "lib/run-manifest.js",
+            "lib/records.js",
+            "lib/generated-provenance.js",
+            "lib/reingest-selected.js",
+            "lib/reingest.js",
+            "lib/verify-chain.js",
+            "lib/paths.js"
+          ],
+          "importsFiles": [
+            "lib/generated-provenance.js",
+            "lib/paths.js",
+            "lib/records.js",
+            "lib/reingest-selected.js",
+            "lib/reingest.js",
+            "lib/run-manifest.js",
+            "lib/verify-chain.js"
+          ],
+          "path": "tests/lib-pipeline/provenance-chain.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
+        },
+        {
           "hash": "7ba090032b48ce3799a1729cfbaa224789a95b33d55eac5e3a70ab56ca82d2f6",
           "importsFiles": [
             "lib/refine-briefs.js"
@@ -19451,7 +19540,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -19460,7 +19549,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
@@ -19469,7 +19558,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 40
         }
       ],
       "readers": [],
@@ -19722,7 +19811,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -19732,7 +19821,7 @@
         },
         {
           "coverage": true,
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -20029,7 +20118,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -20038,7 +20127,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
@@ -20047,7 +20136,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 40
         }
       ],
       "readers": [],
@@ -20269,7 +20358,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 96,
+          "files": 97,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20319,7 +20408,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 49
+          "files": 51
         },
         {
           "boundary": "scripts",
@@ -20328,7 +20417,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 32
+          "files": 33
         }
       ],
       "readers": [],
@@ -20392,8 +20481,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
-    "tracked": 3231
+    "commit": "5cbde317ce5e2f672186fe3d21a597f4bb5eb3d7",
+    "tracked": 3235
   },
   "landings": [
     {
@@ -20473,6 +20562,12 @@
         },
         {
           "by": "tests/cli-scripts/namespace-suggester.test.js",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        },
+        {
+          "by": "tests/lib-pipeline/provenance-chain.test.js",
           "call": "literal",
           "confidence": "ast",
           "fromTests": true
@@ -23202,7 +23297,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 102,
+  "testFiles": 103,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

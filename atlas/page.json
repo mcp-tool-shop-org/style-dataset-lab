@@ -75,33 +75,41 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 21,
+      "added": 4,
+      "changed": 0,
       "moved": 0,
-      "parts": 6,
+      "parts": 3,
       "removed": 0
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "bin/sdlab.js is now also read by tests/lib-pipeline/provenance-chain.test.js.",
+        "subjects": [
+          "bin/sdlab.js",
+          "tests/lib-pipeline/provenance-chain.test.js"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-10-01; 21 files changed content.",
+        "sentence": "4 files added, across 3 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "dfeac64ea1a2585b65d88e6ee8a64fd02a185090",
-      "generatedAt": "2026-10-01T02:14:18.418Z"
+      "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+      "generatedAt": "2026-11-05T11:03:13.968Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [],
   "changesTogetherNote": [
-    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+  "commit": "5cbde317ce5e2f672186fe3d21a597f4bb5eb3d7",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (233), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (237), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -121,17 +129,17 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 39
+          "files": 40
         }
       ],
       "runs": [
@@ -168,7 +176,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 31,
-      "runsMore": 70,
+      "runsMore": 71,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -197,17 +205,17 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 39
+          "files": 40
         }
       ],
       "runs": [
@@ -244,7 +252,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 31,
-      "runsMore": 70,
+      "runsMore": 71,
       "sends": [
         "publishes to npm"
       ],
@@ -304,12 +312,12 @@
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 49
+          "files": 51
         },
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 32
+          "files": 33
         }
       ],
       "runs": [
@@ -417,12 +425,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T11:03:13.968Z",
+  "generatedAt": "2026-11-05T11:05:26.622Z",
   "limits": [
-    "7 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `bin/sdlab.js` imports `../scripts/verify.js`, which is not in this repository; `lib/reingest.js` imports `./model-licences.js`, which is not in this repository; and 4 more.",
+    "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 72 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "112 writes and 224 reads go to a path their caller passes, not to this repository.",
+    "112 writes and 238 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -703,11 +711,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 102,
+  "testFiles": 103,
   "testedBy": {
-    "bin": 9,
-    "lib": 93,
-    "scripts": 19
+    "bin": 10,
+    "lib": 94,
+    "scripts": 20
   },
   "unnamedWrites": 38,
   "unread": [
