@@ -15,10 +15,10 @@ PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_AI_TOOLKIT_REPO="https://github.com/ostris/ai-toolkit.git"
 PINNED_AI_TOOLKIT_COMMIT="73ebae1334d2c98089f1b90f8cb19257825f891a"
 PINNED_OVERRIDE_SHA="42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc9e3a9"
-PINNED_LAUNCH_GUARDS_SHA="0c846d1bd21b0459ba4845f89adca9a75b80d5ded14abba510d51a81afdb9391"
+PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="95869133e5d51b7b7db6719dbfe7c3e7a776fd1e97329e93523093d36e5b6449"
-PINNED_SELF_SHA="68b9e700fb88a2843dcc59f26fc53628f1a26ef0675c4872d03e78d5ca7ada4e"
+PINNED_COLAB_WINDOW_SHA="9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3"
+PINNED_SELF_SHA="30ea25422a8d4ddaa50118514c612aa2538a4e44dc6454e8d4a4cc67ef2d7041"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -142,6 +142,8 @@ mkdir -p /content/lane3_out /content/lane3_out/checkpoints
 : "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
 : "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 
+echo "setup" > /content/lane3_out/phase.txt
+: > /content/lane3_out/setup.log
 (
   while true; do
     {
@@ -156,9 +158,12 @@ mkdir -p /content/lane3_out /content/lane3_out/checkpoints
         sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
       fi
       grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      SETUP_SZ="\$(wc -c < /content/lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
+      echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"
       ps -ef | grep -E "ai-toolkit|run\.py" | grep -v grep || true
-      echo 'HARNESS: {"phase": "run"}'
+      CUR_PHASE="\$(cat /content/lane3_out/phase.txt 2>/dev/null || echo setup)"
+      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
     } | tee -a /content/lane3_out/vitals.log
     sleep 15
   done
@@ -169,37 +174,39 @@ trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
 OVERRIDE_SHA="\$(sha256sum /content/ai-toolkit-override-py315.txt | awk '{print \$1}')"
 echo "\${OVERRIDE_SHA}  /content/ai-toolkit-override-py315.txt" > /content/lane3_out/override.sha256
 
-if command -v apt-get >/dev/null 2>&1; then
-  apt-get update -qq && apt-get install -y -qq cmake pkg-config build-essential libsentencepiece-dev >/dev/null 2>&1 || true
-fi
-
-pip install --quiet "uv==\${PINNED_UV_VERSION}"
-uv python install "\${PINNED_PYTHON_VERSION}"
-uv venv /content/venv-lane3 --python "\${PINNED_PYTHON_VERSION}" --seed
+{
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -qq && apt-get install -y -qq cmake pkg-config build-essential libsentencepiece-dev || true
+  fi
+  pip install --quiet "uv==\${PINNED_UV_VERSION}"
+  uv python install "\${PINNED_PYTHON_VERSION}"
+  uv venv /content/venv-lane3 --python "\${PINNED_PYTHON_VERSION}" --seed
+} 2>&1 | tee -a /content/lane3_out/setup.log
 source /content/venv-lane3/bin/activate
+{
+  if [ ! -d /content/ai-toolkit ]; then
+    git clone "\${PINNED_AI_TOOLKIT_REPO}" /content/ai-toolkit
+  fi
+  git -C /content/ai-toolkit fetch --depth 1 origin "\${PINNED_AI_TOOLKIT_COMMIT}" || true
+  git -C /content/ai-toolkit checkout "\${PINNED_AI_TOOLKIT_COMMIT}"
+  ACTUAL_AI_TOOLKIT_COMMIT="\$(git -C /content/ai-toolkit rev-parse HEAD)"
+  if [ "\${ACTUAL_AI_TOOLKIT_COMMIT}" != "\${PINNED_AI_TOOLKIT_COMMIT}" ]; then
+    echo "REFUSED: ai-toolkit commit mismatch: got \${ACTUAL_AI_TOOLKIT_COMMIT}, expected \${PINNED_AI_TOOLKIT_COMMIT}" >&2
+    exit 1
+  fi
 
-if [ ! -d /content/ai-toolkit ]; then
-  git clone "\${PINNED_AI_TOOLKIT_REPO}" /content/ai-toolkit
-fi
-git -C /content/ai-toolkit fetch --depth 1 origin "\${PINNED_AI_TOOLKIT_COMMIT}" || true
-git -C /content/ai-toolkit checkout "\${PINNED_AI_TOOLKIT_COMMIT}"
-ACTUAL_AI_TOOLKIT_COMMIT="\$(git -C /content/ai-toolkit rev-parse HEAD)"
-if [ "\${ACTUAL_AI_TOOLKIT_COMMIT}" != "\${PINNED_AI_TOOLKIT_COMMIT}" ]; then
-  echo "REFUSED: ai-toolkit commit mismatch: got \${ACTUAL_AI_TOOLKIT_COMMIT}, expected \${PINNED_AI_TOOLKIT_COMMIT}" >&2
-  exit 1
-fi
+  grep -Ev '^(av|torchcodec)([=<>!~[:space:]]|\$)' /content/ai-toolkit/requirements.txt \
+    > /content/lane3_out/requirements.filtered.txt
 
-grep -Ev '^(av|torchcodec)([=<>!~[:space:]]|\$)' /content/ai-toolkit/requirements.txt \
-  > /content/lane3_out/requirements.filtered.txt
+  uv pip install -r /content/lane3_out/requirements.filtered.txt \
+    --override /content/ai-toolkit-override-py315.txt \
+    --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
+    --index-strategy unsafe-best-match \
+    2>&1 | tee /content/lane3_out/wheels.log
 
-uv pip install -r /content/lane3_out/requirements.filtered.txt \
-  --override /content/ai-toolkit-override-py315.txt \
-  --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
-  --index-strategy unsafe-best-match \
-  > /content/lane3_out/wheels.log 2>&1
-
-python -c "import sentencepiece as spm; print('SENTENCEPIECE_OK', spm.__version__)" \
-  | tee /content/lane3_out/sentencepiece.txt
+  python -c "import sentencepiece as spm; print('SENTENCEPIECE_OK', spm.__version__)" \
+    | tee /content/lane3_out/sentencepiece.txt
+} 2>&1 | tee -a /content/lane3_out/setup.log
 
 python - << 'SYNTHEOF'
 import hashlib
@@ -261,6 +268,7 @@ config:
         dtype: fp32
 YAMLEOF
 
+echo "run" > /content/lane3_out/phase.txt
 python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml \
   > /content/lane3_out/train.log 2>&1
 
