@@ -461,22 +461,30 @@
       "files": [
         {
           "exports": [
+            "assertNotHeldTrainingData",
             "buildAiToolkitConfig",
-            "buildPackage"
+            "buildPackage",
+            "buildQwenAiToolkitConfig",
+            "getAiToolkitOverrideMetadata"
           ],
           "failurePaths": [
             {
+              "in": "assertNotHeldTrainingData",
+              "kind": "throw",
+              "line": 89
+            },
+            {
               "in": "buildPackage",
               "kind": "throw",
-              "line": 33
+              "line": 103
             },
             {
               "in": "buildPackage",
               "kind": "catch",
-              "line": 88
+              "line": 160
             }
           ],
-          "hash": "f8dd4e50107278a6725179c632f81366ebbca81ff21d7039ec4d390e96a22b22",
+          "hash": "3d06a9087594d5a90d6ab4d6fa74eabc3a02c2d7c85583e0c4f31f747e6f300a",
           "importOrder": [
             "lib/captions.js",
             "lib/rows.js",
@@ -1739,6 +1747,33 @@
             "lib/split.js"
           ],
           "path": "lib/card.js"
+        },
+        {
+          "exports": [
+            "checkHostRamProjection",
+            "evaluateCapGuard",
+            "evaluateVitalsAndStallGuard",
+            "evaluateWallGuard",
+            "parseVitalsLog",
+            "runBetweenItemFetch"
+          ],
+          "failurePaths": [
+            {
+              "in": "parseVitalsLog",
+              "kind": "catch",
+              "line": 135
+            },
+            {
+              "in": "checkHostRamProjection",
+              "kind": "throw",
+              "line": 236
+            }
+          ],
+          "hash": "d29ddc9bbb5b1a8ba89d4351f85d38fff5c5fd990e1f9a5b70a4b24f75fc6745",
+          "importsFiles": [
+            "lib/errors.js"
+          ],
+          "path": "lib/colab-launcher-guards.js"
         },
         {
           "exports": [
@@ -3220,6 +3255,77 @@
         },
         {
           "exports": [
+            "attachEvalPackSha",
+            "buildTrainRunRecord",
+            "readTrainRunJson",
+            "writeTrainRunJson"
+          ],
+          "failurePaths": [
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 69
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 72
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 75
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 89
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 96
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 100
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 108
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 115
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 124
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 135
+            },
+            {
+              "in": "buildTrainRunRecord",
+              "kind": "throw",
+              "line": 146
+            }
+          ],
+          "hash": "96572e4d603611e2adc7e9f7a5449b1c05e4a0467868ebd45fe7f32e9ebed0f3",
+          "importsFiles": [
+            "lib/adapters/ai-toolkit.js",
+            "lib/errors.js"
+          ],
+          "path": "lib/train-runs.js"
+        },
+        {
+          "exports": [
             "isRegisteredAdapter",
             "listAdapters",
             "loadAdapter"
@@ -3462,11 +3568,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 194,
+          "reads": 198,
           "where": [
             "caller"
           ],
-          "writes": 95
+          "writes": 102
         },
         {
           "reads": 1,
@@ -3498,13 +3604,13 @@
           "writes": 1
         }
       ],
-      "outsideReads": 203,
-      "outsideWrites": 96,
+      "outsideReads": 207,
+      "outsideWrites": 103,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 93,
+      "testedBy": 94,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -16111,6 +16217,39 @@
           "path": "scripts/card.js"
         },
         {
+          "hash": "42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc9e3a9",
+          "path": "scripts/colab/ai-toolkit-override-py315.txt"
+        },
+        {
+          "exports": [
+            "check_host_ram_projection",
+            "evaluate_cap_guard",
+            "evaluate_vitals_and_stall_guard",
+            "evaluate_wall_guard",
+            "main",
+            "parse_vitals_log",
+            "run_between_item_fetch"
+          ],
+          "failurePaths": [
+            {
+              "in": "parse_vitals_log",
+              "kind": "except",
+              "line": 92
+            },
+            {
+              "in": "check_host_ram_projection",
+              "kind": "raise",
+              "line": 142
+            },
+            {
+              "kind": "raise",
+              "line": 191
+            }
+          ],
+          "hash": "0288d9905fafde1114cda03c9bc014815f80e0f56d5dd2f9c70c5ea5ad89fadd",
+          "path": "scripts/colab/launch_guards.py"
+        },
+        {
           "exports": [
             "run"
           ],
@@ -17710,11 +17849,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 20,
+          "reads": 21,
           "where": [
             "caller"
           ],
-          "writes": 10
+          "writes": 13
         },
         {
           "reads": 2,
@@ -17732,8 +17871,8 @@
           "writes": 0
         }
       ],
-      "outsideReads": 23,
-      "outsideWrites": 22,
+      "outsideReads": 24,
+      "outsideWrites": 25,
       "role": "code",
       "testRunners": [
         "node --test"
@@ -17754,7 +17893,7 @@
           "path": "site/astro.config.mjs"
         },
         {
-          "hash": "97a3922330418d28bbd96b7eeb26366e537bb321a961cc7ccf83fad0979893a3",
+          "hash": "5ec4d99a215539afd0754989ab5f620558f5a98d8c4244a9c801246d4b1165cf",
           "path": "site/package-lock.json"
         },
         {
@@ -19020,6 +19159,21 @@
           "testFramework": "node --test"
         },
         {
+          "hash": "fe92107483f35e66e7c1d5358b3287b0c4e3ce5b432b529c322fa5bc109d19d3",
+          "importOrder": [
+            "lib/adapters/ai-toolkit.js",
+            "lib/train-runs.js",
+            "lib/colab-launcher-guards.js"
+          ],
+          "importsFiles": [
+            "lib/adapters/ai-toolkit.js",
+            "lib/colab-launcher-guards.js",
+            "lib/train-runs.js"
+          ],
+          "path": "tests/lib-pipeline/lane3-train-guards.test.js",
+          "testFramework": "node --test"
+        },
+        {
           "hash": "7ba090032b48ce3799a1729cfbaa224789a95b33d55eac5e3a70ab56ca82d2f6",
           "importsFiles": [
             "lib/refine-briefs.js"
@@ -19417,7 +19571,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -19426,7 +19580,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
@@ -19688,7 +19842,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -19698,7 +19852,7 @@
         },
         {
           "coverage": true,
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -19995,7 +20149,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -20004,7 +20158,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 76
         },
         {
           "boundary": "scripts",
@@ -20235,7 +20389,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 96,
+          "files": 97,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20358,8 +20512,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "dfeac64ea1a2585b65d88e6ee8a64fd02a185090",
-    "tracked": 3231
+    "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+    "tracked": 3236
   },
   "landings": [
     {
@@ -22906,6 +23060,22 @@
     {
       "readers": [
         {
+          "by": "lib/adapters/ai-toolkit.js",
+          "call": "literal",
+          "confidence": "ast"
+        },
+        {
+          "by": "lib/adapters/ai-toolkit.js",
+          "call": "readFileSync",
+          "confidence": "ast"
+        }
+      ],
+      "target": "scripts/colab/ai-toolkit-override-py315.txt",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
           "by": "tests/cli-scripts/bulk-curate-removed.test.js",
           "call": "existsSync",
           "confidence": "ast",
@@ -23168,7 +23338,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 102,
+  "testFiles": 103,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
