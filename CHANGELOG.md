@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Portlight ship data cleared and quarantine removed** — the studio's Portlight ship data (`mcp-tool-shop/portlight-ships-anatomy`) and `plsvessel` LoRA (`mcp-tool-shop/portlight-ships-anatomy-lora`) are cleared under the MIT licence for training and CC-BY-4.0 release. Removed the quarantine patterns and checks in `lib/model-licences.js`, `lib/adapters/ai-toolkit.js`, `lib/train-runs.js`, and `lib/verify-chain.js`, and added the cleared MIT catalogue entry for `plsvessel` / `portlight-ships-anatomy`.
+
 ## [3.4.0] - 2026-08-04
 
 **Dogfood swarm.** A full health pass (bugs/security, then proactive hardening, then user-facing copy) followed by three new commands. Tests **400 → 791**. Every fix carries a test proven to fail against the unfixed code.

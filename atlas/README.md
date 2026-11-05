@@ -1,16 +1,16 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit dbf8473 by Atlas 1.24.0.
+Mapped at 2026-11-05 from commit 8207917 by Atlas 1.24.0.
 
 ## What this is
 
-13 parts, mostly JSON data (2616 files); code in JavaScript (247), Python (36), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
+13 parts, mostly JSON data (2617 files); code in JavaScript (247), Python (38), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-05 (8004ec8)
+## What changed since 2026-11-05 (dbf8473)
 
-- LICENSE is now read by tests/lib-pipeline/lane1-render.test.js.
-- bin/sdlab.js is now also read by tests/lib-pipeline/provenance-chain.test.js.
-- 15 files added and 30 changed content, across 6 parts.
+- tests/colab/fixtures/colab-cli-contract.json is now read by tests/colab/fixtures/fake_colab.py.
+- tests/colab/fixtures/colab_help.txt is now read by tests/colab/fixtures/fake_colab.py.
+- 5 files added and 15 changed content, across 4 parts.
 
 ## What comes in
 
@@ -21,7 +21,7 @@ Mapped at 2026-11-05 from commit dbf8473 by Atlas 1.24.0.
 
 ## What happens through CI
 
-1. The workflow runs bin/sdlab.js in bin and 104 files in tests.
+1. The workflow runs bin/sdlab.js in bin and 105 files in tests.
    1. Inside bin/sdlab.js, `main` does, in order: `enableDebug` (lib) and `setLogLevel`.
    2. Or, for an entry of `namespaces` where `command === head`, `main` does `findClosest` (lib) and `inputError` instead.
    3. Or, when `command === 'critique'`, `main` does `run` (scripts) instead.
@@ -38,7 +38,7 @@ Mapped at 2026-11-05 from commit dbf8473 by Atlas 1.24.0.
       8. `info`
    7. **`run`** (scripts) runs, in order: `parseArgs` (lib), `getProjectName`, `getProjectRoot`, `loadCritique`, `getRunsDir`, `refine-briefs.js` (3 steps) and `info`.
    8. **`run`** (scripts) runs, in order: `parseArgs` (lib), `getProjectName`, `getProjectRoot`, `selections.js` (3 steps) and `info`.
-2. That reaches lib (82 files) and scripts (42 files).
+2. That reaches lib (82 files) and scripts (43 files).
 3. It uploads coverage to Codecov.
 
 ## Who reads the results

@@ -4,7 +4,7 @@
  * Written test-first: one test per link in the chain
  *   image -> record (G5 owner + CC-BY-4.0) -> canon (G6 canon_sha + entry_sha256)
  *   -> model licence (G4 SPDX id + url + date_read) -> run manifest (G9 workflow sha)
- * plus G14 (portlight-ships configured as a real project, no held data).
+ * plus G14 (portlight-ships configured as a real project; Portlight ship data and plsvessel LoRA are the studio's own, MIT, cleared for training).
  */
 
 import { test } from 'node:test';
@@ -195,6 +195,20 @@ test('G4: hashModelFile and buildPinning attach licence_id, licence_url, and dat
   assert.match(klein.licence_url, /FLUX\.2-klein-4B/);
   assert.equal(klein.date_read, '2026-10-25');
 
+  // Studio Portlight ship LoRA (plsvessel) is cleared under MIT
+  const plsvessel = hashModelFile('plsvessel_v1.safetensors', {
+    kind: 'lora',
+    modelsDir: '/nonexistent',
+    doHash: false,
+  });
+  assert.equal(plsvessel.licence_id, 'MIT');
+  assert.equal(plsvessel.licence_url, 'https://huggingface.co/mcp-tool-shop/portlight-ships-anatomy-lora');
+  assert.equal(plsvessel.date_read, '2026-11-05');
+  assert.equal(plsvessel.licence?.spdx_id, 'MIT');
+  assert.equal(plsvessel.licence?.cc_by_4_eligible, true);
+  assert.equal(plsvessel.licence?.excluded, false);
+  assert.equal(plsvessel.licence?.status, 'cleared');
+
   const customLora = resolveModelLicence('studio_hull_v1.safetensors', null, {
     'studio_hull_v1.safetensors': {
       spdx_id: 'CC-BY-4.0',
@@ -222,6 +236,8 @@ test('G4: hashModelFile and buildPinning attach licence_id, licence_url, and dat
     false,
   );
   assert.equal(isClearedLicenceEntry(null), false);
+  assert.equal(resolveModelLicence('').status, 'unknown');
+  assert.equal(resolveModelLicence('unknown_unlisted_model.safetensors').status, 'unknown');
 
   const excludedPin = buildPinning({
     graph: null,
@@ -234,6 +250,19 @@ test('G4: hashModelFile and buildPinning attach licence_id, licence_url, and dat
   assert.equal(excludedPin.cc_by_4_eligible, false);
   assert.equal(excludedPin.models.checkpoint.licence?.cc_by_4_eligible, false);
   assert.equal(excludedPin.models.checkpoint.licence?.excluded, true);
+
+  // Other excluded families remain excluded
+  for (const excludedName of [
+    'flux-2-dev.safetensors',
+    'flux-2-klein-9b.safetensors',
+    'sd3.5_large.safetensors',
+    'qwen_image_2.1_api',
+    'dreamshaperXL.safetensors',
+  ]) {
+    const lic = resolveModelLicence(excludedName);
+    assert.equal(lic.excluded, true, `${excludedName} must remain excluded`);
+    assert.equal(lic.cc_by_4_eligible, false, `${excludedName} must remain cc_by_4_eligible: false`);
+  }
 
   // allowUnlicensedResearch permits the research call while marking cc_by_4_eligible: false
   assert.doesNotThrow(() =>
@@ -569,25 +598,46 @@ test('G9-link4 (run manifest break): verifyProvenanceChain fails with BROKEN_RUN
   }
 });
 
-test('G9-link5 (quarantine break): verifyProvenanceChain fails with QUARANTINED_SOURCE_REFERENCED when held plsvessel LoRA is present', async () => {
+test('G9-portlight-cleared: verifyProvenanceChain passes when cleared MIT plsvessel LoRA is pinned on run manifest and record', async () => {
   const fx = await makeValidProvenanceProject();
   try {
+    const plsvesselLic = resolveModelLicence('plsvessel_v1.safetensors');
+    assert.equal(plsvesselLic.spdx_id, 'MIT');
+    assert.equal(plsvesselLic.url, 'https://huggingface.co/mcp-tool-shop/portlight-ships-anatomy-lora');
+    assert.equal(plsvesselLic.verified_at, '2026-11-05');
+    assert.equal(plsvesselLic.cc_by_4_eligible, true);
+    assert.equal(plsvesselLic.excluded, false);
+
+    const loraEntry = {
+      name: 'plsvessel_v1.safetensors',
+      weight: 1.0,
+      size_bytes: 128,
+      sha256: 'sha256:' + 'cc'.repeat(32),
+      licence_id: plsvesselLic.licence_id,
+      licence_url: plsvesselLic.licence_url,
+      date_read: plsvesselLic.date_read,
+      licence: plsvesselLic,
+    };
+
+    const runManifestPath = join(fx.projectRoot, 'runs', fx.runId, 'manifest.json');
+    const runManifest = JSON.parse(await readFile(runManifestPath, 'utf-8'));
+    runManifest.pinning.loras = [loraEntry];
+    await writeFile(runManifestPath, JSON.stringify(runManifest, null, 2));
+
     const rec = JSON.parse(await readFile(fx.recordPath, 'utf-8'));
     rec.generation_provenance.lora_ids = ['plsvessel_v1.safetensors'];
+    rec.generation_provenance.model_licences.loras = [loraEntry];
     await writeFile(fx.recordPath, JSON.stringify(rec, null, 2));
 
     const report = await verifyProvenanceChain(fx.projectRoot);
-    assert.equal(report.ok, false);
-    assert.ok(
-      report.failures.some((f) => f.code === 'QUARANTINED_SOURCE_REFERENCED'),
-      `expected QUARANTINED_SOURCE_REFERENCED in ${JSON.stringify(report.failures)}`,
-    );
+    assert.equal(report.ok, true, `expected cleared plsvessel LoRA to pass verifyProvenanceChain, got: ${JSON.stringify(report.failures)}`);
+    assert.equal(report.failures.length, 0);
   } finally {
     await fx.cleanup();
   }
 });
 
-test('G9-link6 (verdict separation break): verifyProvenanceChain fails with INVALID_VERDICT_PROVENANCE when judge equals generator or shares Qwen family', async () => {
+test('G9-link5 (verdict separation break): verifyProvenanceChain fails with INVALID_VERDICT_PROVENANCE when judge equals generator or shares Qwen family', async () => {
   const fx = await makeValidProvenanceProject();
   try {
     const rec = JSON.parse(await readFile(fx.recordPath, 'utf-8'));
@@ -676,7 +726,7 @@ test('G9-cli: `sdlab verify` exits 0 on valid chain and exits non-zero when any 
 
 const TODO_CANON_MARKER = 'TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)';
 
-test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, restores template files with TODO-canon marker, contains zero invented canon or held data, and walks G9 sdlab verify offline', async () => {
+test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, restores template files with TODO-canon marker, contains zero invented canon, and walks G9 sdlab verify offline', async () => {
   const portlightDir = join(REPO_ROOT, 'projects', 'portlight-ships');
   const proj = JSON.parse(readFileSync(join(portlightDir, 'project.json'), 'utf-8'));
 
@@ -711,10 +761,9 @@ test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, 
       /Distinct Hull & Rig Silhouette|Cold-Coast Shipwrights|Sunward-Sea Yards|Crown Naval Dockyards|greeble_spam/i,
       `${rel} still contains builder-invented canon prose`,
     );
-    assert.doesNotMatch(text, /plsvessel|nano[-_ ]banana/i, `${rel} must not reference held Portlight data`);
   }
 
-  // Configuration files must have no invented creative prose or held data
+  // Configuration files must have no invented creative prose
   for (const rel of [
     'project.json',
     'lanes.json',
@@ -727,7 +776,6 @@ test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, 
       /age-of-sail|shipwright tradition|gunport|taffrail|maintruck/i,
       `${rel} must not contain invented creative prose`,
     );
-    assert.doesNotMatch(text, /plsvessel|nano[-_ ]banana/i, `${rel} must not reference held Portlight data`);
   }
 
   // Verify lanes include damage-state-plate referenced by canon/ships/*.md

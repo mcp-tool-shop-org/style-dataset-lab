@@ -75,38 +75,38 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 15,
-      "changed": 30,
+      "added": 5,
+      "changed": 15,
       "moved": 0,
-      "parts": 6,
+      "parts": 4,
       "removed": 0
     },
     "items": [
       {
         "kind": "landing",
-        "sentence": "LICENSE is now read by tests/lib-pipeline/lane1-render.test.js.",
+        "sentence": "tests/colab/fixtures/colab-cli-contract.json is now read by tests/colab/fixtures/fake_colab.py.",
         "subjects": [
-          "LICENSE",
-          "tests/lib-pipeline/lane1-render.test.js"
+          "tests/colab/fixtures/colab-cli-contract.json",
+          "tests/colab/fixtures/fake_colab.py"
         ]
       },
       {
         "kind": "landing",
-        "sentence": "bin/sdlab.js is now also read by tests/lib-pipeline/provenance-chain.test.js.",
+        "sentence": "tests/colab/fixtures/colab_help.txt is now read by tests/colab/fixtures/fake_colab.py.",
         "subjects": [
-          "bin/sdlab.js",
-          "tests/lib-pipeline/provenance-chain.test.js"
+          "tests/colab/fixtures/colab_help.txt",
+          "tests/colab/fixtures/fake_colab.py"
         ]
       },
       {
         "kind": "counts",
-        "sentence": "15 files added and 30 changed content, across 6 parts.",
+        "sentence": "5 files added and 15 changed content, across 4 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "8004ec888e5c50c7a1a4e1c2526869659e6faaac",
-      "generatedAt": "2026-11-05T15:02:56.106Z"
+      "commit": "dbf8473fe4e2fcf4dd5dead382f84084932d661c",
+      "generatedAt": "2026-11-05T18:18:21.440Z"
     },
     "unchanged": false
   },
@@ -115,9 +115,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "dbf8473fe4e2fcf4dd5dead382f84084932d661c",
+  "commit": "8207917079fb43e3edc7329768563f276b30730c",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (247), Python (36), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2617 files); code in JavaScript (247), Python (38), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -137,7 +137,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 108
+          "files": 109
         },
         {
           "boundary": "lib",
@@ -147,7 +147,7 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 42
+          "files": 43
         }
       ],
       "runs": [
@@ -434,7 +434,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T18:18:21.440Z",
+  "generatedAt": "2026-11-05T22:08:22.864Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 73 reads use paths built at run time and are not named here.",
@@ -720,11 +720,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 110,
+  "testFiles": 113,
   "testedBy": {
     "bin": 10,
     "lib": 97,
-    "scripts": 23
+    "scripts": 24
   },
   "unnamedWrites": 38,
   "unread": [
