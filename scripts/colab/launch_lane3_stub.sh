@@ -18,7 +18,7 @@ PINNED_OVERRIDE_SHA="42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
 PINNED_COLAB_WINDOW_SHA="9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3"
-PINNED_SELF_SHA="30ea25422a8d4ddaa50118514c612aa2538a4e44dc6454e8d4a4cc67ef2d7041"
+PINNED_SELF_SHA="67c27c3d227eeead8593c58a36d802c01b45beb53821fb2bcddf1838a36a2866"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -175,15 +175,25 @@ OVERRIDE_SHA="\$(sha256sum /content/ai-toolkit-override-py315.txt | awk '{print 
 echo "\${OVERRIDE_SHA}  /content/ai-toolkit-override-py315.txt" > /content/lane3_out/override.sha256
 
 {
+  unset UV_SYSTEM_PYTHON
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
   if command -v apt-get >/dev/null 2>&1; then
     apt-get update -qq && apt-get install -y -qq cmake pkg-config build-essential libsentencepiece-dev || true
   fi
   pip install --quiet "uv==\${PINNED_UV_VERSION}"
   uv python install "\${PINNED_PYTHON_VERSION}"
-  uv venv /content/venv-lane3 --python "\${PINNED_PYTHON_VERSION}" --seed
+  uv venv --python "\${PINNED_PYTHON_VERSION}" --seed /content/venv-lane3
+  /content/venv-lane3/bin/python -c '
+import sys
+if not (sys.version.startswith("3.15.1") and sys.prefix.startswith("/content/venv-lane")):
+    sys.stderr.write(f"REFUSED: VENV_PYTHON_MISMATCH version={sys.version!r} prefix={sys.prefix!r}\n")
+    raise SystemExit(1)
+'
+  /content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith("3.15.1"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
 } 2>&1 | tee -a /content/lane3_out/setup.log
-source /content/venv-lane3/bin/activate
 {
+  unset UV_SYSTEM_PYTHON
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
   if [ ! -d /content/ai-toolkit ]; then
     git clone "\${PINNED_AI_TOOLKIT_REPO}" /content/ai-toolkit
   fi
@@ -198,17 +208,35 @@ source /content/venv-lane3/bin/activate
   grep -Ev '^(av|torchcodec)([=<>!~[:space:]]|\$)' /content/ai-toolkit/requirements.txt \
     > /content/lane3_out/requirements.filtered.txt
 
-  uv pip install -r /content/lane3_out/requirements.filtered.txt \
+  uv pip install --python /content/venv-lane3/bin/python \
+    -r /content/lane3_out/requirements.filtered.txt \
     --override /content/ai-toolkit-override-py315.txt \
     --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
     --index-strategy unsafe-best-match \
     2>&1 | tee /content/lane3_out/wheels.log
 
-  python -c "import sentencepiece as spm; print('SENTENCEPIECE_OK', spm.__version__)" \
-    | tee /content/lane3_out/sentencepiece.txt
+  /content/venv-lane3/bin/python -c '
+import importlib
+import sys
+
+REQUIRED = ("sentencepiece", "torch", "safetensors", "yaml", "oyaml", "PIL")
+for mod_name in REQUIRED:
+    try:
+        mod = importlib.import_module(mod_name)
+    except Exception as exc:
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}\n")
+        raise SystemExit(1)
+    mod_file = getattr(mod, "__file__", None) or ""
+    print(f"VENV_IMPORT {mod_name} {mod_file}", flush=True)
+    if not mod_file.startswith("/content/venv-lane3/"):
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}\n")
+        raise SystemExit(1)
+import sentencepiece as spm
+print("SENTENCEPIECE_OK", spm.__version__, flush=True)
+' | tee /content/lane3_out/sentencepiece.txt
 } 2>&1 | tee -a /content/lane3_out/setup.log
 
-python - << 'SYNTHEOF'
+/content/venv-lane3/bin/python - << 'SYNTHEOF'
 import hashlib
 import json
 import struct
@@ -269,7 +297,7 @@ config:
 YAMLEOF
 
 echo "run" > /content/lane3_out/phase.txt
-python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml \
+/content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml \
   > /content/lane3_out/train.log 2>&1
 
 CHECKPOINT_PATH="/content/lane3_out/checkpoints/synth_lora.safetensors"
@@ -283,7 +311,7 @@ if [ ! -s "\${CHECKPOINT_PATH}" ]; then
   fi
 fi
 
-python - "\${PINNED_AI_TOOLKIT_COMMIT}" "\${OVERRIDE_SHA}" "\${CHECKPOINT_PATH}" << 'WINPYEOF'
+/content/venv-lane3/bin/python - "\${PINNED_AI_TOOLKIT_COMMIT}" "\${OVERRIDE_SHA}" "\${CHECKPOINT_PATH}" << 'WINPYEOF'
 import hashlib
 import json
 import subprocess
@@ -310,7 +338,7 @@ print("WINDOW_JSON " + json.dumps(rec), flush=True)
 WINPYEOF
 
 while IFS= read -r -d '' f; do
-  python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+  /content/venv-lane3/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
 tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
 REMOTEEOF

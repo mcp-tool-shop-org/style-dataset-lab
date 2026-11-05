@@ -501,3 +501,103 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
     assert vitals_stall.count("=== VITALS ") >= 3
     assert "SETUP_STALL_TRIPPED" in (out_stall / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-setup-stall" in (state_stall / "stops.log").read_text(encoding="utf-8")
+
+
+def test_lane3_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Path) -> None:
+    # With UV_SYSTEM_PYTHON=1 set, the kit unsets UV_SYSTEM_PYTHON, sets UV_PYTHON_INSTALL_DIR under /content,
+    # names /content/venv-lane3/bin/python on every uv pip install and python invocation, and the window passes.
+    _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "l3_uv_sys_ok")
+    env_ok["UV_SYSTEM_PYTHON"] = "1"
+    env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_ok = tmp_path / "out_l3_uv_sys_ok"
+    res_ok = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_ok), "--session", "sdlab-l3-uvsys-ok"],
+        env=env_ok,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
+    remote_sh = (out_ok / "remote_lane3_stub.sh").read_text(encoding="utf-8")
+    assert "unset UV_SYSTEM_PYTHON" in remote_sh
+    assert 'export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"' in remote_sh
+    assert "source /content/venv-lane3/bin/activate" not in remote_sh
+    assert "uv venv --python \"${PINNED_PYTHON_VERSION}\" --seed /content/venv-lane3" in remote_sh
+    assert (
+        "/content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith(\"3.15.1\"), sys.version; "
+        "assert sys.prefix.startswith(\"/content/venv-lane\"), sys.prefix'"
+    ) in remote_sh
+    assert "uv pip install --python /content/venv-lane3/bin/python" in remote_sh
+    assert "/content/venv-lane3/bin/python /content/ai-toolkit/run.py" in remote_sh
+    assert "/content/venv-lane3/bin/python /content/launch_guards.py" in remote_sh
+    vitals_ok = (out_ok / "vitals.log").read_text(encoding="utf-8")
+    assert "VENV_IMPORT sentencepiece /content/venv-lane3/" in vitals_ok
+    assert "STOP -s sdlab-l3-uvsys-ok" in (state_ok / "stops.log").read_text(encoding="utf-8")
+
+
+def test_lane3_venv_python_version_mismatch_refuses_with_venv_python_mismatch(tmp_path: Path) -> None:
+    _, state_mis, env_mis = _make_fake_colab_env(tmp_path / "l3_venv_mismatch")
+    env_mis["UV_SYSTEM_PYTHON"] = "1"
+    env_mis["FAKE_COLAB_VENV_PYTHON_VERSION"] = "3.13.18 (main, Oct 2026)"
+    env_mis["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_mis = tmp_path / "out_l3_venv_mismatch"
+    res_mis = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_mis), "--session", "sdlab-l3-vmis"],
+        env=env_mis,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_mis.returncode != 0
+    vitals_mis = (out_mis / "vitals.log").read_text(encoding="utf-8")
+    assert "REFUSED: VENV_PYTHON_MISMATCH" in vitals_mis
+    assert "STOP -s sdlab-l3-vmis" in (state_mis / "stops.log").read_text(encoding="utf-8")
+
+
+def test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_path: Path) -> None:
+    # 1. An import resolved outside the venv refuses with VENV_IMPORT_OUTSIDE_VENV
+    _, state_out, env_out = _make_fake_colab_env(tmp_path / "l3_import_outside")
+    env_out["UV_SYSTEM_PYTHON"] = "1"
+    env_out["FAKE_COLAB_MODE"] = "venv_import_outside"
+    env_out["FAKE_COLAB_OUTSIDE_IMPORT_PACKAGE"] = "sentencepiece"
+    env_out["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_outside = tmp_path / "out_l3_import_outside"
+    res_out = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_outside), "--session", "sdlab-l3-impout"],
+        env=env_out,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_out.returncode != 0
+    vitals_out = (out_outside / "vitals.log").read_text(encoding="utf-8")
+    assert "REFUSED: VENV_IMPORT_OUTSIDE_VENV" in vitals_out
+    assert "STOP -s sdlab-l3-impout" in (state_out / "stops.log").read_text(encoding="utf-8")
+
+    # 2. A regression where uv pip install omits --python /content/venv-lane3/bin/python lands outside the venv and fails
+    _, state_nopy, env_nopy = _make_fake_colab_env(tmp_path / "l3_uv_nopy")
+    env_nopy["UV_SYSTEM_PYTHON"] = "1"
+    env_nopy["FAKE_COLAB_MODE"] = "uv_no_python_flag"
+    env_nopy["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_nopy = tmp_path / "out_l3_uv_nopy"
+    res_nopy = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_nopy), "--session", "sdlab-l3-uvnopy"],
+        env=env_nopy,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_nopy.returncode != 0
+    vitals_nopy = (out_nopy / "vitals.log").read_text(encoding="utf-8")
+    assert "REFUSED: VENV_IMPORT_OUTSIDE_VENV" in vitals_nopy
+    assert "STOP -s sdlab-l3-uvnopy" in (state_nopy / "stops.log").read_text(encoding="utf-8")
+
+

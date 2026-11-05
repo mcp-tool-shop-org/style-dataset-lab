@@ -17,7 +17,7 @@ PINNED_LANE1_RENDER_SHA="75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af3
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
 PINNED_COLAB_WINDOW_SHA="9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3"
-PINNED_SELF_SHA="ec9dae2c62e72b3b483474582c25da83cb93656dd63cfd5c0407cdf49f85466b"
+PINNED_SELF_SHA="51de88a27b640a8f7620c1eb0095ae1238c49991ce0c99e9334862b56ec07f35"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -172,12 +172,22 @@ VITALS_PID="\$!"
 trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
 
 {
+  unset UV_SYSTEM_PYTHON
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
   pip install --quiet "uv==\${PINNED_UV_VERSION}"
   uv python install "\${PINNED_PYTHON_VERSION}"
-  uv venv /content/venv-lane1 --python "\${PINNED_PYTHON_VERSION}" --seed
+  uv venv --python "\${PINNED_PYTHON_VERSION}" --seed /content/venv-lane1
+  /content/venv-lane1/bin/python -c '
+import sys
+if not (sys.version.startswith("3.15.1") and sys.prefix.startswith("/content/venv-lane")):
+    sys.stderr.write(f"REFUSED: VENV_PYTHON_MISMATCH version={sys.version!r} prefix={sys.prefix!r}\n")
+    raise SystemExit(1)
+'
+  /content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith("3.15.1"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
 } 2>&1 | tee -a /content/lane1_out/setup.log
-source /content/venv-lane1/bin/activate
 {
+  unset UV_SYSTEM_PYTHON
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
   if [ ! -d /content/ComfyUI ]; then
     git clone "\${PINNED_COMFYUI_REPO}" /content/ComfyUI
   fi
@@ -189,15 +199,34 @@ source /content/venv-lane1/bin/activate
     exit 1
   fi
 
-  uv pip install -r /content/ComfyUI/requirements.txt \
+  uv pip install --python /content/venv-lane1/bin/python \
+    -r /content/ComfyUI/requirements.txt \
     --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
     --index-strategy unsafe-best-match
-  uv pip install "\${PINNED_COMFY_HEADLESS_SPEC}"
-  python -c "from comfy_headless import ComfyClient; assert ComfyClient is not None"
+  uv pip install --python /content/venv-lane1/bin/python "\${PINNED_COMFY_HEADLESS_SPEC}"
+  /content/venv-lane1/bin/python -c '
+import importlib
+import sys
+
+REQUIRED = ("comfy_headless", "torch", "safetensors", "PIL", "yaml", "aiohttp")
+for mod_name in REQUIRED:
+    try:
+        mod = importlib.import_module(mod_name)
+    except Exception as exc:
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}\n")
+        raise SystemExit(1)
+    mod_file = getattr(mod, "__file__", None) or ""
+    print(f"VENV_IMPORT {mod_name} {mod_file}", flush=True)
+    if not mod_file.startswith("/content/venv-lane1/"):
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}\n")
+        raise SystemExit(1)
+from comfy_headless import ComfyClient
+assert ComfyClient is not None
+'
 } 2>&1 | tee -a /content/lane1_out/setup.log
 
 echo "run" > /content/lane1_out/phase.txt
-python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \
+/content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \
   > /content/lane1_out/comfyui.log 2>&1 &
 COMFY_PID="\$!"
 
@@ -214,7 +243,7 @@ cat > /content/lane1_out/jobs.jsonl << 'JOBSEOF'
 JOBSEOF
 
 set +e
-python /content/lane1_render.py \
+/content/venv-lane1/bin/python /content/lane1_render.py \
   --cpu --bootstrap \
   --comfy-pid "\${COMFY_PID}" \
   --comfyui-commit "\${PINNED_COMFYUI_COMMIT}" \
@@ -234,7 +263,7 @@ fi
 
 SHA_BEFORE="\$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print \$1}')"
 
-python /content/lane1_render.py \
+/content/venv-lane1/bin/python /content/lane1_render.py \
   --cpu \
   --jobs /content/lane1_out/jobs.jsonl \
   --renders /content/lane1_out/renders.jsonl \
@@ -251,7 +280,7 @@ fi
 
 kill "\${COMFY_PID}" 2>/dev/null || true
 while IFS= read -r -d '' f; do
-  python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+  /content/venv-lane1/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
 tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
 REMOTEEOF

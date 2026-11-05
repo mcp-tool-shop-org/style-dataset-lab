@@ -176,7 +176,99 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
 
 
 def _write_fake_remote_scripts(content_dir: Path) -> None:
-    lane1_body = """#!/usr/bin/env bash
+    venv_check_helper = """verify_uploaded_venv_script() {
+  local uploaded_sh="$1"
+  local lane_num="$2"
+  local expected_venv="/content/venv-lane${lane_num}"
+  local expected_py="${expected_venv}/bin/python"
+
+  local sim_ver="${FAKE_COLAB_VENV_PYTHON_VERSION:-3.15.1 (main, Oct 21 2026)}"
+  local sim_prefix="${FAKE_COLAB_VENV_PREFIX:-${expected_venv}}"
+  if [[ "${sim_ver}" != 3.15.1* ]] || [[ "${sim_prefix}" != /content/venv-lane* ]]; then
+    if ! grep -Fq "VENV_PYTHON_MISMATCH" "${uploaded_sh}" && ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"3.15.1\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
+      echo "WARN: VENV_PYTHON_GATE_BYPASSED version=${sim_ver} prefix=${sim_prefix} (no pre-install venv gate in ${uploaded_sh})" >&2
+      return 0
+    fi
+    echo "REFUSED: VENV_PYTHON_MISMATCH version=${sim_ver} prefix=${sim_prefix}" >&2
+    exit 1
+  fi
+
+  if [ "${FAKE_COLAB_MODE:-}" = "venv_python_mismatch" ]; then
+    if ! grep -Fq "VENV_PYTHON_MISMATCH" "${uploaded_sh}" && ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"3.15.1\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
+      echo "WARN: VENV_PYTHON_GATE_BYPASSED (no pre-install venv gate in ${uploaded_sh})" >&2
+      return 0
+    fi
+    echo "REFUSED: VENV_PYTHON_MISMATCH version=3.13.18 prefix=/usr" >&2
+    exit 1
+  fi
+  if [ "${FAKE_COLAB_MODE:-}" = "venv_import_outside" ] || [ -n "${FAKE_COLAB_OUTSIDE_IMPORT_PACKAGE:-}" ]; then
+    local pkg="${FAKE_COLAB_OUTSIDE_IMPORT_PACKAGE:-torch}"
+    if ! grep -Fq "VENV_IMPORT_OUTSIDE_VENV" "${uploaded_sh}"; then
+      echo "WARN: VENV_IMPORT_GATE_BYPASSED ${pkg} /usr/local/lib/python3.13/dist-packages/${pkg}/__init__.py (no post-install import gate in ${uploaded_sh})" >&2
+      return 0
+    fi
+    echo "VENV_IMPORT ${pkg} /usr/local/lib/python3.13/dist-packages/${pkg}/__init__.py"
+    echo "REFUSED: VENV_IMPORT_OUTSIDE_VENV ${pkg}: /usr/local/lib/python3.13/dist-packages/${pkg}/__init__.py" >&2
+    exit 1
+  fi
+  if [ "${FAKE_COLAB_MODE:-}" = "venv_import_failed" ]; then
+    if ! grep -Fq "VENV_IMPORT_FAILED" "${uploaded_sh}"; then
+      return 0
+    fi
+    echo "REFUSED: VENV_IMPORT_FAILED comfy_headless: No module named 'comfy_headless'" >&2
+    exit 1
+  fi
+  if [ "${FAKE_COLAB_MODE:-}" = "uv_no_python_flag" ]; then
+    if ! grep -Fq "VENV_IMPORT_OUTSIDE_VENV" "${uploaded_sh}"; then
+      return 0
+    fi
+    echo "REFUSED: VENV_IMPORT_OUTSIDE_VENV: uv pip install without --python ${expected_py} landed in /usr/local/lib/python3.13/dist-packages" >&2
+    exit 1
+  fi
+
+  if [ ! -f "${uploaded_sh}" ]; then
+    echo "REFUSED: uploaded script missing: ${uploaded_sh}" >&2
+    exit 2
+  fi
+  if grep -Eq '^[[:space:]]*source[[:space:]]+.*/activate' "${uploaded_sh}"; then
+    echo "REFUSED: VENV_ACTIVATE_RELIANCE: uploaded script relies on activate instead of explicit --python" >&2
+    exit 1
+  fi
+  if ! grep -Eq '^[[:space:]]*unset[[:space:]]+UV_SYSTEM_PYTHON([[:space:]]|$)' "${uploaded_sh}"; then
+    echo "REFUSED: UV_SYSTEM_PYTHON_NOT_UNSET: uploaded script did not unset UV_SYSTEM_PYTHON before uv" >&2
+    exit 1
+  fi
+  if ! grep -Eq 'UV_PYTHON_INSTALL_DIR=.*/content/' "${uploaded_sh}"; then
+    echo "REFUSED: UV_PYTHON_INSTALL_DIR_MISSING: uploaded script did not set UV_PYTHON_INSTALL_DIR under /content" >&2
+    exit 1
+  fi
+
+  local uv_pip_lines
+  uv_pip_lines="$(grep -E '^[[:space:]]*uv[[:space:]]+pip[[:space:]]+install\\b' "${uploaded_sh}" || true)"
+  if [ -z "${uv_pip_lines}" ]; then
+    echo "REFUSED: UV_PIP_INSTALL_MISSING: no uv pip install found in ${uploaded_sh}" >&2
+    exit 1
+  fi
+  while IFS= read -r line; do
+    [ -z "${line}" ] && continue
+    if ! printf '%s\\n' "${line}" | grep -Fq -- "--python ${expected_py}"; then
+      echo "REFUSED: VENV_IMPORT_OUTSIDE_VENV: uv pip install without --python ${expected_py} landed in /usr/local/lib/python3.13/dist-packages (UV_SYSTEM_PYTHON=${UV_SYSTEM_PYTHON:-1}): ${line}" >&2
+      exit 1
+    fi
+  done <<< "${uv_pip_lines}"
+
+  if ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"3.15.1\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
+    echo "REFUSED: VENV_PYTHON_GATE_MISSING: pre-install venv interpreter gate missing in ${uploaded_sh}" >&2
+    exit 1
+  fi
+  if ! grep -Fq "VENV_IMPORT_OUTSIDE_VENV" "${uploaded_sh}" || ! grep -Fq "VENV_IMPORT_FAILED" "${uploaded_sh}"; then
+    echo "REFUSED: VENV_IMPORT_GATE_MISSING: post-install import gate missing in ${uploaded_sh}" >&2
+    exit 1
+  fi
+}
+"""
+    lane1_body = (
+        """#!/usr/bin/env bash
 set -euo pipefail
 : "${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
 : "${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
@@ -207,7 +299,9 @@ emit_vitals() {
   fi
   printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
 }
-
+"""
+        + venv_check_helper
+        + """
 mode="${FAKE_COLAB_MODE:-success}"
 if [ "${mode}" = "fail" ]; then
   emit_vitals "setup" ""
@@ -246,20 +340,26 @@ elif [ "${mode}" = "setup_stall" ]; then
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane1_out/phase.txt
   for _ in $(seq 1 60); do
-    emit_vitals "run" "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+    emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
     sleep "${vitals_interval}"
   done
   exit 0
 fi
 
+verify_uploaded_venv_script "remote_lane1_stub.sh.uploaded" "1" 2>&1 | tee -a lane1_out/setup.log
+for mod_name in comfy_headless torch safetensors PIL yaml aiohttp; do
+  echo "VENV_IMPORT ${mod_name} /content/venv-lane1/lib/python3.15/site-packages/${mod_name}/__init__.py" | tee -a lane1_out/setup.log
+done
 printf 'setup_complete\\n' >> lane1_out/setup.log
 echo "run" > lane1_out/phase.txt
-emit_vitals "run" "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
 echo "LANE1_STUB_OK python=3.15.1 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
 printf 'FAKE_TAR_BYTES' > lane1_stub_bundle.tar.gz
 """
-    lane3_body = """#!/usr/bin/env bash
+    )
+    lane3_body = (
+        """#!/usr/bin/env bash
 set -euo pipefail
 : "${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
 : "${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
@@ -289,7 +389,9 @@ emit_vitals() {
   fi
   printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
 }
-
+"""
+        + venv_check_helper
+        + """
 mode="${FAKE_COLAB_MODE:-success}"
 if [ "${mode}" = "fail" ]; then
   emit_vitals "setup" ""
@@ -328,19 +430,24 @@ elif [ "${mode}" = "setup_stall" ]; then
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane3_out/phase.txt
   for _ in $(seq 1 60); do
-    emit_vitals "run" "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+    emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
     sleep "${vitals_interval}"
   done
   exit 0
 fi
 
+verify_uploaded_venv_script "remote_lane3_stub.sh.uploaded" "3" 2>&1 | tee -a lane3_out/setup.log
+for mod_name in sentencepiece torch safetensors yaml oyaml PIL; do
+  echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.15/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
+done
 printf 'setup_complete\\n' >> lane3_out/setup.log
 echo "run" > lane3_out/phase.txt
-emit_vitals "run" "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "73ebae1334d2c98089f1b90f8cb19257825f891a", "override_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
 echo "LANE3_STUB_OK python=3.15.1 sentencepiece=0.2.1 checkpoint_written=true"
 printf 'FAKE_TAR_BYTES' > lane3_stub_bundle.tar.gz
 """
+    )
     (content_dir / ".fake_remote_lane1_stub.sh").write_text(lane1_body, encoding="utf-8", newline="\n")
     (content_dir / ".fake_remote_lane3_stub.sh").write_text(lane3_body, encoding="utf-8", newline="\n")
 
@@ -682,13 +789,14 @@ def main(argv: list[str] | None = None) -> int:
                 env_vars[k] = v
 
         # Build isolated kernel environment: strip rig-side PINNED_* and SDLAB_* (except SDLAB_PYTHON)
-        # so the remote runner only sees what was passed via --env.
+        # so the remote runner only sees what was passed via --env, and set UV_SYSTEM_PYTHON=1 to match Colab.
         kernel_env = {
             k: v
             for k, v in os.environ.items()
             if not k.startswith("PINNED_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
         }
+        kernel_env.setdefault("UV_SYSTEM_PYTHON", "1")
         kernel_env.update(env_vars)
 
         # Execute the local .py file's source in a simulated IPython kernel cell:
