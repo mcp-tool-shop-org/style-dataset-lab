@@ -14,10 +14,10 @@ PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LANE1_RENDER_SHA="75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013"
-PINNED_LAUNCH_GUARDS_SHA="06364ffcf95879ef8c5d0d62b517f23b898abc28f960209aaaacc89f46623406"
+PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="ade565b71c17da2e7c63370d1d39cc3badc017f2a88188fa6e314b6151a9b3ff"
-PINNED_SELF_SHA="f0ac9fe51857cfbf59b26b30a4c594cf0deec2a4f19e67af2654111134d174a7"
+PINNED_COLAB_WINDOW_SHA="9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3"
+PINNED_SELF_SHA="ec9dae2c62e72b3b483474582c25da83cb93656dd63cfd5c0407cdf49f85466b"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -143,6 +143,7 @@ mkdir -p /content/lane1_out
 : "\${PINNED_COMFY_HEADLESS_SPEC:?missing PINNED_COMFY_HEADLESS_SPEC}"
 
 echo "setup" > /content/lane1_out/phase.txt
+: > /content/lane1_out/setup.log
 (
   while true; do
     {
@@ -157,6 +158,8 @@ echo "setup" > /content/lane1_out/phase.txt
         sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
       fi
       grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      SETUP_SZ="\$(wc -c < /content/lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
+      echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"
       ps -ef | grep -E "comfy|main\.py|lane1_render\.py" | grep -v grep || true
       CUR_PHASE="\$(cat /content/lane1_out/phase.txt 2>/dev/null || echo setup)"
@@ -168,27 +171,30 @@ echo "setup" > /content/lane1_out/phase.txt
 VITALS_PID="\$!"
 trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
 
-pip install --quiet "uv==\${PINNED_UV_VERSION}"
-uv python install "\${PINNED_PYTHON_VERSION}"
-uv venv /content/venv-lane1 --python "\${PINNED_PYTHON_VERSION}" --seed
+{
+  pip install --quiet "uv==\${PINNED_UV_VERSION}"
+  uv python install "\${PINNED_PYTHON_VERSION}"
+  uv venv /content/venv-lane1 --python "\${PINNED_PYTHON_VERSION}" --seed
+} 2>&1 | tee -a /content/lane1_out/setup.log
 source /content/venv-lane1/bin/activate
+{
+  if [ ! -d /content/ComfyUI ]; then
+    git clone "\${PINNED_COMFYUI_REPO}" /content/ComfyUI
+  fi
+  git -C /content/ComfyUI fetch --depth 1 origin "\${PINNED_COMFYUI_COMMIT}" || true
+  git -C /content/ComfyUI checkout "\${PINNED_COMFYUI_COMMIT}"
+  ACTUAL_COMFYUI_COMMIT="\$(git -C /content/ComfyUI rev-parse HEAD)"
+  if [ "\${ACTUAL_COMFYUI_COMMIT}" != "\${PINNED_COMFYUI_COMMIT}" ]; then
+    echo "REFUSED: ComfyUI commit mismatch: got \${ACTUAL_COMFYUI_COMMIT}, expected \${PINNED_COMFYUI_COMMIT}" >&2
+    exit 1
+  fi
 
-if [ ! -d /content/ComfyUI ]; then
-  git clone "\${PINNED_COMFYUI_REPO}" /content/ComfyUI
-fi
-git -C /content/ComfyUI fetch --depth 1 origin "\${PINNED_COMFYUI_COMMIT}" || true
-git -C /content/ComfyUI checkout "\${PINNED_COMFYUI_COMMIT}"
-ACTUAL_COMFYUI_COMMIT="\$(git -C /content/ComfyUI rev-parse HEAD)"
-if [ "\${ACTUAL_COMFYUI_COMMIT}" != "\${PINNED_COMFYUI_COMMIT}" ]; then
-  echo "REFUSED: ComfyUI commit mismatch: got \${ACTUAL_COMFYUI_COMMIT}, expected \${PINNED_COMFYUI_COMMIT}" >&2
-  exit 1
-fi
-
-uv pip install -r /content/ComfyUI/requirements.txt \
-  --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
-  --index-strategy unsafe-best-match
-uv pip install "\${PINNED_COMFY_HEADLESS_SPEC}"
-python -c "from comfy_headless import ComfyClient; assert ComfyClient is not None"
+  uv pip install -r /content/ComfyUI/requirements.txt \
+    --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
+    --index-strategy unsafe-best-match
+  uv pip install "\${PINNED_COMFY_HEADLESS_SPEC}"
+  python -c "from comfy_headless import ComfyClient; assert ComfyClient is not None"
+} 2>&1 | tee -a /content/lane1_out/setup.log
 
 echo "run" > /content/lane1_out/phase.txt
 python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \

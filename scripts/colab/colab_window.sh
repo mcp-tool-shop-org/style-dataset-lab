@@ -269,6 +269,8 @@ colab_run_exec_with_live_guards() {
   local last_size=0
   local last_progress_epoch
   last_progress_epoch="$(date -u +%s)"
+  local last_setup_bytes=0
+  local last_setup_progress_epoch="${last_progress_epoch}"
 
   local wall_int="${wall_s%.*}"
   local grace_int="${grace_s%.*}"
@@ -287,7 +289,7 @@ colab_run_exec_with_live_guards() {
     if ! kill -0 "${EXEC_PID}" 2>/dev/null; then
       break
     fi
-    local now_epoch elapsed_s cur_size idle_s
+    local now_epoch elapsed_s cur_size idle_s cur_setup_bytes setup_idle_s run_only_bytes
     now_epoch="$(date -u +%s)"
     elapsed_s="$((now_epoch - start_epoch))"
 
@@ -301,17 +303,26 @@ colab_run_exec_with_live_guards() {
       return 91
     fi
 
-    cur_size="$(wc -c < "${out_dir}/vitals.log" 2>/dev/null | tr -d '[:space:]' || echo 0)"
+    run_only_bytes="$(grep -Ev '^(===[[:space:]]*VITALS|CGROUP_MEM(_CURRENT|_MAX)?:|MEM:|SETUP_BYTES:|PROC:|HARNESS:|[[:space:]]*[0-9]+[[:space:]]+.*(comfy|main\.py|ai-toolkit|run\.py|llama-server|ollama|lane1_render\.py))' "${out_dir}/vitals.log" 2>/dev/null | wc -c | tr -d '[:space:]' || echo 0)"
+    cur_size="${run_only_bytes:-0}"
     if [ "${cur_size:-0}" != "${last_size}" ]; then
       last_size="${cur_size:-0}"
       last_progress_epoch="${now_epoch}"
     fi
     idle_s="$((now_epoch - last_progress_epoch))"
 
+    cur_setup_bytes="$(grep -E '^SETUP_BYTES:[[:space:]]*[0-9]+[[:space:]]*$' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | awk -F: '{gsub(/[[:space:]]/, "", $2); print $2}' || true)"
+    if [ -n "${cur_setup_bytes}" ] && [ "${cur_setup_bytes}" != "${last_setup_bytes}" ]; then
+      last_setup_bytes="${cur_setup_bytes}"
+      last_setup_progress_epoch="${now_epoch}"
+    fi
+    setup_idle_s="$((now_epoch - last_setup_progress_epoch))"
+
     local vitals_rc=0
     "${py_bin}" "${guards_py}" \
       --vitals-file "${out_dir}/vitals.log" \
       --idle-seconds "${idle_s}" \
+      --setup-idle-seconds "${setup_idle_s}" \
       --stall-s "${stall_s}" \
       --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log" || vitals_rc=$?
     if [ "${vitals_rc}" -ne 0 ]; then
@@ -344,7 +355,7 @@ colab_run_exec_with_live_guards() {
     return "${remote_rc}"
   fi
 
-  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log"
+  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log"
   local end_epoch elapsed_final
   end_epoch="$(date -u +%s)"
   elapsed_final="$((end_epoch - start_epoch))"
@@ -522,11 +533,15 @@ rate_for_projection = read_float_file(out_dir / "rate_for_projection.txt")
 rate_used_for_cap_and_projection = rate_for_projection
 rate_source = read_text_file(out_dir / "rate_source.txt") or (
     "post_open_measured"
-    if rate_measured_post_open is not None
+    if (rate_measured_post_open is not None and rate_measured_post_open > 0.0)
     else (
-        "max_of_pre_open_and_configured"
-        if rate_measured_pre_open is not None
-        else "configured"
+        "configured_pending_post_open_rate"
+        if (rate_measured_post_open is not None and rate_measured_post_open == 0.0)
+        else (
+            "max_of_pre_open_and_configured"
+            if rate_measured_pre_open is not None
+            else "configured"
+        )
     )
 )
 

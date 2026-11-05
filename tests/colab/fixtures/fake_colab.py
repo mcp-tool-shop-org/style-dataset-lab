@@ -185,29 +185,46 @@ set -euo pipefail
 : "${PINNED_COMFYUI_COMMIT:?missing PINNED_COMFYUI_COMMIT}"
 : "${PINNED_COMFY_HEADLESS_SPEC:?missing PINNED_COMFY_HEADLESS_SPEC}"
 
+mkdir -p lane1_out
+: > lane1_out/setup.log
+echo "setup" > lane1_out/phase.txt
+vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
+
+emit_vitals() {
+  local phase_val="$1"
+  local worker_line="$2"
+  local setup_sz
+  setup_sz="$(wc -c < lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
+  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  echo "CGROUP_MEM_CURRENT: 536870912"
+  echo "CGROUP_MEM_MAX: 12884901888"
+  echo "CGROUP_MEM: oom_kill 0"
+  echo "MEM: MemTotal: 12582912 kB"
+  echo "SETUP_BYTES: ${setup_sz:-0}"
+  echo "PROC:"
+  if [ -n "${worker_line}" ]; then
+    echo "${worker_line}"
+  fi
+  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+}
+
 mode="${FAKE_COLAB_MODE:-success}"
 if [ "${mode}" = "fail" ]; then
+  emit_vitals "setup" ""
   echo "Simulated remote failure with colab-runtime-proxy-token=secret_proxy_tok_lane1_999" >&2
   exit 42
 elif [ "${mode}" = "wall" ]; then
-  echo "Simulated hung child ignoring inner timeout"
+  echo "Simulated hung child ignoring inner timeout" | tee -a lane1_out/setup.log
   for _ in $(seq 1 40); do
-    sleep 0.2
+    emit_vitals "setup" ""
+    sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
-  echo "=== VITALS 2026-11-05T12:01:00Z ==="
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "MEM: MemTotal: 13290000 kB"
-  echo "PROC:"
-  echo 'HARNESS: {"phase": "run", "step": 1}'
-  echo "=== VITALS 2026-11-05T12:01:15Z ==="
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "MEM: MemTotal: 13290000 kB"
-  echo "PROC:"
-  echo 'HARNESS: {"phase": "run", "step": 1}'
+  echo "run" > lane1_out/phase.txt
   for _ in $(seq 1 60); do
-    sleep 0.2
+    emit_vitals "run" ""
+    sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "setup_phase" ]; then
@@ -215,45 +232,29 @@ elif [ "${mode}" = "setup_phase" ]; then
   scale="${FAKE_COLAB_SETUP_SCALE:-1.0}"
   step_sleep="$(awk -v t="${setup_total}" -v s="${scale}" 'BEGIN { printf "%.4f", (t * s) / 4.0 }')"
   for idx in 1 2 3 4; do
-    echo "=== VITALS 2026-11-05T12:00:$((idx * 15))Z ==="
-    echo "CGROUP_MEM_CURRENT: 536870912"
-    echo "CGROUP_MEM_MAX: 12884901888"
-    echo "MEM: MemTotal: 12582912 kB"
-    echo "PROC:"
-    echo 'HARNESS: {"phase": "setup"}'
-    echo "SETUP_PROGRESS step=${idx}/4"
+    echo "SETUP_PROGRESS step=${idx}/4" | tee -a lane1_out/setup.log
+    emit_vitals "setup" ""
     sleep "${step_sleep}"
   done
 elif [ "${mode}" = "setup_stall" ]; then
-  echo "=== VITALS 2026-11-05T12:00:00Z ==="
-  echo "CGROUP_MEM_CURRENT: 536870912"
-  echo "CGROUP_MEM_MAX: 12884901888"
-  echo "MEM: MemTotal: 12582912 kB"
-  echo "PROC:"
-  echo 'HARNESS: {"phase": "setup"}'
+  printf 'initial_setup_line\\n' > lane1_out/setup.log
   for _ in $(seq 1 60); do
-    sleep 0.2
+    emit_vitals "setup" ""
+    sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
-  echo "=== VITALS 2026-11-05T12:00:00Z ==="
-  echo "MEM: MemTotal: 13290000 kB"
-  echo "PROC:"
-  echo "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-  echo 'HARNESS: {"phase": "run", "step": 1}'
+  echo "run" > lane1_out/phase.txt
   for _ in $(seq 1 60); do
-    sleep 0.2
+    emit_vitals "run" "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+    sleep "${vitals_interval}"
   done
   exit 0
 fi
 
-echo "=== VITALS 2026-11-05T12:00:00Z ==="
-echo "CGROUP_MEM_CURRENT: 536870912"
-echo "CGROUP_MEM_MAX: 12884901888"
-echo "MEM: MemTotal: 12582912 kB"
-echo "PROC:"
-echo "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-echo 'HARNESS: {"phase": "run", "step": 1}'
+printf 'setup_complete\\n' >> lane1_out/setup.log
+echo "run" > lane1_out/phase.txt
+emit_vitals "run" "101 python3 /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
 echo "LANE1_STUB_OK python=3.15.1 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
 printf 'FAKE_TAR_BYTES' > lane1_stub_bundle.tar.gz
@@ -266,29 +267,46 @@ set -euo pipefail
 : "${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
 : "${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 
+mkdir -p lane3_out
+: > lane3_out/setup.log
+echo "setup" > lane3_out/phase.txt
+vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
+
+emit_vitals() {
+  local phase_val="$1"
+  local worker_line="$2"
+  local setup_sz
+  setup_sz="$(wc -c < lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
+  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  echo "CGROUP_MEM_CURRENT: 536870912"
+  echo "CGROUP_MEM_MAX: 12884901888"
+  echo "CGROUP_MEM: oom_kill 0"
+  echo "MEM: MemTotal: 12582912 kB"
+  echo "SETUP_BYTES: ${setup_sz:-0}"
+  echo "PROC:"
+  if [ -n "${worker_line}" ]; then
+    echo "${worker_line}"
+  fi
+  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+}
+
 mode="${FAKE_COLAB_MODE:-success}"
 if [ "${mode}" = "fail" ]; then
+  emit_vitals "setup" ""
   echo "Simulated remote failure with colab-runtime-proxy-token=secret_proxy_tok_lane3_999" >&2
   exit 42
 elif [ "${mode}" = "wall" ]; then
-  echo "Simulated hung child ignoring inner timeout"
+  echo "Simulated hung child ignoring inner timeout" | tee -a lane3_out/setup.log
   for _ in $(seq 1 40); do
-    sleep 0.2
+    emit_vitals "setup" ""
+    sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
-  echo "=== VITALS 2026-11-05T12:01:00Z ==="
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "MEM: MemTotal: 13290000 kB"
-  echo "PROC:"
-  echo 'HARNESS: {"phase": "run", "step": 1}'
-  echo "=== VITALS 2026-11-05T12:01:15Z ==="
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "MEM: MemTotal: 13290000 kB"
-  echo "PROC:"
-  echo 'HARNESS: {"phase": "run", "step": 1}'
+  echo "run" > lane3_out/phase.txt
   for _ in $(seq 1 60); do
-    sleep 0.2
+    emit_vitals "run" ""
+    sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "setup_phase" ]; then
@@ -296,45 +314,29 @@ elif [ "${mode}" = "setup_phase" ]; then
   scale="${FAKE_COLAB_SETUP_SCALE:-1.0}"
   step_sleep="$(awk -v t="${setup_total}" -v s="${scale}" 'BEGIN { printf "%.4f", (t * s) / 4.0 }')"
   for idx in 1 2 3 4; do
-    echo "=== VITALS 2026-11-05T12:00:$((idx * 15))Z ==="
-    echo "CGROUP_MEM_CURRENT: 536870912"
-    echo "CGROUP_MEM_MAX: 12884901888"
-    echo "MEM: MemTotal: 12582912 kB"
-    echo "PROC:"
-    echo 'HARNESS: {"phase": "setup"}'
-    echo "SETUP_PROGRESS step=${idx}/4"
+    echo "SETUP_PROGRESS step=${idx}/4" | tee -a lane3_out/setup.log
+    emit_vitals "setup" ""
     sleep "${step_sleep}"
   done
 elif [ "${mode}" = "setup_stall" ]; then
-  echo "=== VITALS 2026-11-05T12:00:00Z ==="
-  echo "CGROUP_MEM_CURRENT: 536870912"
-  echo "CGROUP_MEM_MAX: 12884901888"
-  echo "MEM: MemTotal: 12582912 kB"
-  echo "PROC:"
-  echo 'HARNESS: {"phase": "setup"}'
+  printf 'initial_setup_line\\n' > lane3_out/setup.log
   for _ in $(seq 1 60); do
-    sleep 0.2
+    emit_vitals "setup" ""
+    sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
-  echo "=== VITALS 2026-11-05T12:00:00Z ==="
-  echo "MEM: MemTotal: 13290000 kB"
-  echo "PROC:"
-  echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-  echo 'HARNESS: {"phase": "run", "step": 1}'
+  echo "run" > lane3_out/phase.txt
   for _ in $(seq 1 60); do
-    sleep 0.2
+    emit_vitals "run" "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+    sleep "${vitals_interval}"
   done
   exit 0
 fi
 
-echo "=== VITALS 2026-11-05T12:00:00Z ==="
-echo "CGROUP_MEM_CURRENT: 536870912"
-echo "CGROUP_MEM_MAX: 12884901888"
-echo "MEM: MemTotal: 12582912 kB"
-echo "PROC:"
-echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-echo 'HARNESS: {"phase": "run", "step": 1}'
+printf 'setup_complete\\n' >> lane3_out/setup.log
+echo "run" > lane3_out/phase.txt
+emit_vitals "run" "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "73ebae1334d2c98089f1b90f8cb19257825f891a", "override_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
 echo "LANE3_STUB_OK python=3.15.1 sentencepiece=0.2.1 checkpoint_written=true"
 printf 'FAKE_TAR_BYTES' > lane3_stub_bundle.tar.gz
@@ -526,10 +528,24 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         bal = "9.75" if (mode == "cap_burn" and c >= 2) else os.environ.get("FAKE_COLAB_BALANCE", "9.85")
         session_opened = (state_dir / "session_opened.txt").is_file()
+        post_count = 0
+        if session_opened:
+            post_count_file = state_dir / "post_open_usage_count.txt"
+            post_count = (
+                int(post_count_file.read_text(encoding="utf-8").strip())
+                if post_count_file.is_file()
+                else 0
+            )
+            post_count += 1
+            post_count_file.write_text(f"{post_count}\n", encoding="utf-8", newline="\n")
         pre_rate_str = os.environ.get("FAKE_COLAB_PRE_OPEN_RATE_STR")
+        post_rate_seq_raw = os.environ.get("FAKE_COLAB_POST_OPEN_RATE_SEQ")
         post_rate_str = os.environ.get("FAKE_COLAB_POST_OPEN_RATE_STR")
         if not session_opened and pre_rate_str is not None:
             rate_str = pre_rate_str
+        elif session_opened and post_rate_seq_raw:
+            seq = [x.strip() for x in post_rate_seq_raw.split(",") if x.strip()]
+            rate_str = seq[min(post_count - 1, len(seq) - 1)]
         elif session_opened and post_rate_str is not None:
             rate_str = post_rate_str
         else:

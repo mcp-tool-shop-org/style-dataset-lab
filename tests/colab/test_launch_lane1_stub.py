@@ -572,9 +572,10 @@ def test_negative_balance_refuses_at_start_and_stops_midrun(tmp_path: Path) -> N
 def test_setup_phase_with_no_workers_and_steady_output_succeeds_then_switches_to_run(tmp_path: Path) -> None:
     _, state_dir, env = _make_fake_colab_env(tmp_path / "setup_ok")
     env["FAKE_COLAB_MODE"] = "setup_phase"
-    env["FAKE_COLAB_SETUP_DURATION_S"] = "60"
-    env["FAKE_COLAB_SETUP_SCALE"] = "0.01"
+    env["FAKE_COLAB_SETUP_DURATION_S"] = "8"
+    env["FAKE_COLAB_SETUP_SCALE"] = "0.2"
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env["SETUP_STALL_S"] = "1"
     out_dir = tmp_path / "out_setup_ok"
     res = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-setup-ok"],
@@ -589,13 +590,23 @@ def test_setup_phase_with_no_workers_and_steady_output_succeeds_then_switches_to
     vitals_txt = (out_dir / "vitals.log").read_text(encoding="utf-8")
     assert '"phase": "setup"' in vitals_txt
     assert '"phase": "run"' in vitals_txt
-    assert "DEAD_HARNESS_TRIPPED" not in (out_dir / "guards.log").read_text(encoding="utf-8")
+    setup_bytes_vals = [
+        int(line.split(":", 1)[1].strip())
+        for line in vitals_txt.splitlines()
+        if line.startswith("SETUP_BYTES:")
+    ]
+    assert len(setup_bytes_vals) >= 4
+    assert setup_bytes_vals[-1] > setup_bytes_vals[0]
+    guards_txt = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert "DEAD_HARNESS_TRIPPED" not in guards_txt
+    assert "SETUP_STALL_TRIPPED" not in guards_txt
     assert "STOP -s sdlab-l1-setup-ok" in (state_dir / "stops.log").read_text(encoding="utf-8")
 
 
 def test_silent_setup_trips_setup_stall_tripped_and_trap_stops_session(tmp_path: Path) -> None:
     _, state_dir, env = _make_fake_colab_env(tmp_path / "setup_stall")
     env["FAKE_COLAB_MODE"] = "setup_stall"
+    env["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
     env["SETUP_STALL_S"] = "1"
     out_dir = tmp_path / "out_setup_stall"
@@ -609,6 +620,15 @@ def test_silent_setup_trips_setup_stall_tripped_and_trap_stops_session(tmp_path:
         check=False,
     )
     assert res.returncode == 93
+    vitals_txt = (out_dir / "vitals.log").read_text(encoding="utf-8")
+    assert vitals_txt.count("=== VITALS ") >= 3, "Vitals blocks must continue arriving during silent setup"
+    setup_bytes_vals = [
+        int(line.split(":", 1)[1].strip())
+        for line in vitals_txt.splitlines()
+        if line.startswith("SETUP_BYTES:")
+    ]
+    assert len(setup_bytes_vals) >= 3
+    assert len(set(setup_bytes_vals)) == 1, "SETUP_BYTES must stay constant while vitals blocks continue"
     guards_txt = (out_dir / "guards.log").read_text(encoding="utf-8")
     assert "SETUP_STALL_TRIPPED" in guards_txt
     assert "DEAD_HARNESS_TRIPPED" not in guards_txt
@@ -702,3 +722,53 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     assert res_cap_rate.returncode == 91
     assert "CAP_GUARD_TRIPPED" in (out_cap_rate / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l1-rcap" in (state_cap_rate / "stops.log").read_text(encoding="utf-8")
+
+    # 5. Post-open 0.00/hr rate is NOT used as the cap rate: uses configured_pending_post_open_rate, then updates when positive
+    _, _, env_post_zero = _make_fake_colab_env(tmp_path / "rate_post_zero")
+    env_post_zero["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
+    env_post_zero["FAKE_COLAB_POST_OPEN_RATE_STR"] = "0.00/hr"
+    env_post_zero["RATE_CCU_PER_HOUR"] = "0.26"
+    env_post_zero["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_post_zero = tmp_path / "out_rate_post_zero"
+    res_post_zero = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_post_zero), "--session", "sdlab-l1-rpzero"],
+        env=env_post_zero,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_post_zero.returncode == 0
+    win_post_zero = json.loads((out_post_zero / "window.json").read_text(encoding="utf-8"))
+    assert win_post_zero["rate_measured_pre_open"] == 0.0
+    assert win_post_zero["rate_measured_post_open"] == 0.0
+    assert win_post_zero["rate_used_for_cap_and_projection"] == 0.26
+    assert win_post_zero["rate_for_projection"] == 0.26
+    assert win_post_zero["rate_source"] == "configured_pending_post_open_rate"
+
+    # 6. First post-open read is 0.00/hr, later post-open read is positive (0.41/hr) -> window.json records 0.41 and post_open_measured
+    _, _, env_seq = _make_fake_colab_env(tmp_path / "rate_post_seq")
+    env_seq["FAKE_COLAB_MODE"] = "setup_phase"
+    env_seq["FAKE_COLAB_SETUP_DURATION_S"] = "4"
+    env_seq["FAKE_COLAB_SETUP_SCALE"] = "0.1"
+    env_seq["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
+    env_seq["FAKE_COLAB_POST_OPEN_RATE_SEQ"] = "0.00/hr,0.41/hr"
+    env_seq["RATE_CCU_PER_HOUR"] = "0.26"
+    env_seq["GUARD_POLL_INTERVAL_S"] = "0.15"
+    out_seq = tmp_path / "out_rate_post_seq"
+    res_seq = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_seq), "--session", "sdlab-l1-rpseq"],
+        env=env_seq,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_seq.returncode == 0
+    win_seq = json.loads((out_seq / "window.json").read_text(encoding="utf-8"))
+    assert win_seq["rate_measured_pre_open"] == 0.0
+    assert win_seq["rate_measured_post_open"] == 0.41
+    assert win_seq["rate_used_for_cap_and_projection"] == 0.41
+    assert win_seq["rate_source"] == "post_open_measured"

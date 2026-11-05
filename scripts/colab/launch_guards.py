@@ -148,9 +148,21 @@ def parse_usage_text(
         cur_measured: float | None,
     ) -> tuple[float | None, float | None, float, str]:
         eff_pre = cur_measured if not session_opened else pre_open_rate
-        eff_post = post_open_rate if post_open_rate is not None else (cur_measured if session_opened else None)
-        if eff_post is not None:
+        existing_pos_post = post_open_rate if (post_open_rate is not None and post_open_rate > 0.0) else None
+        if existing_pos_post is not None:
+            eff_post: float | None = existing_pos_post
+        elif session_opened and cur_measured is not None:
+            eff_post = cur_measured
+        elif post_open_rate is not None:
+            eff_post = post_open_rate
+        else:
+            eff_post = None
+
+        if eff_post is not None and eff_post > 0.0:
             return eff_pre, eff_post, float(eff_post), "post_open_measured"
+        if eff_post is not None and eff_post == 0.0:
+            pos_pre = float(eff_pre) if (eff_pre is not None and eff_pre > 0.0) else 0.0
+            return eff_pre, eff_post, max(cfg, pos_pre), "configured_pending_post_open_rate"
         if eff_pre is not None:
             return eff_pre, None, max(float(eff_pre), cfg), "max_of_pre_open_and_configured"
         return None, None, cfg, "configured"
@@ -309,10 +321,17 @@ def parse_vitals_log(vitals_text: str) -> list[dict[str, Any]]:
         phase = None
         worker_count = 0
         oom_kill = False
+        setup_bytes: int | None = None
         in_proc = False
         for line in lines[1:]:
             if OOM_KILL_RE.search(line):
                 oom_kill = True
+            if line.startswith("SETUP_BYTES:"):
+                in_proc = False
+                raw_sb = line[len("SETUP_BYTES:") :].strip()
+                if raw_sb.isdigit():
+                    setup_bytes = int(raw_sb)
+                continue
             if line.startswith("PROC:"):
                 in_proc = True
                 continue
@@ -335,6 +354,7 @@ def parse_vitals_log(vitals_text: str) -> list[dict[str, Any]]:
                 "phase": phase,
                 "worker_proc_count": worker_count,
                 "oom_kill": oom_kill,
+                "setup_bytes": setup_bytes,
             }
         )
     return samples
@@ -344,6 +364,7 @@ def evaluate_vitals_and_stall_guard(
     *,
     vitals_text: str,
     idle_seconds: float = 0.0,
+    setup_idle_seconds: float | None = None,
     stall_s: float = 300.0,
     setup_stall_s: float = 600.0,
 ) -> dict[str, Any]:
@@ -380,12 +401,13 @@ def evaluate_vitals_and_stall_guard(
                 "samples_count": len(samples),
             }
     if current_phase.startswith("setup"):
-        if float(idle_seconds) >= float(setup_stall_s):
+        eff_setup_idle = float(setup_idle_seconds if setup_idle_seconds is not None else idle_seconds)
+        if eff_setup_idle >= float(setup_stall_s):
             return {
                 "tripped": True,
                 "code": "SETUP_STALL_TRIPPED",
                 "cgroup_oom": False,
-                "reason": f"No new output in phase=setup for {idle_seconds}s (setup_stall_s={setup_stall_s}s)",
+                "reason": f"No new setup.log output (SETUP_BYTES unchanged) in phase=setup for {eff_setup_idle}s (setup_stall_s={setup_stall_s}s)",
                 "samples_count": len(samples),
             }
     elif float(idle_seconds) >= float(stall_s):
@@ -466,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scrub-file", action="append", default=[], help="Scrub Colab/OAuth tokens from file in place")
     parser.add_argument("--vitals-file", type=Path, default=None, help="Evaluate vitals.log and stall guard")
     parser.add_argument("--idle-seconds", type=float, default=0.0)
+    parser.add_argument("--setup-idle-seconds", type=float, default=None)
     parser.add_argument("--stall-s", type=float, default=300.0)
     parser.add_argument("--setup-stall-s", type=float, default=600.0)
     parser.add_argument("--check-ram", action="store_true", help="Run host/cgroup RAM projection check")
@@ -515,6 +538,7 @@ def main(argv: list[str] | None = None) -> int:
         vit = evaluate_vitals_and_stall_guard(
             vitals_text=txt,
             idle_seconds=args.idle_seconds,
+            setup_idle_seconds=args.setup_idle_seconds,
             stall_s=args.stall_s,
             setup_stall_s=args.setup_stall_s,
         )

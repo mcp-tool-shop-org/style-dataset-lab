@@ -207,6 +207,74 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_after_pre["rate_used_for_cap_and_projection"] == 0.24
     assert post_after_pre["rate_source"] == "post_open_measured"
 
+    # A post-open 0.00/hr rate is not yet measured: uses max(configured, positive measured) and configured_pending_post_open_rate
+    post_zero = lg.parse_usage_text(
+        "Current balance: 9.85 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=True,
+        pre_open_rate=0.0,
+    )
+    assert post_zero["ok"] is True
+    assert post_zero["rate_measured_pre_open"] == 0.0
+    assert post_zero["rate_measured_post_open"] == 0.0
+    assert post_zero["rate_used_for_cap_and_projection"] == 0.26
+    assert post_zero["rate_source"] == "configured_pending_post_open_rate"
+
+    post_zero_with_pos_pre = lg.parse_usage_text(
+        "Current balance: 9.85 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=True,
+        pre_open_rate=0.45,
+    )
+    assert post_zero_with_pos_pre["ok"] is True
+    assert post_zero_with_pos_pre["rate_measured_post_open"] == 0.0
+    assert post_zero_with_pos_pre["rate_used_for_cap_and_projection"] == 0.45
+    assert post_zero_with_pos_pre["rate_source"] == "configured_pending_post_open_rate"
+
+    # Once a later post-open read becomes positive, it replaces the earlier 0.0 post-open read
+    post_later_positive = lg.parse_usage_text(
+        "Current balance: 9.83 compute units\nUsage rate: 0.34/hr\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=True,
+        post_open_rate=0.0,
+        pre_open_rate=0.0,
+    )
+    assert post_later_positive["ok"] is True
+    assert post_later_positive["rate_measured_post_open"] == 0.34
+    assert post_later_positive["rate_used_for_cap_and_projection"] == 0.34
+    assert post_later_positive["rate_source"] == "post_open_measured"
+
+    # Once a positive post_open_rate is established, a subsequent omitted rate keeps the positive post_open_rate
+    post_keep_positive = lg.parse_usage_text(
+        "Current balance: 9.82 compute units\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=True,
+        post_open_rate=0.34,
+        pre_open_rate=0.0,
+    )
+    assert post_keep_positive["ok"] is True
+    assert post_keep_positive["rate_measured_post_open"] == 0.34
+    assert post_keep_positive["rate_used_for_cap_and_projection"] == 0.34
+    assert post_keep_positive["rate_source"] == "post_open_measured"
+
+    # Subsequent omitted rate when post_open_rate was 0.0 keeps configured_pending_post_open_rate
+    post_keep_pending = lg.parse_usage_text(
+        "Current balance: 9.82 compute units\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.26,
+        session_opened=True,
+        post_open_rate=0.0,
+        pre_open_rate=0.0,
+    )
+    assert post_keep_pending["ok"] is True
+    assert post_keep_pending["rate_measured_post_open"] == 0.0
+    assert post_keep_pending["rate_used_for_cap_and_projection"] == 0.26
+    assert post_keep_pending["rate_source"] == "configured_pending_post_open_rate"
+
     # Rejects JSON or unparseable output or non-zero exit code without any 10.0 fallback
     bad_json = lg.parse_usage_text('{"balance_ccu": 10.0, "rate_ccu_per_hour": 0.26}', usage_rc=0)
     assert bad_json["ok"] is False
@@ -319,29 +387,38 @@ HARNESS: {"phase": "run", "step": 1}
 def test_setup_phase_zero_workers_does_not_trip_dead_harness_and_trips_setup_stall_or_oom() -> None:
     setup_two_zero_fixture = """=== VITALS 2026-11-05T12:00:00Z ===
 CGROUP_MEM: oom_kill 0
+SETUP_BYTES: 120
 PROC:
 HARNESS: {"phase": "setup"}
 === VITALS 2026-11-05T12:00:15Z ===
 CGROUP_MEM: oom_kill 0
+SETUP_BYTES: 120
 PROC:
 HARNESS: {"phase": "setup"}
 === VITALS 2026-11-05T12:00:30Z ===
 CGROUP_MEM: oom_kill 0
+SETUP_BYTES: 120
 PROC:
 HARNESS: {"phase": "setup"}
 """
+    samples = lg.parse_vitals_log(setup_two_zero_fixture)
+    assert [s["setup_bytes"] for s in samples] == [120, 120, 120]
+
     quiet_setup = lg.evaluate_vitals_and_stall_guard(
         vitals_text=setup_two_zero_fixture,
-        idle_seconds=599.9,
+        idle_seconds=0.0,
+        setup_idle_seconds=599.9,
         stall_s=300.0,
         setup_stall_s=600.0,
     )
     assert quiet_setup["tripped"] is False
     assert quiet_setup["code"] is None
 
+    # Even when idle_seconds=0.0 (vitals blocks keep arriving), setup_idle_seconds >= setup_stall_s trips SETUP_STALL_TRIPPED
     tripped_setup_stall = lg.evaluate_vitals_and_stall_guard(
         vitals_text=setup_two_zero_fixture,
-        idle_seconds=600.0,
+        idle_seconds=0.0,
+        setup_idle_seconds=600.0,
         stall_s=300.0,
         setup_stall_s=600.0,
     )

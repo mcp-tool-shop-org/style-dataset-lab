@@ -450,14 +450,15 @@ def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(t
 
 
 def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: Path) -> None:
-    # 1. Setup phase with no workers and steady output succeeds, then switches to run
+    # 1. Setup phase with no workers and steady output succeeds, then switches to run; post-open 0.00/hr then 0.29/hr
     _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "l3_setup_ok")
     env_ok["FAKE_COLAB_MODE"] = "setup_phase"
-    env_ok["FAKE_COLAB_SETUP_DURATION_S"] = "60"
-    env_ok["FAKE_COLAB_SETUP_SCALE"] = "0.01"
+    env_ok["FAKE_COLAB_SETUP_DURATION_S"] = "8"
+    env_ok["FAKE_COLAB_SETUP_SCALE"] = "0.2"
     env_ok["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
-    env_ok["FAKE_COLAB_POST_OPEN_RATE_STR"] = "0.29/hr"
+    env_ok["FAKE_COLAB_POST_OPEN_RATE_SEQ"] = "0.00/hr,0.29/hr"
     env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_ok["SETUP_STALL_S"] = "1"
     out_ok = tmp_path / "out_l3_setup_ok"
     res_ok = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_ok), "--session", "sdlab-l3-setup-ok"],
@@ -479,9 +480,10 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
     assert win_ok["rate_source"] == "post_open_measured"
     assert "STOP -s sdlab-l3-setup-ok" in (state_ok / "stops.log").read_text(encoding="utf-8")
 
-    # 2. Silent setup trips SETUP_STALL_TRIPPED and trap stops session
+    # 2. Silent setup trips SETUP_STALL_TRIPPED while vitals blocks continue, and trap stops session
     _, state_stall, env_stall = _make_fake_colab_env(tmp_path / "l3_setup_stall")
     env_stall["FAKE_COLAB_MODE"] = "setup_stall"
+    env_stall["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
     env_stall["GUARD_POLL_INTERVAL_S"] = "0.2"
     env_stall["SETUP_STALL_S"] = "1"
     out_stall = tmp_path / "out_l3_setup_stall"
@@ -495,5 +497,7 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
         check=False,
     )
     assert res_stall.returncode == 93
+    vitals_stall = (out_stall / "vitals.log").read_text(encoding="utf-8")
+    assert vitals_stall.count("=== VITALS ") >= 3
     assert "SETUP_STALL_TRIPPED" in (out_stall / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-setup-stall" in (state_stall / "stops.log").read_text(encoding="utf-8")
