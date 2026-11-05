@@ -223,7 +223,7 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
     assert l1.verify_loopback_sockets(["127.0.0.1:8188"], 8188) == ["127.0.0.1:8188"]
     with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
         l1.verify_loopback_sockets(["0.0.0.0:8188"], 8188)
-    with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
+    with pytest.raises(ValueError, match="LANE1_COMFY_SOCKET_NOT_FOUND"):
         l1.verify_loopback_sockets(["127.0.0.1:9999"], 8188)
 
     weight_file = tmp_path / "dummy.safetensors"
@@ -288,11 +288,10 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
     assert l1.unwrap_text_val('"hello"') == "hello"
     assert l1.unwrap_text_val('"unterminated\\') == '"unterminated\\'
 
-    with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
+    with pytest.raises(ValueError, match="LANE1_COMFY_SOCKET_NOT_FOUND"):
         l1.verify_loopback_sockets([], 8188)
-    with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
-        l1.verify_loopback_sockets(["127.0.0.1:8188", "0.0.0.0:9000"], 8188)
-    assert l1.verify_loopback_sockets(["no_colon", "127.0.0.1:badport", "127.0.0.1:8188"], 8188)
+    assert l1.verify_loopback_sockets(["127.0.0.1:8188", "0.0.0.0:22", "[::]:22"], 8188) == ["127.0.0.1:8188"]
+    assert l1.verify_loopback_sockets(["no_colon", "127.0.0.1:badport", "127.0.0.1:8188"], 8188) == ["127.0.0.1:8188"]
 
     # Weight staging error branches
     empty_m = tmp_path / "empty_m.json"
@@ -351,29 +350,44 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
     with pytest.raises(ValueError, match="LANE1_WEIGHT_SHA_MISMATCH"):
         l1.stage_weights(mismatch_m)
 
-    # CLI main() invocation
-    proc_tcp_fixture = tmp_path / "proc_net_tcp"
-    proc_tcp_fixture.write_text(
+    # CLI main() invocation with hermetic /proc fixture directory (ComfyUI + wildcard sshd)
+    proc_fixture = tmp_path / "proc_cli"
+    (proc_fixture / "net").mkdir(parents=True)
+    (proc_fixture / "4242" / "fd").mkdir(parents=True)
+    (proc_fixture / "4242" / "fd" / "3").write_text("socket:[12345]\n", encoding="utf-8")
+    (proc_fixture / "net" / "tcp").write_text(
         "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
-        "   0: 0100007F:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n",
+        "   0: 0100007F:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n"
+        "   1: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22001 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    (proc_fixture / "net" / "tcp6").write_text(
+        "  sl  local_address                         rem_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+        "   0: 00000000000000000000000000000000:0016 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22002 1 0000000000000000 100 0 0 10 0\n",
         encoding="utf-8",
     )
     monkeypatch.setenv("SDLAB_EXPECTED_PYTHON", l1.sys.version.split()[0])
+    cli_win_path = tmp_path / "cli_win.json"
     cli_rc = l1.main(
         [
             "--cpu",
             "--bootstrap",
+            "--comfy-pid",
+            "4242",
+            "--proc-root",
+            str(proc_fixture),
             "--window-json",
-            str(tmp_path / "cli_win.json"),
+            str(cli_win_path),
             "--weight-manifest",
             str(manifest_path),
-            "--proc-net-tcp",
-            str(proc_tcp_fixture),
             "--system-python-bin",
             l1.sys.executable,
         ]
     )
     assert cli_rc == 0
+    cli_win = json.loads(cli_win_path.read_text(encoding="utf-8"))
+    assert cli_win["listening_sockets"] == ["127.0.0.1:8188"]
+    assert cli_win["other_listeners"] == ["0.0.0.0:22", "[::]:22"]
 
 
 def test_real_vm_facts_proc_net_tcp_ss_and_system_python_without_defaults(tmp_path: Path) -> None:
@@ -454,4 +468,125 @@ def test_real_vm_facts_proc_net_tcp_ss_and_system_python_without_defaults(tmp_pa
     )
     assert measured_win["system_python"] == "3.13.16"
     assert measured_win["listening_sockets"] == ["127.0.0.1:8188", "[::1]:8188"]
+    assert measured_win["other_listeners"] == []
+
+
+def test_hermetic_proc_comfy_socket_guard_and_other_listeners(tmp_path: Path) -> None:
+    """Hermetic /proc fixture tests for ComfyUI socket inode/port guard and other_listeners."""
+    tcp_header = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+    tcp6_header = "  sl  local_address                         rem_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+
+    # Case 1: ComfyUI on loopback (127.0.0.1:8188 + [::1]:8188) with unrelated wildcard sshd (0.0.0.0:22 + [::]:22)
+    proc_ok = tmp_path / "proc_ok"
+    (proc_ok / "net").mkdir(parents=True)
+    (proc_ok / "4242" / "fd").mkdir(parents=True)
+    (proc_ok / "4242" / "fd" / "3").write_text("socket:[12345]\n", encoding="utf-8")
+    (proc_ok / "4242" / "fd" / "4").write_text("socket:[12347]\n", encoding="utf-8")
+    (proc_ok / "net" / "tcp").write_text(
+        tcp_header
+        + "   0: 0100007F:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n"
+        + "   1: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22001 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    (proc_ok / "net" / "tcp6").write_text(
+        tcp6_header
+        + "   0: 00000000000000000000000001000000:1FFC 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12347 1 0000000000000000 100 0 0 10 0\n"
+        + "   1: 00000000000000000000000000000000:0016 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22002 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+
+    # Port fallback when /proc/<pid>/fd is absent passes and records sshd in other_listeners
+    win_port_ok = l1.write_window_json(
+        tmp_path / "win_port_ok.json",
+        window_id="win_port_ok",
+        comfy_url="http://127.0.0.1:8188",
+        system_python="3.13.16",
+        expected_python=l1.sys.version.split()[0],
+        proc_net_tcp=proc_ok / "net" / "tcp",
+        proc_net_tcp6=proc_ok / "net" / "tcp6",
+    )
+    assert win_port_ok["listening_sockets"] == ["127.0.0.1:8188", "[::1]:8188"]
+    assert win_port_ok["other_listeners"] == ["0.0.0.0:22", "[::]:22"]
+
+    win_pid_ok = l1.write_window_json(
+        tmp_path / "win_pid_ok.json",
+        window_id="win_pid_ok",
+        comfy_url="http://127.0.0.1:8188",
+        system_python="3.13.16",
+        expected_python=l1.sys.version.split()[0],
+        comfy_pid=4242,
+        proc_root=proc_ok,
+    )
+    assert win_pid_ok["listening_sockets"] == ["127.0.0.1:8188", "[::1]:8188"]
+    assert win_pid_ok["other_listeners"] == ["0.0.0.0:22", "[::]:22"]
+
+    # Case 2: ComfyUI on 0.0.0.0 or [::] refuses with LANE1_NON_LOOPBACK_SOCKET
+    proc_wild_v4 = tmp_path / "proc_wild_v4"
+    (proc_wild_v4 / "net").mkdir(parents=True)
+    (proc_wild_v4 / "4242" / "fd").mkdir(parents=True)
+    (proc_wild_v4 / "4242" / "fd" / "3").write_text("socket:[55501]\n", encoding="utf-8")
+    (proc_wild_v4 / "net" / "tcp").write_text(
+        tcp_header + "   0: 00000000:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 55501 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
+        l1.write_window_json(
+            tmp_path / "win_wild_v4.json",
+            window_id="win_wild_v4",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            comfy_pid=4242,
+            proc_root=proc_wild_v4,
+        )
+
+    proc_wild_v6 = tmp_path / "proc_wild_v6"
+    (proc_wild_v6 / "net").mkdir(parents=True)
+    (proc_wild_v6 / "4242" / "fd").mkdir(parents=True)
+    (proc_wild_v6 / "4242" / "fd" / "3").write_text("socket:[55502]\n", encoding="utf-8")
+    (proc_wild_v6 / "net" / "tcp6").write_text(
+        tcp6_header + "   0: 00000000000000000000000000000000:1FFC 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 55502 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
+        l1.write_window_json(
+            tmp_path / "win_wild_v6.json",
+            window_id="win_wild_v6",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            comfy_pid=4242,
+            proc_root=proc_wild_v6,
+        )
+
+    # Case 3: No socket found for the ComfyUI PID or port refuses with LANE1_COMFY_SOCKET_NOT_FOUND
+    proc_no_pid_sock = tmp_path / "proc_no_pid_sock"
+    (proc_no_pid_sock / "net").mkdir(parents=True)
+    (proc_no_pid_sock / "4242" / "fd").mkdir(parents=True)
+    (proc_no_pid_sock / "4242" / "fd" / "3").write_text("socket:[99999]\n", encoding="utf-8")
+    (proc_no_pid_sock / "net" / "tcp").write_text(
+        tcp_header + "   0: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22001 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="LANE1_COMFY_SOCKET_NOT_FOUND"):
+        l1.write_window_json(
+            tmp_path / "win_no_pid_sock.json",
+            window_id="win_no_pid_sock",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            comfy_pid=4242,
+            proc_root=proc_no_pid_sock,
+        )
+
+    with pytest.raises(ValueError, match="LANE1_COMFY_SOCKET_NOT_FOUND"):
+        l1.write_window_json(
+            tmp_path / "win_no_port_sock.json",
+            window_id="win_no_port_sock",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            proc_net_tcp=proc_no_pid_sock / "net" / "tcp",
+        )
+
 

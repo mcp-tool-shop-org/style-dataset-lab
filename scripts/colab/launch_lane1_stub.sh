@@ -13,10 +13,10 @@ PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
-PINNED_LANE1_RENDER_SHA="affe7825d6a453ba46b93141aa00ba69f189f1f670b955acf21882c800b5f3b9"
+PINNED_LANE1_RENDER_SHA="bec745ac2e53092ad107266d46510c8f4cd7e3d94482a4fca9fae12349db9592"
 PINNED_LAUNCH_GUARDS_SHA="82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25"
 PINNED_COLAB_WINDOW_SHA="7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372"
-PINNED_SELF_SHA="312577d6b5381e4a92aeb1af1e15698c70f105e41dc6681028203526f6206221"
+PINNED_SELF_SHA="24a6f33e791f7d9f2216f16e69f828ea312ace76aeda06c6c5f747d8e2a8715a"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -202,6 +202,7 @@ JOBSEOF
 set +e
 python /content/lane1_render.py \
   --cpu --bootstrap \
+  --comfy-pid "\${COMFY_PID}" \
   --comfyui-commit "\${PINNED_COMFYUI_COMMIT}" \
   --window-json /content/lane1_out/vm_window.json \
   --jobs /content/lane1_out/jobs.jsonl \
