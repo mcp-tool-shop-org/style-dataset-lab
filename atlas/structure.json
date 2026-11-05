@@ -542,11 +542,13 @@
         {
           "exports": [
             "buildQwenGraph",
+            "buildStubFixtureGraph",
             "buildWorkflowGraph",
             "listWorkflowTemplates",
+            "resolveQwenLoras",
             "resolveTemplateId"
           ],
-          "hash": "58ed4c864fb9ab0c80bd0f6ba9ba591cdd8dda2d391290a0836aceded5bccc47",
+          "hash": "34e45be48f92851b926cc43224874df0a64a9d3f0829510f7715d0e6a6162f61",
           "importsFiles": [
             "lib/paths.js"
           ],
@@ -2454,6 +2456,164 @@
           "path": "lib/judgment-provenance.js"
         },
         {
+          "exports": [
+            "assertLoopbackComfyUrl",
+            "buildWindowRecord",
+            "compileLane1Jobs",
+            "readJobsJsonl",
+            "runLane1Queue",
+            "stageWeightsFromManifest",
+            "verifyLoopbackSockets",
+            "writeJobsJsonl"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertLoopbackComfyUrl",
+              "kind": "catch",
+              "line": 66
+            },
+            {
+              "in": "assertLoopbackComfyUrl",
+              "kind": "throw",
+              "line": 67
+            },
+            {
+              "in": "assertLoopbackComfyUrl",
+              "kind": "throw",
+              "line": 74
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 92
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 124
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 131
+            },
+            {
+              "in": "verifyLoopbackSockets",
+              "kind": "throw",
+              "line": 139
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 160
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 167
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 171
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 185
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 195
+            },
+            {
+              "in": "stageWeightsFromManifest",
+              "kind": "throw",
+              "line": 202
+            },
+            {
+              "in": "buildWindowRecord",
+              "kind": "throw",
+              "line": 259
+            },
+            {
+              "in": "buildWindowRecord",
+              "kind": "throw",
+              "line": 262
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 299
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 303
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 306
+            },
+            {
+              "in": "validatePinComponent",
+              "kind": "throw",
+              "line": 312
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 349
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 353
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 356
+            },
+            {
+              "in": "compileLane1Jobs",
+              "kind": "throw",
+              "line": 371
+            },
+            {
+              "in": "readJobsJsonl",
+              "kind": "throw",
+              "line": 472
+            },
+            {
+              "in": "loadCompletedRenders",
+              "kind": "catch",
+              "line": 510
+            },
+            {
+              "in": "runLane1Queue",
+              "kind": "throw",
+              "line": 556
+            }
+          ],
+          "hash": "7ae98a64f3049ca6e21b8157f74a8f0228444b319d8d8b599b7745ffd009aeb0",
+          "importOrder": [
+            "lib/errors.js",
+            "lib/run-manifest.js",
+            "lib/adapters/comfyui-workflows.js",
+            "lib/png-meta.js"
+          ],
+          "importsFiles": [
+            "lib/adapters/comfyui-workflows.js",
+            "lib/errors.js",
+            "lib/png-meta.js",
+            "lib/run-manifest.js"
+          ],
+          "path": "lib/lane1-render.js"
+        },
+        {
           "entry": "log",
           "entryRule": 3,
           "exports": [
@@ -2670,8 +2830,14 @@
         },
         {
           "exports": [
+            "crc32Png",
             "decodePng",
-            "parsePngMeta"
+            "parsePngMeta",
+            "readPngProvenance",
+            "readPngTextChunks",
+            "stampPngProvenance",
+            "verifyPngProvenance",
+            "writePngTextChunks"
           ],
           "failurePaths": [
             {
@@ -2748,9 +2914,34 @@
               "in": "decodePng",
               "kind": "throw",
               "line": 247
+            },
+            {
+              "in": "unwrapTextValue",
+              "kind": "catch",
+              "line": 428
+            },
+            {
+              "in": "stampPngProvenance",
+              "kind": "throw",
+              "line": 445
+            },
+            {
+              "in": "stampPngProvenance",
+              "kind": "throw",
+              "line": 450
+            },
+            {
+              "in": "verifyPngProvenance",
+              "kind": "throw",
+              "line": 495
+            },
+            {
+              "in": "verifyPngProvenance",
+              "kind": "throw",
+              "line": 505
             }
           ],
-          "hash": "1b3d3b3193c51490e40c9f6eb57a0e79985263b744182d1a4b2624290868079f",
+          "hash": "41bfab0ddb147094796930b321185eef18acd355dc9ab5c06443a4fd57780521",
           "importsFiles": [
             "lib/errors.js"
           ],
@@ -3462,11 +3653,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 194,
+          "reads": 207,
           "where": [
             "caller"
           ],
-          "writes": 95
+          "writes": 107
         },
         {
           "reads": 1,
@@ -3498,13 +3689,13 @@
           "writes": 1
         }
       ],
-      "outsideReads": 203,
-      "outsideWrites": 96,
+      "outsideReads": 216,
+      "outsideWrites": 108,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 93,
+      "testedBy": 94,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -16112,6 +16303,158 @@
         },
         {
           "exports": [
+            "assert_loopback_url",
+            "build_qwen_lora_graph",
+            "build_stub_fixture_graph",
+            "build_text_chunk",
+            "download_comfy_image",
+            "load_completed",
+            "main",
+            "normalize_sha256",
+            "pick_history_image",
+            "run_queue",
+            "sha256_bytes",
+            "sha256_file",
+            "stage_weights",
+            "stamp_png_provenance",
+            "sync_copy_back",
+            "unwrap_text_val",
+            "verify_loopback_sockets",
+            "verify_png_provenance",
+            "write_png_text_chunks",
+            "write_window_json"
+          ],
+          "failurePaths": [
+            {
+              "in": "assert_loopback_url",
+              "kind": "raise",
+              "line": 84
+            },
+            {
+              "in": "verify_loopback_sockets",
+              "kind": "raise",
+              "line": 90
+            },
+            {
+              "in": "verify_loopback_sockets",
+              "kind": "except",
+              "line": 99
+            },
+            {
+              "in": "verify_loopback_sockets",
+              "kind": "raise",
+              "line": 106
+            },
+            {
+              "in": "verify_loopback_sockets",
+              "kind": "raise",
+              "line": 109
+            },
+            {
+              "in": "verify_loopback_sockets",
+              "kind": "raise",
+              "line": 111
+            },
+            {
+              "in": "write_png_text_chunks",
+              "kind": "raise",
+              "line": 124
+            },
+            {
+              "in": "write_png_text_chunks",
+              "kind": "raise",
+              "line": 136
+            },
+            {
+              "in": "unwrap_text_val",
+              "kind": "except",
+              "line": 167
+            },
+            {
+              "in": "stamp_png_provenance",
+              "kind": "raise",
+              "line": 176
+            },
+            {
+              "in": "verify_png_provenance",
+              "kind": "raise",
+              "line": 195
+            },
+            {
+              "in": "verify_png_provenance",
+              "kind": "raise",
+              "line": 200
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 286
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 293
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 295
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 300
+            },
+            {
+              "in": "stage_weights",
+              "kind": "raise",
+              "line": 303
+            },
+            {
+              "in": "write_window_json",
+              "kind": "raise",
+              "line": 325
+            },
+            {
+              "in": "write_window_json",
+              "kind": "except",
+              "line": 329
+            },
+            {
+              "in": "pick_history_image",
+              "kind": "raise",
+              "line": 378
+            },
+            {
+              "in": "load_completed",
+              "kind": "except",
+              "line": 406
+            },
+            {
+              "in": "run_queue",
+              "kind": "raise",
+              "line": 483
+            },
+            {
+              "in": "run_queue",
+              "kind": "raise",
+              "line": 486
+            },
+            {
+              "in": "run_queue",
+              "kind": "raise",
+              "line": 499
+            },
+            {
+              "kind": "raise",
+              "line": 632
+            }
+          ],
+          "hash": "74cf48c35b76c5d0ffdc49d750ff0ffb3bd8dfb78eb600d8492e7a73b2d40f40",
+          "path": "scripts/colab/lane1_render.py"
+        },
+        {
+          "exports": [
             "run"
           ],
           "failurePaths": [
@@ -16727,6 +17070,7 @@
         },
         {
           "exports": [
+            "normalizeGenerationInput",
             "run"
           ],
           "failurePaths": [
@@ -16743,20 +17087,20 @@
             {
               "in": "run",
               "kind": "throw",
-              "line": 368
+              "line": 369
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 517
+              "line": 521
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 555
+              "line": 559
             }
           ],
-          "hash": "622d98b512b8f6d82f7892fa832a5f0b916a3fb0c51ddb5559868bf637aec76a",
+          "hash": "f8a58d3a4a43885e5bed0cacc1f8077ceeb0a3c9b7e6a080c1858b71674f8e9d",
           "importOrder": [
             "lib/args.js",
             "lib/paths.js",
@@ -17710,11 +18054,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 20,
+          "reads": 23,
           "where": [
             "caller"
           ],
-          "writes": 10
+          "writes": 16
         },
         {
           "reads": 2,
@@ -17732,13 +18076,13 @@
           "writes": 0
         }
       ],
-      "outsideReads": 23,
-      "outsideWrites": 22,
+      "outsideReads": 26,
+      "outsideWrites": 28,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 19,
+      "testedBy": 20,
       "unresolvedSites": 0
     },
     {
@@ -17754,7 +18098,7 @@
           "path": "site/astro.config.mjs"
         },
         {
-          "hash": "97a3922330418d28bbd96b7eeb26366e537bb321a961cc7ccf83fad0979893a3",
+          "hash": "5ec4d99a215539afd0754989ab5f620558f5a98d8c4244a9c801246d4b1165cf",
           "path": "site/package-lock.json"
         },
         {
@@ -19020,6 +19364,25 @@
           "testFramework": "node --test"
         },
         {
+          "hash": "79a7b6b0d3e9fdfd2fcd85528089ce2d35767cf7c4821f8dedc1d6c0e0d98413",
+          "importOrder": [
+            "lib/png-meta.js",
+            "tests/lib-asset/fixtures/make-png.js",
+            "lib/adapters/comfyui-workflows.js",
+            "scripts/generate.js",
+            "lib/lane1-render.js"
+          ],
+          "importsFiles": [
+            "lib/adapters/comfyui-workflows.js",
+            "lib/lane1-render.js",
+            "lib/png-meta.js",
+            "scripts/generate.js",
+            "tests/lib-asset/fixtures/make-png.js"
+          ],
+          "path": "tests/lib-pipeline/lane1-render.test.js",
+          "testFramework": "node --test"
+        },
+        {
           "hash": "7ba090032b48ce3799a1729cfbaa224789a95b33d55eac5e3a70ab56ca82d2f6",
           "importsFiles": [
             "lib/refine-briefs.js"
@@ -19417,7 +19780,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -19426,7 +19789,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 75
         },
         {
           "boundary": "scripts",
@@ -19688,7 +20051,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -19698,7 +20061,7 @@
         },
         {
           "coverage": true,
-          "files": 96,
+          "files": 97,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -19995,7 +20358,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 100
+          "files": 101
         },
         {
           "boundary": "lib",
@@ -20004,7 +20367,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 74
+          "files": 75
         },
         {
           "boundary": "scripts",
@@ -20235,7 +20598,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 96,
+          "files": 97,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20358,10 +20721,24 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "dfeac64ea1a2585b65d88e6ee8a64fd02a185090",
-    "tracked": 3231
+    "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+    "tracked": 3234
   },
   "landings": [
+    {
+      "readers": [
+        {
+          "by": "tests/lib-pipeline/lane1-render.test.js",
+          "call": "raw-url",
+          "confidence": "ast",
+          "fromTests": true,
+          "ref": "main",
+          "repo": "QwenLM/Qwen2.5-VL"
+        }
+      ],
+      "target": "LICENSE",
+      "writers": []
+    },
     {
       "readers": [],
       "target": "README.md",
@@ -23168,7 +23545,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 102,
+  "testFiles": 103,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
