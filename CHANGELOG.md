@@ -8,6 +8,33 @@ All notable changes to this project will be documented in this file.
 
 - **Portlight ship data cleared and quarantine removed** — the studio's Portlight ship data (`mcp-tool-shop/portlight-ships-anatomy`) and `plsvessel` LoRA (`mcp-tool-shop/portlight-ships-anatomy-lora`) are cleared under the MIT licence for training and CC-BY-4.0 release. Removed the quarantine patterns and checks in `lib/model-licences.js`, `lib/adapters/ai-toolkit.js`, `lib/train-runs.js`, and `lib/verify-chain.js`, and added the cleared MIT catalogue entry for `plsvessel` / `portlight-ships-anatomy`.
 
+## [3.5.0] - 2026-11-05
+
+**Provenance you can prove, canon a model can draft but not decide, and the first Colab lanes.** Tests **791 → 926**.
+
+### Added
+
+- **`sdlab asset ingest <dir>`** — the asset lane. Admits a 3D asset's re-rendered turnaround as provenance-carrying training data, against an `asset-source.json` contract (schema 1.3.0). Every declaration (channels, palette bands, gate thresholds, the acceptance verdict, the style register, how the renders came to exist) is proven against the actual bytes, and the whole ingest is refused on any violation. Records land uncurated with `provenance.source: "asset"`. Missing-but-optional declarations are reported as notices rather than failures. Contract: `docs/asset-lane-design.md`.
+- **`sdlab verify --project <name>`** — walks the release provenance chain offline for each record: owner and CC-BY-4.0 licence on the record, the bound canon entry (by `canon_sha` and entry hash), the licence of every model and LoRA (SPDX id, licence URL, date read, and the file's sha256), and the workflow hash in the run manifest. A missing link fails.
+- **`sdlab canon draft`** — a local model drafts canon entries and prompts through a loopback-only, OpenAI-compatible endpoint. Output is written with `status: "draft"`, `judgment: null`, and `drafted_by_model` / `author_model` on every path. Keys a model could use to pre-fill a ratification, judgment or status are stripped from its output.
+- **Canon review gate and memory store.** The freeze gate refuses any model-drafted entry unless a person approved it, with a reason and the sha256 of the exact draft approved. A persistent memory store keeps every draft and decision, marking model authorship.
+- **Run provenance in images.** Lane-1 renders stamp their generation provenance into PNG metadata. Training runs record what trained them (`lib/train-runs.js`), including Qwen LoRA support through ai-toolkit.
+
+### Experimental
+
+- **Colab launch kits** (`scripts/colab/`) for a lane-1 render and a lane-3 training step on your own Colab account. They pin every input by hash, check the real `colab` CLI contract, cap spend from your live balance (refusing to start if the balance can't be read), watch setup and run separately for stalls, and stop their own session on exit. **They have not yet completed a live window end to end.**
+- The canon draft and review gate are complete, but no single command yet drives drafting, review and freeze together.
+
+### Changed
+
+- Every pull request now runs CI; pushes stay paths-gated. Coverage is uploaded to Codecov, and the repository carries an Atlas map checked in CI.
+- The landing site moved to Astro 7.
+
+### Fixed
+
+- Updated `devalue` and `brace-expansion` to their patched releases.
+- Removed home paths and an account handle from the tree.
+
 ## [3.4.0] - 2026-08-04
 
 **Dogfood swarm.** A full health pass (bugs/security, then proactive hardening, then user-facing copy) followed by three new commands. Tests **400 → 791**. Every fix carries a test proven to fail against the unfixed code.

@@ -1,16 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit 8207917 by Atlas 1.24.0.
+Mapped at 2026-11-05 from commit ca36100 by Atlas 1.24.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2617 files); code in JavaScript (247), Python (38), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-05 (dbf8473)
+## What changed since 2026-11-05 (8207917)
 
-- tests/colab/fixtures/colab-cli-contract.json is now read by tests/colab/fixtures/fake_colab.py.
-- tests/colab/fixtures/colab_help.txt is now read by tests/colab/fixtures/fake_colab.py.
-- 5 files added and 15 changed content, across 4 parts.
+Nothing structural changed since 2026-11-05; 12 files changed content.
 
 ## What comes in
 
