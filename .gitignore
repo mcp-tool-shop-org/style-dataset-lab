@@ -45,6 +45,8 @@ site/node_modules/
 # Test coverage output
 coverage/
 .nyc_output/
+.coverage
+coverage-python.xml
 
 # Generated candidate images — ignore at ANY depth.
 # (Was projects/*/outputs/*/*.png — only 2-level; missed outputs/v3/<subject>/ etc.)
