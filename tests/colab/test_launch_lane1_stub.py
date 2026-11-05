@@ -427,6 +427,7 @@ def test_usage_text_parsed_into_live_balance_and_rate_in_window_json(tmp_path: P
     assert win["start_balance"] == 14.32
     assert win["end_balance"] == 14.32
     assert win["rate_measured"] == 0.42
+    assert win["rate_used_for_cap_and_projection"] == 0.42
     assert win["rate_for_projection"] == 0.42
     assert win["rate_source"] == "measured"
     assert win["usage_parse_error"] is None
@@ -484,3 +485,81 @@ def test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0(tmp_
     assert win_mid["end_balance"] is None
     assert "COLAB_USAGE_PARSE_FAILED" in (win_mid["usage_parse_error"] or "")
     assert "10.0" not in win_mid_raw
+
+
+def test_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_before_new(tmp_path: Path) -> None:
+    _, state_dir, env = _make_fake_colab_env(tmp_path / "nonempty_case")
+    env["FAKE_COLAB_MODE"] = "cap_burn"
+    out_dir = tmp_path / "out_nonempty"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "start_balance.txt").write_text("9.75\n", encoding="utf-8")
+
+    res = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-nonempty"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res.returncode != 0
+    assert "OUT_DIR_NOT_EMPTY" in (res.stdout + res.stderr)
+    assert not (state_dir / "calls.log").exists(), "colab must never be called when --out-dir is not empty"
+
+
+def test_midrun_poll_helper_crash_or_empty_stops_window_rc_91_and_trap_stops_session(tmp_path: Path) -> None:
+    for fault in ("crash", "empty"):
+        _, state_dir, env = _make_fake_colab_env(tmp_path / f"helper_{fault}")
+        env["FAKE_COLAB_MODE"] = "stall"
+        env["GUARD_POLL_INTERVAL_S"] = "0.2"
+        env["SDLAB_FAULT_POLL_HELPER_MIDRUN"] = fault
+        out_dir = tmp_path / f"out_helper_{fault}"
+        sid = f"sdlab-l1-h{fault}"
+        res = subprocess.run(
+            [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", sid],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        assert res.returncode == 91, f"Expected rc 91 for {fault}, got {res.returncode}:\n{res.stderr}"
+        assert "COLAB_USAGE_PARSE_FAILED" in (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert f"STOP -s {sid}" in (state_dir / "stops.log").read_text(encoding="utf-8")
+
+
+def test_negative_balance_refuses_at_start_and_stops_midrun(tmp_path: Path) -> None:
+    _, state_start, env_start = _make_fake_colab_env(tmp_path / "neg_start")
+    env_start["FAKE_COLAB_MODE"] = "negative_balance_start"
+    out_start = tmp_path / "out_neg_start"
+    res_start = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_start), "--session", "sdlab-l1-negstart"],
+        env=env_start,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_start.returncode != 0
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_start / "guards.log").read_text(encoding="utf-8")
+    assert "CALL new" not in (state_start / "calls.log").read_text(encoding="utf-8")
+
+    _, state_mid, env_mid = _make_fake_colab_env(tmp_path / "neg_mid")
+    env_mid["FAKE_COLAB_MODE"] = "negative_balance_midrun"
+    env_mid["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_mid = tmp_path / "out_neg_mid"
+    res_mid = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_mid), "--session", "sdlab-l1-negmid"],
+        env=env_mid,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_mid.returncode == 91
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_mid / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l1-negmid" in (state_mid / "stops.log").read_text(encoding="utf-8")

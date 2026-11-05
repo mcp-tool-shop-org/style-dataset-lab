@@ -300,6 +300,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert win["start_balance"] == 9.85
     assert win["end_balance"] == 9.85
     assert win["rate_measured"] == 0.26
+    assert win["rate_used_for_cap_and_projection"] == 0.26
     assert win["rate_source"] == "measured"
     assert win["usage_parse_error"] is None
     assert "lane3_stub_bundle.tar.gz" in win["downloaded_files"]
@@ -386,3 +387,61 @@ def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_
     assert "COLAB_USAGE_PARSE_FAILED" in (out_mid / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-umid" in (state_mid / "stops.log").read_text(encoding="utf-8")
     assert "10.0" not in (out_mid / "window.json").read_text(encoding="utf-8")
+
+
+def test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_before_new(tmp_path: Path) -> None:
+    _, state_dir, env = _make_fake_colab_env(tmp_path / "nonempty_case")
+    env["FAKE_COLAB_MODE"] = "cap_burn"
+    out_dir = tmp_path / "out_nonempty"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "start_balance.txt").write_text("9.75\n", encoding="utf-8")
+
+    res = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l3-nonempty"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res.returncode != 0
+    assert "OUT_DIR_NOT_EMPTY" in (res.stdout + res.stderr)
+    assert not (state_dir / "calls.log").exists(), "colab must never be called when --out-dir is not empty"
+
+
+def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(tmp_path: Path) -> None:
+    _, state_crash, env_crash = _make_fake_colab_env(tmp_path / "helper_crash")
+    env_crash["FAKE_COLAB_MODE"] = "stall"
+    env_crash["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_crash["SDLAB_FAULT_POLL_HELPER_MIDRUN"] = "crash"
+    out_crash = tmp_path / "out_helper_crash"
+    res_crash = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_crash), "--session", "sdlab-l3-hcrash"],
+        env=env_crash,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_crash.returncode == 91
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_crash / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-hcrash" in (state_crash / "stops.log").read_text(encoding="utf-8")
+
+    _, state_neg, env_neg = _make_fake_colab_env(tmp_path / "neg_mid")
+    env_neg["FAKE_COLAB_MODE"] = "negative_balance_midrun"
+    env_neg["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_neg = tmp_path / "out_neg_mid"
+    res_neg = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_neg), "--session", "sdlab-l3-negmid"],
+        env=env_neg,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_neg.returncode == 91
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_neg / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-negmid" in (state_neg / "stops.log").read_text(encoding="utf-8")

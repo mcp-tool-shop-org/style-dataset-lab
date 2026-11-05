@@ -14,6 +14,14 @@ colab_resolve_python() {
   command -v python
 }
 
+colab_refuse_nonempty_out_dir() {
+  local out_dir="$1"
+  if [ -d "${out_dir}" ] && [ -n "$(ls -A "${out_dir}" 2>/dev/null)" ]; then
+    echo "REFUSED: OUT_DIR_NOT_EMPTY: ${out_dir} already exists and is not empty" >&2
+    return 97
+  fi
+}
+
 colab_guard_fake_cli_if_test() {
   local colab_bin
   colab_bin="$(command -v colab || true)"
@@ -43,6 +51,18 @@ colab_verify_input_shas() {
 colab_poll_usage_and_ram() {
   local py_bin="$1"
   local out_dir="$2"
+  local fault_mode="${SDLAB_FAULT_POLL_HELPER:-}"
+  if [ -f "${out_dir}/start_balance.txt" ] && [ -n "${SDLAB_FAULT_POLL_HELPER_MIDRUN:-}" ]; then
+    fault_mode="${SDLAB_FAULT_POLL_HELPER_MIDRUN}"
+  fi
+  if [ "${fault_mode}" = "crash" ]; then
+    return 137
+  elif [ "${fault_mode}" = "empty" ]; then
+    return 0
+  elif [ "${fault_mode}" = "short" ]; then
+    echo "9.85 9.85"
+    return 0
+  fi
   local default_rate="${RATE_CCU_PER_HOUR:-0.26}"
   local guards_py
   guards_py="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launch_guards.py"
@@ -134,10 +154,22 @@ colab_check_cap_and_ram() {
   local margin="$8"
   local out_dir="$9"
 
-  local metrics
-  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")"
-  local start_bal cur_bal rate_val err_tok anon_mb mem_total_mb cgroup_max_mb
-  read -r start_bal cur_bal rate_val err_tok anon_mb mem_total_mb cgroup_max_mb <<< "${metrics}"
+  local metrics=""
+  local poll_rc=0
+  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || poll_rc=$?
+  local start_bal="" cur_bal="" rate_val="" err_tok="" anon_mb="" mem_total_mb="" cgroup_max_mb=""
+  if [ "${poll_rc}" -ne 0 ]; then
+    err_tok="COLAB_USAGE_PARSE_FAILED"
+    printf 'COLAB_USAGE_PARSE_FAILED: usage poll helper exited with status %s\n' "${poll_rc}" > "${out_dir}/usage_parse_error.txt"
+  else
+    read -r start_bal cur_bal rate_val err_tok anon_mb mem_total_mb cgroup_max_mb <<< "${metrics}"
+    if [ -z "${metrics}" ] || [ -z "${start_bal}" ] || [ -z "${cur_bal}" ] || [ -z "${rate_val}" ] || [ -z "${err_tok}" ] || [ "${start_bal}" = "NONE" ] || [ "${cur_bal}" = "NONE" ]; then
+      err_tok="COLAB_USAGE_PARSE_FAILED"
+      if [ ! -s "${out_dir}/usage_parse_error.txt" ]; then
+        printf 'COLAB_USAGE_PARSE_FAILED: incomplete or missing usage metrics (%s)\n' "${metrics}" > "${out_dir}/usage_parse_error.txt"
+      fi
+    fi
+  fi
 
   local guard_args=(
     "--mode" "${mode}"
@@ -162,7 +194,9 @@ colab_check_cap_and_ram() {
     guard_args+=("--usage-parse-error" "${err_detail}")
   fi
 
-  if ! "${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null >> "${out_dir}/guards.log"; then
+  local guard_rc=0
+  "${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null >> "${out_dir}/guards.log" || guard_rc=$?
+  if [ "${guard_rc}" -ne 0 ]; then
     if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
       echo "REFUSED: COLAB_USAGE_PARSE_FAILED" >&2
     fi
@@ -178,7 +212,11 @@ colab_check_cap_and_ram() {
   if [ -n "${cgroup_max_mb:-}" ]; then
     ram_args+=("--cgroup-max-mb" "${cgroup_max_mb}")
   fi
-  "${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null >> "${out_dir}/guards.log"
+  local ram_rc=0
+  "${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null >> "${out_dir}/guards.log" || ram_rc=$?
+  if [ "${ram_rc}" -ne 0 ]; then
+    return "${ram_rc}"
+  fi
 }
 
 colab_run_exec_with_live_guards() {
@@ -222,7 +260,9 @@ colab_run_exec_with_live_guards() {
     now_epoch="$(date -u +%s)"
     elapsed_s="$((now_epoch - start_epoch))"
 
-    if ! colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}"; then
+    local check_rc=0
+    colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}" || check_rc=$?
+    if [ "${check_rc}" -ne 0 ]; then
       pkill -P "${EXEC_PID}" 2>/dev/null || true
       kill -9 "${EXEC_PID}" 2>/dev/null || true
       wait "${EXEC_PID}" 2>/dev/null || true
@@ -237,10 +277,12 @@ colab_run_exec_with_live_guards() {
     fi
     idle_s="$((now_epoch - last_progress_epoch))"
 
-    if ! "${py_bin}" "${guards_py}" \
+    local vitals_rc=0
+    "${py_bin}" "${guards_py}" \
       --vitals-file "${out_dir}/vitals.log" \
       --idle-seconds "${idle_s}" \
-      --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log"; then
+      --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log" || vitals_rc=$?
+    if [ "${vitals_rc}" -ne 0 ]; then
       pkill -P "${EXEC_PID}" 2>/dev/null || true
       kill -9 "${EXEC_PID}" 2>/dev/null || true
       wait "${EXEC_PID}" 2>/dev/null || true
@@ -438,6 +480,7 @@ for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.saf
 usage_parse_error = read_text_file(out_dir / "usage_parse_error.txt")
 rate_measured = read_float_file(out_dir / "rate_measured.txt")
 rate_for_projection = read_float_file(out_dir / "rate_for_projection.txt")
+rate_used_for_cap_and_projection = rate_for_projection
 rate_source = read_text_file(out_dir / "rate_source.txt") or (
     "measured" if rate_measured is not None else "configured_RATE_CCU_PER_HOUR"
 )
@@ -455,6 +498,7 @@ window_payload = {
     "start_balance": read_float_file(out_dir / "start_balance.txt"),
     "end_balance": read_float_file(out_dir / "end_balance.txt"),
     "rate_measured": rate_measured,
+    "rate_used_for_cap_and_projection": rate_used_for_cap_and_projection,
     "rate_for_projection": rate_for_projection,
     "rate_source": rate_source,
     "usage_parse_error": usage_parse_error,

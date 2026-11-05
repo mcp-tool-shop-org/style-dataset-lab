@@ -210,7 +210,7 @@ elif [ "${mode}" = "dead_harness" ]; then
     sleep 0.2
   done
   exit 0
-elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ]; then
+elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "=== VITALS 2026-11-05T12:00:00Z ==="
   echo "MEM: MemTotal: 13290000 kB"
   echo "PROC:"
@@ -266,7 +266,7 @@ elif [ "${mode}" = "dead_harness" ]; then
     sleep 0.2
   done
   exit 0
-elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ]; then
+elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "=== VITALS 2026-11-05T12:00:00Z ==="
   echo "MEM: MemTotal: 13290000 kB"
   echo "PROC:"
@@ -463,6 +463,12 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if mode == "usage_fail_midrun" and c >= 2:
             print("UNPARSEABLE_USAGE_TEXT_MIDRUN")
+            return 0
+        if mode == "negative_balance_start" and c == 1:
+            print("Current balance: -5.00 compute units\nUsage rate: 0.26/hr\nActive assignments: 1")
+            return 0
+        if mode == "negative_balance_midrun" and c >= 2:
+            print("Current balance: -5.00 compute units\nUsage rate: 0.26/hr\nActive assignments: 1")
             return 0
         raw_override = os.environ.get("FAKE_COLAB_USAGE_TEXT")
         if raw_override is not None:
