@@ -7,7 +7,7 @@
  *   image -> record (G5 owner + CC-BY-4.0)
  *         -> canon (G6 canon_sha + entry_sha256)
  *         -> model licence (G4 SPDX id + licence_url + date_read)
- *         -> run manifest (workflow sha + quarantine guard + verdict separation)
+ *         -> run manifest (workflow sha + verdict separation)
  */
 
 import { parseArgs, getProjectName } from '../lib/args.js';

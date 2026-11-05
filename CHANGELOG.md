@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Portlight ship data cleared and quarantine removed** — the studio's Portlight ship data (`mcp-tool-shop/portlight-ships-anatomy`) and `plsvessel` LoRA (`mcp-tool-shop/portlight-ships-anatomy-lora`) are cleared under the MIT licence for training and CC-BY-4.0 release. Removed the quarantine patterns and checks in `lib/model-licences.js`, `lib/adapters/ai-toolkit.js`, `lib/train-runs.js`, and `lib/verify-chain.js`, and added the cleared MIT catalogue entry for `plsvessel` / `portlight-ships-anatomy`.
+
 ## [3.5.0] - 2026-11-05
 
 **Provenance you can prove, canon a model can draft but not decide, and the first Colab lanes.** Tests **791 → 926**.
