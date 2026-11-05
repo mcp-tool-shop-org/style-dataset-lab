@@ -63,7 +63,7 @@ test('SDL-H5: assertSafeId / SAFE_ID_RE reject traversal and unsafe characters',
 test('SDL-H6: assertSafeAssetPath rejects absolute paths and traversal, accepts safe relative paths', () => {
   const root = join('C:', 'fake', 'project') || '/fake/project';
   assert.throws(
-    () => assertSafeAssetPath('../../../../Users/victim/.ssh/id_rsa', root, 'rec1'),
+    () => assertSafeAssetPath('../../../../etc/passwd', root, 'rec1'),
     err => err.code === 'ASSET_PATH_TRAVERSAL',
   );
   assert.throws(
@@ -295,7 +295,7 @@ for (const [name, buildPackage] of adapters) {
         entity_id: 'safe_id',
         lane: 'concept',
         partition: 'train',
-        asset_path: '../../../../Users/victim/.ssh/id_rsa',
+        asset_path: '../../../../etc/passwd',
         caption: 'a caption',
       };
 
