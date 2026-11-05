@@ -465,12 +465,12 @@ test('G1 & §3.1/§3.5/§7: VM bootstrap enforces loopback-only ComfyUI bind, ve
     end_balance: 2512.73,
     rate_measured: 0.08,
   });
-  assert.equal(win.python, '3.15.1');
+  assert.equal(win.python, '3.14.9');
   assert.equal(win.system_python, '3.13.16');
   assert.deepEqual(win.listening_sockets, ['127.0.0.1:8188']);
   assert.equal(LANE1_UV_PIN, 'uv==0.13.5');
 
-  // Non-3.15.1 python refused
+  // Non-3.14.9 python refused
   assert.throws(
     () =>
       buildWindowRecord({

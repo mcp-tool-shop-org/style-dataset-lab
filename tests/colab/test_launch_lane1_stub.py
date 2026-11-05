@@ -293,7 +293,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert res_ok.returncode == 0
     win = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
     assert win["system_python"] == "3.13.16"
-    assert win["python"] == "3.15.1"
+    assert win["python"] == "3.14.9"
     assert win["listening_sockets"] == ["127.0.0.1:8188"]
     assert win["start_balance"] == 9.85
     assert win["end_balance"] == 9.85
@@ -793,11 +793,11 @@ def test_lane1_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
     assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
     remote_sh = (out_ok / "remote_lane1_stub.sh").read_text(encoding="utf-8")
     assert "unset UV_SYSTEM_PYTHON" in remote_sh
-    assert 'export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"' in remote_sh
+    assert 'export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_314/install"' in remote_sh
     assert "source /content/venv-lane1/bin/activate" not in remote_sh
     assert "uv venv --python \"${PINNED_PYTHON_VERSION}\" --seed /content/venv-lane1" in remote_sh
     assert (
-        "/content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith(\"3.15.1\"), sys.version; "
+        "/content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith(\"3.14.9\"), sys.version; "
         "assert sys.prefix.startswith(\"/content/venv-lane\"), sys.prefix'"
     ) in remote_sh
     uv_pip_lines = [
@@ -805,8 +805,9 @@ def test_lane1_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
         for line in remote_sh.splitlines()
         if line.strip().startswith("uv pip install")
     ]
-    assert len(uv_pip_lines) == 2
+    assert len(uv_pip_lines) == 1
     assert all("--python /content/venv-lane1/bin/python" in line for line in uv_pip_lines)
+    assert all("--require-hashes" in line and "--only-binary :all:" in line for line in uv_pip_lines)
     assert "/content/venv-lane1/bin/python /content/ComfyUI/main.py" in remote_sh
     assert "/content/venv-lane1/bin/python /content/lane1_render.py" in remote_sh
     assert "/content/venv-lane1/bin/python /content/launch_guards.py" in remote_sh
@@ -816,24 +817,120 @@ def test_lane1_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
 
 
 def test_lane1_venv_python_version_mismatch_refuses_with_venv_python_mismatch(tmp_path: Path) -> None:
-    _, state_mis, env_mis = _make_fake_colab_env(tmp_path / "venv_mismatch")
-    env_mis["UV_SYSTEM_PYTHON"] = "1"
-    env_mis["FAKE_COLAB_VENV_PYTHON_VERSION"] = "3.13.18 (main, Oct 2026)"
-    env_mis["GUARD_POLL_INTERVAL_S"] = "0.2"
-    out_mis = tmp_path / "out_venv_mismatch"
-    res_mis = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_mis), "--session", "sdlab-l1-vmis"],
-        env=env_mis,
+    for bad_ver, tag in (("3.13.18 (main, Oct 2026)", "313"), ("3.15.1 (main, Oct 2026)", "315")):
+        _, state_mis, env_mis = _make_fake_colab_env(tmp_path / f"venv_mismatch_{tag}")
+        env_mis["UV_SYSTEM_PYTHON"] = "1"
+        env_mis["FAKE_COLAB_VENV_PYTHON_VERSION"] = bad_ver
+        env_mis["GUARD_POLL_INTERVAL_S"] = "0.2"
+        out_mis = tmp_path / f"out_venv_mismatch_{tag}"
+        res_mis = subprocess.run(
+            [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_mis), "--session", f"sdlab-l1-vmis-{tag}"],
+            env=env_mis,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        assert res_mis.returncode != 0
+        vitals_mis = (out_mis / "vitals.log").read_text(encoding="utf-8")
+        assert "REFUSED: VENV_PYTHON_MISMATCH" in vitals_mis
+        assert f"STOP -s sdlab-l1-vmis-{tag}" in (state_mis / "stops.log").read_text(encoding="utf-8")
+
+
+def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: Path) -> None:
+    # 1. Static check: no bare `uv pip install` without `--require-hashes` in either kit
+    for kit_path in (
+        REPO_ROOT / "scripts" / "colab" / "launch_lane1_stub.sh",
+        REPO_ROOT / "scripts" / "colab" / "launch_lane3_stub.sh",
+    ):
+        txt = kit_path.read_text(encoding="utf-8")
+        uv_lines = [line.strip() for line in txt.splitlines() if line.strip().startswith("uv pip install")]
+        assert uv_lines, f"Expected uv pip install lines in {kit_path}"
+        for line in uv_lines:
+            assert "--require-hashes" in line, f"Bare uv pip install without --require-hashes in {kit_path}: {line}"
+            assert "--only-binary :all:" in line, f"uv pip install without --only-binary :all: in {kit_path}: {line}"
+
+    # 2. LOCK_DRIFT refuses before any colab call
+    _, state_drift, env_drift = _make_fake_colab_env(tmp_path / "l1_drift")
+    tampered_lock = tmp_path / "tampered_lane1.lock"
+    tampered_lock.write_text("# drifted lock\n", encoding="utf-8")
+    env_drift["SDLAB_PREFLIGHT_MOCK_COMPILE_OUT"] = _to_posix(tampered_lock)
+    out_drift = tmp_path / "out_l1_drift"
+    res_drift = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_drift), "--session", "sdlab-l1-drift"],
+        env=env_drift,
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
         timeout=30,
         check=False,
     )
-    assert res_mis.returncode != 0
-    vitals_mis = (out_mis / "vitals.log").read_text(encoding="utf-8")
-    assert "REFUSED: VENV_PYTHON_MISMATCH" in vitals_mis
-    assert "STOP -s sdlab-l1-vmis" in (state_mis / "stops.log").read_text(encoding="utf-8")
+    assert res_drift.returncode != 0
+    assert "LOCK_DRIFT" in (res_drift.stdout + res_drift.stderr)
+    assert not (state_drift / "calls.log").exists(), "LOCK_DRIFT must make no colab call"
+
+    # 3. PIN_NOT_FOUND refuses before any colab call
+    _, state_pin, env_pin = _make_fake_colab_env(tmp_path / "l1_pin")
+    env_pin["SDLAB_PREFLIGHT_PIN_SHA"] = "73ebae1334d2c98089f1b90f8cb19257825f891a"
+    env_pin["SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE"] = "158419f3a0017c2ce123484b14b6c527716d6ec8\trefs/tags/v0.3.34"
+    out_pin = tmp_path / "out_l1_pin"
+    res_pin = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_pin), "--session", "sdlab-l1-pin"],
+        env=env_pin,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_pin.returncode != 0
+    assert "PIN_NOT_FOUND" in (res_pin.stdout + res_pin.stderr)
+    assert not (state_pin / "calls.log").exists(), "PIN_NOT_FOUND must make no colab call"
+
+    # 4. WHEEL_MISSING on VM surfaces in setup.log and final status (window.json + outcome.draft.json)
+    _, state_wm, env_wm = _make_fake_colab_env(tmp_path / "l1_wm")
+    env_wm["FAKE_COLAB_MODE"] = "wheel_missing"
+    env_wm["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_wm = tmp_path / "out_l1_wm"
+    res_wm = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_wm), "--session", "sdlab-l1-wm"],
+        env=env_wm,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_wm.returncode != 0
+    setup_wm = (state_wm / "content" / "lane1_out" / "setup.log").read_text(encoding="utf-8")
+    assert "WHEEL_MISSING" in setup_wm
+    win_wm = json.loads((out_wm / "window.json").read_text(encoding="utf-8"))
+    out_draft_wm = json.loads((out_wm / "outcome.draft.json").read_text(encoding="utf-8"))
+    assert win_wm["status"] == "WHEEL_MISSING"
+    assert out_draft_wm["status"] == "WHEEL_MISSING"
+
+    # 5. LOCK_HASH_MISMATCH on VM surfaces in setup.log and final status (window.json + outcome.draft.json)
+    _, state_hm, env_hm = _make_fake_colab_env(tmp_path / "l1_hm")
+    env_hm["FAKE_COLAB_MODE"] = "lock_hash_mismatch"
+    env_hm["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_hm = tmp_path / "out_l1_hm"
+    res_hm = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_hm), "--session", "sdlab-l1-hm"],
+        env=env_hm,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_hm.returncode != 0
+    setup_hm = (state_hm / "content" / "lane1_out" / "setup.log").read_text(encoding="utf-8")
+    assert "LOCK_HASH_MISMATCH" in setup_hm
+    win_hm = json.loads((out_hm / "window.json").read_text(encoding="utf-8"))
+    out_draft_hm = json.loads((out_hm / "outcome.draft.json").read_text(encoding="utf-8"))
+    assert win_hm["status"] == "LOCK_HASH_MISMATCH"
+    assert out_draft_hm["status"] == "LOCK_HASH_MISMATCH"
 
 
 def test_lane1_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_path: Path) -> None:

@@ -76,30 +76,38 @@
   "changes": {
     "fileCounts": {
       "added": 0,
-      "changed": 12,
+      "changed": 14,
       "moved": 0,
-      "parts": 2,
-      "removed": 0
+      "parts": 5,
+      "removed": 1
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "scripts/colab/locks/lane3.lock is now read by lib/adapters/ai-toolkit.js.",
+        "subjects": [
+          "scripts/colab/locks/lane3.lock",
+          "lib/adapters/ai-toolkit.js"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-05; 12 files changed content.",
+        "sentence": "1 file removed and 14 changed content, across 5 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "8207917079fb43e3edc7329768563f276b30730c",
-      "generatedAt": "2026-11-05T22:08:22.864Z"
+      "commit": "ca3610091d0b12da15854b44f9fd1eba349613e1",
+      "generatedAt": "2026-11-05T22:32:52.094Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [],
   "changesTogetherNote": [
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "ca3610091d0b12da15854b44f9fd1eba349613e1",
+  "commit": "fb44a38142bc0988194c1316357bdb5a407daab3",
   "defaultBranch": "main",
   "derived": "13 parts, mostly JSON data (2617 files); code in JavaScript (247), Python (38), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
@@ -418,7 +426,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T22:32:52.094Z",
+  "generatedAt": "2026-11-05T23:19:36.552Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 73 reads use paths built at run time and are not named here.",

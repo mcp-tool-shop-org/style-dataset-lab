@@ -250,48 +250,48 @@
         "path": ".gitignore"
       },
       {
-        "commits": 4,
-        "lines": 107,
+        "commits": 5,
+        "lines": 134,
         "path": "CHANGELOG.md"
       },
       {
-        "commits": 3,
-        "lines": 227,
+        "commits": 4,
+        "lines": 397,
         "path": "README.es.md"
       },
       {
-        "commits": 3,
-        "lines": 311,
+        "commits": 4,
+        "lines": 495,
         "path": "README.fr.md"
       },
       {
-        "commits": 3,
-        "lines": 319,
+        "commits": 4,
+        "lines": 498,
         "path": "README.hi.md"
       },
       {
-        "commits": 3,
-        "lines": 231,
+        "commits": 4,
+        "lines": 402,
         "path": "README.it.md"
       },
       {
-        "commits": 3,
-        "lines": 257,
+        "commits": 4,
+        "lines": 449,
         "path": "README.ja.md"
       },
       {
-        "commits": 6,
-        "lines": 120,
+        "commits": 7,
+        "lines": 129,
         "path": "README.md"
       },
       {
-        "commits": 3,
-        "lines": 225,
+        "commits": 4,
+        "lines": 408,
         "path": "README.pt-BR.md"
       },
       {
-        "commits": 3,
-        "lines": 297,
+        "commits": 4,
+        "lines": 472,
         "path": "README.zh.md"
       },
       {
@@ -301,7 +301,7 @@
       },
       {
         "commits": 10,
-        "lines": 430,
+        "lines": 428,
         "path": "atlas/README.md"
       },
       {
@@ -311,17 +311,17 @@
       },
       {
         "commits": 10,
-        "lines": 1547,
+        "lines": 1553,
         "path": "atlas/page.json"
       },
       {
         "commits": 10,
-        "lines": 53234,
+        "lines": 53248,
         "path": "atlas/statistics.json"
       },
       {
         "commits": 10,
-        "lines": 30776,
+        "lines": 30798,
         "path": "atlas/structure.json"
       },
       {
@@ -645,13 +645,13 @@
         "path": "lib/workflow-profiles.js"
       },
       {
-        "commits": 6,
-        "lines": 592,
+        "commits": 7,
+        "lines": 596,
         "path": "package-lock.json"
       },
       {
-        "commits": 5,
-        "lines": 11,
+        "commits": 6,
+        "lines": 13,
         "path": "package.json"
       },
       {
@@ -7315,8 +7315,8 @@
         "path": "site/src/content/docs/handbook/case-study-tallow-fen.md"
       },
       {
-        "commits": 3,
-        "lines": 167,
+        "commits": 4,
+        "lines": 205,
         "path": "site/src/content/docs/handbook/reference.md"
       },
       {
@@ -7730,11 +7730,32 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T22:32:52.094Z",
+  "generatedAt": "2026-11-05T23:19:36.552Z",
   "generatedFrom": {
-    "commit": "ca3610091d0b12da15854b44f9fd1eba349613e1"
+    "commit": "fb44a38142bc0988194c1316357bdb5a407daab3"
   },
   "pairs": [
+    {
+      "a": "CHANGELOG.md",
+      "b": "README.md",
+      "either": 8,
+      "shared": 4,
+      "strength": 0.5
+    },
+    {
+      "a": "CHANGELOG.md",
+      "b": "package.json",
+      "either": 6,
+      "shared": 4,
+      "strength": 0.666667
+    },
+    {
+      "a": "README.md",
+      "b": "package.json",
+      "either": 8,
+      "shared": 4,
+      "strength": 0.5
+    },
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
@@ -7776,6 +7797,13 @@
       "either": 8,
       "shared": 8,
       "strength": 1
+    },
+    {
+      "a": "package-lock.json",
+      "b": "package.json",
+      "either": 7,
+      "shared": 4,
+      "strength": 0.571429
     }
   ],
   "parameters": {
@@ -7788,16 +7816,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T17:24:39-05:00",
-    "inScopeFiles": 3266,
+    "headDate": "2026-11-05T17:51:41-05:00",
+    "inScopeFiles": 3265,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 108,
+    "qualifyingCommits": 109,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T22:24:39.000Z",
+    "since": "2026-05-09T22:51:41.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

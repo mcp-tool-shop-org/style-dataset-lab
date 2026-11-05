@@ -43,12 +43,12 @@ describe('Part D — Lane 3 LoRA training kit + C2 launcher guards (G12, G13, §
   it('G12 & §3.5: ai-toolkit adapter supports qwen-image target family, records py315 override sha256 + upstream issue #1087, and builds a package for cleared Portlight plsvessel data', async () => {
     assert.equal(AI_TOOLKIT_UPSTREAM_ISSUE, 'https://github.com/ostris/ai-toolkit/issues/1087');
     const overrideMeta = getAiToolkitOverrideMetadata();
-    assert.ok(overrideMeta.override_file.endsWith('ai-toolkit-override-py315.txt'));
+    assert.ok(overrideMeta.override_file.endsWith('scripts/colab/locks/lane3.lock'));
     assert.match(overrideMeta.override_sha256, /^sha256:[0-9a-f]{64}$/);
     assert.equal(overrideMeta.upstream_issue, 'https://github.com/ostris/ai-toolkit/issues/1087');
-    assert.ok(overrideMeta.packages.includes('scipy==1.18.1'));
-    assert.ok(overrideMeta.packages.includes('matplotlib==3.11.2'));
-    assert.ok(overrideMeta.packages.includes('sentencepiece==0.2.1'));
+    assert.ok(overrideMeta.packages.includes('scipy==1.12.0'));
+    assert.ok(overrideMeta.packages.includes('matplotlib==3.10.1'));
+    assert.ok(overrideMeta.packages.includes('sentencepiece==0.2.3'));
 
     // Studio Portlight ship data (plsvessel, MIT) is cleared for training and builds an ai-toolkit package
     const plsvesselProfile = {

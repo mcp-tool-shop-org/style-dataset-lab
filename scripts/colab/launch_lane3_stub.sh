@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
 # Stub launch kit for Lane 3 (train) Colab CPU high-mem window (Part C, PR #47).
-# Checks pinned input sha256s (including itself) before opening, holds /tmp/colab-window-open.lock,
-# opens CPU --high-mem, runs CPython 3.15.1 uv venv + pinned ostris/ai-toolkit install with
-# av/torchcodec filtered + ai-toolkit-override-py315.txt + PyTorch cp315 wheel index (proving
-# sentencepiece==0.2.1 and wheels) + generates synth_job.yaml for a 1-step CPU training run on the
-# synthetic package + verifies the .safetensors checkpoint exists and records its path in window.json,
-# enforces live launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs
-# before tarring, downloads result tar, and stops its own session in an EXIT trap on every exit path.
+# Checks pinned input sha256s (including itself) and runs preflight_resolve.sh before opening,
+# holds /tmp/colab-window-open.lock, opens CPU --high-mem, runs CPython 3.12.15 uv venv + wheel-only
+# install from hash-locked lane3.lock and pre-built local wheels in lane3-local-wheels.json + pinned
+# ostris/ai-toolkit + generates synth_job.yaml for a 1-step CPU training run on the synthetic package +
+# verifies the .safetensors checkpoint exists and records its path in window.json, enforces live
+# launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring,
+# downloads result tar, and stops its own session in an EXIT trap on every exit path.
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
-PINNED_PYTHON_VERSION="3.15.1"
+PINNED_PYTHON_VERSION="3.12.15"
 PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_AI_TOOLKIT_REPO="https://github.com/ostris/ai-toolkit.git"
-PINNED_AI_TOOLKIT_COMMIT="73ebae1334d2c98089f1b90f8cb19257825f891a"
-PINNED_OVERRIDE_SHA="42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc9e3a9"
+PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
+PINNED_OVERRIDE_SHA="09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286"
+PINNED_LOCAL_WHEELS_MANIFEST_SHA="acef251e75cf364f057de5da82d356eee293748245b5d66452ac99916c8df1e7"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3"
-PINNED_SELF_SHA="67c27c3d227eeead8593c58a36d802c01b45beb53821fb2bcddf1838a36a2866"
+PINNED_COLAB_WINDOW_SHA="d07ee558c858b331c090d3ec26833dec88868f75c2052ced50058bf18cc0e466"
+PINNED_SELF_SHA="ac4307e21903ceb6f079d4410940d1daf7a513ac1885090fd113bf2b37da4236"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -28,6 +29,7 @@ source "${SCRIPT_DIR}/colab_window.sh"
 CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane3-stub-$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR=""
+WHEEL_DIR="${SDLAB_WHEEL_DIR:-E:/AI/rnd-local/projects/sdlab-colab/wheels}"
 CAP="${CAP:-0.05}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
@@ -38,6 +40,7 @@ while [ "$#" -gt 0 ]; do
     --card) CARD="$2"; shift 2 ;;
     --session) SESSION="$2"; shift 2 ;;
     --out-dir) OUT_DIR="$2"; shift 2 ;;
+    --wheel-dir) WHEEL_DIR="$2"; shift 2 ;;
     --cap) CAP="$2"; shift 2 ;;
     --wall-s) WALL_S="$2"; shift 2 ;;
     --grace-s) GRACE_S="$2"; shift 2 ;;
@@ -57,20 +60,23 @@ mkdir -p "${OUT_DIR}"
 
 PY_BIN="$(colab_resolve_python)"
 GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
-OVERRIDE_TXT="${SCRIPT_DIR}/ai-toolkit-override-py315.txt"
+LOCK_FILE="${SCRIPT_DIR}/locks/lane3.lock"
+LOCAL_WHEELS_JSON="${SCRIPT_DIR}/locks/lane3-local-wheels.json"
 RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 
 colab_guard_fake_cli_if_test
 
 EXP_OVERRIDE_SHA="${EXPECTED_OVERRIDE_SHA:-${PINNED_OVERRIDE_SHA}}"
+EXP_LOCAL_WHEELS_SHA="${EXPECTED_LOCAL_WHEELS_MANIFEST_SHA:-${PINNED_LOCAL_WHEELS_MANIFEST_SHA}}"
 EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
 EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${PINNED_REMOTE_RUNNER_SHA}}"
 EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
 EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE3_STUB_SHA:-${PINNED_SELF_SHA}}"
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
-  "${OVERRIDE_TXT}=${EXP_OVERRIDE_SHA}" \
+  "${LOCK_FILE}=${EXP_OVERRIDE_SHA}" \
+  "${LOCAL_WHEELS_JSON}=${EXP_LOCAL_WHEELS_SHA}" \
   "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
   "${RUNNER_PY}=${EXP_RUNNER_SHA}" \
   "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
@@ -108,6 +114,28 @@ cleanup_on_exit() {
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
 
+if [[ "${WHEEL_DIR}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
+  DRIVE_LOWER="${BASH_REMATCH[1],,}"
+  REST_PATH="${BASH_REMATCH[2]}"
+  if [[ ! -d "${WHEEL_DIR}" ]] && [[ -d "/mnt/${DRIVE_LOWER}/${REST_PATH}" ]]; then
+    WHEEL_DIR="/mnt/${DRIVE_LOWER}/${REST_PATH}"
+  fi
+fi
+
+# Free pre-flight resolve, git pin check, and local wheel sha verification before any colab CLI call
+if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -z "${SDLAB_PREFLIGHT_FAST_COMPILE_MOCK:-}" ]; then
+  export SDLAB_PREFLIGHT_FAST_COMPILE_MOCK=1
+fi
+if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -z "${SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE:-}" ]; then
+  export SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE="${PINNED_AI_TOOLKIT_COMMIT}	HEAD"
+fi
+PREFLIGHT_OUT=""
+if ! PREFLIGHT_OUT="$(bash "${SCRIPT_DIR}/preflight_resolve.sh" lane3 --wheel-dir "${WHEEL_DIR}" 2>&1)"; then
+  printf '%s\n' "${PREFLIGHT_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+  exit 1
+fi
+printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
+
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
@@ -141,6 +169,7 @@ mkdir -p /content/lane3_out /content/lane3_out/checkpoints
 : "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
 : "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
 : "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
+: "\${PINNED_OVERRIDE_SHA:?missing PINNED_OVERRIDE_SHA}"
 
 echo "setup" > /content/lane3_out/phase.txt
 : > /content/lane3_out/setup.log
@@ -171,29 +200,59 @@ echo "setup" > /content/lane3_out/phase.txt
 VITALS_PID="\$!"
 trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
 
-OVERRIDE_SHA="\$(sha256sum /content/ai-toolkit-override-py315.txt | awk '{print \$1}')"
-echo "\${OVERRIDE_SHA}  /content/ai-toolkit-override-py315.txt" > /content/lane3_out/override.sha256
+OVERRIDE_SHA="\$(sha256sum /content/lane3.lock | awk '{print \$1}')"
+echo "\${OVERRIDE_SHA}  /content/lane3.lock" > /content/lane3_out/override.sha256
 
 {
   unset UV_SYSTEM_PYTHON
-  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
-  if command -v apt-get >/dev/null 2>&1; then
-    apt-get update -qq && apt-get install -y -qq cmake pkg-config build-essential libsentencepiece-dev || true
-  fi
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"
+  export UV_NO_BUILD=1
   pip install --quiet "uv==\${PINNED_UV_VERSION}"
   uv python install "\${PINNED_PYTHON_VERSION}"
   uv venv --python "\${PINNED_PYTHON_VERSION}" --seed /content/venv-lane3
   /content/venv-lane3/bin/python -c '
 import sys
-if not (sys.version.startswith("3.15.1") and sys.prefix.startswith("/content/venv-lane")):
+if not (sys.version.startswith("3.12.15") and sys.prefix.startswith("/content/venv-lane")):
     sys.stderr.write(f"REFUSED: VENV_PYTHON_MISMATCH version={sys.version!r} prefix={sys.prefix!r}\n")
     raise SystemExit(1)
 '
-  /content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith("3.15.1"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
+  /content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith("3.12.15"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
 } 2>&1 | tee -a /content/lane3_out/setup.log
 {
   unset UV_SYSTEM_PYTHON
-  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"
+  export UV_NO_BUILD=1
+  if [ "\${OVERRIDE_SHA}" != "\${PINNED_OVERRIDE_SHA}" ]; then
+    echo "REFUSED: LOCK_HASH_MISMATCH: /content/lane3.lock sha256=\${OVERRIDE_SHA} expected=\${PINNED_OVERRIDE_SHA}" >&2
+    exit 1
+  fi
+
+  # Verify uploaded local wheels on VM against lane3-local-wheels.json and generate local-wheels.lock
+  /content/venv-lane3/bin/python - << 'WHEELPYEOF'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+manifest = json.loads(Path("/content/lane3-local-wheels.json").read_text(encoding="utf-8"))
+lines = []
+for entry in manifest.get("wheels", []):
+    fname = entry["filename"]
+    pkg = entry["package"]
+    ver = entry["version"]
+    exp_sha = entry["sha256"].lower().removeprefix("sha256:")
+    wpath = Path("/content/wheels") / fname
+    if not wpath.is_file():
+        sys.stderr.write(f"REFUSED: LOCAL_WHEEL_MISSING on VM: {wpath}\n")
+        raise SystemExit(1)
+    act_sha = hashlib.sha256(wpath.read_bytes()).hexdigest().lower()
+    if act_sha != exp_sha:
+        sys.stderr.write(f"REFUSED: LOCAL_WHEEL_SHA_MISMATCH on VM: {fname} got {act_sha} expected {exp_sha}\n")
+        raise SystemExit(1)
+    lines.append(f"{pkg}=={ver} \\\n    --hash=sha256:{exp_sha}\n")
+Path("/content/lane3_out/local-wheels.lock").write_text("".join(lines), encoding="utf-8")
+WHEELPYEOF
+
   if [ ! -d /content/ai-toolkit ]; then
     git clone "\${PINNED_AI_TOOLKIT_REPO}" /content/ai-toolkit
   fi
@@ -201,25 +260,31 @@ if not (sys.version.startswith("3.15.1") and sys.prefix.startswith("/content/ven
   git -C /content/ai-toolkit checkout "\${PINNED_AI_TOOLKIT_COMMIT}"
   ACTUAL_AI_TOOLKIT_COMMIT="\$(git -C /content/ai-toolkit rev-parse HEAD)"
   if [ "\${ACTUAL_AI_TOOLKIT_COMMIT}" != "\${PINNED_AI_TOOLKIT_COMMIT}" ]; then
-    echo "REFUSED: ai-toolkit commit mismatch: got \${ACTUAL_AI_TOOLKIT_COMMIT}, expected \${PINNED_AI_TOOLKIT_COMMIT}" >&2
+    echo "REFUSED: PIN_NOT_FOUND: ai-toolkit commit mismatch: got \${ACTUAL_AI_TOOLKIT_COMMIT}, expected \${PINNED_AI_TOOLKIT_COMMIT}" >&2
     exit 1
   fi
 
-  grep -Ev '^(av|torchcodec)([=<>!~[:space:]]|\$)' /content/ai-toolkit/requirements.txt \
-    > /content/lane3_out/requirements.filtered.txt
-
-  uv pip install --python /content/venv-lane3/bin/python \
-    -r /content/lane3_out/requirements.filtered.txt \
-    --override /content/ai-toolkit-override-py315.txt \
-    --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
-    --index-strategy unsafe-best-match \
-    2>&1 | tee /content/lane3_out/wheels.log
+  set +e
+  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" --index-strategy unsafe-best-match -r /content/lane3.lock > /content/lane3_out/wheels.log 2>&1
+  UV_RC1=\$?
+  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --no-index --find-links /content/wheels --no-deps -r /content/lane3_out/local-wheels.lock >> /content/lane3_out/wheels.log 2>&1
+  UV_RC2=\$?
+  set -e
+  cat /content/lane3_out/wheels.log
+  if [ "\${UV_RC1}" -ne 0 ] || [ "\${UV_RC2}" -ne 0 ]; then
+    if grep -Eiq "hash mismatch|--require-hashes" /content/lane3_out/wheels.log; then
+      echo "REFUSED: LOCK_HASH_MISMATCH during lane3 lock install" >&2
+    else
+      echo "REFUSED: WHEEL_MISSING during lane3 lock install" >&2
+    fi
+    exit 1
+  fi
 
   /content/venv-lane3/bin/python -c '
 import importlib
 import sys
 
-REQUIRED = ("sentencepiece", "torch", "safetensors", "yaml", "oyaml", "PIL")
+REQUIRED = ("sentencepiece", "torch", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris")
 for mod_name in REQUIRED:
     try:
         mod = importlib.import_module(mod_name)
@@ -343,7 +408,12 @@ done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -
 tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
 REMOTEEOF
 
-colab upload -s "${SESSION}" "${OVERRIDE_TXT}" /content/ai-toolkit-override-py315.txt </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab upload -s "${SESSION}" "${LOCK_FILE}" /content/lane3.lock </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab upload -s "${SESSION}" "${LOCAL_WHEELS_JSON}" /content/lane3-local-wheels.json </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+while IFS= read -r wheel_fname; do
+  [ -z "${wheel_fname}" ] && continue
+  colab upload -s "${SESSION}" "${WHEEL_DIR}/${wheel_fname}" "/content/wheels/${wheel_fname}" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+done < <("${PY_BIN}" -c 'import json, sys; d = json.load(open(sys.argv[1], encoding="utf-8")); print("\n".join(w["filename"] for w in d.get("wheels", [])))' "${LOCAL_WHEELS_JSON}")
 colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 
@@ -355,7 +425,8 @@ colab_run_exec_with_live_guards \
   "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
   "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
   "PINNED_AI_TOOLKIT_REPO=${PINNED_AI_TOOLKIT_REPO}" \
-  "PINNED_AI_TOOLKIT_COMMIT=${PINNED_AI_TOOLKIT_COMMIT}"
+  "PINNED_AI_TOOLKIT_COMMIT=${PINNED_AI_TOOLKIT_COMMIT}" \
+  "PINNED_OVERRIDE_SHA=${EXP_OVERRIDE_SHA}"
 
 # Download result tar before EXIT trap stops the session
 colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1

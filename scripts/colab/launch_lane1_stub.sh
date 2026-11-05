@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
 # Stub launch kit for Lane 1 (render) Colab CPU high-mem window (Part C, PR #45).
-# Checks pinned input sha256s (including itself) before opening, holds /tmp/colab-window-open.lock,
-# opens CPU --high-mem, runs CPython 3.15.1 uv venv + pinned ComfyUI --cpu + comfy-headless + 64x64
-# fixture render + stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap,
-# vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges
-# VM facts/balances/rate/downloaded shas into window.json, and stops its own session in an EXIT trap.
+# Checks pinned input sha256s (including itself) and runs preflight_resolve.sh before opening,
+# holds /tmp/colab-window-open.lock, opens CPU --high-mem, runs CPython 3.14.9 uv venv + wheel-only
+# install from hash-locked lane1.lock + pinned ComfyUI --cpu + comfy-headless + 64x64 fixture render +
+# stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap, vitals/DEAD HARNESS,
+# host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges VM facts/balances/rate/
+# downloaded shas into window.json, and stops its own session in an EXIT trap.
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
-PINNED_PYTHON_VERSION="3.15.1"
+PINNED_PYTHON_VERSION="3.14.9"
 PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
-PINNED_LANE1_RENDER_SHA="75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013"
+PINNED_LOCK_SHA="eda267efc8ba491ec472e01d63339478728970b640abcef79b19d80e2a97bd1e"
+PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3"
-PINNED_SELF_SHA="51de88a27b640a8f7620c1eb0095ae1238c49991ce0c99e9334862b56ec07f35"
+PINNED_COLAB_WINDOW_SHA="d07ee558c858b331c090d3ec26833dec88868f75c2052ced50058bf18cc0e466"
+PINNED_SELF_SHA="f54f25a3344c8105f7154af3905bfe4d5202ee7b3be149db91347e649002734f"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -59,9 +61,11 @@ GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
 LANE1_PY="${SCRIPT_DIR}/lane1_render.py"
 RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
+LOCK_FILE="${SCRIPT_DIR}/locks/lane1.lock"
 
 colab_guard_fake_cli_if_test
 
+EXP_LOCK_SHA="${EXPECTED_LANE1_LOCK_SHA:-${PINNED_LOCK_SHA}}"
 EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${PINNED_LANE1_RENDER_SHA}}"
 EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
 EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${PINNED_REMOTE_RUNNER_SHA}}"
@@ -69,6 +73,7 @@ EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
 EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE1_STUB_SHA:-${PINNED_SELF_SHA}}"
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
+  "${LOCK_FILE}=${EXP_LOCK_SHA}" \
   "${LANE1_PY}=${EXP_LANE1_SHA}" \
   "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
   "${RUNNER_PY}=${EXP_RUNNER_SHA}" \
@@ -107,6 +112,20 @@ cleanup_on_exit() {
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
 
+# Free pre-flight resolve & git pin check before any colab CLI call
+if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -z "${SDLAB_PREFLIGHT_FAST_COMPILE_MOCK:-}" ]; then
+  export SDLAB_PREFLIGHT_FAST_COMPILE_MOCK=1
+fi
+if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -z "${SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE:-}" ]; then
+  export SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE="${PINNED_COMFYUI_COMMIT}	refs/tags/v0.3.34"
+fi
+PREFLIGHT_OUT=""
+if ! PREFLIGHT_OUT="$(bash "${SCRIPT_DIR}/preflight_resolve.sh" lane1 2>&1)"; then
+  printf '%s\n' "${PREFLIGHT_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+  exit 1
+fi
+printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
+
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
@@ -141,6 +160,7 @@ mkdir -p /content/lane1_out
 : "\${PINNED_COMFYUI_REPO:?missing PINNED_COMFYUI_REPO}"
 : "\${PINNED_COMFYUI_COMMIT:?missing PINNED_COMFYUI_COMMIT}"
 : "\${PINNED_COMFY_HEADLESS_SPEC:?missing PINNED_COMFY_HEADLESS_SPEC}"
+: "\${PINNED_LOCK_SHA:?missing PINNED_LOCK_SHA}"
 
 echo "setup" > /content/lane1_out/phase.txt
 : > /content/lane1_out/setup.log
@@ -173,21 +193,30 @@ trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
 
 {
   unset UV_SYSTEM_PYTHON
-  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_314/install"
+  export UV_NO_BUILD=1
   pip install --quiet "uv==\${PINNED_UV_VERSION}"
   uv python install "\${PINNED_PYTHON_VERSION}"
   uv venv --python "\${PINNED_PYTHON_VERSION}" --seed /content/venv-lane1
   /content/venv-lane1/bin/python -c '
 import sys
-if not (sys.version.startswith("3.15.1") and sys.prefix.startswith("/content/venv-lane")):
+if not (sys.version.startswith("3.14.9") and sys.prefix.startswith("/content/venv-lane")):
     sys.stderr.write(f"REFUSED: VENV_PYTHON_MISMATCH version={sys.version!r} prefix={sys.prefix!r}\n")
     raise SystemExit(1)
 '
-  /content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith("3.15.1"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
+  /content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith("3.14.9"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
 } 2>&1 | tee -a /content/lane1_out/setup.log
 {
   unset UV_SYSTEM_PYTHON
-  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_315/install"
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_314/install"
+  export UV_NO_BUILD=1
+  ACTUAL_LOCK_SHA="\$(sha256sum /content/lane1.lock | awk '{print \$1}')"
+  echo "\${ACTUAL_LOCK_SHA}  /content/lane1.lock" > /content/lane1_out/lock.sha256
+  if [ "\${ACTUAL_LOCK_SHA}" != "\${PINNED_LOCK_SHA}" ]; then
+    echo "REFUSED: LOCK_HASH_MISMATCH: /content/lane1.lock sha256=\${ACTUAL_LOCK_SHA} expected=\${PINNED_LOCK_SHA}" >&2
+    exit 1
+  fi
+
   if [ ! -d /content/ComfyUI ]; then
     git clone "\${PINNED_COMFYUI_REPO}" /content/ComfyUI
   fi
@@ -195,15 +224,24 @@ if not (sys.version.startswith("3.15.1") and sys.prefix.startswith("/content/ven
   git -C /content/ComfyUI checkout "\${PINNED_COMFYUI_COMMIT}"
   ACTUAL_COMFYUI_COMMIT="\$(git -C /content/ComfyUI rev-parse HEAD)"
   if [ "\${ACTUAL_COMFYUI_COMMIT}" != "\${PINNED_COMFYUI_COMMIT}" ]; then
-    echo "REFUSED: ComfyUI commit mismatch: got \${ACTUAL_COMFYUI_COMMIT}, expected \${PINNED_COMFYUI_COMMIT}" >&2
+    echo "REFUSED: PIN_NOT_FOUND: ComfyUI commit mismatch: got \${ACTUAL_COMFYUI_COMMIT}, expected \${PINNED_COMFYUI_COMMIT}" >&2
     exit 1
   fi
 
-  uv pip install --python /content/venv-lane1/bin/python \
-    -r /content/ComfyUI/requirements.txt \
-    --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
-    --index-strategy unsafe-best-match
-  uv pip install --python /content/venv-lane1/bin/python "\${PINNED_COMFY_HEADLESS_SPEC}"
+  set +e
+  uv pip install --python /content/venv-lane1/bin/python --require-hashes --only-binary :all: --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" --index-strategy unsafe-best-match -r /content/lane1.lock > /content/lane1_out/wheels.log 2>&1
+  UV_RC=\$?
+  set -e
+  cat /content/lane1_out/wheels.log
+  if [ "\${UV_RC}" -ne 0 ]; then
+    if grep -Eiq "hash mismatch|--require-hashes" /content/lane1_out/wheels.log; then
+      echo "REFUSED: LOCK_HASH_MISMATCH during lane1 lock install" >&2
+    else
+      echo "REFUSED: WHEEL_MISSING during lane1 lock install" >&2
+    fi
+    exit 1
+  fi
+
   /content/venv-lane1/bin/python -c '
 import importlib
 import sys
@@ -285,6 +323,7 @@ done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -
 tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
 REMOTEEOF
 
+colab upload -s "${SESSION}" "${LOCK_FILE}" /content/lane1.lock </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${LANE1_PY}" /content/lane1_render.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
@@ -298,7 +337,8 @@ colab_run_exec_with_live_guards \
   "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
   "PINNED_COMFYUI_REPO=${PINNED_COMFYUI_REPO}" \
   "PINNED_COMFYUI_COMMIT=${PINNED_COMFYUI_COMMIT}" \
-  "PINNED_COMFY_HEADLESS_SPEC=${PINNED_COMFY_HEADLESS_SPEC}"
+  "PINNED_COMFY_HEADLESS_SPEC=${PINNED_COMFY_HEADLESS_SPEC}" \
+  "PINNED_LOCK_SHA=${EXP_LOCK_SHA}"
 
 # Download result tar before EXIT trap stops the session
 colab download -s "${SESSION}" /content/lane1_stub_bundle.tar.gz "${OUT_DIR}/lane1_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
