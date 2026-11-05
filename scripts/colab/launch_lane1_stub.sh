@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
 # Stub launch kit for Lane 1 (render) Colab CPU high-mem window (Part C, PR #45).
-# Checks input sha256s before opening, holds /tmp/colab-window-open.lock, opens CPU --high-mem,
-# runs CPython 3.15.1 uv venv + ComfyUI --cpu + 64x64 fixture render + stamp read-back + kill + resume,
-# enforces launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), downloads result tar,
-# scrubs tokens from all kept logs, writes window.json and outcome.draft.json, and stops its own
-# session in an EXIT trap on every exit path.
+# Checks pinned input sha256s (including itself) before opening, holds /tmp/colab-window-open.lock,
+# opens CPU --high-mem, runs CPython 3.15.1 uv venv + pinned ComfyUI --cpu + comfy-headless + 64x64
+# fixture render + stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap,
+# vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges
+# VM facts/balances/rate/downloaded shas into window.json, and stops its own session in an EXIT trap.
 set -euo pipefail
 
+PINNED_UV_VERSION="0.13.5"
+PINNED_PYTHON_VERSION="3.15.1"
+PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
+PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
+PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
+PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
+PINNED_LANE1_RENDER_SHA="affe7825d6a453ba46b93141aa00ba69f189f1f670b955acf21882c800b5f3b9"
+PINNED_LAUNCH_GUARDS_SHA="82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25"
+PINNED_COLAB_WINDOW_SHA="7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372"
+PINNED_SELF_SHA="312577d6b5381e4a92aeb1af1e15698c70f105e41dc6681028203526f6206221"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
 # shellcheck source=scripts/colab/colab_window.sh
 source "${SCRIPT_DIR}/colab_window.sh"
 
@@ -47,18 +59,16 @@ WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 
 colab_guard_fake_cli_if_test
 
-actual_sha() {
-  sha256sum "$1" | awk '{print $1}'
-}
-
-EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-$(actual_sha "${LANE1_PY}")}"
-EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-$(actual_sha "${GUARDS_PY}")}"
-EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-$(actual_sha "${WINDOW_SH}")}"
+EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${PINNED_LANE1_RENDER_SHA}}"
+EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
+EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
+EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE1_STUB_SHA:-${PINNED_SELF_SHA}}"
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${LANE1_PY}=${EXP_LANE1_SHA}" \
   "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
-  "${WINDOW_SH}=${EXP_WINDOW_SHA}")"
+  "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
+  "${SELF_SH}=${EXP_SELF_SHA}")"
 
 OPENED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date -u +%s)"
@@ -78,7 +88,7 @@ cleanup_on_exit() {
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
   fi
   if [ "${SESSION_OPENED}" -eq 1 ]; then
-    colab stop -s "${SESSION}" </dev/null >> "${OUT_DIR}/colab.log" 2>&1 || true
+    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
   fi
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -114,43 +124,70 @@ colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane1_stub.sh"
-cat > "${REMOTE_RUNNER}" << 'REMOTEEOF'
+cat > "${REMOTE_RUNNER}" << REMOTEEOF
 #!/usr/bin/env bash
 set -euo pipefail
 export CUDA_VISIBLE_DEVICES=""
 mkdir -p /content/lane1_out
 
+PINNED_UV_VERSION="${PINNED_UV_VERSION}"
+PINNED_PYTHON_VERSION="${PINNED_PYTHON_VERSION}"
+PINNED_PYTORCH_INDEX_URL="${PINNED_PYTORCH_INDEX_URL}"
+PINNED_COMFYUI_REPO="${PINNED_COMFYUI_REPO}"
+PINNED_COMFYUI_COMMIT="${PINNED_COMFYUI_COMMIT}"
+PINNED_COMFY_HEADLESS_SPEC="${PINNED_COMFY_HEADLESS_SPEC}"
+
 (
   while true; do
-    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-    if [ -f /sys/fs/cgroup/memory.events ]; then
-      sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
-    fi
-    head -n 3 /proc/meminfo | sed 's/^/MEM: /' || true
-    echo "PROC:"
-    ps -ef | grep -E "comfy|main\.py|lane1_render\.py" | grep -v grep || true
-    echo 'HARNESS: {"phase": "run"}'
+    {
+      echo "=== VITALS \$(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+      if [ -f /sys/fs/cgroup/memory.current ]; then
+        echo "CGROUP_MEM_CURRENT: \$(cat /sys/fs/cgroup/memory.current)" || true
+      fi
+      if [ -f /sys/fs/cgroup/memory.max ]; then
+        echo "CGROUP_MEM_MAX: \$(cat /sys/fs/cgroup/memory.max)" || true
+      fi
+      if [ -f /sys/fs/cgroup/memory.events ]; then
+        sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
+      fi
+      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      echo "PROC:"
+      ps -ef | grep -E "comfy|main\.py|lane1_render\.py" | grep -v grep || true
+      echo 'HARNESS: {"phase": "run"}'
+    } | tee -a /content/lane1_out/vitals.log
     sleep 15
   done
-) >> /content/lane1_out/vitals.log 2>&1 &
-VITALS_PID="$!"
-trap 'kill "${VITALS_PID}" 2>/dev/null || true' EXIT
+) &
+VITALS_PID="\$!"
+trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
 
-pip install --quiet "uv==0.13.5"
-uv python install 3.15.1
-uv venv /content/venv-lane1 --python 3.15.1 --seed
+pip install --quiet "uv==\${PINNED_UV_VERSION}"
+uv python install "\${PINNED_PYTHON_VERSION}"
+uv venv /content/venv-lane1 --python "\${PINNED_PYTHON_VERSION}" --seed
 source /content/venv-lane1/bin/activate
 
 if [ ! -d /content/ComfyUI ]; then
-  git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git /content/ComfyUI
+  git clone "\${PINNED_COMFYUI_REPO}" /content/ComfyUI
 fi
-uv pip install -r /content/ComfyUI/requirements.txt
+git -C /content/ComfyUI fetch --depth 1 origin "\${PINNED_COMFYUI_COMMIT}" || true
+git -C /content/ComfyUI checkout "\${PINNED_COMFYUI_COMMIT}"
+ACTUAL_COMFYUI_COMMIT="\$(git -C /content/ComfyUI rev-parse HEAD)"
+if [ "\${ACTUAL_COMFYUI_COMMIT}" != "\${PINNED_COMFYUI_COMMIT}" ]; then
+  echo "REFUSED: ComfyUI commit mismatch: got \${ACTUAL_COMFYUI_COMMIT}, expected \${PINNED_COMFYUI_COMMIT}" >&2
+  exit 1
+fi
+
+uv pip install -r /content/ComfyUI/requirements.txt \
+  --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" \
+  --index-strategy unsafe-best-match
+uv pip install "\${PINNED_COMFY_HEADLESS_SPEC}"
+python -c "from comfy_headless import ComfyClient; assert ComfyClient is not None"
 
 python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \
   > /content/lane1_out/comfyui.log 2>&1 &
-COMFY_PID="$!"
+COMFY_PID="\$!"
 
-for _ in $(seq 1 60); do
+for _ in \$(seq 1 60); do
   if curl -sf http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
     break
   fi
@@ -165,6 +202,7 @@ JOBSEOF
 set +e
 python /content/lane1_render.py \
   --cpu --bootstrap \
+  --comfyui-commit "\${PINNED_COMFYUI_COMMIT}" \
   --window-json /content/lane1_out/vm_window.json \
   --jobs /content/lane1_out/jobs.jsonl \
   --renders /content/lane1_out/renders.jsonl \
@@ -172,14 +210,14 @@ python /content/lane1_render.py \
   --copy-back-dir /content/lane1_out/copy_back \
   --copy-back-every 1 \
   --kill-after 1
-RC1=$?
+RC1=\$?
 set -e
-if [ "${RC1}" -ne 75 ]; then
-  echo "Expected exit 75 on deliberate kill-after=1, got ${RC1}" >&2
+if [ "\${RC1}" -ne 75 ]; then
+  echo "Expected exit 75 on deliberate kill-after=1, got \${RC1}" >&2
   exit 1
 fi
 
-SHA_BEFORE="$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print $1}')"
+SHA_BEFORE="\$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print \$1}')"
 
 python /content/lane1_render.py \
   --cpu \
@@ -189,14 +227,17 @@ python /content/lane1_render.py \
   --copy-back-dir /content/lane1_out/copy_back \
   --copy-back-every 1
 
-SHA_AFTER="$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print $1}')"
-SHA_COPY="$(sha256sum /content/lane1_out/copy_back/stub_01.png | awk '{print $1}')"
-if [ "${SHA_BEFORE}" != "${SHA_AFTER}" ] || [ "${SHA_BEFORE}" != "${SHA_COPY}" ]; then
-  echo "Resume hash mismatch: before=${SHA_BEFORE} after=${SHA_AFTER} copy=${SHA_COPY}" >&2
+SHA_AFTER="\$(sha256sum /content/lane1_out/pngs/stub_01.png | awk '{print \$1}')"
+SHA_COPY="\$(sha256sum /content/lane1_out/copy_back/stub_01.png | awk '{print \$1}')"
+if [ "\${SHA_BEFORE}" != "\${SHA_AFTER}" ] || [ "\${SHA_BEFORE}" != "\${SHA_COPY}" ]; then
+  echo "Resume hash mismatch: before=\${SHA_BEFORE} after=\${SHA_AFTER} copy=\${SHA_COPY}" >&2
   exit 1
 fi
 
-kill "${COMFY_PID}" 2>/dev/null || true
+kill "\${COMFY_PID}" 2>/dev/null || true
+while IFS= read -r -d '' f; do
+  python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
 tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
 REMOTEEOF
 
@@ -204,24 +245,9 @@ colab upload -s "${SESSION}" "${LANE1_PY}" /content/lane1_render.py </dev/null >
 colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 
-colab exec -s "${SESSION}" "bash /content/remote_lane1_stub.sh" </dev/null > "${OUT_DIR}/vitals.log" 2>&1 &
-EXEC_PID="$!"
-wait "${EXEC_PID}"
-EXEC_RC=$?
-EXEC_PID=""
-
-colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
-
-if [ "${EXEC_RC}" -ne 0 ]; then
-  exit "${EXEC_RC}"
-fi
-
-# Evaluate vitals.log and DEAD HARNESS watcher via launch_guards.py
-"${PY_BIN}" "${GUARDS_PY}" --vitals-file "${OUT_DIR}/vitals.log" --idle-seconds 0 --stall-s 300 </dev/null >> "${OUT_DIR}/guards.log"
-
-NOW_EPOCH="$(date -u +%s)"
-ELAPSED_S="$((NOW_EPOCH - START_EPOCH))"
-colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "${ELAPSED_S}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
+colab_run_exec_with_live_guards \
+  "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "bash /content/remote_lane1_stub.sh" \
+  "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
 # Download result tar before EXIT trap stops the session
 colab download -s "${SESSION}" /content/lane1_stub_bundle.tar.gz "${OUT_DIR}/lane1_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1

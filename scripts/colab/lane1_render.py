@@ -162,6 +162,105 @@ def verify_loopback_sockets(sockets: list[str], comfy_port: int = 8188) -> list[
     return sockets
 
 
+def parse_proc_net_tcp(text: str, ipv6: bool = False) -> list[str]:
+    """Parse Linux /proc/net/tcp or /proc/net/tcp6 and return TCP_LISTEN (st=0A) sockets."""
+    out: list[str] = []
+    for raw_line in text.splitlines():
+        parts = raw_line.strip().split()
+        if len(parts) < 4 or ":" not in parts[1]:
+            continue
+        state = parts[3].upper()
+        if state != "0A":
+            continue
+        addr_hex, port_hex = parts[1].split(":", 1)
+        try:
+            port = int(port_hex, 16)
+            if ipv6 and len(addr_hex) == 32:
+                words = [int(addr_hex[i : i + 8], 16) for i in range(0, 32, 8)]
+                raw_ip = struct.pack("<IIII", *words)
+                host = f"[{socket.inet_ntop(socket.AF_INET6, raw_ip)}]"
+            elif not ipv6 and len(addr_hex) == 8:
+                raw_ip = struct.pack("<I", int(addr_hex, 16))
+                host = socket.inet_ntop(socket.AF_INET, raw_ip)
+            else:
+                continue
+        except (ValueError, OSError):
+            continue
+        entry = f"{host}:{port}"
+        if entry not in out:
+            out.append(entry)
+    return out
+
+
+def parse_ss_tln(text: str) -> list[str]:
+    """Parse `ss -tln` output and return LISTEN local address:port strings."""
+    out: list[str] = []
+    for raw_line in text.splitlines():
+        parts = raw_line.strip().split()
+        if len(parts) < 4 or parts[0].upper() != "LISTEN":
+            continue
+        local_addr = parts[3].strip()
+        if ":" in local_addr and local_addr not in out:
+            out.append(local_addr)
+    return out
+
+
+def probe_listening_sockets(
+    *,
+    proc_net_tcp: Path | None = None,
+    proc_net_tcp6: Path | None = None,
+    ss_runner: Any | None = None,
+) -> list[str]:
+    """Read listening TCP sockets from /proc/net/tcp* or `ss -tln` without synthetic fallback."""
+    found: list[str] = []
+    tcp_v4 = proc_net_tcp if proc_net_tcp is not None else Path("/proc/net/tcp")
+    tcp_v6 = proc_net_tcp6 if proc_net_tcp6 is not None else Path("/proc/net/tcp6")
+    if tcp_v4.exists():
+        for s in parse_proc_net_tcp(tcp_v4.read_text(encoding="utf-8", errors="replace"), ipv6=False):
+            if s not in found:
+                found.append(s)
+    if tcp_v6.exists():
+        for s in parse_proc_net_tcp(tcp_v6.read_text(encoding="utf-8", errors="replace"), ipv6=True):
+            if s not in found:
+                found.append(s)
+    if not found:
+        if ss_runner is not None:
+            ss_out = ss_runner()
+        elif proc_net_tcp is None and proc_net_tcp6 is None:
+            try:
+                proc = subprocess.run(["ss", "-tln"], capture_output=True, text=True, timeout=5, check=False)
+                ss_out = proc.stdout or ""
+            except Exception:
+                ss_out = ""
+        else:
+            ss_out = ""
+        for s in parse_ss_tln(ss_out):
+            if s not in found:
+                found.append(s)
+    return found
+
+
+def probe_system_python(
+    python_bin: str | Path = "/usr/bin/python3",
+    runner: Any | None = None,
+) -> str:
+    """Measure the VM's system Python version via `<python_bin> --version` with no hardcoded default."""
+    cmd = [str(python_bin), "--version"]
+    if runner is not None:
+        raw = str(runner(cmd) or "").strip()
+    else:
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10, check=False)
+            raw = ((proc.stdout or "") + "\n" + (proc.stderr or "")).strip()
+        except Exception as exc:
+            raise ValueError(f"LANE1_NO_MEASURED_SYSTEM_PYTHON: failed to run {cmd!r}: {exc}") from exc
+    for token in raw.replace("\n", " ").split():
+        parts = token.strip().split(".")
+        if len(parts) >= 2 and all(p.isdigit() for p in parts[:2]):
+            return token.strip()
+    raise ValueError(f"LANE1_NO_MEASURED_SYSTEM_PYTHON: could not parse version from {raw!r}")
+
+
 def build_text_chunk(keyword: str, text: str) -> bytes:
     payload = keyword.encode("latin-1") + b"\x00" + text.encode("latin-1")
     ctype = b"tEXt"
@@ -361,7 +460,7 @@ def write_window_json(
     *,
     window_id: str,
     comfy_url: str,
-    system_python: str,
+    system_python: str | None = None,
     sockets: list[str] | None = None,
     comfyui_commit: str | None = None,
     card: str = "CPU",
@@ -369,6 +468,11 @@ def write_window_json(
     wall_s: int = 3000,
     margin: float = 0.01,
     expected_python: str | None = None,
+    proc_net_tcp: Path | None = None,
+    proc_net_tcp6: Path | None = None,
+    ss_runner: Any | None = None,
+    system_python_bin: str | Path = "/usr/bin/python3",
+    system_python_runner: Any | None = None,
 ) -> dict[str, Any]:
     host, port = assert_loopback_url(comfy_url)
     py_ver = sys.version.split()[0]
@@ -380,7 +484,18 @@ def write_window_json(
         uv_out = subprocess.run(["uv", "--version"], capture_output=True, text=True, timeout=10, check=False).stdout.strip()
     except Exception:
         uv_out = UV_PIN
-    sock_list = sockets or [f"{host}:{port}"]
+    measured_sys_py = (
+        system_python.strip()
+        if isinstance(system_python, str) and system_python.strip()
+        else probe_system_python(python_bin=system_python_bin, runner=system_python_runner)
+    )
+    sock_list = (
+        list(sockets)
+        if sockets is not None
+        else probe_listening_sockets(proc_net_tcp=proc_net_tcp, proc_net_tcp6=proc_net_tcp6, ss_runner=ss_runner)
+    )
+    if not sock_list:
+        raise ValueError("LANE1_NO_MEASURED_SOCKETS: no listening TCP sockets found in /proc/net/tcp* or ss -tln")
     verify_loopback_sockets(sock_list, port)
 
     record = {
@@ -391,7 +506,7 @@ def write_window_json(
             "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
             "platform": sys.platform,
         },
-        "system_python": system_python,
+        "system_python": measured_sys_py,
         "python": py_ver,
         "python_sha256": py_sha,
         "uv": uv_out or UV_PIN,
@@ -636,7 +751,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bootstrap", action="store_true", help="Write window.json and verify weight manifest")
     parser.add_argument("--window-json", type=Path, help="Path to write window.json")
     parser.add_argument("--window-id", default="win_lane1_stub_01", help="Window identifier")
-    parser.add_argument("--system-python", default="3.13.16", help="Host/system Python version recorded in window.json")
+    parser.add_argument("--system-python", default=None, help="Measured host/system Python version (probed when omitted)")
+    parser.add_argument("--system-python-bin", default="/usr/bin/python3", help="System python binary to probe")
+    parser.add_argument("--proc-net-tcp", type=Path, default=None, help="Optional /proc/net/tcp path override")
+    parser.add_argument("--proc-net-tcp6", type=Path, default=None, help="Optional /proc/net/tcp6 path override")
+    parser.add_argument("--comfyui-commit", default=None, help="Pinned ComfyUI git commit SHA")
     parser.add_argument("--weight-manifest", type=Path, help="Optional weight manifest JSON to verify by sha256 + licence")
     parser.add_argument("--staging-dir", type=Path, help="Optional weight staging directory")
     parser.add_argument("--comfy-url", default="http://127.0.0.1:8188", help="Loopback ComfyUI URL")
@@ -667,6 +786,10 @@ def main(argv: list[str] | None = None) -> int:
             window_id=args.window_id,
             comfy_url=args.comfy_url,
             system_python=args.system_python,
+            comfyui_commit=args.comfyui_commit,
+            proc_net_tcp=args.proc_net_tcp,
+            proc_net_tcp6=args.proc_net_tcp6,
+            system_python_bin=args.system_python_bin,
         )
         print(f"WINDOW_JSON {json.dumps(rec)}", flush=True)
 

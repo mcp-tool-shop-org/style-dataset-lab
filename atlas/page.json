@@ -75,7 +75,7 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 3,
+      "added": 7,
       "changed": 4,
       "moved": 0,
       "parts": 4,
@@ -83,33 +83,40 @@
     },
     "items": [
       {
-        "kind": "landing",
-        "sentence": "LICENSE is now read by tests/lib-pipeline/lane1-render.test.js.",
+        "kind": "door",
+        "sentence": "CI's push trigger now also names `scripts/colab/**` and `tests/**/*.py`.",
         "subjects": [
-          "LICENSE",
-          "tests/lib-pipeline/lane1-render.test.js"
+          ".github/workflows/ci.yml"
+        ]
+      },
+      {
+        "kind": "door",
+        "sentence": "CI now also runs tests/colab/.",
+        "subjects": [
+          ".github/workflows/ci.yml",
+          "tests/colab/"
         ]
       },
       {
         "kind": "counts",
-        "sentence": "3 files added and 4 changed content, across 4 parts.",
+        "sentence": "7 files added and 4 changed content, across 4 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "dfeac64ea1a2585b65d88e6ee8a64fd02a185090",
-      "generatedAt": "2026-10-01T02:14:18.418Z"
+      "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+      "generatedAt": "2026-11-05T11:38:23.850Z"
     },
     "unchanged": false
   },
   "changesTogether": [],
   "changesTogetherNote": [
-    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+  "commit": "be87587f3f9811b6362e55070531a715d31ea8ea",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (235), Python (31), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (235), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -129,7 +136,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 101
+          "files": 104
         },
         {
           "boundary": "lib",
@@ -139,11 +146,12 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 39
+          "files": 41
         }
       ],
       "runs": [
         "bin/sdlab.js",
+        "tests/colab/",
         "tests/canon-star-freight/",
         "tests/cli-scripts/",
         "tests/lib-asset/asset-ingest.test.js",
@@ -175,15 +183,15 @@
         "tests/lib-pipeline/",
         "tests/lib-runtime/"
       ],
-      "runsCount": 31,
-      "runsMore": 71,
+      "runsCount": 32,
+      "runsMore": 94,
       "sends": [
         "uploads coverage to Codecov"
       ],
       "stages": [],
       "triggers": [
         "on a pull request",
-        "on a push touching 14 paths",
+        "on a push touching 16 paths",
         "or by hand"
       ]
     },
@@ -425,12 +433,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T11:38:23.850Z",
+  "generatedAt": "2026-11-05T14:53:19.294Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 72 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "130 writes and 236 reads go to a path their caller passes, not to this repository.",
+    "134 writes and 243 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -711,11 +719,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 103,
+  "testFiles": 106,
   "testedBy": {
     "bin": 9,
     "lib": 94,
-    "scripts": 20
+    "scripts": 22
   },
   "unnamedWrites": 38,
   "unread": [

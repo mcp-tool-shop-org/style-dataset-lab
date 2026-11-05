@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "d7404db0fa4a252237e72499c4169e0275ed60395fbbb42907daf200037ddfbf",
+          "hash": "58fb1f6438a692063c31e0c43a8c8e1c7a8911ee1f72fdba7814950f16c98829",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -15627,7 +15627,11 @@
       "externals": 0,
       "files": [
         {
-          "hash": "425ad7b1ef1d88fa45f25078420c7c417b2e8c345d4799ba5b3c0a5a69c6eba7",
+          "hash": "f657b35f0a7c8d7e27db46b0a965ada347f4c79d55a6e69e920728ea82ec47e3",
+          "path": ".gitattributes"
+        },
+        {
+          "hash": "65e64ecb33c5f4ec9d7af6103c1b0d90beee7b55b79115f138ef76b594ffdace",
           "path": ".gitignore"
         },
         {
@@ -15695,7 +15699,7 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "59ca3f6a5be96b80fee73bebf2b778211208d17cd3fb82e2134608dff0729c76",
+          "hash": "9a956260d11b53d157c882bfcc6af84eccff7df59da3fc89cbaef07da0bedcdb",
           "path": "codecov.yml"
         },
         {
@@ -16302,6 +16306,10 @@
           "path": "scripts/card.js"
         },
         {
+          "hash": "7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372",
+          "path": "scripts/colab/colab_window.sh"
+        },
+        {
           "exports": [
             "assert_loopback_url",
             "build_qwen_lora_graph",
@@ -16311,7 +16319,11 @@
             "load_completed",
             "main",
             "normalize_sha256",
+            "parse_proc_net_tcp",
+            "parse_ss_tln",
             "pick_history_image",
+            "probe_listening_sockets",
+            "probe_system_python",
             "run_queue",
             "sha256_bytes",
             "sha256_file",
@@ -16326,132 +16338,235 @@
           ],
           "failurePaths": [
             {
+              "in": "_read_png_text_chunks_fallback",
+              "kind": "raise",
+              "line": 47
+            },
+            {
+              "in": "_read_workflow_metadata_fallback",
+              "kind": "except",
+              "line": 76
+            },
+            {
+              "kind": "except",
+              "line": 87
+            },
+            {
               "in": "assert_loopback_url",
               "kind": "raise",
-              "line": 84
+              "line": 134
             },
             {
               "in": "verify_loopback_sockets",
               "kind": "raise",
-              "line": 90
+              "line": 140
             },
             {
               "in": "verify_loopback_sockets",
               "kind": "except",
-              "line": 99
+              "line": 149
             },
             {
               "in": "verify_loopback_sockets",
               "kind": "raise",
-              "line": 106
+              "line": 156
             },
             {
               "in": "verify_loopback_sockets",
               "kind": "raise",
-              "line": 109
+              "line": 159
             },
             {
               "in": "verify_loopback_sockets",
               "kind": "raise",
-              "line": 111
+              "line": 161
+            },
+            {
+              "in": "parse_proc_net_tcp",
+              "kind": "except",
+              "line": 187
+            },
+            {
+              "in": "probe_listening_sockets",
+              "kind": "except",
+              "line": 233
+            },
+            {
+              "in": "probe_system_python",
+              "kind": "except",
+              "line": 255
+            },
+            {
+              "in": "probe_system_python",
+              "kind": "raise",
+              "line": 256
+            },
+            {
+              "in": "probe_system_python",
+              "kind": "raise",
+              "line": 261
             },
             {
               "in": "write_png_text_chunks",
               "kind": "raise",
-              "line": 124
+              "line": 273
             },
             {
               "in": "write_png_text_chunks",
               "kind": "raise",
-              "line": 136
+              "line": 285
             },
             {
               "in": "unwrap_text_val",
               "kind": "except",
-              "line": 167
+              "line": 316
             },
             {
               "in": "stamp_png_provenance",
               "kind": "raise",
-              "line": 176
+              "line": 325
             },
             {
               "in": "verify_png_provenance",
               "kind": "raise",
-              "line": 195
+              "line": 344
             },
             {
               "in": "verify_png_provenance",
               "kind": "raise",
-              "line": 200
+              "line": 349
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 286
+              "line": 435
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 293
+              "line": 442
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 295
+              "line": 444
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 300
+              "line": 449
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 303
+              "line": 452
             },
             {
               "in": "write_window_json",
               "kind": "raise",
-              "line": 325
+              "line": 481
             },
             {
               "in": "write_window_json",
               "kind": "except",
-              "line": 329
+              "line": 485
+            },
+            {
+              "in": "write_window_json",
+              "kind": "raise",
+              "line": 498
             },
             {
               "in": "pick_history_image",
               "kind": "raise",
-              "line": 378
+              "line": 545
             },
             {
               "in": "load_completed",
               "kind": "except",
-              "line": 406
+              "line": 573
             },
             {
               "in": "run_queue",
               "kind": "raise",
-              "line": 483
+              "line": 657
             },
             {
               "in": "run_queue",
               "kind": "raise",
-              "line": 486
+              "line": 660
             },
             {
               "in": "run_queue",
               "kind": "raise",
-              "line": 499
+              "line": 673
             },
             {
               "kind": "raise",
-              "line": 632
+              "line": 814
             }
           ],
-          "hash": "74cf48c35b76c5d0ffdc49d750ff0ffb3bd8dfb78eb600d8492e7a73b2d40f40",
+          "hash": "affe7825d6a453ba46b93141aa00ba69f189f1f670b955acf21882c800b5f3b9",
           "path": "scripts/colab/lane1_render.py"
+        },
+        {
+          "exports": [
+            "check_host_ram_projection",
+            "evaluate_cap_guard",
+            "evaluate_vitals_and_stall_guard",
+            "evaluate_wall_guard",
+            "main",
+            "normalize_hex_sha",
+            "parse_vitals_log",
+            "run_between_item_fetch",
+            "scrub_colab_tokens",
+            "scrub_file_in_place",
+            "sha256_file",
+            "sha256_self_normalized",
+            "verify_input_shas"
+          ],
+          "failurePaths": [
+            {
+              "in": "verify_input_shas",
+              "kind": "raise",
+              "line": 70
+            },
+            {
+              "in": "verify_input_shas",
+              "kind": "raise",
+              "line": 78
+            },
+            {
+              "in": "parse_vitals_log",
+              "kind": "except",
+              "line": 172
+            },
+            {
+              "in": "check_host_ram_projection",
+              "kind": "raise",
+              "line": 257
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 323
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 342
+            },
+            {
+              "kind": "raise",
+              "line": 371
+            }
+          ],
+          "hash": "82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25",
+          "path": "scripts/colab/launch_guards.py"
+        },
+        {
+          "hash": "b9b08b38f07920e67a12c76c412c537928f8b8353bb02d06e288ce130030b7d7",
+          "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
           "exports": [
@@ -18054,11 +18169,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 23,
+          "reads": 30,
           "where": [
             "caller"
           ],
-          "writes": 16
+          "writes": 20
         },
         {
           "reads": 2,
@@ -18076,13 +18191,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 26,
-      "outsideWrites": 28,
+      "outsideReads": 33,
+      "outsideWrites": 32,
       "role": "code",
       "testRunners": [
-        "node --test"
+        "node --test",
+        "pytest"
       ],
-      "testedBy": 20,
+      "testedBy": 22,
       "unresolvedSites": 0
     },
     {
@@ -18746,6 +18862,52 @@
           ],
           "path": "tests/cli-scripts/qwen-python-parity.test.js",
           "testFramework": "node --test"
+        },
+        {
+          "exports": [
+            "make_minimal_png_with_prompt",
+            "test_copy_back_cadence_and_resume_after_deliberate_kill_with_fake_client",
+            "test_job_compilation_qwen_lora_and_stub_fixture",
+            "test_loopback_guards_and_weight_staging_and_window_json",
+            "test_real_vm_facts_proc_net_tcp_ss_and_system_python_without_defaults",
+            "test_stamp_write_and_read_back_and_validation"
+          ],
+          "hash": "177842a0d666a79a33a320fc3cce8e0c7acfd2a7a40a4a68f3c56ece4234cea2",
+          "importsFiles": [
+            "scripts/colab/lane1_render.py"
+          ],
+          "path": "tests/colab/test_lane1_render.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_between_item_fetch_copies_files_before_resetting_current_json",
+            "test_cap_guard_trips_on_fixture_and_stays_quiet_just_under",
+            "test_dead_harness_on_cgroup_oom_fixture_trips_and_stays_quiet_just_under",
+            "test_host_ram_projection_trips_and_stays_quiet_just_under",
+            "test_verify_input_shas_and_scrub_tokens_and_cli",
+            "test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under",
+            "test_wall_guard_trips_on_fixture_and_stays_quiet_just_under"
+          ],
+          "hash": "a0d6b87dadb20ea2c47f76a1744f9d5249aa21ae5d1510435906c5e23e71a9f1",
+          "importsFiles": [
+            "scripts/colab/launch_guards.py"
+          ],
+          "path": "tests/colab/test_launch_guards.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_kit_pins_self_sha_comfyui_commit_comfy_headless_and_pytorch_index",
+            "test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json",
+            "test_real_colab_cli_guard_refuses_when_not_fake",
+            "test_sha_refusal_before_opening_session",
+            "test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap",
+            "test_trap_stops_session_on_command_failure_and_wall"
+          ],
+          "hash": "63ca80e444156540104b2847d2e9c791c4070207fb444348989643c0ecab3168",
+          "path": "tests/colab/test_launch_lane1_stub.py",
+          "testFramework": "pytest"
         },
         {
           "hash": "2494c82673dea71514b707801c820353d9a7a79aa2620e55a8f87a731b6b7b13",
@@ -19585,7 +19747,8 @@
       "origin": "authored",
       "role": "test",
       "testRunners": [
-        "node --test"
+        "node --test",
+        "pytest"
       ],
       "testedBy": 0,
       "unresolvedNamed": [
@@ -19708,6 +19871,18 @@
             "npm"
           ],
           "step": "Coverage (Node 22 only)"
+        },
+        {
+          "dir": "",
+          "job": "verify",
+          "programs": [
+            ".venv-ci/bin/python",
+            "pipx",
+            "pwd",
+            "python3",
+            "uv"
+          ],
+          "step": "Python tests and coverage (Node 22 only)"
         }
       ],
       "elsewhere": [],
@@ -19780,7 +19955,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 101
+          "files": 104
         },
         {
           "boundary": "lib",
@@ -19798,7 +19973,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 41
         }
       ],
       "readers": [],
@@ -19820,6 +19995,12 @@
           "job": "verify",
           "matched": true,
           "path": "tests/cli-scripts/",
+          "runKind": "executes"
+        },
+        {
+          "directory": true,
+          "job": "verify",
+          "path": "tests/colab/",
           "runKind": "executes"
         },
         {
@@ -19996,7 +20177,7 @@
           "runKind": "executes"
         }
       ],
-      "runsCount": 31,
+      "runsCount": 32,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -20070,6 +20251,13 @@
             "npm run coverage",
             "npm test"
           ]
+        },
+        {
+          "coverage": true,
+          "files": 3,
+          "job": "verify",
+          "runner": "pytest",
+          "step": "Python tests and coverage (Node 22 only)"
         }
       ],
       "triggers": [
@@ -20089,10 +20277,12 @@
             "runtime/**",
             "schemas/**",
             "scripts/**",
+            "scripts/colab/**",
             "site/astro.config.mjs",
             "site/package-lock.json",
             "site/package.json",
-            "tests/**"
+            "tests/**",
+            "tests/**/*.py"
           ]
         },
         {
@@ -20721,8 +20911,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
-    "tracked": 3234
+    "commit": "be87587f3f9811b6362e55070531a715d31ea8ea",
+    "tracked": 3241
   },
   "landings": [
     {
@@ -23545,7 +23735,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 103,
+  "testFiles": 106,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

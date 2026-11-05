@@ -255,6 +255,7 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
         window_id="win_01",
         comfy_url="http://127.0.0.1:8188",
         system_python="3.13.16",
+        sockets=["127.0.0.1:8188"],
         expected_python=l1.sys.version.split()[0],
     )
     assert rec["window_id"] == "win_01"
@@ -266,6 +267,7 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
             window_id="win_01",
             comfy_url="http://127.0.0.1:8188",
             system_python="3.13.16",
+            sockets=["127.0.0.1:8188"],
             expected_python="0.0.0",
         )
 
@@ -350,6 +352,12 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
         l1.stage_weights(mismatch_m)
 
     # CLI main() invocation
+    proc_tcp_fixture = tmp_path / "proc_net_tcp"
+    proc_tcp_fixture.write_text(
+        "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+        "   0: 0100007F:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
     monkeypatch.setenv("SDLAB_EXPECTED_PYTHON", l1.sys.version.split()[0])
     cli_rc = l1.main(
         [
@@ -359,6 +367,91 @@ def test_loopback_guards_and_weight_staging_and_window_json(tmp_path: Path, monk
             str(tmp_path / "cli_win.json"),
             "--weight-manifest",
             str(manifest_path),
+            "--proc-net-tcp",
+            str(proc_tcp_fixture),
+            "--system-python-bin",
+            l1.sys.executable,
         ]
     )
     assert cli_rc == 0
+
+
+def test_real_vm_facts_proc_net_tcp_ss_and_system_python_without_defaults(tmp_path: Path) -> None:
+    proc_tcp = tmp_path / "proc_net_tcp"
+    proc_tcp.write_text(
+        "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+        "   0: 0100007F:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n"
+        "   1: 0100007F:1FFC 0100007F:C350 01 00000000:00000000 00:00000000 00000000     0        0 12346 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    parsed_v4 = l1.parse_proc_net_tcp(proc_tcp.read_text(encoding="utf-8"), ipv6=False)
+    assert parsed_v4 == ["127.0.0.1:8188"]
+
+    proc_tcp6 = tmp_path / "proc_net_tcp6"
+    proc_tcp6.write_text(
+        "  sl  local_address                         rem_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+        "   0: 00000000000000000000000001000000:1FFC 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12347 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    parsed_v6 = l1.parse_proc_net_tcp(proc_tcp6.read_text(encoding="utf-8"), ipv6=True)
+    assert parsed_v6 == ["[::1]:8188"]
+
+    ss_sample = (
+        "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\n"
+        "LISTEN 0      128        127.0.0.1:8188      0.0.0.0:*\n"
+        "LISTEN 0      128            [::1]:8188         [::]:*\n"
+    )
+    assert l1.parse_ss_tln(ss_sample) == ["127.0.0.1:8188", "[::1]:8188"]
+
+    probed_socks = l1.probe_listening_sockets(proc_net_tcp=proc_tcp, proc_net_tcp6=proc_tcp6)
+    assert probed_socks == ["127.0.0.1:8188", "[::1]:8188"]
+
+    probed_py = l1.probe_system_python(runner=lambda _cmd: "Python 3.13.16\n")
+    assert probed_py == "3.13.16"
+    with pytest.raises(ValueError, match="LANE1_NO_MEASURED_SYSTEM_PYTHON"):
+        l1.probe_system_python(runner=lambda _cmd: "")
+
+    # No fallback to [f"{host}:{port}"] when OS socket tables yield no listening sockets
+    with pytest.raises(ValueError, match="LANE1_NO_MEASURED_SOCKETS"):
+        l1.write_window_json(
+            tmp_path / "no_socks_win.json",
+            window_id="win_no_socks",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            proc_net_tcp=tmp_path / "nonexistent_tcp",
+            proc_net_tcp6=tmp_path / "nonexistent_tcp6",
+            ss_runner=lambda: "",
+        )
+
+    # Wildcard 0.0.0.0:8188 in /proc/net/tcp is caught and refused
+    wildcard_tcp = tmp_path / "wildcard_tcp"
+    wildcard_tcp.write_text(
+        "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+        "   0: 00000000:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="LANE1_NON_LOOPBACK_SOCKET"):
+        l1.write_window_json(
+            tmp_path / "wild_win.json",
+            window_id="win_wild",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            proc_net_tcp=wildcard_tcp,
+            proc_net_tcp6=tmp_path / "nonexistent_tcp6",
+        )
+
+    # write_window_json measures both system_python and listening_sockets when not supplied
+    measured_win = l1.write_window_json(
+        tmp_path / "measured_win.json",
+        window_id="win_measured",
+        comfy_url="http://127.0.0.1:8188",
+        expected_python=l1.sys.version.split()[0],
+        proc_net_tcp=proc_tcp,
+        proc_net_tcp6=proc_tcp6,
+        system_python_runner=lambda _cmd: "Python 3.13.16\n",
+    )
+    assert measured_win["system_python"] == "3.13.16"
+    assert measured_win["listening_sockets"] == ["127.0.0.1:8188", "[::1]:8188"]
+
