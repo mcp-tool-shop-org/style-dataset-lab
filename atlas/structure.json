@@ -64,15 +64,15 @@
             {
               "in": "main",
               "kind": "throw",
-              "line": 623
+              "line": 624
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 664
+              "line": 665
             }
           ],
-          "hash": "3c7a588496a82b2a1f2d1c85a348612f7bebe64054c4ae7e89fc66380b964ba6",
+          "hash": "8c56e1d335e065c5362f04b7465df42b4a229e8e98956de114cf51e0470aed49",
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -114,14 +114,14 @@
             {
               "calls": [
                 {
-                  "line": 562,
+                  "line": 563,
                   "name": "enableDebug",
                   "target": {
                     "file": "lib/errors.js"
                   }
                 },
                 {
-                  "line": 563,
+                  "line": 564,
                   "name": "setLogLevel",
                   "target": {
                     "file": "lib/log.js"
@@ -129,7 +129,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 619,
+                  "line": 620,
                   "name": "findClosest",
                   "over": "namespaces",
                   "target": {
@@ -138,7 +138,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 623,
+                  "line": 624,
                   "name": "inputError",
                   "over": "namespaces",
                   "target": {
@@ -229,7 +229,7 @@
                       }
                     }
                   ],
-                  "line": 638,
+                  "line": 639,
                   "name": "run",
                   "target": {
                     "file": "scripts/critique.js"
@@ -302,7 +302,7 @@
                       }
                     }
                   ],
-                  "line": 646,
+                  "line": 647,
                   "name": "run",
                   "target": {
                     "file": "scripts/refine.js"
@@ -369,7 +369,7 @@
                       }
                     }
                   ],
-                  "line": 654,
+                  "line": 655,
                   "name": "run",
                   "target": {
                     "file": "scripts/select.js"
@@ -377,7 +377,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 660,
+                  "line": 661,
                   "name": "findClosest",
                   "target": {
                     "file": "lib/args.js"
@@ -385,7 +385,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 664,
+                  "line": 665,
                   "name": "inputError",
                   "target": {
                     "file": "lib/errors.js"
@@ -1317,6 +1317,84 @@
         },
         {
           "exports": [
+            "assertLoopbackEndpoint",
+            "buildCanonDraftMessages",
+            "computeDraftContentSha256",
+            "draftCanonClassViaEndpoint",
+            "readPromptsJsonl",
+            "verifyGlimmerRuntime",
+            "writePromptsJsonl"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertLoopbackEndpoint",
+              "kind": "catch",
+              "line": 66
+            },
+            {
+              "in": "assertLoopbackEndpoint",
+              "kind": "throw",
+              "line": 67
+            },
+            {
+              "in": "assertLoopbackEndpoint",
+              "kind": "throw",
+              "line": 74
+            },
+            {
+              "in": "verifyGlimmerRuntime",
+              "kind": "throw",
+              "line": 105
+            },
+            {
+              "in": "verifyGlimmerRuntime",
+              "kind": "throw",
+              "line": 115
+            },
+            {
+              "in": "verifyGlimmerRuntime",
+              "kind": "throw",
+              "line": 122
+            },
+            {
+              "in": "verifyGlimmerRuntime",
+              "kind": "throw",
+              "line": 126
+            },
+            {
+              "in": "draftCanonClassViaEndpoint",
+              "kind": "throw",
+              "line": 232
+            },
+            {
+              "in": "draftCanonClassViaEndpoint",
+              "kind": "throw",
+              "line": 244
+            },
+            {
+              "in": "draftCanonClassViaEndpoint",
+              "kind": "throw",
+              "line": 264
+            },
+            {
+              "in": "draftCanonClassViaEndpoint",
+              "kind": "catch",
+              "line": 276
+            }
+          ],
+          "hash": "5cfdca823fd255168290c9ef5d43b9ac047f9c32180ee5639cc22cc62b0ecbf1",
+          "importOrder": [
+            "lib/freeze-stamp.js",
+            "lib/errors.js"
+          ],
+          "importsFiles": [
+            "lib/errors.js",
+            "lib/freeze-stamp.js"
+          ],
+          "path": "lib/canon-author.js"
+        },
+        {
+          "exports": [
             "runBuild"
           ],
           "failurePaths": [
@@ -1707,6 +1785,57 @@
             "lib/errors.js"
           ],
           "path": "lib/canon-build/load-schema.js"
+        },
+        {
+          "exports": [
+            "assertDirectorRatifiedForFreeze",
+            "assertNoSelfVerification",
+            "normalizeModelFamilyKey",
+            "ratifyCanonDraft"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertNoSelfVerification",
+              "kind": "throw",
+              "line": 88
+            },
+            {
+              "in": "ratifyCanonDraft",
+              "kind": "throw",
+              "line": 114
+            },
+            {
+              "in": "ratifyCanonDraft",
+              "kind": "throw",
+              "line": 118
+            },
+            {
+              "in": "ratifyCanonDraft",
+              "kind": "throw",
+              "line": 125
+            },
+            {
+              "in": "assertDirectorRatifiedForFreeze",
+              "kind": "throw",
+              "line": 161
+            },
+            {
+              "in": "assertDirectorRatifiedForFreeze",
+              "kind": "throw",
+              "line": 186
+            },
+            {
+              "in": "assertDirectorRatifiedForFreeze",
+              "kind": "throw",
+              "line": 196
+            }
+          ],
+          "hash": "8f6634f583a476779bc152994fd14021c0c3320fd02ed8b8efea335470c2260c",
+          "importsFiles": [
+            "lib/canon-author.js",
+            "lib/errors.js"
+          ],
+          "path": "lib/canon-review-gate.js"
         },
         {
           "exports": [
@@ -2235,41 +2364,43 @@
             {
               "in": "latestFreezeAt",
               "kind": "catch",
-              "line": 43
+              "line": 46
             },
             {
               "in": "loadAllCanonEntries",
               "kind": "catch",
-              "line": 78
+              "line": 81
             },
             {
               "in": "assertNotFrozen",
               "kind": "throw",
-              "line": 166
+              "line": 169
             },
             {
               "in": "assertNotFrozen",
               "kind": "throw",
-              "line": 175
+              "line": 178
             },
             {
               "in": "assertNotFrozen",
               "kind": "throw",
-              "line": 182
+              "line": 185
             }
           ],
-          "hash": "97384b7683e771fad2c04f81902895661eb694da7c69e40b90b89da6fcdf277a",
+          "hash": "e77f731aa24e1ab2d765941cd4ddaefbdad65a5a30acb660a4f2aef5af40bec0",
           "importOrder": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
             "lib/freeze-stamp.js",
             "lib/freeze-events.js",
             "lib/errors.js",
-            "lib/log.js"
+            "lib/log.js",
+            "lib/canon-review-gate.js"
           ],
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
+            "lib/canon-review-gate.js",
             "lib/errors.js",
             "lib/freeze-events.js",
             "lib/freeze-stamp.js",
@@ -2735,6 +2866,179 @@
             "lib/paths.js"
           ],
           "path": "lib/measure.js"
+        },
+        {
+          "exports": [
+            "appendMemoryEntry",
+            "approveProposedMemoryEntry",
+            "computeStoreSha256",
+            "diffMemorySnapshots",
+            "getMemoryStorePath",
+            "loadEffectiveMemory",
+            "promoteProjectMemoryToGlobal",
+            "readStoreEntries",
+            "recordVisionVerdict",
+            "writeMemorySnapshot"
+          ],
+          "failurePaths": [
+            {
+              "in": "validateProjectSlug",
+              "kind": "throw",
+              "line": 94
+            },
+            {
+              "in": "getMemoryStorePath",
+              "kind": "throw",
+              "line": 118
+            },
+            {
+              "in": "checkSealedHoldoutCitations",
+              "kind": "throw",
+              "line": 151
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 170
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 194
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 197
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 200
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 206
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 209
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 212
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 215
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 224
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 232
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 248
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 254
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 260
+            },
+            {
+              "in": "appendMemoryEntry",
+              "kind": "throw",
+              "line": 270
+            },
+            {
+              "in": "approveProposedMemoryEntry",
+              "kind": "throw",
+              "line": 333
+            },
+            {
+              "in": "approveProposedMemoryEntry",
+              "kind": "throw",
+              "line": 342
+            },
+            {
+              "in": "promoteProjectMemoryToGlobal",
+              "kind": "throw",
+              "line": 381
+            },
+            {
+              "in": "promoteProjectMemoryToGlobal",
+              "kind": "throw",
+              "line": 387
+            },
+            {
+              "in": "promoteProjectMemoryToGlobal",
+              "kind": "throw",
+              "line": 396
+            },
+            {
+              "in": "loadEffectiveMemory",
+              "kind": "throw",
+              "line": 459
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 590
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 604
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 607
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 613
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 622
+            },
+            {
+              "in": "recordVisionVerdict",
+              "kind": "throw",
+              "line": 630
+            }
+          ],
+          "hash": "3a6f33a573870f75881cae17db153f82d77ac95d9c411eace24c6a26d62f5633",
+          "importOrder": [
+            "lib/freeze-stamp.js",
+            "lib/canon-review-gate.js",
+            "lib/errors.js"
+          ],
+          "importsFiles": [
+            "lib/canon-review-gate.js",
+            "lib/errors.js",
+            "lib/freeze-stamp.js"
+          ],
+          "path": "lib/memory-store.js"
         },
         {
           "exports": [
@@ -3629,8 +3933,13 @@
             "generatorModelFromManifest",
             "warnIfSelfVerification"
           ],
-          "hash": "ef878405de554f9bdf34d2566145ba61374e625e0753924cc01f4d4b62e6e7fe",
+          "hash": "2a3efd697cbc0e2c105f15b4604d61373298c47c2b06b662f953c6406f7f470a",
+          "importOrder": [
+            "lib/log.js",
+            "lib/canon-review-gate.js"
+          ],
           "importsFiles": [
+            "lib/canon-review-gate.js",
             "lib/log.js"
           ],
           "path": "lib/verifier.js"
@@ -3722,11 +4031,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 227,
+          "reads": 233,
           "where": [
             "caller"
           ],
-          "writes": 107
+          "writes": 118
         },
         {
           "reads": 1,
@@ -3758,13 +4067,13 @@
           "writes": 1
         }
       ],
-      "outsideReads": 236,
-      "outsideWrites": 108,
+      "outsideReads": 242,
+      "outsideWrites": 119,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 95,
+      "testedBy": 96,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -16142,6 +16451,30 @@
             {
               "in": "run",
               "kind": "throw",
+              "line": 40
+            },
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 46
+            }
+          ],
+          "hash": "29f3866561ee7e853f018e93418c3bdcfd2fadbb70a1ed3393e11e08715bec3c",
+          "importsFiles": [
+            "lib/canon-author.js",
+            "lib/errors.js",
+            "scripts/_shared-args.js"
+          ],
+          "path": "scripts/canon-draft.js"
+        },
+        {
+          "exports": [
+            "run"
+          ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
               "line": 44
             },
             {
@@ -16223,50 +16556,51 @@
             {
               "in": "run",
               "kind": "throw",
-              "line": 52
+              "line": 53
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 61
+              "line": 62
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 65
+              "line": 66
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 73
+              "line": 74
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 79
+              "line": 80
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 98
+              "line": 99
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 108
+              "line": 112
             },
             {
               "in": "findLatestBuildHash",
               "kind": "catch",
-              "line": 209
+              "line": 213
             }
           ],
-          "hash": "cd9554a5c516f8dd5afd9dc1fdde0808e991ad91b0dc1a3796fd12b1699cf082",
+          "hash": "5fd33e898cf5d133de0d90b55b63703efff80f983e925fa9a21c3e57d1922d18",
           "importOrder": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
             "lib/freeze-stamp.js",
             "lib/freeze-events.js",
+            "lib/canon-review-gate.js",
             "lib/errors.js",
             "lib/paths.js",
             "scripts/_shared-args.js"
@@ -16274,6 +16608,7 @@
           "importsFiles": [
             "lib/canon-build/load-config.js",
             "lib/canon-build/load-entry.js",
+            "lib/canon-review-gate.js",
             "lib/errors.js",
             "lib/freeze-events.js",
             "lib/freeze-stamp.js",
@@ -19665,6 +20000,16 @@
           "testFramework": "node --test"
         },
         {
+          "hash": "bb5cacd6e88e7cde47c62a177ab01f4c6647a4e7a2c1fa970d000404dd19e5be",
+          "importsFiles": [
+            "lib/canon-author.js",
+            "lib/canon-review-gate.js",
+            "lib/memory-store.js"
+          ],
+          "path": "tests/lib-pipeline/lane2-canon-memory.test.js",
+          "testFramework": "node --test"
+        },
+        {
           "hash": "f06c6d8760d8469f4f178e0dfce06a703e38f8ba75a8457be99145f3c2d981a7",
           "importOrder": [
             "lib/run-manifest.js",
@@ -20105,7 +20450,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 105
+          "files": 106
         },
         {
           "boundary": "lib",
@@ -20114,7 +20459,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 77
+          "files": 80
         },
         {
           "boundary": "scripts",
@@ -20382,7 +20727,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 98,
+          "files": 99,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -20392,7 +20737,7 @@
         },
         {
           "coverage": true,
-          "files": 98,
+          "files": 99,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -20698,7 +21043,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 102
+          "files": 103
         },
         {
           "boundary": "lib",
@@ -20707,7 +21052,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 77
+          "files": 80
         },
         {
           "boundary": "scripts",
@@ -20938,7 +21283,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 98,
+          "files": 99,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20988,7 +21333,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 51
+          "files": 53
         },
         {
           "boundary": "scripts",
@@ -21061,8 +21406,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003",
-    "tracked": 3245
+    "commit": "50656210c29b22d9140c3bf6e761c0145bd74d63",
+    "tracked": 3250
   },
   "landings": [
     {
@@ -23891,7 +24236,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 107,
+  "testFiles": 108,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

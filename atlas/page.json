@@ -75,22 +75,22 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 1,
-      "changed": 0,
+      "added": 5,
+      "changed": 4,
       "moved": 0,
-      "parts": 1,
+      "parts": 4,
       "removed": 0
     },
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-05; 1 file added.",
+        "sentence": "Nothing structural changed since 2026-11-05; 5 files added and 4 changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8",
-      "generatedAt": "2026-11-05T17:24:04.421Z"
+      "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003",
+      "generatedAt": "2026-11-05T17:37:51.183Z"
     },
     "unchanged": true
   },
@@ -99,9 +99,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "1ecf0003aecddfd32afe1bb6114ad8b2536bf003",
+  "commit": "50656210c29b22d9140c3bf6e761c0145bd74d63",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (239), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2616 files); code in JavaScript (244), Python (35), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -121,12 +121,12 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 105
+          "files": 106
         },
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 77
+          "files": 80
         },
         {
           "boundary": "scripts",
@@ -169,7 +169,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 32,
-      "runsMore": 95,
+      "runsMore": 96,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -198,12 +198,12 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 102
+          "files": 103
         },
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 77
+          "files": 80
         },
         {
           "boundary": "scripts",
@@ -245,7 +245,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 31,
-      "runsMore": 72,
+      "runsMore": 73,
       "sends": [
         "publishes to npm"
       ],
@@ -305,7 +305,7 @@
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 51
+          "files": 53
         },
         {
           "boundary": "scripts",
@@ -418,12 +418,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T17:37:51.183Z",
+  "generatedAt": "2026-11-05T18:10:13.768Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "134 writes and 264 reads go to a path their caller passes, not to this repository.",
+    "145 writes and 270 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -704,10 +704,10 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 107,
+  "testFiles": 108,
   "testedBy": {
     "bin": 10,
-    "lib": 95,
+    "lib": 96,
     "scripts": 23
   },
   "unnamedWrites": 38,
