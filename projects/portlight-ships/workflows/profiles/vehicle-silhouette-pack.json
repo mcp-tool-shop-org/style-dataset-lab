@@ -49,11 +49,14 @@
   ],
   "runtime_defaults": {
     "adapter_target": "comfyui",
+    "base": "qwen-image",
     "width": 1024,
     "height": 1024,
-    "steps": 30,
-    "cfg": 6.5,
-    "sampler": "dpmpp_2m",
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
     "seed_mode": "random"
   }
 }

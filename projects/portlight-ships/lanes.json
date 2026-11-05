@@ -36,6 +36,11 @@
       "label": "Damage / Battle Variant",
       "description": "Battle-damaged states, wear progression, field-repaired configurations",
       "id_patterns": ["^damage_", "^battle_", "^wear_"]
+    },
+    {
+      "id": "damage-state-plate",
+      "label": "Damage-State Plate",
+      "id_patterns": ["^damage_state_", "^plate_"]
     }
   ]
 }

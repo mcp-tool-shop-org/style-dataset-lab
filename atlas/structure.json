@@ -64,15 +64,15 @@
             {
               "in": "main",
               "kind": "throw",
-              "line": 609
+              "line": 623
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 650
+              "line": 664
             }
           ],
-          "hash": "1937a03ccd7331e9e510202aa4d18efff89aa281619a43847710ba5675d24cd6",
+          "hash": "3c7a588496a82b2a1f2d1c85a348612f7bebe64054c4ae7e89fc66380b964ba6",
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
@@ -90,7 +90,6 @@
             "scripts/generate-controlnet.js",
             "scripts/generate-identity.js",
             "scripts/generate-ipadapter.js",
-            "scripts/generate.js",
             "scripts/implementation-pack.js",
             "scripts/ingest.js",
             "scripts/init.js",
@@ -106,21 +105,22 @@
             "scripts/split.js",
             "scripts/training-manifest.js",
             "scripts/training-package.js",
-            "scripts/training-profile.js"
+            "scripts/training-profile.js",
+            "scripts/verify.js"
           ],
           "path": "bin/sdlab.js",
           "sequences": [
             {
               "calls": [
                 {
-                  "line": 548,
+                  "line": 562,
                   "name": "enableDebug",
                   "target": {
                     "file": "lib/errors.js"
                   }
                 },
                 {
-                  "line": 549,
+                  "line": 563,
                   "name": "setLogLevel",
                   "target": {
                     "file": "lib/log.js"
@@ -128,7 +128,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 605,
+                  "line": 619,
                   "name": "findClosest",
                   "over": "namespaces",
                   "target": {
@@ -137,7 +137,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 609,
+                  "line": 623,
                   "name": "inputError",
                   "over": "namespaces",
                   "target": {
@@ -228,7 +228,7 @@
                       }
                     }
                   ],
-                  "line": 624,
+                  "line": 638,
                   "name": "run",
                   "target": {
                     "file": "scripts/critique.js"
@@ -301,7 +301,7 @@
                       }
                     }
                   ],
-                  "line": 632,
+                  "line": 646,
                   "name": "run",
                   "target": {
                     "file": "scripts/refine.js"
@@ -368,7 +368,7 @@
                       }
                     }
                   ],
-                  "line": 640,
+                  "line": 654,
                   "name": "run",
                   "target": {
                     "file": "scripts/select.js"
@@ -376,7 +376,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 646,
+                  "line": 660,
                   "name": "findClosest",
                   "target": {
                     "file": "lib/args.js"
@@ -384,7 +384,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 650,
+                  "line": 664,
                   "name": "inputError",
                   "target": {
                     "file": "lib/errors.js"
@@ -409,16 +409,21 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 9,
+      "testedBy": 10,
       "testedThroughSpawn": true,
       "unresolvedNamed": [
         {
           "path": "bin/sdlab.js",
           "specifier": null,
           "why": "dynamic"
+        },
+        {
+          "path": "bin/sdlab.js",
+          "specifier": "../scripts/generate.js",
+          "why": "missing"
         }
       ],
-      "unresolvedSites": 1
+      "unresolvedSites": 2
     },
     {
       "dynamicReads": 0,
@@ -2157,7 +2162,7 @@
               "line": 452
             }
           ],
-          "hash": "84d9ba3b0ea7ec7742680817fa2e3892f3dce182d8629c0b663885ac716d4b59",
+          "hash": "d9405f25885a9c9d591f4910274b9f40e621026f0a15871efc1385fce6cd3700",
           "importOrder": [
             "lib/config.js",
             "lib/snapshot.js",
@@ -2303,18 +2308,30 @@
         },
         {
           "exports": [
-            "buildGeneratedProvenance"
+            "buildGeneratedProvenance",
+            "resolveCanonLink"
           ],
           "failurePaths": [
             {
+              "in": "resolveCanonLink",
+              "kind": "catch",
+              "line": 47
+            },
+            {
+              "in": "resolveCanonLink",
+              "kind": "catch",
+              "line": 101
+            },
+            {
               "in": "buildGeneratedProvenance",
               "kind": "catch",
-              "line": 72
+              "line": 229
             }
           ],
-          "hash": "3cdd225e4938eccfad018a896bf84f4be79f532cf69d37fda3f8acbaf059794a",
+          "hash": "484d0fe4e1380424ba05d3abded6b8b6206affce5b57adef1555dd4b0dc2f2f9",
           "importsFiles": [
-            "lib/log.js"
+            "lib/log.js",
+            "lib/records.js"
           ],
           "path": "lib/generated-provenance.js"
         },
@@ -2725,6 +2742,28 @@
         },
         {
           "exports": [
+            "assertClearedPinningLicences",
+            "hasModelSha256",
+            "isClearedLicenceEntry",
+            "isQuarantinedName",
+            "normalizeModelFamilyKey",
+            "resolveModelLicence"
+          ],
+          "failurePaths": [
+            {
+              "in": "assertClearedPinningLicences",
+              "kind": "throw",
+              "line": 299
+            }
+          ],
+          "hash": "9cb33cbaa94986789258ff20ffc99b3c01205bea3ce81594e83161908cd22e66",
+          "importsFiles": [
+            "lib/errors.js"
+          ],
+          "path": "lib/model-licences.js"
+        },
+        {
+          "exports": [
             "parseNpyHeader",
             "readNpyValues"
           ],
@@ -2950,6 +2989,7 @@
         {
           "exports": [
             "buildBaseRecord",
+            "buildDefaultRights",
             "buildIdentityRecord",
             "loadRecord",
             "saveRecord"
@@ -2958,15 +2998,15 @@
             {
               "in": "loadRecord",
               "kind": "catch",
-              "line": 54
+              "line": 100
             },
             {
               "in": "loadRecord",
               "kind": "throw",
-              "line": 56
+              "line": 102
             }
           ],
-          "hash": "107a7e5986ef29aae8b98ce524aaeaa3342721934752e9f2ed460d9653028093",
+          "hash": "991cf87b748d1be5a626d18150aef3a2ca2c7b1fd0f9e675adff31e93659112f",
           "path": "lib/records.js"
         },
         {
@@ -3037,7 +3077,7 @@
               "line": 158
             }
           ],
-          "hash": "99d4f64575c56acf4a26a88d2e0c866ddcfdcb65f1a25c432b2d1b1e588a9781",
+          "hash": "8cae755bfb1c016c088e72446826cc405b86703b7041704db8e6b83c04d32bb2",
           "importOrder": [
             "lib/paths.js",
             "lib/batch-runs.js",
@@ -3061,12 +3101,16 @@
             "auditReingest",
             "reingestGenerated"
           ],
-          "hash": "7fd953a23600850efd5163a86d8f210eeb02881e6b5cf586b8d5a89b2db0426d",
+          "hash": "a1eb6dba23e2d4f3a094c8f119057629692b80cd8fbab7611023f2cc1204daa7",
           "importOrder": [
             "lib/training-manifests.js",
-            "lib/records.js"
+            "lib/records.js",
+            "lib/generated-provenance.js",
+            "lib/model-licences.js"
           ],
           "importsFiles": [
+            "lib/generated-provenance.js",
+            "lib/model-licences.js",
             "lib/records.js",
             "lib/training-manifests.js"
           ],
@@ -3124,32 +3168,33 @@
             {
               "in": "hashModelFile",
               "kind": "catch",
-              "line": 268
+              "line": 292
             },
             {
               "in": "hashModelFile",
               "kind": "catch",
-              "line": 275
+              "line": 299
             },
             {
               "in": "hashModelFile",
               "kind": "catch",
-              "line": 285
+              "line": 309
             },
             {
               "in": "createHashCache",
               "kind": "catch",
-              "line": 329
+              "line": 353
             },
             {
               "in": "flushHashCache",
               "kind": "catch",
-              "line": 342
+              "line": 366
             }
           ],
-          "hash": "0bcc254c73ba2199360e65ae66100be608a1485f0bd40998a260d8132194c0ae",
+          "hash": "1260e7734d93b78de6fa5a1726f23146fc2a20474878c9448d5ae709ca663a31",
           "importsFiles": [
-            "lib/log.js"
+            "lib/log.js",
+            "lib/model-licences.js"
           ],
           "path": "lib/run-manifest.js"
         },
@@ -3596,6 +3641,34 @@
         },
         {
           "exports": [
+            "verifyProvenanceChain",
+            "verifyRecordProvenance"
+          ],
+          "failurePaths": [
+            {
+              "in": "verifyRecordProvenance",
+              "kind": "catch",
+              "line": 104
+            },
+            {
+              "in": "verifyRecordProvenance",
+              "kind": "catch",
+              "line": 148
+            }
+          ],
+          "hash": "70341e5233301df09dd370779040c2fd5b77e291565729dfbac09cd2145c6317",
+          "importOrder": [
+            "lib/records.js",
+            "lib/model-licences.js"
+          ],
+          "importsFiles": [
+            "lib/model-licences.js",
+            "lib/records.js"
+          ],
+          "path": "lib/verify-chain.js"
+        },
+        {
+          "exports": [
             "getWorkflowProfile",
             "listWorkflowProfiles",
             "saveWorkflowProfile",
@@ -3653,7 +3726,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 207,
+          "reads": 227,
           "where": [
             "caller"
           ],
@@ -3689,13 +3762,13 @@
           "writes": 1
         }
       ],
-      "outsideReads": 216,
+      "outsideReads": 236,
       "outsideWrites": 108,
       "role": "code",
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 94,
+      "testedBy": 95,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -7115,7 +7188,7 @@
           "path": "projects/hesperia/terminology.json"
         },
         {
-          "hash": "73f93d1483e59e6825c9522544ab2435020493b29288a73ca2421ccd28cfda78",
+          "hash": "ce8aecbd9191ca553f34dc75951ff668ef90ab783ddcd8913c97eff6f1eb6c87",
           "path": "projects/portlight-ships/README.md"
         },
         {
@@ -7123,7 +7196,7 @@
           "path": "projects/portlight-ships/canon-build/config.json"
         },
         {
-          "hash": "c14f0360a5c161709ddd42a16d4f53724deec37ee996f96706f9624c7994ec1e",
+          "hash": "c93fcde875b921abdae20a9a06f435fffc68d40f00fdff366b3be48ec03a2664",
           "path": "projects/portlight-ships/canon/constitution.md"
         },
         {
@@ -7131,7 +7204,7 @@
           "path": "projects/portlight-ships/canon/damage-tiers.md"
         },
         {
-          "hash": "76f1a098db620cb45d11ba31b0cb13b44aba8ff426e790bde66194d86489841c",
+          "hash": "9de416654d85b03dc86f23d63506248d307023364571651dead571bed03834da",
           "path": "projects/portlight-ships/canon/review-rubric.md"
         },
         {
@@ -7199,35 +7272,35 @@
           "path": "projects/portlight-ships/canon/traditions.md"
         },
         {
-          "hash": "a459e85f4f75fd8ce9564655951e58f0fa8e948c32613b2727f28e1a3829beed",
+          "hash": "26bd2d040baee5fb11a4baa2f93522fd7c0c4de50b7316d1812764cd952e1ab4",
           "path": "projects/portlight-ships/constitution.json"
         },
         {
-          "hash": "906bc8474139b099f0a9e55352e305791642e0d804fb63313ff5e913a36f07c2",
+          "hash": "0bac6620d8b909a156f091c380090c1d376429f9b92a75e23f96c45b8f59b8e2",
           "path": "projects/portlight-ships/inputs/prompts/example-wave.json"
         },
         {
-          "hash": "bf73d9c6f15b970566b9bf43eac8a5525fefa6317103c7ef079f19c8f945b04a",
+          "hash": "c1193a0992e5e2ed10a1c74924c204d53f54f62d0d8e88586861d7929d857fde",
           "path": "projects/portlight-ships/lanes.json"
         },
         {
-          "hash": "201bfe9dde5de0328d423e6a09ead36ec08ac1144f022127972687397cb125f3",
+          "hash": "ce9a2c9d31e6f19f4ff0553325591d72d501f99c6679608c753514baf84d6af6",
           "path": "projects/portlight-ships/project.json"
         },
         {
-          "hash": "c6a9a41d1efb36d32b217594b75f15a5857926369eb1d94e3070fa874aa2185b",
+          "hash": "6862934583025e0e2683ec88ffa5a808bbed2c67e228c4636e0448bf82dc653f",
           "path": "projects/portlight-ships/rubric.json"
         },
         {
-          "hash": "d50214c333f0e050050a6c06bc654516d36cbe367aa7a27447a152209514d45f",
+          "hash": "660af10a49a1ca362ae8d46416a9f70f02d668b41ca54e75eeff100167ebc39c",
           "path": "projects/portlight-ships/terminology.json"
         },
         {
-          "hash": "b9a515411de67ac412bbcd39791f3c926a025b331253baed534bc312ade9c3aa",
+          "hash": "0368930c82901ee86b9e2b18c7905444c9ad0ec2f1f3e4790c38a2918355f1f7",
           "path": "projects/portlight-ships/workflows/profiles/variant-pack.json"
         },
         {
-          "hash": "3d342ea3c4d021ae0c0fe56825324936db44ead2788d16795cb2e5fff23148ac",
+          "hash": "21122a070fc6b47e60dcd74dbe89731371703d08741a556e6f57266d6aa6e28c",
           "path": "projects/portlight-ships/workflows/profiles/vehicle-silhouette-pack.json"
         },
         {
@@ -7235,7 +7308,7 @@
           "path": "projects/rustline/CHANGELOG.md"
         },
         {
-          "hash": "4663352ac4ae6882ffd5c1faf6fe302525482122180cc4f320bf8a9fb93cdcb0",
+          "hash": "92dade4e6a7118b43b7f7bd9a1d2a689b74e801323ff734c9e375b720595dcb4",
           "path": "projects/rustline/HANDOFF.md"
         },
         {
@@ -7483,7 +7556,7 @@
           "path": "projects/rustline/records/comfy-cloud-lora-export-request.md"
         },
         {
-          "hash": "520248de8519a4b8147876217383f4b0b3c48c35786700043fe70b0e8c9bfe3b",
+          "hash": "0cfee8d6cd87d8105ff5e75c158fd131e5425a0ebc24e1e55e1b3fa7d572627a",
           "path": "projects/rustline/records/comfy-cloud-model-import-resolution.md"
         },
         {
@@ -8416,7 +8489,7 @@
           "path": "projects/salt-road/inputs/prompts/finishing-uploads.json"
         },
         {
-          "hash": "59bf88e022a408cd6ddaff4887c0e2093fe62f6967a06d02e69d7b79ad18068c",
+          "hash": "fb6ae1ae6aea7761013f8046ab6ab12922f95eec485bbc6e91e2f99f7d3799cc",
           "path": "projects/salt-road/inputs/prompts/formula.json"
         },
         {
@@ -15770,7 +15843,7 @@
           "path": "schemas/critique-report.schema.json"
         },
         {
-          "hash": "4ef44ec6f635edf82b56bac14604aeb89b6e77cb4cee0b91f8f6b96da6fa21d9",
+          "hash": "2c823158eb7fb01c1b0b80fc9956c7da86ed521a5ca4d413ba359a4d245371d6",
           "path": "schemas/generated-record.schema.json"
         },
         {
@@ -15793,10 +15866,10 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 11,
+      "dynamicReads": 10,
       "dynamicSpawns": 0,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 16,
+      "dynamicWrites": 14,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -16316,13 +16389,17 @@
             "build_stub_fixture_graph",
             "build_text_chunk",
             "download_comfy_image",
+            "inspect_comfy_listeners",
             "load_completed",
             "main",
             "normalize_sha256",
             "parse_proc_net_tcp",
+            "parse_proc_net_tcp_records",
             "parse_ss_tln",
             "pick_history_image",
+            "probe_listening_socket_records",
             "probe_listening_sockets",
+            "probe_pid_socket_inodes",
             "probe_system_python",
             "run_queue",
             "sha256_bytes",
@@ -16357,156 +16434,171 @@
               "line": 134
             },
             {
-              "in": "verify_loopback_sockets",
-              "kind": "raise",
-              "line": 140
-            },
-            {
-              "in": "verify_loopback_sockets",
+              "in": "parse_proc_net_tcp_records",
               "kind": "except",
-              "line": 149
-            },
-            {
-              "in": "verify_loopback_sockets",
-              "kind": "raise",
-              "line": 156
-            },
-            {
-              "in": "verify_loopback_sockets",
-              "kind": "raise",
-              "line": 159
-            },
-            {
-              "in": "verify_loopback_sockets",
-              "kind": "raise",
               "line": 161
             },
             {
-              "in": "parse_proc_net_tcp",
-              "kind": "except",
-              "line": 187
+              "in": "probe_pid_socket_inodes",
+              "kind": "raise",
+              "line": 212
             },
             {
-              "in": "probe_listening_sockets",
+              "in": "probe_pid_socket_inodes",
               "kind": "except",
-              "line": 233
+              "line": 218
+            },
+            {
+              "in": "probe_pid_socket_inodes",
+              "kind": "raise",
+              "line": 219
+            },
+            {
+              "in": "probe_pid_socket_inodes",
+              "kind": "except",
+              "line": 228
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "except",
+              "line": 260
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "raise",
+              "line": 265
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "raise",
+              "line": 282
+            },
+            {
+              "in": "inspect_comfy_listeners",
+              "kind": "raise",
+              "line": 293
+            },
+            {
+              "in": "probe_listening_socket_records",
+              "kind": "except",
+              "line": 346
             },
             {
               "in": "probe_system_python",
               "kind": "except",
-              "line": 255
+              "line": 388
             },
             {
               "in": "probe_system_python",
               "kind": "raise",
-              "line": 256
+              "line": 389
             },
             {
               "in": "probe_system_python",
               "kind": "raise",
-              "line": 261
+              "line": 394
             },
             {
               "in": "write_png_text_chunks",
               "kind": "raise",
-              "line": 273
+              "line": 406
             },
             {
               "in": "write_png_text_chunks",
               "kind": "raise",
-              "line": 285
+              "line": 418
             },
             {
               "in": "unwrap_text_val",
               "kind": "except",
-              "line": 316
+              "line": 449
             },
             {
               "in": "stamp_png_provenance",
               "kind": "raise",
-              "line": 325
+              "line": 458
             },
             {
               "in": "verify_png_provenance",
               "kind": "raise",
-              "line": 344
+              "line": 477
             },
             {
               "in": "verify_png_provenance",
               "kind": "raise",
-              "line": 349
+              "line": 482
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 435
+              "line": 568
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 442
+              "line": 575
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 444
+              "line": 577
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 449
+              "line": 582
             },
             {
               "in": "stage_weights",
               "kind": "raise",
-              "line": 452
+              "line": 585
             },
             {
               "in": "write_window_json",
               "kind": "raise",
-              "line": 481
+              "line": 616
             },
             {
               "in": "write_window_json",
               "kind": "except",
-              "line": 485
+              "line": 620
             },
             {
               "in": "write_window_json",
               "kind": "raise",
-              "line": 498
+              "line": 638
             },
             {
               "in": "pick_history_image",
               "kind": "raise",
-              "line": 545
+              "line": 697
             },
             {
               "in": "load_completed",
               "kind": "except",
-              "line": 573
+              "line": 725
             },
             {
               "in": "run_queue",
               "kind": "raise",
-              "line": 657
+              "line": 809
             },
             {
               "in": "run_queue",
               "kind": "raise",
-              "line": 660
+              "line": 812
             },
             {
               "in": "run_queue",
               "kind": "raise",
-              "line": 673
+              "line": 825
             },
             {
               "kind": "raise",
-              "line": 814
+              "line": 970
             }
           ],
-          "hash": "affe7825d6a453ba46b93141aa00ba69f189f1f670b955acf21882c800b5f3b9",
+          "hash": "75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013",
           "path": "scripts/colab/lane1_render.py"
         },
         {
@@ -16565,7 +16657,7 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "b9b08b38f07920e67a12c76c412c537928f8b8353bb02d06e288ce130030b7d7",
+          "hash": "a1c7ccbb34446ea53a52b2775b71357ec8b685a80990f1df82c70c84dc3e9dfc",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
@@ -16844,25 +16936,25 @@
             {
               "in": "run",
               "kind": "catch",
-              "line": 240
+              "line": 241
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 362
+              "line": 363
             },
             {
               "in": "run",
               "kind": "catch",
-              "line": 372
+              "line": 373
             },
             {
               "in": "run",
               "kind": "throw",
-              "line": 610
+              "line": 611
             }
           ],
-          "hash": "27ba0ec6980c6adfa9f34b0b6a6cf7449c5b1c38bfec153af76374602cde3a54",
+          "hash": "bb1b9ceca78b13d725414490ac18d37cf93af7b4a4cc1c7e5e29b8abaceaab98",
           "importOrder": [
             "lib/args.js",
             "lib/paths.js",
@@ -17182,63 +17274,6 @@
             "scripts/_resume.js"
           ],
           "path": "scripts/generate-ipadapter.js"
-        },
-        {
-          "exports": [
-            "normalizeGenerationInput",
-            "run"
-          ],
-          "failurePaths": [
-            {
-              "in": "normalizeGenerationInput",
-              "kind": "throw",
-              "line": 231
-            },
-            {
-              "in": "normalizeGenerationInput",
-              "kind": "throw",
-              "line": 251
-            },
-            {
-              "in": "run",
-              "kind": "throw",
-              "line": 369
-            },
-            {
-              "in": "run",
-              "kind": "catch",
-              "line": 521
-            },
-            {
-              "in": "run",
-              "kind": "throw",
-              "line": 559
-            }
-          ],
-          "hash": "f8a58d3a4a43885e5bed0cacc1f8077ceeb0a3c9b7e6a080c1858b71674f8e9d",
-          "importOrder": [
-            "lib/args.js",
-            "lib/paths.js",
-            "lib/config.js",
-            "lib/errors.js",
-            "lib/comfyui.js",
-            "lib/comfyui-output.js",
-            "lib/adapters/comfyui-workflows.js",
-            "lib/run-manifest.js",
-            "lib/log.js"
-          ],
-          "importsFiles": [
-            "lib/adapters/comfyui-workflows.js",
-            "lib/args.js",
-            "lib/comfyui-output.js",
-            "lib/comfyui.js",
-            "lib/config.js",
-            "lib/errors.js",
-            "lib/log.js",
-            "lib/paths.js",
-            "lib/run-manifest.js"
-          ],
-          "path": "scripts/generate.js"
         },
         {
           "exports": [
@@ -18126,6 +18161,32 @@
           "exports": [
             "run"
           ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 55
+            }
+          ],
+          "hash": "df36b4832349f95b57c13e18328b295307d90c58d62f090b1db1b469040293a6",
+          "importOrder": [
+            "lib/args.js",
+            "lib/paths.js",
+            "lib/errors.js",
+            "lib/verify-chain.js"
+          ],
+          "importsFiles": [
+            "lib/args.js",
+            "lib/errors.js",
+            "lib/paths.js",
+            "lib/verify-chain.js"
+          ],
+          "path": "scripts/verify.js"
+        },
+        {
+          "exports": [
+            "run"
+          ],
           "hash": "245d2214f843abc51fbd90ee4efec05585e3f599cd7856c76af94c06fe8ef567",
           "importOrder": [
             "lib/args.js",
@@ -18169,7 +18230,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 30,
+          "reads": 31,
           "where": [
             "caller"
           ],
@@ -18191,7 +18252,7 @@
           "writes": 0
         }
       ],
-      "outsideReads": 33,
+      "outsideReads": 34,
       "outsideWrites": 32,
       "role": "code",
       "testRunners": [
@@ -18682,7 +18743,6 @@
           "hash": "cbe083046aff430ac7d5c05a72efc3dbce2ecbbc7f710fc535fc514385d4410e",
           "importOrder": [
             "lib/paths.js",
-            "scripts/generate.js",
             "scripts/generate-identity.js",
             "scripts/generate-controlnet.js",
             "scripts/generate-ipadapter.js",
@@ -18693,7 +18753,6 @@
             "scripts/generate-controlnet.js",
             "scripts/generate-identity.js",
             "scripts/generate-ipadapter.js",
-            "scripts/generate.js",
             "scripts/painterly.js"
           ],
           "path": "tests/cli-scripts/dry-run-no-side-effects.test.js",
@@ -18828,7 +18887,6 @@
             "scripts/generate-controlnet.js",
             "scripts/generate-identity.js",
             "scripts/generate-ipadapter.js",
-            "scripts/generate.js",
             "scripts/implementation-pack.js",
             "scripts/migrate-records.js",
             "scripts/painterly-test.js",
@@ -18866,13 +18924,15 @@
         {
           "exports": [
             "make_minimal_png_with_prompt",
+            "test_comfy_pid_fd_fail_closed_and_socket_match_mode_recorded",
             "test_copy_back_cadence_and_resume_after_deliberate_kill_with_fake_client",
+            "test_hermetic_proc_comfy_socket_guard_and_other_listeners",
             "test_job_compilation_qwen_lora_and_stub_fixture",
             "test_loopback_guards_and_weight_staging_and_window_json",
             "test_real_vm_facts_proc_net_tcp_ss_and_system_python_without_defaults",
             "test_stamp_write_and_read_back_and_validation"
           ],
-          "hash": "177842a0d666a79a33a320fc3cce8e0c7acfd2a7a40a4a68f3c56ece4234cea2",
+          "hash": "e8ad54a385c329c98a771b23f52702d1babc3360a3038ea4ad45235ebbe597bb",
           "importsFiles": [
             "scripts/colab/lane1_render.py"
           ],
@@ -19385,7 +19445,7 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "d8e330630be6d5b6f1b8ad6d2f8e65be01d13145d251e6570bd3494096cdc4b8",
+          "hash": "75df872801372441d6c9356a281ddcf8537a36b260dbf3b9d88d62e6f91ccfe0",
           "importOrder": [
             "lib/training-packages.js",
             "lib/export.js",
@@ -19531,17 +19591,45 @@
             "lib/png-meta.js",
             "tests/lib-asset/fixtures/make-png.js",
             "lib/adapters/comfyui-workflows.js",
-            "scripts/generate.js",
             "lib/lane1-render.js"
           ],
           "importsFiles": [
             "lib/adapters/comfyui-workflows.js",
             "lib/lane1-render.js",
             "lib/png-meta.js",
-            "scripts/generate.js",
             "tests/lib-asset/fixtures/make-png.js"
           ],
           "path": "tests/lib-pipeline/lane1-render.test.js",
+          "testFramework": "node --test"
+        },
+        {
+          "hash": "f06c6d8760d8469f4f178e0dfce06a703e38f8ba75a8457be99145f3c2d981a7",
+          "importOrder": [
+            "lib/run-manifest.js",
+            "lib/model-licences.js",
+            "lib/records.js",
+            "lib/generated-provenance.js",
+            "lib/reingest-selected.js",
+            "lib/reingest.js",
+            "lib/verify-chain.js",
+            "lib/canon-build/build.js",
+            "lib/paths.js"
+          ],
+          "importsFiles": [
+            "lib/canon-build/build.js",
+            "lib/generated-provenance.js",
+            "lib/model-licences.js",
+            "lib/paths.js",
+            "lib/records.js",
+            "lib/reingest-selected.js",
+            "lib/reingest.js",
+            "lib/run-manifest.js",
+            "lib/verify-chain.js"
+          ],
+          "path": "tests/lib-pipeline/provenance-chain.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
           "testFramework": "node --test"
         },
         {
@@ -19753,12 +19841,22 @@
       "testedBy": 0,
       "unresolvedNamed": [
         {
+          "path": "tests/cli-scripts/dry-run-no-side-effects.test.js",
+          "specifier": "../../scripts/generate.js",
+          "why": "missing"
+        },
+        {
           "path": "tests/cli-scripts/project-root-traversal.test.js",
           "specifier": null,
           "why": "dynamic"
+        },
+        {
+          "path": "tests/lib-pipeline/lane1-render.test.js",
+          "specifier": "../../scripts/generate.js",
+          "why": "missing"
         }
       ],
-      "unresolvedSites": 1
+      "unresolvedSites": 3
     },
     {
       "dynamicReads": 0,
@@ -19955,7 +20053,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 104
+          "files": 105
         },
         {
           "boundary": "lib",
@@ -19964,7 +20062,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 75
+          "files": 77
         },
         {
           "boundary": "scripts",
@@ -20232,7 +20330,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 97,
+          "files": 98,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -20242,7 +20340,7 @@
         },
         {
           "coverage": true,
-          "files": 97,
+          "files": 98,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -20548,7 +20646,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 101
+          "files": 102
         },
         {
           "boundary": "lib",
@@ -20557,7 +20655,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 75
+          "files": 77
         },
         {
           "boundary": "scripts",
@@ -20788,7 +20886,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 97,
+          "files": 98,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -20838,7 +20936,7 @@
             "file": "lib/errors.js",
             "from": "bin/sdlab.js"
           },
-          "files": 49
+          "files": 51
         },
         {
           "boundary": "scripts",
@@ -20911,8 +21009,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "be87587f3f9811b6362e55070531a715d31ea8ea",
-    "tracked": 3241
+    "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8",
+    "tracked": 3244
   },
   "landings": [
     {
@@ -21006,6 +21104,12 @@
         },
         {
           "by": "tests/cli-scripts/namespace-suggester.test.js",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        },
+        {
+          "by": "tests/lib-pipeline/provenance-chain.test.js",
           "call": "literal",
           "confidence": "ast",
           "fromTests": true
@@ -23735,7 +23839,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 106,
+  "testFiles": 107,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

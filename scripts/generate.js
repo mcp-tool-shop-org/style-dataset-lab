@@ -21,6 +21,8 @@ import { comfyHealth, submitAndWait, downloadImage } from "../lib/comfyui.js";
 import { pickOutputImage } from "../lib/comfyui-output.js";
 import { buildQwenGraph, QWEN_DEFAULTS, resolveQwenLoras } from "../lib/adapters/comfyui-workflows.js";
 import { buildPinning, SEED_POLICIES, createHashCache, flushHashCache } from "../lib/run-manifest.js";
+import { STUDIO_OWNER, STUDIO_LICENCE, buildDefaultRights } from "../lib/records.js";
+import { resolveCanonLink } from "../lib/generated-provenance.js";
 import { info, result, warn } from "../lib/log.js";
 
 /**
@@ -260,6 +262,7 @@ export function normalizeGenerationInput(raw, projectMeta) {
         jobs.push({
           assetId: `${subject.id}_${variation.id}`,
           subjectId: subject.id,
+          entryId: subject.entry_id || subject.id,
           variationId: variation.id,
           prompt: compose(subject.prompt),
           seed: baseSeed + k + (variation.seed_offset || 0),
@@ -280,6 +283,7 @@ export function normalizeGenerationInput(raw, projectMeta) {
       jobs.push({
         assetId: `${subject.id}_v${v}`,
         subjectId: subject.id,
+        entryId: subject.entry_id || subject.id,
         variationId: `v${v}`,
         prompt: compose(subject.prompt),
         seed: baseSeed + k,
@@ -385,7 +389,7 @@ export async function run(argv = process.argv.slice(2)) {
   const runStartMs = Date.now();
 
   for (const job of pack.jobs) {
-    const { assetId, prompt: fullPrompt, seed, loras } = job;
+    const { assetId, entryId, prompt: fullPrompt, seed, loras } = job;
     const effectiveLoras = isQwen
       ? resolveQwenLoras({ projectDefaults: d, loras })
       : loras;
@@ -456,9 +460,16 @@ export async function run(argv = process.argv.slice(2)) {
       const destPath = `outputs/candidates/${assetId}.png`;
       await writeFile(join(GAME_ROOT, destPath), imgData);
 
+      const canonLink = resolveCanonLink(GAME_ROOT, {
+        canonSha: raw.canon_sha || null,
+        entryId,
+      });
+
       // Write provenance record (base-aware: Qwen records unet/clip/vae/shift,
       // SDXL records checkpoint/loras).
       const provenance = {
+        owner: STUDIO_OWNER,
+        licence: STUDIO_LICENCE,
         workflow_id: pack.lane,
         workflow_version: "1.0.0",
         base,
@@ -474,6 +485,13 @@ export async function run(argv = process.argv.slice(2)) {
         generation_time_ms: elapsed,
         gpu_model: gpuModel,
         batch_index: generated,
+        ...(canonLink
+          ? {
+              canon_sha: canonLink.canon_sha,
+              entry_id: canonLink.entry_id,
+              entry_sha256: canonLink.entry_sha256,
+            }
+          : {}),
       };
       if (isQwen) {
         provenance.unet = d.unet || QWEN_DEFAULTS.unet;
@@ -499,16 +517,20 @@ export async function run(argv = process.argv.slice(2)) {
         hashModels,
         cache: hashCache,
       });
+      provenance.comfy_workflow_sha = provenance.pinning.comfy_workflow_sha;
 
       const record = {
         id: assetId,
         schema_version: "1.0.0",
         created_at: new Date().toISOString(),
+        owner: STUDIO_OWNER,
+        licence: STUDIO_LICENCE,
+        rights: buildDefaultRights(),
         asset_path: destPath,
         image: { format: "png", width: resolved.width, height: resolved.height, bytes: imgData.length },
         provenance,
         judgment: null,
-        canon: null,
+        canon: canonLink,
         iteration: null,
       };
 

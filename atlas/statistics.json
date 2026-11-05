@@ -153,7 +153,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "scripts",
-      "qualifyingSourceCommits": 12,
+      "qualifyingSourceCommits": 15,
       "rebaseline": null
     },
     {
@@ -201,7 +201,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "tests",
-      "qualifyingSourceCommits": 14,
+      "qualifyingSourceCommits": 17,
       "rebaseline": null
     },
     {
@@ -305,8 +305,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 6,
-        "lines": 349,
+        "commits": 7,
+        "lines": 370,
         "path": "atlas/README.md"
       },
       {
@@ -315,18 +315,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 6,
-        "lines": 1358,
+        "commits": 7,
+        "lines": 1406,
         "path": "atlas/page.json"
       },
       {
-        "commits": 6,
-        "lines": 26612,
+        "commits": 7,
+        "lines": 52341,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 6,
-        "lines": 29436,
+        "commits": 7,
+        "lines": 29712,
         "path": "atlas/structure.json"
       },
       {
@@ -7030,23 +7030,23 @@
         "path": "scripts/card.js"
       },
       {
-        "commits": 1,
-        "lines": 189,
+        "commits": 2,
+        "lines": 423,
         "path": "scripts/colab/colab_window.sh"
       },
       {
-        "commits": 2,
-        "lines": 725,
+        "commits": 5,
+        "lines": 1152,
         "path": "scripts/colab/lane1_render.py"
       },
       {
-        "commits": 1,
-        "lines": 356,
+        "commits": 2,
+        "lines": 377,
         "path": "scripts/colab/launch_guards.py"
       },
       {
-        "commits": 1,
-        "lines": 228,
+        "commits": 4,
+        "lines": 383,
         "path": "scripts/colab/launch_lane1_stub.sh"
       },
       {
@@ -7340,8 +7340,8 @@
         "path": "tests/cli-scripts/qwen-python-parity.test.js"
       },
       {
-        "commits": 1,
-        "lines": 364,
+        "commits": 4,
+        "lines": 705,
         "path": "tests/colab/test_lane1_render.py"
       },
       {
@@ -7350,8 +7350,8 @@
         "path": "tests/colab/test_launch_guards.py"
       },
       {
-        "commits": 1,
-        "lines": 250,
+        "commits": 2,
+        "lines": 429,
         "path": "tests/colab/test_launch_lane1_stub.py"
       },
       {
@@ -7620,11 +7620,54 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T14:53:19.294Z",
+  "generatedAt": "2026-11-05T17:24:04.421Z",
   "generatedFrom": {
-    "commit": "be87587f3f9811b6362e55070531a715d31ea8ea"
+    "commit": "ef9ec0b957da494a2a7e267300cfffae73644af8"
   },
-  "pairs": [],
+  "pairs": [
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/page.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/statistics.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/page.json",
+      "b": "atlas/statistics.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/page.json",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/statistics.json",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    }
+  ],
   "parameters": {
     "appliedChangesetLimit": 50,
     "changeset": 50,
@@ -7635,16 +7678,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T09:01:19-05:00",
-    "inScopeFiles": 3246,
+    "headDate": "2026-11-05T11:45:35-05:00",
+    "inScopeFiles": 3260,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 102,
+    "qualifyingCommits": 105,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T14:01:19.000Z",
+    "since": "2026-05-09T16:45:35.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

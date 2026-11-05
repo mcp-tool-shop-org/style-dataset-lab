@@ -13,6 +13,26 @@
     "record_id": { "type": "string" },
     "project_id": { "type": "string" },
     "image_path": { "type": "string" },
+    "owner": { "type": "string", "const": "mcp-tool-shop" },
+    "licence": { "type": "string", "const": "CC-BY-4.0" },
+    "rights": {
+      "type": "object",
+      "required": ["owner", "licence", "ai_assisted_disclosure"],
+      "properties": {
+        "owner": { "type": "string", "const": "mcp-tool-shop" },
+        "licence": { "type": "string", "const": "CC-BY-4.0" },
+        "ai_assisted_disclosure": { "type": "boolean", "const": true },
+        "disclosure_note": { "type": "string" }
+      }
+    },
+    "canon": {
+      "type": ["object", "null"],
+      "properties": {
+        "canon_sha": { "type": ["string", "null"] },
+        "entry_id": { "type": ["string", "null"] },
+        "entry_sha256": { "type": ["string", "null"] }
+      }
+    },
 
     "generation_provenance": {
       "type": "object",
@@ -23,6 +43,8 @@
         "workflow_id"
       ],
       "properties": {
+        "owner": { "type": "string", "const": "mcp-tool-shop" },
+        "licence": { "type": "string", "const": "CC-BY-4.0" },
         "source_type": {
           "type": "string",
           "enum": ["run", "batch"]
@@ -36,6 +58,13 @@
         "subject_id": { "type": "string" },
         "selected_filename": { "type": "string" },
         "seed": { "type": "integer" },
+        "prompt": { "type": "string" },
+        "prompt_sha256": { "type": "string" },
+        "comfy_workflow_sha": { "type": "string" },
+        "canon_sha": { "type": ["string", "null"] },
+        "entry_id": { "type": ["string", "null"] },
+        "entry_sha256": { "type": ["string", "null"] },
+        "model_licences": { "type": ["object", "null"] },
         "adapter_target": { "type": "string" },
         "config_fingerprint": { "type": "string" }
       }

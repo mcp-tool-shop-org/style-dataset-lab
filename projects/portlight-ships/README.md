@@ -1,5 +1,7 @@
 # portlight-ships
 
+> TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)
+
 A `style-dataset-lab` project — domain: **vehicle-mech**.
 
 ## Quick commands
