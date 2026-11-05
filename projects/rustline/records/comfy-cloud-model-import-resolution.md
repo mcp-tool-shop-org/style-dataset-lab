@@ -12,14 +12,14 @@ path. It appears as the HF owner, the repo, and the filename joined by **double 
 SaintEloi__rustline-lora__rustline_v3ckpt_1500.safetensors
 ```
 
-Not `rustline_v3ckpt_1500.safetensors`. Not `mikeyfrilot/rustline-lora/rustline_v3ckpt_1500.safetensors`.
+Not `rustline_v3ckpt_1500.safetensors`. Not `<hf-user>/rustline-lora/rustline_v3ckpt_1500.safetensors`.
 Both of those were tried and both rejected.
 
 ## ⚠ The HF owner is the CANONICAL namespace, which may not be the one you typed
 
-`mikeyfrilot/rustline-lora` and `SaintEloi/rustline-lora` are **the same private repo** —
-`SaintEloi` is the canonical namespace and `mikeyfrilot` redirects to it (HF does this after a
-rename). `huggingface_hub` follows the redirect silently, so uploads to the `mikeyfrilot` path land
+`<hf-user>/rustline-lora` and `SaintEloi/rustline-lora` are **the same private repo** —
+`SaintEloi` is the canonical namespace and `<hf-user>` redirects to it (HF does this after a
+rename). `huggingface_hub` follows the redirect silently, so uploads to the `<hf-user>` path land
 correctly and `repo_info()` on it returns the files — giving no hint that the canonical owner
 differs.
 
@@ -86,7 +86,7 @@ Private repos additionally need an HF token saved in **Comfy Cloud → Secrets**
 | `rustline_v5ckpt_1500` | ✅ | ❌ | ❌ |
 | `rustline_v5ckpt_1750` | ✅ | ❌ | ❌ |
 
-Repo: `SaintEloi/rustline-lora` (private, author `mikeyfrilot`).
+Repo: `SaintEloi/rustline-lora` (private, author `<hf-user>`).
 
 ## Related
 

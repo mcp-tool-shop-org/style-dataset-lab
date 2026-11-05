@@ -121,8 +121,8 @@ welded negative.
   empty-combo problem is **browser-UI only**. This unblocked the whole evening after being treated
   as a hard wall.
 - **Resolver name = `<hf-owner>__<repo>__<filename>`, double underscore.** Ours:
-  `mikeyfrilot__rustline-lora__rustline_v5ckpt_1000.safetensors`. NOT the bare filename, NOT
-  slash-namespaced. Note the owner is whatever the import used — we have both a `mikeyfrilot__` set
+  `<hf-user>__rustline-lora__rustline_v5ckpt_1000.safetensors`. NOT the bare filename, NOT
+  slash-namespaced. Note the owner is whatever the import used — we have both a `<hf-user>__` set
   (the live v5 ones) and an older `SaintEloi__` v3 entry.
 - **Terminal status is `success`.** `executed` is **TRANSIENT** — treating it as terminal reads
   `/api/jobs/{id}` before outputs register and silently loses renders (cost 12/288). The docs'
