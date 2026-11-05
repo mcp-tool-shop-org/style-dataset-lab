@@ -70,7 +70,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "lib",
-      "qualifyingSourceCommits": 18,
+      "qualifyingSourceCommits": 19,
       "rebaseline": null
     },
     {
@@ -153,7 +153,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "scripts",
-      "qualifyingSourceCommits": 16,
+      "qualifyingSourceCommits": 17,
       "rebaseline": null
     },
     {
@@ -196,12 +196,12 @@
         "importsAndCoChanges": [],
         "importsOnly": []
       },
-      "cohesion": null,
+      "cohesion": 1,
       "cohesionDropped": false,
       "confidence": "low",
       "highWater": null,
       "name": "tests",
-      "qualifyingSourceCommits": 21,
+      "qualifyingSourceCommits": 22,
       "rebaseline": null
     },
     {
@@ -230,8 +230,8 @@
         "path": ".gitattributes"
       },
       {
-        "commits": 14,
-        "lines": 309,
+        "commits": 15,
+        "lines": 327,
         "path": ".github/workflows/ci.yml"
       },
       {
@@ -250,8 +250,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 5,
-        "lines": 134,
+        "commits": 6,
+        "lines": 135,
         "path": "CHANGELOG.md"
       },
       {
@@ -300,8 +300,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 10,
-        "lines": 428,
+        "commits": 11,
+        "lines": 435,
         "path": "atlas/README.md"
       },
       {
@@ -310,18 +310,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 10,
-        "lines": 1553,
+        "commits": 11,
+        "lines": 1579,
         "path": "atlas/page.json"
       },
       {
-        "commits": 10,
-        "lines": 53248,
+        "commits": 11,
+        "lines": 53344,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 10,
-        "lines": 30798,
+        "commits": 11,
+        "lines": 30859,
         "path": "atlas/structure.json"
       },
       {
@@ -370,8 +370,8 @@
         "path": "docs/internal/WAVE_PLAN.md"
       },
       {
-        "commits": 3,
-        "lines": 303,
+        "commits": 4,
+        "lines": 313,
         "path": "lib/adapters/ai-toolkit.js"
       },
       {
@@ -540,8 +540,8 @@
         "path": "lib/judgment-provenance.js"
       },
       {
-        "commits": 1,
-        "lines": 668,
+        "commits": 2,
+        "lines": 670,
         "path": "lib/lane1-render.js"
       },
       {
@@ -7080,23 +7080,23 @@
         "path": "scripts/card.js"
       },
       {
-        "commits": 1,
-        "lines": 14,
+        "commits": 2,
+        "lines": 35,
         "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
       },
       {
-        "commits": 1,
-        "lines": 45,
+        "commits": 2,
+        "lines": 90,
         "path": "scripts/colab/ai-toolkit-override-py315.txt"
       },
       {
-        "commits": 3,
-        "lines": 699,
+        "commits": 4,
+        "lines": 730,
         "path": "scripts/colab/colab_window.sh"
       },
       {
-        "commits": 1,
-        "lines": 970,
+        "commits": 2,
+        "lines": 974,
         "path": "scripts/colab/lane1_render.py"
       },
       {
@@ -7105,14 +7105,44 @@
         "path": "scripts/colab/launch_guards.py"
       },
       {
-        "commits": 4,
-        "lines": 397,
+        "commits": 5,
+        "lines": 477,
         "path": "scripts/colab/launch_lane1_stub.sh"
       },
       {
-        "commits": 4,
-        "lines": 468,
+        "commits": 5,
+        "lines": 611,
         "path": "scripts/colab/launch_lane3_stub.sh"
+      },
+      {
+        "commits": 1,
+        "lines": 30,
+        "path": "scripts/colab/locks/lane1.in"
+      },
+      {
+        "commits": 1,
+        "lines": 2351,
+        "path": "scripts/colab/locks/lane1.lock"
+      },
+      {
+        "commits": 1,
+        "lines": 25,
+        "path": "scripts/colab/locks/lane3-local-wheels.json"
+      },
+      {
+        "commits": 1,
+        "lines": 48,
+        "path": "scripts/colab/locks/lane3.in"
+      },
+      {
+        "commits": 1,
+        "lines": 3061,
+        "path": "scripts/colab/locks/lane3.lock"
+      },
+      {
+        "commits": 1,
+        "lines": 231,
+        "path": "scripts/colab/preflight_resolve.sh"
       },
       {
         "commits": 1,
@@ -7425,8 +7455,8 @@
         "path": "tests/colab/fixtures/colab_help.txt"
       },
       {
-        "commits": 3,
-        "lines": 958,
+        "commits": 4,
+        "lines": 1016,
         "path": "tests/colab/fixtures/fake_colab.py"
       },
       {
@@ -7440,13 +7470,13 @@
         "path": "tests/colab/test_launch_guards.py"
       },
       {
-        "commits": 4,
-        "lines": 1184,
+        "commits": 5,
+        "lines": 1313,
         "path": "tests/colab/test_launch_lane1_stub.py"
       },
       {
-        "commits": 4,
-        "lines": 901,
+        "commits": 5,
+        "lines": 1064,
         "path": "tests/colab/test_launch_lane3_stub.py"
       },
       {
@@ -7625,8 +7655,8 @@
         "path": "tests/lib-pipeline/comfyui-workflows.test.js"
       },
       {
-        "commits": 1,
-        "lines": 639,
+        "commits": 2,
+        "lines": 643,
         "path": "tests/lib-pipeline/lane1-render.test.js"
       },
       {
@@ -7635,8 +7665,8 @@
         "path": "tests/lib-pipeline/lane2-canon-memory.test.js"
       },
       {
-        "commits": 2,
-        "lines": 541,
+        "commits": 3,
+        "lines": 549,
         "path": "tests/lib-pipeline/lane3-train-guards.test.js"
       },
       {
@@ -7730,24 +7760,17 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T23:19:36.552Z",
+  "generatedAt": "2026-11-05T23:32:38.709Z",
   "generatedFrom": {
-    "commit": "fb44a38142bc0988194c1316357bdb5a407daab3"
+    "commit": "bbb779d0ee2d50ee1c7d39db7144c87b6b3990ab"
   },
   "pairs": [
     {
       "a": "CHANGELOG.md",
-      "b": "README.md",
-      "either": 8,
-      "shared": 4,
-      "strength": 0.5
-    },
-    {
-      "a": "CHANGELOG.md",
       "b": "package.json",
-      "either": 6,
+      "either": 7,
       "shared": 4,
-      "strength": 0.666667
+      "strength": 0.571429
     },
     {
       "a": "README.md",
@@ -7759,43 +7782,43 @@
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
-      "either": 8,
-      "shared": 8,
+      "either": 9,
+      "shared": 9,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/statistics.json",
-      "either": 8,
-      "shared": 8,
+      "either": 9,
+      "shared": 9,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/structure.json",
-      "either": 8,
-      "shared": 8,
+      "either": 9,
+      "shared": 9,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/statistics.json",
-      "either": 8,
-      "shared": 8,
+      "either": 9,
+      "shared": 9,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/structure.json",
-      "either": 8,
-      "shared": 8,
+      "either": 9,
+      "shared": 9,
       "strength": 1
     },
     {
       "a": "atlas/statistics.json",
       "b": "atlas/structure.json",
-      "either": 8,
-      "shared": 8,
+      "either": 9,
+      "shared": 9,
       "strength": 1
     },
     {
@@ -7804,6 +7827,48 @@
       "either": 7,
       "shared": 4,
       "strength": 0.571429
+    },
+    {
+      "a": "scripts/colab/launch_lane1_stub.sh",
+      "b": "scripts/colab/launch_lane3_stub.sh",
+      "either": 6,
+      "shared": 4,
+      "strength": 0.666667
+    },
+    {
+      "a": "scripts/colab/launch_lane1_stub.sh",
+      "b": "tests/colab/test_launch_lane1_stub.py",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "scripts/colab/launch_lane1_stub.sh",
+      "b": "tests/colab/test_launch_lane3_stub.py",
+      "either": 6,
+      "shared": 4,
+      "strength": 0.666667
+    },
+    {
+      "a": "scripts/colab/launch_lane3_stub.sh",
+      "b": "tests/colab/test_launch_lane1_stub.py",
+      "either": 6,
+      "shared": 4,
+      "strength": 0.666667
+    },
+    {
+      "a": "scripts/colab/launch_lane3_stub.sh",
+      "b": "tests/colab/test_launch_lane3_stub.py",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "tests/colab/test_launch_lane1_stub.py",
+      "b": "tests/colab/test_launch_lane3_stub.py",
+      "either": 6,
+      "shared": 4,
+      "strength": 0.666667
     }
   ],
   "parameters": {
@@ -7816,16 +7881,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T17:51:41-05:00",
-    "inScopeFiles": 3265,
+    "headDate": "2026-11-05T18:26:28-05:00",
+    "inScopeFiles": 3271,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 109,
+    "qualifyingCommits": 110,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T22:51:41.000Z",
+    "since": "2026-05-09T23:26:28.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

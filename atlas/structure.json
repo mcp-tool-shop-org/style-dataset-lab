@@ -16112,7 +16112,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "7e73581baf842b428ab534a88e5d69ac383f0d22fe2abc594fe89d3410b7541f",
+          "hash": "7bf909a9b30934723b7bce46a29d825d9d7099653572f1e1b8923934e0aefcf1",
           "path": "CHANGELOG.md"
         },
         {
@@ -16180,11 +16180,11 @@
           "path": "codecov.yml"
         },
         {
-          "hash": "dc9478b1bb329677922feaa47f9738593b13959920d88e5163d1ac6728666f1a",
+          "hash": "1db74c1295fda3e3565fc77411e32f6b55dd347f47378ed53eb6cd9fe0018902",
           "path": "package-lock.json"
         },
         {
-          "hash": "7b46040669b6346827cfc12c5165b22b154a56abd932a1643d56ef8d695589f2",
+          "hash": "c9a93519aac4c2f21368310499dfd63630f175277524a3c731f50213f7827b13",
           "path": "package.json"
         }
       ],
@@ -17098,6 +17098,30 @@
         {
           "hash": "6cc717610670d0f6865d3aaf57cb013fe1c9bd789ce8c2366a2e98d6b17ee81d",
           "path": "scripts/colab/launch_lane3_stub.sh"
+        },
+        {
+          "hash": "c14de38ba41776ac17e961e8020b10bdb67982688f6811aeba12c844dc81051f",
+          "path": "scripts/colab/locks/lane1.in"
+        },
+        {
+          "hash": "eda267efc8ba491ec472e01d63339478728970b640abcef79b19d80e2a97bd1e",
+          "path": "scripts/colab/locks/lane1.lock"
+        },
+        {
+          "hash": "acef251e75cf364f057de5da82d356eee293748245b5d66452ac99916c8df1e7",
+          "path": "scripts/colab/locks/lane3-local-wheels.json"
+        },
+        {
+          "hash": "08252614c01c8042db6b89178b2e3a9744a3d7cc36e6e1c0cf7c3270f0f1f051",
+          "path": "scripts/colab/locks/lane3.in"
+        },
+        {
+          "hash": "09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286",
+          "path": "scripts/colab/locks/lane3.lock"
+        },
+        {
+          "hash": "e9f1a287707098ff482d1d665eacfac5372c183fa924c06ca4361b0dc91b2ef3",
+          "path": "scripts/colab/preflight_resolve.sh"
         },
         {
           "exports": [
@@ -20194,7 +20218,7 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "31e47cd540f34a80abb85adaa27b8aa2b55c6ee0e6273e5ffcc5d9146339b974",
+          "hash": "3622f1c28b89c1704e2b868bd03f3662bb413e0df7289e150ba088fdbe2cf91d",
           "importOrder": [
             "lib/adapters/ai-toolkit.js",
             "lib/train-runs.js",
@@ -20665,6 +20689,11 @@
           "files": 1
         },
         {
+          "boundary": "scripts",
+          "depth": 0,
+          "files": 44
+        },
+        {
           "boundary": "tests",
           "depth": 0,
           "files": 109
@@ -20677,15 +20706,6 @@
             "from": "bin/sdlab.js"
           },
           "files": 82
-        },
-        {
-          "boundary": "scripts",
-          "depth": 1,
-          "enters": {
-            "file": "scripts/critique-show.js",
-            "from": "bin/sdlab.js"
-          },
-          "files": 43
         }
       ],
       "readers": [],
@@ -20693,6 +20713,11 @@
         {
           "job": "verify",
           "path": "bin/sdlab.js",
+          "runKind": "executes"
+        },
+        {
+          "job": "verify",
+          "path": "scripts/colab/preflight_resolve.sh",
           "runKind": "executes"
         },
         {
@@ -20889,7 +20914,7 @@
           "runKind": "executes"
         }
       ],
-      "runsCount": 32,
+      "runsCount": 33,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -21623,8 +21648,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "fb44a38142bc0988194c1316357bdb5a407daab3",
-    "tracked": 3260
+    "commit": "bbb779d0ee2d50ee1c7d39db7144c87b6b3990ab",
+    "tracked": 3266
   },
   "landings": [
     {
@@ -24191,9 +24216,58 @@
     {
       "readers": [
         {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "scripts/colab/locks/lane1.in",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "scripts/colab/locks/lane1.lock",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "scripts/colab/locks/lane3.in",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "lib/adapters/ai-toolkit.js",
+          "call": "literal",
+          "confidence": "ast"
+        },
+        {
           "by": "lib/adapters/ai-toolkit.js",
           "call": "readFileSync",
           "confidence": "ast"
+        },
+        {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        },
+        {
+          "by": "tests/lib-pipeline/lane3-train-guards.test.js",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
         }
       ],
       "target": "scripts/colab/locks/lane3.lock",
