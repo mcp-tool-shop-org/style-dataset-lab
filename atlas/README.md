@@ -1,26 +1,27 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit a881cb5 by Atlas 1.24.0.
+Mapped at 2026-11-05 from commit 8004ec8 by Atlas 1.24.0.
 
 ## What this is
 
-13 parts, mostly JSON data (2616 files); code in JavaScript (236), Python (31), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
+13 parts, mostly JSON data (2616 files); code in JavaScript (236), Python (33), Astro (3), PowerShell (3), CSS (2), HTML (2), TypeScript (2) and shell (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-10-01 (dfeac64)
+## What changed since 2026-11-05 (a881cb5)
 
-- scripts/colab/ai-toolkit-override-py315.txt is now read by lib/adapters/ai-toolkit.js.
-- 5 files added and 2 changed content, across 4 parts.
+- CI's push trigger now also names `scripts/colab/**` and `tests/**/*.py`.
+- CI now also runs tests/colab/.
+- 5 files added and 4 changed content, across 4 parts.
 
 ## What comes in
 
-1. **CI.** On a pull request; on a push touching 14 paths; or by hand. Runs bin/sdlab.js, tests/canon-star-freight/, tests/cli-scripts/ and 71 more.
+1. **CI.** On a pull request; on a push touching 16 paths; or by hand. Runs bin/sdlab.js, tests/colab/, tests/canon-star-freight/ and 94 more.
 2. **Publish.** When a release is published; or by hand. Runs bin/sdlab.js, tests/canon-star-freight/, tests/cli-scripts/ and 71 more.
 3. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 4. **sdlab** (a command people run). Runs bin/sdlab.js.
 
 ## What happens through CI
 
-1. The workflow runs bin/sdlab.js in bin and 97 files in tests.
+1. The workflow runs bin/sdlab.js in bin and 99 files in tests.
    1. Inside bin/sdlab.js, `main` does, in order: `enableDebug` (lib) and `setLogLevel`.
    2. Or, for an entry of `namespaces` where `command === head`, `main` does `findClosest` (lib) and `inputError` instead.
    3. Or, when `command === 'critique'`, `main` does `run` (scripts) instead.
@@ -37,7 +38,7 @@ Mapped at 2026-11-05 from commit a881cb5 by Atlas 1.24.0.
       8. `info`
    7. **`run`** (scripts) runs, in order: `parseArgs` (lib), `getProjectName`, `getProjectRoot`, `loadCritique`, `getRunsDir`, `refine-briefs.js` (3 steps) and `info`.
    8. **`run`** (scripts) runs, in order: `parseArgs` (lib), `getProjectName`, `getProjectRoot`, `selections.js` (3 steps) and `info`.
-2. That reaches lib (76 files) and scripts (39 files).
+2. That reaches lib (76 files) and scripts (40 files).
 3. It uploads coverage to Codecov.
 
 ## Who reads the results
@@ -65,7 +66,7 @@ CI writes nothing this map can see.
 
 No two source files changed together often enough to name.
 
-Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do.
+Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do.
 
 ## What no test touches
 
@@ -117,7 +118,7 @@ Read those in order to follow one pull request end to end.
 - 4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.
 - 38 writes and 72 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
-- 122 writes and 225 reads go to a path their caller passes, not to this repository.
+- 123 writes and 228 reads go to a path their caller passes, not to this repository.
 - 12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.
 - 7 reads go to the directory the command is run in, not to this repository.
 - 1 write and 2 reads go to a temporary directory, not to this repository.

@@ -44,6 +44,17 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+SELF_PIN_LINE_RE = re.compile(rb'^(PINNED_SELF_SHA=")[0-9a-fA-F]{64}(")', flags=re.M)
+
+
+def sha256_self_normalized(path: Path) -> tuple[str | None, str]:
+    raw = Path(path).read_bytes()
+    m = re.search(rb'^PINNED_SELF_SHA="([0-9a-fA-F]{64})"', raw, flags=re.M)
+    embedded_pin = m.group(1).decode("ascii").lower() if m else None
+    norm_bytes = SELF_PIN_LINE_RE.sub(rb"\1\2", raw, count=1)
+    return embedded_pin, hashlib.sha256(norm_bytes).hexdigest()
+
+
 def normalize_hex_sha(val: str) -> str:
     s = str(val).strip().lower()
     if s.startswith("sha256:"):
@@ -60,9 +71,13 @@ def verify_input_shas(expected_shas: dict[str, str]) -> dict[str, str]:
         exp = normalize_hex_sha(exp_raw)
         got = sha256_file(p)
         if got != exp:
-            raise ValueError(
-                f"REFUSED: INPUT_SHA_MISMATCH for {p}: got {got}, expected {exp}"
-            )
+            embedded_pin, norm_got = sha256_self_normalized(p)
+            if embedded_pin is not None and exp == norm_got and embedded_pin == norm_got:
+                got = norm_got
+            else:
+                raise ValueError(
+                    f"REFUSED: INPUT_SHA_MISMATCH for {p}: got {got}, expected {exp}"
+                )
         verified[file_str] = got
     return verified
 

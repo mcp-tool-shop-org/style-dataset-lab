@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "d7404db0fa4a252237e72499c4169e0275ed60395fbbb42907daf200037ddfbf",
+          "hash": "58fb1f6438a692063c31e0c43a8c8e1c7a8911ee1f72fdba7814950f16c98829",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -15542,7 +15542,11 @@
       "externals": 0,
       "files": [
         {
-          "hash": "425ad7b1ef1d88fa45f25078420c7c417b2e8c345d4799ba5b3c0a5a69c6eba7",
+          "hash": "f657b35f0a7c8d7e27db46b0a965ada347f4c79d55a6e69e920728ea82ec47e3",
+          "path": ".gitattributes"
+        },
+        {
+          "hash": "65e64ecb33c5f4ec9d7af6103c1b0d90beee7b55b79115f138ef76b594ffdace",
           "path": ".gitignore"
         },
         {
@@ -15610,7 +15614,7 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "59ca3f6a5be96b80fee73bebf2b778211208d17cd3fb82e2134608dff0729c76",
+          "hash": "9a956260d11b53d157c882bfcc6af84eccff7df59da3fc89cbaef07da0bedcdb",
           "path": "codecov.yml"
         },
         {
@@ -16221,33 +16225,67 @@
           "path": "scripts/colab/ai-toolkit-override-py315.txt"
         },
         {
+          "hash": "7b8f3059b4a103682777c8654d94f7eb9036fdcc10c79a9cc7b3c74dc59ee372",
+          "path": "scripts/colab/colab_window.sh"
+        },
+        {
           "exports": [
             "check_host_ram_projection",
             "evaluate_cap_guard",
             "evaluate_vitals_and_stall_guard",
             "evaluate_wall_guard",
             "main",
+            "normalize_hex_sha",
             "parse_vitals_log",
-            "run_between_item_fetch"
+            "run_between_item_fetch",
+            "scrub_colab_tokens",
+            "scrub_file_in_place",
+            "sha256_file",
+            "sha256_self_normalized",
+            "verify_input_shas"
           ],
           "failurePaths": [
             {
+              "in": "verify_input_shas",
+              "kind": "raise",
+              "line": 70
+            },
+            {
+              "in": "verify_input_shas",
+              "kind": "raise",
+              "line": 78
+            },
+            {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 92
+              "line": 172
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 142
+              "line": 257
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 323
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 342
             },
             {
               "kind": "raise",
-              "line": 191
+              "line": 371
             }
           ],
-          "hash": "0288d9905fafde1114cda03c9bc014815f80e0f56d5dd2f9c70c5ea5ad89fadd",
+          "hash": "82812c78ad2fa4fdc7631264cf335e148951d0b7abe54cffe74f12e897290e25",
           "path": "scripts/colab/launch_guards.py"
+        },
+        {
+          "hash": "c1040fb887211a6b8a7681d39d04809d595122d4f1515db67f6aa5c91a178003",
+          "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
           "exports": [
@@ -17849,11 +17887,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 21,
+          "reads": 24,
           "where": [
             "caller"
           ],
-          "writes": 13
+          "writes": 14
         },
         {
           "reads": 2,
@@ -17871,13 +17909,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 24,
-      "outsideWrites": 25,
+      "outsideReads": 27,
+      "outsideWrites": 26,
       "role": "code",
       "testRunners": [
-        "node --test"
+        "node --test",
+        "pytest"
       ],
-      "testedBy": 19,
+      "testedBy": 20,
       "unresolvedSites": 0
     },
     {
@@ -18541,6 +18580,36 @@
           ],
           "path": "tests/cli-scripts/qwen-python-parity.test.js",
           "testFramework": "node --test"
+        },
+        {
+          "exports": [
+            "test_between_item_fetch_copies_files_before_resetting_current_json",
+            "test_cap_guard_trips_on_fixture_and_stays_quiet_just_under",
+            "test_dead_harness_on_cgroup_oom_fixture_trips_and_stays_quiet_just_under",
+            "test_host_ram_projection_trips_and_stays_quiet_just_under",
+            "test_verify_input_shas_and_scrub_tokens_and_cli",
+            "test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under",
+            "test_wall_guard_trips_on_fixture_and_stays_quiet_just_under"
+          ],
+          "hash": "a0d6b87dadb20ea2c47f76a1744f9d5249aa21ae5d1510435906c5e23e71a9f1",
+          "importsFiles": [
+            "scripts/colab/launch_guards.py"
+          ],
+          "path": "tests/colab/test_launch_guards.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json",
+            "test_real_colab_cli_guard_refuses_when_not_fake",
+            "test_sha_refusal_before_opening_session",
+            "test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap",
+            "test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_verifies_checkpoint",
+            "test_trap_stops_session_on_command_failure_and_wall"
+          ],
+          "hash": "81476266f700f6df28f96bb7cced2b7fe5668015ff8384fbd78709a21df5b43f",
+          "path": "tests/colab/test_launch_lane3_stub.py",
+          "testFramework": "pytest"
         },
         {
           "hash": "2494c82673dea71514b707801c820353d9a7a79aa2620e55a8f87a731b6b7b13",
@@ -19376,7 +19445,8 @@
       "origin": "authored",
       "role": "test",
       "testRunners": [
-        "node --test"
+        "node --test",
+        "pytest"
       ],
       "testedBy": 0,
       "unresolvedNamed": [
@@ -19499,6 +19569,18 @@
             "npm"
           ],
           "step": "Coverage (Node 22 only)"
+        },
+        {
+          "dir": "",
+          "job": "verify",
+          "programs": [
+            ".venv-ci/bin/python",
+            "pipx",
+            "pwd",
+            "python3",
+            "uv"
+          ],
+          "step": "Python tests and coverage (Node 22 only)"
         }
       ],
       "elsewhere": [],
@@ -19571,7 +19653,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 101
+          "files": 103
         },
         {
           "boundary": "lib",
@@ -19589,7 +19671,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 39
+          "files": 40
         }
       ],
       "readers": [],
@@ -19611,6 +19693,12 @@
           "job": "verify",
           "matched": true,
           "path": "tests/cli-scripts/",
+          "runKind": "executes"
+        },
+        {
+          "directory": true,
+          "job": "verify",
+          "path": "tests/colab/",
           "runKind": "executes"
         },
         {
@@ -19787,7 +19875,7 @@
           "runKind": "executes"
         }
       ],
-      "runsCount": 31,
+      "runsCount": 32,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -19861,6 +19949,13 @@
             "npm run coverage",
             "npm test"
           ]
+        },
+        {
+          "coverage": true,
+          "files": 2,
+          "job": "verify",
+          "runner": "pytest",
+          "step": "Python tests and coverage (Node 22 only)"
         }
       ],
       "triggers": [
@@ -19880,10 +19975,12 @@
             "runtime/**",
             "schemas/**",
             "scripts/**",
+            "scripts/colab/**",
             "site/astro.config.mjs",
             "site/package-lock.json",
             "site/package.json",
-            "tests/**"
+            "tests/**",
+            "tests/**/*.py"
           ]
         },
         {
@@ -20512,8 +20609,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "a881cb5ba656e0618080d2269498fda7f36ac93a",
-    "tracked": 3236
+    "commit": "8004ec888e5c50c7a1a4e1c2526869659e6faaac",
+    "tracked": 3241
   },
   "landings": [
     {
@@ -23338,7 +23435,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 103,
+  "testFiles": 105,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

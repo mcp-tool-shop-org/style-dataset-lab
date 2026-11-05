@@ -53,7 +53,22 @@ shift || true
 
 case "${sub}" in
   usage)
-    echo '{"balance_ccu": 9.85, "rate_ccu_per_hour": 0.08}'
+    count_file="${STATE_DIR}/usage_count.txt"
+    c=0
+    if [ -f "${count_file}" ]; then
+      c="$(cat "${count_file}")"
+    fi
+    c=$((c + 1))
+    echo "${c}" > "${count_file}"
+    if [ "${FAKE_COLAB_MODE:-success}" = "cap_burn" ] && [ "${c}" -ge 2 ]; then
+      echo '{"balance_ccu": 9.75, "rate_ccu_per_hour": 0.26}'
+    else
+      echo '{"balance_ccu": 9.85, "rate_ccu_per_hour": 0.26}'
+    fi
+    ;;
+  sessions)
+    echo "SESSION_LIST_AFTER_STOP" >> "${STATE_DIR}/sessions.log"
+    echo "No active sessions."
     ;;
   new)
     if command -v flock >/dev/null 2>&1; then
@@ -85,11 +100,50 @@ case "${sub}" in
         sleep 0.2
       done
       exit 0
+    elif [ "${FAKE_COLAB_MODE:-success}" = "dead_harness" ]; then
+      echo "=== VITALS 2026-11-05T12:01:00Z ==="
+      echo "CGROUP_MEM: oom_kill 0"
+      echo "MEM: MemTotal: 13290000 kB"
+      echo "PROC:"
+      echo 'HARNESS: {"phase": "run", "step": 1}'
+      echo "=== VITALS 2026-11-05T12:01:15Z ==="
+      echo "CGROUP_MEM: oom_kill 0"
+      echo "MEM: MemTotal: 13290000 kB"
+      echo "PROC:"
+      echo 'HARNESS: {"phase": "run", "step": 1}'
+      for _ in $(seq 1 60); do
+        sleep 0.2
+      done
+      exit 0
+    elif [ "${FAKE_COLAB_MODE:-success}" = "stall" ]; then
+      echo "=== VITALS 2026-11-05T12:00:00Z ==="
+      echo "MEM: MemTotal: 13290000 kB"
+      echo "PROC:"
+      echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+      echo 'HARNESS: {"phase": "run", "step": 1}'
+      for _ in $(seq 1 60); do
+        sleep 0.2
+      done
+      exit 0
+    elif [ "${FAKE_COLAB_MODE:-success}" = "cap_burn" ]; then
+      echo "=== VITALS 2026-11-05T12:00:00Z ==="
+      echo "MEM: MemTotal: 13290000 kB"
+      echo "PROC:"
+      echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+      echo 'HARNESS: {"phase": "run", "step": 1}'
+      for _ in $(seq 1 60); do
+        sleep 0.2
+      done
+      exit 0
     fi
     echo "=== VITALS 2026-11-05T12:00:00Z ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "MEM: MemTotal: 12582912 kB"
     echo "PROC:"
-    echo "101 python3 /content/ai-toolkit/run.py job.yaml"
+    echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
     echo 'HARNESS: {"phase": "run", "step": 1}'
+    echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "73ebae1334d2c98089f1b90f8cb19257825f891a", "override_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
     echo "LANE3_STUB_OK python=3.15.1 sentencepiece=0.2.1 checkpoint_written=true"
     ;;
   download)
@@ -247,3 +301,130 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
     )
     assert res_wall.returncode != 0
     assert "STOP -s sdlab-l3-wall" in (state_dir_wall / "stops.log").read_text(encoding="utf-8")
+
+
+def test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_verifies_checkpoint(tmp_path: Path) -> None:
+    kit_text = LAUNCHER.read_text(encoding="utf-8")
+    for required_var in (
+        "PINNED_UV_VERSION=",
+        "PINNED_PYTHON_VERSION=",
+        "PINNED_PYTORCH_INDEX_URL=",
+        "PINNED_AI_TOOLKIT_REPO=",
+        "PINNED_AI_TOOLKIT_COMMIT=",
+        "PINNED_OVERRIDE_SHA=",
+        "PINNED_LAUNCH_GUARDS_SHA=",
+        "PINNED_COLAB_WINDOW_SHA=",
+        "PINNED_SELF_SHA=",
+    ):
+        assert required_var in kit_text, f"Missing top-of-kit pin variable {required_var}"
+
+    # Filters av and torchcodec before uv pip install --override with PyTorch cp315 index
+    assert "grep -Ev '^(av|torchcodec)" in kit_text
+    assert "https://download.pytorch.org/whl/cu130" in kit_text
+    assert "git -C /content/ai-toolkit checkout" in kit_text
+    # Generates synth_job.yaml for a 1-step CPU run and verifies .safetensors checkpoint exists
+    assert "/content/lane3_out/synth_job.yaml" in kit_text
+    assert "steps: 1" in kit_text
+    assert "device: cpu" in kit_text
+    assert "synth_lora.safetensors" in kit_text
+
+    # Self-sha refusal when EXPECTED_LAUNCH_LANE3_STUB_SHA mismatches
+    _, state_dir_self, env_self = _make_fake_colab_env(tmp_path / "self_sha_case")
+    env_self["EXPECTED_LAUNCH_LANE3_STUB_SHA"] = "0" * 64
+    out_self = tmp_path / "out_self_sha"
+    res_self = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_self)],
+        env=env_self,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_self.returncode != 0
+    assert "INPUT_SHA_MISMATCH" in (res_self.stdout + res_self.stderr)
+    assert not (state_dir_self / "calls.log").exists()
+
+
+def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json(tmp_path: Path) -> None:
+    # 1. DEAD_HARNESS_TRIPPED during live colab exec kills EXEC_PID and stops session
+    _, state_dh, env_dh = _make_fake_colab_env(tmp_path / "dh_case")
+    env_dh["FAKE_COLAB_MODE"] = "dead_harness"
+    env_dh["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_dh = tmp_path / "out_dh"
+    res_dh = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dh), "--session", "sdlab-l3-dh"],
+        env=env_dh,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_dh.returncode != 0
+    assert "DEAD_HARNESS_TRIPPED" in (out_dh / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-dh" in (state_dh / "stops.log").read_text(encoding="utf-8")
+
+    # 2. STALL_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session
+    _, state_st, env_st = _make_fake_colab_env(tmp_path / "stall_case")
+    env_st["FAKE_COLAB_MODE"] = "stall"
+    env_st["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_st["STALL_S"] = "1"
+    out_st = tmp_path / "out_stall"
+    res_st = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_st), "--session", "sdlab-l3-stall"],
+        env=env_st,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_st.returncode != 0
+    assert "STALL_GUARD_TRIPPED" in (out_st / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-stall" in (state_st / "stops.log").read_text(encoding="utf-8")
+
+    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session
+    _, state_cap, env_cap = _make_fake_colab_env(tmp_path / "cap_case")
+    env_cap["FAKE_COLAB_MODE"] = "cap_burn"
+    env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_cap = tmp_path / "out_cap"
+    res_cap = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l3-cap", "--cap", "0.05", "--margin", "0.01"],
+        env=env_cap,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_cap.returncode != 0
+    assert "CAP_GUARD_TRIPPED" in (out_cap / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-cap" in (state_cap / "stops.log").read_text(encoding="utf-8")
+
+    # 4. Normal success merges VM facts (including checkpoint_path), balances, rate_measured, downloaded_files sha, and logs sessions + closing usage
+    _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "merge_case")
+    env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_ok = tmp_path / "out_merge"
+    res_ok = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_ok), "--session", "sdlab-l3-merge"],
+        env=env_ok,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_ok.returncode == 0
+    win = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
+    assert win["system_python"] == "3.13.16"
+    assert win["python"] == "3.15.1"
+    assert win["checkpoint_path"] == "/content/lane3_out/checkpoints/synth_lora.safetensors"
+    assert win["start_balance"] == 9.85
+    assert win["end_balance"] == 9.85
+    assert win["rate_measured"] == 0.26
+    assert "lane3_stub_bundle.tar.gz" in win["downloaded_files"]
+    assert (state_ok / "sessions.log").exists()
+    remote_sh = (out_ok / "remote_lane3_stub.sh").read_text(encoding="utf-8")
+    assert "--scrub-file" in remote_sh
+

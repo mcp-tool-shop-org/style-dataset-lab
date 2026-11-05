@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared Colab window lifecycle, lock, wall/cap/vitals/RAM guards, token scrubber, and EXIT trap.
+# Shared Colab window lifecycle, lock, live wall/cap/vitals/RAM guards, token scrubber, and EXIT trap.
 set -euo pipefail
 
 colab_resolve_python() {
@@ -40,6 +40,68 @@ colab_verify_input_shas() {
   "${py_bin}" "${guards_py}" "${args[@]}" </dev/null
 }
 
+colab_poll_usage_and_ram() {
+  local py_bin="$1"
+  local out_dir="$2"
+  local default_rate="${RATE_CCU_PER_HOUR:-0.26}"
+
+  local usage_json
+  usage_json="$(colab usage </dev/null 2>>"${out_dir}/colab.log" || echo "{\"balance_ccu\":10.0,\"rate_ccu_per_hour\":${default_rate}}")"
+  echo "${usage_json}" >> "${out_dir}/usage.log"
+
+  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_json}" << 'PYEOF'
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+out_dir = Path(sys.argv[1])
+default_rate = float(sys.argv[2])
+raw_usage = sys.argv[3]
+
+bal = 10.0
+rate = default_rate
+try:
+    parsed = json.loads(raw_usage)
+    if parsed.get("balance_ccu") is not None:
+        bal = float(parsed["balance_ccu"])
+    if parsed.get("rate_ccu_per_hour") is not None:
+        rate = float(parsed["rate_ccu_per_hour"])
+except Exception:
+    pass
+
+start_f = out_dir / "start_balance.txt"
+if not start_f.exists():
+    start_f.write_text(f"{bal}\n", encoding="utf-8", newline="\n")
+start_bal = float(start_f.read_text(encoding="utf-8").strip())
+(out_dir / "end_balance.txt").write_text(f"{bal}\n", encoding="utf-8", newline="\n")
+(out_dir / "rate_measured.txt").write_text(f"{rate}\n", encoding="utf-8", newline="\n")
+
+# Parse VM /proc/meminfo and cgroup memory from vitals.log when present
+anon_mb = float(os.environ.get("CURRENT_ANON_MB", "512")) if "os" in sys.modules else 512.0
+mem_total_mb = 12288.0
+cgroup_max_mb = ""
+vitals_f = out_dir / "vitals.log"
+if vitals_f.exists():
+    vtxt = vitals_f.read_text(encoding="utf-8", errors="replace")
+    m_tot = re.findall(r"MemTotal:\s*(\d+)\s*kB", vtxt)
+    if m_tot:
+        mem_total_mb = round(int(m_tot[-1]) / 1024.0, 1)
+    m_anon = re.findall(r"AnonPages:\s*(\d+)\s*kB", vtxt)
+    if m_anon:
+        anon_mb = round(int(m_anon[-1]) / 1024.0, 1)
+    m_cg_cur = re.findall(r"CGROUP_MEM_CURRENT:\s*(\d+)", vtxt)
+    if m_cg_cur:
+        anon_mb = round(int(m_cg_cur[-1]) / (1024.0 * 1024.0), 1)
+    m_cg_max = re.findall(r"CGROUP_MEM_MAX:\s*(\d+)", vtxt)
+    if m_cg_max:
+        cgroup_max_mb = str(round(int(m_cg_max[-1]) / (1024.0 * 1024.0), 1))
+
+print(f"{start_bal} {bal} {rate} {anon_mb} {mem_total_mb} {cgroup_max_mb}")
+PYEOF
+}
+
 colab_check_cap_and_ram() {
   local py_bin="$1"
   local guards_py="$2"
@@ -51,9 +113,10 @@ colab_check_cap_and_ram() {
   local margin="$8"
   local out_dir="$9"
 
-  local usage_json
-  usage_json="$(colab usage </dev/null 2>>"${out_dir}/colab.log" || echo '{"balance_ccu":10.0,"rate_ccu_per_hour":0.08}')"
-  echo "${usage_json}" >> "${out_dir}/usage.log"
+  local metrics
+  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")"
+  local start_bal cur_bal rate_val anon_mb mem_total_mb cgroup_max_mb
+  read -r start_bal cur_bal rate_val anon_mb mem_total_mb cgroup_max_mb <<< "${metrics}"
 
   "${py_bin}" "${guards_py}" \
     --mode "${mode}" \
@@ -62,13 +125,102 @@ colab_check_cap_and_ram() {
     --grace-s "${grace_s}" \
     --cap "${cap}" \
     --margin "${margin}" \
-    --rate "0.08" </dev/null >> "${out_dir}/guards.log"
+    --rate "${rate_val:-0.26}" \
+    --start-balance "${start_bal}" \
+    --current-balance "${cur_bal}" </dev/null >> "${out_dir}/guards.log"
 
-  "${py_bin}" "${guards_py}" \
-    --check-ram \
-    --current-anon-mb "${CURRENT_ANON_MB:-512}" \
-    --projected-delta-mb "${PROJECTED_DELTA_MB:-2048}" \
-    --mem-total-mb "${MEM_TOTAL_MB:-12288}" </dev/null >> "${out_dir}/guards.log"
+  local ram_args=(
+    "--check-ram"
+    "--current-anon-mb" "${CURRENT_ANON_MB:-${anon_mb:-512}}"
+    "--projected-delta-mb" "${PROJECTED_DELTA_MB:-2048}"
+    "--mem-total-mb" "${MEM_TOTAL_MB:-${mem_total_mb:-12288}}"
+  )
+  if [ -n "${cgroup_max_mb:-}" ]; then
+    ram_args+=("--cgroup-max-mb" "${cgroup_max_mb}")
+  fi
+  "${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null >> "${out_dir}/guards.log"
+}
+
+colab_run_exec_with_live_guards() {
+  local py_bin="$1"
+  local guards_py="$2"
+  local session="$3"
+  local remote_cmd="$4"
+  local start_epoch="$5"
+  local wall_s="$6"
+  local grace_s="$7"
+  local cap="$8"
+  local margin="$9"
+  local out_dir="${10}"
+
+  local poll_s="${GUARD_POLL_INTERVAL_S:-2}"
+  local stall_s="${STALL_S:-300}"
+  local last_size=0
+  local last_progress_epoch
+  last_progress_epoch="$(date -u +%s)"
+
+  colab exec -s "${session}" "${remote_cmd}" </dev/null > "${out_dir}/vitals.log" 2>&1 &
+  EXEC_PID="$!"
+
+  while kill -0 "${EXEC_PID}" 2>/dev/null; do
+    sleep "${poll_s}"
+    if ! kill -0 "${EXEC_PID}" 2>/dev/null; then
+      break
+    fi
+    local now_epoch elapsed_s cur_size idle_s
+    now_epoch="$(date -u +%s)"
+    elapsed_s="$((now_epoch - start_epoch))"
+
+    if ! colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}"; then
+      pkill -P "${EXEC_PID}" 2>/dev/null || true
+      kill -9 "${EXEC_PID}" 2>/dev/null || true
+      wait "${EXEC_PID}" 2>/dev/null || true
+      EXEC_PID=""
+      return 91
+    fi
+
+    cur_size="$(wc -c < "${out_dir}/vitals.log" 2>/dev/null | tr -d '[:space:]' || echo 0)"
+    if [ "${cur_size:-0}" != "${last_size}" ]; then
+      last_size="${cur_size:-0}"
+      last_progress_epoch="${now_epoch}"
+    fi
+    idle_s="$((now_epoch - last_progress_epoch))"
+
+    if ! "${py_bin}" "${guards_py}" \
+      --vitals-file "${out_dir}/vitals.log" \
+      --idle-seconds "${idle_s}" \
+      --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log"; then
+      pkill -P "${EXEC_PID}" 2>/dev/null || true
+      kill -9 "${EXEC_PID}" 2>/dev/null || true
+      wait "${EXEC_PID}" 2>/dev/null || true
+      EXEC_PID=""
+      return 93
+    fi
+  done
+
+  local exec_rc=0
+  wait "${EXEC_PID}" || exec_rc=$?
+  EXEC_PID=""
+
+  colab_scrub_all_logs "${py_bin}" "${guards_py}" "${out_dir}"
+  if [ "${exec_rc}" -ne 0 ]; then
+    return "${exec_rc}"
+  fi
+
+  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log"
+  local end_epoch elapsed_final
+  end_epoch="$(date -u +%s)"
+  elapsed_final="$((end_epoch - start_epoch))"
+  colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_final}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}"
+}
+
+colab_stop_and_log_closing() {
+  local py_bin="$1"
+  local session="$2"
+  local out_dir="$3"
+  colab stop -s "${session}" </dev/null >> "${out_dir}/colab.log" 2>&1 || true
+  colab sessions </dev/null >> "${out_dir}/colab.log" 2>&1 || true
+  colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
 }
 
 colab_open_session_locked() {
@@ -118,7 +270,7 @@ colab_scrub_all_logs() {
   local scrub_args=()
   while IFS= read -r -d '' f; do
     scrub_args+=("--scrub-file" "${f}")
-  done < <(find "${out_dir}" -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
+  done < <(find "${out_dir}" -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" -o -name "*.sh" \) -print0 2>/dev/null || true)
   if [ "${#scrub_args[@]}" -gt 0 ]; then
     "${py_bin}" "${guards_py}" "${scrub_args[@]}" </dev/null || true
   fi
@@ -140,8 +292,10 @@ colab_write_window_and_outcome() {
   local shas_json="${13}"
 
   "${py_bin}" - "${out_dir}" "${lane}" "${session}" "${card}" "${cap}" "${wall_s}" "${grace_s}" "${margin}" "${opened_at}" "${closed_at}" "${exit_code}" "${shas_json}" << 'PYEOF'
+import hashlib
 import json
 import sys
+import tarfile
 from pathlib import Path
 
 out_dir = Path(sys.argv[1])
@@ -158,7 +312,61 @@ exit_code = int(sys.argv[11])
 shas_raw = json.loads(sys.argv[12])
 
 out_dir.mkdir(parents=True, exist_ok=True)
+
+
+def sha256_path(p: Path) -> str:
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return "sha256:" + h.hexdigest()
+
+
+def read_float_file(p: Path) -> float | None:
+    if not p.exists():
+        return None
+    try:
+        return float(p.read_text(encoding="utf-8").strip())
+    except Exception:
+        return None
+
+
+vm_facts: dict = {}
+vm_win_file = out_dir / "vm_window.json"
+if vm_win_file.exists():
+    try:
+        vm_facts.update(json.loads(vm_win_file.read_text(encoding="utf-8")))
+    except Exception:
+        pass
+
+for tar_p in sorted(out_dir.glob("*.tar.gz")):
+    if tarfile.is_tarfile(tar_p):
+        try:
+            with tarfile.open(tar_p, "r:gz") as tf:
+                for member in tf.getmembers():
+                    if Path(member.name).name == "vm_window.json":
+                        ext = tf.extractfile(member)
+                        if ext is not None:
+                            vm_facts.update(json.loads(ext.read().decode("utf-8")))
+        except Exception:
+            pass
+
+vitals_p = out_dir / "vitals.log"
+if vitals_p.exists():
+    for line in vitals_p.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("WINDOW_JSON "):
+            try:
+                vm_facts.update(json.loads(line[len("WINDOW_JSON ") :].strip()))
+            except Exception:
+                pass
+
+downloaded_files: dict[str, str] = {}
+for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.safetensors"))):
+    if artifact.is_file():
+        downloaded_files[artifact.name] = sha256_path(artifact)
+
 window_payload = {
+    **vm_facts,
     "window_id": session,
     "lane": lane,
     "session": session,
@@ -167,7 +375,11 @@ window_payload = {
     "wall_s": wall_s,
     "grace_s": grace_s,
     "margin": margin,
+    "start_balance": read_float_file(out_dir / "start_balance.txt"),
+    "end_balance": read_float_file(out_dir / "end_balance.txt"),
+    "rate_measured": read_float_file(out_dir / "rate_measured.txt"),
     "input_shas": shas_raw.get("verified_shas", shas_raw),
+    "downloaded_files": downloaded_files,
     "opened_at": opened_at,
     "closed_at": closed_at,
     "exit_code": exit_code,
