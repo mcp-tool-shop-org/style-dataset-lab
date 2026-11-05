@@ -1,15 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit 5cbde31 by Atlas 1.24.0.
+Mapped at 2026-11-05 from commit abfd3b8 by Atlas 1.24.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2616 files); code in JavaScript (237), Python (30), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-05 (a881cb5)
+## What changed since 2026-11-05 (5cbde31)
 
-- bin/sdlab.js is now also read by tests/lib-pipeline/provenance-chain.test.js.
-- 4 files added, across 3 parts.
+Nothing structural changed since 2026-11-05; 15 files changed content.
 
 ## What comes in
 
@@ -117,7 +116,7 @@ Read those in order to follow one pull request end to end.
 - 4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.
 - 38 writes and 72 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
-- 112 writes and 238 reads go to a path their caller passes, not to this repository.
+- 112 writes and 240 reads go to a path their caller passes, not to this repository.
 - 12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.
 - 7 reads go to the directory the command is run in, not to this repository.
 - 1 write and 2 reads go to a temporary directory, not to this repository.

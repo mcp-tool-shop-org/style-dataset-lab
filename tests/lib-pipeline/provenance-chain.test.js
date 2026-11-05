@@ -23,6 +23,7 @@ import {
   isClearedLicenceEntry,
   assertClearedPinningLicences,
 } from '../../lib/run-manifest.js';
+import { hasModelSha256, normalizeModelFamilyKey } from '../../lib/model-licences.js';
 import { buildBaseRecord } from '../../lib/records.js';
 import { buildGeneratedProvenance, resolveCanonLink } from '../../lib/generated-provenance.js';
 import { reingestSelection } from '../../lib/reingest-selected.js';
@@ -76,6 +77,12 @@ async function makeValidProvenanceProject() {
     }, null, 2),
   );
 
+  const modelsDir = join(root, 'models');
+  await mkdir(modelsDir, { recursive: true });
+  await writeFile(join(modelsDir, 'qwen_image_fp8_e4m3fn.safetensors'), 'fake-unet-weights');
+  await writeFile(join(modelsDir, 'qwen_2.5_vl_7b_fp8_scaled.safetensors'), 'fake-clip-weights');
+  await writeFile(join(modelsDir, 'qwen_image_vae.safetensors'), 'fake-vae-weights');
+
   const sampleGraph = {
     37: { class_type: 'UNETLoader', inputs: { unet_name: 'qwen_image_fp8_e4m3fn.safetensors', weight_dtype: 'default' } },
     38: { class_type: 'CLIPLoader', inputs: { clip_name: 'qwen_2.5_vl_7b_fp8_scaled.safetensors', type: 'qwen_image' } },
@@ -91,8 +98,8 @@ async function makeValidProvenanceProject() {
     },
     loras: [],
     seedPolicy: 'explicit-per-item',
-    modelsDir: join(root, 'empty-models'),
-    doHash: false,
+    modelsDir,
+    hashModels: true,
   });
 
   await mkdir(join(projectRoot, 'runs', runId), { recursive: true });
@@ -196,7 +203,24 @@ test('G4: hashModelFile and buildPinning attach licence_id, licence_url, and dat
     },
   });
   assert.equal(customLora.cc_by_4_eligible, true);
-  assert.equal(isClearedLicenceEntry({ name: 'studio_hull_v1.safetensors', ...customLora, licence: customLora }), true);
+  assert.equal(
+    isClearedLicenceEntry({
+      name: 'studio_hull_v1.safetensors',
+      sha256: 'sha256:' + 'cc'.repeat(32),
+      ...customLora,
+      licence: customLora,
+    }),
+    true,
+  );
+  assert.equal(
+    isClearedLicenceEntry({
+      name: 'studio_hull_v1.safetensors',
+      sha256: null,
+      ...customLora,
+      licence: customLora,
+    }),
+    false,
+  );
   assert.equal(isClearedLicenceEntry(null), false);
 
   const excludedPin = buildPinning({
@@ -459,6 +483,73 @@ test('G9-link3 (G4 break): verifyProvenanceChain fails with UNLICENSED_OR_EXCLUD
   }
 });
 
+test('G9-link3b (G4 model sha256 break): verifyProvenanceChain fails with MISSING_MODEL_SHA256 when a model or LoRA in pinning or generation_provenance.model_licences has no sha256', async () => {
+  const fx = await makeValidProvenanceProject();
+  try {
+    const runManifestPath = join(fx.projectRoot, 'runs', fx.runId, 'manifest.json');
+    const runManifest = JSON.parse(await readFile(runManifestPath, 'utf-8'));
+    const origUnetSha = runManifest.pinning.models.unet.sha256;
+    runManifest.pinning.models.unet.sha256 = null;
+    await writeFile(runManifestPath, JSON.stringify(runManifest, null, 2));
+
+    const report1 = await verifyProvenanceChain(fx.projectRoot);
+    assert.equal(report1.ok, false);
+    assert.ok(
+      report1.failures.some((f) => f.code === 'MISSING_MODEL_SHA256'),
+      `expected MISSING_MODEL_SHA256 in ${JSON.stringify(report1.failures)}`,
+    );
+
+    // Restore pinning sha256, break generation_provenance.model_licences.models.unet.sha256
+    runManifest.pinning.models.unet.sha256 = origUnetSha;
+    await writeFile(runManifestPath, JSON.stringify(runManifest, null, 2));
+
+    const rec = JSON.parse(await readFile(fx.recordPath, 'utf-8'));
+    rec.generation_provenance.model_licences.models.unet.sha256 = '';
+    await writeFile(fx.recordPath, JSON.stringify(rec, null, 2));
+
+    const report2 = await verifyProvenanceChain(fx.projectRoot);
+    assert.equal(report2.ok, false);
+    assert.ok(
+      report2.failures.some((f) => f.code === 'MISSING_MODEL_SHA256'),
+      `expected MISSING_MODEL_SHA256 for generation_provenance.model_licences in ${JSON.stringify(report2.failures)}`,
+    );
+
+    // LoRA without sha256 in pinning also fails with MISSING_MODEL_SHA256
+    rec.generation_provenance.model_licences.models.unet.sha256 = origUnetSha;
+    rec.generation_provenance.model_licences.loras = [
+      {
+        name: 'studio_hull_v1.safetensors',
+        weight: 1.0,
+        sha256: null,
+        licence_id: 'CC-BY-4.0',
+        licence_url: 'https://github.com/mcp-tool-shop-org/style-dataset-lab/blob/main/LICENSE',
+        date_read: '2026-11-05',
+      },
+    ];
+    await writeFile(fx.recordPath, JSON.stringify(rec, null, 2));
+    runManifest.pinning.loras = [
+      {
+        name: 'studio_hull_v1.safetensors',
+        weight: 1.0,
+        sha256: null,
+        licence_id: 'CC-BY-4.0',
+        licence_url: 'https://github.com/mcp-tool-shop-org/style-dataset-lab/blob/main/LICENSE',
+        date_read: '2026-11-05',
+      },
+    ];
+    await writeFile(runManifestPath, JSON.stringify(runManifest, null, 2));
+
+    const report3 = await verifyProvenanceChain(fx.projectRoot);
+    assert.equal(report3.ok, false);
+    assert.ok(
+      report3.failures.some((f) => f.code === 'MISSING_MODEL_SHA256'),
+      `expected MISSING_MODEL_SHA256 for LoRA without sha256 in ${JSON.stringify(report3.failures)}`,
+    );
+  } finally {
+    await fx.cleanup();
+  }
+});
+
 test('G9-link4 (run manifest break): verifyProvenanceChain fails with BROKEN_RUN_MANIFEST_LINK when comfy_workflow_sha mismatches', async () => {
   const fx = await makeValidProvenanceProject();
   try {
@@ -496,7 +587,7 @@ test('G9-link5 (quarantine break): verifyProvenanceChain fails with QUARANTINED_
   }
 });
 
-test('G9-link6 (verdict separation break): verifyProvenanceChain fails with INVALID_VERDICT_PROVENANCE when judge equals generator', async () => {
+test('G9-link6 (verdict separation break): verifyProvenanceChain fails with INVALID_VERDICT_PROVENANCE when judge equals generator or shares Qwen family', async () => {
   const fx = await makeValidProvenanceProject();
   try {
     const rec = JSON.parse(await readFile(fx.recordPath, 'utf-8'));
@@ -514,14 +605,42 @@ test('G9-link6 (verdict separation break): verifyProvenanceChain fails with INVA
       `expected INVALID_VERDICT_PROVENANCE in ${JSON.stringify(report.failures)}`,
     );
 
-    // Distinct VLM judge passes verdict_separation
+    // Same-family Qwen VLM judge (DESIGN-v3 §12.5) must also fail verdict_separation
     rec.judgment = {
       status: 'approved',
       judged_by_model: 'qwen3-vl-30b-a3b-instruct',
       generator_model: 'qwen-image:qwen_image_fp8_e4m3fn',
     };
+    const sameFamilyRes = verifyRecordProvenance(fx.projectRoot, rec);
+    assert.equal(sameFamilyRes.links.verdict_separation, 'fail');
+    assert.ok(sameFamilyRes.failures.some((f) => f.code === 'INVALID_VERDICT_PROVENANCE'));
+
+    // Distinct independent-family VLM judge passes verdict_separation
+    rec.judgment = {
+      status: 'approved',
+      judged_by_model: 'gemma-4-31b-it',
+      generator_model: 'qwen-image:qwen_image_fp8_e4m3fn',
+    };
     const distinctRes = verifyRecordProvenance(fx.projectRoot, rec);
     assert.equal(distinctRes.links.verdict_separation, 'pass');
+
+    assert.equal(hasModelSha256(null), false);
+    assert.equal(hasModelSha256({ sha256: '' }), false);
+    assert.equal(hasModelSha256({ sha256: 'sha256:' + '11'.repeat(32) }), true);
+    assert.equal(normalizeModelFamilyKey(''), '');
+    assert.equal(normalizeModelFamilyKey('   '), '');
+    assert.equal(normalizeModelFamilyKey('human:director'), 'human');
+    assert.equal(normalizeModelFamilyKey('rule-based:sdlab-critique-v1'), 'rule-based');
+    assert.equal(normalizeModelFamilyKey('Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf'), 'family:muse-glimmer-30b');
+    assert.equal(normalizeModelFamilyKey('qwen-image:qwen_image_fp8_e4m3fn'), 'family:qwen');
+    assert.equal(normalizeModelFamilyKey('qwen3-vl-30b-a3b-instruct'), 'family:qwen');
+    assert.equal(normalizeModelFamilyKey('gemma-4-31b-it'), 'family:gemma');
+    assert.equal(normalizeModelFamilyKey('CapRL-InternVL3.5-8B'), 'family:internvl');
+    assert.equal(normalizeModelFamilyKey('siglip2-so400m-patch14-384'), 'family:siglip2');
+    assert.equal(normalizeModelFamilyKey('flux-2-klein-4b.safetensors'), 'family:flux');
+    assert.equal(normalizeModelFamilyKey('sd3.5-large'), 'family:sd3');
+    assert.equal(normalizeModelFamilyKey('sdxl:dreamshaperXL'), 'family:sdxl');
+    assert.equal(normalizeModelFamilyKey('custom-verifier-v1'), 'custom-verifier-v1');
   } finally {
     await fx.cleanup();
   }
@@ -640,6 +759,12 @@ test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, 
     const brigSha = canonManifest.per_entity_hashes['brig'] || canonManifest.per_entity_hashes['ships/brig'];
     assert.match(brigSha, /^(sha256:)?[0-9a-f]{64}$/);
 
+    const modelsDir = join(tmpRoot, 'models');
+    await mkdir(modelsDir, { recursive: true });
+    await writeFile(join(modelsDir, proj.generation.unet), 'fake-unet-weights');
+    await writeFile(join(modelsDir, proj.generation.clip), 'fake-clip-weights');
+    await writeFile(join(modelsDir, proj.generation.vae), 'fake-vae-weights');
+
     const sampleGraph = {
       37: { class_type: 'UNETLoader', inputs: { unet_name: proj.generation.unet, weight_dtype: 'default' } },
       38: { class_type: 'CLIPLoader', inputs: { clip_name: proj.generation.clip, type: 'qwen_image' } },
@@ -654,8 +779,8 @@ test('G14: projects/portlight-ships keeps Apache-2.0 Qwen-Image project config, 
       },
       loras: [],
       seedPolicy: 'explicit-per-item',
-      modelsDir: join(tmpRoot, 'empty-models'),
-      doHash: false,
+      modelsDir,
+      hashModels: true,
     });
 
     const runId = 'run_2026-11-05_001';

@@ -2314,15 +2314,15 @@
             {
               "in": "resolveCanonLink",
               "kind": "catch",
-              "line": 98
+              "line": 101
             },
             {
               "in": "buildGeneratedProvenance",
               "kind": "catch",
-              "line": 226
+              "line": 229
             }
           ],
-          "hash": "33ecc7ad16fd929e2d102354c94e2c6c5e6f93a845f6f3051002343061a8ba23",
+          "hash": "484d0fe4e1380424ba05d3abded6b8b6206affce5b57adef1555dd4b0dc2f2f9",
           "importsFiles": [
             "lib/log.js",
             "lib/records.js"
@@ -2579,18 +2579,20 @@
         {
           "exports": [
             "assertClearedPinningLicences",
+            "hasModelSha256",
             "isClearedLicenceEntry",
             "isQuarantinedName",
+            "normalizeModelFamilyKey",
             "resolveModelLicence"
           ],
           "failurePaths": [
             {
               "in": "assertClearedPinningLicences",
               "kind": "throw",
-              "line": 245
+              "line": 299
             }
           ],
-          "hash": "d4cd863656070d509f3dd0bc5a373276e4ae74968d771fb1ee251fbd568d6fdb",
+          "hash": "9cb33cbaa94986789258ff20ffc99b3c01205bea3ce81594e83161908cd22e66",
           "importsFiles": [
             "lib/errors.js"
           ],
@@ -3451,15 +3453,15 @@
             {
               "in": "verifyRecordProvenance",
               "kind": "catch",
-              "line": 94
+              "line": 104
             },
             {
               "in": "verifyRecordProvenance",
               "kind": "catch",
-              "line": 138
+              "line": 148
             }
           ],
-          "hash": "4b1ba737f28191445d76ea608b870bde6637acdbf8f2e3fc5035d1cd70d28e96",
+          "hash": "70341e5233301df09dd370779040c2fd5b77e291565729dfbac09cd2145c6317",
           "importOrder": [
             "lib/records.js",
             "lib/model-licences.js"
@@ -3529,7 +3531,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 212,
+          "reads": 214,
           "where": [
             "caller"
           ],
@@ -3565,7 +3567,7 @@
           "writes": 1
         }
       ],
-      "outsideReads": 221,
+      "outsideReads": 223,
       "outsideWrites": 96,
       "role": "code",
       "testRunners": [
@@ -6991,7 +6993,7 @@
           "path": "projects/hesperia/terminology.json"
         },
         {
-          "hash": "c1289368feee67a88ea2851621f6c6009bd4483a1292ae023071f9d3524279ad",
+          "hash": "ce8aecbd9191ca553f34dc75951ff668ef90ab783ddcd8913c97eff6f1eb6c87",
           "path": "projects/portlight-ships/README.md"
         },
         {
@@ -6999,7 +7001,7 @@
           "path": "projects/portlight-ships/canon-build/config.json"
         },
         {
-          "hash": "0b9cfa786570858553471df6499218f48ee68bb756056d7cb3a2e9f2caacb5f5",
+          "hash": "c93fcde875b921abdae20a9a06f435fffc68d40f00fdff366b3be48ec03a2664",
           "path": "projects/portlight-ships/canon/constitution.md"
         },
         {
@@ -7007,7 +7009,7 @@
           "path": "projects/portlight-ships/canon/damage-tiers.md"
         },
         {
-          "hash": "64c3907af7cee7ef9f1d8aeae61376369366e35ae066778c593f642ec5c496a1",
+          "hash": "9de416654d85b03dc86f23d63506248d307023364571651dead571bed03834da",
           "path": "projects/portlight-ships/canon/review-rubric.md"
         },
         {
@@ -7075,35 +7077,35 @@
           "path": "projects/portlight-ships/canon/traditions.md"
         },
         {
-          "hash": "d3f465a7c3a72ed22e34b668a43e9d8ee7ef4f75f3bc96990d473c0a256ac776",
+          "hash": "26bd2d040baee5fb11a4baa2f93522fd7c0c4de50b7316d1812764cd952e1ab4",
           "path": "projects/portlight-ships/constitution.json"
         },
         {
-          "hash": "4b40e975147f9fb4e50b292d2e9c1da7d29c66817e609885806cc3b5ea2643ef",
+          "hash": "0bac6620d8b909a156f091c380090c1d376429f9b92a75e23f96c45b8f59b8e2",
           "path": "projects/portlight-ships/inputs/prompts/example-wave.json"
         },
         {
-          "hash": "fb3c7389d958482c70aa4aab17211c11723814e8c9d9fdfc63a7465a470a0d5a",
+          "hash": "c1193a0992e5e2ed10a1c74924c204d53f54f62d0d8e88586861d7929d857fde",
           "path": "projects/portlight-ships/lanes.json"
         },
         {
-          "hash": "549bbe063ae6ec7ed03060323897db32eb94bbba5efbaeec2e2c9abc5bc565ad",
+          "hash": "ce9a2c9d31e6f19f4ff0553325591d72d501f99c6679608c753514baf84d6af6",
           "path": "projects/portlight-ships/project.json"
         },
         {
-          "hash": "b84ef7cb3fe572f7a67233cc1bbb66e8ba911bc90ce1450d52a5eb3994efa597",
+          "hash": "6862934583025e0e2683ec88ffa5a808bbed2c67e228c4636e0448bf82dc653f",
           "path": "projects/portlight-ships/rubric.json"
         },
         {
-          "hash": "6237d0557937bfd207ff1a3e851b49f84bdc54db0713f4ee8cdd9102046d3141",
+          "hash": "660af10a49a1ca362ae8d46416a9f70f02d668b41ca54e75eeff100167ebc39c",
           "path": "projects/portlight-ships/terminology.json"
         },
         {
-          "hash": "090a9804fefd086848be8b1bc9a35b67e95b94f604c41831d0ac17092a58bb67",
+          "hash": "0368930c82901ee86b9e2b18c7905444c9ad0ec2f1f3e4790c38a2918355f1f7",
           "path": "projects/portlight-ships/workflows/profiles/variant-pack.json"
         },
         {
-          "hash": "bc040dbddc294fa5defdb453e53cea801492bfb4c2a3d16d5f664ca065da7e76",
+          "hash": "21122a070fc6b47e60dcd74dbe89731371703d08741a556e6f57266d6aa6e28c",
           "path": "projects/portlight-ships/workflows/profiles/vehicle-silhouette-pack.json"
         },
         {
@@ -19117,18 +19119,22 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "93af43c81fe255d9d409b24ea3cfb0b26759a78e6ca467ebb53145852b16aa01",
+          "hash": "f06c6d8760d8469f4f178e0dfce06a703e38f8ba75a8457be99145f3c2d981a7",
           "importOrder": [
             "lib/run-manifest.js",
+            "lib/model-licences.js",
             "lib/records.js",
             "lib/generated-provenance.js",
             "lib/reingest-selected.js",
             "lib/reingest.js",
             "lib/verify-chain.js",
+            "lib/canon-build/build.js",
             "lib/paths.js"
           ],
           "importsFiles": [
+            "lib/canon-build/build.js",
             "lib/generated-provenance.js",
+            "lib/model-licences.js",
             "lib/paths.js",
             "lib/records.js",
             "lib/reingest-selected.js",
@@ -20481,7 +20487,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "5cbde317ce5e2f672186fe3d21a597f4bb5eb3d7",
+    "commit": "abfd3b8ffe7a8d48f2ccac6807f9ec586268126e",
     "tracked": 3235
   },
   "landings": [
