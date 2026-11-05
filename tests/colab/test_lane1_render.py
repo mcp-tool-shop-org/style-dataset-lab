@@ -590,3 +590,92 @@ def test_hermetic_proc_comfy_socket_guard_and_other_listeners(tmp_path: Path) ->
         )
 
 
+def test_comfy_pid_fd_fail_closed_and_socket_match_mode_recorded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fix 4: fail closed when comfy_pid is given and fd dir is absent or unreadable; record socket_match and comfy_pid."""
+    tcp_header = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+    proc_fx = tmp_path / "proc_fx"
+    (proc_fx / "net").mkdir(parents=True)
+    (proc_fx / "4242" / "fd").mkdir(parents=True)
+    (proc_fx / "4242" / "fd" / "3").write_text("socket:[12345]\n", encoding="utf-8")
+    (proc_fx / "net" / "tcp").write_text(
+        tcp_header
+        + "   0: 0100007F:1FFC 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 12345 1 0000000000000000 100 0 0 10 0\n"
+        + "   1: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22001 1 0000000000000000 100 0 0 10 0\n",
+        encoding="utf-8",
+    )
+
+    # 1. PID given, fd dir absent -> refuses LANE1_COMFY_PID_FD_UNREADABLE (no fallback to port)
+    with pytest.raises(ValueError, match="LANE1_COMFY_PID_FD_UNREADABLE"):
+        l1.write_window_json(
+            tmp_path / "win_absent_fd.json",
+            window_id="win_absent_fd",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            comfy_pid=9999,
+            proc_root=proc_fx,
+        )
+
+    # 2. PID given, iterdir raises PermissionError (monkeypatched) -> refuses LANE1_COMFY_PID_FD_UNREADABLE
+    orig_iterdir = Path.iterdir
+    fd_target = proc_fx / "4242" / "fd"
+
+    def _deny_iterdir(self: Path):  # type: ignore[no-untyped-def]
+        if self == fd_target:
+            raise PermissionError("Permission denied reading /proc/4242/fd")
+        return orig_iterdir(self)
+
+    with monkeypatch.context() as mp:
+        mp.setattr(Path, "iterdir", _deny_iterdir)
+        with pytest.raises(ValueError, match="LANE1_COMFY_PID_FD_UNREADABLE"):
+            l1.write_window_json(
+                tmp_path / "win_perm_fd.json",
+                window_id="win_perm_fd",
+                comfy_url="http://127.0.0.1:8188",
+                system_python="3.13.16",
+                expected_python=l1.sys.version.split()[0],
+                comfy_pid=4242,
+                proc_root=proc_fx,
+            )
+
+    # 3. No PID, port mode -> socket_match == "port" and comfy_pid is None; inode mode -> socket_match == "inode" and comfy_pid recorded
+    win_port = l1.write_window_json(
+        tmp_path / "win_port_mode.json",
+        window_id="win_port_mode",
+        comfy_url="http://127.0.0.1:8188",
+        system_python="3.13.16",
+        expected_python=l1.sys.version.split()[0],
+        proc_net_tcp=proc_fx / "net" / "tcp",
+    )
+    assert win_port["socket_match"] == "port"
+    assert win_port["comfy_pid"] is None
+
+    win_inode = l1.write_window_json(
+        tmp_path / "win_inode_mode.json",
+        window_id="win_inode_mode",
+        comfy_url="http://127.0.0.1:8188",
+        system_python="3.13.16",
+        expected_python=l1.sys.version.split()[0],
+        comfy_pid=4242,
+        proc_root=proc_fx,
+    )
+    assert win_inode["socket_match"] == "inode"
+    assert win_inode["comfy_pid"] == 4242
+
+    # 4. Single prefix on LANE1_NO_MEASURED_SOCKETS (not doubled with LANE1_COMFY_SOCKET_NOT_FOUND)
+    with pytest.raises(ValueError, match=r"^LANE1_NO_MEASURED_SOCKETS: no listening TCP sockets"):
+        l1.write_window_json(
+            tmp_path / "win_no_socks_single_code.json",
+            window_id="win_no_socks_single_code",
+            comfy_url="http://127.0.0.1:8188",
+            system_python="3.13.16",
+            expected_python=l1.sys.version.split()[0],
+            proc_net_tcp=tmp_path / "missing_tcp",
+            proc_net_tcp6=tmp_path / "missing_tcp6",
+            ss_runner=lambda: "",
+        )
+
+
+

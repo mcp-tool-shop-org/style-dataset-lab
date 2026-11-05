@@ -197,30 +197,42 @@ def probe_pid_socket_inodes(
     *,
     proc_root: Path | None = None,
     allow_host_proc: bool = True,
-) -> tuple[set[str], bool]:
+) -> tuple[set[str], str]:
     """Read `socket:[inode]` entries from `/proc/<pid>/fd` (symlink or fixture file)."""
+    if comfy_pid is None:
+        return set(), "port"
+
     fd_dir: Path | None = None
-    if comfy_pid is not None and proc_root is not None:
+    if proc_root is not None:
         fd_dir = proc_root / str(comfy_pid) / "fd"
-    elif comfy_pid is not None and allow_host_proc:
+    elif allow_host_proc:
         fd_dir = Path(f"/proc/{comfy_pid}/fd")
 
     if fd_dir is None or not fd_dir.exists() or not fd_dir.is_dir():
-        return set(), False
+        raise ValueError(
+            f"LANE1_COMFY_PID_FD_UNREADABLE: fd directory for comfy_pid={comfy_pid} is absent or not a directory ({fd_dir})"
+        )
+
+    try:
+        entries = sorted(fd_dir.iterdir(), key=lambda p: p.name)
+    except OSError as exc:
+        raise ValueError(
+            f"LANE1_COMFY_PID_FD_UNREADABLE: failed to read fd directory for comfy_pid={comfy_pid} ({fd_dir}): {exc}"
+        ) from exc
 
     inodes: set[str] = set()
-    for entry in sorted(fd_dir.iterdir(), key=lambda p: p.name):
+    for entry in entries:
         target = ""
         try:
             target = os.readlink(entry)
         except OSError:
-            if entry.is_file():
+            if proc_root is not None and entry.is_file():
                 target = entry.read_text(encoding="utf-8", errors="replace").strip()
         if target.startswith("socket:[") and target.endswith("]"):
             inode = target[len("socket:[") : -1].strip()
             if inode.isdigit():
                 inodes.add(inode)
-    return inodes, True
+    return inodes, "inode"
 
 
 def inspect_comfy_listeners(
@@ -230,7 +242,7 @@ def inspect_comfy_listeners(
     comfy_pid: int | None = None,
     proc_root: Path | None = None,
     allow_host_proc: bool = True,
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], str]:
     """Partition listening sockets into ComfyUI sockets and other_listeners, verifying ComfyUI is loopback-only."""
     parsed_records: list[tuple[str, str, int, str]] = []
     for item in sockets:
@@ -252,7 +264,7 @@ def inspect_comfy_listeners(
     if not parsed_records:
         raise ValueError("LANE1_COMFY_SOCKET_NOT_FOUND: listening_sockets list has no valid address:port entries")
 
-    inode_set, match_by_inode = probe_pid_socket_inodes(
+    inode_set, socket_match = probe_pid_socket_inodes(
         comfy_pid,
         proc_root=proc_root,
         allow_host_proc=allow_host_proc,
@@ -261,7 +273,7 @@ def inspect_comfy_listeners(
     comfy_sockets: list[str] = []
     other_listeners: list[str] = []
     for addr, _host_part, port_num, inode in parsed_records:
-        is_comfy = (bool(inode) and inode in inode_set) if match_by_inode else (port_num == comfy_port)
+        is_comfy = (bool(inode) and inode in inode_set) if socket_match == "inode" else (port_num == comfy_port)
         target_list = comfy_sockets if is_comfy else other_listeners
         if addr not in target_list:
             target_list.append(addr)
@@ -283,7 +295,7 @@ def inspect_comfy_listeners(
                 "(must be 127.0.0.1 or ::1)"
             )
 
-    return comfy_sockets, other_listeners
+    return comfy_sockets, other_listeners, socket_match
 
 
 def verify_loopback_sockets(
@@ -293,7 +305,7 @@ def verify_loopback_sockets(
     comfy_pid: int | None = None,
     proc_root: Path | None = None,
 ) -> list[str]:
-    comfy_sockets, _ = inspect_comfy_listeners(
+    comfy_sockets, _, _ = inspect_comfy_listeners(
         sockets,
         comfy_port,
         comfy_pid=comfy_pid,
@@ -624,10 +636,10 @@ def write_window_json(
     )
     if not raw_records:
         raise ValueError(
-            "LANE1_NO_MEASURED_SOCKETS: LANE1_COMFY_SOCKET_NOT_FOUND: no listening TCP sockets found in /proc/net/tcp* or ss -tln"
+            "LANE1_NO_MEASURED_SOCKETS: no listening TCP sockets found in /proc/net/tcp* or ss -tln"
         )
     allow_host_proc = all(x is None for x in (proc_root, proc_net_tcp, proc_net_tcp6, sockets))
-    comfy_sockets, other_listeners = inspect_comfy_listeners(
+    comfy_sockets, other_listeners, socket_match = inspect_comfy_listeners(
         raw_records,
         port,
         comfy_pid=comfy_pid,
@@ -650,6 +662,8 @@ def write_window_json(
         "comfyui_commit": comfyui_commit,
         "comfy_headless_version": COMFY_HEADLESS_VERSION,
         "comfy_bind": f"{host}:{port}",
+        "comfy_pid": comfy_pid,
+        "socket_match": socket_match,
         "listening_sockets": comfy_sockets,
         "other_listeners": other_listeners,
         "override_sha256": None,
