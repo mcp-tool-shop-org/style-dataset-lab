@@ -1,4 +1,4 @@
-"""Tests for scripts/colab/launch_lane3_stub.sh against a fake colab CLI (Part C)."""
+"""Tests for scripts/colab/launch_lane3_stub.sh against the contract-checked fake colab CLI."""
 
 from __future__ import annotations
 
@@ -7,12 +7,16 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LAUNCHER = REPO_ROOT / "scripts" / "colab" / "launch_lane3_stub.sh"
+sys.path.insert(0, str(REPO_ROOT / "tests" / "colab" / "fixtures"))
+
+import fake_colab as fc  # noqa: E402
 
 
 def _find_bash() -> str:
@@ -25,152 +29,11 @@ def _find_bash() -> str:
 
 
 def _to_posix(p: Path) -> str:
-    s = p.resolve().as_posix()
-    if len(s) >= 2 and s[1] == ":":
-        return f"/{s[0].lower()}{s[2:]}"
-    return s
+    return fc._to_posix(p)
 
 
 def _make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
-    bin_dir = tmp_path / "fake_bin"
-    bin_dir.mkdir(parents=True, exist_ok=True)
-    state_dir = tmp_path / "colab_state"
-    state_dir.mkdir(parents=True, exist_ok=True)
-    lock_file = tmp_path / "colab-window-open.lock"
-
-    fake_colab = bin_dir / "colab"
-    fake_colab.write_text(
-        """#!/usr/bin/env bash
-#SDLAB_FAKE_COLAB_CLI=1
-set -euo pipefail
-
-STATE_DIR="${FAKE_COLAB_STATE_DIR:?missing FAKE_COLAB_STATE_DIR}"
-LOCK_FILE="${COLAB_OPEN_LOCK:-/tmp/colab-window-open.lock}"
-echo "CALL $*" >> "${STATE_DIR}/calls.log"
-
-sub="${1:-}"
-shift || true
-
-case "${sub}" in
-  usage)
-    count_file="${STATE_DIR}/usage_count.txt"
-    c=0
-    if [ -f "${count_file}" ]; then
-      c="$(cat "${count_file}")"
-    fi
-    c=$((c + 1))
-    echo "${c}" > "${count_file}"
-    if [ "${FAKE_COLAB_MODE:-success}" = "cap_burn" ] && [ "${c}" -ge 2 ]; then
-      echo '{"balance_ccu": 9.75, "rate_ccu_per_hour": 0.26}'
-    else
-      echo '{"balance_ccu": 9.85, "rate_ccu_per_hour": 0.26}'
-    fi
-    ;;
-  sessions)
-    echo "SESSION_LIST_AFTER_STOP" >> "${STATE_DIR}/sessions.log"
-    echo "No active sessions."
-    ;;
-  new)
-    if command -v flock >/dev/null 2>&1; then
-      if flock -n "${LOCK_FILE}" -c "true" 2>/dev/null; then
-        echo "LOCK_HELD=0" >> "${STATE_DIR}/lock.log"
-      else
-        echo "LOCK_HELD=1" >> "${STATE_DIR}/lock.log"
-      fi
-    else
-      if [ -d "${LOCK_FILE}.lockdir" ] || [ -f "${LOCK_FILE}.held" ]; then
-        echo "LOCK_HELD=1" >> "${STATE_DIR}/lock.log"
-      else
-        echo "LOCK_HELD=0" >> "${STATE_DIR}/lock.log"
-      fi
-    fi
-    echo "Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_lane3_999&port=8188"
-    echo "OAuth access_token=ya29.secret_oauth_lane3_888"
-    ;;
-  upload)
-    echo "UPLOAD_OK $*" >> "${STATE_DIR}/uploads.log"
-    ;;
-  exec)
-    if [ "${FAKE_COLAB_MODE:-success}" = "fail" ]; then
-      echo "Simulated remote failure with colab-runtime-proxy-token=secret_proxy_tok_lane3_999" >&2
-      exit 42
-    elif [ "${FAKE_COLAB_MODE:-success}" = "wall" ]; then
-      echo "Simulated hung child ignoring inner timeout"
-      for _ in $(seq 1 40); do
-        sleep 0.2
-      done
-      exit 0
-    elif [ "${FAKE_COLAB_MODE:-success}" = "dead_harness" ]; then
-      echo "=== VITALS 2026-11-05T12:01:00Z ==="
-      echo "CGROUP_MEM: oom_kill 0"
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      echo "=== VITALS 2026-11-05T12:01:15Z ==="
-      echo "CGROUP_MEM: oom_kill 0"
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      for _ in $(seq 1 60); do
-        sleep 0.2
-      done
-      exit 0
-    elif [ "${FAKE_COLAB_MODE:-success}" = "stall" ]; then
-      echo "=== VITALS 2026-11-05T12:00:00Z ==="
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      for _ in $(seq 1 60); do
-        sleep 0.2
-      done
-      exit 0
-    elif [ "${FAKE_COLAB_MODE:-success}" = "cap_burn" ]; then
-      echo "=== VITALS 2026-11-05T12:00:00Z ==="
-      echo "MEM: MemTotal: 13290000 kB"
-      echo "PROC:"
-      echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-      echo 'HARNESS: {"phase": "run", "step": 1}'
-      for _ in $(seq 1 60); do
-        sleep 0.2
-      done
-      exit 0
-    fi
-    echo "=== VITALS 2026-11-05T12:00:00Z ==="
-    echo "CGROUP_MEM_CURRENT: 536870912"
-    echo "CGROUP_MEM_MAX: 12884901888"
-    echo "MEM: MemTotal: 12582912 kB"
-    echo "PROC:"
-    echo "101 python3 /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-    echo 'HARNESS: {"phase": "run", "step": 1}'
-    echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "73ebae1334d2c98089f1b90f8cb19257825f891a", "override_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
-    echo "LANE3_STUB_OK python=3.15.1 sentencepiece=0.2.1 checkpoint_written=true"
-    ;;
-  download)
-    dest="${@: -1}"
-    mkdir -p "$(dirname "${dest}")"
-    printf 'FAKE_TAR_BYTES' > "${dest}"
-    ;;
-  stop)
-    echo "STOP $*" >> "${STATE_DIR}/stops.log"
-    ;;
-  *)
-    echo "UNKNOWN_SUBCOMMAND ${sub}" >&2
-    exit 2
-    ;;
-esac
-""",
-        encoding="utf-8",
-        newline="\n",
-    )
-    fake_colab.chmod(fake_colab.stat().st_mode | stat.S_IEXEC)
-
-    env = os.environ.copy()
-    env["PATH"] = f"{_to_posix(bin_dir)}:{bin_dir}{os.pathsep}{env.get('PATH', '')}"
-    env["FAKE_COLAB_STATE_DIR"] = _to_posix(state_dir)
-    env["COLAB_OPEN_LOCK"] = _to_posix(lock_file)
-    env["SDLAB_TEST_FAKE_COLAB"] = "1"
-    return bin_dir, state_dir, env
+    return fc.make_fake_colab_env(tmp_path)
 
 
 def test_real_colab_cli_guard_refuses_when_not_fake(tmp_path: Path) -> None:
@@ -286,12 +149,21 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
     # Independent wall guard stops session even when child sleeps past wall
     _, state_dir_wall, env_wall = _make_fake_colab_env(tmp_path / "wall_case")
     env_wall["FAKE_COLAB_MODE"] = "wall"
-    env_wall["WALL_S"] = "2"
-    env_wall["GRACE_S"] = "1"
     out_wall = tmp_path / "out_wall"
 
     res_wall = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_wall), "--session", "sdlab-l3-wall"],
+        [
+            _find_bash(),
+            _to_posix(LAUNCHER),
+            "--out-dir",
+            _to_posix(out_wall),
+            "--session",
+            "sdlab-l3-wall",
+            "--wall-s",
+            "2",
+            "--grace-s",
+            "1",
+        ],
         env=env_wall,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -313,6 +185,7 @@ def test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_ver
         "PINNED_AI_TOOLKIT_COMMIT=",
         "PINNED_OVERRIDE_SHA=",
         "PINNED_LAUNCH_GUARDS_SHA=",
+        "PINNED_REMOTE_RUNNER_SHA=",
         "PINNED_COLAB_WINDOW_SHA=",
         "PINNED_SELF_SHA=",
     ):
@@ -384,7 +257,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert "STALL_GUARD_TRIPPED" in (out_st / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-stall" in (state_st / "stops.log").read_text(encoding="utf-8")
 
-    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session
+    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session (in text format)
     _, state_cap, env_cap = _make_fake_colab_env(tmp_path / "cap_case")
     env_cap["FAKE_COLAB_MODE"] = "cap_burn"
     env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
@@ -401,6 +274,10 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert res_cap.returncode != 0
     assert "CAP_GUARD_TRIPPED" in (out_cap / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-cap" in (state_cap / "stops.log").read_text(encoding="utf-8")
+    usage_log_cap = (out_cap / "usage.log").read_text(encoding="utf-8")
+    assert "Current balance: 9.85 compute units" in usage_log_cap
+    assert "Current balance: 9.75 compute units" in usage_log_cap
+    assert "balance_ccu" not in usage_log_cap
 
     # 4. Normal success merges VM facts (including checkpoint_path), balances, rate_measured, downloaded_files sha, and logs sessions + closing usage
     _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "merge_case")
@@ -423,8 +300,148 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert win["start_balance"] == 9.85
     assert win["end_balance"] == 9.85
     assert win["rate_measured"] == 0.26
+    assert win["rate_used_for_cap_and_projection"] == 0.26
+    assert win["rate_source"] == "measured"
+    assert win["usage_parse_error"] is None
     assert "lane3_stub_bundle.tar.gz" in win["downloaded_files"]
     assert (state_ok / "sessions.log").exists()
     remote_sh = (out_ok / "remote_lane3_stub.sh").read_text(encoding="utf-8")
     assert "--scrub-file" in remote_sh
 
+
+def test_lane3_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: Path) -> None:
+    _, state_dir, env = _make_fake_colab_env(tmp_path)
+    out_dir = tmp_path / "out_contract"
+    res = subprocess.run(
+        [
+            _find_bash(),
+            _to_posix(LAUNCHER),
+            "--out-dir",
+            _to_posix(out_dir),
+            "--session",
+            "sdlab-l3-contract",
+            "--wall-s",
+            "900",
+            "--grace-s",
+            "60",
+        ],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res.returncode == 0, f"STDERR:\n{res.stderr}"
+    calls = [
+        json.loads(line)
+        for line in (state_dir / "calls.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    exec_calls = [c for c in calls if c["subcmd"] == "exec"]
+    assert len(exec_calls) == 1
+    ec = exec_calls[0]
+    assert ec["positionals"] == []
+    f_vals = ec["parsed_opts"].get("-f") or ec["parsed_opts"].get("--file")
+    assert f_vals and f_vals[-1].endswith(".py")
+    timeout_val = float(ec["parsed_opts"]["--timeout"][-1])
+    assert timeout_val > 900.0
+    assert timeout_val == 1020.0
+    env_kv = ec["parsed_opts"].get("--env", [])
+    assert any(kv.endswith("/content/remote_lane3_stub.sh") and kv.startswith("SDLAB_REMOTE_SCRIPT=") for kv in env_kv)
+    assert any(kv.startswith("PINNED_AI_TOOLKIT_COMMIT=") for kv in env_kv)
+
+
+def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0(tmp_path: Path) -> None:
+    _, state_start, env_start = _make_fake_colab_env(tmp_path / "usage_start_case")
+    env_start["FAKE_COLAB_MODE"] = "usage_fail_start"
+    out_start = tmp_path / "out_usage_start"
+    res_start = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_start), "--session", "sdlab-l3-ustart"],
+        env=env_start,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_start.returncode != 0
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_start / "guards.log").read_text(encoding="utf-8")
+    assert "CALL new" not in (state_start / "calls.log").read_text(encoding="utf-8")
+    assert "10.0" not in (out_start / "window.json").read_text(encoding="utf-8")
+
+    _, state_mid, env_mid = _make_fake_colab_env(tmp_path / "usage_mid_case")
+    env_mid["FAKE_COLAB_MODE"] = "usage_fail_midrun"
+    env_mid["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_mid = tmp_path / "out_usage_mid"
+    res_mid = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_mid), "--session", "sdlab-l3-umid"],
+        env=env_mid,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_mid.returncode != 0
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_mid / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-umid" in (state_mid / "stops.log").read_text(encoding="utf-8")
+    assert "10.0" not in (out_mid / "window.json").read_text(encoding="utf-8")
+
+
+def test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_before_new(tmp_path: Path) -> None:
+    _, state_dir, env = _make_fake_colab_env(tmp_path / "nonempty_case")
+    env["FAKE_COLAB_MODE"] = "cap_burn"
+    out_dir = tmp_path / "out_nonempty"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "start_balance.txt").write_text("9.75\n", encoding="utf-8")
+
+    res = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l3-nonempty"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res.returncode != 0
+    assert "OUT_DIR_NOT_EMPTY" in (res.stdout + res.stderr)
+    assert not (state_dir / "calls.log").exists(), "colab must never be called when --out-dir is not empty"
+
+
+def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(tmp_path: Path) -> None:
+    _, state_crash, env_crash = _make_fake_colab_env(tmp_path / "helper_crash")
+    env_crash["FAKE_COLAB_MODE"] = "stall"
+    env_crash["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_crash["SDLAB_FAULT_POLL_HELPER_MIDRUN"] = "crash"
+    out_crash = tmp_path / "out_helper_crash"
+    res_crash = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_crash), "--session", "sdlab-l3-hcrash"],
+        env=env_crash,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_crash.returncode == 91
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_crash / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-hcrash" in (state_crash / "stops.log").read_text(encoding="utf-8")
+
+    _, state_neg, env_neg = _make_fake_colab_env(tmp_path / "neg_mid")
+    env_neg["FAKE_COLAB_MODE"] = "negative_balance_midrun"
+    env_neg["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_neg = tmp_path / "out_neg_mid"
+    res_neg = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_neg), "--session", "sdlab-l3-negmid"],
+        env=env_neg,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_neg.returncode == 91
+    assert "COLAB_USAGE_PARSE_FAILED" in (out_neg / "guards.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-negmid" in (state_neg / "stops.log").read_text(encoding="utf-8")

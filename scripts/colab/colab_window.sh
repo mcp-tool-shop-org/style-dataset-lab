@@ -14,6 +14,14 @@ colab_resolve_python() {
   command -v python
 }
 
+colab_refuse_nonempty_out_dir() {
+  local out_dir="$1"
+  if [ -d "${out_dir}" ] && [ -n "$(ls -A "${out_dir}" 2>/dev/null)" ]; then
+    echo "REFUSED: OUT_DIR_NOT_EMPTY: ${out_dir} already exists and is not empty" >&2
+    return 97
+  fi
+}
+
 colab_guard_fake_cli_if_test() {
   local colab_bin
   colab_bin="$(command -v colab || true)"
@@ -43,14 +51,28 @@ colab_verify_input_shas() {
 colab_poll_usage_and_ram() {
   local py_bin="$1"
   local out_dir="$2"
+  local fault_mode="${SDLAB_FAULT_POLL_HELPER:-}"
+  if [ -f "${out_dir}/start_balance.txt" ] && [ -n "${SDLAB_FAULT_POLL_HELPER_MIDRUN:-}" ]; then
+    fault_mode="${SDLAB_FAULT_POLL_HELPER_MIDRUN}"
+  fi
+  if [ "${fault_mode}" = "crash" ]; then
+    return 137
+  elif [ "${fault_mode}" = "empty" ]; then
+    return 0
+  elif [ "${fault_mode}" = "short" ]; then
+    echo "9.85 9.85"
+    return 0
+  fi
   local default_rate="${RATE_CCU_PER_HOUR:-0.26}"
+  local guards_py
+  guards_py="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launch_guards.py"
 
-  local usage_json
-  usage_json="$(colab usage </dev/null 2>>"${out_dir}/colab.log" || echo "{\"balance_ccu\":10.0,\"rate_ccu_per_hour\":${default_rate}}")"
-  echo "${usage_json}" >> "${out_dir}/usage.log"
+  local usage_text=""
+  local usage_rc=0
+  usage_text="$(colab usage </dev/null 2>>"${out_dir}/colab.log")" || usage_rc=$?
+  printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
 
-  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_json}" << 'PYEOF'
-import json
+  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" << 'PYEOF'
 import os
 import re
 import sys
@@ -58,25 +80,44 @@ from pathlib import Path
 
 out_dir = Path(sys.argv[1])
 default_rate = float(sys.argv[2])
-raw_usage = sys.argv[3]
+usage_rc = int(sys.argv[3])
+raw_usage = sys.argv[4]
+guards_py = Path(sys.argv[5])
 
-bal = 10.0
-rate = default_rate
-try:
-    parsed = json.loads(raw_usage)
-    if parsed.get("balance_ccu") is not None:
-        bal = float(parsed["balance_ccu"])
-    if parsed.get("rate_ccu_per_hour") is not None:
-        rate = float(parsed["rate_ccu_per_hour"])
-except Exception:
-    pass
+sys.path.insert(0, str(guards_py.parent))
+import launch_guards as lg
+
+parsed = lg.parse_usage_text(raw_usage, usage_rc=usage_rc, configured_rate=default_rate)
 
 start_f = out_dir / "start_balance.txt"
-if not start_f.exists():
-    start_f.write_text(f"{bal}\n", encoding="utf-8", newline="\n")
-start_bal = float(start_f.read_text(encoding="utf-8").strip())
-(out_dir / "end_balance.txt").write_text(f"{bal}\n", encoding="utf-8", newline="\n")
-(out_dir / "rate_measured.txt").write_text(f"{rate}\n", encoding="utf-8", newline="\n")
+end_f = out_dir / "end_balance.txt"
+rate_f = out_dir / "rate_measured.txt"
+rate_proj_f = out_dir / "rate_for_projection.txt"
+rate_src_f = out_dir / "rate_source.txt"
+err_f = out_dir / "usage_parse_error.txt"
+
+if parsed["ok"]:
+    bal = parsed["balance"]
+    if not start_f.exists():
+        start_f.write_text(f"{bal}\n", encoding="utf-8", newline="\n")
+    start_bal_str = start_f.read_text(encoding="utf-8").strip()
+    end_f.write_text(f"{bal}\n", encoding="utf-8", newline="\n")
+    cur_bal_str = f"{bal}"
+    if parsed["rate_measured"] is not None:
+        rate_f.write_text(f"{parsed['rate_measured']}\n", encoding="utf-8", newline="\n")
+    rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
+    rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
+    err_tok = "NONE"
+else:
+    err_msg = str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED")
+    err_f.write_text(f"{err_msg}\n", encoding="utf-8", newline="\n")
+    if end_f.exists():
+        end_f.unlink()
+    start_bal_str = start_f.read_text(encoding="utf-8").strip() if start_f.exists() else "NONE"
+    cur_bal_str = "NONE"
+    rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
+    rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
+    err_tok = "COLAB_USAGE_PARSE_FAILED"
 
 # Parse VM /proc/meminfo and cgroup memory from vitals.log when present
 anon_mb = float(os.environ.get("CURRENT_ANON_MB", "512")) if "os" in sys.modules else 512.0
@@ -98,7 +139,7 @@ if vitals_f.exists():
     if m_cg_max:
         cgroup_max_mb = str(round(int(m_cg_max[-1]) / (1024.0 * 1024.0), 1))
 
-print(f"{start_bal} {bal} {rate} {anon_mb} {mem_total_mb} {cgroup_max_mb}")
+print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok} {anon_mb} {mem_total_mb} {cgroup_max_mb}")
 PYEOF
 }
 
@@ -113,21 +154,54 @@ colab_check_cap_and_ram() {
   local margin="$8"
   local out_dir="$9"
 
-  local metrics
-  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")"
-  local start_bal cur_bal rate_val anon_mb mem_total_mb cgroup_max_mb
-  read -r start_bal cur_bal rate_val anon_mb mem_total_mb cgroup_max_mb <<< "${metrics}"
+  local metrics=""
+  local poll_rc=0
+  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || poll_rc=$?
+  local start_bal="" cur_bal="" rate_val="" err_tok="" anon_mb="" mem_total_mb="" cgroup_max_mb=""
+  if [ "${poll_rc}" -ne 0 ]; then
+    err_tok="COLAB_USAGE_PARSE_FAILED"
+    printf 'COLAB_USAGE_PARSE_FAILED: usage poll helper exited with status %s\n' "${poll_rc}" > "${out_dir}/usage_parse_error.txt"
+  else
+    read -r start_bal cur_bal rate_val err_tok anon_mb mem_total_mb cgroup_max_mb <<< "${metrics}"
+    if [ -z "${metrics}" ] || [ -z "${start_bal}" ] || [ -z "${cur_bal}" ] || [ -z "${rate_val}" ] || [ -z "${err_tok}" ] || [ "${start_bal}" = "NONE" ] || [ "${cur_bal}" = "NONE" ]; then
+      err_tok="COLAB_USAGE_PARSE_FAILED"
+      if [ ! -s "${out_dir}/usage_parse_error.txt" ]; then
+        printf 'COLAB_USAGE_PARSE_FAILED: incomplete or missing usage metrics (%s)\n' "${metrics}" > "${out_dir}/usage_parse_error.txt"
+      fi
+    fi
+  fi
 
-  "${py_bin}" "${guards_py}" \
-    --mode "${mode}" \
-    --elapsed-s "${elapsed_s}" \
-    --wall-s "${wall_s}" \
-    --grace-s "${grace_s}" \
-    --cap "${cap}" \
-    --margin "${margin}" \
-    --rate "${rate_val:-0.26}" \
-    --start-balance "${start_bal}" \
-    --current-balance "${cur_bal}" </dev/null >> "${out_dir}/guards.log"
+  local guard_args=(
+    "--mode" "${mode}"
+    "--elapsed-s" "${elapsed_s}"
+    "--wall-s" "${wall_s}"
+    "--grace-s" "${grace_s}"
+    "--cap" "${cap}"
+    "--margin" "${margin}"
+    "--rate" "${rate_val:-0.26}"
+  )
+  if [ "${start_bal}" != "NONE" ] && [ -n "${start_bal}" ]; then
+    guard_args+=("--start-balance" "${start_bal}")
+  fi
+  if [ "${cur_bal}" != "NONE" ] && [ -n "${cur_bal}" ]; then
+    guard_args+=("--current-balance" "${cur_bal}")
+  fi
+  if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
+    local err_detail="${err_tok}"
+    if [ -f "${out_dir}/usage_parse_error.txt" ]; then
+      err_detail="$(cat "${out_dir}/usage_parse_error.txt")"
+    fi
+    guard_args+=("--usage-parse-error" "${err_detail}")
+  fi
+
+  local guard_rc=0
+  "${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null >> "${out_dir}/guards.log" || guard_rc=$?
+  if [ "${guard_rc}" -ne 0 ]; then
+    if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
+      echo "REFUSED: COLAB_USAGE_PARSE_FAILED" >&2
+    fi
+    return 1
+  fi
 
   local ram_args=(
     "--check-ram"
@@ -138,20 +212,26 @@ colab_check_cap_and_ram() {
   if [ -n "${cgroup_max_mb:-}" ]; then
     ram_args+=("--cgroup-max-mb" "${cgroup_max_mb}")
   fi
-  "${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null >> "${out_dir}/guards.log"
+  local ram_rc=0
+  "${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null >> "${out_dir}/guards.log" || ram_rc=$?
+  if [ "${ram_rc}" -ne 0 ]; then
+    return "${ram_rc}"
+  fi
 }
 
 colab_run_exec_with_live_guards() {
   local py_bin="$1"
   local guards_py="$2"
   local session="$3"
-  local remote_cmd="$4"
+  local runner_py="$4"
   local start_epoch="$5"
   local wall_s="$6"
   local grace_s="$7"
   local cap="$8"
   local margin="$9"
   local out_dir="${10}"
+  shift 10
+  local env_pairs=("$@")
 
   local poll_s="${GUARD_POLL_INTERVAL_S:-2}"
   local stall_s="${STALL_S:-300}"
@@ -159,7 +239,16 @@ colab_run_exec_with_live_guards() {
   local last_progress_epoch
   last_progress_epoch="$(date -u +%s)"
 
-  colab exec -s "${session}" "${remote_cmd}" </dev/null > "${out_dir}/vitals.log" 2>&1 &
+  local wall_int="${wall_s%.*}"
+  local grace_int="${grace_s%.*}"
+  local exec_timeout="$(( wall_int + grace_int + 60 ))"
+
+  local exec_args=("-s" "${session}" "-f" "${runner_py}" "--timeout" "${exec_timeout}")
+  for kv in "${env_pairs[@]}"; do
+    exec_args+=("--env" "${kv}")
+  done
+
+  colab exec "${exec_args[@]}" </dev/null > "${out_dir}/vitals.log" 2>&1 &
   EXEC_PID="$!"
 
   while kill -0 "${EXEC_PID}" 2>/dev/null; do
@@ -171,7 +260,9 @@ colab_run_exec_with_live_guards() {
     now_epoch="$(date -u +%s)"
     elapsed_s="$((now_epoch - start_epoch))"
 
-    if ! colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}"; then
+    local check_rc=0
+    colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}" || check_rc=$?
+    if [ "${check_rc}" -ne 0 ]; then
       pkill -P "${EXEC_PID}" 2>/dev/null || true
       kill -9 "${EXEC_PID}" 2>/dev/null || true
       wait "${EXEC_PID}" 2>/dev/null || true
@@ -186,10 +277,12 @@ colab_run_exec_with_live_guards() {
     fi
     idle_s="$((now_epoch - last_progress_epoch))"
 
-    if ! "${py_bin}" "${guards_py}" \
+    local vitals_rc=0
+    "${py_bin}" "${guards_py}" \
       --vitals-file "${out_dir}/vitals.log" \
       --idle-seconds "${idle_s}" \
-      --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log"; then
+      --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log" || vitals_rc=$?
+    if [ "${vitals_rc}" -ne 0 ]; then
       pkill -P "${EXEC_PID}" 2>/dev/null || true
       kill -9 "${EXEC_PID}" 2>/dev/null || true
       wait "${EXEC_PID}" 2>/dev/null || true
@@ -203,8 +296,20 @@ colab_run_exec_with_live_guards() {
   EXEC_PID=""
 
   colab_scrub_all_logs "${py_bin}" "${guards_py}" "${out_dir}"
-  if [ "${exec_rc}" -ne 0 ]; then
-    return "${exec_rc}"
+
+  local marker_line=""
+  marker_line="$(grep -E '^SDLAB_REMOTE_RC=-?[0-9]+$' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | tr -d '\r' || true)"
+  if [ -z "${marker_line}" ]; then
+    echo "REFUSED: SDLAB_REMOTE_RC marker missing from vitals.log (colab exec_rc=${exec_rc})" >> "${out_dir}/guards.log"
+    if [ "${exec_rc}" -ne 0 ]; then
+      return "${exec_rc}"
+    fi
+    return 94
+  fi
+  local remote_rc="${marker_line#SDLAB_REMOTE_RC=}"
+  if [ "${remote_rc}" -ne 0 ]; then
+    echo "REFUSED: remote runner reported SDLAB_REMOTE_RC=${remote_rc}" >> "${out_dir}/guards.log"
+    return "${remote_rc}"
   fi
 
   "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --stall-s "${stall_s}" </dev/null >> "${out_dir}/guards.log"
@@ -331,6 +436,13 @@ def read_float_file(p: Path) -> float | None:
         return None
 
 
+def read_text_file(p: Path) -> str | None:
+    if not p.exists():
+        return None
+    val = p.read_text(encoding="utf-8", errors="replace").strip()
+    return val if val else None
+
+
 vm_facts: dict = {}
 vm_win_file = out_dir / "vm_window.json"
 if vm_win_file.exists():
@@ -365,6 +477,14 @@ for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.saf
     if artifact.is_file():
         downloaded_files[artifact.name] = sha256_path(artifact)
 
+usage_parse_error = read_text_file(out_dir / "usage_parse_error.txt")
+rate_measured = read_float_file(out_dir / "rate_measured.txt")
+rate_for_projection = read_float_file(out_dir / "rate_for_projection.txt")
+rate_used_for_cap_and_projection = rate_for_projection
+rate_source = read_text_file(out_dir / "rate_source.txt") or (
+    "measured" if rate_measured is not None else "configured_RATE_CCU_PER_HOUR"
+)
+
 window_payload = {
     **vm_facts,
     "window_id": session,
@@ -377,7 +497,11 @@ window_payload = {
     "margin": margin,
     "start_balance": read_float_file(out_dir / "start_balance.txt"),
     "end_balance": read_float_file(out_dir / "end_balance.txt"),
-    "rate_measured": read_float_file(out_dir / "rate_measured.txt"),
+    "rate_measured": rate_measured,
+    "rate_used_for_cap_and_projection": rate_used_for_cap_and_projection,
+    "rate_for_projection": rate_for_projection,
+    "rate_source": rate_source,
+    "usage_parse_error": usage_parse_error,
     "input_shas": shas_raw.get("verified_shas", shas_raw),
     "downloaded_files": downloaded_files,
     "opened_at": opened_at,

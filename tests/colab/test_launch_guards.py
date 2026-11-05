@@ -57,9 +57,9 @@ def test_cap_guard_trips_on_fixture_and_stays_quiet_just_under() -> None:
     assert tripped_bal["tripped"] is True
     assert tripped_bal["code"] == "CAP_GUARD_TRIPPED"
 
-    # Burn-rate fixture without balance poll: 0.24 CCU/hr * 600s = 0.04 CCU
+    # Burn-rate fixture without balance poll (in fake mode): 0.24 CCU/hr * 600s = 0.04 CCU
     quiet_rate = lg.evaluate_cap_guard(
-        mode="live",
+        mode="fake",
         cap=0.05,
         margin=0.01,
         rate_ccu_per_hour=0.24,
@@ -68,7 +68,7 @@ def test_cap_guard_trips_on_fixture_and_stays_quiet_just_under() -> None:
     assert quiet_rate["tripped"] is False
 
     tripped_rate = lg.evaluate_cap_guard(
-        mode="live",
+        mode="fake",
         cap=0.05,
         margin=0.01,
         rate_ccu_per_hour=0.24,
@@ -76,6 +76,120 @@ def test_cap_guard_trips_on_fixture_and_stays_quiet_just_under() -> None:
     )
     assert tripped_rate["tripped"] is True
     assert tripped_rate["code"] == "CAP_GUARD_TRIPPED"
+
+    # Burn-rate conservative floor in live mode when balances do not drop yet:
+    live_rate_tripped = lg.evaluate_cap_guard(
+        mode="live",
+        cap=0.05,
+        margin=0.01,
+        start_balance=10.0,
+        current_balance=10.0,
+        rate_ccu_per_hour=0.24,
+        elapsed_s=600.0,
+    )
+    assert live_rate_tripped["tripped"] is True
+    assert live_rate_tripped["code"] == "CAP_GUARD_TRIPPED"
+
+    # Missing start or current balance in live/stub (non-fake) mode fails closed as COLAB_USAGE_PARSE_FAILED
+    missing_start = lg.evaluate_cap_guard(
+        mode="live",
+        cap=0.05,
+        margin=0.01,
+        start_balance=None,
+        current_balance=9.85,
+    )
+    assert missing_start["tripped"] is True
+    assert missing_start["code"] == "COLAB_USAGE_PARSE_FAILED"
+
+    missing_current = lg.evaluate_cap_guard(
+        mode="live",
+        cap=0.05,
+        margin=0.01,
+        start_balance=9.85,
+        current_balance=None,
+    )
+    assert missing_current["tripped"] is True
+    assert missing_current["code"] == "COLAB_USAGE_PARSE_FAILED"
+
+    # Negative start or current balance fails closed as COLAB_USAGE_PARSE_FAILED
+    neg_bal = lg.evaluate_cap_guard(
+        mode="live",
+        cap=0.05,
+        margin=0.01,
+        start_balance=9.85,
+        current_balance=-5.0,
+    )
+    assert neg_bal["tripped"] is True
+    assert neg_bal["code"] == "COLAB_USAGE_PARSE_FAILED"
+
+    # Usage parse failure trips cap guard immediately with COLAB_USAGE_PARSE_FAILED
+    tripped_parse = lg.evaluate_cap_guard(
+        mode="stub",
+        cap=0.05,
+        margin=0.01,
+        usage_parse_error="COLAB_USAGE_PARSE_FAILED: missing 'Current balance: <float> compute units'",
+    )
+    assert tripped_parse["tripped"] is True
+    assert tripped_parse["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert tripped_parse["spend_ccu"] is None
+
+
+def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
+    ok_hr = lg.parse_usage_text(
+        "Current balance: 9.85 compute units\nUsage rate: 0.26/hr\nActive assignments: 1\n",
+        usage_rc=0,
+        configured_rate=0.50,
+    )
+    assert ok_hr["ok"] is True
+    assert ok_hr["balance"] == 9.85
+    assert ok_hr["rate_measured"] == 0.26
+    assert ok_hr["rate_for_projection"] == 0.26
+    assert ok_hr["rate_source"] == "measured"
+    assert ok_hr["active_assignments"] == 1
+
+    # Accepts /h as well, and falls back to configured RATE_CCU_PER_HOUR only when rate is absent
+    ok_h = lg.parse_usage_text(
+        "Current balance: 12.5 compute units\nUsage rate: 0.08/h\n",
+        usage_rc=0,
+        configured_rate=0.50,
+    )
+    assert ok_h["ok"] is True
+    assert ok_h["balance"] == 12.5
+    assert ok_h["rate_measured"] == 0.08
+    assert ok_h["rate_source"] == "measured"
+
+    fallback_rate = lg.parse_usage_text(
+        "Current balance: 7.25 compute units\nActive assignments: 0\n",
+        usage_rc=0,
+        configured_rate=0.33,
+    )
+    assert fallback_rate["ok"] is True
+    assert fallback_rate["balance"] == 7.25
+    assert fallback_rate["rate_measured"] is None
+    assert fallback_rate["rate_for_projection"] == 0.33
+    assert fallback_rate["rate_source"] == "configured_RATE_CCU_PER_HOUR"
+
+    # Rejects JSON or unparseable output or non-zero exit code without any 10.0 fallback
+    bad_json = lg.parse_usage_text('{"balance_ccu": 10.0, "rate_ccu_per_hour": 0.26}', usage_rc=0)
+    assert bad_json["ok"] is False
+    assert bad_json["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert bad_json["balance"] is None
+
+    bad_rc = lg.parse_usage_text("Current balance: 9.85 compute units\n", usage_rc=1)
+    assert bad_rc["ok"] is False
+    assert bad_rc["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert bad_rc["balance"] is None
+
+    # Rejects negative balance and negative usage rate as COLAB_USAGE_PARSE_FAILED
+    neg_bal = lg.parse_usage_text("Current balance: -5.00 compute units\nUsage rate: 0.26/hr\n", usage_rc=0)
+    assert neg_bal["ok"] is False
+    assert neg_bal["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert neg_bal["balance"] is None
+
+    neg_rate = lg.parse_usage_text("Current balance: 5.00 compute units\nUsage rate: -0.26/hr\n", usage_rc=0)
+    assert neg_rate["ok"] is False
+    assert neg_rate["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert neg_rate["balance"] is None
 
 
 def test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under() -> None:
@@ -240,10 +354,10 @@ def test_verify_input_shas_and_scrub_tokens_and_cli(tmp_path: Path) -> None:
     assert rc == 0
     assert "sec_tok_98765" not in log_file.read_text(encoding="utf-8")
 
-    rc_ok = lg.main(["--mode", "stub", "--elapsed-s", "10", "--wall-s", "900", "--grace-s", "60"])
+    rc_ok = lg.main(["--mode", "stub", "--elapsed-s", "10", "--wall-s", "900", "--grace-s", "60", "--start-balance", "10.0", "--current-balance", "10.0"])
     assert rc_ok == 0
 
-    rc_trip = lg.main(["--mode", "stub", "--elapsed-s", "850", "--wall-s", "900", "--grace-s", "60"])
+    rc_trip = lg.main(["--mode", "stub", "--elapsed-s", "850", "--wall-s", "900", "--grace-s", "60", "--start-balance", "10.0", "--current-balance", "10.0"])
     assert rc_trip == 1
 
     # Direct main() CLI coverage for --verify-sha, --check-ram, --vitals-file, and non-existent scrub file

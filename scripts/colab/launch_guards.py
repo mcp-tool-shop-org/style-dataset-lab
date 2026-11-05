@@ -119,6 +119,101 @@ def evaluate_wall_guard(
     }
 
 
+CURRENT_BALANCE_RE = re.compile(
+    r"^\s*Current\s+balance:\s*([+-]?\d+(?:\.\d+)?)\s*(?:compute\s+units)?\s*$",
+    re.I | re.M,
+)
+USAGE_RATE_RE = re.compile(
+    r"^\s*Usage\s+rate:\s*([+-]?\d+(?:\.\d+)?)\s*/\s*hr?\s*$",
+    re.I | re.M,
+)
+ACTIVE_ASSIGNMENTS_RE = re.compile(
+    r"^\s*Active\s+assignments:\s*(\d+)\s*$",
+    re.I | re.M,
+)
+
+
+def parse_usage_text(
+    raw_usage: str,
+    *,
+    usage_rc: int = 0,
+    configured_rate: float = 0.26,
+) -> dict[str, Any]:
+    if usage_rc != 0:
+        return {
+            "ok": False,
+            "code": "COLAB_USAGE_PARSE_FAILED",
+            "balance": None,
+            "rate_measured": None,
+            "rate_for_projection": float(configured_rate),
+            "rate_used_for_cap_and_projection": float(configured_rate),
+            "rate_source": "configured_RATE_CCU_PER_HOUR",
+            "active_assignments": None,
+            "error": f"COLAB_USAGE_PARSE_FAILED: colab usage exited with status {usage_rc}",
+        }
+    text = raw_usage or ""
+    m_bal = CURRENT_BALANCE_RE.search(text)
+    if not m_bal:
+        return {
+            "ok": False,
+            "code": "COLAB_USAGE_PARSE_FAILED",
+            "balance": None,
+            "rate_measured": None,
+            "rate_for_projection": float(configured_rate),
+            "rate_used_for_cap_and_projection": float(configured_rate),
+            "rate_source": "configured_RATE_CCU_PER_HOUR",
+            "active_assignments": None,
+            "error": "COLAB_USAGE_PARSE_FAILED: missing 'Current balance: <float> compute units'",
+        }
+    balance = float(m_bal.group(1))
+    if balance < 0.0:
+        return {
+            "ok": False,
+            "code": "COLAB_USAGE_PARSE_FAILED",
+            "balance": None,
+            "rate_measured": None,
+            "rate_for_projection": float(configured_rate),
+            "rate_used_for_cap_and_projection": float(configured_rate),
+            "rate_source": "configured_RATE_CCU_PER_HOUR",
+            "active_assignments": None,
+            "error": f"COLAB_USAGE_PARSE_FAILED: negative balance {balance} is impossible",
+        }
+    m_rate = USAGE_RATE_RE.search(text)
+    if m_rate:
+        rate_measured: float | None = float(m_rate.group(1))
+        if rate_measured < 0.0:
+            return {
+                "ok": False,
+                "code": "COLAB_USAGE_PARSE_FAILED",
+                "balance": None,
+                "rate_measured": None,
+                "rate_for_projection": float(configured_rate),
+                "rate_used_for_cap_and_projection": float(configured_rate),
+                "rate_source": "configured_RATE_CCU_PER_HOUR",
+                "active_assignments": None,
+                "error": f"COLAB_USAGE_PARSE_FAILED: negative usage rate {rate_measured} is impossible",
+            }
+        rate_for_projection = rate_measured
+        rate_source = "measured"
+    else:
+        rate_measured = None
+        rate_for_projection = float(configured_rate)
+        rate_source = "configured_RATE_CCU_PER_HOUR"
+    m_assign = ACTIVE_ASSIGNMENTS_RE.search(text)
+    active_assignments = int(m_assign.group(1)) if m_assign else None
+    return {
+        "ok": True,
+        "code": None,
+        "balance": balance,
+        "rate_measured": rate_measured,
+        "rate_for_projection": rate_for_projection,
+        "rate_used_for_cap_and_projection": rate_for_projection,
+        "rate_source": rate_source,
+        "active_assignments": active_assignments,
+        "error": None,
+    }
+
+
 def evaluate_cap_guard(
     *,
     mode: str = "live",
@@ -128,7 +223,38 @@ def evaluate_cap_guard(
     current_balance: float | None = None,
     rate_ccu_per_hour: float = 0.0,
     elapsed_s: float = 0.0,
+    usage_parse_error: str | None = None,
 ) -> dict[str, Any]:
+    ceiling = round(max(0.0, float(cap) - float(margin)), 6)
+    if usage_parse_error:
+        return {
+            "mode": mode,
+            "tripped": True,
+            "code": "COLAB_USAGE_PARSE_FAILED",
+            "spend_ccu": None,
+            "ceiling_ccu": ceiling,
+            "usage_parse_error": usage_parse_error,
+        }
+    if (start_balance is not None and float(start_balance) < 0.0) or (
+        current_balance is not None and float(current_balance) < 0.0
+    ):
+        return {
+            "mode": mode,
+            "tripped": True,
+            "code": "COLAB_USAGE_PARSE_FAILED",
+            "spend_ccu": None,
+            "ceiling_ccu": ceiling,
+            "usage_parse_error": "COLAB_USAGE_PARSE_FAILED: negative balance is impossible",
+        }
+    if mode not in ("fake", "dry_run", "offline") and (start_balance is None or current_balance is None):
+        return {
+            "mode": mode,
+            "tripped": True,
+            "code": "COLAB_USAGE_PARSE_FAILED",
+            "spend_ccu": None,
+            "ceiling_ccu": ceiling,
+            "usage_parse_error": "COLAB_USAGE_PARSE_FAILED: missing start_balance or current_balance in non-fake mode",
+        }
     drop = (
         round(max(0.0, float(start_balance) - float(current_balance)), 6)
         if start_balance is not None and current_balance is not None
@@ -136,7 +262,6 @@ def evaluate_cap_guard(
     )
     rate_est = round(max(0.0, (float(rate_ccu_per_hour) * float(elapsed_s)) / 3600.0), 6)
     spend = round(max(drop, rate_est), 6)
-    ceiling = round(max(0.0, float(cap) - float(margin)), 6)
     tripped = spend >= ceiling
     return {
         "mode": mode,
@@ -296,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rate", type=float, default=0.0)
     parser.add_argument("--start-balance", type=float, default=None)
     parser.add_argument("--current-balance", type=float, default=None)
+    parser.add_argument("--usage-parse-error", default=None, help="Usage parse failure message causing cap guard to trip")
     parser.add_argument("--verify-sha", action="append", default=[], help="Verify PATH=SHA256 before opening window")
     parser.add_argument("--scrub-file", action="append", default=[], help="Scrub Colab/OAuth tokens from file in place")
     parser.add_argument("--vitals-file", type=Path, default=None, help="Evaluate vitals.log and stall guard")
@@ -362,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
         current_balance=args.current_balance,
         rate_ccu_per_hour=args.rate,
         elapsed_s=args.elapsed_s,
+        usage_parse_error=args.usage_parse_error,
     )
     print(json.dumps({"wall": wall, "cap": cap}))
     return 1 if (wall["tripped"] or cap["tripped"]) else 0

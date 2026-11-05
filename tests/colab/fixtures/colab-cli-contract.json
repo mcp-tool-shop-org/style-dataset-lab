@@ -1,0 +1,87 @@
+{
+  "cli": "google-colab-cli",
+  "version": "v0.7.4",
+  "help_fixture": "tests/colab/fixtures/colab_help.txt",
+  "session_row_shape": "[<SESSION>] <TOKEN> | <TOKEN>: <TOKEN> | <TOKEN>: <TOKEN> | <TOKEN>: <TOKEN>",
+  "empty_sessions_line": "[colab] No active sessions found on server.",
+  "global_options": [
+    "--auth",
+    "--client-oauth-config",
+    "--config",
+    "--help",
+    "--install-completion",
+    "--logtostderr",
+    "--show-completion",
+    "-c",
+    "-h"
+  ],
+  "commands": {
+    "sessions": {
+      "options": [
+        "--help",
+        "-h"
+      ],
+      "usage": "Usage: colab sessions [OPTIONS]"
+    },
+    "new": {
+      "options": [
+        "--gpu",
+        "--help",
+        "--high-mem",
+        "--session",
+        "--tpu",
+        "-h",
+        "-s"
+      ],
+      "usage": "Usage: colab new [OPTIONS]"
+    },
+    "upload": {
+      "options": [
+        "--help",
+        "--session",
+        "-h",
+        "-s"
+      ],
+      "usage": "Usage: colab upload [OPTIONS] {local_path} {remote_path}"
+    },
+    "exec": {
+      "options": [
+        "--env",
+        "--file",
+        "--help",
+        "--output-image",
+        "--session",
+        "--timeout",
+        "-f",
+        "-h",
+        "-s"
+      ],
+      "usage": "Usage: colab exec [OPTIONS]"
+    },
+    "download": {
+      "options": [
+        "--help",
+        "--session",
+        "-h",
+        "-s"
+      ],
+      "usage": "Usage: colab download [OPTIONS] {remote_path} {local_path}"
+    },
+    "stop": {
+      "options": [
+        "--help",
+        "--session",
+        "-h",
+        "-s"
+      ],
+      "usage": "Usage: colab stop [OPTIONS]"
+    },
+    "usage": {
+      "options": [
+        "--help",
+        "-h"
+      ],
+      "usage": "Usage: colab usage [OPTIONS]"
+    }
+  }
+}
