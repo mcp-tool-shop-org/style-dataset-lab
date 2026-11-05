@@ -1,59 +1,62 @@
 {
   "workflow_id": "vehicle-silhouette-pack",
-  "label": "Vehicle Silhouette Pack",
-  "description": "Explore vehicle silhouette variations and form language.",
-  "lane_id": "exterior",
+  "label": "Maritime Vessel Silhouette Pack",
+  "description": "Explore vessel hull sheer, stem/stern rake, and sail-plan silhouette recognition.",
+  "lane_id": "nav-chart-silhouette",
   "subject_mode": "optional",
   "output_mode": "silhouette_sheet",
   "output_count": 6,
   "required_reference_roles": [],
-  "preferred_reference_tags": ["exterior", "silhouette"],
+  "preferred_reference_tags": ["nav-chart-silhouette", "silhouette"],
   "prompt_strategy": {
     "style_prefix": [
-      "vehicle silhouette concept art",
-      "strong form language",
-      "high contrast shape exploration"
+      "age-of-sail maritime recognition silhouette plate",
+      "distinct hull sheer and rigging profile",
+      "high contrast naval chart exploration"
     ],
     "structure": "style_prefix, lane_goal, canon_focus, controlled_variation",
     "must_include": [
-      "vehicle form language",
-      "silhouette variety",
-      "scale read"
+      "vessel hull form language",
+      "mast and sail-plan silhouette variety",
+      "maritime scale read"
     ],
     "optional_blocks": [
-      "faction note",
-      "role note"
+      "shipwright tradition note",
+      "merchant or naval role note"
     ]
   },
   "negative_strategy": {
     "must_avoid": [
-      "uniform silhouettes",
-      "over-detailed rendering",
-      "unrealistic proportions"
+      "indistinct generic sailboat silhouettes",
+      "tangled rigging noise",
+      "unseaworthy hull proportions"
     ],
     "lane_specific_avoid": [
       "interior focus",
-      "background complexity"
+      "busy harbour background complexity"
     ],
     "subject_specific_avoid": []
   },
   "canon_focus": [
     "silhouette",
-    "scale_logic",
-    "faction_read",
-    "material_language"
+    "scale_cues",
+    "propulsion_clarity",
+    "structural_logic"
   ],
   "drift_guards": [
-    "silhouettes must be readable at thumbnail scale",
-    "form language must stay within project vocabulary"
+    "silhouettes must be identifiable by vessel class at thumbnail scale",
+    "hull and rig proportions must stay within Portlight shipwright traditions"
   ],
   "runtime_defaults": {
     "adapter_target": "comfyui",
+    "base": "qwen-image",
     "width": 1024,
     "height": 1024,
-    "steps": 30,
-    "cfg": 6.5,
-    "sampler": "dpmpp_2m",
+    "steps": 22,
+    "cfg": 3.5,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
     "seed_mode": "random"
   }
 }

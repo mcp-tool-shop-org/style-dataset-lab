@@ -1,21 +1,50 @@
 {
-  "group_label": "vehicle_class",
-  "id_detection_order": [],
-  "prompt_detection_order": [],
-  "groups": {},
-  "cross_group_patterns": {},
-  "edge_defaults": {},
-  "null_faction_patterns": [],
-  "id_fallbacks": {},
-  "faction_context": {},
-  "training_profiles": [
-    {
-      "profile_id": "vehicle-style",
-      "intended_use": "Vehicle design consistency LoRA",
-      "eligible_lanes": ["exterior", "cockpit", "component"],
-      "minimum_review_threshold": 0.7,
-      "excluded_content": ["rejected"],
-      "export_format": "trl"
+  "version": "1.0.0",
+  "groups": {
+    "cold-coast": {
+      "name": "Cold-Coast Shipwrights",
+      "materials": ["pitch-darkened northern oak", "clinker-built larch strakes", "tarred hemp", "forged black iron"],
+      "motifs": ["high bluff bows", "steeply raked stems", "enclosed weather castles", "square storm canvas"],
+      "palette": ["charcoal pitch", "weathered bog oak", "ochre tallow", "slate sea-grey"]
+    },
+    "sunward-sea": {
+      "name": "Sunward-Sea Yards",
+      "materials": ["cedar and cypress carvel planking", "brass and bronze fittings", "bleached linen lateen canvas"],
+      "motifs": ["long sweeping lateen yards", "low sleek sheer", "beaked prows", "painted eyes and geometricwale bands"],
+      "palette": ["warm sun-cured cedar", "terracotta red", "ultramarine trim", "bleached flax"]
+    },
+    "crown-naval": {
+      "name": "Crown Naval Dockyards",
+      "materials": ["seasoned heart-oak", "copper-sheathed lower hull", "cast bronze ordnance", "dressed pine spars"],
+      "motifs": ["checkered gunport strakes", "carved stern galleries", "disciplined three-mast square rig", "signal halyards"],
+      "palette": ["naval ochre-yellow", "tar black", "verdigris copper", "unbleached canvas cream"]
+    },
+    "longshore": {
+      "name": "Longshore & Sound Builders",
+      "materials": ["white oak frames", "pitch-pine planking", "tanbark-dyed fore-and-aft canvas", "galvanized ironwork"],
+      "motifs": ["raked schooners and sloops", "clean working decks", "gaff and boom fore-and-aft rig", "sharp weatherly entry"],
+      "palette": ["tanbark rust", "weathered pine grey", "hull black", "chalk white waterline"]
+    },
+    "far-trade": {
+      "name": "Far-Trade Ocean Yards",
+      "materials": ["teak and camphorwood planking", "split-bamboo sail battens", "lacquered hardwood", "coir cordage"],
+      "motifs": ["full-length battened lug sails", "watertight bulkhead hull divisions", "high transom stern", "balanced rudder"],
+      "palette": ["oiled teak", "cinnabar lacquer", "indigo cloth", "aged bamboo gold"]
     }
-  ]
+  },
+  "shared": {
+    "rendering_terms": [
+      "age-of-sail naval architecture",
+      "clear standing and running rigging",
+      "authentic timber grain and plank seams",
+      "controlled natural maritime lighting"
+    ],
+    "prohibited": [
+      "anime",
+      "cel-shading",
+      "sci-fi thrusters",
+      "modern steel warship",
+      "neon cyberpunk lighting"
+    ]
+  }
 }

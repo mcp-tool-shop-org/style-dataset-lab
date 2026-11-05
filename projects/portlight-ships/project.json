@@ -1,22 +1,51 @@
 {
   "name": "portlight-ships",
-  "display_name": "TEMPLATE",
-  "domain": "vehicle-mech",
-  "version": "0.1.0",
-  "defaults": {
-    "checkpoint": "dreamshaperXL_v21TurboDPMSDE.safetensors",
-    "loras": [
-      {
-        "name": "classipeintxl_v21.safetensors",
-        "weight": 1
-      }
-    ],
+  "display_name": "Portlight Ships",
+  "version": "1.0.0",
+  "description": "Portlight Ships — maritime age-of-sail merchant and naval vessel visual canon and dataset project on Apache-2.0 Qwen-Image",
+  "domain": "maritime-vessel",
+  "rights": {
+    "owner": "mcp-tool-shop",
+    "licence": "CC-BY-4.0",
+    "ai_assisted_disclosure": true
+  },
+  "paths": {
+    "canon": "canon",
+    "records": "records",
+    "comparisons": "comparisons",
+    "prompts": "inputs/prompts",
+    "candidates": "outputs/candidates",
+    "approved": "outputs/approved",
+    "rejected": "outputs/rejected",
+    "exports": "exports",
+    "snapshots": "snapshots",
+    "splits": "splits"
+  },
+  "generation": {
+    "comfy_url": "http://127.0.0.1:8188",
+    "base": "qwen-image",
+    "unet": "qwen_image_fp8_e4m3fn.safetensors",
+    "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "vae": "qwen_image_vae.safetensors",
+    "sampler": "euler",
+    "scheduler": "simple",
+    "shift": 3.1,
+    "steps": 22,
+    "cfg": 3.5,
     "width": 1024,
-    "height": 1024,
-    "steps": 8,
-    "cfg": 2,
-    "sampler": "dpmpp_sde",
-    "scheduler": "karras",
-    "comfy_url": "http://127.0.0.1:8188"
+    "height": 1024
+  },
+  "selection_defaults": {
+    "require_judgment": true,
+    "require_status": ["approved"],
+    "require_canon_bound": true,
+    "minimum_pass_ratio": 0.7,
+    "require_provenance_chain": true
+  },
+  "split_defaults": {
+    "train_ratio": 0.8,
+    "val_ratio": 0.1,
+    "test_ratio": 0.1,
+    "seed": 42
   }
 }
