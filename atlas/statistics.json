@@ -33,7 +33,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "bin",
-      "qualifyingSourceCommits": 4,
+      "qualifyingSourceCommits": 2,
       "rebaseline": null
     },
     {
@@ -70,7 +70,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "lib",
-      "qualifyingSourceCommits": 18,
+      "qualifyingSourceCommits": 13,
       "rebaseline": null
     },
     {
@@ -201,7 +201,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "tests",
-      "qualifyingSourceCommits": 18,
+      "qualifyingSourceCommits": 15,
       "rebaseline": null
     },
     {
@@ -226,12 +226,17 @@
     "files": [
       {
         "commits": 2,
-        "lines": 6,
+        "lines": 0,
+        "path": ".coverage"
+      },
+      {
+        "commits": 1,
+        "lines": 3,
         "path": ".gitattributes"
       },
       {
-        "commits": 15,
-        "lines": 354,
+        "commits": 14,
+        "lines": 309,
         "path": ".github/workflows/ci.yml"
       },
       {
@@ -245,8 +250,8 @@
         "path": ".github/workflows/publish.yml"
       },
       {
-        "commits": 10,
-        "lines": 55,
+        "commits": 9,
+        "lines": 53,
         "path": ".gitignore"
       },
       {
@@ -300,8 +305,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 10,
-        "lines": 423,
+        "commits": 7,
+        "lines": 370,
         "path": "atlas/README.md"
       },
       {
@@ -310,28 +315,28 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 10,
-        "lines": 1531,
+        "commits": 7,
+        "lines": 1402,
         "path": "atlas/page.json"
       },
       {
-        "commits": 10,
-        "lines": 78488,
+        "commits": 7,
+        "lines": 52321,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 10,
-        "lines": 31921,
+        "commits": 7,
+        "lines": 29362,
         "path": "atlas/structure.json"
       },
       {
-        "commits": 6,
-        "lines": 120,
+        "commits": 3,
+        "lines": 91,
         "path": "bin/sdlab.js"
       },
       {
-        "commits": 4,
-        "lines": 56,
+        "commits": 3,
+        "lines": 46,
         "path": "codecov.yml"
       },
       {
@@ -370,8 +375,8 @@
         "path": "docs/internal/WAVE_PLAN.md"
       },
       {
-        "commits": 1,
-        "lines": 42,
+        "commits": 2,
+        "lines": 259,
         "path": "lib/adapters/ai-toolkit.js"
       },
       {
@@ -380,8 +385,8 @@
         "path": "lib/adapters/comfyui-runner.js"
       },
       {
-        "commits": 5,
-        "lines": 337,
+        "commits": 3,
+        "lines": 151,
         "path": "lib/adapters/comfyui-workflows.js"
       },
       {
@@ -440,19 +445,9 @@
         "path": "lib/candidate-sheet.js"
       },
       {
-        "commits": 3,
-        "lines": 358,
-        "path": "lib/canon-author.js"
-      },
-      {
         "commits": 2,
         "lines": 239,
         "path": "lib/canon-build/build.js"
-      },
-      {
-        "commits": 2,
-        "lines": 221,
-        "path": "lib/canon-review-gate.js"
       },
       {
         "commits": 2,
@@ -463,6 +458,11 @@
         "commits": 2,
         "lines": 86,
         "path": "lib/card.js"
+      },
+      {
+        "commits": 1,
+        "lines": 285,
+        "path": "lib/colab-launcher-guards.js"
       },
       {
         "commits": 2,
@@ -500,13 +500,13 @@
         "path": "lib/eval-runs.js"
       },
       {
-        "commits": 4,
-        "lines": 160,
+        "commits": 2,
+        "lines": 156,
         "path": "lib/export.js"
       },
       {
-        "commits": 3,
-        "lines": 88,
+        "commits": 2,
+        "lines": 85,
         "path": "lib/freeze-gate.js"
       },
       {
@@ -515,8 +515,8 @@
         "path": "lib/freeze-stamp.js"
       },
       {
-        "commits": 3,
-        "lines": 383,
+        "commits": 1,
+        "lines": 17,
         "path": "lib/generated-provenance.js"
       },
       {
@@ -535,24 +535,9 @@
         "path": "lib/judgment-provenance.js"
       },
       {
-        "commits": 2,
-        "lines": 1336,
-        "path": "lib/lane1-render.js"
-      },
-      {
         "commits": 1,
         "lines": 422,
         "path": "lib/measure.js"
-      },
-      {
-        "commits": 3,
-        "lines": 677,
-        "path": "lib/memory-store.js"
-      },
-      {
-        "commits": 2,
-        "lines": 610,
-        "path": "lib/model-licences.js"
       },
       {
         "commits": 2,
@@ -565,28 +550,18 @@
         "path": "lib/paths.js"
       },
       {
-        "commits": 3,
-        "lines": 761,
+        "commits": 1,
+        "lines": 263,
         "path": "lib/png-meta.js"
       },
       {
         "commits": 2,
-        "lines": 124,
-        "path": "lib/records.js"
-      },
-      {
-        "commits": 4,
-        "lines": 146,
+        "lines": 114,
         "path": "lib/reingest-selected.js"
       },
       {
-        "commits": 2,
-        "lines": 60,
-        "path": "lib/reingest.js"
-      },
-      {
-        "commits": 5,
-        "lines": 566,
+        "commits": 3,
+        "lines": 426,
         "path": "lib/run-manifest.js"
       },
       {
@@ -611,6 +586,11 @@
       },
       {
         "commits": 1,
+        "lines": 214,
+        "path": "lib/train-runs.js"
+      },
+      {
+        "commits": 1,
         "lines": 135,
         "path": "lib/training-manifests.js"
       },
@@ -620,14 +600,9 @@
         "path": "lib/training-packages.js"
       },
       {
-        "commits": 2,
-        "lines": 70,
+        "commits": 1,
+        "lines": 67,
         "path": "lib/verifier.js"
-      },
-      {
-        "commits": 2,
-        "lines": 734,
-        "path": "lib/verify-chain.js"
       },
       {
         "commits": 1,
@@ -2995,8 +2970,8 @@
         "path": "projects/hesperia/terminology.json"
       },
       {
-        "commits": 4,
-        "lines": 94,
+        "commits": 2,
+        "lines": 90,
         "path": "projects/portlight-ships/README.md"
       },
       {
@@ -3005,8 +2980,8 @@
         "path": "projects/portlight-ships/canon-build/config.json"
       },
       {
-        "commits": 4,
-        "lines": 92,
+        "commits": 2,
+        "lines": 88,
         "path": "projects/portlight-ships/canon/constitution.md"
       },
       {
@@ -3015,8 +2990,8 @@
         "path": "projects/portlight-ships/canon/damage-tiers.md"
       },
       {
-        "commits": 4,
-        "lines": 64,
+        "commits": 2,
+        "lines": 60,
         "path": "projects/portlight-ships/canon/review-rubric.md"
       },
       {
@@ -3100,43 +3075,43 @@
         "path": "projects/portlight-ships/canon/traditions.md"
       },
       {
-        "commits": 4,
-        "lines": 176,
+        "commits": 2,
+        "lines": 174,
         "path": "projects/portlight-ships/constitution.json"
       },
       {
-        "commits": 4,
-        "lines": 76,
+        "commits": 2,
+        "lines": 74,
         "path": "projects/portlight-ships/inputs/prompts/example-wave.json"
       },
       {
-        "commits": 4,
-        "lines": 92,
+        "commits": 2,
+        "lines": 82,
         "path": "projects/portlight-ships/lanes.json"
       },
       {
-        "commits": 4,
-        "lines": 164,
+        "commits": 2,
+        "lines": 44,
         "path": "projects/portlight-ships/project.json"
       },
       {
-        "commits": 4,
-        "lines": 82,
+        "commits": 2,
+        "lines": 80,
         "path": "projects/portlight-ships/rubric.json"
       },
       {
-        "commits": 4,
-        "lines": 44,
+        "commits": 2,
+        "lines": 42,
         "path": "projects/portlight-ships/terminology.json"
       },
       {
-        "commits": 4,
-        "lines": 138,
+        "commits": 2,
+        "lines": 120,
         "path": "projects/portlight-ships/workflows/profiles/variant-pack.json"
       },
       {
-        "commits": 4,
-        "lines": 136,
+        "commits": 2,
+        "lines": 118,
         "path": "projects/portlight-ships/workflows/profiles/vehicle-silhouette-pack.json"
       },
       {
@@ -3145,8 +3120,8 @@
         "path": "projects/rustline/CHANGELOG.md"
       },
       {
-        "commits": 4,
-        "lines": 236,
+        "commits": 2,
+        "lines": 228,
         "path": "projects/rustline/HANDOFF.md"
       },
       {
@@ -3445,8 +3420,8 @@
         "path": "projects/rustline/records/comfy-cloud-lora-export-request.md"
       },
       {
-        "commits": 3,
-        "lines": 115,
+        "commits": 1,
+        "lines": 95,
         "path": "projects/rustline/records/comfy-cloud-model-import-resolution.md"
       },
       {
@@ -4525,8 +4500,8 @@
         "path": "projects/salt-road/inputs/prompts/finishing-uploads.json"
       },
       {
-        "commits": 5,
-        "lines": 540,
+        "commits": 3,
+        "lines": 536,
         "path": "projects/salt-road/inputs/prompts/formula.json"
       },
       {
@@ -6980,11 +6955,6 @@
         "path": "rustline/records/gen2-cyclops-design-convergence.md}"
       },
       {
-        "commits": 2,
-        "lines": 58,
-        "path": "schemas/generated-record.schema.json"
-      },
-      {
         "commits": 1,
         "lines": 71,
         "path": "scripts/_batch_cut.py"
@@ -7040,11 +7010,6 @@
         "path": "scripts/canon-build.js"
       },
       {
-        "commits": 1,
-        "lines": 82,
-        "path": "scripts/canon-draft.js"
-      },
-      {
         "commits": 2,
         "lines": 23,
         "path": "scripts/canon-drift.js"
@@ -7055,8 +7020,8 @@
         "path": "scripts/canon-freeze-status.js"
       },
       {
-        "commits": 3,
-        "lines": 42,
+        "commits": 2,
+        "lines": 38,
         "path": "scripts/canon-freeze.js"
       },
       {
@@ -7070,24 +7035,24 @@
         "path": "scripts/card.js"
       },
       {
+        "commits": 1,
+        "lines": 45,
+        "path": "scripts/colab/ai-toolkit-override-py315.txt"
+      },
+      {
         "commits": 2,
-        "lines": 802,
+        "lines": 423,
         "path": "scripts/colab/colab_window.sh"
       },
       {
-        "commits": 2,
-        "lines": 1940,
-        "path": "scripts/colab/lane1_render.py"
-      },
-      {
-        "commits": 2,
-        "lines": 742,
+        "commits": 3,
+        "lines": 419,
         "path": "scripts/colab/launch_guards.py"
       },
       {
         "commits": 2,
-        "lines": 510,
-        "path": "scripts/colab/launch_lane1_stub.sh"
+        "lines": 419,
+        "path": "scripts/colab/launch_lane3_stub.sh"
       },
       {
         "commits": 1,
@@ -7110,8 +7075,8 @@
         "path": "scripts/curate.js"
       },
       {
-        "commits": 4,
-        "lines": 238,
+        "commits": 2,
+        "lines": 236,
         "path": "scripts/doctor.js"
       },
       {
@@ -7150,8 +7115,8 @@
         "path": "scripts/generate-ipadapter.js"
       },
       {
-        "commits": 8,
-        "lines": 519,
+        "commits": 5,
+        "lines": 419,
         "path": "scripts/generate.js"
       },
       {
@@ -7238,11 +7203,6 @@
         "commits": 1,
         "lines": 4,
         "path": "scripts/training-profile.js"
-      },
-      {
-        "commits": 2,
-        "lines": 134,
-        "path": "scripts/verify.js"
       },
       {
         "commits": 1,
@@ -7385,19 +7345,14 @@
         "path": "tests/cli-scripts/qwen-python-parity.test.js"
       },
       {
-        "commits": 2,
-        "lines": 1362,
-        "path": "tests/colab/test_lane1_render.py"
-      },
-      {
-        "commits": 2,
-        "lines": 540,
+        "commits": 1,
+        "lines": 270,
         "path": "tests/colab/test_launch_guards.py"
       },
       {
         "commits": 2,
-        "lines": 854,
-        "path": "tests/colab/test_launch_lane1_stub.py"
+        "lines": 434,
+        "path": "tests/colab/test_launch_lane3_stub.py"
       },
       {
         "commits": 2,
@@ -7555,8 +7510,8 @@
         "path": "tests/lib-dataset/training-manifest-checksums-binding.test.js"
       },
       {
-        "commits": 3,
-        "lines": 349,
+        "commits": 1,
+        "lines": 341,
         "path": "tests/lib-dataset/training-package-safety.test.js"
       },
       {
@@ -7575,19 +7530,9 @@
         "path": "tests/lib-pipeline/comfyui-workflows.test.js"
       },
       {
-        "commits": 2,
-        "lines": 1278,
-        "path": "tests/lib-pipeline/lane1-render.test.js"
-      },
-      {
-        "commits": 3,
-        "lines": 873,
-        "path": "tests/lib-pipeline/lane2-canon-memory.test.js"
-      },
-      {
-        "commits": 2,
-        "lines": 1696,
-        "path": "tests/lib-pipeline/provenance-chain.test.js"
+        "commits": 1,
+        "lines": 360,
+        "path": "tests/lib-pipeline/lane3-train-guards.test.js"
       },
       {
         "commits": 1,
@@ -7675,51 +7620,51 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T18:10:13.768Z",
+  "generatedAt": "2026-11-05T18:18:21.440Z",
   "generatedFrom": {
-    "commit": "50656210c29b22d9140c3bf6e761c0145bd74d63"
+    "commit": "dbf8473fe4e2fcf4dd5dead382f84084932d661c"
   },
   "pairs": [
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
-      "either": 7,
-      "shared": 7,
+      "either": 5,
+      "shared": 5,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/statistics.json",
-      "either": 7,
-      "shared": 7,
+      "either": 5,
+      "shared": 5,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/structure.json",
-      "either": 7,
-      "shared": 7,
+      "either": 5,
+      "shared": 5,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/statistics.json",
-      "either": 7,
-      "shared": 7,
+      "either": 5,
+      "shared": 5,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/structure.json",
-      "either": 7,
-      "shared": 7,
+      "either": 5,
+      "shared": 5,
       "strength": 1
     },
     {
       "a": "atlas/statistics.json",
       "b": "atlas/structure.json",
-      "either": 7,
-      "shared": 7,
+      "either": 5,
+      "shared": 5,
       "strength": 1
     }
   ],
@@ -7733,16 +7678,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T13:09:44-05:00",
-    "inScopeFiles": 3255,
+    "headDate": "2026-11-05T10:03:32-05:00",
+    "inScopeFiles": 3269,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 105,
+    "qualifyingCommits": 103,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T18:09:44.000Z",
+    "since": "2026-05-09T15:03:32.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",
