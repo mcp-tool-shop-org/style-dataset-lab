@@ -1,5 +1,7 @@
 # Review Rubric
 
+> TODO-canon: import the Director-ratified Portlight canon (portlight-ships, 2026-07-25)
+
 ## Quick Decision Tree
 
 1. Does the image pass the **style test**? (Would it look at home next to approved assets?)
