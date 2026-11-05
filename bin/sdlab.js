@@ -102,6 +102,7 @@ const CANON_COMMANDS = {
   'unfreeze':      '../scripts/canon-unfreeze.js',
   'freeze-status': '../scripts/canon-freeze-status.js',
   'drift':         '../scripts/canon-drift.js',
+  'draft':         '../scripts/canon-draft.js',
 };
 
 // Two-word commands under "asset" namespace — the asset lane

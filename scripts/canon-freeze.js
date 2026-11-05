@@ -17,6 +17,7 @@ import { loadBuildConfig } from '../lib/canon-build/load-config.js';
 import { loadCanonEntriesInDir, entryId } from '../lib/canon-build/load-entry.js';
 import { buildFreezeBlock, FREEZE_STATUSES, resolveWatchFields } from '../lib/freeze-stamp.js';
 import { appendEvent } from '../lib/freeze-events.js';
+import { assertDirectorRatifiedForFreeze } from '../lib/canon-review-gate.js';
 import { inputError } from '../lib/errors.js';
 import { getProjectRoot } from '../lib/paths.js';
 import { assertKnownOptions } from './_shared-args.js';
@@ -101,6 +102,9 @@ export async function run(argv) {
       `Check the entry filename matches the id field, and that the schema-subdirectory mapping in canon-build/config.json covers this entity type.`,
     );
   }
+
+  // G11: Refuse to freeze a model-drafted canon entry unless explicitly ratified by the Director
+  assertDirectorRatifiedForFreeze(resolved.entry.frontmatter);
 
   // Resolve the witness build hash
   const lockedAtBuild = parsed.values.build || await findLatestBuildHash(projectRoot);
