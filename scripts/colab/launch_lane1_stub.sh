@@ -24,10 +24,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="e1c97cc2c854f20fcc8e37967afcdd6b96137f696de9b7fc5bea04c5090984a1"
+PINNED_LAUNCH_GUARDS_SHA="84b505966f476cf0a944147fb638e6128c17dde14bdd69bcb3c3762f3c284795"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="3fd61cb74eda69d1995b9a2712dc96595aa4239e81d4b315dd3abea8561a93aa"
-PINNED_SELF_SHA="c03c4d909eec18242a906f0ec617532c0fea505641766eaad8c8556b3f05aa2a"
+PINNED_COLAB_WINDOW_SHA="79029af51608020fcf0898a9aba3add694612726474c00c7f755b213abb8fa1e"
+PINNED_SELF_SHA="c5a6a0bbbd2ca2b98b40489e911e4b89186b721e2c90ca387ba522ae3967c7ac"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -242,7 +242,10 @@ echo "setup" > /content/lane1_out/phase.txt
       if [ -f /sys/fs/cgroup/memory.events ]; then
         sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
       fi
-      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      if [ -f /sys/fs/cgroup/memory.stat ]; then
+        grep -E '^(anon|shmem|file) ' /sys/fs/cgroup/memory.stat | sed 's/^/CGROUP_MEM_STAT: /' || true
+      fi
+      grep -E '^(MemTotal|MemAvailable|AnonPages|Shmem):' /proc/meminfo | sed 's/^/MEM: /' || true
       SETUP_SZ="\$(wc -c < /content/lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
       echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"

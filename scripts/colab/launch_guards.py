@@ -612,24 +612,161 @@ def evaluate_vitals_and_stall_guard(
     }
 
 
+# The host-RAM guard measures PRIVATE memory: pages the kernel cannot drop to make room, so
+# pages that end in an OOM kill when they outgrow the VM. That is anonymous memory plus shmem
+# (tmpfs, /dev/shm, PyTorch's shared-memory tensors): Colab VMs run without swap, so shmem is
+# as unreclaimable as anon. It is NOT cgroup memory.current, which also counts the page cache
+# (file pages: a downloaded or mmap'd model), and the kernel reclaims that cache before it
+# OOM-kills anything. Window sdlab-l3-rung-g4a (2026-11-06) tripped on memory.current: 173,117
+# MiB of which AnonPages was 52,492 MiB, while MemAvailable still read 125,790 MiB.
+#
+# Two checks, either one trips HOST_RAM_PROJECTION_EXCEEDED:
+#   1. (private + delta) x factor > ceiling, ceiling = min(MemTotal, cgroup memory.max when it is
+#      a number; `max` is no cgroup limit).
+#   2. MemAvailable - delta x factor < floor. MemAvailable is the kernel's own estimate of what
+#      can be had without swapping, reclaimable cache included; it also falls for unreclaimable
+#      memory that is not anon (kernel slab, page tables, driver-pinned buffers), which check 1
+#      cannot see. The floor (2048 MiB) is the one the lane-3 walks stop at (walk_probe.py
+#      HOST_RAM_CEILING: MemAvailable < 2 GiB).
+MEM_AVAILABLE_FLOOR_MB = 2048.0
+RAM_SAFETY_FACTOR = 1.05
+_KB_FIELD_RE = {
+    name: re.compile(rf"^MEM:\s*{name}:\s*(\d+)\s*kB", re.M)
+    for name in ("MemTotal", "MemAvailable", "AnonPages", "Shmem")
+}
+_CGROUP_STAT_RE = re.compile(r"^CGROUP_MEM_STAT:\s*(anon|shmem|file)\s+(\d+)\s*$", re.M)
+_CGROUP_MAX_RE = re.compile(r"^CGROUP_MEM_MAX:\s*(\S+)\s*$", re.M)
+_CGROUP_CUR_RE = re.compile(r"^CGROUP_MEM_CURRENT:\s*(\d+)\s*$", re.M)
+
+
+def host_ram_reading(vitals_text: str) -> dict[str, Any] | None:
+    """The newest vitals sample's private-memory reading, or None when no sample carries one.
+
+    Every value is taken from ONE sample (the newest whose private memory can be read), so a
+    reading never mixes two samples. Private memory is cgroup memory.stat `anon` + `shmem` when the
+    sample carries it (it is scoped to the cgroup the limit applies to), else /proc/meminfo
+    `AnonPages` + `Shmem` (Shmem counted as 0 when an older emitter did not print it). cgroup
+    memory.current is recorded for the record only and never used."""
+    blocks = [b for b in re.split(r"^===\s*VITALS\s+", vitals_text, flags=re.M) if b.strip()]
+    for block in reversed(blocks):
+        kb = {}
+        for name, rx in _KB_FIELD_RE.items():
+            found = rx.findall(block)
+            if found:
+                kb[name] = round(int(found[-1]) / 1024.0, 1)
+        stat = {k: int(v) for k, v in _CGROUP_STAT_RE.findall(block)}
+        if "anon" in stat:
+            anon_mb = round(stat["anon"] / 1048576.0, 1)
+            shmem_mb = round(stat.get("shmem", 0) / 1048576.0, 1)
+            source = "cgroup_memory.stat:anon+shmem"
+        elif "AnonPages" in kb:
+            anon_mb = kb["AnonPages"]
+            shmem_mb = kb.get("Shmem", 0.0)
+            source = "meminfo:AnonPages+Shmem" if "Shmem" in kb else "meminfo:AnonPages"
+        else:
+            continue
+        cg_max_raw = _CGROUP_MAX_RE.findall(block)
+        cg_max_mb = None
+        if cg_max_raw and cg_max_raw[-1].isdigit():
+            cg_max_mb = round(int(cg_max_raw[-1]) / 1048576.0, 1)
+        cg_cur = _CGROUP_CUR_RE.findall(block)
+        return {
+            "timestamp": block.split()[0] if block.split() else "",
+            "private_mb": round(anon_mb + shmem_mb, 1),
+            "anon_mb": anon_mb,
+            "shmem_mb": shmem_mb,
+            "source": source,
+            "mem_total_mb": kb.get("MemTotal"),
+            "mem_available_mb": kb.get("MemAvailable"),
+            "cgroup_max_mb": cg_max_mb,
+            "cgroup_max_raw": cg_max_raw[-1] if cg_max_raw else None,
+            "cgroup_current_mb_not_used": round(int(cg_cur[-1]) / 1048576.0, 1) if cg_cur else None,
+        }
+    return None
+
+
+def evaluate_host_ram_projection(
+    *,
+    current_anon_mb: float,
+    projected_delta_mb: float,
+    mem_total_mb: float,
+    cgroup_max_mb: float | None = None,
+    mem_available_mb: float | None = None,
+    mem_available_floor_mb: float = MEM_AVAILABLE_FLOOR_MB,
+    safety_factor: float = RAM_SAFETY_FACTOR,
+    source: str | None = None,
+) -> dict[str, Any]:
+    """Both host-RAM checks (see the comment above MEM_AVAILABLE_FLOOR_MB). The record carries every
+    number either check used, tripped or not, so guards.log shows why a window stopped."""
+    limit_mb = float(mem_total_mb)
+    limit_source = "MemTotal"
+    if cgroup_max_mb is not None and float(cgroup_max_mb) < limit_mb:
+        limit_mb = float(cgroup_max_mb)
+        limit_source = "cgroup memory.max"
+    factor = float(safety_factor)
+    delta = float(projected_delta_mb)
+    projected_mb = round((float(current_anon_mb) + delta) * factor, 1)
+    tripped_on: list[str] = []
+    why: list[str] = []
+    if projected_mb > limit_mb:
+        tripped_on.append("private_projection")
+        why.append(f"private {float(current_anon_mb):.1f} MB ({source or 'unknown source'}) + delta {delta:.1f} MB "
+                   f"x {factor} = {projected_mb:.1f} MB > ceiling {limit_mb:.1f} MB ({limit_source})")
+    avail_after = None
+    if mem_available_mb is not None:
+        avail_after = round(float(mem_available_mb) - delta * factor, 1)
+        if avail_after < float(mem_available_floor_mb):
+            tripped_on.append("mem_available_floor")
+            why.append(f"MemAvailable {float(mem_available_mb):.1f} MB - delta {delta:.1f} MB x {factor} = "
+                       f"{avail_after:.1f} MB < floor {float(mem_available_floor_mb):.1f} MB")
+    tripped = bool(tripped_on)
+    return {
+        "check": "host_ram",
+        "ok": not tripped,
+        "tripped": tripped,
+        "code": "HOST_RAM_PROJECTION_EXCEEDED" if tripped else None,
+        "tripped_on": tripped_on,
+        "source": source,
+        "private_mb": round(float(current_anon_mb), 1),
+        "delta_mb": round(delta, 1),
+        "factor": factor,
+        "projected_mb": projected_mb,
+        "limit_mb": limit_mb,
+        "limit_source": limit_source,
+        "mem_total_mb": float(mem_total_mb),
+        "cgroup_max_mb": None if cgroup_max_mb is None else float(cgroup_max_mb),
+        "mem_available_mb": None if mem_available_mb is None else float(mem_available_mb),
+        "mem_available_after_delta_mb": avail_after,
+        "mem_available_floor_mb": float(mem_available_floor_mb),
+        "why": "; ".join(why) if why else None,
+    }
+
+
 def check_host_ram_projection(
     *,
     current_anon_mb: float,
     projected_delta_mb: float,
     mem_total_mb: float,
     cgroup_max_mb: float | None = None,
-    safety_factor: float = 1.05,
+    safety_factor: float = RAM_SAFETY_FACTOR,
+    mem_available_mb: float | None = None,
+    mem_available_floor_mb: float = MEM_AVAILABLE_FLOOR_MB,
+    source: str | None = None,
 ) -> dict[str, Any]:
-    limits = [float(mem_total_mb)]
-    if cgroup_max_mb is not None:
-        limits.append(float(cgroup_max_mb))
-    limit_mb = min(limits)
-    projected_mb = round((float(current_anon_mb) + float(projected_delta_mb)) * float(safety_factor), 1)
-    if projected_mb > limit_mb:
-        raise ValueError(
-            f"HOST_RAM_PROJECTION_EXCEEDED: projected {projected_mb:.1f} MB > ceiling {limit_mb:.1f} MB"
-        )
-    return {"ok": True, "projected_mb": projected_mb, "limit_mb": limit_mb}
+    """evaluate_host_ram_projection, raising ValueError (HOST_RAM_PROJECTION_EXCEEDED: <why>) on a trip."""
+    rec = evaluate_host_ram_projection(
+        current_anon_mb=current_anon_mb,
+        projected_delta_mb=projected_delta_mb,
+        mem_total_mb=mem_total_mb,
+        cgroup_max_mb=cgroup_max_mb,
+        mem_available_mb=mem_available_mb,
+        mem_available_floor_mb=mem_available_floor_mb,
+        safety_factor=safety_factor,
+        source=source,
+    )
+    if rec["tripped"]:
+        raise ValueError(f"HOST_RAM_PROJECTION_EXCEEDED: {rec['why']}")
+    return rec
 
 
 def run_between_item_fetch(
@@ -657,6 +794,23 @@ def run_between_item_fetch(
     return {"copied_files": copied, "previous_item": previous_item}
 
 
+def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any] | None:
+    """The kit's named refusal for a wall/cap trip, with the numbers that tripped it. When both trip,
+    the cap's code is the one named (a failed usage read or a spent cap is the costlier finding)."""
+    if cap.get("tripped"):
+        if cap.get("code") == "COLAB_USAGE_PARSE_FAILED":
+            why = f"cap guard: {cap.get('usage_parse_error')} (ceiling {cap.get('ceiling_ccu')} ccu)"
+        else:
+            why = f"cap guard: spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu"
+        return {"code": cap.get("code"), "why": why}
+    if wall.get("tripped"):
+        return {
+            "code": wall.get("code"),
+            "why": f"wall guard: {wall.get('remaining_s')} s remaining of threshold {wall.get('threshold_s')} s (wall - grace)",
+        }
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="sdlab C2 launcher guards CLI")
     parser.add_argument("--mode", default="stub")
@@ -681,6 +835,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--projected-delta-mb", type=float, default=1024.0)
     parser.add_argument("--mem-total-mb", type=float, default=12288.0)
     parser.add_argument("--cgroup-max-mb", type=float, default=None)
+    parser.add_argument("--mem-available-mb", type=float, default=None)
+    parser.add_argument("--mem-available-floor-mb", type=float, default=MEM_AVAILABLE_FLOOR_MB)
+    parser.add_argument("--ram-source", default=None, help="Where --current-anon-mb was read (recorded in guards.log)")
     args = parser.parse_args(argv)
 
     if args.verify_sha:
@@ -705,18 +862,24 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.check_ram:
-        try:
-            res = check_host_ram_projection(
-                current_anon_mb=args.current_anon_mb,
-                projected_delta_mb=args.projected_delta_mb,
-                mem_total_mb=args.mem_total_mb,
-                cgroup_max_mb=args.cgroup_max_mb,
-            )
+        # The record goes to stdout (guards.log) whether or not it trips, so the tripping numbers
+        # reach the rig; a trip also names itself on stderr and carries `refusal` for the kit.
+        res = evaluate_host_ram_projection(
+            current_anon_mb=args.current_anon_mb,
+            projected_delta_mb=args.projected_delta_mb,
+            mem_total_mb=args.mem_total_mb,
+            cgroup_max_mb=args.cgroup_max_mb,
+            mem_available_mb=args.mem_available_mb,
+            mem_available_floor_mb=args.mem_available_floor_mb,
+            source=args.ram_source,
+        )
+        if res["tripped"]:
+            res["refusal"] = {"code": res["code"], "why": res["why"]}
             print(json.dumps(res))
-            return 0
-        except ValueError as exc:
-            print(str(exc), file=sys.stderr)
+            print(f"{res['code']}: {res['why']}", file=sys.stderr)
             return 1
+        print(json.dumps(res))
+        return 0
 
     if args.vitals_file is not None:
         txt = args.vitals_file.read_text(encoding="utf-8", errors="replace") if args.vitals_file.exists() else ""
@@ -727,6 +890,8 @@ def main(argv: list[str] | None = None) -> int:
             stall_s=args.stall_s,
             setup_stall_s=args.setup_stall_s,
         )
+        if vit["tripped"]:
+            vit["refusal"] = {"code": vit["code"], "why": vit["reason"]}
         print(json.dumps(vit))
         return 1 if vit["tripped"] else 0
 
@@ -741,7 +906,11 @@ def main(argv: list[str] | None = None) -> int:
         elapsed_s=args.elapsed_s,
         usage_parse_error=args.usage_parse_error,
     )
-    print(json.dumps({"wall": wall, "cap": cap}))
+    out: dict[str, Any] = {"wall": wall, "cap": cap}
+    refusal = wall_cap_refusal(wall, cap)
+    if refusal is not None:
+        out["refusal"] = refusal
+    print(json.dumps(out))
     return 1 if (wall["tripped"] or cap["tripped"]) else 0
 
 

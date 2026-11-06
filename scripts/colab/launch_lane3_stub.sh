@@ -30,14 +30,14 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="e1c97cc2c854f20fcc8e37967afcdd6b96137f696de9b7fc5bea04c5090984a1"
+PINNED_LAUNCH_GUARDS_SHA="84b505966f476cf0a944147fb638e6128c17dde14bdd69bcb3c3762f3c284795"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="3fd61cb74eda69d1995b9a2712dc96595aa4239e81d4b315dd3abea8561a93aa"
+PINNED_COLAB_WINDOW_SHA="79029af51608020fcf0898a9aba3add694612726474c00c7f755b213abb8fa1e"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="e2dee45ebf4d46dfef98949b3927d6cecbcf4abc21e94919a14d7aaaeb0c092a"
+PINNED_SELF_SHA="8aea11adc798c4ff711b87479d5347c77df2b431fb2c2a8197a0f2da11ec8078"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -173,7 +173,10 @@ echo "setup" > /content/lane3_out/phase.txt
       if [ -f /sys/fs/cgroup/memory.events ]; then
         sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
       fi
-      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      if [ -f /sys/fs/cgroup/memory.stat ]; then
+        grep -E '^(anon|shmem|file) ' /sys/fs/cgroup/memory.stat | sed 's/^/CGROUP_MEM_STAT: /' || true
+      fi
+      grep -E '^(MemTotal|MemAvailable|AnonPages|Shmem):' /proc/meminfo | sed 's/^/MEM: /' || true
       SETUP_SZ="\$(wc -c < /content/lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
       echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"

@@ -820,6 +820,37 @@ elif [ "${mode}" = "setup_stall" ]; then
     sleep "${vitals_interval}"
   done
   exit 0
+elif [ "${mode}" = "ram_replay" ]; then
+  # Replays a real VM's memory readings: FAKE_COLAB_RAM_REPLAY names a file with one sample per
+  # line, "<cgroup memory.current bytes> <MemTotal kB> <MemAvailable kB> <AnonPages kB>", printed
+  # the way the kit's vitals emitter prints them (cgroup memory.max "max", as on Colab). The last
+  # sample is held so the live guards read it more than once.
+  echo "run" > lane3_out/phase.txt
+  emit_ram_sample() {
+    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "CGROUP_MEM_CURRENT: $1"
+    echo "CGROUP_MEM_MAX: max"
+    echo "CGROUP_MEM: oom_kill 0"
+    echo "MEM: MemTotal:       $2 kB"
+    echo "MEM: MemAvailable:   $3 kB"
+    echo "MEM: AnonPages:      $4 kB"
+    echo "SETUP_BYTES: 0"
+    echo "PROC:"
+    echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+    printf 'HARNESS: {"phase": "run"}\\n'
+  }
+  last=""
+  while read -r cg tot avail anon; do
+    [ -n "${anon:-}" ] || continue
+    emit_ram_sample "${cg}" "${tot}" "${avail}" "${anon}"
+    last="${cg} ${tot} ${avail} ${anon}"
+    sleep "${vitals_interval}"
+  done < "${FAKE_COLAB_RAM_REPLAY:?ram_replay needs FAKE_COLAB_RAM_REPLAY}"
+  for _ in $(seq 1 "${FAKE_COLAB_RAM_HOLD:-40}"); do
+    emit_ram_sample ${last}
+    sleep "${vitals_interval}"
+  done
+  exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane3_out/phase.txt
   for _ in $(seq 1 60); do

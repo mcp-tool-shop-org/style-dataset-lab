@@ -1,14 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-06 from commit 0471d9f by Atlas 1.24.0.
+Mapped at 2026-11-06 from commit f114ff0 by Atlas 1.24.0.
 
 ## What this is
 
-13 parts, mostly JSON data (2619 files); code in JavaScript (247), Python (56), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
+13 parts, mostly JSON data (2619 files); code in JavaScript (247), Python (57), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-06 (59984cc)
+## What changed since 2026-11-06 (0471d9f)
 
-Nothing structural changed since 2026-11-06; 7 files added and 15 changed content.
+Nothing structural changed since 2026-11-06; 2 files added and 7 changed content.
 
 ## What comes in
 
@@ -19,7 +19,7 @@ Nothing structural changed since 2026-11-06; 7 files added and 15 changed conten
 
 ## What happens through CI
 
-1. The workflow runs bin/sdlab.js in bin, scripts/colab/preflight_resolve.sh in scripts, and 119 files in tests.
+1. The workflow runs bin/sdlab.js in bin, scripts/colab/preflight_resolve.sh in scripts, and 120 files in tests.
    1. Inside bin/sdlab.js, `main` does, in order: `enableDebug` (lib) and `setLogLevel`.
    2. Or, for an entry of `namespaces` where `command === head`, `main` does `findClosest` (lib) and `inputError` instead.
    3. Or, when `command === 'critique'`, `main` does `run` (scripts) instead.
@@ -62,7 +62,7 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 7 of 11 commits, inside the tests part.
+- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 7 of 12 commits, inside the tests part.
 
 Confidence is low: fewer than 25 source files reach 10 revisions in the window.
 
