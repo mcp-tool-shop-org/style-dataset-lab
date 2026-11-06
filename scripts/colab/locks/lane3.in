@@ -46,3 +46,8 @@ torchcodec==0.15.0
 librosa==0.11.0
 mutagen==1.47.0
 scipy==1.12.0
+# torchaudio: upstream installs it beside torch rather than in requirements (README.md:152-153 at the
+# pin), and toolkit/config_modules.py:7 imports it, so ai-toolkit's run.py fails without it. This lock
+# resolves torch 2.15.0+cu132 from PyPI; upstream's torchaudio==2.11.0+cu130 refuses to import against
+# it (CUDA 13.2 vs 13.0 check), and 2.11.1 (+cu132) imports. Found by the local walk, 2026-11-06.
+torchaudio==2.11.1

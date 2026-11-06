@@ -2915,10 +2915,17 @@ torch==2.15.0 \
     #   pytorch-fid
     #   pytorch-wavelets
     #   timm
+    #   torchaudio
     #   torchvision
 torchao==0.10.0 \
     --hash=sha256:8d984f39246817ac43b46549759af6fa09b3bf70e00f0cff3bd48978777a10e6 \
     --hash=sha256:9489b71259a7e29ee5ad391c333046adeb47888b6d84cfd0111adcf439f829a9
+    # via -r scripts/colab/locks/lane3.in
+torchaudio==2.11.1 \
+    --hash=sha256:0173b5b51e1368aa88de3cbe4e98508b5e9df4d8d59356c4e1fbc830c96191ef \
+    --hash=sha256:46ea71634d181f797370f046075ea982043c228b38d674fd7d9fc1c855a37b6a \
+    --hash=sha256:917667ab3e357d286b0e2405a33dc538e4344d554b72e1b2b03382a4352ca857 \
+    --hash=sha256:ad1175202b5cdb7585a38c1330845430e128c4ed8ceb770639318aa40fc1994b
     # via -r scripts/colab/locks/lane3.in
 torchcodec==0.15.0+cu130 \
     --hash=sha256:03f43f61e214abf9b9f0060c9820a8c883fe0ff60fda305a46514a2a1da1169f \
