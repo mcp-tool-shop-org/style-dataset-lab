@@ -1235,19 +1235,48 @@ def test_gpu_window_at_8_88_trips_the_cap_on_time(tmp_path: Path) -> None:
             os.kill(pid, 9)
 
 
-def test_live_rate_policy_never_falls_back_to_the_configured_rate() -> None:
+USAGE_0 = "Current balance: 1812.22 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n"
+
+
+def test_gpu_rate_selection_raises_rate_unread_without_a_live_rate() -> None:
     import launch_guards as lg
 
-    text0 = "Current balance: 1812.22 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n"
-    gpu = lg.parse_usage_text(text0, configured_rate=0.26, session_opened=True, pre_open_rate=0.0,
-                              live_rate_required=True)
-    assert gpu["rate_for_projection"] == 0.0 and gpu["rate_source"] == "live_rate_unread"
-    gpu2 = lg.parse_usage_text(text0.replace("0.00/hr", "8.88/hr"), configured_rate=0.26, session_opened=True,
-                               pre_open_rate=0.0, live_rate_required=True)
-    assert gpu2["rate_for_projection"] == 8.88 and gpu2["rate_source"] == "post_open_measured"
-    # The CPU stub is unchanged: a 0.00 post-open reading still projects with the labelled configured rate.
-    cpu = lg.parse_usage_text(text0, configured_rate=0.26, session_opened=True, pre_open_rate=0.0)
-    assert cpu["rate_for_projection"] == 0.26 and cpu["rate_source"] == "configured_pending_post_open_rate"
+    for text in (USAGE_0, "Current balance: 1812.22 compute units\nActive assignments: 1\n"):
+        with pytest.raises(lg.RateUnread) as exc:
+            lg.parse_usage_text(text, "gpu", configured_rate=0.26, session_opened=True, pre_open_rate=0.0)
+        assert exc.value.code == "RATE_UNREAD" and exc.value.partial["balance"] == 1812.22
+    # Before the open there is no post-open rate either: still the raise, never a configured rate.
+    with pytest.raises(lg.RateUnread):
+        lg.parse_usage_text(USAGE_0, "gpu", configured_rate=0.26, session_opened=False)
+    # A failed usage read stays COLAB_USAGE_PARSE_FAILED, and carries no projection rate at all.
+    bad = lg.parse_usage_text("garbage", "gpu", configured_rate=0.26, session_opened=True)
+    assert bad["code"] == "COLAB_USAGE_PARSE_FAILED" and bad["rate_for_projection"] is None
+    assert bad["rate_source"] == "live_rate_unread"
+    with pytest.raises(ValueError):
+        lg.parse_usage_text(USAGE_0, "tpu")
+
+
+def test_gpu_rate_selection_uses_the_live_8_88_and_keeps_it() -> None:
+    import launch_guards as lg
+
+    live = lg.parse_usage_text(USAGE_0.replace("0.00/hr", "8.88/hr"), "gpu", configured_rate=0.26,
+                               session_opened=True, pre_open_rate=0.0)
+    assert live["rate_for_projection"] == 8.88 and live["rate_source"] == "post_open_measured"
+    # A later 0.00 reading keeps the last good live rate.
+    later = lg.parse_usage_text(USAGE_0, "gpu", configured_rate=0.26, session_opened=True, pre_open_rate=0.0,
+                                post_open_rate=8.88)
+    assert later["rate_for_projection"] == 8.88 and later["rate_source"] == "post_open_measured"
+
+
+def test_cpu_rate_selection_is_unchanged() -> None:
+    import launch_guards as lg
+
+    pending = lg.parse_usage_text(USAGE_0, "cpu", configured_rate=0.26, session_opened=True, pre_open_rate=0.0)
+    assert pending["rate_for_projection"] == 0.26 and pending["rate_source"] == "configured_pending_post_open_rate"
+    pre = lg.parse_usage_text(USAGE_0.replace("0.00/hr", "0.08/hr"), "cpu", configured_rate=0.26, session_opened=False)
+    assert pre["rate_for_projection"] == 0.26 and pre["rate_source"] == "max_of_pre_open_and_configured"
+    none = lg.parse_usage_text("Current balance: 1.0 compute units\n", "cpu", configured_rate=0.26, session_opened=False)
+    assert none["rate_for_projection"] == 0.26 and none["rate_source"] == "configured"
 
 
 def test_cap_at_8_88_per_hour_trips_at_20_3_seconds() -> None:

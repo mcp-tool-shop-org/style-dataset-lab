@@ -135,7 +135,7 @@ def test_cap_guard_trips_on_fixture_and_stays_quiet_just_under() -> None:
 
 
 def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
-    ok_hr = lg.parse_usage_text(
+    ok_hr = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.85 compute units\nUsage rate: 0.26/hr\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.50,
@@ -149,7 +149,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert ok_hr["active_assignments"] == 1
 
     # Accepts /h as well, and falls back to configured RATE_CCU_PER_HOUR only when rate is absent
-    ok_h = lg.parse_usage_text(
+    ok_h = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 12.5 compute units\nUsage rate: 0.08/h\n",
         usage_rc=0,
         configured_rate=0.50,
@@ -159,7 +159,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert ok_h["rate_measured"] == 0.08
     assert ok_h["rate_source"] == "post_open_measured"
 
-    fallback_rate = lg.parse_usage_text(
+    fallback_rate = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 7.25 compute units\nActive assignments: 0\n",
         usage_rc=0,
         configured_rate=0.33,
@@ -171,7 +171,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert fallback_rate["rate_source"] == "configured"
 
     # Pre-open measured 0.00/hr must never lower configured rate; uses max(pre_open, configured)
-    pre_zero = lg.parse_usage_text(
+    pre_zero = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.85 compute units\nUsage rate: 0.00/hr\nActive assignments: 0\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -183,7 +183,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert pre_zero["rate_used_for_cap_and_projection"] == 0.26
     assert pre_zero["rate_source"] == "max_of_pre_open_and_configured"
 
-    pre_higher = lg.parse_usage_text(
+    pre_higher = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.85 compute units\nUsage rate: 0.80/hr\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -194,7 +194,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert pre_higher["rate_used_for_cap_and_projection"] == 0.80
     assert pre_higher["rate_source"] == "max_of_pre_open_and_configured"
 
-    post_after_pre = lg.parse_usage_text(
+    post_after_pre = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.80 compute units\nUsage rate: 0.24/hr\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -208,7 +208,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_after_pre["rate_source"] == "post_open_measured"
 
     # A post-open 0.00/hr rate is not yet measured: uses max(configured, positive measured) and configured_pending_post_open_rate
-    post_zero = lg.parse_usage_text(
+    post_zero = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.85 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -221,7 +221,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_zero["rate_used_for_cap_and_projection"] == 0.26
     assert post_zero["rate_source"] == "configured_pending_post_open_rate"
 
-    post_zero_with_pos_pre = lg.parse_usage_text(
+    post_zero_with_pos_pre = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.85 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -234,7 +234,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_zero_with_pos_pre["rate_source"] == "configured_pending_post_open_rate"
 
     # Once a later post-open read becomes positive, it replaces the earlier 0.0 post-open read
-    post_later_positive = lg.parse_usage_text(
+    post_later_positive = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.83 compute units\nUsage rate: 0.34/hr\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -248,7 +248,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_later_positive["rate_source"] == "post_open_measured"
 
     # Once a positive post_open_rate is established, a subsequent omitted rate keeps the positive post_open_rate
-    post_keep_positive = lg.parse_usage_text(
+    post_keep_positive = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.82 compute units\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -262,7 +262,7 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_keep_positive["rate_source"] == "post_open_measured"
 
     # Subsequent omitted rate when post_open_rate was 0.0 keeps configured_pending_post_open_rate
-    post_keep_pending = lg.parse_usage_text(
+    post_keep_pending = lg.parse_usage_text(card_class="cpu", raw_usage=
         "Current balance: 9.82 compute units\nActive assignments: 1\n",
         usage_rc=0,
         configured_rate=0.26,
@@ -276,23 +276,23 @@ def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
     assert post_keep_pending["rate_source"] == "configured_pending_post_open_rate"
 
     # Rejects JSON or unparseable output or non-zero exit code without any 10.0 fallback
-    bad_json = lg.parse_usage_text('{"balance_ccu": 10.0, "rate_ccu_per_hour": 0.26}', usage_rc=0)
+    bad_json = lg.parse_usage_text(card_class="cpu", raw_usage='{"balance_ccu": 10.0, "rate_ccu_per_hour": 0.26}', usage_rc=0)
     assert bad_json["ok"] is False
     assert bad_json["code"] == "COLAB_USAGE_PARSE_FAILED"
     assert bad_json["balance"] is None
 
-    bad_rc = lg.parse_usage_text("Current balance: 9.85 compute units\n", usage_rc=1)
+    bad_rc = lg.parse_usage_text(card_class="cpu", raw_usage="Current balance: 9.85 compute units\n", usage_rc=1)
     assert bad_rc["ok"] is False
     assert bad_rc["code"] == "COLAB_USAGE_PARSE_FAILED"
     assert bad_rc["balance"] is None
 
     # Rejects negative balance and negative usage rate as COLAB_USAGE_PARSE_FAILED
-    neg_bal = lg.parse_usage_text("Current balance: -5.00 compute units\nUsage rate: 0.26/hr\n", usage_rc=0)
+    neg_bal = lg.parse_usage_text(card_class="cpu", raw_usage="Current balance: -5.00 compute units\nUsage rate: 0.26/hr\n", usage_rc=0)
     assert neg_bal["ok"] is False
     assert neg_bal["code"] == "COLAB_USAGE_PARSE_FAILED"
     assert neg_bal["balance"] is None
 
-    neg_rate = lg.parse_usage_text("Current balance: 5.00 compute units\nUsage rate: -0.26/hr\n", usage_rc=0)
+    neg_rate = lg.parse_usage_text(card_class="cpu", raw_usage="Current balance: 5.00 compute units\nUsage rate: -0.26/hr\n", usage_rc=0)
     assert neg_rate["ok"] is False
     assert neg_rate["code"] == "COLAB_USAGE_PARSE_FAILED"
     assert neg_rate["balance"] is None

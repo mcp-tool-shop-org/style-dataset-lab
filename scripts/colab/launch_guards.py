@@ -133,16 +133,37 @@ ACTIVE_ASSIGNMENTS_RE = re.compile(
 )
 
 
+class RateUnread(Exception):
+    """A GPU window has no positive live post-open rate. `partial` carries what the usage text did
+    give (balance, the readings), so a caller can record it; the caller decides whether this
+    means "not yet" (polling right after open) or a refusal (RATE_UNREAD)."""
+
+    code = "RATE_UNREAD"
+
+    def __init__(self, partial: dict[str, Any]) -> None:
+        super().__init__("RATE_UNREAD: no positive live post-open rate for a GPU window")
+        self.partial = partial
+
+
+CARD_CLASSES = ("gpu", "cpu")
+
+
 def parse_usage_text(
     raw_usage: str,
+    card_class: str,
     *,
     usage_rc: int = 0,
     configured_rate: float = 0.26,
     session_opened: bool = True,
     post_open_rate: float | None = None,
     pre_open_rate: float | None = None,
-    live_rate_required: bool = False,
 ) -> dict[str, Any]:
+    """Parse `colab usage`. `card_class` ("gpu" or "cpu", required) decides the rate policy: a GPU
+    window is priced only by its live post-open rate, and `_select_rate` raises RateUnread when it
+    has none, so no GPU caller can reach a configured-rate branch. A CPU stub keeps the labelled
+    configured rate."""
+    if card_class not in CARD_CLASSES:
+        raise ValueError(f"card_class must be one of {CARD_CLASSES}, got {card_class!r}")
     cfg = float(configured_rate)
 
     def _select_rate(
@@ -161,11 +182,8 @@ def parse_usage_text(
 
         if eff_post is not None and eff_post > 0.0:
             return eff_pre, eff_post, float(eff_post), "post_open_measured"
-        if live_rate_required:
-            # A GPU window never projects with a configured (CPU) rate: until the live post-open
-            # rate is read the projection is 0 and the cap rests on the balance drop alone, and
-            # the kit refuses RATE_UNREAD if no positive rate shows within its bounded polls.
-            return eff_pre, eff_post, 0.0, "live_rate_unread"
+        if card_class == "gpu":
+            raise RateUnread({"rate_measured_pre_open": eff_pre, "rate_measured_post_open": eff_post})
         if eff_post is not None and eff_post == 0.0:
             pos_pre = float(eff_pre) if (eff_pre is not None and eff_pre > 0.0) else 0.0
             return eff_pre, eff_post, max(cfg, pos_pre), "configured_pending_post_open_rate"
@@ -173,8 +191,17 @@ def parse_usage_text(
             return eff_pre, None, max(float(eff_pre), cfg), "max_of_pre_open_and_configured"
         return None, None, cfg, "configured"
 
+    def _failure_rates() -> tuple[float | None, float | None, float | None, str]:
+        # A usage read that failed is COLAB_USAGE_PARSE_FAILED (the cap guard trips on it); for a
+        # GPU window without a live rate it carries no projection rate at all, never a configured one.
+        try:
+            return _select_rate(None)
+        except RateUnread as exc:
+            return (exc.partial["rate_measured_pre_open"], exc.partial["rate_measured_post_open"], None,
+                    "live_rate_unread")
+
     if usage_rc != 0:
-        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+        eff_pre, eff_post, rate_used, rate_src = _failure_rates()
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
@@ -191,7 +218,7 @@ def parse_usage_text(
     text = raw_usage or ""
     m_bal = CURRENT_BALANCE_RE.search(text)
     if not m_bal:
-        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+        eff_pre, eff_post, rate_used, rate_src = _failure_rates()
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
@@ -207,7 +234,7 @@ def parse_usage_text(
         }
     balance = float(m_bal.group(1))
     if balance < 0.0:
-        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+        eff_pre, eff_post, rate_used, rate_src = _failure_rates()
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
@@ -225,7 +252,7 @@ def parse_usage_text(
     if m_rate:
         rate_measured: float | None = float(m_rate.group(1))
         if rate_measured < 0.0:
-            eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+            eff_pre, eff_post, rate_used, rate_src = _failure_rates()
             return {
                 "ok": False,
                 "code": "COLAB_USAGE_PARSE_FAILED",
@@ -241,9 +268,14 @@ def parse_usage_text(
             }
     else:
         rate_measured = None
-    eff_pre, eff_post, rate_for_projection, rate_source = _select_rate(rate_measured)
     m_assign = ACTIVE_ASSIGNMENTS_RE.search(text)
     active_assignments = int(m_assign.group(1)) if m_assign else None
+    try:
+        eff_pre, eff_post, rate_for_projection, rate_source = _select_rate(rate_measured)
+    except RateUnread as exc:
+        exc.partial.update({"balance": balance, "rate_measured": rate_measured,
+                            "active_assignments": active_assignments})
+        raise
     return {
         "ok": True,
         "code": None,

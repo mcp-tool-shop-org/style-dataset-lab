@@ -24,10 +24,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="6e7290d28c10c2b0a8953e1ab943f6fc875c8f4c0126dc90535b04f0fac2fce5"
+PINNED_LAUNCH_GUARDS_SHA="0f5b0b9a77455e9eda06a782418aa3b018a56d3feb6c2e5bc95a6295aa4e151d"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="ec8f7e67bc43e96ac73e2df8645d40bf74461f0e0de80a5e37c7b2a59d502821"
-PINNED_SELF_SHA="1c72a3a3d1b324950f99ecebd581ad4bdb92c4be364a9043552753acacc59491"
+PINNED_COLAB_WINDOW_SHA="c1a9cb226eaab1924c82e7f41bf2e40e2147ec3aad2a98a211cca992a5ac73e5"
+PINNED_SELF_SHA="29de559aea2ac5aa0e4ed28fff8d09f9cb33d034ff06772e8f4384be3ca42abd"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -163,6 +163,13 @@ fi
 printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
 # Pre-open cap and host-RAM check via launch_guards.py
+# The card class sets the rate policy (launch_guards.parse_usage_text): this CPU stub keeps the
+# labelled configured rate; a GPU card would be priced only by its live post-open rate.
+if colab_card_is_cpu "${CARD}"; then
+  export COLAB_CARD_CLASS=cpu
+else
+  export COLAB_CARD_CLASS=gpu
+fi
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
 # Independent wall watcher (cannot be blocked by a child timeout)

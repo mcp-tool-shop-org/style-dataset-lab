@@ -225,7 +225,7 @@ colab_poll_usage_and_ram() {
   usage_text="$(colab usage </dev/null 2>>"${out_dir}/colab.log")" || usage_rc=$?
   printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
 
-  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_LIVE_RATE_REQUIRED:-0}" << 'PYEOF'
+  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_CARD_CLASS:?the kit must set COLAB_CARD_CLASS to gpu or cpu}" << 'PYEOF'
 import os
 import re
 import sys
@@ -236,7 +236,7 @@ default_rate = float(sys.argv[2])
 usage_rc = int(sys.argv[3])
 raw_usage = sys.argv[4]
 guards_py = Path(sys.argv[5])
-live_rate_required = sys.argv[6] == "1"
+card_class = sys.argv[6]
 
 sys.path.insert(0, str(guards_py.parent))
 import launch_guards as lg
@@ -265,15 +265,35 @@ session_opened = opened_marker.exists()
 existing_pre = _read_float(rate_pre_f)
 existing_post = _read_float(rate_post_f)
 
-parsed = lg.parse_usage_text(
-    raw_usage,
-    usage_rc=usage_rc,
-    configured_rate=default_rate,
-    session_opened=session_opened,
-    post_open_rate=existing_post,
-    pre_open_rate=existing_pre,
-    live_rate_required=live_rate_required,
-)
+rate_unread = False
+try:
+    parsed = lg.parse_usage_text(
+        raw_usage,
+        card_class,
+        usage_rc=usage_rc,
+        configured_rate=default_rate,
+        session_opened=session_opened,
+        post_open_rate=existing_post,
+        pre_open_rate=existing_pre,
+    )
+except lg.RateUnread as exc:
+    # A GPU window without a positive live rate. Before the open there is no window to price, so
+    # only the balance and the pre-open reading are kept (projection 0). After the open it is
+    # RATE_UNREAD: the post-open rate read treats it as "not yet" and polls again; the live cap
+    # check refuses RATE_UNREAD. (Once a positive live rate has been read, parse_usage_text keeps
+    # it, so a later reading of 0.00 never gets here.)
+    part = exc.partial
+    rate_unread = session_opened
+    parsed = {
+        "ok": True,
+        "balance": part["balance"],
+        "rate_measured": part["rate_measured"],
+        "rate_measured_pre_open": part["rate_measured_pre_open"],
+        "rate_measured_post_open": part["rate_measured_post_open"],
+        "rate_for_projection": 0.0,
+        "rate_source": "live_rate_unread" if session_opened else "pre_open_no_window",
+        "error": None,
+    }
 
 if parsed["ok"]:
     bal = parsed["balance"]
@@ -292,7 +312,7 @@ if parsed["ok"]:
         rate_f.write_text(f"{parsed['rate_measured_pre_open']}\n", encoding="utf-8", newline="\n")
     rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
-    err_tok = "NONE"
+    err_tok = "RATE_UNREAD" if rate_unread else "NONE"
 else:
     err_msg = str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED")
     err_f.write_text(f"{err_msg}\n", encoding="utf-8", newline="\n")
@@ -413,6 +433,10 @@ colab_check_cap_and_ram() {
   fi
   if [ "${cur_bal}" != "NONE" ] && [ -n "${cur_bal}" ]; then
     guard_args+=("--current-balance" "${cur_bal}")
+  fi
+  if [ "${err_tok}" = "RATE_UNREAD" ]; then
+    colab_refuse_logged "${out_dir}" RATE_UNREAD "a GPU window has no positive live post-open rate; it is not priced with a configured rate"
+    return 1
   fi
   if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
     local err_detail="${err_tok}"
