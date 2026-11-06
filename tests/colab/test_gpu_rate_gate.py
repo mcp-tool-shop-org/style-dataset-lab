@@ -36,7 +36,7 @@ def _lane1(tmp_path: Path, extra_env: dict[str, str], *extra: str, mode: str = "
     env.update(extra_env)
     out_dir = tmp_path / "out"
     args = [_bash(), fc._to_posix(LANE1), "--card", "A100", "--session", "sdlab-l1-gpu",
-            "--out-dir", fc._to_posix(out_dir), "--cap", cap]
+            "--out-dir", fc._to_posix(out_dir), "--cap", cap, "--shape", "high-mem"]
     if max_rate is not None:
         args += ["--max-rate", max_rate]
     res = subprocess.run([*args, *extra], env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True,
@@ -253,7 +253,7 @@ def test_every_lane_arms_the_gate_before_it_opens_and_only_colab_window_calls_ne
         text = kit.read_text(encoding="utf-8")
         if "colab_open_session_locked" not in text:
             continue
-        arm = text.find("colab_gpu_rate_gate_arm ")
+        arm = text.find("colab_gpu_rate_gate_arm \"")
         opened = text.find("colab_open_session_locked \"")
         assert 0 <= arm < opened, f"{kit.name} opens a window without arming the GPU rate gate first"
     for script in COLAB_DIR.rglob("*.sh"):

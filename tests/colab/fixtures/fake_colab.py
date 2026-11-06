@@ -41,6 +41,31 @@ EMPTY_SESSIONS_LINE = "[colab] No active sessions found on server."
 DEFAULT_SESSION_ROW_TEMPLATE = (
     "[{sid}] m-s-fake-{sid} | hw: {gpu} | status: READY | age: 1m"
 )
+# A `colab sessions` row as google-colab-cli 0.7.4 prints it (colab_cli/commands/session.py:41-63,
+# _format_session_line; the Shape label from shape_display_label, colab_cli/client.py:114-118).
+SESSIONS_ROW_TEMPLATE = "[{sid}] m-s-fake-{sid} | Hardware: {hw} | Shape: {shape} | Variant: {variant}"
+# Accelerators google-colab-cli 0.7.4 sends no shape for (colab_cli/client.py:90-95): they exist in a
+# single high-memory shape, so the fake's server reports High-RAM for them whatever was asked.
+SINGLE_SHAPE_ACCELERATORS = frozenset({"L4", "V5E1", "V6E1"})
+
+
+def _open_sessions_dir(state_dir: Path) -> Path:
+    d = state_dir / "open_sessions"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _session_shape_label(card: str | None, high_mem: bool) -> str:
+    """The Shape the fake's server reports for a `colab new`.
+
+    FAKE_COLAB_SESSION_SHAPE overrides it (a mismatch fixture); OMIT drops the Shape field.
+    """
+    forced = os.environ.get("FAKE_COLAB_SESSION_SHAPE")
+    if forced:
+        return forced
+    if card and card.upper() in SINGLE_SHAPE_ACCELERATORS:
+        return "High-RAM"
+    return "High-RAM" if high_mem else "Standard"
 
 CONTENTS_API_KEYS = (
     "source",
@@ -1139,7 +1164,19 @@ def main(argv: list[str] | None = None) -> int:
     if subcmd == "sessions":
         with (state_dir / "sessions.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write("SESSION_LIST_AFTER_STOP\n")
-        print(EMPTY_SESSIONS_LINE)
+        # FAKE_COLAB_SESSIONS_EMPTY=1: the server lists nothing, even for an open session.
+        rows = []
+        if os.environ.get("FAKE_COLAB_SESSIONS_EMPTY") != "1":
+            for f in sorted(_open_sessions_dir(state_dir).glob("*.json")):
+                rec = json.loads(f.read_text(encoding="utf-8"))
+                row = SESSIONS_ROW_TEMPLATE.format(**rec)
+                if rec["shape"] == "OMIT":
+                    row = row.replace(" | Shape: OMIT", "")
+                rows.append(row)
+        if not rows:
+            print(EMPTY_SESSIONS_LINE)
+        for row in rows:
+            print(row)
         return 0
 
     if subcmd == "new":
@@ -1157,6 +1194,17 @@ def main(argv: list[str] | None = None) -> int:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
         (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
+        gpu = _get_opt("--gpu")
+        (_open_sessions_dir(state_dir) / f"{sid}.json").write_text(
+            json.dumps({
+                "sid": sid,
+                "hw": gpu.upper() if gpu else "CPU",
+                "shape": _session_shape_label(gpu, "--high-mem" in parsed_opts),
+                "variant": "GPU" if gpu else "DEFAULT",
+            }) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
         # FAKE_COLAB_NEW_DELAY_S: the open takes this long; the moment it succeeds is logged.
         time.sleep(float(os.environ.get("FAKE_COLAB_NEW_DELAY_S", "0")))
         (state_dir / "new_done_epoch.txt").write_text(f"{time.time()}\n", encoding="utf-8", newline="\n")
@@ -1242,6 +1290,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"STOP {' '.join(args)}\n")
+        (_open_sessions_dir(state_dir) / f"{sid}.json").unlink(missing_ok=True)
         _kill_recorded_groups(state_dir, sid)
         _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
         return 0

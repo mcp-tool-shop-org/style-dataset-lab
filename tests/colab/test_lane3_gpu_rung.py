@@ -550,6 +550,8 @@ def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: st
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
             "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
             "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5", *extra]
+    if "--shape" not in extra:
+        args += ["--shape", "high-mem"]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     return res, out_dir
 
@@ -566,6 +568,10 @@ def test_rung_success_trains_copies_off_and_records_the_guards(tmp_path: Path) -
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["status"] == "ok" and win["refusal_code"] is None
     assert win["train"] == "trained" and win["trained"] is True and win["lane3_mode"] == "train"
+    # The machine shape: --shape high-mem reaches `colab new` as --high-mem and the row matches.
+    calls = (out_dir.parent / "colab_state" / "calls.log").read_text(encoding="utf-8")
+    assert "CALL new --gpu A100 --high-mem -s sdlab-l3-gpu-rung" in calls
+    assert win["shape_requested"] == "high-mem" and win["shape_check"]["match"] is True
     gpu = win["train_guards"]["gpu"]
     assert gpu["device_name"] == "NVIDIA A100-SXM4-80GB" and gpu["driver_version"] == "580.82.07"
     assert gpu["torch_cuda"] == "13.0" and gpu["bitsandbytes_version"] == "0.50.2" and gpu["adamw8bit_step"] == "ok"
@@ -1369,6 +1375,56 @@ def test_the_count_leading_the_rate_by_one_read_does_not_trip() -> None:
     assert max(x["window_rate"] or 0 for x in st["readings"]) == 8.88
 
 
+def test_the_reviewers_sequence_a_neighbour_closing_with_the_rate_two_reads_ahead_then_our_rise_trips() -> None:
+    import launch_guards as lg
+
+    # rdlab re-reads review: pre-open 8.88 (a neighbour), our 8.88 at count 2; the neighbour closes and
+    # its rate drop leads the count by 2 reads (0.00 own, twice, at the unchanged count); the count
+    # settles at 1; then our own rise to 12.00 must trip --max-rate 9.5.
+    st = _fold({}, (17.76, 17.76, 8.88, 8.88, 8.88, 8.88, 12.0, 12.0),
+               pre=8.88, counts=(2, 2, 2, 2, 1, 1, 1, 1))
+    r = st["readings"]
+    assert r[3]["below_floor"] is True and r[3]["stable"] is False
+    reb = [x for x in r if x.get("rebaselined")]
+    assert len(reb) == 1 and reb[0]["neighbour_baseline"] == 0.0
+    assert st["best_stable"] == 12.0 and lg.window_rate_decision(st, 9.5) == "above_max"
+
+
+def test_the_rebaseline_uses_the_highest_stable_rate_seen() -> None:
+    import launch_guards as lg
+
+    # A T4 neighbour (1.07) closes; its drop leads the count by 2, so our stable read at the old
+    # count is 7.81 (above the floor), not our real 8.88. Re-baselining on that last stable read
+    # left a 1.07 neighbour that is gone, and our rise to 10.50 read 9.43 under --max-rate 9.5.
+    # On the highest stable rate seen (8.88) the baseline is 0.00 and the rise trips.
+    st = _fold({}, (9.95, 9.95, 8.88, 8.88, 8.88, 8.88, 10.5, 10.5),
+               pre=1.07, counts=(2, 2, 2, 2, 1, 1, 1, 1))
+    r = st["readings"]
+    assert r[3]["stable"] is True and r[3]["window_rate"] == 7.81
+    reb = [x for x in r if x.get("rebaselined")]
+    assert len(reb) == 1 and reb[0]["neighbour_baseline"] == 0.0 and reb[0]["window_rate"] == 8.88
+    assert [x["window_rate"] for x in r[-2:]] == [10.5, 10.5]
+    assert lg.window_rate_decision(st, 9.5) == "above_max"
+
+
+def test_a_stable_mid_run_rate_below_the_floor_is_a_bad_read() -> None:
+    import launch_guards as lg
+
+    # After our first stable 8.88, the account drops to 0.50 at an unchanged count: the stable pair
+    # below the floor is recorded below_floor and counts as bad; three in a row end the window.
+    one = _fold({}, (8.88, 8.88, 0.5, 0.5, 8.88), pre=0.0)
+    r = one["readings"]
+    assert r[2].get("below_floor") is None and r[3]["below_floor"] is True and r[3]["stable"] is False
+    assert one["best_stable"] == 8.88 and not one.get("assignments_unreadable")
+    assert one["assignments_bad_streak"] == 0 and lg.window_rate_decision(one, 9.5) == "ok"
+    three = _fold({}, (8.88, 8.88, 0.5, 0.5, 0.5, 0.5), pre=0.0)
+    assert [x.get("below_floor", False) for x in three["readings"]] == [False, False, False, True, True, True]
+    assert lg.window_rate_decision(three, 9.5) == "assignments_unreadable"
+    # Before the first stable read a sub-floor rate stays "unread" (the RATE_UNREAD budget), not bad.
+    low = _fold({}, (0.5, 0.5, 0.5, 0.5), pre=0.0)
+    assert not any(x.get("below_floor") for x in low["readings"]) and lg.window_rate_decision(low, 9.5) == "unread"
+
+
 @pytest.mark.parametrize("bad", [None, 0])
 def test_a_bad_count_for_three_reads_is_unreadable_and_one_is_recorded_only(bad) -> None:
     import launch_guards as lg
@@ -1476,3 +1532,32 @@ def test_cap_at_8_88_per_hour_trips_at_20_3_seconds() -> None:
     assert lg.evaluate_cap_guard(elapsed_s=20.3, **kw)["tripped"] is True
     # The balance drop counts too: the larger of the drop and the projection is the spend.
     assert lg.evaluate_cap_guard(elapsed_s=0.0, **{**kw, "current_balance": 99.94})["tripped"] is True
+
+
+# The machine shape gate (colab_window.sh) on lane 3: required for the GPU rung, checked after open.
+
+def test_rung_without_shape_refuses_before_any_colab_call(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    out_dir = tmp_path / "out"
+    args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
+            "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
+            "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
+            "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5"]
+    res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
+    assert res.returncode == 2 and "REFUSED: SHAPE_REQUIRED:" in res.stderr, res.stderr[-2000:]
+    assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
+    assert json.loads((out_dir / "window.json").read_text(encoding="utf-8"))["refusal_code"] == "SHAPE_REQUIRED"
+
+
+def test_rung_shape_mismatch_refuses_after_open_and_stops(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env["FAKE_COLAB_SESSION_SHAPE"] = "High-RAM"
+    res, out_dir = _launch(tmp_path, env, src, "--shape", "standard")
+    assert res.returncode != 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "SHAPE_MISMATCH" and win["shape_requested"] == "standard"
+    assert win["shape_check"] == {"requested": "standard", "expected": "Standard", "observed": "High-RAM",
+                                  "match": False}
+    assert "CALL new --gpu A100 -s sdlab-l3-gpu-rung" in (state_dir / "calls.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+    assert _no_uploads(state_dir)

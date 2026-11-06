@@ -451,7 +451,7 @@ print(lg.window_rate_decision(state, float((out / "max_rate.txt").read_text(enco
 PYEOF
 )"
   if [ "${decision}" = "assignments_unreadable" ]; then
-    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
+    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: 3 consecutive bad reads: no readable Active assignments count (missing or 0), or a stable window rate below the floor (rate_window.json)"
     return 1
   fi
   if [ "${decision}" = "above_max" ]; then
@@ -709,6 +709,102 @@ colab_gpu_rate_gate_arm() {
   printf '%s %s %s\n' "${card}" "${max_rate}" "${COLAB_RATE_READ_INTERVAL_S}" > "${out_dir}/gpu_rate_gate_armed.txt"
 }
 
+# The machine shape gate, shared by every lane. A GPU card names its shape with --shape
+# standard|high-mem; there is no default, because a hidden --high-mem once sent every GPU card
+# shape=HIGH_RAM, a machine nobody had priced. A CPU card keeps its fixed `colab new --high-mem`
+# and takes no --shape. colab_open_session_locked refuses SHAPE_REQUIRED for a GPU card that was
+# not armed here, passes --high-mem only for high-mem, and checks the session row's Shape after open.
+#
+# google-colab-cli 0.7.4 drops --high-mem for L4, V5E1 and V6E1 (colab_cli/client.py:90-95,
+# HIGH_MEM_ONLY_ACCELERATORS; resolve_assign_shape returns None for them at :109-110): those cards
+# exist in a single high-memory shape, so --shape standard is refused for them before any colab call.
+colab_card_is_single_shape() {
+  case "${1^^}" in
+    L4 | V5E1 | V6E1) return 0 ;;
+  esac
+  return 1
+}
+
+# The Shape a `colab sessions` row prints for a requested shape (shape_display_label,
+# colab_cli/client.py:114-118).
+colab_shape_row_label() {
+  if [ "$1" = "high-mem" ]; then
+    printf 'High-RAM\n'
+  else
+    printf 'Standard\n'
+  fi
+}
+
+# colab_shape_gate_arm <out_dir> <card> <shape>
+colab_shape_gate_arm() {
+  local out_dir="$1"
+  local card="$2"
+  local shape="$3"
+  rm -f "${out_dir}/shape_requested.txt"
+  if colab_card_is_cpu "${card}"; then
+    if [ -n "${shape}" ]; then
+      colab_refuse_logged "${out_dir}" SHAPE_NOT_FOR_CPU "a CPU card (${card}) always opens with colab new --high-mem; drop --shape ${shape}"
+      return 2
+    fi
+    return 0
+  fi
+  case "${shape}" in
+    standard | high-mem) ;;
+    "")
+      colab_refuse_logged "${out_dir}" SHAPE_REQUIRED "a GPU card (${card}) needs --shape standard|high-mem; there is no default"
+      return 2
+      ;;
+    *)
+      colab_refuse_logged "${out_dir}" SHAPE_INVALID "--shape ${shape}: use standard or high-mem"
+      return 2
+      ;;
+  esac
+  if [ "${shape}" = "standard" ] && colab_card_is_single_shape "${card}"; then
+    colab_refuse_logged "${out_dir}" SHAPE_STANDARD_UNAVAILABLE "${card} has a single high-memory shape (google-colab-cli 0.7.4 colab_cli/client.py:90-95); pass --shape high-mem"
+    return 2
+  fi
+  printf '%s\n' "${shape}" > "${out_dir}/shape_requested.txt"
+}
+
+# colab_check_session_shape <session> <out_dir> <shape>: after `colab new`, the session's row in
+# `colab sessions` must print the Shape the request asked for. Writes shape_check.json (requested,
+# expected and observed values) and refuses SHAPE_MISMATCH otherwise; the caller's EXIT trap stops
+# the session.
+colab_check_session_shape() {
+  local session="$1"
+  local out_dir="$2"
+  local shape="$3"
+  local expected
+  expected="$(colab_shape_row_label "${shape}")"
+  local rows_file="${out_dir}/sessions_after_open.txt"
+  colab sessions </dev/null > "${rows_file}" 2>&1 || true
+  cat "${rows_file}" >> "${out_dir}/colab.log"
+  local observed rc=0
+  observed="$("${PY_BIN:?the kit must set PY_BIN}" - "${session}" "${rows_file}" "${shape}" "${expected}" "${out_dir}/shape_check.json" << 'PYEOF'
+import json
+import re
+import sys
+from pathlib import Path
+
+session, rows_file, shape, expected, out = sys.argv[1:6]
+observed = None
+for line in Path(rows_file).read_text(encoding="utf-8", errors="replace").splitlines():
+    if line.startswith(f"[{session}] "):
+        m = re.search(r"\|\s*Shape:\s*([^|]+?)\s*(?:\||$)", line)
+        observed = m.group(1) if m else None
+        break
+rec = {"requested": shape, "expected": expected, "observed": observed, "match": observed == expected}
+Path(out).write_text(json.dumps(rec) + "\n", encoding="utf-8")
+print(observed if observed is not None else "none")
+sys.exit(0 if rec["match"] else 3)
+PYEOF
+)" || rc=$?
+  if [ "${rc}" -ne 0 ]; then
+    colab_refuse_logged "${out_dir}" SHAPE_MISMATCH "requested --shape ${shape} (Shape: ${expected}); the session row reads Shape: ${observed:-none} (shape_check.json)"
+    return 1
+  fi
+}
+
 colab_open_session_locked() {
   local session="$1"
   local card="$2"
@@ -720,13 +816,24 @@ colab_open_session_locked() {
       colab_refuse_logged "${out_dir}" GPU_RATE_GATE_NOT_ARMED "a GPU card (${card}) opens only after colab_gpu_rate_gate_arm"
       return 2
     fi
+    if [ ! -s "${out_dir}/shape_requested.txt" ]; then
+      colab_refuse_logged "${out_dir}" SHAPE_REQUIRED "a GPU card (${card}) opens only after colab_shape_gate_arm with --shape standard|high-mem"
+      return 2
+    fi
   fi
 
+  # A CPU card keeps its fixed --high-mem. A GPU card sends --high-mem only for --shape high-mem.
   local new_args=()
+  local shape=""
   if colab_card_is_cpu "${card}"; then
     new_args=("new" "--high-mem" "-s" "${session}")
   else
-    new_args=("new" "--gpu" "${card}" "--high-mem" "-s" "${session}")
+    shape="$(cat "${out_dir}/shape_requested.txt")"
+    new_args=("new" "--gpu" "${card}")
+    if [ "${shape}" = "high-mem" ]; then
+      new_args+=("--high-mem")
+    fi
+    new_args+=("-s" "${session}")
   fi
 
   if command -v flock >/dev/null 2>&1; then
@@ -756,6 +863,7 @@ colab_open_session_locked() {
     # after them are billed time and count.
     START_EPOCH="$(date -u +%s)"
     date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${out_dir}/cap_clock_started_at.txt"
+    colab_check_session_shape "${session}" "${out_dir}" "${shape}" || return 1
     colab_read_post_open_rate "${PY_BIN:?the kit must set PY_BIN}" "${out_dir}" "${COLAB_RATE_READ_POLLS}" \
       "${COLAB_RATE_READ_INTERVAL_S}" "$(cat "${out_dir}/max_rate.txt")" || return 1
   fi
@@ -939,6 +1047,11 @@ REFUSAL_CODES = (
     "RATE_ABOVE_MAX",
     "ASSIGNMENTS_UNREADABLE",
     "GPU_RATE_GATE_NOT_ARMED",
+    "SHAPE_REQUIRED",
+    "SHAPE_INVALID",
+    "SHAPE_NOT_FOR_CPU",
+    "SHAPE_STANDARD_UNAVAILABLE",
+    "SHAPE_MISMATCH",
     "MAX_RATE_REQUIRED",
     "TRAIN_MAX_RATE_REQUIRED",
     "TRAIN_SAMPLE_MISSING",
@@ -1005,6 +1118,15 @@ if (out_dir / "rate_window.json").is_file():
     except ValueError:
         rate_readings = None
 cap_clock_started_at = read_text_file(out_dir / "cap_clock_started_at.txt")
+# The machine shape a GPU card asked for (--shape) and what its session row showed after open;
+# a CPU card takes no --shape and always opens --high-mem, so both stay null for it.
+shape_requested = read_text_file(out_dir / "shape_requested.txt")
+shape_check = None
+if (out_dir / "shape_check.json").is_file():
+    try:
+        shape_check = json.loads((out_dir / "shape_check.json").read_text(encoding="utf-8"))
+    except ValueError:
+        shape_check = None
 rate_check = None
 if (out_dir / "rate_check.json").is_file():
     try:
@@ -1055,6 +1177,8 @@ window_payload = {
     "lane": lane,
     "session": session,
     "card": card,
+    "shape_requested": shape_requested,
+    "shape_check": shape_check,
     "status": final_status,
     "refusal_code": refusal_code,
     "cap": cap,
