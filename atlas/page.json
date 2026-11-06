@@ -75,30 +75,38 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 16,
+      "added": 12,
+      "changed": 0,
       "moved": 0,
-      "parts": 3,
+      "parts": 2,
       "removed": 0
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "tests/colab/fixtures/fake_vm_site/ is now read by tests/colab/fixtures/fake_colab.py.",
+        "subjects": [
+          "tests/colab/fixtures/fake_vm_site/",
+          "tests/colab/fixtures/fake_colab.py"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-06; 16 files changed content.",
+        "sentence": "12 files added, across 2 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "223751ceb97c208600e115168f9dca24d41c7182",
-      "generatedAt": "2026-11-06T02:57:58.124Z"
+      "commit": "61f2c2ce24f749ad13e605e9bee2352c2dd8f8e9",
+      "generatedAt": "2026-11-06T06:38:21.619Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [
     {
       "a": "tests/colab/fixtures/fake_colab.py",
       "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 8,
+      "either": 9,
       "partLabels": [
         "tests",
         "tests"
@@ -108,37 +116,7 @@
         "tests"
       ],
       "relation": "inside",
-      "shared": 6
-    },
-    {
-      "a": "tests/colab/fixtures/fake_colab.py",
-      "b": "tests/colab/test_launch_lane1_stub.py",
-      "either": 8,
-      "partLabels": [
-        "tests",
-        "tests"
-      ],
-      "parts": [
-        "tests",
-        "tests"
-      ],
-      "relation": "inside",
-      "shared": 4
-    },
-    {
-      "a": "tests/colab/test_launch_lane1_stub.py",
-      "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 8,
-      "partLabels": [
-        "tests",
-        "tests"
-      ],
-      "parts": [
-        "tests",
-        "tests"
-      ],
-      "relation": "inside",
-      "shared": 4
+      "shared": 7
     }
   ],
   "changesTogetherNote": [
@@ -146,9 +124,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "61f2c2ce24f749ad13e605e9bee2352c2dd8f8e9",
+  "commit": "7e9fdc47fe9f95d0f28c8627d4f3fb5015030447",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (45), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (247), Python (52), shell (7), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -168,12 +146,12 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 45
+          "files": 47
         },
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 115
+          "files": 120
         },
         {
           "boundary": "lib",
@@ -466,12 +444,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-06T06:38:21.619Z",
+  "generatedAt": "2026-11-06T06:39:41.191Z",
   "limits": [
-    "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
-    "38 writes and 73 reads use paths built at run time and are not named here.",
+    "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
+    "40 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "152 writes and 275 reads go to a path their caller passes, not to this repository.",
+    "159 writes and 290 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -752,13 +730,13 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 124,
+  "testFiles": 129,
   "testedBy": {
     "bin": 10,
     "lib": 97,
-    "scripts": 25
+    "scripts": 27
   },
-  "unnamedWrites": 38,
+  "unnamedWrites": 40,
   "unread": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase2/",
