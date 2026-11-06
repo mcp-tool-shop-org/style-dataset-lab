@@ -51,13 +51,13 @@ REPO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*
 PLACEHOLDERS = ("__LANE3_TRAINING_FOLDER__", "__LANE3_DATASET_DIR__", "__LANE3_MODEL_PATH__")
 COPY_OFF_SUFFIXES = (".safetensors", ".png", ".jpg", ".jpeg", ".webp")
 HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
+BEARER_RE = re.compile(r"(?i)\bBearer\s+\S+")
 
 
-def scrub_secrets(text: str, token: str | None = None) -> str:
-    """Remove a Hugging Face token from text that is printed (exec output reaches the CLI history)."""
-    if token:
-        text = text.replace(token, "hf_[REDACTED]")
-    return HF_TOKEN_RE.sub("hf_[REDACTED]", text)
+def scrub_secrets(text: str) -> str:
+    """Remove every Hugging Face token and every bearer value from text that is printed (exec
+    output reaches the CLI history)."""
+    return BEARER_RE.sub("Bearer [REDACTED]", HF_TOKEN_RE.sub("hf_[REDACTED]", text))
 
 
 def safetensors_complete(path: Path) -> bool:
@@ -351,12 +351,14 @@ def classify_hub_error(exc: BaseException) -> tuple[str, str]:
     name = type(exc).__name__
     status = getattr(getattr(exc, "response", None), "status_code", None)
     status = status if isinstance(status, int) else getattr(exc, "code", None)
-    detail = f"{name} (http={status if status is not None else 'none'})"
+    # The detail is the status code and a fixed message only: never the exception's text, which can
+    # echo the request (and so the token).
+    http = str(status) if isinstance(status, int) else "none"
     if "RevisionNotFound" in name or (status == 404 and "revision" in str(exc).lower()):
-        return "MODEL_REVISION_NOT_FOUND", detail
+        return "MODEL_REVISION_NOT_FOUND", f"the pinned revision was not found (http={http})"
     if status in (401, 403) or "Gated" in name:
-        return "MODEL_AUTH_FAILED", detail
-    return "MODEL_METADATA_FAILED", detail
+        return "MODEL_AUTH_FAILED", f"the read token was refused (http={http})"
+    return "MODEL_METADATA_FAILED", f"the model metadata call failed (http={http})"
 
 
 HF_API_BASE = "https://huggingface.co"
@@ -461,8 +463,9 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
     # A read token only when the request put one in HF_TOKEN_GGUF_READ; its value is never written.
     token = os.environ.get("HF_TOKEN_GGUF_READ") or None
     offline = os.environ.get("HF_HUB_OFFLINE") == "1"
-    rec: dict[str, Any] = {"repo_id": args.repo, "revision": args.revision, "token_used": token is not None,
-                           "offline": offline}
+    # Whether a token was used is read from the variable's presence, not from its value.
+    rec: dict[str, Any] = {"repo_id": args.repo, "revision": args.revision,
+                           "token_used": "HF_TOKEN_GGUF_READ" in os.environ, "offline": offline}
     try:
         max_seconds = parse_positive_number(args.max_seconds, "DOWNLOAD_LIMIT_MISSING", "LANE3_DOWNLOAD_MAX_SECONDS")
         if not REPO_ID_RE.match(args.repo or ""):
@@ -553,7 +556,9 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
                      f"probe {probe['probe_rate_mb_s']} MB/s over {probe['probe_seconds']} s projects "
                      f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {max_seconds} s")
     if rc != 0 or not snapshot:
-        tail = scrub_secrets(" | ".join(log_lines[-3:]), token)
+        tail = scrub_secrets(" | ".join(log_lines[-3:]))
+        if token is not None and token in tail:
+            tail = "[the download log tail is withheld: it held the read token]"
         return _fail(out_path, rec, "MODEL_DOWNLOAD_FAILED", f"snapshot_download rc={rc}: {tail}")
     write_json(out_path, rec)
     print("MODEL_DOWNLOAD " + json.dumps(rec), flush=True)

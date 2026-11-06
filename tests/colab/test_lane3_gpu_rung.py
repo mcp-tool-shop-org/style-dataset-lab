@@ -917,13 +917,34 @@ def test_download_failure_tail_is_scrubbed(tmp_path: Path, monkeypatch: pytest.M
     assert "REFUSED: MODEL_DOWNLOAD_FAILED: " in out.err and "using token hf_[REDACTED]" in out.err
     assert TOKEN not in out.err
     assert TOKEN not in out.out
+    assert TOKEN not in (tmp_path / "dl.json").read_text(encoding="utf-8")
+
+
+def test_metadata_exception_text_never_reaches_any_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                                          capsys: pytest.CaptureFixture[str]) -> None:
+    _dl_env(monkeypatch, HF_TOKEN_GGUF_READ=TOKEN)
+
+    class Echo(Exception):
+        def __init__(self) -> None:
+            super().__init__(f"401 Unauthorized for GET with headers Authorization: Bearer {TOKEN} token={TOKEN}")
+            self.response = type("R", (), {"status_code": 401})()
+
+    def boom(*_a: object) -> int:
+        raise Echo()
+
+    assert lr.run_download(_dl_args(tmp_path), expected_fn=boom) == 1
+    out = capsys.readouterr()
+    assert "REFUSED: MODEL_AUTH_FAILED: " in out.err and "http=401" in out.err
+    for text in (out.err, out.out, (tmp_path / "dl.json").read_text(encoding="utf-8")):
+        assert TOKEN not in text and "Bearer" not in text
+    assert lr.scrub_secrets(f"Authorization: Bearer abc.def {TOKEN}") == "Authorization: Bearer [REDACTED] hf_[REDACTED]"
 
 
 def test_remote_runner_scrubs_relayed_lines() -> None:
     import remote_runner as rr
 
     assert rr.scrub_line(f"Authenticated download with token {TOKEN}\n") == "Authenticated download with token hf_[REDACTED]\n"
-    assert lr.scrub_secrets("x hf_short y", "hf_short") == "x hf_[REDACTED] y"
+    assert lr.scrub_secrets("x hf_short y") == "x hf_short y"
 
 
 def test_failed_download_prints_no_token_into_exec_history(tmp_path: Path) -> None:
@@ -998,6 +1019,9 @@ def test_safetensors_completeness_and_checkpoint_pick(tmp_path: Path, capsys: py
     assert lr.run_checkpoint(argparse.Namespace(bundle=str(bundle), manifest=str(tmp_path / "none.jsonl"))) == 1
 
 
+REDIRECT_PATH = f"/api/models/Qwen/Qwen-Image/revision/{REVISION}"
+
+
 def test_model_check_refuses_a_cross_host_redirect_and_keeps_the_token(tmp_path: Path) -> None:
     seen: list[str | None] = []
 
@@ -1020,7 +1044,7 @@ def test_model_check_refuses_a_cross_host_redirect_and_keeps_the_token(tmp_path:
     class Redirect(http.server.BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802
             self.send_response(302)
-            self.send_header("Location", target + self.path)
+            self.send_header("Location", target + REDIRECT_PATH)
             self.send_header("Content-Length", "0")
             self.end_headers()
 
