@@ -548,7 +548,7 @@ def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: st
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
             "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-            "--wall-s", "2900", "--cap", "5", *extra]
+            "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5", *extra]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     return res, out_dir
 
@@ -635,12 +635,14 @@ def test_rung_mid_run_failure_downloads_what_was_copied_off(tmp_path: Path) -> N
     [("--model-revision", "TRAIN_MODEL_REVISION_REQUIRED"), ("--host-ram-required-gib", "HOST_RAM_THRESHOLD_MISSING"),
      ("--download-max-seconds", "DOWNLOAD_LIMIT_MISSING"), ("--dataset-dir", "TRAIN_DATASET_REQUIRED"),
      ("--model", "TRAIN_MODEL_REQUIRED"), ("token", "HF_READ_TOKEN_MISSING"),
-     ("--wall-s", "TRAIN_WALL_REQUIRED"), ("--cap", "TRAIN_CAP_REQUIRED")],
+     ("--wall-s", "TRAIN_WALL_REQUIRED"), ("--cap", "TRAIN_CAP_REQUIRED"),
+     ("--max-rate", "TRAIN_MAX_RATE_REQUIRED")],
 )
 def test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call(tmp_path: Path, drop: str, code: str) -> None:
     state_dir, env, src = _rung_env(tmp_path)
     args = {"--model": "Qwen/Qwen-Image", "--model-revision": REVISION, "--host-ram-required-gib": "96.5",
-            "--download-max-seconds": "60", "--dataset-dir": fc._to_posix(src), "--wall-s": "2900", "--cap": "5"}
+            "--download-max-seconds": "60", "--dataset-dir": fc._to_posix(src), "--wall-s": "2900", "--cap": "5",
+            "--max-rate": "9.5"}
     if drop == "token":
         env.pop("HF_TOKEN_GGUF_READ")
     else:
@@ -1163,3 +1165,96 @@ def test_bundle_now_also_finds_the_download_grandchild(tmp_path: Path) -> None:
     (proc / "21" / "cmdline").write_bytes(
         b"python\0-c\0import os, sys\nfrom huggingface_hub import snapshot_download\npath = snapshot_download(repo_id=sys.argv[1], revision=x)\0a/b\0")
     assert lr.rung_pids(tmp_path / "content", proc) == [21]
+
+
+# --- live rate guard (rung 1 was stopped by hand at 8.88/h; the kit read 0.0 and projected 0.26) -
+
+
+def test_gpu_window_with_no_post_open_rate_refuses_rate_unread(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "0.00/hr",
+                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05"})
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "RATE_UNREAD"
+    assert win["rate_check"]["live_rate"] is None and win["rate_check"]["polls"] == 24
+    uploads = state_dir / "uploads.log"
+    assert not uploads.exists() or "UPLOAD_OK" not in uploads.read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+    assert win["rate_source"] == "live_rate_unread" and win["rate_used_for_cap_and_projection"] == 0.0
+
+
+def test_gpu_window_above_max_rate_refuses_before_any_upload(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,8.88/hr",
+                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05"})
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "8.0")
+    assert res.returncode != 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "RATE_ABOVE_MAX"
+    assert win["rate_check"] == {"live_rate": 8.88, "pre_open_rate": 0.0, "window_rate": 8.88, "max_rate": 8.0, "polls": 2}
+    uploads = state_dir / "uploads.log"
+    assert not uploads.exists() or "UPLOAD_OK" not in uploads.read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+
+
+def test_gpu_window_under_max_rate_proceeds_on_the_live_rate(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,8.88/hr",
+                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05"})
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    assert res.returncode == 0, res.stderr
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["status"] == "ok" and win["trained"] is True
+    assert win["rate_check"]["live_rate"] == 8.88 and win["rate_check"]["max_rate"] == 9.5
+    assert win["rate_source"] == "post_open_measured" and win["rate_used_for_cap_and_projection"] == 8.88
+
+
+def test_gpu_window_at_8_88_trips_the_cap_on_time(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,8.88/hr",
+                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05", "FAKE_VM_TRAIN": "hang_after_save",
+                "GUARD_POLL_INTERVAL_S": "0.5"})
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+        assert win["refusal_code"] is None or win["status"] != "ok"
+        trips = [json.loads(ln)["cap"] for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
+                 if ln.startswith("{") and '"cap"' in ln]
+        tripped = [c for c in trips if c["tripped"]]
+        assert tripped, "the cap never tripped"
+        # 0.05 units at 8.88/h is 20.3 s; with 0.5 s polls the trip lands within a few seconds of it.
+        elapsed = tripped[0]["spend_ccu"] / 8.88 * 3600
+        assert 20.2 <= elapsed <= 30, elapsed
+        assert all(c["spend_ccu"] < 0.05 for c in trips if not c["tripped"])
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def test_live_rate_policy_never_falls_back_to_the_configured_rate() -> None:
+    import launch_guards as lg
+
+    text0 = "Current balance: 1812.22 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n"
+    gpu = lg.parse_usage_text(text0, configured_rate=0.26, session_opened=True, pre_open_rate=0.0,
+                              live_rate_required=True)
+    assert gpu["rate_for_projection"] == 0.0 and gpu["rate_source"] == "live_rate_unread"
+    gpu2 = lg.parse_usage_text(text0.replace("0.00/hr", "8.88/hr"), configured_rate=0.26, session_opened=True,
+                               pre_open_rate=0.0, live_rate_required=True)
+    assert gpu2["rate_for_projection"] == 8.88 and gpu2["rate_source"] == "post_open_measured"
+    # The CPU stub is unchanged: a 0.00 post-open reading still projects with the labelled configured rate.
+    cpu = lg.parse_usage_text(text0, configured_rate=0.26, session_opened=True, pre_open_rate=0.0)
+    assert cpu["rate_for_projection"] == 0.26 and cpu["rate_source"] == "configured_pending_post_open_rate"
+
+
+def test_cap_at_8_88_per_hour_trips_at_20_3_seconds() -> None:
+    import launch_guards as lg
+
+    kw = dict(mode="live", cap=0.06, margin=0.01, start_balance=100.0, current_balance=100.0, rate_ccu_per_hour=8.88)
+    assert lg.evaluate_cap_guard(elapsed_s=20.0, **kw)["tripped"] is False
+    assert lg.evaluate_cap_guard(elapsed_s=20.3, **kw)["tripped"] is True
+    # The balance drop counts too: the larger of the drop and the projection is the spend.
+    assert lg.evaluate_cap_guard(elapsed_s=0.0, **{**kw, "current_balance": 99.94})["tripped"] is True

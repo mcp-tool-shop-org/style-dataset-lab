@@ -225,7 +225,7 @@ colab_poll_usage_and_ram() {
   usage_text="$(colab usage </dev/null 2>>"${out_dir}/colab.log")" || usage_rc=$?
   printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
 
-  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" << 'PYEOF'
+  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_LIVE_RATE_REQUIRED:-0}" << 'PYEOF'
 import os
 import re
 import sys
@@ -236,6 +236,7 @@ default_rate = float(sys.argv[2])
 usage_rc = int(sys.argv[3])
 raw_usage = sys.argv[4]
 guards_py = Path(sys.argv[5])
+live_rate_required = sys.argv[6] == "1"
 
 sys.path.insert(0, str(guards_py.parent))
 import launch_guards as lg
@@ -271,6 +272,7 @@ parsed = lg.parse_usage_text(
     session_opened=session_opened,
     post_open_rate=existing_post,
     pre_open_rate=existing_pre,
+    live_rate_required=live_rate_required,
 )
 
 if parsed["ok"]:
@@ -324,6 +326,49 @@ if vitals_f.exists():
 
 print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok} {anon_mb} {mem_total_mb} {cgroup_max_mb}")
 PYEOF
+}
+
+# colab_read_post_open_rate <py> <out_dir> <polls> <interval_s> <max_rate|"">: right after a GPU
+# window opens, poll `colab usage` until it shows a positive rate (the account's rate, so this
+# window's rate is the post-open rate minus the pre-open one). No positive rate within <polls>
+# polls is RATE_UNREAD; a window rate above <max_rate> is RATE_ABOVE_MAX. Both are refusals the
+# caller ends the window on (the session is stopped by its EXIT trap, before any upload).
+colab_read_post_open_rate() {
+  local py_bin="$1"
+  local out_dir="$2"
+  local polls="$3"
+  local interval_s="$4"
+  local max_rate="$5"
+  local i=0
+  local live=""
+  while [ "${i}" -lt "${polls}" ]; do
+    i=$((i + 1))
+    colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
+    live="$(cat "${out_dir}/rate_measured_post_open.txt" 2>/dev/null | tr -d '[:space:]' || true)"
+    if [ -n "${live}" ] && awk -v r="${live}" 'BEGIN { exit !(r + 0 > 0) }'; then
+      break
+    fi
+    live=""
+    [ "${i}" -lt "${polls}" ] && sleep "${interval_s}"
+  done
+  local pre
+  pre="$(cat "${out_dir}/rate_measured_pre_open.txt" 2>/dev/null | tr -d '[:space:]' || true)"
+  pre="${pre:-0}"
+  if [ -z "${live}" ]; then
+    printf '{"live_rate": null, "pre_open_rate": %s, "window_rate": null, "max_rate": %s, "polls": %s}\n' \
+      "${pre}" "${max_rate:-null}" "${i}" > "${out_dir}/rate_check.json"
+    colab_refuse_logged "${out_dir}" RATE_UNREAD "colab usage showed no positive rate in ${i} polls after open; the window is not run on a configured or CPU rate"
+    return 1
+  fi
+  local window_rate
+  window_rate="$(awk -v a="${live}" -v b="${pre}" 'BEGIN { d = a - b; if (d < 0) d = 0; printf "%.4f", d }')"
+  printf '{"live_rate": %s, "pre_open_rate": %s, "window_rate": %s, "max_rate": %s, "polls": %s}\n' \
+    "${live}" "${pre}" "${window_rate}" "${max_rate:-null}" "${i}" > "${out_dir}/rate_check.json"
+  echo "RATE_READ live=${live}/h pre_open=${pre}/h window=${window_rate}/h max=${max_rate:-none} polls=${i}" >> "${out_dir}/guards.log"
+  if [ -n "${max_rate}" ] && awk -v w="${window_rate}" -v m="${max_rate}" 'BEGIN { exit !(w + 0 > m + 0) }'; then
+    colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "the window's rate ${window_rate}/h (account ${live}/h, ${pre}/h before open) is above --max-rate ${max_rate}/h"
+    return 1
+  fi
 }
 
 colab_check_cap_and_ram() {
@@ -741,6 +786,9 @@ REFUSAL_CODES = (
     "DATASET_SHA_MISMATCH",
     "JOB_TEMPLATE_INVALID",
     "HF_READ_TOKEN_MISSING",
+    "RATE_UNREAD",
+    "RATE_ABOVE_MAX",
+    "TRAIN_MAX_RATE_REQUIRED",
     "TRAIN_SAMPLE_MISSING",
     "TRAIN_WALL_REQUIRED",
     "TRAIN_CAP_REQUIRED",
@@ -798,6 +846,12 @@ for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.saf
         downloaded_files[artifact.name] = sha256_path(artifact)
 
 usage_parse_error = read_text_file(out_dir / "usage_parse_error.txt")
+rate_check = None
+if (out_dir / "rate_check.json").is_file():
+    try:
+        rate_check = json.loads((out_dir / "rate_check.json").read_text(encoding="utf-8"))
+    except ValueError:
+        rate_check = None
 rate_measured_pre_open = read_float_file(out_dir / "rate_measured_pre_open.txt")
 rate_measured_post_open = read_float_file(out_dir / "rate_measured_post_open.txt")
 rate_measured = (
@@ -857,6 +911,7 @@ window_payload = {
     "rate_for_projection": rate_for_projection,
     "rate_source": rate_source,
     "usage_parse_error": usage_parse_error,
+    "rate_check": rate_check,
     "input_shas": shas_raw.get("verified_shas", shas_raw),
     "downloaded_files": downloaded_files,
     "opened_at": opened_at,

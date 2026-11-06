@@ -141,6 +141,7 @@ def parse_usage_text(
     session_opened: bool = True,
     post_open_rate: float | None = None,
     pre_open_rate: float | None = None,
+    live_rate_required: bool = False,
 ) -> dict[str, Any]:
     cfg = float(configured_rate)
 
@@ -160,6 +161,11 @@ def parse_usage_text(
 
         if eff_post is not None and eff_post > 0.0:
             return eff_pre, eff_post, float(eff_post), "post_open_measured"
+        if live_rate_required:
+            # A GPU window never projects with a configured (CPU) rate: until the live post-open
+            # rate is read the projection is 0 and the cap rests on the balance drop alone, and
+            # the kit refuses RATE_UNREAD if no positive rate shows within its bounded polls.
+            return eff_pre, eff_post, 0.0, "live_rate_unread"
         if eff_post is not None and eff_post == 0.0:
             pos_pre = float(eff_pre) if (eff_pre is not None and eff_pre > 0.0) else 0.0
             return eff_pre, eff_post, max(cfg, pos_pre), "configured_pending_post_open_rate"

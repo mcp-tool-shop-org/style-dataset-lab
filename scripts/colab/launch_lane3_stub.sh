@@ -30,14 +30,14 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
+PINNED_LAUNCH_GUARDS_SHA="6e7290d28c10c2b0a8953e1ab943f6fc875c8f4c0126dc90535b04f0fac2fce5"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="9058334198ec1225d71296c809592727089789960466b70e93df35026239187e"
+PINNED_COLAB_WINDOW_SHA="ec8f7e67bc43e96ac73e2df8645d40bf74461f0e0de80a5e37c7b2a59d502821"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="829fd49b24499813027ca216c09913892997d0003b210f874785cd58b7acee7f"
+PINNED_SELF_SHA="c71dd7783c4ef47df7d9391b57a0d7603b9211addbf288d1837624d854b6696b"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -562,6 +562,9 @@ LANE3_DOWNLOAD_PROBE_BYTES="2147483648"
 # latent and text-embedding caching, 20 steps, one save, one six-image 1024^2 grid at 25 steps with
 # true CFG; 1800 s allowed, against the consult's 12-19 min estimate for the whole rung).
 LANE3_INSTALL_ALLOWANCE_S="900"
+# A GPU window's live rate is read right after open: up to 24 polls 5 s apart (2 min).
+LANE3_RATE_READ_POLLS="24"
+LANE3_RATE_READ_INTERVAL_S="5"
 LANE3_TRAIN_ALLOWANCE_S="1800"
 
 CARD="${CARD:-CPU-high-mem}"
@@ -581,6 +584,7 @@ TRAIN_MODEL=""
 TRAIN_MODEL_REVISION=""
 TRAIN_HOST_RAM_REQUIRED_GIB=""
 TRAIN_DOWNLOAD_MAX_SECONDS=""
+TRAIN_MAX_RATE=""
 DATASET_DIR=""
 SESSION_ARGS=()
 
@@ -596,6 +600,7 @@ while [ "$#" -gt 0 ]; do
     --grace-s) SESSION_ARGS+=("$1"); GRACE_S="$2"; shift 2 ;;
     --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
     --train) TRAIN_REQUESTED=1; shift ;;
+    --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --host-ram-required-gib) TRAIN_HOST_RAM_REQUIRED_GIB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -667,6 +672,10 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s ${WALL_S} minus grace ${GRACE_S} must cover ${TRAIN_NEED_S} s (download limit ${TRAIN_DOWNLOAD_MAX_SECONDS} + install ${LANE3_INSTALL_ALLOWANCE_S} + train ${LANE3_TRAIN_ALLOWANCE_S})" >&2
     exit 2
   fi
+  if ! [[ "${TRAIN_MAX_RATE}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${TRAIN_MAX_RATE}" =~ ^0+(\.0+)?$ ]]; then
+    echo "REFUSED: TRAIN_MAX_RATE_REQUIRED: --train needs --max-rate <units/h>, the highest live rate the window may run at" >&2
+    exit 2
+  fi
   if [ -z "${DATASET_DIR}" ]; then
     echo "REFUSED: TRAIN_DATASET_REQUIRED: --train needs --dataset-dir <dir> holding the images listed in scripts/colab/lane3/rung-dataset.json" >&2
     exit 2
@@ -723,6 +732,9 @@ fi
 if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_DISK_REQUIRED_GIB:-}" ]; then
   LANE3_DISK_REQUIRED_GIB="${SDLAB_TEST_DISK_REQUIRED_GIB}"
 fi
+if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_RATE_READ_INTERVAL_S:-}" ]; then
+  LANE3_RATE_READ_INTERVAL_S="${SDLAB_TEST_RATE_READ_INTERVAL_S}"
+fi
 if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_GPU_SMOKE_SECONDS:-}" ]; then
   LANE3_GPU_SMOKE_SECONDS="${SDLAB_TEST_GPU_SMOKE_SECONDS}"
 fi
@@ -744,6 +756,7 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_DOWNLOAD_PROBE_SECONDS
   SDLAB_TEST_DISK_REQUIRED_GIB
   SDLAB_TEST_GPU_SMOKE_SECONDS
+  SDLAB_TEST_RATE_READ_INTERVAL_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 EXP_OVERRIDE_SHA="${PINNED_OVERRIDE_SHA}"
@@ -912,6 +925,11 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   fi
 fi
 
+# A GPU card's cap projection uses only the live post-open rate, never a configured one.
+if ! colab_card_is_cpu "${CARD}"; then
+  export COLAB_LIVE_RATE_REQUIRED=1
+fi
+
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
@@ -932,6 +950,13 @@ WALL_WATCHER_PID="$!"
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
+# A GPU window runs only on its live rate: read it right after open (bounded polls), refuse
+# RATE_UNREAD without one and RATE_ABOVE_MAX above --max-rate, before any upload. A CPU stub keeps
+# the configured rate (labelled `configured` in window.json).
+if ! colab_card_is_cpu "${CARD}"; then
+  [ -n "${TRAIN_MAX_RATE}" ] && printf '%s\n' "${TRAIN_MAX_RATE}" > "${OUT_DIR}/max_rate.txt"
+  colab_read_post_open_rate "${PY_BIN}" "${OUT_DIR}" "${LANE3_RATE_READ_POLLS}" "${LANE3_RATE_READ_INTERVAL_S}" "${TRAIN_MAX_RATE}"
+fi
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane3_stub.sh"
 lane3_write_remote_script "${REMOTE_RUNNER}"
