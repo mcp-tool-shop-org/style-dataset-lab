@@ -6,7 +6,9 @@
 # stderr, exit 1:
 # 1. Tools and inputs: git (and python for lane 3) on PATH and uv unless the compile is
 #    mocked (`PREFLIGHT_TOOL_MISSING`); the lane's .in, .lock and, for lane 3, the local-wheel
-#    manifest (`LOCK_INPUT_MISSING`).
+#    manifest (`LOCK_INPUT_MISSING`); the lock's exclude-newer timestamp file,
+#    scripts/colab/locks/<lane>.exclude-newer (`LOCK_TIMESTAMP_MISSING`, or
+#    `LOCK_TIMESTAMP_MALFORMED` unless it holds one RFC 3339 UTC instant, not in the future).
 # 2. Lane 3 local wheels (skipped with --skip-local-wheels, as CI does): the wheel directory
 #    comes from --wheel-dir or SDLAB_WHEEL_DIR, never a default (`WHEEL_DIR_REQUIRED`); each
 #    wheel in scripts/colab/locks/lane3-local-wheels.json must exist (`LOCAL_WHEEL_MISSING`)
@@ -17,8 +19,12 @@
 #    have is `PIN_NOT_FOUND`; an unreachable server or any other fetch failure is
 #    `PIN_CHECK_UNAVAILABLE`.
 # 4. uv must be the kits' pinned version (`UV_VERSION_MISMATCH`; this script refuses, it
-#    never installs uv). The compile is re-run; a failed compile is `LOCK_COMPILE_FAILED`,
-#    and a compile that succeeds but differs from the committed lock is `LOCK_DRIFT`.
+#    never installs uv). The compile is re-run with `--exclude-newer <the timestamp>`, so it
+#    sees only files uploaded before the lock was made and an upstream release cannot drift
+#    it; a failed compile is `LOCK_COMPILE_FAILED`, and a compile that succeeds but differs
+#    from the committed lock is `LOCK_DRIFT`. uv's two-line header (it records the command)
+#    is left out of the comparison. Locks are regenerated with scripts/colab/relock.sh, which
+#    writes the lock and its timestamp file together (docs/colab-locks.md).
 #
 # Test hooks (the SDLAB_PREFLIGHT_* variables listed in TEST_HOOK_VARS) are honoured only
 # when SDLAB_TEST_FAKE_COLAB=1 and `colab` on PATH is the fake CLI (#SDLAB_FAKE_COLAB_CLI=1).
@@ -27,6 +33,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# shellcheck source=scripts/colab/lock_common.sh
+source "${SCRIPT_DIR}/lock_common.sh"
 
 refuse() {
   local code="$1"
@@ -44,6 +52,7 @@ TEST_HOOK_VARS=(
   SDLAB_PREFLIGHT_LOCK_FILE
   SDLAB_PREFLIGHT_IN_FILE
   SDLAB_PREFLIGHT_WHEELS_MANIFEST
+  SDLAB_PREFLIGHT_EXCLUDE_NEWER_FILE
 )
 
 fake_colab_active() {
@@ -99,31 +108,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-case "${LANE_RAW}" in
-  lane1|1)
-    LANE="lane1"
-    PY_VER="3.14.9"
-    IN_REL="scripts/colab/locks/lane1.in"
-    LOCK_REL="scripts/colab/locks/lane1.lock"
-    LAUNCH_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
-    ;;
-  lane3|3)
-    LANE="lane3"
-    PY_VER="3.12.15"
-    IN_REL="scripts/colab/locks/lane3.in"
-    LOCK_REL="scripts/colab/locks/lane3.lock"
-    LAUNCH_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
-    ;;
-  *)
-    echo "Unknown lane: ${LANE_RAW} (expected lane1 or lane3)" >&2
-    exit 2
-    ;;
-esac
+if ! lock_lane_config "${LANE_RAW}"; then
+  echo "Unknown lane: ${LANE_RAW} (expected lane1 or lane3)" >&2
+  exit 2
+fi
 
 IN_FILE="$(hook SDLAB_PREFLIGHT_IN_FILE)"
 IN_FILE="${IN_FILE:-${REPO_ROOT}/${IN_REL}}"
 LOCK_FILE="$(hook SDLAB_PREFLIGHT_LOCK_FILE)"
 LOCK_FILE="${LOCK_FILE:-${REPO_ROOT}/${LOCK_REL}}"
+TS_FILE="$(hook SDLAB_PREFLIGHT_EXCLUDE_NEWER_FILE)"
+TS_FILE="${TS_FILE:-${REPO_ROOT}/${TS_REL}}"
 WHEELS_MANIFEST="$(hook SDLAB_PREFLIGHT_WHEELS_MANIFEST)"
 WHEELS_MANIFEST="${WHEELS_MANIFEST:-${REPO_ROOT}/scripts/colab/locks/lane3-local-wheels.json}"
 COMPILE_MOCK="$(hook SDLAB_PREFLIGHT_FAST_COMPILE_MOCK)"
@@ -145,6 +140,7 @@ fi
 if [[ "${LANE}" == "lane3" ]]; then
   [[ -f "${WHEELS_MANIFEST}" ]] || refuse LOCK_INPUT_MISSING "wheel manifest ${WHEELS_MANIFEST} not found"
 fi
+EXCLUDE_NEWER="$(lock_read_exclude_newer "${TS_FILE}")" || exit 1
 
 # 2. Lane 3 local wheels
 if [[ "${LANE}" == "lane3" ]] && [[ "${SKIP_LOCAL_WHEELS}" != "1" ]]; then
@@ -285,30 +281,11 @@ if [[ "${COMPILE_MOCK}" == "1" ]]; then
   MOCK_OUT="$(hook SDLAB_PREFLIGHT_MOCK_COMPILE_OUT)"
   cp "${MOCK_OUT:-${REPO_ROOT}/${LOCK_REL}}" "${TMP_LOCK}"
 else
-  PINNED_UV="$(grep -E '^PINNED_UV_VERSION=' "${LAUNCH_SH}" | head -n1 | cut -d'"' -f2)"
-  [[ -n "${PINNED_UV}" ]] || refuse LOCK_INPUT_MISSING "PINNED_UV_VERSION not found in ${LAUNCH_SH}"
-  UV_VER_LINE="$("${UV_BIN}" --version 2>&1 || true)"
-  UV_VER="$(awk '{print $2}' <<<"${UV_VER_LINE}")"
-  if [[ "${UV_VER}" != "${PINNED_UV}" ]]; then
-    refuse UV_VERSION_MISMATCH "${UV_BIN} reports '${UV_VER_LINE}', the kits pin uv ${PINNED_UV}; install uv ${PINNED_UV} or point UV_BIN at it"
-  fi
+  lock_check_uv "${UV_BIN}"
 
   COMPILE_LOG="$(mktemp)"
-  CUSTOM_CMD="uv pip compile --generate-hashes --only-binary :all: --python-platform x86_64-manylinux_2_28 --python-version ${PY_VER} --extra-index-url https://download.pytorch.org/whl/cu130 --index-strategy unsafe-best-match ${IN_REL} -o ${LOCK_REL}"
-  if ! (
-    cd "${REPO_ROOT}"
-    "${UV_BIN}" pip compile \
-      --generate-hashes \
-      --only-binary :all: \
-      --python-platform x86_64-manylinux_2_28 \
-      --python-version "${PY_VER}" \
-      --extra-index-url https://download.pytorch.org/whl/cu130 \
-      --index-strategy unsafe-best-match \
-      --custom-compile-command "${CUSTOM_CMD}" \
-      "${IN_FILE}" \
-      -o "${TMP_LOCK}" >"${COMPILE_LOG}" 2>&1
-  ); then
-    echo "REFUSED: LOCK_COMPILE_FAILED: uv pip compile failed for ${LANE} (python ${PY_VER}); last lines:" >&2
+  if ! lock_run_compile "${UV_BIN}" "${IN_FILE}" "${TMP_LOCK}" "${EXCLUDE_NEWER}" >"${COMPILE_LOG}" 2>&1; then
+    echo "REFUSED: LOCK_COMPILE_FAILED: uv pip compile failed for ${LANE} (python ${PY_VER}, exclude-newer ${EXCLUDE_NEWER}); last lines:" >&2
     tail -n 15 "${COMPILE_LOG}" >&2 || true
     exit 1
   fi
@@ -316,14 +293,14 @@ fi
 
 NORM_COMMITTED="$(mktemp)"
 NORM_COMPILED="$(mktemp)"
-tr -d '\r' < "${LOCK_FILE}" > "${NORM_COMMITTED}"
-tr -d '\r' < "${TMP_LOCK}" > "${NORM_COMPILED}"
+lock_normalise "${LOCK_FILE}" > "${NORM_COMMITTED}"
+lock_normalise "${TMP_LOCK}" > "${NORM_COMPILED}"
 
 if ! diff -u "${NORM_COMMITTED}" "${NORM_COMPILED}" >/dev/null 2>&1; then
-  echo "REFUSED: LOCK_DRIFT: compiled output for ${LANE} differs from committed ${LOCK_FILE}" >&2
+  echo "REFUSED: LOCK_DRIFT: compiled output for ${LANE} differs from committed ${LOCK_FILE} (exclude-newer ${EXCLUDE_NEWER} from ${TS_FILE})" >&2
   diff -u "${NORM_COMMITTED}" "${NORM_COMPILED}" | head -n 40 >&2 || true
   exit 1
 fi
 
 PIN_COUNT="$(grep -c '^[a-zA-Z0-9_-]*==' "${NORM_COMMITTED}")"
-echo "PREFLIGHT_OK lane=${LANE} python=${PY_VER} pins=${PIN_COUNT}"
+echo "PREFLIGHT_OK lane=${LANE} python=${PY_VER} pins=${PIN_COUNT} exclude_newer=${EXCLUDE_NEWER}"
