@@ -451,7 +451,7 @@ print(lg.window_rate_decision(state, float((out / "max_rate.txt").read_text(enco
 PYEOF
 )"
   if [ "${decision}" = "assignments_unreadable" ]; then
-    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
+    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: 3 consecutive bad reads: no readable Active assignments count (missing or 0), or a stable window rate below the floor (rate_window.json)"
     return 1
   fi
   if [ "${decision}" = "above_max" ]; then

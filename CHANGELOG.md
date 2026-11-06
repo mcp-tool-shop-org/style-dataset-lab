@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- **Colab kits: the mid-run re-baseline can no longer hide our rise** (from reasoning-dataset-lab's re-reads review) - the neighbour re-baseline used our *last* stable rate, so a low stable read taken while a closing neighbour's rate led its count by two reads (a T4's 1.07 closing beside our 8.88 reads 7.81) left a baseline for a neighbour that was gone, and our later rise to 10.50 read 9.43 under `--max-rate` 9.5 and never tripped. It now uses the highest stable rate seen (`launch_guards.update_window_rate`). The floor also applies mid-run: a stable window rate below `GPU_RATE_FLOOR` is recorded `below_floor` and counts as a bad read toward the 3-read `ASSIGNMENTS_UNREADABLE` limit, never accepted.
+
 ### Added
 
 - **Colab kits: the GPU machine shape is explicit (`--shape standard|high-mem`, `SHAPE_REQUIRED`, `SHAPE_MISMATCH`)** — `colab_window.sh` sent `--high-mem` with every GPU card, and google-colab-cli 0.7.4 drops it only for L4, V5E1 and V6E1 (`colab_cli/client.py:90-111`), so a G4 was opened as High-RAM, a shape nobody had priced (our G4 measurement is G4 Standard, 8.90/h). A GPU card now needs `--shape` in both lanes, through one shared gate (`colab_shape_gate_arm`, checked again by `colab_open_session_locked`), refused before any `colab` call when it is missing or invalid; `--high-mem` reaches `colab new` only for `high-mem`. After the open the session's `colab sessions` row must show the requested Shape (High-RAM / Standard), or the kit refuses `SHAPE_MISMATCH`, stops the session and records both values. `--shape standard` on L4, V5E1 or V6E1 is refused (`SHAPE_STANDARD_UNAVAILABLE`); they expect High-RAM. `window.json` carries `shape_requested` and `shape_check`. CPU stubs are unchanged: always `colab new --high-mem`, no `--shape`. The fake CLI's `colab sessions` now prints real rows with the Shape (`FAKE_COLAB_SESSION_SHAPE` forces a mismatch).

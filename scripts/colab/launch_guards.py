@@ -158,8 +158,9 @@ CARD_CLASSES = ("gpu", "cpu")
 # "Active assignments" is recorded with every reading. When it changes, another window opened or
 # closed. Nothing is judged until the count settles: two counted reads at the new count, at least
 # RATE_STABLE_GAP_S apart, whose account rates agree within the tolerance (the count can arrive a
-# read before the neighbour's rate). Then the neighbour is re-baselined: baseline = account - our
-# last stable rate. Pending or settling reads are never judged against the max and never raise our
+# read before the neighbour's rate). Then the neighbour is re-baselined: baseline = account - the
+# highest stable rate of ours seen (not the last one: a low stable read taken while a neighbour's
+# rate led its count would otherwise inflate the baseline and hide our later rise). Pending or settling reads are never judged against the max and never raise our
 # priced rate, which stays max(--max-rate, highest stable seen). Only a read at an unchanged count
 # may raise our rate or trip the max. Known limit: a neighbour opening on the same read our own rate
 # rises folds that rise into the baseline; pricing at max(--max-rate, seen) bounds the cost.
@@ -169,8 +170,11 @@ CARD_CLASSES = ("gpu", "cpu")
 # with 0 assignments until the session registers, then 1.07 with 1). Such a read is recorded,
 # uncounted, and spends only the RATE_UNREAD poll budget. After the first stable read, a missing
 # count or 0 is a bad read: recorded, the rate not judged, and ASSIGNMENTS_UNREADABLE after
-# ASSIGNMENTS_BAD_LIMIT consecutive bad reads. Known limit: a rate that leads its count by two or
-# more reads at open waits for the count before it can be stable.
+# ASSIGNMENTS_BAD_LIMIT consecutive bad reads. After the first stable read the floor applies too: a
+# stable pair below GPU_RATE_FLOOR (our window cannot bill under the cheapest GPU) is never
+# accepted; it is recorded `below_floor` and counts as a bad read toward the same limit. Known
+# limit: a rate that leads its count by two or more reads at open waits for the count before it
+# can be stable.
 GPU_RATE_FLOOR = 1.00
 RATE_STABLE_TOLERANCE = 0.01
 RATE_STABLE_GAP_S = 5.0
@@ -212,6 +216,7 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
         rec.update({"counted": False, "assignments_bad": True})
         readings.append(rec)
         return state
+    bad_streak_before = int(state.get("assignments_bad_streak", 0))
     state["assignments_bad_streak"] = 0
     last_epoch = state.get("last_counted_epoch")
     if last_epoch is not None and float(epoch) - float(last_epoch) < float(min_gap_s):
@@ -238,8 +243,10 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
             rec["rebaseline_pending"] = True
             readings.append(rec)
             return state
-        # Settled: two agreeing reads at the new count.
-        ours = state.get("last_stable")
+        # Settled: two agreeing reads at the new count. The neighbour is what the account reads above
+        # the highest stable rate of ours seen: the conservative direction (our later reads can only
+        # come out higher, never hidden under an inflated baseline).
+        ours = state.get("best_stable")
         if ours is not None:
             base = round(max(float(account_rate) - float(ours), 0.0), 4)
             state["neighbour_baseline"] = base
@@ -253,7 +260,15 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
     prev = state.get("last_window")
     stable = (window is not None and window >= floor and prev is not None
               and abs(window - float(prev)) <= tolerance)
+    below_floor = (window is not None and window < floor and prev is not None
+                   and abs(window - float(prev)) <= tolerance and state.get("best_stable") is not None)
     rec.update({"window_rate": window, "stable": stable})
+    if below_floor:
+        # Mid-run, a stable own rate below the floor is a bad read, never an accepted rate.
+        state["assignments_bad_streak"] = bad_streak_before + 1
+        if state["assignments_bad_streak"] >= ASSIGNMENTS_BAD_LIMIT:
+            state["assignments_unreadable"] = True
+        rec["below_floor"] = True
     readings.append(rec)
     state["last_window"] = window
     if stable:
