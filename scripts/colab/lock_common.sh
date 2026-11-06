@@ -1,0 +1,120 @@
+# shellcheck shell=bash
+# Shared by preflight_resolve.sh (the drift check) and relock.sh (lock regeneration): the lane
+# table, the exclude-newer timestamp file beside each lock, the uv version pin and the one
+# `uv pip compile` command both run. Sourced, never executed. Callers define `refuse <CODE> <detail>`.
+#
+# The timestamp file (scripts/colab/locks/<lane>.exclude-newer) holds the instant passed to uv's
+# `--exclude-newer`: the resolver sees only files uploaded before it, so a re-resolve of a lock made
+# under it cannot pick up a release published later. Format: `#` comment lines and blank lines are
+# ignored, and exactly one other line must be an RFC 3339 UTC timestamp with whole seconds,
+# `YYYY-MM-DDTHH:MM:SSZ`, that is a real instant and not in the future. A missing file is
+# `LOCK_TIMESTAMP_MISSING`, anything else wrong is `LOCK_TIMESTAMP_MALFORMED`. See docs/colab-locks.md.
+
+LOCK_EXCLUDE_NEWER_RE='^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$'
+
+# lock_lane_config <lane1|lane3|1|3>: sets LANE, PY_VER, IN_REL, LOCK_REL, TS_REL and LAUNCH_SH
+# (absolute, from SCRIPT_DIR). Returns 1 for an unknown lane.
+lock_lane_config() {
+  case "$1" in
+    lane1|1)
+      LANE="lane1"
+      PY_VER="3.14.9"
+      LAUNCH_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
+      ;;
+    lane3|3)
+      LANE="lane3"
+      PY_VER="3.12.15"
+      LAUNCH_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  IN_REL="scripts/colab/locks/${LANE}.in"
+  LOCK_REL="scripts/colab/locks/${LANE}.lock"
+  TS_REL="scripts/colab/locks/${LANE}.exclude-newer"
+}
+
+# lock_check_exclude_newer <text>: returns 0 for a valid bound; otherwise sets LOCK_TS_REASON, returns 1.
+lock_check_exclude_newer() {
+  local ts="$1" round_trip now
+  LOCK_TS_REASON=""
+  if [[ ! "${ts}" =~ ${LOCK_EXCLUDE_NEWER_RE} ]]; then
+    LOCK_TS_REASON="'${ts}' is not an RFC 3339 UTC timestamp of the form YYYY-MM-DDTHH:MM:SSZ"
+    return 1
+  fi
+  round_trip="$(date -u -d "${ts}" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true)"
+  if [[ "${round_trip}" != "${ts}" ]]; then
+    LOCK_TS_REASON="'${ts}' is not a real date and time"
+    return 1
+  fi
+  now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  if [[ "${ts}" > "${now}" ]]; then
+    LOCK_TS_REASON="'${ts}' is in the future (now ${now}), so a later upload would still be visible"
+    return 1
+  fi
+  return 0
+}
+
+# lock_read_exclude_newer <file>: prints the file's timestamp, or refuses LOCK_TIMESTAMP_MISSING /
+# LOCK_TIMESTAMP_MALFORMED.
+lock_read_exclude_newer() {
+  local file="$1"
+  [[ -f "${file}" ]] || refuse LOCK_TIMESTAMP_MISSING "${file} not found; each lock needs its exclude-newer file (docs/colab-locks.md)"
+  local lines=()
+  mapfile -t lines < <(tr -d '\r' < "${file}" | grep -vE '^[[:space:]]*(#|$)' || true)
+  if [[ "${#lines[@]}" -ne 1 ]]; then
+    refuse LOCK_TIMESTAMP_MALFORMED "${file} must hold exactly one timestamp line, found ${#lines[@]}"
+  fi
+  lock_check_exclude_newer "${lines[0]}" || refuse LOCK_TIMESTAMP_MALFORMED "${file}: ${LOCK_TS_REASON}"
+  printf '%s\n' "${lines[0]}"
+}
+
+# lock_check_uv <uv_bin>: refuses UV_VERSION_MISMATCH unless uv is the kits' pinned version.
+lock_check_uv() {
+  local uv_bin="$1" pinned ver_line ver
+  pinned="$(grep -E '^PINNED_UV_VERSION=' "${LAUNCH_SH}" | head -n1 | cut -d'"' -f2)"
+  [[ -n "${pinned}" ]] || refuse LOCK_INPUT_MISSING "PINNED_UV_VERSION not found in ${LAUNCH_SH}"
+  ver_line="$("${uv_bin}" --version 2>&1 || true)"
+  ver="$(awk '{print $2}' <<<"${ver_line}")"
+  if [[ "${ver}" != "${pinned}" ]]; then
+    refuse UV_VERSION_MISMATCH "${uv_bin} reports '${ver_line}', the kits pin uv ${pinned}; install uv ${pinned} or point UV_BIN at it"
+  fi
+}
+
+# lock_compile_command <exclude_newer>: the command written into the lock's header.
+lock_compile_command() {
+  printf 'uv pip compile --generate-hashes --only-binary :all: --python-platform x86_64-manylinux_2_28 --python-version %s --extra-index-url https://download.pytorch.org/whl/cu130 --index-strategy unsafe-best-match --exclude-newer %s %s -o %s' \
+    "${PY_VER}" "$1" "${IN_REL}" "${LOCK_REL}"
+}
+
+# lock_run_compile <uv_bin> <in_file> <out_file> <exclude_newer>: the lane's compile, run from
+# REPO_ROOT. uv's own exclude-newer variables are cleared so only the committed bound applies.
+lock_run_compile() {
+  local uv_bin="$1" in_file="$2" out_file="$3" exclude_newer="$4"
+  (
+    cd "${REPO_ROOT}"
+    env -u UV_EXCLUDE_NEWER -u UV_EXCLUDE_NEWER_PACKAGE "${uv_bin}" pip compile \
+      --generate-hashes \
+      --only-binary :all: \
+      --python-platform x86_64-manylinux_2_28 \
+      --python-version "${PY_VER}" \
+      --extra-index-url https://download.pytorch.org/whl/cu130 \
+      --index-strategy unsafe-best-match \
+      --exclude-newer "${exclude_newer}" \
+      --custom-compile-command "$(lock_compile_command "${exclude_newer}")" \
+      "${in_file}" \
+      -o "${out_file}"
+  )
+}
+
+# lock_normalise <file>: the lock without CRs and without uv's two-line header (the
+# "autogenerated" line and the command line under it), which records how the lock was made and
+# not what it resolves, so a changed header is never drift.
+lock_normalise() {
+  tr -d '\r' < "$1" | awk '
+    NR == 1 && /^# This file was autogenerated by uv/ { header = 1; next }
+    NR == 2 && header && /^#    / { next }
+    { print }
+  '
+}
