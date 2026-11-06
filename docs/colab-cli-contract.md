@@ -31,3 +31,7 @@ Source: google-colab-cli 0.7.4, read on 2026-11-06. The same contract is modelle
    - Known limit: a rate that leads its count by two or more reads at open waits for the count before it can be stable.
    - Known limit: a neighbour opening on the same read this window's own rate rises folds that rise into the baseline. Pricing at the higher of `--max-rate` and the highest stable rate seen bounds the cost.
    - Every lane goes through one gate (`colab_gpu_rate_gate_arm`, then `colab_open_session_locked`, which refuses `GPU_RATE_GATE_NOT_ARMED` for a GPU card that was not armed).
+6. **`colab new --high-mem` picks the machine shape, and `colab sessions` shows it.**
+   - `--high-mem` becomes `shape=hm` on the assign request (`colab_cli/client.py:302-303`), except for L4, V5E1 and V6E1, where `resolve_assign_shape` drops it (`:90-95`, `:109-110`): those cards come in one high-memory shape.
+   - Each `colab sessions` row is `[name] endpoint | Hardware: X | Shape: Y | Variant: Z`, with `Y` `High-RAM` or `Standard` from the server's assignment (`commands/session.py:41-63`, `sessions_command` at `:254-277`; `client.py:114-118`).
+   - A GPU card therefore names its shape: `--shape standard|high-mem`, required, no default (`SHAPE_REQUIRED`). `--high-mem` is sent only for `high-mem`, and after the open the session's row must show the requested Shape, or the kit refuses `SHAPE_MISMATCH` and stops the session. `--shape standard` on L4, V5E1 or V6E1 is refused before any call (`SHAPE_STANDARD_UNAVAILABLE`). A CPU card keeps `--high-mem` and takes no `--shape`.

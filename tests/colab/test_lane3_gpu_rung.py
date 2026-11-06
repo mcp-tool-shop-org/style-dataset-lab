@@ -550,6 +550,8 @@ def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: st
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
             "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
             "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5", *extra]
+    if "--shape" not in extra:
+        args += ["--shape", "high-mem"]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     return res, out_dir
 
@@ -566,6 +568,10 @@ def test_rung_success_trains_copies_off_and_records_the_guards(tmp_path: Path) -
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["status"] == "ok" and win["refusal_code"] is None
     assert win["train"] == "trained" and win["trained"] is True and win["lane3_mode"] == "train"
+    # The machine shape: --shape high-mem reaches `colab new` as --high-mem and the row matches.
+    calls = (out_dir.parent / "colab_state" / "calls.log").read_text(encoding="utf-8")
+    assert "CALL new --gpu A100 --high-mem -s sdlab-l3-gpu-rung" in calls
+    assert win["shape_requested"] == "high-mem" and win["shape_check"]["match"] is True
     gpu = win["train_guards"]["gpu"]
     assert gpu["device_name"] == "NVIDIA A100-SXM4-80GB" and gpu["driver_version"] == "580.82.07"
     assert gpu["torch_cuda"] == "13.0" and gpu["bitsandbytes_version"] == "0.50.2" and gpu["adamw8bit_step"] == "ok"
@@ -1476,3 +1482,32 @@ def test_cap_at_8_88_per_hour_trips_at_20_3_seconds() -> None:
     assert lg.evaluate_cap_guard(elapsed_s=20.3, **kw)["tripped"] is True
     # The balance drop counts too: the larger of the drop and the projection is the spend.
     assert lg.evaluate_cap_guard(elapsed_s=0.0, **{**kw, "current_balance": 99.94})["tripped"] is True
+
+
+# The machine shape gate (colab_window.sh) on lane 3: required for the GPU rung, checked after open.
+
+def test_rung_without_shape_refuses_before_any_colab_call(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    out_dir = tmp_path / "out"
+    args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
+            "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
+            "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
+            "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5"]
+    res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
+    assert res.returncode == 2 and "REFUSED: SHAPE_REQUIRED:" in res.stderr, res.stderr[-2000:]
+    assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
+    assert json.loads((out_dir / "window.json").read_text(encoding="utf-8"))["refusal_code"] == "SHAPE_REQUIRED"
+
+
+def test_rung_shape_mismatch_refuses_after_open_and_stops(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env["FAKE_COLAB_SESSION_SHAPE"] = "High-RAM"
+    res, out_dir = _launch(tmp_path, env, src, "--shape", "standard")
+    assert res.returncode != 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "SHAPE_MISMATCH" and win["shape_requested"] == "standard"
+    assert win["shape_check"] == {"requested": "standard", "expected": "Standard", "observed": "High-RAM",
+                                  "match": False}
+    assert "CALL new --gpu A100 -s sdlab-l3-gpu-rung" in (state_dir / "calls.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+    assert _no_uploads(state_dir)

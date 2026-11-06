@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Launch kit for Lane 3 (train) Colab windows: the CPU install-path stub (Part C, PR #47) and, with
 # --train, the GPU rung. Checks pinned input sha256s (including itself) and runs preflight_resolve.sh
-# before opening, holds /tmp/colab-window-open.lock, opens the card --high-mem, runs CPython 3.12.15
+# before opening, holds /tmp/colab-window-open.lock, opens the card (CPU: --high-mem; GPU: --shape standard|high-mem), runs CPython 3.12.15
 # uv venv + wheel-only install from hash-locked lane3.lock and pre-built local wheels in
 # lane3-local-wheels.json + pinned ostris/ai-toolkit + the import gate. Without --train it stops
 # there: TRAIN_SKIPPED and train=skipped_cpu_stub in window.json (never a trained result). With
@@ -32,12 +32,12 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="0749b81fbc023adda80bdb1e99ce538e2b66a729b209519ee2f6721d04fe37ea"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="9da858589cfe2832745c26f2f201772c578753a1e419691eb42011e5d7175a6e"
+PINNED_COLAB_WINDOW_SHA="24bc981188d8d9bcace88900745528be3b615669e4fb9f3f6620885961033369"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="667aea07aaa83f167c9a08fe855f77fa0ee9546b7a34f0d22cd5ab5d6d531cbd"
+PINNED_SELF_SHA="b1e9ec2cd23ab3504820b8814791d53b217a7bd779feb6a4ccf96eeee61a64f9"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -582,6 +582,7 @@ TRAIN_MODEL_REVISION=""
 TRAIN_HOST_RAM_REQUIRED_GIB=""
 TRAIN_DOWNLOAD_MAX_SECONDS=""
 TRAIN_MAX_RATE=""
+SHAPE=""
 DATASET_DIR=""
 SESSION_ARGS=()
 
@@ -598,6 +599,7 @@ while [ "$#" -gt 0 ]; do
     --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
     --train) TRAIN_REQUESTED=1; shift ;;
     --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --shape) SESSION_ARGS+=("$1"); SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --host-ram-required-gib) TRAIN_HOST_RAM_REQUIRED_GIB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -922,6 +924,9 @@ fi
 # The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
 # max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
 colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}"
+# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
+# stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
+colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
@@ -939,7 +944,8 @@ MAIN_PID="$$"
 ) &
 WALL_WATCHER_PID="$!"
 
-# Hold /tmp/colab-window-open.lock while opening with colab new (--high-mem default)
+# Hold /tmp/colab-window-open.lock while opening with colab new (CPU: --high-mem; GPU: --high-mem
+# only for --shape high-mem, then the session row's Shape is checked: SHAPE_MISMATCH)
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 # A GPU window's cap clock started, and its stable rate was read, inside colab_open_session_locked

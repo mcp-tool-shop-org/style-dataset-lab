@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stub launch kit for Lane 1 (render) Colab CPU high-mem window (Part C, PR #45).
 # Checks pinned input sha256s (including itself) and runs preflight_resolve.sh before opening,
-# holds /tmp/colab-window-open.lock, opens CPU --high-mem, runs CPython 3.14.9 uv venv + wheel-only
+# holds /tmp/colab-window-open.lock, opens CPU --high-mem (a GPU card needs --shape), runs CPython 3.14.9 uv venv + wheel-only
 # install from hash-locked lane1.lock + pinned ComfyUI --cpu + comfy-headless + 64x64 fixture render +
 # stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap, vitals/DEAD HARNESS,
 # host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges VM facts/balances/rate/
@@ -26,8 +26,8 @@ PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="0749b81fbc023adda80bdb1e99ce538e2b66a729b209519ee2f6721d04fe37ea"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="9da858589cfe2832745c26f2f201772c578753a1e419691eb42011e5d7175a6e"
-PINNED_SELF_SHA="28042f0a1118774f0b323dde7a42d4587987cf0b1a39c557bf2d190bc6741830"
+PINNED_COLAB_WINDOW_SHA="24bc981188d8d9bcace88900745528be3b615669e4fb9f3f6620885961033369"
+PINNED_SELF_SHA="042fe37bc34caceec00fa26c300d82698c0c16b1ec27b9b243aabfda5e86d5fe"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -42,6 +42,7 @@ WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
 MAX_RATE=""
+SHAPE=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -53,6 +54,7 @@ while [ "$#" -gt 0 ]; do
     --grace-s) GRACE_S="$2"; shift 2 ;;
     --margin) MARGIN="$2"; shift 2 ;;
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --shape) SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -169,6 +171,9 @@ printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 # goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
 # at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
 colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
+# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
+# card keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
+colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
 # Independent wall watcher (cannot be blocked by a child timeout)
@@ -184,7 +189,8 @@ MAIN_PID="$$"
 ) &
 WALL_WATCHER_PID="$!"
 
-# Hold /tmp/colab-window-open.lock while opening with colab new (--high-mem default)
+# Hold /tmp/colab-window-open.lock while opening with colab new (CPU: --high-mem; GPU: --high-mem
+# only for --shape high-mem, then the session row's Shape is checked: SHAPE_MISMATCH)
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
