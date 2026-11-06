@@ -1,0 +1,5 @@
+Using Python 3.13.13 environment at: v
+error: No solution found when resolving dependencies
+  cause: Because sdpkg==1.0 has no usable wheels and you require sdpkg==1.0, we can conclude that your requirements are unsatisfiable.
+
+hint: Wheels are required for `sdpkg` because building from source is disabled for all packages (i.e., with `--no-build`)

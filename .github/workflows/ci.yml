@@ -86,16 +86,22 @@ jobs:
         run: |
           python3 -m pip install --user "uv==0.13.5" || pipx install "uv==0.13.5"
           export PATH="$HOME/.local/bin:$PATH"
-          if uv python install 3.15.1; then
-            PY_TARGET=3.15.1
-          else
-            uv python install 3.13
-            PY_TARGET=3.13
-          fi
+          uv python install 3.14.9 3.12.15
+          PY_TARGET=3.14.9
           uv venv .venv-ci --python "${PY_TARGET}"
           uv pip install --python .venv-ci/bin/python pytest pytest-cov
           .venv-ci/bin/python --version
           SDLAB_PYTHON="$(pwd)/.venv-ci/bin/python" .venv-ci/bin/python -m pytest tests/colab             --cov=scripts/colab             --cov-report=term-missing             --cov-report=xml:coverage/coverage-python.xml             --cov-fail-under=90
+      - name: Colab pre-flight resolve — lane 1 (Node 22 only)
+        if: matrix.node-version == 22
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          bash scripts/colab/preflight_resolve.sh lane1
+      - name: Colab pre-flight resolve — lane 3 (Node 22 only)
+        if: matrix.node-version == 22
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          bash scripts/colab/preflight_resolve.sh lane3 --skip-local-wheels
       # The codecov job below uploads what these steps save; this job
       # never holds an OIDC token. Coverage is saved when the tests passed,
       # and test results whenever they ran, failures included, because a

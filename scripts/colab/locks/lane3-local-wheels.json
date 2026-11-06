@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "lane": "lane3",
+  "python_version": "3.12.15",
+  "ai_toolkit_commit": "beb94824c51480a04d3c86c718603676fdef6938",
+  "wheels": [
+    {
+      "package": "lycoris-lora",
+      "version": "1.8.3",
+      "source": "lycoris-lora==1.8.3",
+      "filename": "lycoris_lora-1.8.3-py3-none-any.whl",
+      "sha256": "f3523e722158e87f3c068ab9548a93ab6e33e3a2884afa4700b3a18e2fd22632"
+    },
+    {
+      "package": "diffusers",
+      "version": "0.39.0.dev0",
+      "source": "git+https://github.com/huggingface/diffusers.git@c943837899b16cbae2f619b8dd4f7bb6f07dd81a",
+      "git_repo": "https://github.com/huggingface/diffusers.git",
+      "git_commit": "c943837899b16cbae2f619b8dd4f7bb6f07dd81a",
+      "filename": "diffusers-0.39.0.dev0-py3-none-any.whl",
+      "sha256": "dc27738d024a092f4676ca960e129b6cb7517b971dd5423628adfff28a552f2f"
+    }
+  ]
+}

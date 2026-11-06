@@ -14,6 +14,7 @@ Enforces the recorded Colab CLI v0.7.4 contract against `colab_help.txt` and
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -141,7 +142,14 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
     state_dir.mkdir(parents=True, exist_ok=True)
     content_dir = state_dir / "content"
     content_dir.mkdir(parents=True, exist_ok=True)
+    wheels_dir = tmp_path / "fake_wheels"
+    wheels_dir.mkdir(parents=True, exist_ok=True)
     lock_file = tmp_path / "colab-window-open.lock"
+
+    # Lane 3 inputs the tests build for themselves: two tiny valid wheels, a matching
+    # manifest, and a local git repo whose commits stand in for the upstream pins.
+    pin_repo, pin_tip, pin_parent = make_fixture_git_repo(tmp_path / "pin_repo")
+    manifest_p = make_fixture_wheels(wheels_dir, tmp_path / "lane3-local-wheels.json", pin_repo, pin_parent)
 
     py_posix = _to_posix(Path(_resolve_python()))
     fake_py_posix = _to_posix(Path(__file__).resolve())
@@ -172,20 +180,100 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
     env["FAKE_COLAB_STATE_DIR"] = _to_posix(state_dir)
     env["COLAB_OPEN_LOCK"] = _to_posix(lock_file)
     env["SDLAB_TEST_FAKE_COLAB"] = "1"
+    env["SDLAB_WHEEL_DIR"] = _to_posix(wheels_dir)
+    # Pre-flight test hooks; the pre-flight honours them only under this fake CLI.
+    env["SDLAB_PREFLIGHT_WHEELS_MANIFEST"] = _to_posix(manifest_p)
+    env["EXPECTED_LOCAL_WHEELS_MANIFEST_SHA"] = hashlib.sha256(manifest_p.read_bytes()).hexdigest()
+    env["SDLAB_PREFLIGHT_FAST_COMPILE_MOCK"] = "1"
+    env["SDLAB_PREFLIGHT_PIN_REPO"] = pin_repo
+    env["SDLAB_PREFLIGHT_PIN_SHA"] = pin_tip
+    env["FAKE_FIXTURE_PIN_PARENT"] = pin_parent
     return bin_dir, state_dir, env
 
 
+def _git(repo: Path, *args: str) -> str:
+    res = subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=sdlab-test", "-c", "user.email=sdlab-test@example.invalid",
+         "-c", "commit.gpgsign=false", *args],
+        capture_output=True,
+        text=True,
+        check=True,
+        stdin=subprocess.DEVNULL,
+    )
+    return res.stdout.strip()
+
+
+def make_fixture_git_repo(repo: Path) -> tuple[str, str, str]:
+    """A two-commit local repo: returns (file:// URL, tip sha, parent sha)."""
+    repo.mkdir(parents=True, exist_ok=True)
+    _git(repo, "init", "-q")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "fixture parent")
+    parent = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "fixture tip")
+    tip = _git(repo, "rev-parse", "HEAD")
+    return f"file://{_to_posix(repo)}", tip, parent
+
+
+def _wheel_bytes(name: str, version: str) -> bytes:
+    import base64
+    import io
+    import zipfile
+
+    dist = f"{name}-{version}.dist-info"
+    files = {
+        f"{name}/__init__.py": b"",
+        f"{dist}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n".encode(),
+        f"{dist}/WHEEL": b"Wheel-Version: 1.0\nGenerator: sdlab-test\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+    }
+    record = [
+        f"{k},sha256={base64.urlsafe_b64encode(hashlib.sha256(v).digest()).rstrip(b'=').decode()},{len(v)}"
+        for k, v in files.items()
+    ]
+    files[f"{dist}/RECORD"] = ("\n".join(record + [f"{dist}/RECORD,,"]) + "\n").encode()
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for k, v in files.items():
+            zf.writestr(zipfile.ZipInfo(k, date_time=(2026, 1, 1, 0, 0, 0)), v)
+    return buf.getvalue()
+
+
+def make_fixture_wheels(wheels_dir: Path, manifest_path: Path, git_repo: str, git_commit: str) -> Path:
+    """Write two small valid wheels and a lane3-local-wheels.json that lists them."""
+    wheels_dir.mkdir(parents=True, exist_ok=True)
+    entries = []
+    for pkg, name, version in (("fixture-a", "fixture_a", "1.0"), ("fixture-b", "fixture_b", "2.0")):
+        fname = f"{name}-{version}-py3-none-any.whl"
+        data = _wheel_bytes(name, version)
+        (wheels_dir / fname).write_bytes(data)
+        entry = {"package": pkg, "version": version, "filename": fname, "sha256": hashlib.sha256(data).hexdigest()}
+        if pkg == "fixture-b":
+            # The parent commit, not the tip: the pin check must accept a non-tip commit.
+            entry.update({"git_repo": git_repo, "git_commit": git_commit})
+        entries.append(entry)
+    manifest = {"schema_version": "1.0", "lane": "lane3", "python_version": "3.12.15", "wheels": entries}
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return manifest_path
+
+
 def _write_fake_remote_scripts(content_dir: Path) -> None:
+    uv_logs_dst = content_dir / ".uv_logs"
+    uv_logs_dst.mkdir(parents=True, exist_ok=True)
+    for sample in (FIXTURES_DIR / "uv_logs").glob("*.txt"):
+        shutil.copyfile(sample, uv_logs_dst / sample.name)
     venv_check_helper = """verify_uploaded_venv_script() {
   local uploaded_sh="$1"
   local lane_num="$2"
   local expected_venv="/content/venv-lane${lane_num}"
   local expected_py="${expected_venv}/bin/python"
+  local expected_ver="3.14.9"
+  if [ "${lane_num}" = "3" ]; then
+    expected_ver="3.12.15"
+  fi
 
-  local sim_ver="${FAKE_COLAB_VENV_PYTHON_VERSION:-3.15.1 (main, Oct 21 2026)}"
+  local sim_ver="${FAKE_COLAB_VENV_PYTHON_VERSION:-${expected_ver} (main, Oct 21 2026)}"
   local sim_prefix="${FAKE_COLAB_VENV_PREFIX:-${expected_venv}}"
-  if [[ "${sim_ver}" != 3.15.1* ]] || [[ "${sim_prefix}" != /content/venv-lane* ]]; then
-    if ! grep -Fq "VENV_PYTHON_MISMATCH" "${uploaded_sh}" && ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"3.15.1\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
+  if [[ "${sim_ver}" != "${expected_ver}"* ]] || [[ "${sim_prefix}" != /content/venv-lane* ]]; then
+    if ! grep -Fq "VENV_PYTHON_MISMATCH" "${uploaded_sh}" && ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"${expected_ver}\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
       echo "WARN: VENV_PYTHON_GATE_BYPASSED version=${sim_ver} prefix=${sim_prefix} (no pre-install venv gate in ${uploaded_sh})" >&2
       return 0
     fi
@@ -194,11 +282,29 @@ def _write_fake_remote_scripts(content_dir: Path) -> None:
   fi
 
   if [ "${FAKE_COLAB_MODE:-}" = "venv_python_mismatch" ]; then
-    if ! grep -Fq "VENV_PYTHON_MISMATCH" "${uploaded_sh}" && ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"3.15.1\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
+    if ! grep -Fq "VENV_PYTHON_MISMATCH" "${uploaded_sh}" && ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"${expected_ver}\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
       echo "WARN: VENV_PYTHON_GATE_BYPASSED (no pre-install venv gate in ${uploaded_sh})" >&2
       return 0
     fi
     echo "REFUSED: VENV_PYTHON_MISMATCH version=3.13.18 prefix=/usr" >&2
+    exit 1
+  fi
+  # Install failures: a real uv log sample goes through the kit's own uploaded classifier.
+  local uv_sample=""
+  case "${FAKE_COLAB_MODE:-}" in
+    wheel_missing) uv_sample="no_wheel.txt" ;;
+    lock_hash_mismatch) uv_sample="hash_mismatch.txt" ;;
+    install_network_failure) uv_sample="network_retry.txt" ;;
+    install_failed) uv_sample="no_hash.txt" ;;
+  esac
+  if [ -n "${uv_sample}" ]; then
+    if ! grep -Fq "/content/classify_install_log.py --lane lane${lane_num}" "${uploaded_sh}" || [ ! -f classify_install_log.py ]; then
+      echo "REFUSED: INSTALL_CLASSIFIER_MISSING: ${uploaded_sh} does not run the uploaded classify_install_log.py" >&2
+      exit 1
+    fi
+    cp ".uv_logs/${uv_sample}" "lane${lane_num}_out/wheels.log"
+    cat "lane${lane_num}_out/wheels.log"
+    "${SDLAB_PYTHON:-python3}" classify_install_log.py --lane "lane${lane_num}" --log "lane${lane_num}_out/wheels.log" >&2
     exit 1
   fi
   if [ "${FAKE_COLAB_MODE:-}" = "venv_import_outside" ] || [ -n "${FAKE_COLAB_OUTSIDE_IMPORT_PACKAGE:-}" ]; then
@@ -255,9 +361,13 @@ def _write_fake_remote_scripts(content_dir: Path) -> None:
       echo "REFUSED: VENV_IMPORT_OUTSIDE_VENV: uv pip install without --python ${expected_py} landed in /usr/local/lib/python3.13/dist-packages (UV_SYSTEM_PYTHON=${UV_SYSTEM_PYTHON:-1}): ${line}" >&2
       exit 1
     fi
+    if ! printf '%s\\n' "${line}" | grep -Fq -- "--require-hashes" || ! printf '%s\\n' "${line}" | grep -Fq -- "--only-binary :all:"; then
+      echo "REFUSED: UNLOCKED_INSTALL: uv pip install missing --require-hashes or --only-binary :all:: ${line}" >&2
+      exit 1
+    fi
   done <<< "${uv_pip_lines}"
 
-  if ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"3.15.1\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
+  if ! grep -Fq "${expected_py} -c 'import sys; assert sys.version.startswith(\\"${expected_ver}\\"), sys.version; assert sys.prefix.startswith(\\"/content/venv-lane\\"), sys.prefix'" "${uploaded_sh}"; then
     echo "REFUSED: VENV_PYTHON_GATE_MISSING: pre-install venv interpreter gate missing in ${uploaded_sh}" >&2
     exit 1
   fi
@@ -348,13 +458,13 @@ fi
 
 verify_uploaded_venv_script "remote_lane1_stub.sh.uploaded" "1" 2>&1 | tee -a lane1_out/setup.log
 for mod_name in comfy_headless torch safetensors PIL yaml aiohttp; do
-  echo "VENV_IMPORT ${mod_name} /content/venv-lane1/lib/python3.15/site-packages/${mod_name}/__init__.py" | tee -a lane1_out/setup.log
+  echo "VENV_IMPORT ${mod_name} /content/venv-lane1/lib/python3.14/site-packages/${mod_name}/__init__.py" | tee -a lane1_out/setup.log
 done
 printf 'setup_complete\\n' >> lane1_out/setup.log
 echo "run" > lane1_out/phase.txt
 emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
-echo "LANE1_STUB_OK python=3.15.1 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
+echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
+echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
 printf 'FAKE_TAR_BYTES' > lane1_stub_bundle.tar.gz
 """
     )
@@ -437,14 +547,14 @@ elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usa
 fi
 
 verify_uploaded_venv_script "remote_lane3_stub.sh.uploaded" "3" 2>&1 | tee -a lane3_out/setup.log
-for mod_name in sentencepiece torch safetensors yaml oyaml PIL; do
-  echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.15/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
+for mod_name in sentencepiece torch safetensors yaml oyaml PIL diffusers lycoris; do
+  echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
 printf 'setup_complete\\n' >> lane3_out/setup.log
 echo "run" > lane3_out/phase.txt
 emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.15.1", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "73ebae1334d2c98089f1b90f8cb19257825f891a", "override_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
-echo "LANE3_STUB_OK python=3.15.1 sentencepiece=0.2.1 checkpoint_written=true"
+echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.12.15", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "beb94824c51480a04d3c86c718603676fdef6938", "override_sha256": "09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
+echo "LANE3_STUB_OK python=3.12.15 sentencepiece=0.2.1 checkpoint_written=true"
 printf 'FAKE_TAR_BYTES' > lane3_stub_bundle.tar.gz
 """
     )

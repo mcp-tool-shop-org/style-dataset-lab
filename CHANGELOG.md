@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- **Colab launch kits (`scripts/colab/`): wheel-only installs from hash-locked lock files, per-lane Python, real `ai-toolkit` pin, and free pre-flight resolve** — Lane 1 now runs on CPython `3.14.9` against `scripts/colab/locks/lane1.lock` (89 pins) and Lane 3 runs on CPython `3.12.15` against `scripts/colab/locks/lane3.lock` (157 pins, replacing `scripts/colab/ai-toolkit-override-py315.txt`) plus pre-built local wheels recorded in `scripts/colab/locks/lane3-local-wheels.json` (`lycoris_lora-1.8.3-py3-none-any.whl` and `diffusers-0.39.0.dev0-py3-none-any.whl`). Re-pinned `ostris/ai-toolkit` to upstream commit `beb94824c51480a04d3c86c718603676fdef6938`. Every `uv pip install` uses `--require-hashes --only-binary :all:` with `UV_NO_BUILD=1`; missing wheels, hash mismatches, lock drift, or missing upstream git pins fail with named refusals (`WHEEL_MISSING`, `LOCK_HASH_MISMATCH`, `LOCAL_WHEEL_MISSING`, `LOCAL_WHEEL_SHA_MISMATCH`, `LOCK_DRIFT`, `PIN_NOT_FOUND`). Added `scripts/colab/preflight_resolve.sh` (invoked before any `colab` CLI call and in CI).
+- **Colab kits, review fixes** — the `tests/colab` suite builds its own fixture wheels, manifest and a local two-commit git repo, so it no longer reads pre-built wheels from the rig and passes on a CI runner. No machine path remains in the kits or the wheel manifest: lane 3 requires `--wheel-dir` or `SDLAB_WHEEL_DIR` (`WHEEL_DIR_REQUIRED`). The pre-flight fetches each pinned commit by sha (the kit pin and the manifest's `diffusers` commit), so a valid non-tip commit passes; an unreachable server is `PIN_CHECK_UNAVAILABLE`, not `PIN_NOT_FOUND`. It refuses any uv other than the kits' 0.13.5 (`UV_VERSION_MISMATCH`), reports a failed compile as `LOCK_COMPILE_FAILED` (`LOCK_DRIFT` only for a successful compile that differs) and missing tools or inputs as `PREFLIGHT_TOOL_MISSING` / `LOCK_INPUT_MISSING`, and honours its test hooks only under the fake `colab` CLI (`PREFLIGHT_TEST_HOOK_IN_LIVE_RUN` otherwise). On the VM, a failed lock install is classified from uv's own log by `scripts/colab/classify_install_log.py` (`WHEEL_MISSING`, `LOCK_HASH_MISMATCH`, `INSTALL_NETWORK_FAILURE`, `INSTALL_FAILED`, with the log tail in the refusal). uv itself is installed by hash (`pip install --require-hashes` with the PyPI sha256 of the manylinux x86_64 wheel), and `uv venv` no longer seeds an unpinned pip. `scripts/colab` coverage 93.69% → 93.97%.
+
 ## [3.5.1] - 2026-11-05
 
 ### Changed

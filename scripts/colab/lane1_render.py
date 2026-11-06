@@ -2,7 +2,7 @@
 """Lane 1 (render) VM bootstrap and durable ComfyUI queue driver (DESIGN-v3 §3.1, §3.5, §4.4, §7, G1-G3, G8).
 
 Drives headless ComfyUI on loopback (127.0.0.1) via the `comfy_headless` library
-(never launching the Gradio UI). Enforces CPython 3.15.1 in a uv venv, stages
+(never launching the Gradio UI). Enforces CPython 3.14.9 in a uv venv, stages
 weights by sha256 + cleared SPDX licence from a manifest, writes `window.json`,
 executes `jobs.jsonl` -> `renders.jsonl` with idempotent resume after kill,
 periodic copy-back, and PNG `tEXt` provenance stamping + immediate read-back
@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
-PY_VERSION_EXPECTED = "3.15.1"
+PY_VERSION_EXPECTED = "3.14.9"
 UV_PIN = "uv==0.13.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
 CLEARED_LICENCES = {"Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "CC-BY-4.0"}

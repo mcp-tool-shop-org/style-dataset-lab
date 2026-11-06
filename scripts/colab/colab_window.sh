@@ -443,6 +443,7 @@ colab_write_window_and_outcome() {
   "${py_bin}" - "${out_dir}" "${lane}" "${session}" "${card}" "${cap}" "${wall_s}" "${grace_s}" "${margin}" "${opened_at}" "${closed_at}" "${exit_code}" "${shas_json}" << 'PYEOF'
 import hashlib
 import json
+import re
 import sys
 import tarfile
 from pathlib import Path
@@ -516,6 +517,37 @@ if vitals_p.exists():
             except Exception:
                 pass
 
+REFUSAL_CODES = (
+    "WHEEL_MISSING",
+    "LOCK_HASH_MISMATCH",
+    "LOCAL_WHEEL_MISSING",
+    "LOCAL_WHEEL_SHA_MISMATCH",
+    "INSTALL_NETWORK_FAILURE",
+    "INSTALL_FAILED",
+    "LOCK_DRIFT",
+    "LOCK_COMPILE_FAILED",
+    "LOCK_INPUT_MISSING",
+    "PIN_NOT_FOUND",
+    "PIN_CHECK_UNAVAILABLE",
+    "UV_VERSION_MISMATCH",
+    "PREFLIGHT_TOOL_MISSING",
+    "PREFLIGHT_TEST_HOOK_IN_LIVE_RUN",
+    "VENV_PYTHON_MISMATCH",
+    "VENV_IMPORT_OUTSIDE_VENV",
+    "VENV_IMPORT_FAILED",
+)
+refusal_code: str | None = None
+for log_name in ("guards.log", "vitals.log", "colab.log"):
+    lp = out_dir / log_name
+    if lp.exists():
+        ltxt = lp.read_text(encoding="utf-8", errors="replace")
+        for code in REFUSAL_CODES:
+            if re.search(rf"\b{code}\b", ltxt):
+                refusal_code = code
+                break
+    if refusal_code:
+        break
+
 downloaded_files: dict[str, str] = {}
 for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.safetensors"))):
     if artifact.is_file():
@@ -545,12 +577,16 @@ rate_source = read_text_file(out_dir / "rate_source.txt") or (
     )
 )
 
+final_status = "ok" if exit_code == 0 else (refusal_code or "failed")
+
 window_payload = {
     **vm_facts,
     "window_id": session,
     "lane": lane,
     "session": session,
     "card": card,
+    "status": final_status,
+    "refusal_code": refusal_code,
     "cap": cap,
     "wall_s": wall_s,
     "grace_s": grace_s,
@@ -577,7 +613,8 @@ outcome_payload = {
     "lane": lane,
     "session": session,
     "card": card,
-    "status": "ok" if exit_code == 0 else "failed",
+    "status": final_status,
+    "refusal_code": refusal_code,
     "exit_code": exit_code,
     "opened_at": opened_at,
     "closed_at": closed_at,

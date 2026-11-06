@@ -75,33 +75,79 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 12,
+      "added": 8,
+      "changed": 10,
       "moved": 0,
-      "parts": 2,
+      "parts": 3,
       "removed": 0
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "tests/colab/fixtures/uv_logs/ is now read by tests/colab/fixtures/fake_colab.py.",
+        "subjects": [
+          "tests/colab/fixtures/uv_logs/",
+          "tests/colab/fixtures/fake_colab.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "tests/colab/fixtures/uv_logs/hash_mismatch.txt is now read by tests/colab/test_classify_install_log.py.",
+        "subjects": [
+          "tests/colab/fixtures/uv_logs/hash_mismatch.txt",
+          "tests/colab/test_classify_install_log.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "tests/colab/fixtures/uv_logs/network_retry.txt is now read by tests/colab/test_classify_install_log.py.",
+        "subjects": [
+          "tests/colab/fixtures/uv_logs/network_retry.txt",
+          "tests/colab/test_classify_install_log.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "And 1 more new writer or reader of a place.",
+        "subjects": []
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-05; 12 files changed content.",
+        "sentence": "8 files added and 10 changed content, across 3 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "8207917079fb43e3edc7329768563f276b30730c",
-      "generatedAt": "2026-11-05T22:08:22.864Z"
+      "commit": "bbb779d0ee2d50ee1c7d39db7144c87b6b3990ab",
+      "generatedAt": "2026-11-05T23:32:38.709Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
-  "changesTogether": [],
+  "changesTogether": [
+    {
+      "a": "tests/colab/test_launch_lane1_stub.py",
+      "b": "tests/colab/test_launch_lane3_stub.py",
+      "either": 6,
+      "partLabels": [
+        "tests",
+        "tests"
+      ],
+      "parts": [
+        "tests",
+        "tests"
+      ],
+      "relation": "inside",
+      "shared": 4
+    }
+  ],
   "changesTogetherNote": [
+    "Confidence is low: fewer than 25 source files reach 10 revisions in the window.",
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "ca3610091d0b12da15854b44f9fd1eba349613e1",
+  "commit": "c11e871f8a472edf2dd08b212cf5abc061af338c",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2617 files); code in JavaScript (247), Python (38), Astro (3), PowerShell (3), shell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (41), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -119,23 +165,24 @@
           "files": 1
         },
         {
+          "boundary": "scripts",
+          "depth": 0,
+          "files": 45
+        },
+        {
           "boundary": "tests",
           "depth": 0,
-          "files": 109
+          "files": 111
         },
         {
           "boundary": "lib",
           "depth": 1,
           "files": 82
-        },
-        {
-          "boundary": "scripts",
-          "depth": 1,
-          "files": 43
         }
       ],
       "runs": [
         "bin/sdlab.js",
+        "scripts/colab/preflight_resolve.sh",
         "tests/colab/",
         "tests/canon-star-freight/",
         "tests/cli-scripts/",
@@ -168,8 +215,8 @@
         "tests/lib-pipeline/",
         "tests/lib-runtime/"
       ],
-      "runsCount": 32,
-      "runsMore": 97,
+      "runsCount": 33,
+      "runsMore": 100,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -418,12 +465,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T22:32:52.094Z",
+  "generatedAt": "2026-11-06T00:17:00.138Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "152 writes and 274 reads go to a path their caller passes, not to this repository.",
+    "152 writes and 275 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -704,11 +751,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 113,
+  "testFiles": 120,
   "testedBy": {
     "bin": 10,
     "lib": 97,
-    "scripts": 24
+    "scripts": 25
   },
   "unnamedWrites": 38,
   "unread": [

@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "58fb1f6438a692063c31e0c43a8c8e1c7a8911ee1f72fdba7814950f16c98829",
+          "hash": "9c7bc09f46387023522d128472cff402e3b87942332f7b7524364e69511b2660",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -479,7 +479,7 @@
               "line": 118
             }
           ],
-          "hash": "0805ce71112681e3cd76859da5ef89896007126bd84d4b3c7d2cc162b205dc26",
+          "hash": "e5a37016259e53a3efe600ed550f4b9119ac2016c7f2b91377d93916ff43c92e",
           "importOrder": [
             "lib/captions.js",
             "lib/rows.js",
@@ -2771,7 +2771,7 @@
               "line": 556
             }
           ],
-          "hash": "7ae98a64f3049ca6e21b8157f74a8f0228444b319d8d8b599b7745ffd009aeb0",
+          "hash": "cacb08330578896fc3fbb2933b58162353a975daad7fce91a74265d4557b40e3",
           "importOrder": [
             "lib/errors.js",
             "lib/run-manifest.js",
@@ -16112,7 +16112,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "3de4cf335c8833727c3442c6470139f0cc09061a34b5407b2c016ca950afcf6b",
+          "hash": "8ae1b2aa34ab5ac2fb4ebe679102413bec078616a89443131d3e22fdc8e38fa4",
           "path": "CHANGELOG.md"
         },
         {
@@ -16180,11 +16180,11 @@
           "path": "codecov.yml"
         },
         {
-          "hash": "dc9478b1bb329677922feaa47f9738593b13959920d88e5163d1ac6728666f1a",
+          "hash": "1db74c1295fda3e3565fc77411e32f6b55dd347f47378ed53eb6cd9fe0018902",
           "path": "package-lock.json"
         },
         {
-          "hash": "7b46040669b6346827cfc12c5165b22b154a56abd932a1643d56ef8d695589f2",
+          "hash": "c9a93519aac4c2f21368310499dfd63630f175277524a3c731f50213f7827b13",
           "path": "package.json"
         }
       ],
@@ -16809,15 +16809,27 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "2425808025130fa9ea5d4d6b3ed8610af7a3bdebab4f3429335a667ad6ddb678",
+          "hash": "dff0006841cbcbd3e4f30bf09d6d9a3dba4d1e1b7c946cec34c12b1d9ad0eb6c",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
-          "hash": "42eab7931fb6c9b9fec187ded6668bd4ee00bd95dadb4c31e0dc940cffc9e3a9",
-          "path": "scripts/colab/ai-toolkit-override-py315.txt"
+          "exports": [
+            "classify",
+            "main",
+            "refusal_text",
+            "tail_lines"
+          ],
+          "failurePaths": [
+            {
+              "kind": "raise",
+              "line": 100
+            }
+          ],
+          "hash": "ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1",
+          "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "9e956d486dbeb0fbd37e61f30edcc12f13d2565cacba8be4c6bffeb13ec82ed3",
+          "hash": "af85f6d3a3eceae88c4e1b49c0ee107d76cc9bb29efe678cd8df16cbcaf275eb",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17036,7 +17048,7 @@
               "line": 970
             }
           ],
-          "hash": "75c3b356644287e2c57efd4c3b89a5bde4a6ae4705438a98c383af392e114013",
+          "hash": "45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7",
           "path": "scripts/colab/lane1_render.py"
         },
         {
@@ -17096,12 +17108,36 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "2ebef36838f1ab638269ba8972bc1108f66285b9f4bcf4006d54c329377b18f3",
+          "hash": "2d441a047857bccdf25962759ce811c99dd7eb96bd7a5bc0a7d5558228554eb5",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "a2242bbc604c850ff3d89157c275ea86ed9ba72176b84a9fb8ab0f9d7dab2e43",
+          "hash": "7efdda3304d65ca26223408e5a2e5d0a793da3b2502fb6c9c19cecba3e7e9508",
           "path": "scripts/colab/launch_lane3_stub.sh"
+        },
+        {
+          "hash": "c14de38ba41776ac17e961e8020b10bdb67982688f6811aeba12c844dc81051f",
+          "path": "scripts/colab/locks/lane1.in"
+        },
+        {
+          "hash": "eda267efc8ba491ec472e01d63339478728970b640abcef79b19d80e2a97bd1e",
+          "path": "scripts/colab/locks/lane1.lock"
+        },
+        {
+          "hash": "579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320",
+          "path": "scripts/colab/locks/lane3-local-wheels.json"
+        },
+        {
+          "hash": "08252614c01c8042db6b89178b2e3a9744a3d7cc36e6e1c0cf7c3270f0f1f051",
+          "path": "scripts/colab/locks/lane3.in"
+        },
+        {
+          "hash": "09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286",
+          "path": "scripts/colab/locks/lane3.lock"
+        },
+        {
+          "hash": "4f9ae1fa9edf64a9e9832219f7b144ed39a37b7a6f5ef08147568efbceb21458",
+          "path": "scripts/colab/preflight_resolve.sh"
         },
         {
           "exports": [
@@ -18741,7 +18777,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 31,
+          "reads": 32,
           "where": [
             "caller"
           ],
@@ -18763,14 +18799,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 34,
+      "outsideReads": 35,
       "outsideWrites": 32,
       "role": "code",
       "testRunners": [
         "node --test",
         "pytest"
       ],
-      "testedBy": 24,
+      "testedBy": 25,
       "unresolvedSites": 0
     },
     {
@@ -19448,10 +19484,48 @@
             "load_and_verify_contract",
             "main",
             "make_fake_colab_env",
+            "make_fixture_git_repo",
+            "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "13430862677c7bd591f2f07dad08f24f4d5388bca6843f54d6897fdde5f0f393",
+          "hash": "5837fee8744fa739981324cc4091a1cc267054b0675a0ff544fa4a48d851dbaa",
           "path": "tests/colab/fixtures/fake_colab.py"
+        },
+        {
+          "hash": "27d359d114a56953811be6f248357c90944d22c861636e3f470ee77dcb37d7c0",
+          "path": "tests/colab/fixtures/uv_logs/hash_mismatch.txt"
+        },
+        {
+          "hash": "61aeee057544da3ece1d0d61d2192360c9b6222a8fcd98146a4d026c2de2333a",
+          "path": "tests/colab/fixtures/uv_logs/network_retry.txt"
+        },
+        {
+          "hash": "1da706ec25036a7f12af1ab3405cbb8f49dc6d819ff0401b82101ab0599059fa",
+          "path": "tests/colab/fixtures/uv_logs/no_hash.txt"
+        },
+        {
+          "hash": "0331b2b9299e9031c1a3fa89bff2dc3fca83b4550b111882c78a8a16fe2be7b2",
+          "path": "tests/colab/fixtures/uv_logs/no_wheel.txt"
+        },
+        {
+          "hash": "e595c27cc0f037588b04567f5657dc1b7d03650245275fb046e774cd80acea34",
+          "path": "tests/colab/fixtures/uv_logs/not_found.txt"
+        },
+        {
+          "exports": [
+            "test_classify_platform_tag_and_dns_and_other",
+            "test_classify_real_uv_samples",
+            "test_cli_entry_point_runs",
+            "test_hash_mismatch_wins_over_other_patterns",
+            "test_main_prints_refusal_and_handles_missing_log",
+            "test_refusal_text_keeps_log_tail"
+          ],
+          "hash": "1b295c699f610eec417809621de9f6a1cff210e2fc8ff6005c2ebb37700dda1f",
+          "importsFiles": [
+            "scripts/colab/classify_install_log.py"
+          ],
+          "path": "tests/colab/test_classify_install_log.py",
+          "testFramework": "pytest"
         },
         {
           "exports": [
@@ -19497,6 +19571,7 @@
             "test_kit_pins_self_sha_comfyui_commit_comfy_headless_and_pytorch_index",
             "test_lane1_exec_call_passes_contract_py_file_and_timeout_gt_wall",
             "test_lane1_import_resolved_outside_venv_or_missing_python_flag_refuses",
+            "test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install",
             "test_lane1_uv_system_python_env_explicit_venv_python_and_gates",
             "test_lane1_venv_python_version_mismatch_refuses_with_venv_python_mismatch",
             "test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json",
@@ -19514,7 +19589,7 @@
             "test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_usage_text_parsed_into_live_balance_and_rate_in_window_json"
           ],
-          "hash": "f9ad0d872a3cee609ec17c289bbc832cf0bb060a8290b2a1d360cac50da7660c",
+          "hash": "dcdf0e1af05e7ce0a9a65f88fcf5d723d6c486bfa904283d6a94017e882e060a",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/remote_runner.py"
@@ -19530,12 +19605,14 @@
           "exports": [
             "test_lane3_exec_call_passes_contract_py_file_and_timeout_gt_wall",
             "test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses",
+            "test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call",
             "test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91",
             "test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_before_new",
             "test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate",
             "test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_lane3_uv_system_python_env_explicit_venv_python_and_gates",
             "test_lane3_venv_python_version_mismatch_refuses_with_venv_python_mismatch",
+            "test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run",
             "test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json",
             "test_real_colab_cli_guard_refuses_when_not_fake",
             "test_sha_refusal_before_opening_session",
@@ -19543,12 +19620,27 @@
             "test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_verifies_checkpoint",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "76583075a802215a3f9fb20b862d363aecccfe0bbbd4f58037c67bd7bb04b825",
+          "hash": "527e28274569ecf9dcd2096b278eb355ddaa4ec2831ca67887785ede49372920",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
           "path": "tests/colab/test_launch_lane3_stub.py",
           "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_lane3_checks_manifest_git_commit_and_local_wheels",
+            "test_missing_lock_input_and_usage",
+            "test_non_tip_commit_passes_and_missing_commit_is_pin_not_found",
+            "test_test_hooks_refused_in_a_live_run",
+            "test_unreachable_repo_is_pin_check_unavailable",
+            "test_uv_version_compile_failure_drift_and_ok"
+          ],
+          "hash": "ffcc238cba868e85a7450ecc5a6cc8db88ea35fa797fd5b545b862ec2f31e973",
+          "importsFiles": [
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_preflight_resolve.py"
         },
         {
           "hash": "2494c82673dea71514b707801c820353d9a7a79aa2620e55a8f87a731b6b7b13",
@@ -20167,7 +20259,7 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "79a7b6b0d3e9fdfd2fcd85528089ce2d35767cf7c4821f8dedc1d6c0e0d98413",
+          "hash": "9afef3eeb732e4279abf36e21ae10207685147af83e8e058f722d822da562f52",
           "importOrder": [
             "lib/png-meta.js",
             "tests/lib-asset/fixtures/make-png.js",
@@ -20196,7 +20288,7 @@
           "testFramework": "node --test"
         },
         {
-          "hash": "1f22d05eb0738041f4b5c27002ba8117840fef871ec5cd63045edf2e3dedf637",
+          "hash": "3622f1c28b89c1704e2b868bd03f3662bb413e0df7289e150ba088fdbe2cf91d",
           "importOrder": [
             "lib/adapters/ai-toolkit.js",
             "lib/train-runs.js",
@@ -20581,6 +20673,22 @@
             "uv"
           ],
           "step": "Python tests and coverage (Node 22 only)"
+        },
+        {
+          "dir": "",
+          "job": "verify",
+          "programs": [
+            "bash"
+          ],
+          "step": "Colab pre-flight resolve — lane 1 (Node 22 only)"
+        },
+        {
+          "dir": "",
+          "job": "verify",
+          "programs": [
+            "bash"
+          ],
+          "step": "Colab pre-flight resolve — lane 3 (Node 22 only)"
         }
       ],
       "elsewhere": [],
@@ -20651,9 +20759,14 @@
           "files": 1
         },
         {
+          "boundary": "scripts",
+          "depth": 0,
+          "files": 45
+        },
+        {
           "boundary": "tests",
           "depth": 0,
-          "files": 109
+          "files": 111
         },
         {
           "boundary": "lib",
@@ -20663,15 +20776,6 @@
             "from": "bin/sdlab.js"
           },
           "files": 82
-        },
-        {
-          "boundary": "scripts",
-          "depth": 1,
-          "enters": {
-            "file": "scripts/critique-show.js",
-            "from": "bin/sdlab.js"
-          },
-          "files": 43
         }
       ],
       "readers": [],
@@ -20679,6 +20783,11 @@
         {
           "job": "verify",
           "path": "bin/sdlab.js",
+          "runKind": "executes"
+        },
+        {
+          "job": "verify",
+          "path": "scripts/colab/preflight_resolve.sh",
           "runKind": "executes"
         },
         {
@@ -20875,7 +20984,7 @@
           "runKind": "executes"
         }
       ],
-      "runsCount": 32,
+      "runsCount": 33,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -20952,7 +21061,7 @@
         },
         {
           "coverage": true,
-          "files": 5,
+          "files": 7,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -21609,8 +21718,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "ca3610091d0b12da15854b44f9fd1eba349613e1",
-    "tracked": 3261
+    "commit": "c11e871f8a472edf2dd08b212cf5abc061af338c",
+    "tracked": 3274
   },
   "landings": [
     {
@@ -24177,6 +24286,39 @@
     {
       "readers": [
         {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "scripts/colab/locks/lane1.in",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "scripts/colab/locks/lane1.lock",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        }
+      ],
+      "target": "scripts/colab/locks/lane3.in",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
           "by": "lib/adapters/ai-toolkit.js",
           "call": "literal",
           "confidence": "ast"
@@ -24185,9 +24327,20 @@
           "by": "lib/adapters/ai-toolkit.js",
           "call": "readFileSync",
           "confidence": "ast"
+        },
+        {
+          "by": "scripts/colab/preflight_resolve.sh",
+          "call": "literal",
+          "confidence": "text"
+        },
+        {
+          "by": "tests/lib-pipeline/lane3-train-guards.test.js",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
         }
       ],
-      "target": "scripts/colab/ai-toolkit-override-py315.txt",
+      "target": "scripts/colab/locks/lane3.lock",
       "writers": []
     },
     {
@@ -24436,6 +24589,54 @@
     {
       "readers": [
         {
+          "by": "tests/colab/fixtures/fake_colab.py",
+          "call": "glob",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "tests/colab/fixtures/uv_logs",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "tests/colab/test_classify_install_log.py",
+          "call": "read_text",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "tests/colab/fixtures/uv_logs/hash_mismatch.txt",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "tests/colab/test_classify_install_log.py",
+          "call": "read_text",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "tests/colab/fixtures/uv_logs/network_retry.txt",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
+          "by": "tests/colab/test_classify_install_log.py",
+          "call": "read_text",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "tests/colab/fixtures/uv_logs/no_wheel.txt",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
           "by": "lib/batch-modes.js",
           "call": "existsSync",
           "confidence": "ast"
@@ -24479,7 +24680,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 113,
+  "testFiles": 120,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
