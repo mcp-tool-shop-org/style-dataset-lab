@@ -70,6 +70,7 @@ VALUE_OPTS_BY_CMD: dict[str, frozenset[str]] = {
     "upload": frozenset({"-s", "--session"}),
     "download": frozenset({"-s", "--session"}),
     "stop": frozenset({"-s", "--session"}),
+    "restart-kernel": frozenset({"-s", "--session"}),
     "sessions": frozenset(),
     "usage": frozenset(),
 }
@@ -80,6 +81,7 @@ POSITIONAL_COUNTS_BY_CMD: dict[str, int] = {
     "exec": 0,
     "download": 2,
     "stop": 0,
+    "restart-kernel": 0,
     "usage": 0,
 }
 
@@ -287,6 +289,89 @@ def make_fixture_wheels(wheels_dir: Path, manifest_path: Path, git_repo: str, gi
     manifest = {"schema_version": "1.0", "lane": "lane3", "python_version": "3.12.15", "wheels": entries}
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
     return manifest_path
+
+
+# ---------------------------------------------------------------------------------------------------
+# One kernel per session (docs/colab-cli-contract.md, section 4). google-colab-cli runs every exec on
+# the session's stored kernel (colab_cli/commands/execution.py:198-210) and Jupyter runs one cell at a
+# time, so the fake runs each exec's cell as a detached process (it outlives the local `colab exec`,
+# as a VM cell outlives a killed client), queues a second exec behind a running cell, ends the cell's
+# kernel process on `restart-kernel` (the processes the cell spawned are left running; what the real
+# server does to them is not visible from the CLI), and ends everything on `stop` (the VM is gone).
+# ---------------------------------------------------------------------------------------------------
+
+
+def _kernel_file(state_dir: Path, sid: str, kind: str) -> Path:
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", sid)
+    return state_dir / "kernels" / f"{safe}.{kind}"
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    try:
+        state = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8").rsplit(")", 1)[-1].split()[0]
+    except OSError:
+        return True
+    return state != "Z"
+
+
+def _running_cell(state_dir: Path, sid: str) -> int | None:
+    pid_f = _kernel_file(state_dir, sid, "pid")
+    try:
+        pid = int(pid_f.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return None
+    return pid if _pid_alive(pid) else None
+
+
+def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: Path) -> int:
+    """Start argv in its own session, reparented away from this process (double fork), with stdout
+    and stderr to out_path. Returns the cell's pid; its process group is its own."""
+    r, w = os.pipe()
+    pid = os.fork()
+    if pid == 0:  # pragma: no cover - child
+        try:
+            os.close(r)
+            os.setsid()
+            pid2 = os.fork()
+            if pid2 == 0:
+                fd = os.open(str(out_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                os.dup2(fd, 1)
+                os.dup2(fd, 2)
+                null = os.open(os.devnull, os.O_RDONLY)
+                os.dup2(null, 0)
+                os.chdir(str(cwd))
+                os.execve(argv[0], argv, env)
+            os.write(w, str(pid2).encode())
+        finally:
+            os._exit(0)
+    os.close(w)
+    data = b""
+    while True:
+        chunk = os.read(r, 64)
+        if not chunk:
+            break
+        data += chunk
+    os.close(r)
+    os.waitpid(pid, 0)
+    return int(data.decode())
+
+
+def _kill_recorded_groups(state_dir: Path, sid: str) -> None:
+    pg_f = _kernel_file(state_dir, sid, "pgids")
+    if not pg_f.exists():
+        return
+    import signal as _signal
+
+    for line in pg_f.read_text(encoding="utf-8").split():
+        try:
+            os.killpg(int(line), _signal.SIGKILL)
+        except (OSError, ValueError):
+            continue
+    pg_f.unlink(missing_ok=True)
 
 
 def _write_fake_remote_scripts(content_dir: Path) -> None:
@@ -552,20 +637,100 @@ run_uploaded_remote_dirs_block() {
   sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
   bash .remote_dirs_block.sh
 }
-# The uploaded script's sdlab-lane3-mode block is real kit code: run it on this fake CPU VM, where
-# nvidia-smi finds no GPU (a stand-in shadows any on the rig's PATH), so a kit that passed
-# LANE3_MODE=train fails here with the same refusal as on a real CPU card.
+# The uploaded script's sdlab-lane3-mode block is real kit code: run it on this fake VM. On a CPU
+# card nvidia-smi finds no GPU (a stand-in shadows any on the rig's PATH), so a kit that passed
+# LANE3_MODE=train fails here with the same refusal as on a real CPU card. On a GPU card (the kit's
+# `colab new --gpu <card>`, recorded in card.txt) the stand-in lists one A100.
+fake_card="$(cat "${FAKE_COLAB_STATE_DIR:-..}/card.txt" 2>/dev/null || echo CPU)"
+mkdir -p .fake-vm-bin
+if [ "${fake_card}" = "CPU" ]; then
+  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-vm-bin/nvidia-smi
+else
+  cat > .fake-vm-bin/nvidia-smi << 'NVSMIEOF'
+#!/usr/bin/env bash
+case "$*" in
+  *-L*) echo "GPU 0: NVIDIA A100-SXM4-80GB (UUID: GPU-00000000-fake)" ;;
+  *--query-gpu*) echo "580.82.07, NVIDIA A100-SXM4-80GB, 81920 MiB" ;;
+  *) echo "fake nvidia-smi" ;;
+esac
+NVSMIEOF
+fi
+chmod +x .fake-vm-bin/nvidia-smi
 run_uploaded_lane3_mode_block() {
   local uploaded_sh="$1"
   if ! grep -q '^# >>> sdlab-lane3-mode$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-lane3-mode$' "${uploaded_sh}"; then
     echo "REFUSED: LANE3_MODE_BLOCK_MISSING: ${uploaded_sh} has no sdlab-lane3-mode gate" >&2
     exit 1
   fi
-  mkdir -p .fake-cpu-vm-bin
-  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-cpu-vm-bin/nvidia-smi
-  chmod +x .fake-cpu-vm-bin/nvidia-smi
   sed -n '/^# >>> sdlab-lane3-mode$/,/^# <<< sdlab-lane3-mode$/p' "${uploaded_sh}" > .lane3_mode_block.sh
-  PATH="${PWD}/.fake-cpu-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane3_mode_block.sh; echo "LANE3_MODE=${LANE3_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+  PATH="${PWD}/.fake-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane3_mode_block.sh; echo "LANE3_MODE=${LANE3_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+}
+# Train mode on the fake GPU VM: the uploaded script's sdlab-lane3-train and sdlab-lane3-window
+# blocks are real kit code. They run with /content mapped to this fake /content, /proc/meminfo and
+# /dev/shm mapped to fake ones (FAKE_VM_MEM_TOTAL_KB / FAKE_VM_MEM_AVAILABLE_KB), stand-ins for the
+# lane's torch, bitsandbytes and huggingface_hub (tests/colab/fixtures/fake_vm_site) and a stand-in
+# ai-toolkit run.py that saves a checkpoint and a sample (FAKE_VM_TRAIN=fail_after_save: it saves,
+# then dies with a CUDA OOM; =hang_after_save: it saves, then hangs; =no_sample: no sample image).
+# The block runs as <content>/remote_lane3_stub.sh.trainblock, so its command line names the
+# remote script the way the real VM's does (bundle-now finds it by that).
+run_uploaded_train_and_window_blocks() {
+  local uploaded_sh="$1"
+  local blk
+  for blk in sdlab-hf-token sdlab-lane3-train sdlab-lane3-window; do
+    if ! grep -q "^# >>> ${blk}$" "${uploaded_sh}" || ! grep -q "^# <<< ${blk}$" "${uploaded_sh}"; then
+      echo "REFUSED: TRAIN_BLOCK_MISSING: ${uploaded_sh} has no ${blk} block" >&2
+      exit 1
+    fi
+  done
+  {
+    printf '%s\\n' "${FAKE_VM_MEM_TOTAL_KB:-175000000}" "${FAKE_VM_MEM_AVAILABLE_KB:-170000000}"
+  } | awk 'NR==1{print "MemTotal:       " $1 " kB"} NR==2{print "MemFree:        " $1 " kB"; print "MemAvailable:   " $1 " kB"}' > .fake-vm-meminfo
+  mkdir -p .fake-vm-shm ai-toolkit
+  cat > ai-toolkit/run.py << 'RUNPYEOF'
+import os, re, sys, time
+from pathlib import Path
+job = Path(sys.argv[1]).read_text(encoding="utf-8")
+tf = re.search(r'training_folder: "([^"]+)"', job).group(1)
+model = re.search(r'name_or_path: "([^"]+)"', job).group(1)
+name = re.search(r"^  name: (\\S+)$", job, re.M).group(1)
+assert os.environ.get("HF_HUB_OFFLINE") == "1", "run.py must run with the hub offline"
+assert Path(model).is_dir(), f"model path {model} is not the local snapshot"
+out = Path(tf) / name
+(out / "samples").mkdir(parents=True, exist_ok=True)
+print("Loading Qwen Image model", flush=True)
+import json, struct
+def st(tag):
+    # A real safetensors layout: 8-byte header length, JSON header, data; =truncated_save cuts the tail.
+    data = tag * 64
+    hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}}).encode()
+    blob = struct.pack("<Q", len(hdr)) + hdr + data
+    return blob[:-100] if os.environ.get("FAKE_VM_TRAIN") == "truncated_save" else blob
+time.sleep(0.3)
+(out / f"{name}_000000020.safetensors").write_bytes(st(b"FAKE-LORA-STEP-20"))
+time.sleep(0.3)
+if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
+    print("torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB", flush=True)
+    time.sleep(0.3)
+    sys.exit(1)
+if os.environ.get("FAKE_VM_TRAIN") == "hang_after_save":
+    (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    time.sleep(600)
+if os.environ.get("FAKE_VM_TRAIN") != "no_sample":
+    (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+(out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
+print("Done", flush=True)
+RUNPYEOF
+  {
+    echo 'set -euo pipefail'
+    echo 'LANE3_TRAIN_STATE="trained"'
+    echo 'CHECKPOINT_PATH=""'
+    echo 'OVERRIDE_SHA="$(sha256sum lane3.lock | awk '"'"'{print $1}'"'"')"'
+    sed -n '/^# >>> sdlab-hf-token$/,/^# <<< sdlab-hf-token$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane3-train$/,/^# <<< sdlab-lane3-train$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane3-window$/,/^# <<< sdlab-lane3-window$/p' "${uploaded_sh}"
+  } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
+  PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
+    bash "${PWD}/remote_lane3_stub.sh.trainblock"
 }
 run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
@@ -704,6 +869,10 @@ for mod_name in sentencepiece torch torchaudio safetensors yaml oyaml PIL diffus
   echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
 printf 'setup_complete\\n' >> lane3_out/setup.log
+if [ "${LANE3_MODE:-install}" = "train" ]; then
+  run_uploaded_train_and_window_blocks "remote_lane3_stub.sh.uploaded"
+  exit 0
+fi
 # The CPU install-path stub stops at the import gate: the uploaded script must say so and keep its
 # training step behind LANE3_MODE=train.
 if ! grep -Fq 'TRAIN_SKIPPED: cpu stub; training needs a GPU rung' "remote_lane3_stub.sh.uploaded" \\
@@ -758,6 +927,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     state_dir = _normalize_host_path(state_dir_raw)
     state_dir.mkdir(parents=True, exist_ok=True)
+    # Every call's argv, as `ps` shows it on the rig (the token tests scan this).
+    with (state_dir / "argv.log").open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(["colab", *raw_args]) + "\n")
     content_dir = state_dir / "content"
     content_dir.mkdir(parents=True, exist_ok=True)
     if not (content_dir / ".fake_remote_lane1_stub.sh").exists():
@@ -961,6 +1133,7 @@ def main(argv: list[str] | None = None) -> int:
         with (state_dir / "lock.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
+        (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
         print(
             f"Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_{lane_tag}_999&port=8188"
@@ -1043,6 +1216,32 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"STOP {' '.join(args)}\n")
+        _kill_recorded_groups(state_dir, sid)
+        _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
+        return 0
+
+    if subcmd == "restart-kernel":
+        sid = _get_opt("-s", "--session")
+        if not sid:
+            sys.stderr.write("colab restart-kernel requires -s/--session\n")
+            return 2
+        # The kernel process ends (and with it the running cell); processes the cell spawned in
+        # its own process group are left alone. stop() still ends them with the VM.
+        import signal as _signal
+
+        cell = _running_cell(state_dir, sid)
+        if cell is not None:
+            try:
+                os.kill(cell, _signal.SIGKILL)
+            except OSError:
+                pass
+            for _ in range(100):
+                if not _pid_alive(cell):
+                    break
+                time.sleep(0.05)
+        _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
+        with (state_dir / "restarts.log").open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(f"RESTART -s {sid} cell={cell}\n")
         return 0
 
     if subcmd == "exec":
@@ -1093,9 +1292,15 @@ def main(argv: list[str] | None = None) -> int:
             if not k.startswith("PINNED_")
             and not k.startswith("LANE3_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
+            and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN")
         }
         kernel_env.setdefault("UV_SYSTEM_PYTHON", "1")
+        # The fake GPU VM's stand-ins for the lane's torch, bitsandbytes and huggingface_hub.
+        kernel_env["FAKE_VM_SITE"] = str(FIXTURES_DIR / "fake_vm_site")
         kernel_env.update(env_vars)
+
+        env_lines = "".join(f"os.environ[{k!r}] = {v!r}\n" for k, v in env_vars.items())
+        code_logged = "import os\n" + env_lines + py_path.read_text(encoding="utf-8")
 
         # Execute the local .py file's source in a simulated IPython kernel cell:
         # cwd is the fake /content directory, __file__ is undefined, and --env values are applied.
@@ -1105,25 +1310,76 @@ def main(argv: list[str] | None = None) -> int:
             f"src = pathlib.Path({str(py_path.resolve())!r}).read_text(encoding='utf-8')\n"
             "ns = {'__name__': '__main__'}\n"
             "assert '__file__' not in ns\n"
-            "exec(compile(src, '<colab-cell>', 'exec'), ns)\n"
+            "rc = 0\n"
+            "try:\n"
+            "    exec(compile(src, '<colab-cell>', 'exec'), ns)\n"
+            "except SystemExit as exc:\n"
+            "    rc = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)\n"
+            "except BaseException:\n"
+            "    import traceback; traceback.print_exc(); rc = 1\n"
+            "finally:\n"
+            "    pathlib.Path(os.environ['RC_PATH']).write_text(str(rc))\n"
         )
-        try:
-            proc = subprocess.run(
-                [_resolve_python(), "-u", "-c", kernel_code],
-                stdin=subprocess.DEVNULL,
-                env=kernel_env,
-                cwd=str(content_dir),
-                timeout=timeout_s,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
+        (state_dir / "kernels").mkdir(exist_ok=True)
+        (state_dir / "cells").mkdir(exist_ok=True)
+        deadline = time.monotonic() + timeout_s
+        # One kernel per session: wait for a running cell to finish (or for restart-kernel/stop).
+        while _running_cell(state_dir, sid) is not None:
+            if time.monotonic() > deadline:
+                sys.stderr.write(f"Execution timed out after {timeout_s}s (a cell is still running on the kernel)\n")
+                return 124
+            time.sleep(0.05)
+        cell_n = len(list((state_dir / "cells").glob("*.out")))
+        out_path = state_dir / "cells" / f"{cell_n:04d}.out"
+        rc_path = state_dir / "cells" / f"{cell_n:04d}.rc"
+        py = _resolve_python()
+        argv = [py, "-u", "-c", kernel_code]
+        cell_env = dict(kernel_env)
+        cell_env["RC_PATH"] = str(rc_path)
+        cell = _spawn_detached(argv, cell_env, content_dir, out_path)
+        _kernel_file(state_dir, sid, "pid").write_text(f"{cell}\n", encoding="utf-8")
+        with _kernel_file(state_dir, sid, "pgids").open("a", encoding="utf-8") as fh:
+            fh.write(f"{os.getpgid(cell)}\n")
+
+        pos = 0
+        timed_out = False
+        with out_path.open("rb") as fh:
+            while True:
+                chunk = fh.read()
+                if chunk:
+                    sys.stdout.buffer.write(chunk)
+                    sys.stdout.flush()
+                    pos += len(chunk)
+                if not _pid_alive(cell):
+                    rest = fh.read()
+                    if rest:
+                        sys.stdout.buffer.write(rest)
+                        sys.stdout.flush()
+                    break
+                if time.monotonic() > deadline:
+                    timed_out = True
+                    break
+                time.sleep(0.05)
+        if timed_out:
+            # As the real client: the local call gives up, the cell keeps running on the kernel.
             sys.stderr.write(f"Execution timed out after {timeout_s}s\n")
             return 124
+        if _running_cell(state_dir, sid) == cell:
+            _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
+        # History keeps the code (with the --env lines) and the outputs (execution.py:262-272).
+        outputs = out_path.read_text(encoding="utf-8", errors="replace")
+        history = state_dir / "history"
+        history.mkdir(exist_ok=True)
+        with (history / f"{sid}.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps({"code": code_logged, "outputs": [{"output_type": "stream", "text": outputs}]}) + "\n")
 
         # On the real Colab CLI, cell execution exit codes are not reliably propagated as CLI exit code
         if os.environ.get("FAKE_COLAB_FORCE_EXEC_RC_ZERO", "1") == "1":
             return 0
-        return int(proc.returncode)
+        try:
+            return int(rc_path.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            return 1
 
     return 2
 

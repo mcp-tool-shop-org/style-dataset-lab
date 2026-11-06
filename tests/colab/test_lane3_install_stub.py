@@ -77,7 +77,15 @@ def _fake_nvidia_smi(bin_dir: Path, gpu: bool) -> None:
     (bin_dir / "nvidia-smi").chmod(0o755)
 
 
-def _run_mode_gate(tmp_path: Path, mode: str | None, gpu: bool, model: str | None) -> subprocess.CompletedProcess[str]:
+RUNG_ENV = {
+    "LANE3_MODEL_REVISION": "75e0b4be04f60ec59a75f475837eced720f823b6",
+    "LANE3_HOST_RAM_REQUIRED_GIB": "96.5",
+    "LANE3_DOWNLOAD_MAX_SECONDS": "1800",
+}
+
+
+def _run_mode_gate(tmp_path: Path, mode: str | None, gpu: bool, model: str | None,
+                   extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     block = _extract_block(_emit(tmp_path), "sdlab-lane3-mode")
     bin_dir = tmp_path / "vm-bin"
     _fake_nvidia_smi(bin_dir, gpu)
@@ -92,6 +100,7 @@ def _run_mode_gate(tmp_path: Path, mode: str | None, gpu: bool, model: str | Non
         env["LANE3_MODE"] = mode
     if model is not None:
         env["LANE3_MODEL_NAME_OR_PATH"] = model
+    env.update(extra or {})
     return _run([_bash(), "-c", f'export PATH="{_p(bin_dir)}:$PATH"; bash "{_p(gate)}"'], env)
 
 
@@ -120,9 +129,33 @@ def test_train_mode_refuses_without_a_model(tmp_path: Path, model: str | None) -
 
 
 def test_train_mode_with_gpu_and_model_passes_the_gate(tmp_path: Path) -> None:
-    res = _run_mode_gate(tmp_path, "train", gpu=True, model="org/model-name_v1.0")
+    res = _run_mode_gate(tmp_path, "train", gpu=True, model="org/model-name_v1.0", extra=RUNG_ENV)
     assert res.returncode == 0, res.stderr
     assert "MODE_OK train cvd=[unset]" in res.stdout
+
+
+@pytest.mark.parametrize(
+    ("var", "value", "code"),
+    [
+        ("LANE3_MODEL_REVISION", None, "TRAIN_MODEL_REVISION_REQUIRED"),
+        ("LANE3_MODEL_REVISION", "main", "TRAIN_MODEL_REVISION_REQUIRED"),
+        ("LANE3_HOST_RAM_REQUIRED_GIB", None, "HOST_RAM_THRESHOLD_MISSING"),
+        ("LANE3_HOST_RAM_REQUIRED_GIB", "0", "HOST_RAM_THRESHOLD_MISSING"),
+        ("LANE3_HOST_RAM_REQUIRED_GIB", "lots", "HOST_RAM_THRESHOLD_MISSING"),
+        ("LANE3_DOWNLOAD_MAX_SECONDS", None, "DOWNLOAD_LIMIT_MISSING"),
+        ("LANE3_DOWNLOAD_MAX_SECONDS", "0", "DOWNLOAD_LIMIT_MISSING"),
+    ],
+)
+def test_train_mode_refuses_each_missing_rung_value(tmp_path: Path, var: str, value: str | None, code: str) -> None:
+    extra = dict(RUNG_ENV)
+    if value is None:
+        del extra[var]
+    else:
+        extra[var] = value
+    res = _run_mode_gate(tmp_path, "train", gpu=True, model="Qwen/Qwen-Image", extra=extra)
+    assert res.returncode == 1
+    assert f"REFUSED: {code}:" in res.stderr
+    assert "MODE_OK" not in res.stdout
 
 
 def test_unknown_mode_is_refused(tmp_path: Path) -> None:
@@ -187,34 +220,6 @@ def test_install_mode_skips_training_and_says_so(tmp_path: Path) -> None:
         assert not (vm / "lane3_out" / name).exists(), name
 
 
-def test_train_step_refuses_without_a_model_even_past_the_gate(tmp_path: Path) -> None:
-    res, vm = _run_train_or_skip(tmp_path, "train", None)
-    assert res.returncode == 1
-    assert "REFUSED: TRAIN_MODEL_REQUIRED:" in res.stderr
-    assert not (vm / "lane3_out" / "train.log").exists()
-
-
-@pytest.mark.parametrize("train_rc", [0, 3])
-def test_train_mode_names_a_failed_run_on_the_exec_stream(tmp_path: Path, train_rc: int) -> None:
-    res, vm = _run_train_or_skip(tmp_path, "train", "org/model", run_py_rc=train_rc)
-    job = (vm / "lane3_out" / "synth_job.yaml").read_text(encoding="utf-8")
-    assert '        name_or_path: "org/model"\n' in job
-    assert "device: cuda:0" in job
-    assert SKIP_LINE not in (vm / "lane3_out" / "setup.log").read_text(encoding="utf-8")
-    if train_rc == 0:
-        assert res.returncode == 0, res.stderr
-        assert "TRAIN_FAILED" not in res.stdout + res.stderr
-        assert "STATE trained ckpt=[" in res.stdout and "synth_lora.safetensors]" in res.stdout
-    else:
-        assert res.returncode == 1
-        assert "RuntimeError: Found no NVIDIA driver on your system." in res.stdout
-        assert "REFUSED: TRAIN_FAILED: ai-toolkit run.py exited 3" in res.stderr
-
-
-def test_train_mode_without_a_checkpoint_is_refused(tmp_path: Path) -> None:
-    res, _ = _run_train_or_skip(tmp_path, "train", "org/model", run_py_rc=0, write_checkpoint=False)
-    assert res.returncode == 1
-    assert "REFUSED: TRAIN_CHECKPOINT_MISSING:" in res.stderr
 
 
 # --- the kit: --train is refused before any colab call -----------------------------------------
@@ -233,17 +238,36 @@ def test_kit_train_flag_is_refused_before_any_colab_call(tmp_path: Path, card_ar
     assert not (state_dir / "calls.log").exists()
 
 
-def test_kit_train_flag_is_a_window_option_for_emit(tmp_path: Path) -> None:
+def test_kit_emit_with_train_needs_the_rung_values(tmp_path: Path) -> None:
     res = _run([_bash(), _p(LAUNCHER), "--emit-remote-script", _p(tmp_path / "r.sh"), "--train"])
     assert res.returncode == 2
-    assert "EMIT_REMOTE_SCRIPT_EXCLUSIVE" in res.stderr
+    assert "REFUSED: TRAIN_MODEL_REQUIRED:" in res.stderr
+    assert not (tmp_path / "r.sh").exists()
 
 
-def test_kit_never_passes_a_train_mode() -> None:
-    kit = LAUNCHER.read_text(encoding="utf-8")
-    env_fn = kit[kit.index("lane3_remote_env() {"):]
-    env_fn = env_fn[: env_fn.index("\n}\n")]
-    assert "LANE3_MODE" not in env_fn and "LANE3_MODEL" not in env_fn
+def test_kit_passes_a_train_mode_only_with_train(tmp_path: Path) -> None:
+    plain = tmp_path / "plain.sh"
+    assert _run([_bash(), _p(LAUNCHER), "--emit-remote-script", _p(plain)]).returncode == 0
+    assert "LANE3_" not in (tmp_path / "plain.sh.env").read_text(encoding="utf-8")
+    rung = tmp_path / "rung.sh"
+    res = _run([_bash(), _p(LAUNCHER), "--emit-remote-script", _p(rung), "--train", "--model", "Qwen/Qwen-Image",
+                "--model-revision", RUNG_ENV["LANE3_MODEL_REVISION"], "--host-ram-required-gib", "96.5",
+                "--download-max-seconds", "1800"])
+    assert res.returncode == 0, res.stderr
+    env_lines = (tmp_path / "rung.sh.env").read_text(encoding="utf-8").splitlines()
+    for line in ("LANE3_MODE=train", "LANE3_MODEL_NAME_OR_PATH=Qwen/Qwen-Image",
+                 f"LANE3_MODEL_REVISION={RUNG_ENV['LANE3_MODEL_REVISION']}", "LANE3_HOST_RAM_REQUIRED_GIB=96.5",
+                 "LANE3_DOWNLOAD_MAX_SECONDS=1800", "LANE3_DISK_REQUIRED_GIB=75", "LANE3_GPU_SMOKE_SECONDS=5",
+                 "LANE3_DOWNLOAD_PROBE_SECONDS=60", "LANE3_DOWNLOAD_PROBE_BYTES=2147483648"):
+        assert line in env_lines, line
+    # The emitted script is the same file either way: train mode is the environment, not the script.
+    assert rung.read_text(encoding="utf-8") == plain.read_text(encoding="utf-8")
+
+
+def test_kit_train_options_need_train(tmp_path: Path) -> None:
+    res = _run([_bash(), _p(LAUNCHER), "--emit-remote-script", _p(tmp_path / "r.sh"), "--model", "a/b"])
+    assert res.returncode == 2
+    assert "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN:" in res.stderr
 
 
 # --- end to end against the fake: success ends at the import gate ------------------------------

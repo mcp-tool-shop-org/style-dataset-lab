@@ -11,9 +11,18 @@ real time, and finishes by printing a `SDLAB_REMOTE_RC=<rc>` marker line.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
+
+# Exec outputs land in google-colab-cli's history (docs/colab-cli-contract.md, section 3), so no line
+# that could carry a Hugging Face token is relayed as it is.
+_HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
+
+
+def scrub_line(line: str) -> str:
+    return _HF_TOKEN_RE.sub("hf_[REDACTED]", line)
 
 
 def _resolve_bash(env: dict[str, str]) -> str:
@@ -48,7 +57,7 @@ def run_remote_script(
     )
     assert proc.stdout is not None
     for line in proc.stdout:
-        sys.stdout.write(line)
+        sys.stdout.write(scrub_line(line))
         sys.stdout.flush()
     rc = int(proc.wait())
     print(f"SDLAB_REMOTE_RC={rc}", flush=True)
