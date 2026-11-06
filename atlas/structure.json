@@ -442,8 +442,12 @@
           "path": "docs/asset-lane-kickoff.md"
         },
         {
-          "hash": "e05aebcfd9e807bbc4897a7167916c46fbc5b65df89d9b246aceb2f73723c444",
+          "hash": "a83af175c10ab6318084f1b48cf9b1336740840f62d818ad27bf26bb0bd0a53c",
           "path": "docs/colab-cli-contract.md"
+        },
+        {
+          "hash": "4e1211beb2114c625e282e18ce34008799e0ca9fa5d1a116bea9c26e8124f15f",
+          "path": "docs/colab-locks.md"
         }
       ],
       "globs": [
@@ -16116,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "a5b65653de41e45c0222303d7c5fd4fff45030310f33c513fe7932d1271544f8",
+          "hash": "08a60602ce7e530b2c5d7b8b8eb36d042b2eeeb7d3965735dfe3b0ab930a5502",
           "path": "CHANGELOG.md"
         },
         {
@@ -16813,7 +16817,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "f20a981da8a845ba961cac36bb0f35cb0fd6950e883658c85875fd28644079d1",
+          "hash": "30a3265791e26875b47597ce44a2d27d2e88c67ffe76fa9693ffe13a39506295",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16833,7 +16837,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "9058334198ec1225d71296c809592727089789960466b70e93df35026239187e",
+          "hash": "3fd61cb74eda69d1995b9a2712dc96595aa4239e81d4b315dd3abea8561a93aa",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17172,6 +17176,7 @@
             "gpu_smoke",
             "load_done",
             "main",
+            "mask_log_text",
             "measure_disk",
             "measure_host_ram",
             "measure_shm",
@@ -17193,7 +17198,6 @@
             "run_render_job",
             "rung_pids",
             "safetensors_complete",
-            "scrub_secrets",
             "sha256_file",
             "write_json"
           ],
@@ -17266,12 +17270,7 @@
             {
               "in": "redirect_request",
               "kind": "raise",
-              "line": 383
-            },
-            {
-              "in": "check_model_api",
-              "kind": "except",
-              "line": 390
+              "line": 387
             },
             {
               "in": "check_model_api",
@@ -17280,13 +17279,8 @@
             },
             {
               "in": "check_model_api",
-              "kind": "raise",
-              "line": 397
-            },
-            {
-              "in": "check_model_api",
-              "kind": "raise",
-              "line": 400
+              "kind": "except",
+              "line": 398
             },
             {
               "in": "check_model_api",
@@ -17295,13 +17289,8 @@
             },
             {
               "in": "check_model_api",
-              "kind": "except",
-              "line": 402
-            },
-            {
-              "in": "check_model_api",
               "kind": "raise",
-              "line": 403
+              "line": 404
             },
             {
               "in": "check_model_api",
@@ -17309,76 +17298,91 @@
               "line": 405
             },
             {
+              "in": "check_model_api",
+              "kind": "except",
+              "line": 406
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 407
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 409
+            },
+            {
               "in": "run_model_check",
               "kind": "except",
-              "line": 414
+              "line": 418
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 469
+              "line": 474
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 471
+              "line": 476
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 472
+              "line": 477
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 484
+              "line": 489
             },
             {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 656
+              "line": 668
             },
             {
               "in": "load_done",
               "kind": "except",
-              "line": 668
+              "line": 680
             },
             {
               "in": "pid_alive",
               "kind": "except",
-              "line": 676
+              "line": 690
             },
             {
               "in": "read_json",
               "kind": "except",
-              "line": 709
+              "line": 723
             },
             {
               "in": "run_checkpoint",
               "kind": "except",
-              "line": 721
+              "line": 735
             },
             {
               "in": "run_finish",
               "kind": "except",
-              "line": 739
+              "line": 754
             },
             {
               "in": "rung_pids",
               "kind": "except",
-              "line": 783
+              "line": 800
             },
             {
               "in": "run_bundle_now",
               "kind": "except",
-              "line": 804
+              "line": 821
             },
             {
               "kind": "raise",
-              "line": 919
+              "line": 936
             }
           ],
-          "hash": "63db8ada382814b353508e3e2a776fd8f35126eaac545c539337d39be0540a98",
+          "hash": "47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b",
           "path": "scripts/colab/lane3_rung.py"
         },
         {
@@ -17387,8 +17391,10 @@
             "evaluate_cap_guard",
             "evaluate_vitals_and_stall_guard",
             "evaluate_wall_guard",
+            "gpu_projection_rate",
             "main",
             "normalize_hex_sha",
+            "parse_active_assignments",
             "parse_usage_text",
             "parse_vitals_log",
             "run_between_item_fetch",
@@ -17396,7 +17402,9 @@
             "scrub_file_in_place",
             "sha256_file",
             "sha256_self_normalized",
-            "verify_input_shas"
+            "update_window_rate",
+            "verify_input_shas",
+            "window_rate_decision"
           ],
           "failurePaths": [
             {
@@ -17410,47 +17418,80 @@
               "line": 78
             },
             {
+              "in": "parse_usage_text",
+              "kind": "raise",
+              "line": 313
+            },
+            {
+              "in": "_select_rate",
+              "kind": "raise",
+              "line": 333
+            },
+            {
+              "in": "_failure_rates",
+              "kind": "except",
+              "line": 346
+            },
+            {
+              "in": "parse_usage_text",
+              "kind": "except",
+              "line": 422
+            },
+            {
+              "in": "parse_usage_text",
+              "kind": "raise",
+              "line": 425
+            },
+            {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 343
+              "line": 528
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 444
+              "line": 629
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 513
+              "line": 698
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 532
+              "line": 717
             },
             {
               "kind": "raise",
-              "line": 564
+              "line": 749
             }
           ],
-          "hash": "8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78",
+          "hash": "e1c97cc2c854f20fcc8e37967afcdd6b96137f696de9b7fc5bea04c5090984a1",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "d5b5098995037f5f711249f594cb0501dc9bcaf315cb04d6b370d7d8f413a37d",
+          "hash": "ac9b162d23b5fe9cb07301f2caddef97c1ea90ed60b5522716fa80232f82ce4f",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "40aca49b864c41e8c5619225b94696e2c9160dd5ff80834999bc2d3bead686d2",
+          "hash": "7d01b3c2fd08624dbcb0594d59f0a3b357d58f830e2f83634d407ab865958156",
           "path": "scripts/colab/launch_lane3_stub.sh"
+        },
+        {
+          "hash": "fec4e24deff91cdb633d84ed998db79e27c2397f4a9686a47261e12c776a9c10",
+          "path": "scripts/colab/lock_common.sh"
+        },
+        {
+          "hash": "ea15f8c44e937b50c38dc571b8a5384f579205d30ea5cb499d67487c10439a43",
+          "path": "scripts/colab/locks/lane1.exclude-newer"
         },
         {
           "hash": "c14de38ba41776ac17e961e8020b10bdb67982688f6811aeba12c844dc81051f",
           "path": "scripts/colab/locks/lane1.in"
         },
         {
-          "hash": "eda267efc8ba491ec472e01d63339478728970b640abcef79b19d80e2a97bd1e",
+          "hash": "93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c",
           "path": "scripts/colab/locks/lane1.lock"
         },
         {
@@ -17458,16 +17499,24 @@
           "path": "scripts/colab/locks/lane3-local-wheels.json"
         },
         {
+          "hash": "89fb2b5b81c805abffaeb94af4ffd307aef2cc8fdb5c6f8e43da9fefdc2625f4",
+          "path": "scripts/colab/locks/lane3.exclude-newer"
+        },
+        {
           "hash": "fbbcd7a0acac64821c9ba3e98d17717c19e16e2c119865414eae2cfd73766bd4",
           "path": "scripts/colab/locks/lane3.in"
         },
         {
-          "hash": "884a93794e857ce1b146eff87fe00673e16be4af7f8a8fb6524eb5c1aad17151",
+          "hash": "649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94",
           "path": "scripts/colab/locks/lane3.lock"
         },
         {
-          "hash": "609d75cfc81ceafbb7692f4c54d12e201d78e622c877a65face08e2b65e92ec5",
+          "hash": "1e193ed40c95b56df186cbdf9ba3f6a76e63b5a12d66978cba805abe6f4988cd",
           "path": "scripts/colab/preflight_resolve.sh"
+        },
+        {
+          "hash": "0438d06810515bb33a786025aba6f68fe9c907e1503870a67472a61514fa0e12",
+          "path": "scripts/colab/relock.sh"
         },
         {
           "exports": [
@@ -19827,7 +19876,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "89ecfdc581ed2b907966d52827db31455fbd1634544baa6122d918e914d9180a",
+          "hash": "accabb1316ff70469f4ecb3e3d657daf126f19db5559f7882244069c2f89a66d",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -19899,6 +19948,33 @@
         },
         {
           "exports": [
+            "test_every_lane_arms_the_gate_before_it_opens_and_only_colab_window_calls_new",
+            "test_lane1_a_bad_assignments_count_for_three_cycles_ends_the_window",
+            "test_lane1_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time",
+            "test_lane1_a_midrun_rise_above_max_rate_refuses",
+            "test_lane1_a_neighbour_closing_midrun_is_not_an_under_read",
+            "test_lane1_a_neighbour_opening_midrun_rebaselines_and_runs_on",
+            "test_lane1_a_single_missing_count_is_recorded_only",
+            "test_lane1_count_0_at_open_then_mid_run_still_ends",
+            "test_lane1_count_0_for_the_whole_open_budget_is_rate_unread",
+            "test_lane1_count_0_until_the_session_registers_proceeds",
+            "test_lane1_cpu_stub_is_unchanged",
+            "test_lane1_gpu_card_without_max_rate_refuses_before_open",
+            "test_lane1_gpu_window_with_no_rate_refuses_rate_unread",
+            "test_lane1_parallel_neighbour_reproducer_refuses_above_max",
+            "test_lane1_rate_waits_for_stability_and_prices_at_the_max",
+            "test_open_refuses_a_gpu_card_that_was_not_armed",
+            "test_the_gate_arms_five_second_reads_and_refuses_the_test_hook_live"
+          ],
+          "hash": "94d28ff9a6d9183754db526fc7009b0547c6b0e681ade2a6b59139305197715f",
+          "importsFiles": [
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_gpu_rate_gate.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
             "test_contract_refuses_a_contents_api_block_that_creates_directories",
             "test_fake_download_needs_remote_file_and_local_dir",
             "test_fake_upload_into_missing_remote_dir_fails_500_and_never_creates_it",
@@ -19949,13 +20025,26 @@
           "exports": [
             "hub_api",
             "make_dataset",
+            "test_a_bad_count_for_three_reads_is_unreadable_and_one_is_recorded_only",
+            "test_a_count_change_rebaselines_the_neighbour_once_it_settles",
+            "test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time",
+            "test_a_midrun_rise_above_max_rate_refuses_and_bundles",
+            "test_a_neighbour_closing_midrun_is_not_an_under_read",
+            "test_a_neighbour_opening_midrun_rebaselines_and_our_window_runs_on",
+            "test_a_partial_copy_is_copied_again_until_complete",
+            "test_a_stable_mid_run_rate_below_the_floor_is_a_bad_read",
+            "test_a_window_rate_below_the_floor_or_never_stable_is_unread",
+            "test_bundle_now_also_finds_the_download_grandchild",
             "test_bundle_now_cell_needs_its_env_and_runs_lane3_rung",
             "test_bundle_now_kills_sweeps_and_tars",
+            "test_cap_at_8_88_per_hour_trips_at_20_3_seconds",
+            "test_cap_clock_starts_at_open_success_and_counts_the_rate_polls",
             "test_check_model_api_names_each_failure",
             "test_cli_dispatches_every_subcommand",
             "test_committed_rung_dataset_hits_all_three_buckets",
             "test_copy_off_copies_settled_files_once_with_sha",
             "test_copy_off_survives_a_vanished_file_and_the_final_sweep_catches_up",
+            "test_cpu_rate_selection_is_unchanged",
             "test_dataset_verify_place_and_refusals",
             "test_disk_measures_each_filesystem_once_from_the_nearest_existing_ancestor",
             "test_download_failure_and_bad_request_values",
@@ -19964,12 +20053,17 @@
             "test_download_hands_a_present_read_token_to_the_child_only",
             "test_download_hard_limit_kills_a_stalled_download",
             "test_download_offline_reads_only_the_cache",
+            "test_download_records_token_used_from_the_variable",
             "test_download_too_slow_is_stopped_after_the_probe",
             "test_expected_repo_bytes_uses_the_listing",
             "test_failed_download_prints_no_token_into_exec_history",
+            "test_final_sweep_recopies_a_partial_file",
             "test_finish_gathers_records_and_marks_a_failed_run",
+            "test_gpu_rate_selection_raises_rate_unread_without_a_live_rate",
+            "test_gpu_rate_selection_uses_the_live_8_88_and_keeps_it",
             "test_gpu_smoke_matmul_and_adamw8bit_step",
             "test_gpu_smoke_refuses_a_step_that_changes_nothing_and_a_non_finite_matmul",
+            "test_gpu_window_with_no_post_open_rate_refuses_rate_unread",
             "test_guards_pass_and_record_every_measurement",
             "test_guards_refuse_by_name_and_still_record_all_three",
             "test_kit_model_check_refuses_a_dead_token_before_any_spend",
@@ -19977,11 +20071,15 @@
             "test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call",
             "test_kit_refuses_a_wall_that_cannot_cover_the_rung",
             "test_meminfo_and_host_ram_measurement",
+            "test_metadata_exception_text_never_reaches_any_output",
             "test_model_check_cli_reads_the_token_from_the_environment",
             "test_model_check_refuses_a_cross_host_redirect_and_keeps_the_token",
+            "test_no_count_before_the_first_stable_read_is_not_registered_yet",
+            "test_parallel_neighbour_reproducer_refuses_above_max",
             "test_parse_positive_number_refuses_missing_and_bad_values",
             "test_probe_projection",
             "test_query_driver_reads_nvidia_smi_or_records_why_not",
+            "test_rate_waits_for_stability_and_prices_at_the_max",
             "test_read_token_reaches_only_the_download_and_appears_in_no_file",
             "test_remote_runner_scrubs_relayed_lines",
             "test_render_job_fills_the_committed_rung_yaml",
@@ -19990,27 +20088,37 @@
             "test_run_copy_off_follows_the_trainer_and_reports_log_growth",
             "test_rung_mid_run_failure_downloads_what_was_copied_off",
             "test_rung_refusals_stop_before_training_and_still_bundle",
+            "test_rung_shape_mismatch_refuses_after_open_and_stops",
             "test_rung_success_trains_copies_off_and_records_the_guards",
             "test_rung_without_a_sample_image_is_refused",
+            "test_rung_without_shape_refuses_before_any_colab_call",
             "test_rung_yaml_differs_from_the_trained_config_only_where_stated",
             "test_safetensors_completeness_and_checkpoint_pick",
             "test_shm_record_and_its_error",
+            "test_the_count_leading_the_rate_by_one_read_does_not_trip",
+            "test_the_rebaseline_uses_the_highest_stable_rate_seen",
+            "test_the_reviewers_sequence_a_neighbour_closing_with_the_rate_two_reads_ahead_then_our_rise_trips",
+            "test_the_stability_pair_is_five_seconds_apart",
             "test_throttle_signals_are_counted",
             "test_token_file_is_removed_when_its_upload_fails",
             "test_token_staging_failure_refuses_before_the_window_opens",
+            "test_token_variable_reaches_the_download_only_when_a_token_was_staged",
             "test_truncated_checkpoint_is_partial_and_does_not_count",
-            "test_vm_metadata_failures_are_named"
+            "test_vm_metadata_failures_are_named",
+            "test_window_rate_state_unit"
           ],
-          "hash": "2de51467ab693a71abe79f2ee2f017cc1d1da0dfbe8a461b4e66ab5c72c7c57c",
+          "hash": "c7a4b186d865f6c1ffed9d7cf493f8ac3407bda9b1eded3b58af1e5807dd1640",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
             "scripts/colab/lane3_bundle_now.py",
-            "scripts/colab/remote_runner.py"
+            "scripts/colab/remote_runner.py",
+            "scripts/colab/launch_guards.py"
           ],
           "importsFiles": [
             "scripts/colab/lane3_bundle_now.py",
             "scripts/colab/lane3_rung.py",
+            "scripts/colab/launch_guards.py",
             "scripts/colab/remote_runner.py",
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20095,7 +20203,7 @@
             "test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under",
             "test_wall_guard_trips_on_fixture_and_stays_quiet_just_under"
           ],
-          "hash": "eb71874384ce6d5c935fce9e6543682d3e1bbc49849e7e8dba29d73b7bc73038",
+          "hash": "2485fba837f510d18f8e07267bbd3e2d62a965e5afc10a0eec4809cf61050c04",
           "importsFiles": [
             "scripts/colab/launch_guards.py"
           ],
@@ -20167,14 +20275,41 @@
         },
         {
           "exports": [
+            "test_a100_shape_high_mem_passes_high_mem_and_records_the_check",
+            "test_a_bad_shape_value_refuses_before_any_colab_call",
+            "test_a_gpu_card_without_shape_refuses_before_any_colab_call",
+            "test_a_session_row_shape_mismatch_refuses_after_open_and_stops",
+            "test_a_session_row_with_no_shape_is_a_mismatch",
+            "test_a_single_shape_card_refuses_standard_before_any_colab_call",
+            "test_every_lane_arms_the_shape_gate_before_it_opens",
+            "test_g4_shape_standard_does_not_pass_high_mem",
+            "test_l4_high_mem_expects_high_ram",
+            "test_open_refuses_a_gpu_card_whose_shape_was_not_armed",
+            "test_the_cpu_stub_is_unchanged_and_takes_no_shape"
+          ],
+          "hash": "b04c3428b4d1ee6d5c46183a0f397a597f3e4c37d16e35f5a5e5a2f6cd65b531",
+          "importsFiles": [
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_machine_shape.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_body_drift_is_still_caught_under_the_bound",
+            "test_bound_hides_a_newer_upstream_release",
+            "test_committed_timestamp_files_are_well_formed",
             "test_lane3_checks_manifest_git_commit_and_local_wheels",
             "test_missing_lock_input_and_usage",
+            "test_missing_or_malformed_timestamp_refuses_before_any_compile",
             "test_non_tip_commit_passes_and_missing_commit_is_pin_not_found",
+            "test_relock_refusals_leave_files_untouched",
+            "test_relock_writes_lock_and_timestamp_together",
             "test_test_hooks_refused_in_a_live_run",
             "test_unreachable_repo_is_pin_check_unavailable",
             "test_uv_version_compile_failure_drift_and_ok"
           ],
-          "hash": "ffcc238cba868e85a7450ecc5a6cc8db88ea35fa797fd5b545b862ec2f31e973",
+          "hash": "77c2dde42c4a4a9960478b2e91df94abdcdddbf8b591956f5eb53cb3941d7053",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -21312,7 +21447,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 121
+          "files": 123
         },
         {
           "boundary": "lib",
@@ -21607,7 +21742,7 @@
         },
         {
           "coverage": true,
-          "files": 17,
+          "files": 19,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -22264,8 +22399,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "59984ccda980864ed2f4521e3d562b13ddcc46d2",
-    "tracked": 3293
+    "commit": "0471d9ff09a7ceb18ce3fc2c430cbc52eeb2b424",
+    "tracked": 3300
   },
   "landings": [
     {
@@ -24832,39 +24967,6 @@
     {
       "readers": [
         {
-          "by": "scripts/colab/preflight_resolve.sh",
-          "call": "literal",
-          "confidence": "text"
-        }
-      ],
-      "target": "scripts/colab/locks/lane1.in",
-      "writers": []
-    },
-    {
-      "readers": [
-        {
-          "by": "scripts/colab/preflight_resolve.sh",
-          "call": "literal",
-          "confidence": "text"
-        }
-      ],
-      "target": "scripts/colab/locks/lane1.lock",
-      "writers": []
-    },
-    {
-      "readers": [
-        {
-          "by": "scripts/colab/preflight_resolve.sh",
-          "call": "literal",
-          "confidence": "text"
-        }
-      ],
-      "target": "scripts/colab/locks/lane3.in",
-      "writers": []
-    },
-    {
-      "readers": [
-        {
           "by": "lib/adapters/ai-toolkit.js",
           "call": "literal",
           "confidence": "ast"
@@ -24873,11 +24975,6 @@
           "by": "lib/adapters/ai-toolkit.js",
           "call": "readFileSync",
           "confidence": "ast"
-        },
-        {
-          "by": "scripts/colab/preflight_resolve.sh",
-          "call": "literal",
-          "confidence": "text"
         },
         {
           "by": "tests/lib-pipeline/lane3-train-guards.test.js",
@@ -25238,7 +25335,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 130,
+  "testFiles": 132,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
