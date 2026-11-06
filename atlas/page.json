@@ -75,38 +75,30 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 12,
-      "changed": 0,
+      "added": 1,
+      "changed": 14,
       "moved": 0,
-      "parts": 2,
+      "parts": 3,
       "removed": 0
     },
     "items": [
       {
-        "kind": "landing",
-        "sentence": "tests/colab/fixtures/fake_vm_site/ is now read by tests/colab/fixtures/fake_colab.py.",
-        "subjects": [
-          "tests/colab/fixtures/fake_vm_site/",
-          "tests/colab/fixtures/fake_colab.py"
-        ]
-      },
-      {
         "kind": "counts",
-        "sentence": "12 files added, across 2 parts.",
+        "sentence": "Nothing structural changed since 2026-11-06; 1 file added and 14 changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "61f2c2ce24f749ad13e605e9bee2352c2dd8f8e9",
-      "generatedAt": "2026-11-06T06:38:21.619Z"
+      "commit": "7e9fdc47fe9f95d0f28c8627d4f3fb5015030447",
+      "generatedAt": "2026-11-06T06:39:41.191Z"
     },
-    "unchanged": false
+    "unchanged": true
   },
   "changesTogether": [
     {
       "a": "tests/colab/fixtures/fake_colab.py",
       "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 9,
+      "either": 10,
       "partLabels": [
         "tests",
         "tests"
@@ -124,9 +116,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "7e9fdc47fe9f95d0f28c8627d4f3fb5015030447",
+  "commit": "fb6e6ade5e3a066b7ffe5e023dbf1cf9b5db04dc",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (247), Python (52), shell (7), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (247), Python (53), shell (7), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -146,7 +138,7 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 47
+          "files": 48
         },
         {
           "boundary": "tests",
@@ -444,12 +436,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-06T06:39:41.191Z",
+  "generatedAt": "2026-11-06T07:57:51.818Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
     "40 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "159 writes and 290 reads go to a path their caller passes, not to this repository.",
+    "160 writes and 294 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
