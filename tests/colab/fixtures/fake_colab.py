@@ -632,8 +632,48 @@ if [ "${identity_build}" != "${PINNED_PYTHON_BUILD}" ]; then
   echo "REFUSED: PYTHON_BUILD_MISMATCH: cpython-3.12.15-linux-x86_64-gnu build=${identity_build} pinned=${PINNED_PYTHON_BUILD}" >&2
   exit 1
 fi
-emit_vitals "setup" 'root        2216    2101 21 19:01 ?        00:00:02 /content/venv-lane3/bin/python -c  import importlib import sys  REQUIRED = ("sentencepiece", "torch", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris") for mod_name in REQUIRED:     try:         mod = importlib.import_module(mod_name)     except Exception as exc:         sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}")         raise SystemExit(1)     mod_file = getattr(mod, "__file__", None) or ""     if not mod_file.startswith("/content/venv-lane3/"):         sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}")         raise SystemExit(1)'
-for mod_name in sentencepiece torch safetensors yaml oyaml PIL diffusers lycoris; do
+
+# The uploaded script's sdlab-local-wheels-lock block is real kit code too: run it here, with /content
+# mapped to this fake /content and a stand-in for the venv's python, then hand the lock it wrote to
+# real uv (when uv is on PATH), so a lock uv cannot parse fails this stub as it fails a real VM.
+run_uploaded_local_wheels_lock_block() {
+  local uploaded_sh="$1"
+  if ! grep -q '^# >>> sdlab-local-wheels-lock$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-local-wheels-lock$' "${uploaded_sh}"; then
+    echo "REFUSED: LOCAL_WHEELS_LOCK_BLOCK_MISSING: ${uploaded_sh} has no sdlab-local-wheels-lock block" >&2
+    exit 1
+  fi
+  local host_py
+  host_py="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
+  mkdir -p venv-lane3/bin
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'exec "'"${host_py}"'" "$@"'
+  } > venv-lane3/bin/python
+  chmod +x venv-lane3/bin/python
+  sed -n '/^# >>> sdlab-local-wheels-lock$/,/^# <<< sdlab-local-wheels-lock$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .local_wheels_lock_block.sh
+  bash .local_wheels_lock_block.sh
+  if [ ! -s lane3_out/local-wheels.lock ]; then
+    echo "REFUSED: LOCAL_WHEELS_LOCK_MISSING: the kit's block wrote no lane3_out/local-wheels.lock" >&2
+    exit 1
+  fi
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "LOCAL_WHEELS_LOCK_UV_CHECK_SKIPPED: uv is not on PATH"
+    return 0
+  fi
+  rm -rf .lock-check-venv
+  uv venv --quiet --python "${host_py}" .lock-check-venv
+  local venv_py=".lock-check-venv/bin/python"
+  [ -e "${venv_py}" ] || venv_py=".lock-check-venv/Scripts/python.exe"
+  if ! uv pip install --python "${venv_py}" --require-hashes --only-binary :all: --no-index --find-links wheels --no-deps -r lane3_out/local-wheels.lock > lane3_out/local-wheels-check.log 2>&1; then
+    cat lane3_out/local-wheels-check.log >&2
+    echo "REFUSED: LOCAL_WHEELS_LOCK_REJECTED: uv refused lane3_out/local-wheels.lock" >&2
+    exit 1
+  fi
+  echo "LOCAL_WHEELS_LOCK_UV_OK"
+}
+run_uploaded_local_wheels_lock_block "remote_lane3_stub.sh.uploaded" 2>&1 | tee -a lane3_out/setup.log
+emit_vitals "setup" 'root        2216    2101 21 19:01 ?        00:00:02 /content/venv-lane3/bin/python -c  import importlib import sys  REQUIRED = ("sentencepiece", "torch", "torchaudio", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris") for mod_name in REQUIRED:     try:         mod = importlib.import_module(mod_name)     except Exception as exc:         sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}")         raise SystemExit(1)     mod_file = getattr(mod, "__file__", None) or ""     if not mod_file.startswith("/content/venv-lane3/"):         sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}")         raise SystemExit(1)'
+for mod_name in sentencepiece torch torchaudio safetensors yaml oyaml PIL diffusers lycoris; do
   echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
 printf 'setup_complete\\n' >> lane3_out/setup.log

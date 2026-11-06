@@ -21,18 +21,377 @@ PINNED_PYTHON_BUILD="20261021"
 PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_AI_TOOLKIT_REPO="https://github.com/ostris/ai-toolkit.git"
 PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
-PINNED_OVERRIDE_SHA="09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286"
+PINNED_OVERRIDE_SHA="884a93794e857ce1b146eff87fe00673e16be4af7f8a8fb6524eb5c1aad17151"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
 PINNED_COLAB_WINDOW_SHA="188f2c2a445a21ab2ca77c3270b125354d7ed75de88c261426ed64f4f0e5b895"
-PINNED_SELF_SHA="530c51cc84c09571003d4e1ccf4fc65f52a7213b199b07db7f773c3a459ece32"
+PINNED_SELF_SHA="4b31cc1fedd394baa37772fc3e699b36ee408e81650828272ffdfb42a80c3a33"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
 # shellcheck source=scripts/colab/colab_window.sh
 source "${SCRIPT_DIR}/colab_window.sh"
+
+# The remote script the kit uploads and runs on the VM. The live path and --emit-remote-script
+# both write it through this one function, so an emitted file is byte for byte what a window runs.
+lane3_write_remote_script() {
+  local dest="$1"
+  cat > "${dest}" << REMOTEEOF
+#!/usr/bin/env bash
+set -euo pipefail
+export CUDA_VISIBLE_DEVICES=""
+
+# >>> sdlab-remote-dirs
+# The kit uploads every file flat into /content (colab upload creates no remote directory).
+# This block makes the run's directories and moves the uploaded wheels into /content/wheels,
+# checking each directory and file exists afterwards.
+sdlab_remote_mkdir() {
+  local d
+  for d in "\$@"; do
+    mkdir -p "\${d}" 2>/dev/null || true
+    if [ ! -d "\${d}" ]; then
+      echo "REFUSED: REMOTE_DIR_CREATE_FAILED: \${d}" >&2
+      exit 1
+    fi
+  done
+}
+sdlab_remote_mkdir /content/lane3_out /content/lane3_out/checkpoints /content/wheels
+python3 -c 'import json, sys; [print(w["filename"]) for w in json.load(open(sys.argv[1], encoding="utf-8")).get("wheels", [])]' /content/lane3-local-wheels.json > /content/lane3_out/wheel-names.txt
+while IFS= read -r wheel_fname; do
+  [ -z "\${wheel_fname}" ] && continue
+  if [ ! -f "/content/\${wheel_fname}" ]; then
+    echo "REFUSED: LOCAL_WHEEL_MISSING on VM: /content/\${wheel_fname} was not uploaded" >&2
+    exit 1
+  fi
+  if ! mv -f "/content/\${wheel_fname}" "/content/wheels/\${wheel_fname}" || [ ! -f "/content/wheels/\${wheel_fname}" ]; then
+    echo "REFUSED: REMOTE_DIR_CREATE_FAILED: could not place \${wheel_fname} in /content/wheels" >&2
+    exit 1
+  fi
+done < /content/lane3_out/wheel-names.txt
+# <<< sdlab-remote-dirs
+
+: "\${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
+: "\${PINNED_UV_WHEEL_SHA256:?missing PINNED_UV_WHEEL_SHA256}"
+: "\${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
+: "\${PINNED_PYTHON_BUILD:?missing PINNED_PYTHON_BUILD}"
+: "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
+: "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
+: "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
+: "\${PINNED_OVERRIDE_SHA:?missing PINNED_OVERRIDE_SHA}"
+
+echo "setup" > /content/lane3_out/phase.txt
+: > /content/lane3_out/setup.log
+(
+  while true; do
+    {
+      echo "=== VITALS \$(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+      if [ -f /sys/fs/cgroup/memory.current ]; then
+        echo "CGROUP_MEM_CURRENT: \$(cat /sys/fs/cgroup/memory.current)" || true
+      fi
+      if [ -f /sys/fs/cgroup/memory.max ]; then
+        echo "CGROUP_MEM_MAX: \$(cat /sys/fs/cgroup/memory.max)" || true
+      fi
+      if [ -f /sys/fs/cgroup/memory.events ]; then
+        sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
+      fi
+      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      SETUP_SZ="\$(wc -c < /content/lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
+      echo "SETUP_BYTES: \${SETUP_SZ:-0}"
+      echo "PROC:"
+      ps -ef | grep -E "ai-toolkit|run\.py" | grep -v grep || true
+      CUR_PHASE="\$(cat /content/lane3_out/phase.txt 2>/dev/null || echo setup)"
+      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
+    } | tee -a /content/lane3_out/vitals.log
+    sleep 15
+  done
+) &
+VITALS_PID="\$!"
+trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
+
+OVERRIDE_SHA="\$(sha256sum /content/lane3.lock | awk '{print \$1}')"
+echo "\${OVERRIDE_SHA}  /content/lane3.lock" > /content/lane3_out/override.sha256
+
+{
+  unset UV_SYSTEM_PYTHON
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"
+  export UV_NO_BUILD=1
+  # uv itself is installed by hash: only the pinned manylinux x86_64 wheel is accepted.
+  printf 'uv==%s --hash=sha256:%s\n' "\${PINNED_UV_VERSION}" "\${PINNED_UV_WHEEL_SHA256}" > /content/uv-bootstrap.txt
+  pip install --quiet --require-hashes --only-binary :all: --no-deps -r /content/uv-bootstrap.txt
+  uv python install "\${PINNED_PYTHON_VERSION}"
+  uv venv --python "\${PINNED_PYTHON_VERSION}" /content/venv-lane3
+  /content/venv-lane3/bin/python -c '
+import sys
+if not (sys.version.startswith("3.12.15") and sys.prefix.startswith("/content/venv-lane")):
+    sys.stderr.write(f"REFUSED: VENV_PYTHON_MISMATCH version={sys.version!r} prefix={sys.prefix!r}\n")
+    raise SystemExit(1)
+'
+  /content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith("3.12.15"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
+  # Interpreter identity: uv's build tag, download URL, sys.version and the binary's sha256.
+  /content/venv-lane3/bin/python - "\${PINNED_PYTHON_VERSION}" "\${PINNED_PYTHON_BUILD}" "\${UV_PYTHON_INSTALL_DIR}" /content/lane3_out/python_identity.json << 'PYIDEOF'
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+version, want_build, install_dir, out_json = sys.argv[1:5]
+key = "cpython-" + version + "-linux-x86_64-gnu"
+inst = Path(install_dir) / key
+build_f = inst / "BUILD"
+build = build_f.read_text(encoding="utf-8").strip() if build_f.is_file() else None
+minor = ".".join(version.split(".")[:2])
+binary = inst / "bin" / ("python" + minor)
+binary_sha = None
+if binary.is_file():
+    binary_sha = "sha256:" + hashlib.sha256(binary.resolve().read_bytes()).hexdigest()
+download_url = None
+listing = subprocess.run(
+    ["uv", "python", "list", version, "--only-downloads", "--output-format", "json"],
+    capture_output=True, text=True, check=False,
+)
+try:
+    for entry in json.loads(listing.stdout or "[]"):
+        if entry.get("key") == key:
+            download_url = entry.get("url")
+except ValueError:
+    pass
+rec = {
+    "key": key,
+    "build": build,
+    "pinned_build": want_build,
+    "download_url": download_url,
+    "sys_version": sys.version,
+    "binary": str(binary.resolve()) if binary.exists() else str(binary),
+    "binary_sha256": binary_sha,
+}
+Path(out_json).write_text(json.dumps(rec, indent=2) + chr(10), encoding="utf-8")
+print("PYTHON_IDENTITY " + json.dumps(rec), flush=True)
+if build != want_build or binary_sha is None:
+    sys.stderr.write("REFUSED: PYTHON_BUILD_MISMATCH: " + key + " build=" + repr(build) + " pinned=" + want_build + chr(10))
+    raise SystemExit(1)
+PYIDEOF
+} 2>&1 | tee -a /content/lane3_out/setup.log
+{
+  unset UV_SYSTEM_PYTHON
+  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"
+  export UV_NO_BUILD=1
+  if [ "\${OVERRIDE_SHA}" != "\${PINNED_OVERRIDE_SHA}" ]; then
+    echo "REFUSED: LOCK_HASH_MISMATCH: /content/lane3.lock sha256=\${OVERRIDE_SHA} expected=\${PINNED_OVERRIDE_SHA}" >&2
+    exit 1
+  fi
+
+# >>> sdlab-local-wheels-lock
+  # Verify uploaded local wheels on VM against lane3-local-wheels.json and generate local-wheels.lock
+  /content/venv-lane3/bin/python - << 'WHEELPYEOF'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+manifest = json.loads(Path("/content/lane3-local-wheels.json").read_text(encoding="utf-8"))
+lines = []
+for entry in manifest.get("wheels", []):
+    fname = entry["filename"]
+    pkg = entry["package"]
+    ver = entry["version"]
+    exp_sha = entry["sha256"].lower().removeprefix("sha256:")
+    wpath = Path("/content/wheels") / fname
+    if not wpath.is_file():
+        sys.stderr.write(f"REFUSED: LOCAL_WHEEL_MISSING on VM: {wpath}\n")
+        raise SystemExit(1)
+    act_sha = hashlib.sha256(wpath.read_bytes()).hexdigest().lower()
+    if act_sha != exp_sha:
+        sys.stderr.write(f"REFUSED: LOCAL_WHEEL_SHA_MISMATCH on VM: {fname} got {act_sha} expected {exp_sha}\n")
+        raise SystemExit(1)
+    # One requirement per line, ended with chr(10). This heredoc is nested in the kit's unquoted
+    # REMOTEEOF heredoc, which turns a doubled backslash into one, so a backslash escape written
+    # here reaches Python changed (sdlab-l3-stub-4: uv refused a literal backslash-n).
+    lines.append(f"{pkg}=={ver} --hash=sha256:{exp_sha}" + chr(10))
+Path("/content/lane3_out/local-wheels.lock").write_text("".join(lines), encoding="utf-8")
+WHEELPYEOF
+# <<< sdlab-local-wheels-lock
+
+  if [ ! -d /content/ai-toolkit ]; then
+    git clone "\${PINNED_AI_TOOLKIT_REPO}" /content/ai-toolkit
+  fi
+  git -C /content/ai-toolkit fetch --depth 1 origin "\${PINNED_AI_TOOLKIT_COMMIT}" || true
+  git -C /content/ai-toolkit checkout "\${PINNED_AI_TOOLKIT_COMMIT}"
+  ACTUAL_AI_TOOLKIT_COMMIT="\$(git -C /content/ai-toolkit rev-parse HEAD)"
+  if [ "\${ACTUAL_AI_TOOLKIT_COMMIT}" != "\${PINNED_AI_TOOLKIT_COMMIT}" ]; then
+    echo "REFUSED: PIN_NOT_FOUND: ai-toolkit commit mismatch: got \${ACTUAL_AI_TOOLKIT_COMMIT}, expected \${PINNED_AI_TOOLKIT_COMMIT}" >&2
+    exit 1
+  fi
+
+  set +e
+  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" --index-strategy unsafe-best-match -r /content/lane3.lock > /content/lane3_out/wheels.log 2>&1
+  UV_RC1=\$?
+  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --no-index --find-links /content/wheels --no-deps -r /content/lane3_out/local-wheels.lock >> /content/lane3_out/wheels.log 2>&1
+  UV_RC2=\$?
+  set -e
+  cat /content/lane3_out/wheels.log
+  if [ "\${UV_RC1}" -ne 0 ] || [ "\${UV_RC2}" -ne 0 ]; then
+    /content/venv-lane3/bin/python /content/classify_install_log.py --lane lane3 --log /content/lane3_out/wheels.log >&2 \
+      || echo "REFUSED: INSTALL_FAILED during lane3 lock install (classifier did not run)" >&2
+    exit 1
+  fi
+
+  /content/venv-lane3/bin/python -c '
+import importlib
+import sys
+
+REQUIRED = ("sentencepiece", "torch", "torchaudio", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris")
+for mod_name in REQUIRED:
+    try:
+        mod = importlib.import_module(mod_name)
+    except Exception as exc:
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}\n")
+        raise SystemExit(1)
+    mod_file = getattr(mod, "__file__", None) or ""
+    print(f"VENV_IMPORT {mod_name} {mod_file}", flush=True)
+    if not mod_file.startswith("/content/venv-lane3/"):
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}\n")
+        raise SystemExit(1)
+import sentencepiece as spm
+print("SENTENCEPIECE_OK", spm.__version__, flush=True)
+' | tee /content/lane3_out/sentencepiece.txt
+} 2>&1 | tee -a /content/lane3_out/setup.log
+
+/content/venv-lane3/bin/python - << 'SYNTHEOF'
+import hashlib
+import json
+import struct
+import zlib
+from pathlib import Path
+
+pkg = Path("/content/lane3_out/synth_pkg")
+pkg.mkdir(parents=True, exist_ok=True)
+
+def make_png(seed_b: int) -> bytes:
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr_d = struct.pack(">IIBBBBB", 64, 64, 8, 2, 0, 0, 0)
+    ihdr = struct.pack(">I", 13) + b"IHDR" + ihdr_d + struct.pack(">I", zlib.crc32(b"IHDR" + ihdr_d) & 0xFFFFFFFF)
+    row = bytes([0] + [seed_b & 0xFF, (seed_b * 3) & 0xFF, (seed_b * 7) & 0xFF] * 64)
+    idat_d = zlib.compress(row * 64)
+    idat = struct.pack(">I", len(idat_d)) + b"IDAT" + idat_d + struct.pack(">I", zlib.crc32(b"IDAT" + idat_d) & 0xFFFFFFFF)
+    iend = struct.pack(">I", 0) + b"IEND" + struct.pack(">I", zlib.crc32(b"IEND") & 0xFFFFFFFF)
+    return sig + ihdr + idat + iend
+
+items = []
+for idx in (1, 2):
+    img_b = make_png(idx * 17)
+    img_p = pkg / f"sample_{idx:02d}.png"
+    txt_p = pkg / f"sample_{idx:02d}.txt"
+    img_p.write_bytes(img_b)
+    txt_p.write_text(f"portlight ship synthetic fixture {idx}\n", encoding="utf-8")
+    items.append({"image": img_p.name, "sha256": hashlib.sha256(img_b).hexdigest()})
+
+(pkg / "dataset_manifest.json").write_text(json.dumps({"seed": 42, "items": items}, indent=2) + "\n", encoding="utf-8")
+SYNTHEOF
+
+cat > /content/lane3_out/synth_job.yaml << 'YAMLEOF'
+job: extension
+config:
+  name: synth_lora
+  process:
+    - type: sd_trainer
+      training_folder: /content/lane3_out/checkpoints
+      device: cpu
+      network:
+        type: lora
+        linear: 4
+        linear_alpha: 4
+      save:
+        dtype: float32
+        save_every: 1
+        max_step_saves_to_keep: 1
+      datasets:
+        - folder_path: /content/lane3_out/synth_pkg
+          caption_ext: txt
+          resolution: [64, 64]
+      train:
+        batch_size: 1
+        steps: 1
+        lr: 0.0001
+        optimizer: adamw
+        dtype: fp32
+YAMLEOF
+
+echo "run" > /content/lane3_out/phase.txt
+# >>> sdlab-train-step
+# A failed run leaves no bundle (the script stops before tar), so its reason goes to the exec stream.
+set +e
+/content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml \
+  > /content/lane3_out/train.log 2>&1
+TRAIN_RC=\$?
+set -e
+if [ "\${TRAIN_RC}" -ne 0 ]; then
+  echo "--- last 40 lines of train.log ---"
+  tail -n 40 /content/lane3_out/train.log || true
+  echo "REFUSED: TRAIN_FAILED: ai-toolkit run.py exited \${TRAIN_RC}; see lane3_out/train.log" >&2
+  exit 1
+fi
+# <<< sdlab-train-step
+
+CHECKPOINT_PATH="/content/lane3_out/checkpoints/synth_lora.safetensors"
+if [ ! -s "\${CHECKPOINT_PATH}" ]; then
+  FOUND_CKPT="\$(find /content/lane3_out/checkpoints -name '*.safetensors' -type f | head -n 1 || true)"
+  if [ -n "\${FOUND_CKPT}" ] && [ -s "\${FOUND_CKPT}" ]; then
+    cp "\${FOUND_CKPT}" "\${CHECKPOINT_PATH}"
+  else
+    echo "REFUSED: expected non-empty .safetensors checkpoint at \${CHECKPOINT_PATH}" >&2
+    exit 1
+  fi
+fi
+
+/content/venv-lane3/bin/python - "\${PINNED_AI_TOOLKIT_COMMIT}" "\${OVERRIDE_SHA}" "\${CHECKPOINT_PATH}" << 'WINPYEOF'
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ai_commit = sys.argv[1]
+override_sha = sys.argv[2]
+ckpt_path = sys.argv[3]
+sys_py = subprocess.run(["/usr/bin/python3", "--version"], capture_output=True, text=True, check=False).stdout.strip().split()[-1]
+uv_ver = subprocess.run(["uv", "--version"], capture_output=True, text=True, check=False).stdout.strip()
+py_sha = "sha256:" + hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest()
+rec = {
+    "system_python": sys_py,
+    "python": sys.version.split()[0],
+    "python_sha256": py_sha,
+    "uv": uv_ver,
+    "ai_toolkit_commit": ai_commit,
+    "override_sha256": f"sha256:{override_sha}",
+    "checkpoint_path": ckpt_path,
+}
+Path("/content/lane3_out/vm_window.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
+print("WINDOW_JSON " + json.dumps(rec), flush=True)
+WINPYEOF
+
+while IFS= read -r -d '' f; do
+  /content/venv-lane3/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
+tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
+REMOTEEOF
+}
+
+# The environment the kit hands the remote script through colab exec --env, one KEY=VALUE a line;
+# $1 is the lock sha256 the remote script must find.
+lane3_remote_env() {
+  printf '%s\n' \
+    "PINNED_UV_VERSION=${PINNED_UV_VERSION}" \
+    "PINNED_UV_WHEEL_SHA256=${PINNED_UV_WHEEL_SHA256}" \
+    "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
+    "PINNED_PYTHON_BUILD=${PINNED_PYTHON_BUILD}" \
+    "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
+    "PINNED_AI_TOOLKIT_REPO=${PINNED_AI_TOOLKIT_REPO}" \
+    "PINNED_AI_TOOLKIT_COMMIT=${PINNED_AI_TOOLKIT_COMMIT}" \
+    "PINNED_OVERRIDE_SHA=$1"
+}
 
 CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane3-stub-$(date -u +%Y%m%dT%H%M%SZ)"
@@ -42,23 +401,45 @@ CAP="${CAP:-0.05}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
+EMIT_REMOTE_SCRIPT=""
+EMIT_REQUESTED=0
+SESSION_ARGS=()
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --card) CARD="$2"; shift 2 ;;
-    --session) SESSION="$2"; shift 2 ;;
-    --out-dir) OUT_DIR="$2"; shift 2 ;;
-    --wheel-dir) WHEEL_DIR="$2"; shift 2 ;;
-    --cap) CAP="$2"; shift 2 ;;
-    --wall-s) WALL_S="$2"; shift 2 ;;
-    --grace-s) GRACE_S="$2"; shift 2 ;;
-    --margin) MARGIN="$2"; shift 2 ;;
+    --emit-remote-script) EMIT_REQUESTED=1; EMIT_REMOTE_SCRIPT="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --card) SESSION_ARGS+=("$1"); CARD="$2"; shift 2 ;;
+    --session) SESSION_ARGS+=("$1"); SESSION="$2"; shift 2 ;;
+    --out-dir) SESSION_ARGS+=("$1"); OUT_DIR="$2"; shift 2 ;;
+    --wheel-dir) SESSION_ARGS+=("$1"); WHEEL_DIR="$2"; shift 2 ;;
+    --cap) SESSION_ARGS+=("$1"); CAP="$2"; shift 2 ;;
+    --wall-s) SESSION_ARGS+=("$1"); WALL_S="$2"; shift 2 ;;
+    --grace-s) SESSION_ARGS+=("$1"); GRACE_S="$2"; shift 2 ;;
+    --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
       ;;
   esac
 done
+
+# --emit-remote-script <file>: write the remote script exactly as a window would upload it, plus
+# <file>.env with the KEY=VALUE environment the kit passes it, then exit. It makes no colab call,
+# runs no pre-flight and opens nothing, so it is refused beside any option that belongs to a window.
+if [ "${EMIT_REQUESTED}" = "1" ]; then
+  if [ "${#SESSION_ARGS[@]}" -gt 0 ]; then
+    echo "REFUSED: EMIT_REMOTE_SCRIPT_EXCLUSIVE: --emit-remote-script opens no window; drop ${SESSION_ARGS[*]}" >&2
+    exit 2
+  fi
+  if [ -z "${EMIT_REMOTE_SCRIPT}" ]; then
+    echo "REFUSED: EMIT_REMOTE_SCRIPT_PATH_REQUIRED: pass --emit-remote-script <file>" >&2
+    exit 2
+  fi
+  lane3_write_remote_script "${EMIT_REMOTE_SCRIPT}"
+  lane3_remote_env "${PINNED_OVERRIDE_SHA}" > "${EMIT_REMOTE_SCRIPT}.env"
+  echo "REMOTE_SCRIPT_EMITTED ${EMIT_REMOTE_SCRIPT} env=${EMIT_REMOTE_SCRIPT}.env"
+  exit 0
+fi
 
 # The pre-built wheels live outside the repository; there is no default location.
 if [ -z "${WHEEL_DIR}" ]; then
@@ -204,328 +585,7 @@ colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane3_stub.sh"
-cat > "${REMOTE_RUNNER}" << REMOTEEOF
-#!/usr/bin/env bash
-set -euo pipefail
-export CUDA_VISIBLE_DEVICES=""
-
-# >>> sdlab-remote-dirs
-# The kit uploads every file flat into /content (colab upload creates no remote directory).
-# This block makes the run's directories and moves the uploaded wheels into /content/wheels,
-# checking each directory and file exists afterwards.
-sdlab_remote_mkdir() {
-  local d
-  for d in "\$@"; do
-    mkdir -p "\${d}" 2>/dev/null || true
-    if [ ! -d "\${d}" ]; then
-      echo "REFUSED: REMOTE_DIR_CREATE_FAILED: \${d}" >&2
-      exit 1
-    fi
-  done
-}
-sdlab_remote_mkdir /content/lane3_out /content/lane3_out/checkpoints /content/wheels
-python3 -c 'import json, sys; [print(w["filename"]) for w in json.load(open(sys.argv[1], encoding="utf-8")).get("wheels", [])]' /content/lane3-local-wheels.json > /content/lane3_out/wheel-names.txt
-while IFS= read -r wheel_fname; do
-  [ -z "\${wheel_fname}" ] && continue
-  if [ ! -f "/content/\${wheel_fname}" ]; then
-    echo "REFUSED: LOCAL_WHEEL_MISSING on VM: /content/\${wheel_fname} was not uploaded" >&2
-    exit 1
-  fi
-  if ! mv -f "/content/\${wheel_fname}" "/content/wheels/\${wheel_fname}" || [ ! -f "/content/wheels/\${wheel_fname}" ]; then
-    echo "REFUSED: REMOTE_DIR_CREATE_FAILED: could not place \${wheel_fname} in /content/wheels" >&2
-    exit 1
-  fi
-done < /content/lane3_out/wheel-names.txt
-# <<< sdlab-remote-dirs
-
-: "\${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
-: "\${PINNED_UV_WHEEL_SHA256:?missing PINNED_UV_WHEEL_SHA256}"
-: "\${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
-: "\${PINNED_PYTHON_BUILD:?missing PINNED_PYTHON_BUILD}"
-: "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
-: "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
-: "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
-: "\${PINNED_OVERRIDE_SHA:?missing PINNED_OVERRIDE_SHA}"
-
-echo "setup" > /content/lane3_out/phase.txt
-: > /content/lane3_out/setup.log
-(
-  while true; do
-    {
-      echo "=== VITALS \$(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-      if [ -f /sys/fs/cgroup/memory.current ]; then
-        echo "CGROUP_MEM_CURRENT: \$(cat /sys/fs/cgroup/memory.current)" || true
-      fi
-      if [ -f /sys/fs/cgroup/memory.max ]; then
-        echo "CGROUP_MEM_MAX: \$(cat /sys/fs/cgroup/memory.max)" || true
-      fi
-      if [ -f /sys/fs/cgroup/memory.events ]; then
-        sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
-      fi
-      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
-      SETUP_SZ="\$(wc -c < /content/lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-      echo "SETUP_BYTES: \${SETUP_SZ:-0}"
-      echo "PROC:"
-      ps -ef | grep -E "ai-toolkit|run\.py" | grep -v grep || true
-      CUR_PHASE="\$(cat /content/lane3_out/phase.txt 2>/dev/null || echo setup)"
-      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
-    } | tee -a /content/lane3_out/vitals.log
-    sleep 15
-  done
-) &
-VITALS_PID="\$!"
-trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
-
-OVERRIDE_SHA="\$(sha256sum /content/lane3.lock | awk '{print \$1}')"
-echo "\${OVERRIDE_SHA}  /content/lane3.lock" > /content/lane3_out/override.sha256
-
-{
-  unset UV_SYSTEM_PYTHON
-  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"
-  export UV_NO_BUILD=1
-  # uv itself is installed by hash: only the pinned manylinux x86_64 wheel is accepted.
-  printf 'uv==%s --hash=sha256:%s\n' "\${PINNED_UV_VERSION}" "\${PINNED_UV_WHEEL_SHA256}" > /content/uv-bootstrap.txt
-  pip install --quiet --require-hashes --only-binary :all: --no-deps -r /content/uv-bootstrap.txt
-  uv python install "\${PINNED_PYTHON_VERSION}"
-  uv venv --python "\${PINNED_PYTHON_VERSION}" /content/venv-lane3
-  /content/venv-lane3/bin/python -c '
-import sys
-if not (sys.version.startswith("3.12.15") and sys.prefix.startswith("/content/venv-lane")):
-    sys.stderr.write(f"REFUSED: VENV_PYTHON_MISMATCH version={sys.version!r} prefix={sys.prefix!r}\n")
-    raise SystemExit(1)
-'
-  /content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith("3.12.15"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
-  # Interpreter identity: uv's build tag, download URL, sys.version and the binary's sha256.
-  /content/venv-lane3/bin/python - "\${PINNED_PYTHON_VERSION}" "\${PINNED_PYTHON_BUILD}" "\${UV_PYTHON_INSTALL_DIR}" /content/lane3_out/python_identity.json << 'PYIDEOF'
-import hashlib
-import json
-import subprocess
-import sys
-from pathlib import Path
-
-version, want_build, install_dir, out_json = sys.argv[1:5]
-key = "cpython-" + version + "-linux-x86_64-gnu"
-inst = Path(install_dir) / key
-build_f = inst / "BUILD"
-build = build_f.read_text(encoding="utf-8").strip() if build_f.is_file() else None
-minor = ".".join(version.split(".")[:2])
-binary = inst / "bin" / ("python" + minor)
-binary_sha = None
-if binary.is_file():
-    binary_sha = "sha256:" + hashlib.sha256(binary.resolve().read_bytes()).hexdigest()
-download_url = None
-listing = subprocess.run(
-    ["uv", "python", "list", version, "--only-downloads", "--output-format", "json"],
-    capture_output=True, text=True, check=False,
-)
-try:
-    for entry in json.loads(listing.stdout or "[]"):
-        if entry.get("key") == key:
-            download_url = entry.get("url")
-except ValueError:
-    pass
-rec = {
-    "key": key,
-    "build": build,
-    "pinned_build": want_build,
-    "download_url": download_url,
-    "sys_version": sys.version,
-    "binary": str(binary.resolve()) if binary.exists() else str(binary),
-    "binary_sha256": binary_sha,
-}
-Path(out_json).write_text(json.dumps(rec, indent=2) + chr(10), encoding="utf-8")
-print("PYTHON_IDENTITY " + json.dumps(rec), flush=True)
-if build != want_build or binary_sha is None:
-    sys.stderr.write("REFUSED: PYTHON_BUILD_MISMATCH: " + key + " build=" + repr(build) + " pinned=" + want_build + chr(10))
-    raise SystemExit(1)
-PYIDEOF
-} 2>&1 | tee -a /content/lane3_out/setup.log
-{
-  unset UV_SYSTEM_PYTHON
-  export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"
-  export UV_NO_BUILD=1
-  if [ "\${OVERRIDE_SHA}" != "\${PINNED_OVERRIDE_SHA}" ]; then
-    echo "REFUSED: LOCK_HASH_MISMATCH: /content/lane3.lock sha256=\${OVERRIDE_SHA} expected=\${PINNED_OVERRIDE_SHA}" >&2
-    exit 1
-  fi
-
-  # Verify uploaded local wheels on VM against lane3-local-wheels.json and generate local-wheels.lock
-  /content/venv-lane3/bin/python - << 'WHEELPYEOF'
-import hashlib
-import json
-import sys
-from pathlib import Path
-
-manifest = json.loads(Path("/content/lane3-local-wheels.json").read_text(encoding="utf-8"))
-lines = []
-for entry in manifest.get("wheels", []):
-    fname = entry["filename"]
-    pkg = entry["package"]
-    ver = entry["version"]
-    exp_sha = entry["sha256"].lower().removeprefix("sha256:")
-    wpath = Path("/content/wheels") / fname
-    if not wpath.is_file():
-        sys.stderr.write(f"REFUSED: LOCAL_WHEEL_MISSING on VM: {wpath}\n")
-        raise SystemExit(1)
-    act_sha = hashlib.sha256(wpath.read_bytes()).hexdigest().lower()
-    if act_sha != exp_sha:
-        sys.stderr.write(f"REFUSED: LOCAL_WHEEL_SHA_MISMATCH on VM: {fname} got {act_sha} expected {exp_sha}\n")
-        raise SystemExit(1)
-    lines.append(f"{pkg}=={ver} \\\n    --hash=sha256:{exp_sha}\n")
-Path("/content/lane3_out/local-wheels.lock").write_text("".join(lines), encoding="utf-8")
-WHEELPYEOF
-
-  if [ ! -d /content/ai-toolkit ]; then
-    git clone "\${PINNED_AI_TOOLKIT_REPO}" /content/ai-toolkit
-  fi
-  git -C /content/ai-toolkit fetch --depth 1 origin "\${PINNED_AI_TOOLKIT_COMMIT}" || true
-  git -C /content/ai-toolkit checkout "\${PINNED_AI_TOOLKIT_COMMIT}"
-  ACTUAL_AI_TOOLKIT_COMMIT="\$(git -C /content/ai-toolkit rev-parse HEAD)"
-  if [ "\${ACTUAL_AI_TOOLKIT_COMMIT}" != "\${PINNED_AI_TOOLKIT_COMMIT}" ]; then
-    echo "REFUSED: PIN_NOT_FOUND: ai-toolkit commit mismatch: got \${ACTUAL_AI_TOOLKIT_COMMIT}, expected \${PINNED_AI_TOOLKIT_COMMIT}" >&2
-    exit 1
-  fi
-
-  set +e
-  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --extra-index-url "\${PINNED_PYTORCH_INDEX_URL}" --index-strategy unsafe-best-match -r /content/lane3.lock > /content/lane3_out/wheels.log 2>&1
-  UV_RC1=\$?
-  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --no-index --find-links /content/wheels --no-deps -r /content/lane3_out/local-wheels.lock >> /content/lane3_out/wheels.log 2>&1
-  UV_RC2=\$?
-  set -e
-  cat /content/lane3_out/wheels.log
-  if [ "\${UV_RC1}" -ne 0 ] || [ "\${UV_RC2}" -ne 0 ]; then
-    /content/venv-lane3/bin/python /content/classify_install_log.py --lane lane3 --log /content/lane3_out/wheels.log >&2 \
-      || echo "REFUSED: INSTALL_FAILED during lane3 lock install (classifier did not run)" >&2
-    exit 1
-  fi
-
-  /content/venv-lane3/bin/python -c '
-import importlib
-import sys
-
-REQUIRED = ("sentencepiece", "torch", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris")
-for mod_name in REQUIRED:
-    try:
-        mod = importlib.import_module(mod_name)
-    except Exception as exc:
-        sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}\n")
-        raise SystemExit(1)
-    mod_file = getattr(mod, "__file__", None) or ""
-    print(f"VENV_IMPORT {mod_name} {mod_file}", flush=True)
-    if not mod_file.startswith("/content/venv-lane3/"):
-        sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}\n")
-        raise SystemExit(1)
-import sentencepiece as spm
-print("SENTENCEPIECE_OK", spm.__version__, flush=True)
-' | tee /content/lane3_out/sentencepiece.txt
-} 2>&1 | tee -a /content/lane3_out/setup.log
-
-/content/venv-lane3/bin/python - << 'SYNTHEOF'
-import hashlib
-import json
-import struct
-import zlib
-from pathlib import Path
-
-pkg = Path("/content/lane3_out/synth_pkg")
-pkg.mkdir(parents=True, exist_ok=True)
-
-def make_png(seed_b: int) -> bytes:
-    sig = b"\x89PNG\r\n\x1a\n"
-    ihdr_d = struct.pack(">IIBBBBB", 64, 64, 8, 2, 0, 0, 0)
-    ihdr = struct.pack(">I", 13) + b"IHDR" + ihdr_d + struct.pack(">I", zlib.crc32(b"IHDR" + ihdr_d) & 0xFFFFFFFF)
-    row = bytes([0] + [seed_b & 0xFF, (seed_b * 3) & 0xFF, (seed_b * 7) & 0xFF] * 64)
-    idat_d = zlib.compress(row * 64)
-    idat = struct.pack(">I", len(idat_d)) + b"IDAT" + idat_d + struct.pack(">I", zlib.crc32(b"IDAT" + idat_d) & 0xFFFFFFFF)
-    iend = struct.pack(">I", 0) + b"IEND" + struct.pack(">I", zlib.crc32(b"IEND") & 0xFFFFFFFF)
-    return sig + ihdr + idat + iend
-
-items = []
-for idx in (1, 2):
-    img_b = make_png(idx * 17)
-    img_p = pkg / f"sample_{idx:02d}.png"
-    txt_p = pkg / f"sample_{idx:02d}.txt"
-    img_p.write_bytes(img_b)
-    txt_p.write_text(f"portlight ship synthetic fixture {idx}\n", encoding="utf-8")
-    items.append({"image": img_p.name, "sha256": hashlib.sha256(img_b).hexdigest()})
-
-(pkg / "dataset_manifest.json").write_text(json.dumps({"seed": 42, "items": items}, indent=2) + "\n", encoding="utf-8")
-SYNTHEOF
-
-cat > /content/lane3_out/synth_job.yaml << 'YAMLEOF'
-job: extension
-config:
-  name: synth_lora
-  process:
-    - type: sd_trainer
-      training_folder: /content/lane3_out/checkpoints
-      device: cpu
-      network:
-        type: lora
-        linear: 4
-        linear_alpha: 4
-      save:
-        dtype: float32
-        save_every: 1
-        max_step_saves_to_keep: 1
-      datasets:
-        - folder_path: /content/lane3_out/synth_pkg
-          caption_ext: txt
-          resolution: [64, 64]
-      train:
-        batch_size: 1
-        steps: 1
-        lr: 0.0001
-        optimizer: adamw
-        dtype: fp32
-YAMLEOF
-
-echo "run" > /content/lane3_out/phase.txt
-/content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml \
-  > /content/lane3_out/train.log 2>&1
-
-CHECKPOINT_PATH="/content/lane3_out/checkpoints/synth_lora.safetensors"
-if [ ! -s "\${CHECKPOINT_PATH}" ]; then
-  FOUND_CKPT="\$(find /content/lane3_out/checkpoints -name '*.safetensors' -type f | head -n 1 || true)"
-  if [ -n "\${FOUND_CKPT}" ] && [ -s "\${FOUND_CKPT}" ]; then
-    cp "\${FOUND_CKPT}" "\${CHECKPOINT_PATH}"
-  else
-    echo "REFUSED: expected non-empty .safetensors checkpoint at \${CHECKPOINT_PATH}" >&2
-    exit 1
-  fi
-fi
-
-/content/venv-lane3/bin/python - "\${PINNED_AI_TOOLKIT_COMMIT}" "\${OVERRIDE_SHA}" "\${CHECKPOINT_PATH}" << 'WINPYEOF'
-import hashlib
-import json
-import subprocess
-import sys
-from pathlib import Path
-
-ai_commit = sys.argv[1]
-override_sha = sys.argv[2]
-ckpt_path = sys.argv[3]
-sys_py = subprocess.run(["/usr/bin/python3", "--version"], capture_output=True, text=True, check=False).stdout.strip().split()[-1]
-uv_ver = subprocess.run(["uv", "--version"], capture_output=True, text=True, check=False).stdout.strip()
-py_sha = "sha256:" + hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest()
-rec = {
-    "system_python": sys_py,
-    "python": sys.version.split()[0],
-    "python_sha256": py_sha,
-    "uv": uv_ver,
-    "ai_toolkit_commit": ai_commit,
-    "override_sha256": f"sha256:{override_sha}",
-    "checkpoint_path": ckpt_path,
-}
-Path("/content/lane3_out/vm_window.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
-print("WINDOW_JSON " + json.dumps(rec), flush=True)
-WINPYEOF
-
-while IFS= read -r -d '' f; do
-  /content/venv-lane3/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
-done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
-tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
-REMOTEEOF
+lane3_write_remote_script "${REMOTE_RUNNER}"
 
 # Every upload goes flat into /content, the one remote directory that exists before the remote
 # script runs; the script's sdlab-remote-dirs block moves the wheels into /content/wheels.
@@ -543,18 +603,13 @@ colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OU
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.sh "${OUT_DIR}"
 
+REMOTE_ENV=()
+mapfile -t REMOTE_ENV < <(lane3_remote_env "${EXP_OVERRIDE_SHA}")
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \
   "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}" \
   "SDLAB_REMOTE_SCRIPT=/content/remote_lane3_stub.sh" \
-  "PINNED_UV_VERSION=${PINNED_UV_VERSION}" \
-  "PINNED_UV_WHEEL_SHA256=${PINNED_UV_WHEEL_SHA256}" \
-  "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
-  "PINNED_PYTHON_BUILD=${PINNED_PYTHON_BUILD}" \
-  "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
-  "PINNED_AI_TOOLKIT_REPO=${PINNED_AI_TOOLKIT_REPO}" \
-  "PINNED_AI_TOOLKIT_COMMIT=${PINNED_AI_TOOLKIT_COMMIT}" \
-  "PINNED_OVERRIDE_SHA=${EXP_OVERRIDE_SHA}"
+  "${REMOTE_ENV[@]}"
 
 # Download result tar before EXIT trap stops the session
 colab_download_checked "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}"
