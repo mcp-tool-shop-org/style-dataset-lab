@@ -75,43 +75,35 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 6,
-      "changed": 4,
+      "added": 8,
+      "changed": 10,
       "moved": 0,
       "parts": 3,
       "removed": 0
     },
     "items": [
       {
-        "kind": "door",
-        "sentence": "CI now also runs scripts/colab/preflight_resolve.sh.",
+        "kind": "landing",
+        "sentence": "tests/colab/fixtures/uv_logs/ is now read by tests/colab/fixtures/fake_colab.py.",
         "subjects": [
-          ".github/workflows/ci.yml",
-          "scripts/colab/preflight_resolve.sh"
+          "tests/colab/fixtures/uv_logs/",
+          "tests/colab/fixtures/fake_colab.py"
         ]
       },
       {
         "kind": "landing",
-        "sentence": "scripts/colab/locks/lane1.in is now read by scripts/colab/preflight_resolve.sh.",
+        "sentence": "tests/colab/fixtures/uv_logs/hash_mismatch.txt is now read by tests/colab/test_classify_install_log.py.",
         "subjects": [
-          "scripts/colab/locks/lane1.in",
-          "scripts/colab/preflight_resolve.sh"
+          "tests/colab/fixtures/uv_logs/hash_mismatch.txt",
+          "tests/colab/test_classify_install_log.py"
         ]
       },
       {
         "kind": "landing",
-        "sentence": "scripts/colab/locks/lane1.lock is now read by scripts/colab/preflight_resolve.sh.",
+        "sentence": "tests/colab/fixtures/uv_logs/network_retry.txt is now read by tests/colab/test_classify_install_log.py.",
         "subjects": [
-          "scripts/colab/locks/lane1.lock",
-          "scripts/colab/preflight_resolve.sh"
-        ]
-      },
-      {
-        "kind": "landing",
-        "sentence": "scripts/colab/locks/lane3.in is now read by scripts/colab/preflight_resolve.sh.",
-        "subjects": [
-          "scripts/colab/locks/lane3.in",
-          "scripts/colab/preflight_resolve.sh"
+          "tests/colab/fixtures/uv_logs/network_retry.txt",
+          "tests/colab/test_classify_install_log.py"
         ]
       },
       {
@@ -121,13 +113,13 @@
       },
       {
         "kind": "counts",
-        "sentence": "6 files added and 4 changed content, across 3 parts.",
+        "sentence": "8 files added and 10 changed content, across 3 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "fb44a38142bc0988194c1316357bdb5a407daab3",
-      "generatedAt": "2026-11-05T23:19:36.552Z"
+      "commit": "bbb779d0ee2d50ee1c7d39db7144c87b6b3990ab",
+      "generatedAt": "2026-11-05T23:32:38.709Z"
     },
     "unchanged": false
   },
@@ -153,9 +145,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 0 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "bbb779d0ee2d50ee1c7d39db7144c87b6b3990ab",
+  "commit": "c11e871f8a472edf2dd08b212cf5abc061af338c",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (38), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (41), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -175,12 +167,12 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 44
+          "files": 45
         },
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 109
+          "files": 111
         },
         {
           "boundary": "lib",
@@ -473,12 +465,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-05T23:32:38.709Z",
+  "generatedAt": "2026-11-06T00:17:00.138Z",
   "limits": [
     "4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.",
     "38 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "152 writes and 274 reads go to a path their caller passes, not to this repository.",
+    "152 writes and 275 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -759,11 +751,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 113,
+  "testFiles": 120,
   "testedBy": {
     "bin": 10,
     "lib": 97,
-    "scripts": 24
+    "scripts": 25
   },
   "unnamedWrites": 38,
   "unread": [

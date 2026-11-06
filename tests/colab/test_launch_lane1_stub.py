@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -182,6 +183,8 @@ def test_kit_pins_self_sha_comfyui_commit_comfy_headless_and_pytorch_index(tmp_p
     kit_text = LAUNCHER.read_text(encoding="utf-8")
     for required_var in (
         "PINNED_UV_VERSION=",
+        "PINNED_UV_WHEEL_SHA256=",
+        "PINNED_INSTALL_CLASSIFIER_SHA=",
         "PINNED_PYTHON_VERSION=",
         "PINNED_PYTORCH_INDEX_URL=",
         "PINNED_COMFYUI_REPO=",
@@ -795,7 +798,8 @@ def test_lane1_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
     assert "unset UV_SYSTEM_PYTHON" in remote_sh
     assert 'export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_314/install"' in remote_sh
     assert "source /content/venv-lane1/bin/activate" not in remote_sh
-    assert "uv venv --python \"${PINNED_PYTHON_VERSION}\" --seed /content/venv-lane1" in remote_sh
+    assert "uv venv --python \"${PINNED_PYTHON_VERSION}\" /content/venv-lane1" in remote_sh
+    assert "--seed" not in remote_sh
     assert (
         "/content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith(\"3.14.9\"), sys.version; "
         "assert sys.prefix.startswith(\"/content/venv-lane\"), sys.prefix'"
@@ -838,18 +842,43 @@ def test_lane1_venv_python_version_mismatch_refuses_with_venv_python_mismatch(tm
         assert f"STOP -s sdlab-l1-vmis-{tag}" in (state_mis / "stops.log").read_text(encoding="utf-8")
 
 
+_INSTALL_RE = re.compile(r"(^|[\s;&|(])(pip3?|python3?\s+-m\s+pip|uv\s+pip)\s+(install|sync)\b")
+
+
+def _unhashed_install_lines(text: str) -> list[str]:
+    """Install lines without --require-hashes/--only-binary :all:, and any `uv venv --seed`."""
+    bad: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("#"):
+            continue
+        if re.search(r"\buv\s+venv\b", line) and "--seed" in line:
+            bad.append(line)
+            continue
+        if _INSTALL_RE.search(line):
+            if "--require-hashes" not in line or "--only-binary :all:" not in line:
+                bad.append(line)
+    return bad
+
+
 def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: Path) -> None:
-    # 1. Static check: no bare `uv pip install` without `--require-hashes` in either kit
+    # 1. Static check: every install line in either kit is hash-pinned and wheel-only
     for kit_path in (
         REPO_ROOT / "scripts" / "colab" / "launch_lane1_stub.sh",
         REPO_ROOT / "scripts" / "colab" / "launch_lane3_stub.sh",
     ):
+        problems = _unhashed_install_lines(kit_path.read_text(encoding="utf-8"))
+        assert problems == [], f"Unhashed installs in {kit_path}: {problems}"
         txt = kit_path.read_text(encoding="utf-8")
-        uv_lines = [line.strip() for line in txt.splitlines() if line.strip().startswith("uv pip install")]
-        assert uv_lines, f"Expected uv pip install lines in {kit_path}"
-        for line in uv_lines:
-            assert "--require-hashes" in line, f"Bare uv pip install without --require-hashes in {kit_path}: {line}"
-            assert "--only-binary :all:" in line, f"uv pip install without --only-binary :all: in {kit_path}: {line}"
+        assert [ln for ln in txt.splitlines() if ln.strip().startswith("uv pip install")], kit_path
+        assert [ln for ln in txt.splitlines() if ln.strip().startswith("pip install")], kit_path
+    # The scanner itself catches each unhashed shape
+    assert _unhashed_install_lines('  pip install --quiet "uv==0.13.5"\n')
+    assert _unhashed_install_lines("  python -m pip install torch\n")
+    assert _unhashed_install_lines("  uv pip install --python /v/bin/python -r x.lock\n")
+    assert _unhashed_install_lines("  uv pip sync x.lock\n")
+    assert _unhashed_install_lines('  uv venv --python "3.12.15" --seed /content/venv-lane3\n')
+    assert not _unhashed_install_lines("  pip install --require-hashes --only-binary :all: --no-deps -r u.txt\n")
 
     # 2. LOCK_DRIFT refuses before any colab call
     _, state_drift, env_drift = _make_fake_colab_env(tmp_path / "l1_drift")
@@ -873,7 +902,6 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
     # 3. PIN_NOT_FOUND refuses before any colab call
     _, state_pin, env_pin = _make_fake_colab_env(tmp_path / "l1_pin")
     env_pin["SDLAB_PREFLIGHT_PIN_SHA"] = "73ebae1334d2c98089f1b90f8cb19257825f891a"
-    env_pin["SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE"] = "158419f3a0017c2ce123484b14b6c527716d6ec8\trefs/tags/v0.3.34"
     out_pin = tmp_path / "out_l1_pin"
     res_pin = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_pin), "--session", "sdlab-l1-pin"],
@@ -931,6 +959,30 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
     out_draft_hm = json.loads((out_hm / "outcome.draft.json").read_text(encoding="utf-8"))
     assert win_hm["status"] == "LOCK_HASH_MISMATCH"
     assert out_draft_hm["status"] == "LOCK_HASH_MISMATCH"
+    # The refusal is the kit's classifier output and keeps the uv log tail
+    assert "REFUSED: LOCK_HASH_MISMATCH during lane1 lock install" in setup_hm
+    assert "--- last " in setup_hm and "Computed:" in setup_hm
+
+    # 6. Network and other install failures get their own codes, not WHEEL_MISSING
+    for mode, code in (("install_network_failure", "INSTALL_NETWORK_FAILURE"), ("install_failed", "INSTALL_FAILED")):
+        _, state_nf, env_nf = _make_fake_colab_env(tmp_path / f"l1_{mode}")
+        env_nf["FAKE_COLAB_MODE"] = mode
+        env_nf["GUARD_POLL_INTERVAL_S"] = "0.2"
+        out_nf = tmp_path / f"out_l1_{mode}"
+        res_nf = subprocess.run(
+            [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_nf), "--session", f"sdlab-l1-{mode}"],
+            env=env_nf,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        assert res_nf.returncode != 0
+        setup_nf = (state_nf / "content" / "lane1_out" / "setup.log").read_text(encoding="utf-8")
+        assert f"REFUSED: {code} during lane1 lock install" in setup_nf
+        assert "WHEEL_MISSING" not in setup_nf
+        assert json.loads((out_nf / "window.json").read_text(encoding="utf-8"))["status"] == code
 
 
 def test_lane1_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_path: Path) -> None:

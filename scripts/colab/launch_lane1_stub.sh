@@ -9,6 +9,8 @@
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
+# sha256 of uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl on PyPI (the Colab VM platform)
+PINNED_UV_WHEEL_SHA256="fa8d26e08e34c29c0c4e820cf3181757086d547240b4f4d31ff1d8bd810ca946"
 PINNED_PYTHON_VERSION="3.14.9"
 PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
@@ -16,10 +18,11 @@ PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="eda267efc8ba491ec472e01d63339478728970b640abcef79b19d80e2a97bd1e"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
+PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="d07ee558c858b331c090d3ec26833dec88868f75c2052ced50058bf18cc0e466"
-PINNED_SELF_SHA="f54f25a3344c8105f7154af3905bfe4d5202ee7b3be149db91347e649002734f"
+PINNED_COLAB_WINDOW_SHA="af85f6d3a3eceae88c4e1b49c0ee107d76cc9bb29efe678cd8df16cbcaf275eb"
+PINNED_SELF_SHA="e7094527d270aa521e0ec1f4bb1dfc95c4a5a40b58b66f78e7d2aed91eb888b0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -60,6 +63,7 @@ PY_BIN="$(colab_resolve_python)"
 GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
 LANE1_PY="${SCRIPT_DIR}/lane1_render.py"
 RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
+CLASSIFIER_PY="${SCRIPT_DIR}/classify_install_log.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 LOCK_FILE="${SCRIPT_DIR}/locks/lane1.lock"
 
@@ -67,6 +71,7 @@ colab_guard_fake_cli_if_test
 
 EXP_LOCK_SHA="${EXPECTED_LANE1_LOCK_SHA:-${PINNED_LOCK_SHA}}"
 EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${PINNED_LANE1_RENDER_SHA}}"
+EXP_CLASSIFIER_SHA="${EXPECTED_INSTALL_CLASSIFIER_SHA:-${PINNED_INSTALL_CLASSIFIER_SHA}}"
 EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
 EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${PINNED_REMOTE_RUNNER_SHA}}"
 EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
@@ -75,6 +80,7 @@ EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE1_STUB_SHA:-${PINNED_SELF_SHA}}"
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${LOCK_FILE}=${EXP_LOCK_SHA}" \
   "${LANE1_PY}=${EXP_LANE1_SHA}" \
+  "${CLASSIFIER_PY}=${EXP_CLASSIFIER_SHA}" \
   "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
   "${RUNNER_PY}=${EXP_RUNNER_SHA}" \
   "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
@@ -112,13 +118,9 @@ cleanup_on_exit() {
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
 
-# Free pre-flight resolve & git pin check before any colab CLI call
-if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -z "${SDLAB_PREFLIGHT_FAST_COMPILE_MOCK:-}" ]; then
-  export SDLAB_PREFLIGHT_FAST_COMPILE_MOCK=1
-fi
-if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -z "${SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE:-}" ]; then
-  export SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE="${PINNED_COMFYUI_COMMIT}	refs/tags/v0.3.34"
-fi
+# Free pre-flight resolve & git pin check before any colab CLI call.
+# The pre-flight honours its SDLAB_PREFLIGHT_* test hooks only under the fake colab CLI
+# and refuses them in a live run (PREFLIGHT_TEST_HOOK_IN_LIVE_RUN).
 PREFLIGHT_OUT=""
 if ! PREFLIGHT_OUT="$(bash "${SCRIPT_DIR}/preflight_resolve.sh" lane1 2>&1)"; then
   printf '%s\n' "${PREFLIGHT_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
@@ -155,6 +157,7 @@ export CUDA_VISIBLE_DEVICES=""
 mkdir -p /content/lane1_out
 
 : "\${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
+: "\${PINNED_UV_WHEEL_SHA256:?missing PINNED_UV_WHEEL_SHA256}"
 : "\${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
 : "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
 : "\${PINNED_COMFYUI_REPO:?missing PINNED_COMFYUI_REPO}"
@@ -195,9 +198,11 @@ trap 'kill "\${VITALS_PID}" 2>/dev/null || true' EXIT
   unset UV_SYSTEM_PYTHON
   export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_314/install"
   export UV_NO_BUILD=1
-  pip install --quiet "uv==\${PINNED_UV_VERSION}"
+  # uv itself is installed by hash: only the pinned manylinux x86_64 wheel is accepted.
+  printf 'uv==%s --hash=sha256:%s\n' "\${PINNED_UV_VERSION}" "\${PINNED_UV_WHEEL_SHA256}" > /content/uv-bootstrap.txt
+  pip install --quiet --require-hashes --only-binary :all: --no-deps -r /content/uv-bootstrap.txt
   uv python install "\${PINNED_PYTHON_VERSION}"
-  uv venv --python "\${PINNED_PYTHON_VERSION}" --seed /content/venv-lane1
+  uv venv --python "\${PINNED_PYTHON_VERSION}" /content/venv-lane1
   /content/venv-lane1/bin/python -c '
 import sys
 if not (sys.version.startswith("3.14.9") and sys.prefix.startswith("/content/venv-lane")):
@@ -234,11 +239,8 @@ if not (sys.version.startswith("3.14.9") and sys.prefix.startswith("/content/ven
   set -e
   cat /content/lane1_out/wheels.log
   if [ "\${UV_RC}" -ne 0 ]; then
-    if grep -Eiq "hash mismatch|--require-hashes" /content/lane1_out/wheels.log; then
-      echo "REFUSED: LOCK_HASH_MISMATCH during lane1 lock install" >&2
-    else
-      echo "REFUSED: WHEEL_MISSING during lane1 lock install" >&2
-    fi
+    /content/venv-lane1/bin/python /content/classify_install_log.py --lane lane1 --log /content/lane1_out/wheels.log >&2 \
+      || echo "REFUSED: INSTALL_FAILED during lane1 lock install (classifier did not run)" >&2
     exit 1
   fi
 
@@ -326,6 +328,7 @@ REMOTEEOF
 colab upload -s "${SESSION}" "${LOCK_FILE}" /content/lane1.lock </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${LANE1_PY}" /content/lane1_render.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab upload -s "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
 
 colab_run_exec_with_live_guards \
@@ -333,6 +336,7 @@ colab_run_exec_with_live_guards \
   "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}" \
   "SDLAB_REMOTE_SCRIPT=/content/remote_lane1_stub.sh" \
   "PINNED_UV_VERSION=${PINNED_UV_VERSION}" \
+  "PINNED_UV_WHEEL_SHA256=${PINNED_UV_WHEEL_SHA256}" \
   "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
   "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
   "PINNED_COMFYUI_REPO=${PINNED_COMFYUI_REPO}" \

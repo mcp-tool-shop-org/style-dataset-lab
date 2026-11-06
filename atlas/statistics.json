@@ -250,8 +250,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 6,
-        "lines": 135,
+        "commits": 8,
+        "lines": 142,
         "path": "CHANGELOG.md"
       },
       {
@@ -300,8 +300,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 11,
-        "lines": 435,
+        "commits": 12,
+        "lines": 459,
         "path": "atlas/README.md"
       },
       {
@@ -310,18 +310,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 11,
-        "lines": 1579,
+        "commits": 12,
+        "lines": 1668,
         "path": "atlas/page.json"
       },
       {
-        "commits": 11,
-        "lines": 53344,
+        "commits": 12,
+        "lines": 53547,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 11,
-        "lines": 30859,
+        "commits": 12,
+        "lines": 30965,
         "path": "atlas/structure.json"
       },
       {
@@ -645,13 +645,13 @@
         "path": "lib/workflow-profiles.js"
       },
       {
-        "commits": 7,
-        "lines": 596,
+        "commits": 9,
+        "lines": 604,
         "path": "package-lock.json"
       },
       {
-        "commits": 6,
-        "lines": 13,
+        "commits": 8,
+        "lines": 17,
         "path": "package.json"
       },
       {
@@ -7760,24 +7760,17 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-05T23:32:38.709Z",
+  "generatedAt": "2026-11-06T00:17:00.138Z",
   "generatedFrom": {
-    "commit": "bbb779d0ee2d50ee1c7d39db7144c87b6b3990ab"
+    "commit": "c11e871f8a472edf2dd08b212cf5abc061af338c"
   },
   "pairs": [
     {
       "a": "CHANGELOG.md",
       "b": "package.json",
-      "either": 7,
-      "shared": 4,
-      "strength": 0.571429
-    },
-    {
-      "a": "README.md",
-      "b": "package.json",
       "either": 8,
-      "shared": 4,
-      "strength": 0.5
+      "shared": 5,
+      "strength": 0.625
     },
     {
       "a": "atlas/README.md",
@@ -7824,9 +7817,9 @@
     {
       "a": "package-lock.json",
       "b": "package.json",
-      "either": 7,
-      "shared": 4,
-      "strength": 0.571429
+      "either": 8,
+      "shared": 5,
+      "strength": 0.625
     },
     {
       "a": "scripts/colab/launch_lane1_stub.sh",
@@ -7881,16 +7874,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T18:26:28-05:00",
-    "inScopeFiles": 3271,
+    "headDate": "2026-11-05T18:33:13-05:00",
+    "inScopeFiles": 3279,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 110,
+    "qualifyingCommits": 111,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T23:26:28.000Z",
+    "since": "2026-05-09T23:33:13.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

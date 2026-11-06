@@ -1,19 +1,18 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-05 from commit bbb779d by Atlas 1.24.0.
+Mapped at 2026-11-06 from commit c11e871 by Atlas 1.24.0.
 
 ## What this is
 
-13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (38), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
+13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (41), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-05 (fb44a38)
+## What changed since 2026-11-05 (bbb779d)
 
-- CI now also runs scripts/colab/preflight_resolve.sh.
-- scripts/colab/locks/lane1.in is now read by scripts/colab/preflight_resolve.sh.
-- scripts/colab/locks/lane1.lock is now read by scripts/colab/preflight_resolve.sh.
-- scripts/colab/locks/lane3.in is now read by scripts/colab/preflight_resolve.sh.
+- tests/colab/fixtures/uv_logs/ is now read by tests/colab/fixtures/fake_colab.py.
+- tests/colab/fixtures/uv_logs/hash_mismatch.txt is now read by tests/colab/test_classify_install_log.py.
+- tests/colab/fixtures/uv_logs/network_retry.txt is now read by tests/colab/test_classify_install_log.py.
 - And 1 more new writer or reader of a place.
-- 6 files added and 4 changed content, across 3 parts.
+- 8 files added and 10 changed content, across 3 parts.
 
 ## What comes in
 
@@ -24,7 +23,7 @@ Mapped at 2026-11-05 from commit bbb779d by Atlas 1.24.0.
 
 ## What happens through CI
 
-1. The workflow runs bin/sdlab.js in bin, scripts/colab/preflight_resolve.sh in scripts, and 105 files in tests.
+1. The workflow runs bin/sdlab.js in bin, scripts/colab/preflight_resolve.sh in scripts, and 107 files in tests.
    1. Inside bin/sdlab.js, `main` does, in order: `enableDebug` (lib) and `setLogLevel`.
    2. Or, for an entry of `namespaces` where `command === head`, `main` does `findClosest` (lib) and `inputError` instead.
    3. Or, when `command === 'critique'`, `main` does `run` (scripts) instead.
@@ -123,7 +122,7 @@ Read those in order to follow one pull request end to end.
 - 4 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 1 more.
 - 38 writes and 73 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
-- 152 writes and 274 reads go to a path their caller passes, not to this repository.
+- 152 writes and 275 reads go to a path their caller passes, not to this repository.
 - 12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.
 - 7 reads go to the directory the command is run in, not to this repository.
 - 1 write and 2 reads go to a temporary directory, not to this repository.

@@ -47,6 +47,7 @@ def test_real_colab_cli_guard_refuses_when_not_fake(tmp_path: Path) -> None:
     env = os.environ.copy()
     env["PATH"] = f"{_to_posix(unmarked_bin)}:{unmarked_bin}{os.pathsep}{env.get('PATH', '')}"
     env["SDLAB_TEST_FAKE_COLAB"] = "1"
+    env["SDLAB_WHEEL_DIR"] = _to_posix(tmp_path)
     out_dir = tmp_path / "out_guard"
 
     res = subprocess.run(
@@ -179,6 +180,8 @@ def test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_ver
     kit_text = LAUNCHER.read_text(encoding="utf-8")
     for required_var in (
         "PINNED_UV_VERSION=",
+        "PINNED_UV_WHEEL_SHA256=",
+        "PINNED_INSTALL_CLASSIFIER_SHA=",
         "PINNED_PYTHON_VERSION=",
         "PINNED_PYTORCH_INDEX_URL=",
         "PINNED_AI_TOOLKIT_REPO=",
@@ -526,7 +529,8 @@ def test_lane3_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
     assert "unset UV_SYSTEM_PYTHON" in remote_sh
     assert 'export UV_PYTHON_INSTALL_DIR="/content/.sdlab_python_312/install"' in remote_sh
     assert "source /content/venv-lane3/bin/activate" not in remote_sh
-    assert "uv venv --python \"${PINNED_PYTHON_VERSION}\" --seed /content/venv-lane3" in remote_sh
+    assert "uv venv --python \"${PINNED_PYTHON_VERSION}\" /content/venv-lane3" in remote_sh
+    assert "--seed" not in remote_sh
     assert (
         "/content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith(\"3.12.15\"), sys.version; "
         "assert sys.prefix.startswith(\"/content/venv-lane\"), sys.prefix'"
@@ -601,8 +605,9 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
     _, state_wsha, env_wsha = _make_fake_colab_env(tmp_path / "l3_wsha")
     bad_wheels = tmp_path / "bad_wheels"
     bad_wheels.mkdir(parents=True, exist_ok=True)
-    (bad_wheels / "lycoris_lora-1.8.3-py3-none-any.whl").write_bytes(b"corrupted_wheel_bytes")
-    (bad_wheels / "diffusers-0.39.0.dev0-py3-none-any.whl").write_bytes(b"corrupted_wheel_bytes_2")
+    fixture_manifest = json.loads(Path(env_wsha["SDLAB_PREFLIGHT_WHEELS_MANIFEST"]).read_text(encoding="utf-8"))
+    for idx, entry in enumerate(fixture_manifest["wheels"]):
+        (bad_wheels / entry["filename"]).write_bytes(f"corrupted_wheel_bytes_{idx}".encode())
     out_wsha = tmp_path / "out_l3_wsha"
     res_wsha = subprocess.run(
         [
@@ -648,7 +653,6 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
     # 4. PIN_NOT_FOUND refuses before any colab call (e.g. old bogus sha 73ebae13...)
     _, state_pin, env_pin = _make_fake_colab_env(tmp_path / "l3_pin")
     env_pin["SDLAB_PREFLIGHT_PIN_SHA"] = "73ebae1334d2c98089f1b90f8cb19257825f891a"
-    env_pin["SDLAB_PREFLIGHT_LS_REMOTE_OVERRIDE"] = "beb94824c51480a04d3c86c718603676fdef6938\tHEAD"
     out_pin = tmp_path / "out_l3_pin"
     res_pin = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_pin), "--session", "sdlab-l3-pin"],
@@ -664,7 +668,12 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
     assert not (state_pin / "calls.log").exists(), "PIN_NOT_FOUND must make no colab call"
 
     # 5. WHEEL_MISSING and LOCK_HASH_MISMATCH on VM surface in setup.log and final status
-    for mode, expected_code in (("wheel_missing", "WHEEL_MISSING"), ("lock_hash_mismatch", "LOCK_HASH_MISMATCH")):
+    for mode, expected_code in (
+        ("wheel_missing", "WHEEL_MISSING"),
+        ("lock_hash_mismatch", "LOCK_HASH_MISMATCH"),
+        ("install_network_failure", "INSTALL_NETWORK_FAILURE"),
+        ("install_failed", "INSTALL_FAILED"),
+    ):
         _, state_vm, env_vm = _make_fake_colab_env(tmp_path / f"l3_{mode}")
         env_vm["FAKE_COLAB_MODE"] = mode
         env_vm["GUARD_POLL_INTERVAL_S"] = "0.2"
@@ -680,7 +689,8 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
         )
         assert res_vm.returncode != 0
         setup_vm = (state_vm / "content" / "lane3_out" / "setup.log").read_text(encoding="utf-8")
-        assert expected_code in setup_vm
+        assert f"REFUSED: {expected_code} during lane3 lock install" in setup_vm
+        assert "--- last " in setup_vm, "the refusal keeps the tail of the uv log"
         win_vm = json.loads((out_vm / "window.json").read_text(encoding="utf-8"))
         out_draft_vm = json.loads((out_vm / "outcome.draft.json").read_text(encoding="utf-8"))
         assert win_vm["status"] == expected_code
@@ -730,3 +740,45 @@ def test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_p
     assert "STOP -s sdlab-l3-uvnopy" in (state_nopy / "stops.log").read_text(encoding="utf-8")
 
 
+
+
+def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: Path) -> None:
+    # No --wheel-dir and no SDLAB_WHEEL_DIR: named refusal, no default path, no colab call
+    _, state_nd, env_nd = _make_fake_colab_env(tmp_path / "l3_nodir")
+    env_nd.pop("SDLAB_WHEEL_DIR")
+    res_nd = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(tmp_path / "out_l3_nodir"), "--session", "sdlab-l3-nodir"],
+        env=env_nd,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_nd.returncode == 2
+    assert "REFUSED: WHEEL_DIR_REQUIRED" in res_nd.stderr
+    assert not (state_nd / "calls.log").exists()
+
+    # A pre-flight test hook in a run without the fake-colab flag: PREFLIGHT_TEST_HOOK_IN_LIVE_RUN,
+    # before any colab call (`colab` on PATH is still the fake, so nothing real can be reached).
+    _, state_live, env_live = _make_fake_colab_env(tmp_path / "l3_live_hook")
+    env_live.pop("SDLAB_TEST_FAKE_COLAB")
+    env_live.pop("EXPECTED_LOCAL_WHEELS_MANIFEST_SHA")
+    real_names_dir = tmp_path / "unused_wheels"
+    real_names_dir.mkdir()
+    env_live["SDLAB_WHEEL_DIR"] = _to_posix(real_names_dir)
+    out_live = tmp_path / "out_l3_live_hook"
+    res_live = subprocess.run(
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_live), "--session", "sdlab-l3-livehook"],
+        env=env_live,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res_live.returncode != 0
+    assert "PREFLIGHT_TEST_HOOK_IN_LIVE_RUN" in res_live.stderr
+    assert "SDLAB_PREFLIGHT_FAST_COMPILE_MOCK" in res_live.stderr
+    assert not (state_live / "calls.log").exists(), "a refused test hook must make no colab call"
+    assert json.loads((out_live / "window.json").read_text(encoding="utf-8"))["status"] == "PREFLIGHT_TEST_HOOK_IN_LIVE_RUN"

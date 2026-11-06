@@ -3,7 +3,6 @@
   "lane": "lane3",
   "python_version": "3.12.15",
   "ai_toolkit_commit": "beb94824c51480a04d3c86c718603676fdef6938",
-  "default_wheel_dir": "E:/AI/rnd-local/projects/sdlab-colab/wheels",
   "wheels": [
     {
       "package": "lycoris-lora",

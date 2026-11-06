@@ -1,0 +1,7 @@
+Using Python 3.13.13 environment at: v
+error: Request failed after 3 retries in 11.5s
+  cause: Failed to fetch: http://127.0.0.1:9/simple/absentpkg/
+  cause: error sending request for url (http://127.0.0.1:9/simple/absentpkg/)
+  cause: client error (Connect)
+  cause: tcp connect error
+  cause: Connection refused (os error 111)
