@@ -658,8 +658,13 @@ def copy_off_once(watch: Path, bundle: Path, manifest: Path, state: dict[str, An
             with manifest.open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(json.dumps(line) + "\n")
             print("COPY_OFF " + json.dumps(line), flush=True)
-            done.add(rel)
             copied += 1
+            if line.get("partial"):
+                # Still being written: copy it again on a later pass (and the final sweep) until
+                # it is complete; the newest manifest line for a path is the one that counts.
+                pending[rel] = -1
+            else:
+                done.add(rel)
         except OSError as exc:
             print(f"COPY_OFF_SKIPPED {fp.name}: {type(exc).__name__}: {exc}", flush=True)
             continue
@@ -671,9 +676,11 @@ def load_done(manifest: Path) -> set[str]:
     if manifest.exists():
         for ln in manifest.read_text(encoding="utf-8").splitlines():
             try:
-                done.add(json.loads(ln)["path"])
-            except (ValueError, KeyError, TypeError):
+                rec = json.loads(ln)
+            except ValueError:
                 continue
+            if isinstance(rec, dict) and "path" in rec and not rec.get("partial"):
+                done.add(rec["path"])
     return done
 
 
@@ -719,7 +726,7 @@ def read_json(path: Path) -> Any:
 
 def run_checkpoint(args: argparse.Namespace) -> int:
     """Print the bundle path of the newest complete checkpoint the manifest lists (exit 1 if none)."""
-    good = []
+    latest: dict[str, dict[str, Any]] = {}
     mp = Path(args.manifest)
     if mp.exists():
         for ln in mp.read_text(encoding="utf-8").splitlines():
@@ -727,8 +734,9 @@ def run_checkpoint(args: argparse.Namespace) -> int:
                 m = json.loads(ln)
             except ValueError:
                 continue
-            if m.get("path", "").endswith(".safetensors") and not m.get("partial") and m.get("bytes", 0) > 0:
-                good.append(m["path"])
+            latest[m.get("path", "")] = m  # the newest line for a path counts
+    good = [p for p, m in latest.items()
+            if p.endswith(".safetensors") and not m.get("partial") and m.get("bytes", 0) > 0]
     if not good:
         return 1
     print(str(Path(args.bundle) / sorted(good)[-1]), flush=True)
@@ -737,14 +745,16 @@ def run_checkpoint(args: argparse.Namespace) -> int:
 
 def run_finish(args: argparse.Namespace) -> int:
     out = Path(args.lane3_out)
-    manifest_lines = []
+    latest: dict[str, dict[str, Any]] = {}
     mp = out / "rung_outputs" / "manifest.jsonl"
     if mp.exists():
         for ln in mp.read_text(encoding="utf-8").splitlines():
             try:
-                manifest_lines.append(json.loads(ln))
+                rec = json.loads(ln)
             except ValueError:
                 continue
+            latest[rec["path"]] = rec  # a re-copied file: its newest line counts
+    manifest_lines = list(latest.values())
     download = read_json(out / "model_download.json")
     facts = {
         "hf_token_used": bool(download.get("token_used")) if isinstance(download, dict) else False,
@@ -779,7 +789,7 @@ def rung_pids(root: Path, proc: Path = Path("/proc"), skip: Iterable[int] = ()) 
     """Processes of the rung on this VM: the remote script (and its subshells), ai-toolkit's run.py
     and the lane3_rung.py helpers, found by their command lines under `root`."""
     marks = (f"{root}/remote_lane3_stub.sh", f"{root}/ai-toolkit/run.py", f"{root}/lane3_rung.py copy-off",
-             f"{root}/lane3_rung.py download")
+             f"{root}/lane3_rung.py download", "snapshot_download(repo_id=sys.argv[1]")
     skip_set = set(skip)
     found = []
     for entry in proc.iterdir() if proc.is_dir() else []:

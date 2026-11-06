@@ -379,11 +379,11 @@ def test_copy_off_copies_settled_files_once_with_sha(tmp_path: Path) -> None:
     bundle.mkdir()
     state: dict = {}
     ck = watch / "job_000000020.safetensors"
-    ck.write_bytes(b"A" * 10)
+    ck.write_bytes(_st(b"A" * 10))
     (watch / "_latent_cache" / "x.safetensors").write_bytes(b"L")
     (watch / "notes.yaml").write_text("x", encoding="utf-8")
     assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # first sight: size not yet settled
-    ck.write_bytes(b"A" * 20)
+    ck.write_bytes(_st(b"A" * 20))
     assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # still growing
     assert lr.copy_off_once(watch, bundle, manifest, state) == 1
     assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # once only
@@ -391,7 +391,8 @@ def test_copy_off_copies_settled_files_once_with_sha(tmp_path: Path) -> None:
     assert lr.copy_off_once(watch, bundle, manifest, state, final=True) == 1
     lines = [json.loads(x) for x in manifest.read_text(encoding="utf-8").splitlines()]
     assert [x["path"] for x in lines] == ["job_000000020.safetensors", "samples/s.jpg"]
-    assert lines[0]["sha256"] == hashlib.sha256(b"A" * 20).hexdigest() and lines[0]["bytes"] == 20
+    assert lines[0]["sha256"] == hashlib.sha256(_st(b"A" * 20)).hexdigest() and lines[0]["bytes"] == len(_st(b"A" * 20))
+    assert lines[0]["partial"] is False
     assert not (bundle / "_latent_cache").exists()
     assert lr.copy_off_once(tmp_path / "missing", bundle, manifest, {}) == 0
 
@@ -1061,3 +1062,104 @@ def test_model_check_refuses_a_cross_host_redirect_and_keeps_the_token(tmp_path:
     finally:
         other.shutdown()
         redir.shutdown()
+
+
+# --- fix round 4 -------------------------------------------------------------------------------
+
+
+def test_a_partial_copy_is_copied_again_until_complete(tmp_path: Path) -> None:
+    watch, bundle = tmp_path / "train", tmp_path / "b"
+    watch.mkdir()
+    bundle.mkdir()
+    manifest = bundle / "manifest.jsonl"
+    ck = watch / "job_000000020.safetensors"
+    full = _st(b"x" * 300)
+    ck.write_bytes(full[:-100])  # the save paused part-way
+    state: dict = {}
+    assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # first sight
+    assert lr.copy_off_once(watch, bundle, manifest, state) == 1  # size held: copied, partial
+    ck.write_bytes(full)  # the save finishes
+    assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # size changed: wait
+    assert lr.copy_off_once(watch, bundle, manifest, state) == 1  # copied again, complete
+    assert lr.copy_off_once(watch, bundle, manifest, state, final=True) == 0  # now done
+    rows = [json.loads(x) for x in manifest.read_text(encoding="utf-8").splitlines()]
+    assert [r["partial"] for r in rows] == [True, False]
+    ns = argparse.Namespace(bundle=str(bundle), manifest=str(manifest))
+    assert lr.run_checkpoint(ns) == 0
+    out = bundle.parent / "lane3_out"
+    (out / "rung_outputs").mkdir(parents=True)
+    shutil.copy(manifest, out / "rung_outputs" / "manifest.jsonl")
+    assert lr.main(["finish", "--lane3-out", str(out)]) == 0
+    facts = json.loads((out / "train_facts.json").read_text(encoding="utf-8"))
+    assert facts["rung_outputs"]["checkpoints"] == ["job_000000020.safetensors"]
+    assert facts["rung_outputs"]["partial_checkpoints"] == []
+    # A copy-off restarted from this manifest does not take the complete file again.
+    assert "job_000000020.safetensors" in lr.load_done(manifest)
+
+
+def test_final_sweep_recopies_a_partial_file(tmp_path: Path) -> None:
+    watch, bundle = tmp_path / "train", tmp_path / "b"
+    watch.mkdir()
+    bundle.mkdir()
+    manifest = bundle / "manifest.jsonl"
+    ck = watch / "job.safetensors"
+    full = _st(b"y" * 300)
+    ck.write_bytes(full[:-50])
+    state: dict = {}
+    assert lr.copy_off_once(watch, bundle, manifest, state, final=True) == 1
+    ck.write_bytes(full)
+    assert lr.copy_off_once(watch, bundle, manifest, state, final=True) == 1
+    rows = [json.loads(x) for x in manifest.read_text(encoding="utf-8").splitlines()]
+    assert [r["partial"] for r in rows] == [True, False]
+    assert "job.safetensors" not in lr.load_done(bundle / "none.jsonl")
+
+
+def _run_token_and_download_blocks(tmp_path: Path, with_token: bool) -> str:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    script = tmp_path / "remote.sh"
+    res = subprocess.run([_bash(), fc._to_posix(LAUNCHER), "--emit-remote-script", fc._to_posix(script)],
+                         capture_output=True, text=True, check=False)
+    assert res.returncode == 0, res.stderr
+    text = script.read_text(encoding="utf-8")
+    lines = text.split("\n")
+
+    def block(name: str) -> str:
+        a = lines.index(f"# >>> {name}")
+        b = lines.index(f"# <<< {name}", a)
+        return "\n".join(lines[a:b + 1]) + "\n"
+
+    vm = tmp_path / "vm"
+    (vm / "lane3_out").mkdir(parents=True)
+    if with_token:
+        (vm / "lane3_hf_read_token").write_text(TOKEN, encoding="utf-8")
+    probe = tmp_path / "probe.sh"
+    probe.write_text('#!/usr/bin/env bash\nif [ "${HF_TOKEN_GGUF_READ+set}" = set ]; then echo TOKEN_VAR_SET; else echo TOKEN_VAR_UNSET; fi\n',
+                     encoding="utf-8")
+    probe.chmod(0o755)
+    run = tmp_path / "run.sh"
+    run.write_text("set -euo pipefail\nLANE3_MODEL_NAME_OR_PATH=a/b LANE3_HF_HOME=/x LANE3_DOWNLOAD_PROBE_SECONDS=1 LANE3_DOWNLOAD_PROBE_BYTES=1\n" + (block("sdlab-hf-token") + 'LANE3_PY="' + str(probe) + '"\n'
+                   + block("sdlab-lane3-download")).replace("/content", str(vm)), encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if k != "HF_TOKEN_GGUF_READ"}
+    out = subprocess.run([_bash(), str(run)], env=env, capture_output=True, text=True, check=False)
+    assert out.returncode == 0, out.stderr
+    assert not (vm / "lane3_hf_read_token").exists()
+    return out.stdout
+
+
+def test_token_variable_reaches_the_download_only_when_a_token_was_staged(tmp_path: Path) -> None:
+    assert "TOKEN_VAR_SET" in _run_token_and_download_blocks(tmp_path / "with", with_token=True)
+    assert "TOKEN_VAR_UNSET" in _run_token_and_download_blocks(tmp_path / "without", with_token=False)
+
+
+def test_download_records_token_used_from_the_variable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _dl_env(monkeypatch)
+    assert lr.run_download(_dl_args(tmp_path), expected_fn=lambda r, v, t: 64 * 1024**2) == 0
+    assert json.loads((tmp_path / "dl.json").read_text(encoding="utf-8"))["token_used"] is False
+
+
+def test_bundle_now_also_finds_the_download_grandchild(tmp_path: Path) -> None:
+    proc = tmp_path / "proc"
+    (proc / "21").mkdir(parents=True)
+    (proc / "21" / "cmdline").write_bytes(
+        b"python\0-c\0import os, sys\nfrom huggingface_hub import snapshot_download\npath = snapshot_download(repo_id=sys.argv[1], revision=x)\0a/b\0")
+    assert lr.rung_pids(tmp_path / "content", proc) == [21]

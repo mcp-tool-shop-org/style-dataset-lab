@@ -33,11 +33,11 @@ PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
 PINNED_COLAB_WINDOW_SHA="9058334198ec1225d71296c809592727089789960466b70e93df35026239187e"
-PINNED_LANE3_RUNG_SHA="7363905d41e2ca7371d5c84eb431697fee7349e6ff717e5982300aa64d6ca26c"
+PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="fcdab250a06545ce09052147d6e6e903c2ecee28282de73a6d8e269a7a4416a9"
+PINNED_SELF_SHA="829fd49b24499813027ca216c09913892997d0003b210f874785cd58b7acee7f"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -58,8 +58,11 @@ set -euo pipefail
 # It is read into a shell variable and shredded here, before anything else runs, and handed to the
 # model download step's environment alone. Logs are scrubbed of hf_ tokens before bundling.
 LANE3_HF_READ_TOKEN=""
+LANE3_HF_TOKEN_STAGED=0
 if [ -f /content/lane3_hf_read_token ]; then
   LANE3_HF_READ_TOKEN="\$(cat /content/lane3_hf_read_token)"
+  # Staged = the uploaded file was there and held something; set before the shred, from the file.
+  [ -s /content/lane3_hf_read_token ] && LANE3_HF_TOKEN_STAGED=1
   shred -u /content/lane3_hf_read_token 2>/dev/null || rm -f /content/lane3_hf_read_token
   if [ -e /content/lane3_hf_read_token ]; then
     echo "REFUSED: HF_TOKEN_SHRED_FAILED: /content/lane3_hf_read_token is still on the VM" >&2
@@ -384,11 +387,22 @@ mkdir -p "\${LANE3_HF_HOME}" "\${LANE3_TRAINING_FOLDER}" /content/lane3_out/rung
   --disk-required-gib "\${LANE3_DISK_REQUIRED_GIB}" --smoke-seconds "\${LANE3_GPU_SMOKE_SECONDS}" --ram-required-gib "\${LANE3_HOST_RAM_REQUIRED_GIB:-}" \
   --meminfo /proc/meminfo --shm /dev/shm --out /content/lane3_out/train_guards.json 2>&1 | tee -a /content/lane3_out/setup.log
 
-HF_TOKEN_GGUF_READ="\${LANE3_HF_READ_TOKEN:-}" "\${LANE3_PY}" /content/lane3_rung.py download \
-  --repo "\${LANE3_MODEL_NAME_OR_PATH}" --revision "\${LANE3_MODEL_REVISION:-}" --hf-home "\${LANE3_HF_HOME}" \
-  --max-seconds "\${LANE3_DOWNLOAD_MAX_SECONDS:-}" --probe-seconds "\${LANE3_DOWNLOAD_PROBE_SECONDS}" \
-  --probe-bytes "\${LANE3_DOWNLOAD_PROBE_BYTES}" --log /content/lane3_out/model_download.log \
-  --out /content/lane3_out/model_download.json 2>&1 | tee -a /content/lane3_out/setup.log
+# >>> sdlab-lane3-download
+# The token reaches the download step's environment only when one was staged; otherwise the
+# variable is not set at all, so the step records token_used false.
+lane3_download() {
+  "\${LANE3_PY}" /content/lane3_rung.py download \
+    --repo "\${LANE3_MODEL_NAME_OR_PATH}" --revision "\${LANE3_MODEL_REVISION:-}" --hf-home "\${LANE3_HF_HOME}" \
+    --max-seconds "\${LANE3_DOWNLOAD_MAX_SECONDS:-}" --probe-seconds "\${LANE3_DOWNLOAD_PROBE_SECONDS}" \
+    --probe-bytes "\${LANE3_DOWNLOAD_PROBE_BYTES}" --log /content/lane3_out/model_download.log \
+    --out /content/lane3_out/model_download.json
+}
+if [ "\${LANE3_HF_TOKEN_STAGED:-0}" = "1" ]; then
+  HF_TOKEN_GGUF_READ="\${LANE3_HF_READ_TOKEN}" lane3_download 2>&1 | tee -a /content/lane3_out/setup.log
+else
+  lane3_download 2>&1 | tee -a /content/lane3_out/setup.log
+fi
+# <<< sdlab-lane3-download
 LANE3_HF_READ_TOKEN=""
 LANE3_MODEL_PATH="\$("\${LANE3_PY}" -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["snapshot_path"])' /content/lane3_out/model_download.json)"
 
