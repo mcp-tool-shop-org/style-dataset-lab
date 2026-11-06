@@ -16112,7 +16112,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "b1b17cde79fb3d2fb2b455b2bd6d935cd9b41099ce2b63dd62052f59e6d0deec",
+          "hash": "be0b8ae6b58653ed84cab8852ae0a5efab4b419462c8a493becbfe6aa8025485",
           "path": "CHANGELOG.md"
         },
         {
@@ -16809,7 +16809,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "6383cb869c1acf70b4de7755562960ac630b717a8f1eea0d2f95a7852acb4570",
+          "hash": "6af7354780c5871e93eb1737f8e7be3dd99899c21ec24375094ee176a7751f66",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16829,7 +16829,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "188f2c2a445a21ab2ca77c3270b125354d7ed75de88c261426ed64f4f0e5b895",
+          "hash": "ea91e0e494ab768c320cfca121e9f927fe0b83a81badd6b16e24ef28db8c9b86",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17108,11 +17108,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "49d05c11d1a9d00406034d76340f5b3eab1c0be2a9e34754cfcf867d95e2894f",
+          "hash": "5c4bb36e9a197a68c37906fd2fdbe0d2143b195d01c5900b50c5fac53f7fd7d1",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "6f13fb737a6f91ef421e766c6fc7817dbb0bc00b2ae546267efdc34455bda391",
+          "hash": "f6336c3059287c5fe0b030a7703a3f2995d18b1d532609c9861a9190782f7478",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19496,7 +19496,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "252ac32c685aff34dd3d9293e65f2f331746eb12c02a140d06488b32cdf9351d",
+          "hash": "9201db930d40eab0cd7cd75a8857e57b5e9230ee72af579f323814775e8aeade",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -19585,6 +19585,49 @@
         },
         {
           "exports": [
+            "test_cpu_stub_success_ends_at_the_import_gate_with_the_bundle",
+            "test_install_mode_is_the_default_and_hides_the_gpu",
+            "test_install_mode_skips_training_and_says_so",
+            "test_kit_never_passes_a_train_mode",
+            "test_kit_train_flag_is_a_window_option_for_emit",
+            "test_kit_train_flag_is_refused_before_any_colab_call",
+            "test_train_mode_names_a_failed_run_on_the_exec_stream",
+            "test_train_mode_refuses_on_a_cpu_vm",
+            "test_train_mode_refuses_without_a_model",
+            "test_train_mode_with_gpu_and_model_passes_the_gate",
+            "test_train_mode_without_a_checkpoint_is_refused",
+            "test_train_step_refuses_without_a_model_even_past_the_gate",
+            "test_unknown_mode_is_refused",
+            "test_window_writer_adds_no_train_fields_to_other_lanes",
+            "test_window_writer_reads_train_state_strictly"
+          ],
+          "hash": "294d07a8c2b9fd5d3ec4e1d1a877e7ae28247a4e32d80387a2221406923506ef",
+          "importsFiles": [
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_lane3_install_stub.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_emit_remote_script_matches_the_uploaded_script_and_calls_no_colab",
+            "test_emit_remote_script_needs_a_path_and_works_without_any_colab_on_path",
+            "test_emit_remote_script_refuses_beside_any_window_option",
+            "test_fake_fails_the_stub_when_uv_rejects_the_kit_lock",
+            "test_fake_refuses_an_uploaded_script_without_the_lock_block",
+            "test_fake_runs_the_kit_lock_step_and_uv_accepts_it",
+            "test_kit_lock_step_writes_a_lock_real_uv_installs",
+            "test_lane3_lock_and_import_gate_carry_torchaudio"
+          ],
+          "hash": "b9eab0d5551f3e3faa23f2aaa5db50de953bf2c7339dd065020aa87cecdbe69b",
+          "importsFiles": [
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_lane3_local_wheels_lock.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
             "test_between_item_fetch_copies_files_before_resetting_current_json",
             "test_cap_guard_trips_on_fixture_and_stays_quiet_just_under",
             "test_dead_harness_on_cgroup_oom_fixture_trips_and_stays_quiet_just_under",
@@ -19655,10 +19698,10 @@
             "test_real_colab_cli_guard_refuses_when_not_fake",
             "test_sha_refusal_before_opening_session",
             "test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap",
-            "test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_verifies_checkpoint",
+            "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "430a6ae83ad1d9cf2d2a9fff5d09c536da73710186b974d3293bb0a5001bdf70",
+          "hash": "0aca8dcf389e48db8b441ed7f37b9348608159659a78dfe349fe11bce1713d05",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20807,7 +20850,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 113
+          "files": 115
         },
         {
           "boundary": "lib",
@@ -21102,7 +21145,7 @@
         },
         {
           "coverage": true,
-          "files": 9,
+          "files": 11,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -21759,8 +21802,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "a3f44394223b4863100af335d8b97b11fe1e104e",
-    "tracked": 3276
+    "commit": "223751ceb97c208600e115168f9dca24d41c7182",
+    "tracked": 3278
   },
   "landings": [
     {
@@ -24721,7 +24764,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 122,
+  "testFiles": 124,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Stub launch kit for Lane 3 (train) Colab CPU high-mem window (Part C, PR #47).
+# Stub launch kit for Lane 3 (train) Colab CPU high-mem window (Part C, PR #47): an install-path stub.
 # Checks pinned input sha256s (including itself) and runs preflight_resolve.sh before opening,
 # holds /tmp/colab-window-open.lock, opens CPU --high-mem, runs CPython 3.12.15 uv venv + wheel-only
 # install from hash-locked lane3.lock and pre-built local wheels in lane3-local-wheels.json + pinned
-# ostris/ai-toolkit + generates synth_job.yaml for a 1-step CPU training run on the synthetic package +
-# verifies the .safetensors checkpoint exists and records its path in window.json, enforces live
+# ostris/ai-toolkit + the import gate, and stops there: it writes TRAIN_SKIPPED and records
+# train=skipped_cpu_stub in window.json (never a trained result). Training is a separate GPU rung;
+# the remote script keeps its training step behind LANE3_MODE=train, which this kit never passes
+# (--train is refused: TRAIN_REQUIRES_GPU on a CPU card, TRAIN_MODEL_REQUIRED otherwise). Enforces live
 # launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring,
 # downloads result tar, and stops its own session in an EXIT trap on every exit path.
 set -euo pipefail
@@ -26,8 +28,8 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="188f2c2a445a21ab2ca77c3270b125354d7ed75de88c261426ed64f4f0e5b895"
-PINNED_SELF_SHA="4b31cc1fedd394baa37772fc3e699b36ee408e81650828272ffdfb42a80c3a33"
+PINNED_COLAB_WINDOW_SHA="ea91e0e494ab768c320cfca121e9f927fe0b83a81badd6b16e24ef28db8c9b86"
+PINNED_SELF_SHA="e9e9975977fbfbde099c6252695472250569c91f230aa7ca24d1c4042e1a2860"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -41,7 +43,40 @@ lane3_write_remote_script() {
   cat > "${dest}" << REMOTEEOF
 #!/usr/bin/env bash
 set -euo pipefail
-export CUDA_VISIBLE_DEVICES=""
+
+# >>> sdlab-lane3-mode
+# LANE3_MODE=install (the default, and the only mode this kit ever passes) runs the install path
+# and stops after the import gate: the CPU stub's acceptance. LANE3_MODE=train also runs the
+# training step, for a later GPU rung; it is refused here, before any install, on a VM with no
+# NVIDIA GPU (TRAIN_REQUIRES_GPU) or with no model configured (TRAIN_MODEL_REQUIRED).
+LANE3_MODE="\${LANE3_MODE:-install}"
+case "\${LANE3_MODE}" in
+  install)
+    export CUDA_VISIBLE_DEVICES=""
+    ;;
+  train)
+    if ! command -v nvidia-smi >/dev/null 2>&1 || ! nvidia-smi -L 2>/dev/null | grep -q '^GPU [0-9]'; then
+      echo "REFUSED: TRAIN_REQUIRES_GPU: LANE3_MODE=train needs an NVIDIA GPU; nvidia-smi lists none on this VM" >&2
+      exit 1
+    fi
+    if [ -z "\${LANE3_MODEL_NAME_OR_PATH:-}" ]; then
+      echo "REFUSED: TRAIN_MODEL_REQUIRED: LANE3_MODE=train needs LANE3_MODEL_NAME_OR_PATH (the job's model:name_or_path)" >&2
+      exit 1
+    fi
+    # A glob over the whole value (a newline included), not a line-wise grep.
+    case "\${LANE3_MODEL_NAME_OR_PATH}" in
+      *[!A-Za-z0-9._/:@-]*)
+        echo "REFUSED: TRAIN_MODEL_REQUIRED: LANE3_MODEL_NAME_OR_PATH is not a plain model name or path" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "REFUSED: LANE3_MODE_INVALID: LANE3_MODE=\${LANE3_MODE}; expected install or train" >&2
+    exit 1
+    ;;
+esac
+# <<< sdlab-lane3-mode
 
 # >>> sdlab-remote-dirs
 # The kit uploads every file flat into /content (colab upload creates no remote directory).
@@ -259,6 +294,21 @@ print("SENTENCEPIECE_OK", spm.__version__, flush=True)
 ' | tee /content/lane3_out/sentencepiece.txt
 } 2>&1 | tee -a /content/lane3_out/setup.log
 
+# >>> sdlab-train-or-skip
+# The CPU stub (LANE3_MODE=install) ends its acceptance at the import gate above: it writes
+# TRAIN_SKIPPED, records train=skipped_cpu_stub (never a trained result) and still bundles the
+# install evidence. Only LANE3_MODE=train, which the mode gate admits on a GPU VM with a model
+# configured, builds the synthetic package and job and runs ai-toolkit's run.py.
+CHECKPOINT_PATH=""
+if [ "\${LANE3_MODE:-install}" != "train" ]; then
+  LANE3_TRAIN_STATE="skipped_cpu_stub"
+  echo "TRAIN_SKIPPED: cpu stub; training needs a GPU rung" | tee -a /content/lane3_out/setup.log
+else
+  LANE3_TRAIN_STATE="trained"
+  if [ -z "\${LANE3_MODEL_NAME_OR_PATH:-}" ]; then
+    echo "REFUSED: TRAIN_MODEL_REQUIRED: LANE3_MODE=train needs LANE3_MODEL_NAME_OR_PATH (the job's model:name_or_path)" >&2
+    exit 1
+  fi
 /content/venv-lane3/bin/python - << 'SYNTHEOF'
 import hashlib
 import json
@@ -291,14 +341,18 @@ for idx in (1, 2):
 (pkg / "dataset_manifest.json").write_text(json.dumps({"seed": 42, "items": items}, indent=2) + "\n", encoding="utf-8")
 SYNTHEOF
 
-cat > /content/lane3_out/synth_job.yaml << 'YAMLEOF'
+# The model comes only from LANE3_MODEL_NAME_OR_PATH (checked as a plain name or path by the mode
+# gate); this script never picks one.
+cat > /content/lane3_out/synth_job.yaml << YAMLEOF
 job: extension
 config:
   name: synth_lora
   process:
     - type: sd_trainer
       training_folder: /content/lane3_out/checkpoints
-      device: cpu
+      device: cuda:0
+      model:
+        name_or_path: "\${LANE3_MODEL_NAME_OR_PATH}"
       network:
         type: lora
         linear: 4
@@ -319,7 +373,7 @@ config:
         dtype: fp32
 YAMLEOF
 
-echo "run" > /content/lane3_out/phase.txt
+  echo "run" > /content/lane3_out/phase.txt
 # >>> sdlab-train-step
 # A failed run leaves no bundle (the script stops before tar), so its reason goes to the exec stream.
 set +e
@@ -335,18 +389,20 @@ if [ "\${TRAIN_RC}" -ne 0 ]; then
 fi
 # <<< sdlab-train-step
 
-CHECKPOINT_PATH="/content/lane3_out/checkpoints/synth_lora.safetensors"
-if [ ! -s "\${CHECKPOINT_PATH}" ]; then
-  FOUND_CKPT="\$(find /content/lane3_out/checkpoints -name '*.safetensors' -type f | head -n 1 || true)"
-  if [ -n "\${FOUND_CKPT}" ] && [ -s "\${FOUND_CKPT}" ]; then
-    cp "\${FOUND_CKPT}" "\${CHECKPOINT_PATH}"
-  else
-    echo "REFUSED: expected non-empty .safetensors checkpoint at \${CHECKPOINT_PATH}" >&2
-    exit 1
+  CHECKPOINT_PATH="/content/lane3_out/checkpoints/synth_lora.safetensors"
+  if [ ! -s "\${CHECKPOINT_PATH}" ]; then
+    FOUND_CKPT="\$(find /content/lane3_out/checkpoints -name '*.safetensors' -type f | head -n 1 || true)"
+    if [ -n "\${FOUND_CKPT}" ] && [ -s "\${FOUND_CKPT}" ]; then
+      cp "\${FOUND_CKPT}" "\${CHECKPOINT_PATH}"
+    else
+      echo "REFUSED: TRAIN_CHECKPOINT_MISSING: expected a non-empty .safetensors checkpoint at \${CHECKPOINT_PATH}" >&2
+      exit 1
+    fi
   fi
 fi
+# <<< sdlab-train-or-skip
 
-/content/venv-lane3/bin/python - "\${PINNED_AI_TOOLKIT_COMMIT}" "\${OVERRIDE_SHA}" "\${CHECKPOINT_PATH}" << 'WINPYEOF'
+/content/venv-lane3/bin/python - "\${PINNED_AI_TOOLKIT_COMMIT}" "\${OVERRIDE_SHA}" "\${LANE3_MODE:-install}" "\${LANE3_TRAIN_STATE}" "\${CHECKPOINT_PATH}" << 'WINPYEOF'
 import hashlib
 import json
 import subprocess
@@ -355,7 +411,9 @@ from pathlib import Path
 
 ai_commit = sys.argv[1]
 override_sha = sys.argv[2]
-ckpt_path = sys.argv[3]
+lane3_mode = sys.argv[3]
+train_state = sys.argv[4]
+ckpt_path = sys.argv[5] or None
 sys_py = subprocess.run(["/usr/bin/python3", "--version"], capture_output=True, text=True, check=False).stdout.strip().split()[-1]
 uv_ver = subprocess.run(["uv", "--version"], capture_output=True, text=True, check=False).stdout.strip()
 py_sha = "sha256:" + hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest()
@@ -366,6 +424,8 @@ rec = {
     "uv": uv_ver,
     "ai_toolkit_commit": ai_commit,
     "override_sha256": f"sha256:{override_sha}",
+    "lane3_mode": lane3_mode,
+    "train": train_state,
     "checkpoint_path": ckpt_path,
 }
 Path("/content/lane3_out/vm_window.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
@@ -403,6 +463,7 @@ GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
 EMIT_REMOTE_SCRIPT=""
 EMIT_REQUESTED=0
+TRAIN_REQUESTED=0
 SESSION_ARGS=()
 
 while [ "$#" -gt 0 ]; do
@@ -416,6 +477,7 @@ while [ "$#" -gt 0 ]; do
     --wall-s) SESSION_ARGS+=("$1"); WALL_S="$2"; shift 2 ;;
     --grace-s) SESSION_ARGS+=("$1"); GRACE_S="$2"; shift 2 ;;
     --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
+    --train) SESSION_ARGS+=("$1"); TRAIN_REQUESTED=1; shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -439,6 +501,18 @@ if [ "${EMIT_REQUESTED}" = "1" ]; then
   lane3_remote_env "${PINNED_OVERRIDE_SHA}" > "${EMIT_REMOTE_SCRIPT}.env"
   echo "REMOTE_SCRIPT_EMITTED ${EMIT_REMOTE_SCRIPT} env=${EMIT_REMOTE_SCRIPT}.env"
   exit 0
+fi
+
+# --train asks for the training step (LANE3_MODE=train). This kit is the CPU install-path stub and
+# never runs it: training needs a GPU card and a model, and the GPU rung that supplies both is
+# designed separately. Refused before any check that reads the disk and before any colab call.
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  if colab_card_is_cpu "${CARD}"; then
+    echo "REFUSED: TRAIN_REQUIRES_GPU: --train on card ${CARD}; training needs a GPU rung" >&2
+    exit 2
+  fi
+  echo "REFUSED: TRAIN_MODEL_REQUIRED: --train needs a model, and this kit takes none; training is a separate GPU rung" >&2
+  exit 2
 fi
 
 # The pre-built wheels live outside the repository; there is no default location.
