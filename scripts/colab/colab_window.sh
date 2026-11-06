@@ -741,6 +741,15 @@ REFUSAL_CODES = (
     "DATASET_SHA_MISMATCH",
     "JOB_TEMPLATE_INVALID",
     "HF_READ_TOKEN_MISSING",
+    "TRAIN_SAMPLE_MISSING",
+    "TRAIN_WALL_REQUIRED",
+    "TRAIN_CAP_REQUIRED",
+    "TRAIN_WALL_TOO_SHORT",
+    "MODEL_AUTH_FAILED",
+    "MODEL_REVISION_NOT_FOUND",
+    "MODEL_METADATA_FAILED",
+    "HF_TOKEN_STAGING_FAILED",
+    "HF_TOKEN_SHRED_FAILED",
 )
 # A refusal code comes only from a line the kit itself emits, starting `REFUSED: <CODE>`, in the
 # files those lines are written to: guards.log (rig side), the exec stream in vitals.log, and the

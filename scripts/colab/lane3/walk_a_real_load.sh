@@ -18,8 +18,11 @@
 # bound, not the peak.
 # Estimate for the grant ask: VRAM up to the whole card (32 GB, then OOM); 10-20 min (install from
 # a warm uv cache, model load from E:); --wall-s 1800 is the cap to ask for.
-# Usage: walk_a_real_load.sh --wheel-dir <dir> --hf-home <dir> --dataset-dir <dir> \
-#          --evidence-root <dir> --wall-s <s> [--check | --install-only]
+# Sandbox: no network, HF cache read-only, HF_HUB_OFFLINE=1; `timeout --kill-after` binds the wall;
+# the sampler kills by PID when its own VRAM use passes 28 GiB above the idle baseline, MemAvailable < 2 GiB or an OOM line + 60 s.
+# Usage (in order): --check, then --prepare (network on, no GPU), then the GPU run (no mode flag):
+#   walk_a_real_load.sh --wheel-dir <dir> --hf-home <dir> --dataset-dir <dir> \
+#     --evidence-root /mnt/e/<dir> --wall-s <s> [--check | --prepare | --offline-install-check]
 set -euo pipefail
 # shellcheck source=scripts/colab/lane3/walk_common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/walk_common.sh"

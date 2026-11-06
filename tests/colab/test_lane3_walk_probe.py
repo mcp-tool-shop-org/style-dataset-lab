@@ -212,3 +212,53 @@ def test_walk_harnesses_refuse_missing_arguments(tmp_path: Path, walk: str) -> N
     res = subprocess.run([_bash(), script, "--wheel-dir", "w", "--hf-home", str(tmp_path), "--dataset-dir", "d",
                           "--evidence-root", "e", "--wall-s", "soon"], capture_output=True, text=True, check=False)
     assert res.returncode == 2 and "REFUSED: WALK_ARG_INVALID: --wall-s soon" in res.stderr
+
+
+def test_sampler_reads_vram_and_kills_over_the_ceiling(tmp_path: Path) -> None:
+    proc = tmp_path / "proc"
+    _proc(proc, 100, 1, 1000)
+    _meminfo(proc, 20_000_000)
+    killed: list[int] = []
+    readings = iter([("2026/11/06 08:00:00.000", 20000), ("2026/11/06 08:00:01.000", 31000)])
+    ns = argparse.Namespace(proc=str(proc), root_pid=100, train_log=str(tmp_path / "t.log"), out=str(tmp_path / "h.csv"),
+                            interval=0.0, oom_grace_s=60.0, mem_floor_gib=2.0, wall_s=1000.0,
+                            nvidia_smi="nvidia-smi", vram_csv=str(tmp_path / "v.csv"), vram_ceiling_mib=28672,
+                            vram_baseline_mib=2100)
+    ticks = iter([0.0, 0.0, 1.0])
+    wp.run_sample(ns, clock=lambda: next(ticks), sleep=lambda s: None, kill=lambda p, s: killed.append(p),
+                  vram_fn=lambda smi: next(readings))
+    assert killed == [100]
+    assert "VRAM_CEILING: memory.used 31000 MiB - baseline 2100 MiB > ceiling 28672 MiB" in (tmp_path / "h.stop.txt").read_text(encoding="utf-8")
+    assert (tmp_path / "v.csv").read_text(encoding="utf-8").splitlines() == ["2026/11/06 08:00:00.000, 20000",
+                                                                            "2026/11/06 08:00:01.000, 31000"]
+
+
+def test_query_vram_parses_or_gives_none() -> None:
+    assert wp.query_vram("smi", run=lambda c, **k: Res(0, "2026/11/06 08:00:00.000, 9504\n")) == ("2026/11/06 08:00:00.000", 9504)
+    assert wp.query_vram("smi", run=lambda c, **k: Res(0, "garbage\n")) is None
+    assert wp.query_vram("smi", run=lambda c, **k: Res(9, "")) is None
+
+
+@pytest.mark.parametrize("walk", ["walk_a_real_load.sh", "walk_b_quantised.sh"])
+def test_walk_evidence_must_be_on_the_persistent_drive(tmp_path: Path, walk: str) -> None:
+    res = subprocess.run([_bash(), (LANE3_DIR / walk).as_posix(), "--wheel-dir", "w", "--hf-home", str(tmp_path),
+                          "--dataset-dir", "d", "--evidence-root", "/tmp/ev", "--wall-s", "60"],
+                         capture_output=True, text=True, check=False)
+    assert res.returncode == 2 and "REFUSED: WALK_ARG_INVALID: --evidence-root /tmp/ev must be under /mnt/e/" in res.stderr
+
+
+def test_simple_index_links_every_wheel(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    wh = tmp_path / "wh"
+    wh.mkdir()
+    for f in ("torch-2.15.0+cu130-cp312-cp312-manylinux_2_28_x86_64.whl", "cuda_toolkit-13.2.2-py2.py3-none-any.whl",
+              "Jinja2-3.1.6-py3-none-any.whl", "notes.txt"):
+        (wh / f).write_bytes(b"x")
+    out = tmp_path / "simple"
+    assert wp.main(["simple-index", "--wheelhouse", str(wh), "--link-root", "/content/.walk_wheelhouse", "--out", str(out)]) == 0
+    assert sorted(p.name for p in out.iterdir()) == ["cuda-toolkit", "jinja2", "torch"]
+    assert 'href="file:///content/.walk_wheelhouse/torch-2.15.0+cu130-cp312-cp312-manylinux_2_28_x86_64.whl"' in (
+        out / "torch" / "index.html").read_text(encoding="utf-8")
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert wp.main(["simple-index", "--wheelhouse", str(empty), "--link-root", "/x", "--out", str(tmp_path / "s2")]) == 2
+    assert "REFUSED: WALK_INPUT_MISSING" in capsys.readouterr().err

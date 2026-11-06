@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.server
+import threading
 import importlib
 import json
 import os
@@ -457,8 +459,52 @@ def _bash() -> str:
     return found
 
 
+class _HubAPI(http.server.BaseHTTPRequestHandler):
+    """GET /api/models/<repo>/revision/<rev>: 200 for the pinned revision with the right bearer,
+    401 for any other bearer, 404 (revision) for any other revision."""
+
+    def do_GET(self) -> None:  # noqa: N802 - http.server's name
+        if self.headers.get("Authorization") != f"Bearer {TOKEN}":
+            self._send(401, {"error": "Invalid credentials in Authorization header"})
+        elif not self.path.endswith(f"/revision/{REVISION}"):
+            self._send(404, {"error": "Invalid rev id: not found"})
+        else:
+            self._send(200, {"id": "Qwen/Qwen-Image", "sha": REVISION})
+
+    def _send(self, code: int, body: dict) -> None:
+        data = json.dumps(body).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def log_message(self, *_a: object) -> None:
+        return None
+
+
+@pytest.fixture(scope="module")
+def hub_api() -> str:
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _HubAPI)
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    yield f"http://127.0.0.1:{srv.server_address[1]}"
+    srv.shutdown()
+
+
+HUB_API: dict[str, str] = {}
+
+
+@pytest.fixture(autouse=True)
+def _hub_api_url(hub_api: str) -> None:
+    HUB_API["url"] = hub_api
+
+
 def _rung_env(tmp_path: Path) -> tuple[Path, dict[str, str], Path]:
     _, state_dir, env = fc.make_fake_colab_env(tmp_path)
+    (tmp_path / "xdg").mkdir(mode=0o700)
+    env["XDG_RUNTIME_DIR"] = str(tmp_path / "xdg")
+    env["SDLAB_TEST_HF_ENDPOINT"] = HUB_API["url"]
     src, manifest = make_dataset(tmp_path)
     env.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
@@ -478,19 +524,30 @@ def _rung_env(tmp_path: Path) -> tuple[Path, dict[str, str], Path]:
 
 
 def _assert_token_nowhere(out_dir: Path) -> None:
+    """The planted token is in no out-dir file, no bundle member, and none of the fake CLI's records:
+    its exec history (the code with --env lines, as google-colab-cli writes it) and its argv log."""
     for f in out_dir.rglob("*"):
         if f.is_file():
             assert TOKEN.encode() not in f.read_bytes(), f
     if (out_dir / "lane3_stub_bundle.tar.gz").exists():
         for name, data in _bundle(out_dir).items():
             assert TOKEN.encode() not in data, name
+    state = out_dir.parent / "colab_state"
+    histories = list((state / "history").glob("*.jsonl"))
+    assert histories, "the fake CLI wrote no exec history"
+    for f in [*histories, state / "argv.log"]:
+        assert TOKEN.encode() not in f.read_bytes(), f
+    # The token file was shredded on the VM, and the rig's private copy is gone.
+    assert not (state / "content" / "lane3_hf_read_token").exists()
+    assert not list((out_dir.parent / "xdg").glob("sdlab-l3-tok.*"))
 
 
 def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: str = "out") -> tuple[subprocess.CompletedProcess[str], Path]:
     out_dir = tmp_path / out
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
-            "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "1800", *extra]
+            "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
+            "--wall-s", "2900", "--cap", "5", *extra]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     return res, out_dir
 
@@ -576,12 +633,13 @@ def test_rung_mid_run_failure_downloads_what_was_copied_off(tmp_path: Path) -> N
     ("drop", "code"),
     [("--model-revision", "TRAIN_MODEL_REVISION_REQUIRED"), ("--host-ram-required-gib", "HOST_RAM_THRESHOLD_MISSING"),
      ("--download-max-seconds", "DOWNLOAD_LIMIT_MISSING"), ("--dataset-dir", "TRAIN_DATASET_REQUIRED"),
-     ("--model", "TRAIN_MODEL_REQUIRED"), ("token", "HF_READ_TOKEN_MISSING")],
+     ("--model", "TRAIN_MODEL_REQUIRED"), ("token", "HF_READ_TOKEN_MISSING"),
+     ("--wall-s", "TRAIN_WALL_REQUIRED"), ("--cap", "TRAIN_CAP_REQUIRED")],
 )
 def test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call(tmp_path: Path, drop: str, code: str) -> None:
     state_dir, env, src = _rung_env(tmp_path)
     args = {"--model": "Qwen/Qwen-Image", "--model-revision": REVISION, "--host-ram-required-gib": "96.5",
-            "--download-max-seconds": "1800", "--dataset-dir": fc._to_posix(src)}
+            "--download-max-seconds": "60", "--dataset-dir": fc._to_posix(src), "--wall-s": "2900", "--cap": "5"}
     if drop == "token":
         env.pop("HF_TOKEN_GGUF_READ")
     else:
@@ -617,3 +675,218 @@ def test_read_token_reaches_only_the_download_and_appears_in_no_file(tmp_path: P
                          "--model", "Qwen/Qwen-Image", "--model-revision", REVISION, "--host-ram-required-gib", "1",
                          "--download-max-seconds", "60"], env=env, capture_output=True, text=True, check=False)
     assert em.returncode == 0 and TOKEN not in (tmp_path / "emit.sh.env").read_text(encoding="utf-8")
+
+
+# --- fix round 2 -------------------------------------------------------------------------------
+
+
+def test_kit_refuses_a_wall_that_cannot_cover_the_rung(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    res, _ = _launch(tmp_path, env, src, "--wall-s", "1200")
+    assert res.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s 1200 minus grace 60 must cover 2760 s" in res.stderr
+    assert not (state_dir / "card.txt").exists()
+
+
+def test_rung_without_a_sample_image_is_refused(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    env["FAKE_VM_TRAIN"] = "no_sample"
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "TRAIN_SAMPLE_MISSING" and win["trained"] is False
+    _assert_token_nowhere(out_dir)
+
+
+def _rung_processes(root: Path) -> list[int]:
+    return lr.rung_pids(root, skip=(os.getpid(),))
+
+
+def test_rig_side_kill_still_brings_back_the_outputs(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_VM_TRAIN": "hang_after_save", "STALL_S": "4", "SETUP_STALL_S": "4"})
+    res, out_dir = _launch(tmp_path, env, src)
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert "BUNDLE_AFTER_FAILURE: downloaded" in guards, guards[-2000:]
+        assert "BUNDLE_NOW: killed" in (out_dir / "bundle_now.log").read_text(encoding="utf-8")
+        members = _bundle(out_dir)
+        assert members["rung_outputs/rustline_style_v5/rustline_style_v5_000000020.safetensors"].startswith(b"FAKE-LORA")
+        assert "rung_outputs/rustline_style_v5/samples/1762400000000__000000020_0.jpg" in members
+        assert json.loads(members["vm_window.json"])["train"] == "failed"
+        assert _rung_processes(content) == []
+        _assert_token_nowhere(out_dir)
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def test_kit_model_check_refuses_a_dead_token_before_any_spend(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env["HF_TOKEN_GGUF_READ"] = "hf_" + "Dead" * 9
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    assert "REFUSED: MODEL_AUTH_FAILED: Qwen/Qwen-Image@" in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert not (state_dir / "card.txt").exists()
+    res2, out2 = _launch(tmp_path, env | {"HF_TOKEN_GGUF_READ": TOKEN}, src, "--model-revision", "f" * 40, out="out2")
+    assert "REFUSED: MODEL_REVISION_NOT_FOUND: " in (out2 / "guards.log").read_text(encoding="utf-8")
+
+
+def test_check_model_api_names_each_failure() -> None:
+    import io
+    import urllib.error
+
+    def http_err(code: int, body: str):
+        def opener(req, timeout):  # noqa: ANN001
+            assert "hf_" not in req.full_url
+            raise urllib.error.HTTPError(req.full_url, code, "x", {}, io.BytesIO(body.encode()))
+        return opener
+
+    for code, body, name in ((401, "", "MODEL_AUTH_FAILED"), (403, "", "MODEL_AUTH_FAILED"),
+                             (404, '{"error": "Invalid rev id"}', "MODEL_REVISION_NOT_FOUND"),
+                             (404, '{"error": "Repository not found"}', "MODEL_METADATA_FAILED"),
+                             (502, "", "MODEL_METADATA_FAILED")):
+        with pytest.raises(lr.Refusal) as exc:
+            lr.check_model_api("Qwen/Qwen-Image", REVISION, TOKEN, opener=http_err(code, body))
+        assert exc.value.code == name and TOKEN not in str(exc.value)
+
+    def down(req, timeout):  # noqa: ANN001
+        raise urllib.error.URLError("Name or service not known")
+
+    with pytest.raises(lr.Refusal) as exc:
+        lr.check_model_api("a/b", REVISION, None, opener=down)
+    assert exc.value.code == "MODEL_METADATA_FAILED"
+
+    class Resp(io.BytesIO):
+        def __enter__(self):  # noqa: ANN204
+            return self
+
+        def __exit__(self, *a: object) -> None:
+            return None
+
+    with pytest.raises(lr.Refusal) as exc:
+        lr.check_model_api("a/b", REVISION, TOKEN, opener=lambda r, timeout: Resp(b'{"sha": "other"}'))
+    assert exc.value.code == "MODEL_REVISION_NOT_FOUND"
+    assert lr.check_model_api("a/b", REVISION, TOKEN, opener=lambda r, timeout: Resp(json.dumps({"sha": REVISION}).encode()))["ok"]
+
+
+def test_model_check_cli_reads_the_token_from_the_environment(monkeypatch: pytest.MonkeyPatch,
+                                                              capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.setenv("SDLAB_TEST_HF_ENDPOINT", HUB_API["url"])
+    monkeypatch.setenv("HF_TOKEN_GGUF_READ", TOKEN)
+    assert lr.main(["model-check", "--repo", "Qwen/Qwen-Image", "--revision", REVISION]) == 0
+    assert "MODEL_CHECK_OK" in capsys.readouterr().out
+    monkeypatch.delenv("HF_TOKEN_GGUF_READ")
+    assert lr.main(["model-check", "--repo", "Qwen/Qwen-Image", "--revision", REVISION]) == 1
+    assert "REFUSED: MODEL_AUTH_FAILED" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(("mode", "code"), [("401", "MODEL_AUTH_FAILED"), ("404rev", "MODEL_REVISION_NOT_FOUND"),
+                                            ("net", "MODEL_METADATA_FAILED")])
+def test_vm_metadata_failures_are_named(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                        capsys: pytest.CaptureFixture[str], mode: str, code: str) -> None:
+    hub = _fake_mod("huggingface_hub")
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
+    _dl_env(monkeypatch, FAKE_HF_INFO_ERROR=mode)
+    assert lr.run_download(_dl_args(tmp_path)) == 1
+    err = capsys.readouterr().err
+    assert f"REFUSED: {code}: " in err and "Traceback" not in err
+    assert json.loads((tmp_path / "dl.json").read_text(encoding="utf-8"))["refusal"] == code
+
+
+def test_download_hard_limit_kills_a_stalled_download(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                                      capsys: pytest.CaptureFixture[str]) -> None:
+    _dl_env(monkeypatch, FAKE_HF_STALL="1")
+    rc = lr.run_download(_dl_args(tmp_path, max_seconds="2", probe_seconds=100.0, probe_bytes=10 * GIB),
+                         expected_fn=lambda r, v, t: 64 * 1024**2)
+    rec = json.loads((tmp_path / "dl.json").read_text(encoding="utf-8"))
+    assert rc == 1 and rec["refusal"] == "DOWNLOAD_TOO_SLOW" and rec["hard_limit_hit"] is True
+    assert "hard limit" in capsys.readouterr().err
+
+
+def test_download_offline_reads_only_the_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _dl_env(monkeypatch, HF_HUB_OFFLINE="1")
+
+    def no_metadata(*_a: object) -> int:
+        raise AssertionError("no metadata call when the hub is offline")
+
+    assert lr.run_download(_dl_args(tmp_path), expected_fn=no_metadata) == 0
+    rec = json.loads((tmp_path / "dl.json").read_text(encoding="utf-8"))
+    assert rec["offline"] is True and rec["probe"] is None and rec["snapshot_path"]
+
+
+def test_copy_off_survives_a_vanished_file_and_the_final_sweep_catches_up(tmp_path: Path,
+                                                                           monkeypatch: pytest.MonkeyPatch,
+                                                                           capsys: pytest.CaptureFixture[str]) -> None:
+    watch, bundle = tmp_path / "train", tmp_path / "bundle"
+    watch.mkdir()
+    bundle.mkdir()
+    (watch / "a_000000020.safetensors").write_bytes(b"A")
+    (watch / "b.jpg").write_bytes(b"B")
+    real_copy = shutil.copy2
+    calls = {"n": 0}
+
+    def flaky(src, dst):  # noqa: ANN001
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise FileNotFoundError(f"{src} vanished")
+        return real_copy(src, dst)
+
+    monkeypatch.setattr(lr.shutil, "copy2", flaky)
+    manifest = bundle / "manifest.jsonl"
+    assert lr.copy_off_once(watch, bundle, manifest, {}, final=True) == 1
+    assert "COPY_OFF_SKIPPED a_000000020.safetensors: FileNotFoundError" in capsys.readouterr().out
+    # The final sweep, in its own process run (--final-only), takes what is missing and nothing twice.
+    assert lr.main(["copy-off", "--final-only", "--watch", str(watch), "--bundle", str(bundle),
+                    "--manifest", str(manifest)]) == 0
+    paths = sorted(json.loads(x)["path"] for x in manifest.read_text(encoding="utf-8").splitlines())
+    assert paths == ["a_000000020.safetensors", "b.jpg"]
+    assert lr.main(["copy-off", "--watch", str(watch), "--bundle", str(bundle), "--manifest", str(manifest)]) == 2
+
+
+def test_bundle_now_kills_sweeps_and_tars(tmp_path: Path) -> None:
+    root = tmp_path / "content"
+    out = root / "lane3_out"
+    out.mkdir(parents=True)
+    (out / "setup.log").write_text("x\n", encoding="utf-8")
+    (root / "lane3_train" / "job").mkdir(parents=True)
+    (root / "lane3_train" / "job" / "job_000000020.safetensors").write_bytes(b"CK")
+    proc = tmp_path / "proc"
+    for pid, cmd in ((11, f"bash {root}/remote_lane3_stub.sh"), (12, f"python {root}/ai-toolkit/run.py job.yaml"),
+                     (13, "python unrelated.py"), (14, f"python {root}/lane3_rung.py copy-off --pid 12")):
+        (proc / str(pid)).mkdir(parents=True)
+        (proc / str(pid) / "cmdline").write_bytes(cmd.replace(" ", "\0").encode())
+    (proc / "15").mkdir()
+    (proc / "self").mkdir()
+    killed: list[int] = []
+
+    def kill(pid: int, _sig: int) -> None:
+        killed.append(pid)
+        if pid == 14:
+            raise ProcessLookupError
+
+    ns = argparse.Namespace(content=str(root), rc=93, settle_s=0.0)
+    assert lr.run_bundle_now(ns, kill=kill, proc=proc) == 0
+    assert sorted(killed) == [11, 12, 14]
+    with tarfile.open(root / "lane3_stub_bundle.tar.gz") as tf:
+        names = {m.name.removeprefix("./") for m in tf.getmembers()}
+    assert "rung_outputs/job/job_000000020.safetensors" in names and "vm_window.json" in names
+    assert json.loads((out / "vm_window.json").read_text(encoding="utf-8"))["train_exit_code"] == 93
+    # A finished script already bundled: nothing to kill, the bundle is kept.
+    assert lr.run_bundle_now(ns, kill=kill, proc=tmp_path / "empty") == 0
+    assert lr.run_bundle_now(argparse.Namespace(content=str(tmp_path / "nothing"), rc=1, settle_s=0.0),
+                             kill=kill, proc=tmp_path / "empty") == 1
+
+
+def test_bundle_now_cell_needs_its_env_and_runs_lane3_rung(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    sys.path.insert(0, str(COLAB_DIR))
+    import lane3_bundle_now as bn
+
+    assert bn.bundle_now({}) == 2
+    root = tmp_path / "content"
+    (root / "lane3_out").mkdir(parents=True)
+    shutil.copy(COLAB_DIR / "lane3_rung.py", root / "lane3_rung.py")
+    assert bn.bundle_now({**os.environ, "SDLAB_CONTENT": str(root), "SDLAB_BUNDLE_RC": "143"}) == 0
+    assert "SDLAB_BUNDLE_NOW_RC=0" in capsys.readouterr().out
+    assert (root / "lane3_stub_bundle.tar.gz").is_file()

@@ -32,11 +32,12 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="2a0c240e7d2c623b059c085a85114fb5126fbd4f70b1efd72464b03b52ddabcf"
-PINNED_LANE3_RUNG_SHA="212abe4e8b85ac25906d978d002f06a39e76f3c5819745527d1d992ed1e135e2"
+PINNED_COLAB_WINDOW_SHA="9058334198ec1225d71296c809592727089789960466b70e93df35026239187e"
+PINNED_LANE3_RUNG_SHA="18a020977016e115c88a8ad0d50ed39d7128ff8bad0bf7a5be6ee9b5b5a3d9a6"
+PINNED_BUNDLE_NOW_SHA="8e47722109538bdc863e1bd948f69f471a5cb609dc0ffcda873c0ef7afde3211"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="45ca36745da0775a71e225f7d69098e4358c8ecf8328c50402fc04049adcb4c7"
+PINNED_SELF_SHA="2277f97f32f6db131186cc764855335532b52cf5f2257914dc00676053f2cb2a"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -52,10 +53,19 @@ lane3_write_remote_script() {
 set -euo pipefail
 
 # >>> sdlab-hf-token
-# The GPU rung's HF read token (HF_TOKEN_GGUF_READ, passed by the kit in train mode only) is taken
-# out of the environment here, before anything else runs, and handed to the model download step
-# alone. Logs are scrubbed of hf_ tokens (launch_guards.py) before the bundle is made.
-LANE3_HF_READ_TOKEN="\${HF_TOKEN_GGUF_READ:-}"
+# The GPU rung's HF read token reaches the VM only as a file the kit uploads
+# (/content/lane3_hf_read_token; never --env or argv, which the colab CLI writes into its history).
+# It is read into a shell variable and shredded here, before anything else runs, and handed to the
+# model download step's environment alone. Logs are scrubbed of hf_ tokens before bundling.
+LANE3_HF_READ_TOKEN=""
+if [ -f /content/lane3_hf_read_token ]; then
+  LANE3_HF_READ_TOKEN="\$(cat /content/lane3_hf_read_token)"
+  shred -u /content/lane3_hf_read_token 2>/dev/null || rm -f /content/lane3_hf_read_token
+  if [ -e /content/lane3_hf_read_token ]; then
+    echo "REFUSED: HF_TOKEN_SHRED_FAILED: /content/lane3_hf_read_token is still on the VM" >&2
+    exit 1
+  fi
+fi
 unset HF_TOKEN_GGUF_READ HF_TOKEN HUGGING_FACE_HUB_TOKEN
 # <<< sdlab-hf-token
 
@@ -401,6 +411,10 @@ COPY_PID=\$!
 wait "\${TRAIN_PID}"
 TRAIN_RC=\$?
 wait "\${COPY_PID}"
+# A final sweep of the training folder, in its own process: a copy-off watcher that died mid-run
+# leaves nothing behind.
+"\${LANE3_PY}" /content/lane3_rung.py copy-off --final-only --watch "\${LANE3_TRAINING_FOLDER}" \
+  --bundle /content/lane3_out/rung_outputs --manifest /content/lane3_out/rung_outputs/manifest.jsonl
 set -e
 if [ "\${TRAIN_RC}" -ne 0 ]; then
   echo "--- last 40 lines of train.log ---"
@@ -416,6 +430,10 @@ fi
     exit 1
   fi
   CHECKPOINT_PATH="\${FOUND_CKPT}"
+  if ! grep -Eq '"path": "[^"]+\.(png|jpg|jpeg|webp)"' /content/lane3_out/rung_outputs/manifest.jsonl; then
+    echo "REFUSED: TRAIN_SAMPLE_MISSING: no sample image was copied off to lane3_out/rung_outputs" >&2
+    exit 1
+  fi
   "\${LANE3_PY}" /content/lane3_rung.py finish --lane3-out /content/lane3_out
 # <<< sdlab-lane3-train
 fi
@@ -522,6 +540,12 @@ LANE3_DISK_REQUIRED_GIB="75"
 LANE3_GPU_SMOKE_SECONDS="5"
 LANE3_DOWNLOAD_PROBE_SECONDS="60"
 LANE3_DOWNLOAD_PROBE_BYTES="2147483648"
+# The rung's wall must cover, after the grace: the download limit the request sets, the install
+# (uv, CPython, the 158-pin lock, ai-toolkit; 900 s allowed) and the training work (model load,
+# latent and text-embedding caching, 20 steps, one save, one six-image 1024^2 grid at 25 steps with
+# true CFG; 1800 s allowed, against the consult's 12-19 min estimate for the whole rung).
+LANE3_INSTALL_ALLOWANCE_S="900"
+LANE3_TRAIN_ALLOWANCE_S="1800"
 
 CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane3-stub-$(date -u +%Y%m%dT%H%M%SZ)"
@@ -534,6 +558,8 @@ MARGIN="${MARGIN:-0.01}"
 EMIT_REMOTE_SCRIPT=""
 EMIT_REQUESTED=0
 TRAIN_REQUESTED=0
+WALL_SET=0
+CAP_SET=0
 TRAIN_MODEL=""
 TRAIN_MODEL_REVISION=""
 TRAIN_HOST_RAM_REQUIRED_GIB=""
@@ -548,8 +574,8 @@ while [ "$#" -gt 0 ]; do
     --session) SESSION_ARGS+=("$1"); SESSION="$2"; shift 2 ;;
     --out-dir) SESSION_ARGS+=("$1"); OUT_DIR="$2"; shift 2 ;;
     --wheel-dir) SESSION_ARGS+=("$1"); WHEEL_DIR="$2"; shift 2 ;;
-    --cap) SESSION_ARGS+=("$1"); CAP="$2"; shift 2 ;;
-    --wall-s) SESSION_ARGS+=("$1"); WALL_S="$2"; shift 2 ;;
+    --cap) SESSION_ARGS+=("$1"); CAP="$2"; CAP_SET=1; shift 2 ;;
+    --wall-s) SESSION_ARGS+=("$1"); WALL_S="$2"; WALL_SET=1; shift 2 ;;
     --grace-s) SESSION_ARGS+=("$1"); GRACE_S="$2"; shift 2 ;;
     --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
     --train) TRAIN_REQUESTED=1; shift ;;
@@ -610,6 +636,20 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: HF_READ_TOKEN_MISSING: --train needs a Hugging Face read token in HF_TOKEN_GGUF_READ (environment only)" >&2
     exit 2
   fi
+  if [ "${WALL_SET}" != "1" ]; then
+    echo "REFUSED: TRAIN_WALL_REQUIRED: --train needs an explicit --wall-s (the CPU stub's default does not apply)" >&2
+    exit 2
+  fi
+  if [ "${CAP_SET}" != "1" ]; then
+    echo "REFUSED: TRAIN_CAP_REQUIRED: --train needs an explicit --cap (the CPU stub's default does not apply)" >&2
+    exit 2
+  fi
+  TRAIN_NEED_S="$(( TRAIN_DOWNLOAD_MAX_SECONDS + LANE3_INSTALL_ALLOWANCE_S + LANE3_TRAIN_ALLOWANCE_S ))"
+  if ! [[ "${WALL_S}" =~ ^[0-9]+$ ]] || ! [[ "${GRACE_S}" =~ ^[0-9]+$ ]] \
+    || [ "$(( WALL_S - GRACE_S ))" -lt "${TRAIN_NEED_S}" ]; then
+    echo "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s ${WALL_S} minus grace ${GRACE_S} must cover ${TRAIN_NEED_S} s (download limit ${TRAIN_DOWNLOAD_MAX_SECONDS} + install ${LANE3_INSTALL_ALLOWANCE_S} + train ${LANE3_TRAIN_ALLOWANCE_S})" >&2
+    exit 2
+  fi
   if [ -z "${DATASET_DIR}" ]; then
     echo "REFUSED: TRAIN_DATASET_REQUIRED: --train needs --dataset-dir <dir> holding the images listed in scripts/colab/lane3/rung-dataset.json" >&2
     exit 2
@@ -652,6 +692,7 @@ RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
 CLASSIFIER_PY="${SCRIPT_DIR}/classify_install_log.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 RUNG_PY="${SCRIPT_DIR}/lane3_rung.py"
+BUNDLE_NOW_PY="${SCRIPT_DIR}/lane3_bundle_now.py"
 RUNG_YAML="${SCRIPT_DIR}/lane3/rung-qwen-image.yaml"
 RUNG_DATASET_JSON="${SCRIPT_DIR}/lane3/rung-dataset.json"
 # Test hooks: a fixture dataset manifest, a short download probe, a disk threshold and a short GPU
@@ -680,6 +721,8 @@ PIN_OVERRIDE_VARS=(
   EXPECTED_LANE3_RUNG_SHA
   EXPECTED_RUNG_YAML_SHA
   EXPECTED_RUNG_DATASET_SHA
+  EXPECTED_BUNDLE_NOW_SHA
+  SDLAB_TEST_HF_ENDPOINT
   SDLAB_TEST_RUNG_DATASET_MANIFEST
   SDLAB_TEST_DOWNLOAD_PROBE_SECONDS
   SDLAB_TEST_DISK_REQUIRED_GIB
@@ -696,6 +739,7 @@ EXP_SELF_SHA="${PINNED_SELF_SHA}"
 EXP_RUNG_SHA="${PINNED_LANE3_RUNG_SHA}"
 EXP_RUNG_YAML_SHA="${PINNED_RUNG_YAML_SHA}"
 EXP_RUNG_DATASET_SHA="${PINNED_RUNG_DATASET_SHA}"
+EXP_BUNDLE_NOW_SHA="${PINNED_BUNDLE_NOW_SHA}"
 if [ "${TEST_MODE}" = "1" ]; then
   EXP_OVERRIDE_SHA="${EXPECTED_OVERRIDE_SHA:-${EXP_OVERRIDE_SHA}}"
   EXP_LOCAL_WHEELS_SHA="${EXPECTED_LOCAL_WHEELS_MANIFEST_SHA:-${EXP_LOCAL_WHEELS_SHA}}"
@@ -707,6 +751,7 @@ if [ "${TEST_MODE}" = "1" ]; then
   EXP_RUNG_SHA="${EXPECTED_LANE3_RUNG_SHA:-${EXP_RUNG_SHA}}"
   EXP_RUNG_YAML_SHA="${EXPECTED_RUNG_YAML_SHA:-${EXP_RUNG_YAML_SHA}}"
   EXP_RUNG_DATASET_SHA="${EXPECTED_RUNG_DATASET_SHA:-${EXP_RUNG_DATASET_SHA}}"
+  EXP_BUNDLE_NOW_SHA="${EXPECTED_BUNDLE_NOW_SHA:-${EXP_BUNDLE_NOW_SHA}}"
 fi
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
@@ -719,6 +764,7 @@ SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${RUNG_PY}=${EXP_RUNG_SHA}" \
   "${RUNG_YAML}=${EXP_RUNG_YAML_SHA}" \
   "${RUNG_DATASET_JSON}=${EXP_RUNG_DATASET_SHA}" \
+  "${BUNDLE_NOW_PY}=${EXP_BUNDLE_NOW_SHA}" \
   "${SELF_SH}=${EXP_SELF_SHA}")"
 
 OPENED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -727,19 +773,23 @@ SESSION_OPENED=0
 WALL_WATCHER_PID=""
 EXEC_PID=""
 EXEC_STARTED=0
+TOKEN_DIR=""
 
-# lane3_download_bundle_after_failure <rc>: a train-mode remote script bundles lane3_out on every
-# exit (its EXIT trap), so after a failed or stopped exec the kit still downloads whatever the
-# bundle holds: the checkpoints and samples copied off so far and the logs. The attempt writes no
-# REFUSED line, so the window's refusal stays the one that stopped the run.
+# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, run lane3_bundle_now.py
+# on the VM first. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec: the
+# VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
+# training folder, writes the failure record and tars lane3_out. Then the bundle is downloaded:
+# whatever the run had saved. Nothing here writes a REFUSED line, so the window's refusal stays the
+# one that stopped the run.
 lane3_download_bundle_after_failure() {
   local rc="$1"
   local dl_out=""
   local dl_rc=0
   local dst="${OUT_DIR}/lane3_stub_bundle.tar.gz"
+  colab exec -s "${SESSION}" -f "${BUNDLE_NOW_PY}" --timeout 300 --env "SDLAB_CONTENT=/content" \
+    --env "SDLAB_BUNDLE_RC=${rc}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
   dl_out="$(colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${dst}" </dev/null 2>&1)" || dl_rc=$?
-  printf '%s
-' "${dl_out}" >> "${OUT_DIR}/colab.log"
+  printf '%s\n' "${dl_out}" >> "${OUT_DIR}/colab.log"
   if [ "${dl_rc}" -eq 0 ] && [ -s "${dst}" ]; then
     echo "BUNDLE_AFTER_FAILURE: downloaded lane3_stub_bundle.tar.gz (rc=${rc})" >> "${OUT_DIR}/guards.log"
   else
@@ -759,7 +809,11 @@ cleanup_on_exit() {
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
   fi
-  if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_STARTED}" = "1" ]     && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
+  if [ -n "${TOKEN_DIR}" ]; then
+    rm -rf "${TOKEN_DIR}" || true
+  fi
+  if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_STARTED}" = "1" ] \
+    && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
     lane3_download_bundle_after_failure "${rc}" || true
   fi
   if [ "${SESSION_OPENED}" -eq 1 ]; then
@@ -772,6 +826,9 @@ cleanup_on_exit() {
     "${CAP}" "${WALL_S}" "${GRACE_S}" "${MARGIN}" \
     "${OPENED_AT}" "${closed_at}" "${rc}" "${SHAS_JSON}" || true
   colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" || true
+  if [ "${TRAIN_REQUESTED}" = "1" ] && [ "${SESSION_OPENED}" -eq 1 ]; then
+    echo "REMINDER: check ~/.config/colab-cli/history for the token's last 4 characters (the kit never reads that history)"
+  fi
   exit "${rc}"
 }
 trap cleanup_on_exit EXIT
@@ -804,6 +861,18 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     exit 1
   fi
   printf '%s\n' "${DATASET_OUT}" >> "${OUT_DIR}/guards.log"
+fi
+
+# Train mode: the model at the pinned revision must answer the request's read token before any
+# spend (MODEL_AUTH_FAILED, MODEL_REVISION_NOT_FOUND, MODEL_METADATA_FAILED). The token reaches the
+# check through its environment (HF_TOKEN_GGUF_READ), never its argv.
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  MODEL_CHECK_OUT=""
+  if ! MODEL_CHECK_OUT="$("${PY_BIN}" "${RUNG_PY}" model-check --repo "${TRAIN_MODEL}" --revision "${TRAIN_MODEL_REVISION}" 2>&1)"; then
+    printf '%s\n' "${MODEL_CHECK_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+    exit 1
+  fi
+  printf '%s\n' "${MODEL_CHECK_OUT}" >> "${OUT_DIR}/guards.log"
 fi
 
 # Pre-open cap and host-RAM check via launch_guards.py
@@ -848,6 +917,18 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   colab_upload_checked "${SESSION}" "${RUNG_PY}" /content/lane3_rung.py "${OUT_DIR}"
   colab_upload_checked "${SESSION}" "${RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
   colab_upload_checked "${SESSION}" "${RUNG_DATASET_JSON}" /content/rung-dataset.json "${OUT_DIR}"
+  # The read token: a mode-600 file in a private directory on tmpfs (removed by the EXIT trap),
+  # uploaded as a file; the VM reads and shreds it before anything else runs.
+  if ! TOKEN_DIR="$(umask 077 && mktemp -d "${XDG_RUNTIME_DIR:-/dev/shm}/sdlab-l3-tok.XXXXXX" 2>/dev/null)"; then
+    TOKEN_DIR=""
+    colab_refuse_logged "${OUT_DIR}" HF_TOKEN_STAGING_FAILED "no private tmpfs directory (XDG_RUNTIME_DIR or /dev/shm) for the token file"
+    exit 1
+  fi
+  ( umask 077 && printf '%s' "${HF_TOKEN_GGUF_READ}" > "${TOKEN_DIR}/lane3_hf_read_token" )
+  chmod 600 "${TOKEN_DIR}/lane3_hf_read_token"
+  colab_upload_checked "${SESSION}" "${TOKEN_DIR}/lane3_hf_read_token" /content/lane3_hf_read_token "${OUT_DIR}"
+  rm -rf "${TOKEN_DIR}"
+  TOKEN_DIR=""
   while IFS= read -r image_fname; do
     [ -z "${image_fname}" ] && continue
     colab_upload_checked "${SESSION}" "${DATASET_DIR}/${image_fname}" "/content/${image_fname}" "${OUT_DIR}"
@@ -857,12 +938,6 @@ colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.
 
 REMOTE_ENV=()
 mapfile -t REMOTE_ENV < <(lane3_remote_env "${EXP_OVERRIDE_SHA}")
-# Train mode: the HF read token from the rig's environment (checked present above) goes to the VM
-# in the exec's --env only, never into the emitted .env or any file, and every log is scrubbed of
-# it. Install mode never forwards it.
-if [ "${TRAIN_REQUESTED}" = "1" ]; then
-  REMOTE_ENV+=("HF_TOKEN_GGUF_READ=${HF_TOKEN_GGUF_READ}")
-fi
 EXEC_STARTED=1
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \

@@ -166,14 +166,30 @@ def kill_tree(proc: Path, root: int, kill: Callable[[int, int], None] = os.kill)
             continue
 
 
+def query_vram(nvidia_smi: str, run: Callable[..., Any] = subprocess.run) -> tuple[str, int] | None:
+    """(timestamp, memory.used MiB) of GPU 0, or None when nvidia-smi gives no reading."""
+    lines = _query([nvidia_smi, "--query-gpu=timestamp,memory.used", "--format=csv,noheader,nounits"], run)
+    if not lines:
+        return None
+    parts = [x.strip() for x in lines[0].split(",")]
+    try:
+        return parts[0], int(float(parts[1]))
+    except (IndexError, ValueError):
+        return None
+
+
 def run_sample(args: argparse.Namespace, *, clock: Callable[[], float] = time.time,
-               sleep: Callable[[float], None] = time.sleep, kill: Callable[[int, int], None] = os.kill) -> int:
+               sleep: Callable[[float], None] = time.sleep, kill: Callable[[int, int], None] = os.kill,
+               vram_fn: Callable[[str], tuple[str, int] | None] = query_vram) -> int:
     proc = Path(args.proc)
     root = int(args.root_pid)
     train_log = Path(args.train_log)
     start = clock()
     oom_seen_at: float | None = None
     stop_reason = ""
+    # VRAM is read in this same loop (no separate logger process to outlive the walk), written in
+    # nvidia-smi's own CSV form, and the tree is killed by PID above the ceiling.
+    vram_fh = Path(args.vram_csv).open("w", encoding="utf-8", newline="\n") if getattr(args, "vram_csv", None) else None
     with Path(args.out).open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["epoch", "elapsed_s", "pids", "vm_rss_bytes", "rss_anon_bytes", "rss_file_bytes", "vm_swap_bytes",
@@ -190,18 +206,29 @@ def run_sample(args: argparse.Namespace, *, clock: Callable[[], float] = time.ti
                         max((s.get("VmRSS", 0) for s in stats), default=0), avail, phase_of(log_text),
                         last_line(log_text)])
             fh.flush()
+            vram = vram_fn(args.nvidia_smi) if vram_fh is not None and getattr(args, "nvidia_smi", None) else None
+            if vram is not None and vram_fh is not None:
+                vram_fh.write(f"{vram[0]}, {vram[1]}\n")
+                vram_fh.flush()
             if OOM_RE.search(log_text) and oom_seen_at is None:
                 oom_seen_at = now
             if oom_seen_at is not None and now - oom_seen_at >= float(args.oom_grace_s):
                 stop_reason = f"oom line seen and the run still alive after {args.oom_grace_s} s"
             elif avail is not None and avail < float(args.mem_floor_gib) * GIB:
                 stop_reason = f"HOST_RAM_CEILING: MemAvailable {avail / GIB:.2f} GiB < floor {args.mem_floor_gib} GiB"
+            elif (vram is not None and getattr(args, "vram_ceiling_mib", None)
+                  and vram[1] - int(getattr(args, "vram_baseline_mib", None) or 0) > int(args.vram_ceiling_mib)):
+                base = int(getattr(args, "vram_baseline_mib", None) or 0)
+                stop_reason = (f"VRAM_CEILING: memory.used {vram[1]} MiB - baseline {base} MiB > ceiling "
+                               f"{args.vram_ceiling_mib} MiB")
             elif now - start >= float(args.wall_s):
                 stop_reason = f"wall cap {args.wall_s} s reached"
             if stop_reason:
                 kill_tree(proc, root, kill)
                 break
             sleep(float(args.interval))
+    if vram_fh is not None:
+        vram_fh.close()
     Path(args.out).with_suffix(".stop.txt").write_text((stop_reason or "process tree exited") + "\n", encoding="utf-8")
     print(f"SAMPLER_STOP {stop_reason or 'process tree exited'}", flush=True)
     return 0
@@ -316,6 +343,32 @@ def run_derive(args: argparse.Namespace) -> int:
     return 0
 
 
+def build_simple_index(wheelhouse: Path, link_root: str, out: Path) -> int:
+    """A PEP 503 simple index of every wheel in `wheelhouse`, linking to `link_root/<file>` (the
+    wheelhouse's path inside the walk's sandbox), so uv resolves the hash-locked lock offline through
+    file:// index URLs. Returns the number of projects."""
+    import html  # noqa: PLC0415
+
+    by: dict[str, list[str]] = {}
+    for f in sorted(p.name for p in wheelhouse.glob("*.whl")):
+        by.setdefault(re.sub(r"[-_.]+", "-", f.split("-")[0]).lower(), []).append(f)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, files in by.items():
+        (out / name).mkdir(exist_ok=True)
+        links = "".join(f'<a href="file://{link_root}/{html.escape(f)}">{html.escape(f)}</a><br>' for f in files)
+        (out / name / "index.html").write_text(f"<html><body>{links}</body></html>\n", encoding="utf-8")
+    return len(by)
+
+
+def run_simple_index(args: argparse.Namespace) -> int:
+    n = build_simple_index(Path(args.wheelhouse), args.link_root, Path(args.out))
+    if n == 0:
+        refuse("WALK_INPUT_MISSING", f"no wheels in {args.wheelhouse}")
+        return 2
+    print(f"SIMPLE_INDEX projects={n} out={args.out}", flush=True)
+    return 0
+
+
 def run_gpu_busy(args: argparse.Namespace) -> int:
     busy, detail = gpu_busy(args.nvidia_smi, args.windows_smi, int(args.max_mib))
     if busy:
@@ -341,12 +394,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--oom-grace-s", required=True, type=float)
     s.add_argument("--mem-floor-gib", required=True, type=float)
     s.add_argument("--wall-s", required=True, type=float)
+    s.add_argument("--nvidia-smi", default=None)
+    s.add_argument("--vram-csv", default=None)
+    s.add_argument("--vram-ceiling-mib", default=None, type=int)
+    s.add_argument("--vram-baseline-mib", default=None, type=int)
     m = sub.add_parser("summarize")
     m.add_argument("--host-csv", required=True)
     m.add_argument("--vram-csv", required=True)
     m.add_argument("--train-log", required=True)
     m.add_argument("--stop-file", default=None)
     m.add_argument("--out", required=True)
+    si = sub.add_parser("simple-index")
+    si.add_argument("--wheelhouse", required=True)
+    si.add_argument("--link-root", required=True)
+    si.add_argument("--out", required=True)
     d = sub.add_parser("derive-walk-b")
     d.add_argument("--rung-yaml", required=True)
     d.add_argument("--ara-path", required=True)
@@ -357,7 +418,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     return {"gpu-busy": run_gpu_busy, "sample": run_sample, "summarize": run_summarize,
-            "derive-walk-b": run_derive}[args.cmd](args)
+            "derive-walk-b": run_derive, "simple-index": run_simple_index}[args.cmd](args)
 
 
 if __name__ == "__main__":

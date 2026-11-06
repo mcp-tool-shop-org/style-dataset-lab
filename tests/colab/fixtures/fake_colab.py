@@ -585,7 +585,9 @@ run_uploaded_lane3_mode_block() {
 # /dev/shm mapped to fake ones (FAKE_VM_MEM_TOTAL_KB / FAKE_VM_MEM_AVAILABLE_KB), stand-ins for the
 # lane's torch, bitsandbytes and huggingface_hub (tests/colab/fixtures/fake_vm_site) and a stand-in
 # ai-toolkit run.py that saves a checkpoint and a sample (FAKE_VM_TRAIN=fail_after_save: it saves,
-# then dies with a CUDA OOM).
+# then dies with a CUDA OOM; =hang_after_save: it saves, then hangs; =no_sample: no sample image).
+# The block runs as <content>/remote_lane3_stub.sh.trainblock, so its command line names the
+# remote script the way the real VM's does (bundle-now finds it by that).
 run_uploaded_train_and_window_blocks() {
   local uploaded_sh="$1"
   local blk
@@ -618,7 +620,11 @@ if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
     print("torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB", flush=True)
     time.sleep(0.3)
     sys.exit(1)
-(out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+if os.environ.get("FAKE_VM_TRAIN") == "hang_after_save":
+    (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    time.sleep(600)
+if os.environ.get("FAKE_VM_TRAIN") != "no_sample":
+    (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
 (out / f"{name}.safetensors").write_bytes(b"FAKE-LORA-FINAL" * 64)
 print("Done", flush=True)
 RUNPYEOF
@@ -630,9 +636,9 @@ RUNPYEOF
     sed -n '/^# >>> sdlab-hf-token$/,/^# <<< sdlab-hf-token$/p' "${uploaded_sh}"
     sed -n '/^# >>> sdlab-lane3-train$/,/^# <<< sdlab-lane3-train$/p' "${uploaded_sh}"
     sed -n '/^# >>> sdlab-lane3-window$/,/^# <<< sdlab-lane3-window$/p' "${uploaded_sh}"
-  } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > .lane3_train_block.sh
+  } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
   PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
-    bash .lane3_train_block.sh
+    bash "${PWD}/remote_lane3_stub.sh.trainblock"
 }
 run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
@@ -829,6 +835,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     state_dir = _normalize_host_path(state_dir_raw)
     state_dir.mkdir(parents=True, exist_ok=True)
+    # Every call's argv, as `ps` shows it on the rig (the token tests scan this).
+    with (state_dir / "argv.log").open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(["colab", *raw_args]) + "\n")
     content_dir = state_dir / "content"
     content_dir.mkdir(parents=True, exist_ok=True)
     if not (content_dir / ".fake_remote_lane1_stub.sh").exists():
@@ -1171,6 +1180,12 @@ def main(argv: list[str] | None = None) -> int:
         # The fake GPU VM's stand-ins for the lane's torch, bitsandbytes and huggingface_hub.
         kernel_env["FAKE_VM_SITE"] = str(FIXTURES_DIR / "fake_vm_site")
         kernel_env.update(env_vars)
+
+        env_lines = "".join(f"os.environ[{k!r}] = {v!r}\n" for k, v in env_vars.items())
+        history = state_dir / "history"
+        history.mkdir(exist_ok=True)
+        with (history / f"{sid}.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps({"code": "import os\n" + env_lines + py_path.read_text(encoding="utf-8")}) + "\n")
 
         # Execute the local .py file's source in a simulated IPython kernel cell:
         # cwd is the fake /content directory, __file__ is undefined, and --env values are applied.

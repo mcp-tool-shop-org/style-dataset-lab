@@ -20,6 +20,11 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
   render-job    fill the rung YAML's __LANE3_*__ placeholders (JOB_TEMPLATE_INVALID).
   copy-off      while ai-toolkit runs, copy each finished checkpoint and sample image into the
                 bundle directory and append a manifest line with its sha256.
+  model-check   rig side, before a window opens: the model at the pinned revision answers the
+                request's read token (MODEL_AUTH_FAILED, MODEL_REVISION_NOT_FOUND,
+                MODEL_METADATA_FAILED; the same names for the VM's metadata call).
+  bundle-now    the kit's failure path after a rig-side kill: stop the VM-side rung, sweep the
+                training folder, write the failure record and tar lane3_out.
   finish        gather the train-mode records into lane3_out/train_facts.json (and, after a
                 failure, into vm_window.json) so the bundle carries them either way.
 """
@@ -34,6 +39,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable, Iterable
 from pathlib import Path
@@ -309,6 +315,68 @@ def expected_repo_bytes(repo_id: str, revision: str, token: str | None = None) -
     return sum(int(s.size or 0) for s in (info.siblings or []))
 
 
+def classify_hub_error(exc: BaseException) -> tuple[str, str]:
+    """Name a failed model-metadata call: a bad or expired token (401/403, gated) is MODEL_AUTH_FAILED,
+    an unknown revision (404 on the revision) MODEL_REVISION_NOT_FOUND, anything else (network,
+    5xx, a repo that is missing) MODEL_METADATA_FAILED. The message never carries the token."""
+    name = type(exc).__name__
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    status = status if isinstance(status, int) else getattr(exc, "code", None)
+    detail = f"{name} (http={status if status is not None else 'none'})"
+    if "RevisionNotFound" in name or (status == 404 and "revision" in str(exc).lower()):
+        return "MODEL_REVISION_NOT_FOUND", detail
+    if status in (401, 403) or "Gated" in name:
+        return "MODEL_AUTH_FAILED", detail
+    return "MODEL_METADATA_FAILED", detail
+
+
+HF_API_BASE = "https://huggingface.co"
+
+
+def check_model_api(repo_id: str, revision: str, token: str | None, *, base: str = HF_API_BASE,
+                    opener: Callable[..., Any] | None = None, timeout: float = 30.0) -> dict[str, Any]:
+    """Rig-side check before a window opens: the model at the pinned revision is reachable with the
+    request's read token (stdlib only; the token goes in a header, never in argv or a URL)."""
+    import urllib.error  # noqa: PLC0415
+    import urllib.request  # noqa: PLC0415
+
+    url = f"{base.rstrip('/')}/api/models/{repo_id}/revision/{revision}"
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"} if token else {})
+    opener = opener or urllib.request.urlopen
+    try:
+        with opener(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = ""
+        try:
+            body = exc.read().decode("utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            body = ""
+        if exc.code in (401, 403):
+            raise Refusal("MODEL_AUTH_FAILED", f"{repo_id}@{revision}: http={exc.code}") from None
+        if exc.code == 404:
+            code = "MODEL_REVISION_NOT_FOUND" if re.search(r"\brev(ision)?\b", body, re.I) else "MODEL_METADATA_FAILED"
+            raise Refusal(code, f"{repo_id}@{revision}: http=404") from None
+        raise Refusal("MODEL_METADATA_FAILED", f"{repo_id}@{revision}: http={exc.code}") from None
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        raise Refusal("MODEL_METADATA_FAILED", f"{repo_id}@{revision}: {type(exc).__name__}") from None
+    if data.get("sha") != revision:
+        raise Refusal("MODEL_REVISION_NOT_FOUND", f"{repo_id}: the API answered sha {data.get('sha')!r}")
+    return {"repo_id": repo_id, "revision": revision, "ok": True}
+
+
+def run_model_check(args: argparse.Namespace) -> int:
+    token = os.environ.get("HF_TOKEN_GGUF_READ") or None
+    base = os.environ.get("SDLAB_TEST_HF_ENDPOINT") or HF_API_BASE
+    try:
+        rec = check_model_api(args.repo, args.revision, token, base=base)
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+    print("MODEL_CHECK_OK " + json.dumps(rec), flush=True)
+    return 0
+
+
 def evaluate_probe(new_bytes: int, elapsed_s: float, remaining_bytes: int, max_seconds: float) -> dict[str, Any]:
     """Project the time for the bytes still to come from the probe's rate."""
     rate = new_bytes / elapsed_s if elapsed_s > 0 else 0.0
@@ -337,13 +405,23 @@ def count_throttle_signals(lines: Iterable[str]) -> dict[str, int]:
     return {"http_429_lines": http_429, "retry_lines": retries}
 
 
+def _fail(out_path: Path, rec: dict[str, Any], code: str, detail: str) -> int:
+    rec["refusal"] = code
+    write_json(out_path, rec)
+    print("MODEL_DOWNLOAD " + json.dumps(rec), flush=True)
+    print(refuse_line(code, detail), file=sys.stderr, flush=True)
+    return 1
+
+
 def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = expected_repo_bytes,
                  popen: Callable[..., Any] = subprocess.Popen, clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep) -> int:
     out_path = Path(args.out)
     # A read token only when the request put one in HF_TOKEN_GGUF_READ; its value is never written.
     token = os.environ.get("HF_TOKEN_GGUF_READ") or None
-    rec: dict[str, Any] = {"repo_id": args.repo, "revision": args.revision, "token_used": token is not None}
+    offline = os.environ.get("HF_HUB_OFFLINE") == "1"
+    rec: dict[str, Any] = {"repo_id": args.repo, "revision": args.revision, "token_used": token is not None,
+                           "offline": offline}
     try:
         max_seconds = parse_positive_number(args.max_seconds, "DOWNLOAD_LIMIT_MISSING", "LANE3_DOWNLOAD_MAX_SECONDS")
         if not REPO_ID_RE.match(args.repo or ""):
@@ -351,15 +429,20 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
         if not REVISION_RE.match(args.revision or ""):
             raise Refusal("TRAIN_MODEL_REVISION_REQUIRED", f"{args.revision!r} is not a 40-hex commit")
     except Refusal as exc:
-        rec["refusal"] = exc.code
-        write_json(out_path, rec)
-        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
-        return 1
+        return _fail(out_path, rec, exc.code, exc.detail)
 
     hf_home = Path(args.hf_home)
     cache = repo_cache_dir(hf_home, args.repo)
-    expected = int(expected_fn(args.repo, args.revision, token))
     baseline = dir_bytes(cache)
+    if offline:
+        # Hub offline (the rig walks): only the cache is read, so there is nothing to project.
+        expected = baseline
+    else:
+        try:
+            expected = int(expected_fn(args.repo, args.revision, token))
+        except Exception as exc:  # noqa: BLE001 - every metadata failure is one named refusal
+            code, detail = classify_hub_error(exc)
+            return _fail(out_path, rec, code, f"model_info {args.repo}@{args.revision}: {detail}")
     remaining = max(expected - baseline, 0)
     rec.update({"expected_bytes": expected, "cached_bytes_at_start": baseline, "max_seconds": max_seconds,
                 "probe_window": {"seconds": float(args.probe_seconds), "bytes": int(args.probe_bytes)}})
@@ -372,27 +455,42 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
     log_path = Path(args.log)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     start = clock()
+    hard_stop = threading.Event()
     with log_path.open("w", encoding="utf-8", newline="\n") as log_fh:
         proc = popen([sys.executable, "-c", DOWNLOAD_CHILD, args.repo, args.revision],
                      stdout=log_fh, stderr=subprocess.STDOUT, env=env)
+
+        # The hard limit lives in its own thread: it kills the child at max_seconds even when the
+        # loop below is busy, and a stalled download that still prints lines cannot outlive it.
+        def _hard_limit() -> None:
+            if proc.poll() is None:
+                hard_stop.set()
+                proc.kill()
+
+        timer = threading.Timer(max_seconds, _hard_limit)
+        timer.daemon = True
+        timer.start()
         probe: dict[str, Any] | None = None
         last_print = start
-        while proc.poll() is None:
-            sleep(float(args.poll_s))
-            now = clock()
-            elapsed = now - start
-            new_bytes = max(dir_bytes(cache) - baseline, 0)
-            if now - last_print >= 10:
-                last_print = now
-                print(f"MODEL_DOWNLOAD_PROGRESS bytes={new_bytes} seconds={elapsed:.0f}", flush=True)
-            if probe is None and (elapsed >= float(args.probe_seconds) or new_bytes >= int(args.probe_bytes)):
-                probe = evaluate_probe(new_bytes, elapsed, remaining, max_seconds)
-                print("MODEL_DOWNLOAD_PROBE " + json.dumps(probe), flush=True)
-                if probe["too_slow"]:
-                    proc.kill()
-                    proc.wait()
-                    break
-        rc = proc.wait()
+        try:
+            while proc.poll() is None:
+                sleep(float(args.poll_s))
+                now = clock()
+                elapsed = now - start
+                new_bytes = max(dir_bytes(cache) - baseline, 0)
+                if now - last_print >= 10:
+                    last_print = now
+                    print(f"MODEL_DOWNLOAD_PROGRESS bytes={new_bytes} seconds={elapsed:.0f}", flush=True)
+                if not offline and probe is None and (elapsed >= float(args.probe_seconds) or new_bytes >= int(args.probe_bytes)):
+                    probe = evaluate_probe(new_bytes, elapsed, remaining, max_seconds)
+                    print("MODEL_DOWNLOAD_PROBE " + json.dumps(probe), flush=True)
+                    if probe["too_slow"]:
+                        proc.kill()
+                        proc.wait()
+                        break
+            rc = proc.wait()
+        finally:
+            timer.cancel()
     elapsed = clock() - start
     log_lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
     new_bytes = max(dir_bytes(cache) - baseline, 0)
@@ -401,24 +499,23 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
         "seconds": round(elapsed, 2),
         "rate_mb_s": round(new_bytes / elapsed / 1e6, 2) if elapsed > 0 else None,
         "probe": probe,
+        "hard_limit_hit": hard_stop.is_set(),
         **count_throttle_signals(log_lines),
     })
     snapshot = next((ln.split(" ", 1)[1].strip() for ln in log_lines if ln.startswith("SNAPSHOT_PATH ")), None)
     rec["snapshot_path"] = snapshot
-    refusal: tuple[str, str] | None = None
+    if hard_stop.is_set():
+        return _fail(out_path, rec, "DOWNLOAD_TOO_SLOW",
+                     f"hard limit: the download was still running after {max_seconds} s ({new_bytes} bytes)")
     if probe is not None and probe["too_slow"]:
-        refusal = ("DOWNLOAD_TOO_SLOW", f"probe {probe['probe_rate_mb_s']} MB/s over {probe['probe_seconds']} s projects "
-                                        f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {max_seconds} s")
-    elif rc != 0 or not snapshot:
+        return _fail(out_path, rec, "DOWNLOAD_TOO_SLOW",
+                     f"probe {probe['probe_rate_mb_s']} MB/s over {probe['probe_seconds']} s projects "
+                     f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {max_seconds} s")
+    if rc != 0 or not snapshot:
         tail = " | ".join(log_lines[-3:])
-        refusal = ("MODEL_DOWNLOAD_FAILED", f"snapshot_download rc={rc}: {tail}")
-    if refusal:
-        rec["refusal"] = refusal[0]
+        return _fail(out_path, rec, "MODEL_DOWNLOAD_FAILED", f"snapshot_download rc={rc}: {tail}")
     write_json(out_path, rec)
     print("MODEL_DOWNLOAD " + json.dumps(rec), flush=True)
-    if refusal:
-        print(refuse_line(*refusal), file=sys.stderr, flush=True)
-        return 1
     return 0
 
 
@@ -485,33 +582,49 @@ def run_render_job(args: argparse.Namespace) -> int:
 
 def copy_off_once(watch: Path, bundle: Path, manifest: Path, state: dict[str, Any], *, final: bool = False) -> int:
     """Copy each output file whose size held still since the last pass (or every file, on the final
-    pass) into bundle/<relative path>, once, appending a manifest line with its sha256."""
+    pass) into bundle/<relative path>, once, appending a manifest line with its sha256. A file that
+    vanishes or cannot be read is logged (COPY_OFF_SKIPPED) and retried next pass, never fatal."""
     pending: dict[str, int] = state.setdefault("pending", {})
     done: set[str] = state.setdefault("done", set())
     copied = 0
     if not watch.is_dir():
         return 0
     for fp in sorted(watch.rglob("*")):
-        if not fp.is_file() or fp.suffix.lower() not in COPY_OFF_SUFFIXES:
+        try:
+            if not fp.is_file() or fp.suffix.lower() not in COPY_OFF_SUFFIXES:
+                continue
+            rel = fp.relative_to(watch).as_posix()
+            if rel in done or any(part.startswith("_") for part in Path(rel).parts[:-1]):
+                continue
+            size = fp.stat().st_size
+            if not final and pending.get(rel) != size:
+                pending[rel] = size
+                continue
+            dest = bundle / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(fp, dest)
+            line = {"path": rel, "bytes": dest.stat().st_size, "sha256": sha256_file(dest),
+                    "copied_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            with manifest.open("a", encoding="utf-8", newline="\n") as fh:
+                fh.write(json.dumps(line) + "\n")
+            print("COPY_OFF " + json.dumps(line), flush=True)
+            done.add(rel)
+            copied += 1
+        except OSError as exc:
+            print(f"COPY_OFF_SKIPPED {fp.name}: {type(exc).__name__}: {exc}", flush=True)
             continue
-        rel = fp.relative_to(watch).as_posix()
-        if rel in done or any(part.startswith("_") for part in Path(rel).parts[:-1]):
-            continue
-        size = fp.stat().st_size
-        if not final and pending.get(rel) != size:
-            pending[rel] = size
-            continue
-        dest = bundle / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(fp, dest)
-        line = {"path": rel, "bytes": size, "sha256": sha256_file(dest),
-                "copied_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-        with manifest.open("a", encoding="utf-8", newline="\n") as fh:
-            fh.write(json.dumps(line) + "\n")
-        print("COPY_OFF " + json.dumps(line), flush=True)
-        done.add(rel)
-        copied += 1
     return copied
+
+
+def load_done(manifest: Path) -> set[str]:
+    done: set[str] = set()
+    if manifest.exists():
+        for ln in manifest.read_text(encoding="utf-8").splitlines():
+            try:
+                done.add(json.loads(ln)["path"])
+            except (ValueError, KeyError, TypeError):
+                continue
+    return done
 
 
 def pid_alive(pid: int) -> bool:
@@ -526,17 +639,23 @@ def run_copy_off(args: argparse.Namespace, *, alive: Callable[[int], bool] = pid
                  sleep: Callable[[float], None] = time.sleep) -> int:
     watch, bundle, manifest = Path(args.watch), Path(args.bundle), Path(args.manifest)
     bundle.mkdir(parents=True, exist_ok=True)
-    state: dict[str, Any] = {}
-    train_log = Path(args.train_log) if args.train_log else None
-    last_log = -1
-    while alive(int(args.pid)):
-        copy_off_once(watch, bundle, manifest, state)
-        if train_log is not None and train_log.exists():
-            size = train_log.stat().st_size
-            if size != last_log:
-                last_log = size
-                print(f"RUNG_PROGRESS train_log_bytes={size}", flush=True)
-        sleep(float(args.interval))
+    # Files a previous copy-off already took (a crashed watcher, the final sweep) are not copied twice.
+    state: dict[str, Any] = {"done": load_done(manifest)}
+    final_only = bool(getattr(args, "final_only", False))
+    if not final_only and int(args.pid) <= 0:
+        print("copy-off needs --pid <trainer pid> unless --final-only", file=sys.stderr, flush=True)
+        return 2
+    if not final_only:
+        train_log = Path(args.train_log) if args.train_log else None
+        last_log = -1
+        while alive(int(args.pid)):
+            copy_off_once(watch, bundle, manifest, state)
+            if train_log is not None and train_log.exists():
+                size = train_log.stat().st_size
+                if size != last_log:
+                    last_log = size
+                    print(f"RUNG_PROGRESS train_log_bytes={size}", flush=True)
+            sleep(float(args.interval))
     copy_off_once(watch, bundle, manifest, state, final=True)
     return 0
 
@@ -575,6 +694,74 @@ def run_finish(args: argparse.Namespace) -> int:
         base.update({"lane3_mode": "train", "train": "failed", "train_exit_code": int(args.failed_rc), **facts})
         write_json(out / "vm_window.json", base)
         print("WINDOW_JSON " + json.dumps(base), flush=True)
+    return 0
+
+
+# ---------------------------------------------------------------------------------------------
+# bundle-now (the kit's failure path, after a rig-side kill)
+# ---------------------------------------------------------------------------------------------
+
+BUNDLE_NAME = "lane3_stub_bundle.tar.gz"
+
+
+def rung_pids(root: Path, proc: Path = Path("/proc"), skip: Iterable[int] = ()) -> list[int]:
+    """Processes of the rung on this VM: the remote script (and its subshells), ai-toolkit's run.py
+    and the lane3_rung.py helpers, found by their command lines under `root`."""
+    marks = (f"{root}/remote_lane3_stub.sh", f"{root}/ai-toolkit/run.py", f"{root}/lane3_rung.py copy-off",
+             f"{root}/lane3_rung.py download")
+    skip_set = set(skip)
+    found = []
+    for entry in proc.iterdir() if proc.is_dir() else []:
+        if not entry.name.isdigit() or int(entry.name) in skip_set:
+            continue
+        try:
+            cmd = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace")
+        except OSError:
+            continue
+        if any(m in cmd for m in marks):
+            found.append(int(entry.name))
+    return found
+
+
+def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None] = os.kill,
+                   proc: Path = Path("/proc")) -> int:
+    """After the kit killed its exec (wall, cap, stall, dead harness), the VM-side script is still
+    running and its EXIT trap never fires. Stop it (SIGKILL, so no trap races this), sweep the
+    training folder into the bundle directory, write the failure record, scrub, and tar lane3_out."""
+    import signal  # noqa: PLC0415
+
+    root = Path(args.content)
+    out = root / "lane3_out"
+    bundle = root / BUNDLE_NAME
+    pids = rung_pids(root, proc, skip=(os.getpid(), os.getppid()))
+    for pid in pids:
+        try:
+            kill(pid, signal.SIGKILL)
+        except OSError:
+            continue
+    if not pids and bundle.is_file() and bundle.stat().st_size > 0:
+        print(f"BUNDLE_NOW: the remote script already bundled {bundle}", flush=True)
+        return 0
+    if not out.is_dir():
+        print(f"BUNDLE_NOW: no {out} on this VM; nothing to bundle", flush=True)
+        return 1
+    time.sleep(float(args.settle_s))
+    rung_dir = out / "rung_outputs"
+    rung_dir.mkdir(parents=True, exist_ok=True)
+    manifest = rung_dir / "manifest.jsonl"
+    copy_off_once(root / "lane3_train", rung_dir, manifest, {"done": load_done(manifest)}, final=True)
+    run_finish(argparse.Namespace(lane3_out=str(out), failed_rc=int(args.rc)))
+    guards = root / "launch_guards.py"
+    for f in out.rglob("*"):
+        if f.is_file() and f.suffix in (".log", ".json", ".jsonl", ".txt") and guards.is_file():
+            subprocess.run([sys.executable, str(guards), "--scrub-file", str(f)], check=False,
+                           stdin=subprocess.DEVNULL)
+    bundle.unlink(missing_ok=True)
+    import tarfile  # noqa: PLC0415
+
+    with tarfile.open(bundle, "w:gz") as tf:
+        tf.add(str(out), arcname=".")
+    print(f"BUNDLE_NOW: killed {len(pids)} rung process(es) and bundled {bundle}", flush=True)
     return 0
 
 
@@ -624,9 +811,19 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--watch", required=True)
     c.add_argument("--bundle", required=True)
     c.add_argument("--manifest", required=True)
-    c.add_argument("--pid", required=True, type=int)
+    c.add_argument("--pid", default=0, type=int)
+    c.add_argument("--final-only", action="store_true", help="one final sweep, no watching")
     c.add_argument("--train-log", default=None)
     c.add_argument("--interval", default=10.0, type=float)
+
+    mc = sub.add_parser("model-check")
+    mc.add_argument("--repo", required=True)
+    mc.add_argument("--revision", required=True)
+
+    bn = sub.add_parser("bundle-now")
+    bn.add_argument("--content", required=True)
+    bn.add_argument("--rc", required=True, type=int)
+    bn.add_argument("--settle-s", default=2.0, type=float)
 
     f = sub.add_parser("finish")
     f.add_argument("--lane3-out", required=True)
@@ -643,6 +840,8 @@ def main(argv: list[str] | None = None) -> int:
         "render-job": run_render_job,
         "copy-off": run_copy_off,
         "finish": run_finish,
+        "model-check": run_model_check,
+        "bundle-now": run_bundle_now,
     }
     return handlers[args.cmd](args)
 
