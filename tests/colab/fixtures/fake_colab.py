@@ -552,20 +552,87 @@ run_uploaded_remote_dirs_block() {
   sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
   bash .remote_dirs_block.sh
 }
-# The uploaded script's sdlab-lane3-mode block is real kit code: run it on this fake CPU VM, where
-# nvidia-smi finds no GPU (a stand-in shadows any on the rig's PATH), so a kit that passed
-# LANE3_MODE=train fails here with the same refusal as on a real CPU card.
+# The uploaded script's sdlab-lane3-mode block is real kit code: run it on this fake VM. On a CPU
+# card nvidia-smi finds no GPU (a stand-in shadows any on the rig's PATH), so a kit that passed
+# LANE3_MODE=train fails here with the same refusal as on a real CPU card. On a GPU card (the kit's
+# `colab new --gpu <card>`, recorded in card.txt) the stand-in lists one A100.
+fake_card="$(cat "${FAKE_COLAB_STATE_DIR:-..}/card.txt" 2>/dev/null || echo CPU)"
+mkdir -p .fake-vm-bin
+if [ "${fake_card}" = "CPU" ]; then
+  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-vm-bin/nvidia-smi
+else
+  cat > .fake-vm-bin/nvidia-smi << 'NVSMIEOF'
+#!/usr/bin/env bash
+case "$*" in
+  *-L*) echo "GPU 0: NVIDIA A100-SXM4-80GB (UUID: GPU-00000000-fake)" ;;
+  *--query-gpu*) echo "580.82.07, NVIDIA A100-SXM4-80GB, 81920 MiB" ;;
+  *) echo "fake nvidia-smi" ;;
+esac
+NVSMIEOF
+fi
+chmod +x .fake-vm-bin/nvidia-smi
 run_uploaded_lane3_mode_block() {
   local uploaded_sh="$1"
   if ! grep -q '^# >>> sdlab-lane3-mode$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-lane3-mode$' "${uploaded_sh}"; then
     echo "REFUSED: LANE3_MODE_BLOCK_MISSING: ${uploaded_sh} has no sdlab-lane3-mode gate" >&2
     exit 1
   fi
-  mkdir -p .fake-cpu-vm-bin
-  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-cpu-vm-bin/nvidia-smi
-  chmod +x .fake-cpu-vm-bin/nvidia-smi
   sed -n '/^# >>> sdlab-lane3-mode$/,/^# <<< sdlab-lane3-mode$/p' "${uploaded_sh}" > .lane3_mode_block.sh
-  PATH="${PWD}/.fake-cpu-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane3_mode_block.sh; echo "LANE3_MODE=${LANE3_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+  PATH="${PWD}/.fake-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane3_mode_block.sh; echo "LANE3_MODE=${LANE3_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+}
+# Train mode on the fake GPU VM: the uploaded script's sdlab-lane3-train and sdlab-lane3-window
+# blocks are real kit code. They run with /content mapped to this fake /content, /proc/meminfo and
+# /dev/shm mapped to fake ones (FAKE_VM_MEM_TOTAL_KB / FAKE_VM_MEM_AVAILABLE_KB), stand-ins for the
+# lane's torch, bitsandbytes and huggingface_hub (tests/colab/fixtures/fake_vm_site) and a stand-in
+# ai-toolkit run.py that saves a checkpoint and a sample (FAKE_VM_TRAIN=fail_after_save: it saves,
+# then dies with a CUDA OOM).
+run_uploaded_train_and_window_blocks() {
+  local uploaded_sh="$1"
+  local blk
+  for blk in sdlab-hf-token sdlab-lane3-train sdlab-lane3-window; do
+    if ! grep -q "^# >>> ${blk}$" "${uploaded_sh}" || ! grep -q "^# <<< ${blk}$" "${uploaded_sh}"; then
+      echo "REFUSED: TRAIN_BLOCK_MISSING: ${uploaded_sh} has no ${blk} block" >&2
+      exit 1
+    fi
+  done
+  {
+    printf '%s\\n' "${FAKE_VM_MEM_TOTAL_KB:-175000000}" "${FAKE_VM_MEM_AVAILABLE_KB:-170000000}"
+  } | awk 'NR==1{print "MemTotal:       " $1 " kB"} NR==2{print "MemFree:        " $1 " kB"; print "MemAvailable:   " $1 " kB"}' > .fake-vm-meminfo
+  mkdir -p .fake-vm-shm ai-toolkit
+  cat > ai-toolkit/run.py << 'RUNPYEOF'
+import os, re, sys, time
+from pathlib import Path
+job = Path(sys.argv[1]).read_text(encoding="utf-8")
+tf = re.search(r'training_folder: "([^"]+)"', job).group(1)
+model = re.search(r'name_or_path: "([^"]+)"', job).group(1)
+name = re.search(r"^  name: (\\S+)$", job, re.M).group(1)
+assert os.environ.get("HF_HUB_OFFLINE") == "1", "run.py must run with the hub offline"
+assert Path(model).is_dir(), f"model path {model} is not the local snapshot"
+out = Path(tf) / name
+(out / "samples").mkdir(parents=True, exist_ok=True)
+print("Loading Qwen Image model", flush=True)
+time.sleep(0.3)
+(out / f"{name}_000000020.safetensors").write_bytes(b"FAKE-LORA-STEP-20" * 64)
+time.sleep(0.3)
+if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
+    print("torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB", flush=True)
+    time.sleep(0.3)
+    sys.exit(1)
+(out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+(out / f"{name}.safetensors").write_bytes(b"FAKE-LORA-FINAL" * 64)
+print("Done", flush=True)
+RUNPYEOF
+  {
+    echo 'set -euo pipefail'
+    echo 'LANE3_TRAIN_STATE="trained"'
+    echo 'CHECKPOINT_PATH=""'
+    echo 'OVERRIDE_SHA="$(sha256sum lane3.lock | awk '"'"'{print $1}'"'"')"'
+    sed -n '/^# >>> sdlab-hf-token$/,/^# <<< sdlab-hf-token$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane3-train$/,/^# <<< sdlab-lane3-train$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane3-window$/,/^# <<< sdlab-lane3-window$/p' "${uploaded_sh}"
+  } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > .lane3_train_block.sh
+  PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
+    bash .lane3_train_block.sh
 }
 run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
@@ -704,6 +771,10 @@ for mod_name in sentencepiece torch torchaudio safetensors yaml oyaml PIL diffus
   echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
 printf 'setup_complete\\n' >> lane3_out/setup.log
+if [ "${LANE3_MODE:-install}" = "train" ]; then
+  run_uploaded_train_and_window_blocks "remote_lane3_stub.sh.uploaded"
+  exit 0
+fi
 # The CPU install-path stub stops at the import gate: the uploaded script must say so and keep its
 # training step behind LANE3_MODE=train.
 if ! grep -Fq 'TRAIN_SKIPPED: cpu stub; training needs a GPU rung' "remote_lane3_stub.sh.uploaded" \\
@@ -961,6 +1032,7 @@ def main(argv: list[str] | None = None) -> int:
         with (state_dir / "lock.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
+        (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
         print(
             f"Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_{lane_tag}_999&port=8188"
@@ -1093,8 +1165,11 @@ def main(argv: list[str] | None = None) -> int:
             if not k.startswith("PINNED_")
             and not k.startswith("LANE3_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
+            and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN")
         }
         kernel_env.setdefault("UV_SYSTEM_PYTHON", "1")
+        # The fake GPU VM's stand-ins for the lane's torch, bitsandbytes and huggingface_hub.
+        kernel_env["FAKE_VM_SITE"] = str(FIXTURES_DIR / "fake_vm_site")
         kernel_env.update(env_vars)
 
         # Execute the local .py file's source in a simulated IPython kernel cell:

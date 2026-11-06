@@ -16112,7 +16112,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "be0b8ae6b58653ed84cab8852ae0a5efab4b419462c8a493becbfe6aa8025485",
+          "hash": "8b07ae85479d4288d8be6c1ced44a87c713ecbfe87d54dbe7e47ee86eea931e9",
           "path": "CHANGELOG.md"
         },
         {
@@ -16128,35 +16128,35 @@
           "path": "LICENSE"
         },
         {
-          "hash": "5fe43e980972ee7e32a2797deaa5d8e51038b287c938b1316e368da471c0a809",
+          "hash": "454a44ee5cde4f4a937ddd5ca62fef44c2e25dcae587b23b609098505a631a6b",
           "path": "README.es.md"
         },
         {
-          "hash": "5b96986ec36624dce8f749e96b2af6223897c564ae7296affda897c0001e8034",
+          "hash": "40debe94ba1a719cda9266f3ff22e3b615d3403c55e0389164e1a160d836f660",
           "path": "README.fr.md"
         },
         {
-          "hash": "e8f26870cb52ce628d226204963b64c506749bc3fdcfbb32de5655356079dd09",
+          "hash": "ce9e33e2a3f140c05968dd2651f461f4390895511113097f670888bce3c006f0",
           "path": "README.hi.md"
         },
         {
-          "hash": "58b238f90146d5e9d9aff154d7f70bdd1d06ff8e8a5a6104198934959975f103",
+          "hash": "27a50404ee89c7ed39fddf38998842d5b04bae7ffba7b876edbdc80abcbf3b5f",
           "path": "README.it.md"
         },
         {
-          "hash": "89c1c3efdd55e5d16fb707eefce9ccf3c7c4cea220b6ee94ceebc25e1d015e71",
+          "hash": "484817d819520307fa6a51bc12f4e5ae18a0817a878c36b4f947aeee579cb015",
           "path": "README.ja.md"
         },
         {
-          "hash": "7f1abc7bfafadfffd7f19ee208657912562cb1462a6f31c197f6c1e715524ea0",
+          "hash": "ef13517554fcb595d7992714a24e44cd54b35466cbaaf3e7582c4fa072e78e42",
           "path": "README.md"
         },
         {
-          "hash": "4b12df6aaaedbdde67bdc9ba52625d25b70049d8ee6796bd287c0aeaf3fb7077",
+          "hash": "fd191af46214ffacd302515e6289ee46cfdd3f2914ab560d14ecc801b9041c8c",
           "path": "README.pt-BR.md"
         },
         {
-          "hash": "462998e89fb3461c23f077a8d680db3b35082d4ba74cad8dece1aa38efafa17c",
+          "hash": "82544cd33f37b7332e88584bd6d51e72fe1fb259f7f45bfe303a486d6b23afea",
           "path": "README.zh.md"
         },
         {
@@ -16809,7 +16809,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "6af7354780c5871e93eb1737f8e7be3dd99899c21ec24375094ee176a7751f66",
+          "hash": "08c59145b57f0cc652317bb509492a4c2923633dd7bd83b4f613ce31b6b486c0",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16829,7 +16829,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "ea91e0e494ab768c320cfca121e9f927fe0b83a81badd6b16e24ef28db8c9b86",
+          "hash": "2a0c240e7d2c623b059c085a85114fb5126fbd4f70b1efd72464b03b52ddabcf",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17108,11 +17108,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "5c4bb36e9a197a68c37906fd2fdbe0d2143b195d01c5900b50c5fac53f7fd7d1",
+          "hash": "e537c01c83848fbf11a491da754ef578bfaf2924829f3e96a53bb0361bcf8c53",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "f6336c3059287c5fe0b030a7703a3f2995d18b1d532609c9861a9190782f7478",
+          "hash": "b20824764510418967cb11ca5fbf893cb4bc0ea478b694aff093bd233391d15f",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19496,7 +19496,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "9201db930d40eab0cd7cd75a8857e57b5e9230ee72af579f323814775e8aeade",
+          "hash": "6b800e49c029cdf677888ad517aee8366b8c57d48ef3436dca95c12ad4dd78ea",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -19588,20 +19588,19 @@
             "test_cpu_stub_success_ends_at_the_import_gate_with_the_bundle",
             "test_install_mode_is_the_default_and_hides_the_gpu",
             "test_install_mode_skips_training_and_says_so",
-            "test_kit_never_passes_a_train_mode",
-            "test_kit_train_flag_is_a_window_option_for_emit",
+            "test_kit_emit_with_train_needs_the_rung_values",
+            "test_kit_passes_a_train_mode_only_with_train",
             "test_kit_train_flag_is_refused_before_any_colab_call",
-            "test_train_mode_names_a_failed_run_on_the_exec_stream",
+            "test_kit_train_options_need_train",
+            "test_train_mode_refuses_each_missing_rung_value",
             "test_train_mode_refuses_on_a_cpu_vm",
             "test_train_mode_refuses_without_a_model",
             "test_train_mode_with_gpu_and_model_passes_the_gate",
-            "test_train_mode_without_a_checkpoint_is_refused",
-            "test_train_step_refuses_without_a_model_even_past_the_gate",
             "test_unknown_mode_is_refused",
             "test_window_writer_adds_no_train_fields_to_other_lanes",
             "test_window_writer_reads_train_state_strictly"
           ],
-          "hash": "294d07a8c2b9fd5d3ec4e1d1a877e7ae28247a4e32d80387a2221406923506ef",
+          "hash": "59c15deff7a652657ab557fdaf2e596cbe90a34057dff206ff83a6dbaf54dd2e",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -19701,7 +19700,7 @@
             "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "0aca8dcf389e48db8b441ed7f37b9348608159659a78dfe349fe11bce1713d05",
+          "hash": "f062c2e25b28ad8e2da674619986604410ab681ddf96e9e98a963def9c4b2ddd",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -21802,7 +21801,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "223751ceb97c208600e115168f9dca24d41c7182",
+    "commit": "61f2c2ce24f749ad13e605e9bee2352c2dd8f8e9",
     "tracked": 3278
   },
   "landings": [

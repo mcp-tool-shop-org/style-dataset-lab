@@ -1,0 +1,84 @@
+# Lane 3 GPU rung job: the rustline v5 Qwen-Image LoRA config (sha256 44bf1604...f677f of the
+# trained run's config.yaml), changed only where a 20-step rung needs it:
+#   save.save_every 250 -> 20, train.steps 2000 -> 20, sample.sample_every 250 -> 20,
+#   train.skip_first_sample: true (added; no step-0 grid), datasets[0].num_workers: 0 (added; no
+#   forked dataloader workers, so no /dev/shm traffic on a VM with no swap).
+# The three __LANE3_*__ values are filled on the VM by `lane3_rung.py render-job`:
+#   __LANE3_TRAINING_FOLDER__  the run's output folder (checkpoints and samples)
+#   __LANE3_DATASET_DIR__      the staged fixture dataset (scripts/colab/lane3/rung-dataset.json)
+#   __LANE3_MODEL_PATH__       the local snapshot of LANE3_MODEL_NAME_OR_PATH at LANE3_MODEL_REVISION
+# A local snapshot path (not the repo id) pins the weights: at ai-toolkit beb94824 a repo id
+# `Qwen/Qwen-Image` is swapped for an unpinned Comfy-Org file (toolkit/models/v2/_mixin.py:517-529,
+# toolkit/models/v2/diffusion_models/qwen_image.py:14-25), while an existing local path is loaded
+# as is. Everything else, low_vram: false included, is the trained config's value.
+job: extension
+config:
+  name: rustline_style_v5
+  process:
+  - type: sd_trainer
+    training_folder: "__LANE3_TRAINING_FOLDER__"
+    device: cuda:0
+    network:
+      type: lora
+      linear: 16
+      linear_alpha: 16
+    save:
+      dtype: float16
+      save_every: 20
+      max_step_saves_to_keep: 8
+    datasets:
+    - folder_path: "__LANE3_DATASET_DIR__"
+      caption_ext: txt
+      caption_dropout_rate: 0.05
+      shuffle_tokens: false
+      cache_latents_to_disk: true
+      num_workers: 0
+      resolution:
+      - 512
+      - 768
+      - 1024
+    train:
+      batch_size: 1
+      cache_text_embeddings: true
+      steps: 20
+      skip_first_sample: true
+      gradient_accumulation: 1
+      train_unet: true
+      train_text_encoder: false
+      gradient_checkpointing: true
+      noise_scheduler: flowmatch
+      optimizer: adamw8bit
+      lr: 0.0001
+      dtype: bf16
+    model:
+      name_or_path: "__LANE3_MODEL_PATH__"
+      arch: qwen_image
+      quantize: false
+      quantize_te: false
+      low_vram: false
+    sample:
+      sampler: flowmatch
+      sample_every: 20
+      width: 1024
+      height: 1024
+      prompts:
+      - rustline style, an android scavenger in a tattered tarp poncho, a plated mask-face
+        with two optics one a smashed dark socket, patchwork salvaged plating, full
+        body, in a grimy under-city
+      - rustline style, an android enforcer in corroded tower-plating, a visored helmet-head
+        with an amber slit, rust-edged pauldrons, full body, in a grimy under-city
+      - rustline style, an android servant in a frayed apron, a smooth porcelain mask-face
+        with two dark optics, full body, in a grimy under-city
+      - rustline style, an android dock-laborer with a cargo back-rig and a hook hand,
+        a blunt plated mask-face, full body, on a wet dock
+      - rustline style, an android veteran in a tattered military greatcoat, a gas-mask
+        helmet-head, a rifle-stock forearm, full body, in a grimy under-city
+      - a wooden chair on a plain white background
+      neg: ''
+      seed: 42
+      walk_seed: true
+      guidance_scale: 3
+      sample_steps: 25
+meta:
+  name: rustline_style_v5
+  version: '1.0'

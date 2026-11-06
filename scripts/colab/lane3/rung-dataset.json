@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "purpose": "lane 3 GPU rung fixture training set",
+  "source": {
+    "dataset": "Salt Road Style Plates (studio dataset, staged for Hugging Face)",
+    "split": "train",
+    "licence": "cc-by-4.0",
+    "caption_field": "text"
+  },
+  "buckets": {
+    "resolutions": [
+      512,
+      768,
+      1024
+    ],
+    "note": "every image is 1344x768 (area 1,032,192 <= 1024^2), so ai-toolkit places each image in all three resolution sets"
+  },
+  "items": [
+    {
+      "image": "p01_quay_dawn.png",
+      "sha256": "151323020fcfb92cc56d6f509e49446ff602143bda81b547477988ca8f90c9b9",
+      "bytes": 1451703,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, the long stone quay at first light seen flat-on from across the water, cold pale eastern sky, row of tall narrow limewashed warehouse fronts in mismatched ochre and red-ochre batches, each front a slightly different faded tone with a faint chalky glow, facades leaning forward over the water, a timber hoist beam projecting from each gable peak just under the roof ridge with rope tackle, wet stone lip along the water darker and bluer than the dry pale upper stones, stacked casks branded with cooper marks, coiled hawsers, moored wooden boats, long cold shadows"
+    },
+    {
+      "image": "p10_weighing_floor.png",
+      "sha256": "90bf56b03a1de8ace2932766209e33e37912160b92189c4b297b1554ea2256ad",
+      "bytes": 1515425,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, interior of the public weighing floor, six great brass beam scales hanging in a row from heavy roof timbers, chains and hooks, flat iron weights stacked on the flagstone floor, casks and sacks waiting in a queue line by the door, tarred roof trusses above, daylight from tall doorway falling across the flags"
+    },
+    {
+      "image": "p20_shore_vs_sea.png",
+      "sha256": "ae276eebd825678f722004f5abe4d8c24ece676ae01acedb350cc43ab68a3a67",
+      "bytes": 1585088,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, the harbour mouth where the warm cluttered shore meets the cool empty sea, on one side the dense ochre quay with leaning facades, casks and moored boats in warm crowded detail, on the other side wide plain cool grey-blue water stretching empty to the horizon, the contrast between dense warm land and spare cool sea carrying the whole image"
+    },
+    {
+      "image": "w2_006.png",
+      "sha256": "ee03e863e4bcd524956d764270701072b1410e503d25c75bce7d375cdda4d1fd",
+      "bytes": 1601129,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, the worn quay stone steps at low tide, row of tall narrow warehouse fronts in patchy limewash and oxide brick, tarred timber pilings, weathered oak hoist beams, brass sheave blocks with coiled hemp rope, stacked grain sacks marked by chalk tallies, wooden cargo chests bearing burned merchant monograms, folded sailcloth awnings, iron mooring cleats set in cracked mortar, wet lip of the harbour water, raking amber dusk washing over every roof ridge"
+    },
+    {
+      "image": "w2_013.png",
+      "sha256": "65be281c83015adec05e34609589106e38df847eabdff330f21aabf59c6db163",
+      "bytes": 1706984,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, open-sided quay shelter of tarred timber beams and oxide brick supports, weathered oak dock planks, salt cones stacked in tapering pyramids beneath the rafters, braided hemp rope and coarse sailcloth binding each mound, brass tension clamps securing the canvas edges, chalk tallies on rough burlap tags, painted merchant monograms burned into wooden staves, iron crane base bolted to the wet quay stone, limewashed gable ends in mismatched ochre batches, grey gull on mooring cleat, raking low winter light pooling across the damp planks"
+    },
+    {
+      "image": "w2_019.png",
+      "sha256": "43f5f408beb9892414a995c16c9d666fabdf290cff54a3a4c7ed249f741fb156",
+      "bytes": 2616862,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, the sail loft's tall gable with its full-height loading doors open, sailcloth bolt visible in shadow, patchy limewash facades in mismatched ochre batches, weathered oak door frames, tarred timber roof purlins, stacks of hemp rope coils, oxide brick chimney stack, brass tackle hooks fixed to a support post, wooden casks stamped with burned cooper brands and painted merchant monograms, chalk tally marks scored on rough staves, raking afternoon sun pooling over wet quay stone lips cooler and bluer than dry"
+    },
+    {
+      "image": "w2_028.png",
+      "sha256": "9697509e88ff05ec7226df57c7190798e180c7c764d37852bd33664ae2e380ec",
+      "bytes": 1578679,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, a weathered oak desk heaped with wax pools, stacks of chart parchments bearing chalk tally lines and painted pictorial seals, a brass telescope resting on the tarred timber sill, patched limewash walls in mismatched ochre batches, oxide brick hearth lined with soot blackened tiles, coiled hemp rope draped over iron hooks, folded sailcloth bundles stacked against the floorboards, narrow window framing the wet quay stone lip beyond, stacked casks branded with burned cooper marks, raking morning sun pooling across the sill"
+    },
+    {
+      "image": "w2_034.png",
+      "sha256": "ddb94eea01839d83ad41d429f6e003fdf010106d27b7d23cae1c5e74f26efe9b",
+      "bytes": 1589113,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, wet lip quay stone, oxide brick embankment, tarred timber mooring posts, weathered oak bollards, folded brown sailcloth nets resting in heavy coils, clusters of pale cork floats threaded through hemp rope, brass mending needle lying across the damp surface, row of tall narrow limewashed warehouse fronts in mismatched ochre batches, stacked casks branded with burned cooper marks, raking sun casting long cold shadows across the wet masonry"
+    },
+    {
+      "image": "w2_040.png",
+      "sha256": "2be9e247e05cea001c9b27a764c70d8346d46ebb177c5b5f5f288d11291c77dd",
+      "bytes": 1789694,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, the wet lip of the quay stone cooling blue against the tide line, a rusted iron mooring ring bolted into weathered oak blocks, heavy chain links resting on barnacled masonry below the water mark, row of tall oxide brick merchant stores in patchy limewash batches, timber hoist beams projecting from each gable peak, stacked casks bearing chalk tally marks and burned merchant monograms, folded sailcloth bundles lashed with hemp rope, tarnished brass cleats on damp stone, pale raking sun catching the wet surface"
+    },
+    {
+      "image": "w2_047.png",
+      "sha256": "cbe9c51d64a8371dd97c07659ea450943f674dea29757bab8fc4c2c83ba5a43c",
+      "bytes": 1557838,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, the close up harbour surface, green-grey water ripples catching warm window reflections, wet lip of oxide brick quay stone, patchy limewash warehouse gables in mismatched ochre batches, tarred timber mooring stumps driven deep into mud, lengths of hemp rope coiled around weathered oak bollards, stacked casks bearing burned brands, chalk tallies scored on sailcloth bundles, painted merchant monograms fading along the salt crusted tide line, brass cleat fittings dulled by spray, raking late afternoon sun breaking across the green-grey water"
+    },
+    {
+      "image": "w2_053.png",
+      "sha256": "8cb451f04fff96fc8d06e901f2658e07141963cd3b9ec78612b0b35ca7090dac",
+      "bytes": 2477667,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, cooler blue wet lip of quay stone sloping into the basin, overlapping circles of falling rain expanding across the surface, row of tall narrow limewashed warehouse fronts in mismatched ochre batches, timber mooring posts set in tarred timber sleepers, hemp rope coiled along oxide brick ledges, stacked cargo crates marked with burned brands, chalk tallies, painted merchant monograms, sailcloth draped over brass cleats, weathered oak gangplanks leaning against ironbound hulls, gulls resting on the rafter eaves, overcast flatness pooling into muted grey light"
+    },
+    {
+      "image": "w2_060.png",
+      "sha256": "8c3b70a5d0965fe40d43bce95471bc5d4d86de4a1c310b5a33668cb6d04b77fc",
+      "bytes": 2534359,
+      "width": 1344,
+      "height": 768,
+      "caption": "saltroad style, washing lines strung between warehouse gables, damp sailcloth shirts and linen rags luffing like weathered flags, patchy limewash facings in mismatched ochre batches, tarred timber beams and weathered oak purlins, oxide brick chimneys rising above grey skies, hemp rope coils resting on wet quay stone lips, brass mooring rings set into limestone bollards, stacked cargo crates stamped with burned brands, iron-bound barrels marked by chalk tallies and merchant monograms, gulls wheeling above the rigging gaps, raking sun catching the damp weave"
+    }
+  ]
+}

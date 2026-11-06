@@ -201,15 +201,16 @@ def test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode(tmp_path: P
     assert "https://download.pytorch.org/whl/cu130" in kit_text
     assert "git -C /content/ai-toolkit checkout" in kit_text
     assert "beb94824c51480a04d3c86c718603676fdef6938" in kit_text
-    # The CPU stub stops at the import gate; the 1-step synth_job.yaml run and its .safetensors
-    # check stay in the script behind LANE3_MODE=train (GPU and model required).
+    # The CPU stub stops at the import gate; the GPU rung (the committed rung YAML, run by
+    # ai-toolkit's run.py, with its checkpoints copied off) stays behind LANE3_MODE=train.
     assert 'echo "TRAIN_SKIPPED: cpu stub; training needs a GPU rung"' in kit_text
     assert 'LANE3_MODE="\\${LANE3_MODE:-install}"' in kit_text
     assert "TRAIN_REQUIRES_GPU" in kit_text and "TRAIN_MODEL_REQUIRED" in kit_text
-    assert "/content/lane3_out/synth_job.yaml" in kit_text
-    assert "steps: 1" in kit_text
-    assert "device: cuda:0" in kit_text and "device: cpu" not in kit_text
-    assert "synth_lora.safetensors" in kit_text
+    assert "/content/lane3_out/rung_job.yaml" in kit_text
+    assert "/content/rung-qwen-image.yaml" in kit_text
+    assert "synth_job.yaml" not in kit_text and "synth_lora" not in kit_text
+    for pin in ("PINNED_LANE3_RUNG_SHA=", "PINNED_RUNG_YAML_SHA=", "PINNED_RUNG_DATASET_SHA="):
+        assert pin in kit_text, pin
 
     # Self-sha refusal when EXPECTED_LAUNCH_LANE3_STUB_SHA mismatches
     _, state_dir_self, env_self = _make_fake_colab_env(tmp_path / "self_sha_case")

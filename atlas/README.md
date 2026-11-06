@@ -1,14 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-06 from commit 223751c by Atlas 1.24.0.
+Mapped at 2026-11-06 from commit 61f2c2c by Atlas 1.24.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2618 files); code in JavaScript (247), Python (45), shell (4), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-06 (a3f4439)
+## What changed since 2026-11-06 (223751c)
 
-Nothing structural changed since 2026-11-06; 2 files added and 7 changed content.
+Nothing structural changed since 2026-11-06; 16 files changed content.
 
 ## What comes in
 
@@ -62,9 +62,9 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 5 of 7 commits, inside the tests part.
-- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane1_stub.py** changed together in 4 of 7 commits, inside the tests part.
-- **tests/colab/test_launch_lane1_stub.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 4 of 7 commits, inside the tests part.
+- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 6 of 8 commits, inside the tests part.
+- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane1_stub.py** changed together in 4 of 8 commits, inside the tests part.
+- **tests/colab/test_launch_lane1_stub.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 4 of 8 commits, inside the tests part.
 
 Confidence is low: fewer than 25 source files reach 10 revisions in the window.
 
