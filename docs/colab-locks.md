@@ -20,8 +20,12 @@ That happened on 2026-11-06, when transformers 5.22.2 reached PyPI (15:42:54Z) w
 pinned 5.22.1.
 
 Both the lock compile and the drift check therefore pass uv's `--exclude-newer <instant>`: the
-resolver considers only files uploaded before that instant, on PyPI and on the PyTorch index (both
-publish upload times). A re-resolve then sees what existed when the lock was made, and an upstream
+resolver considers only files uploaded before that instant. PyPI publishes an upload time for
+every file. The PyTorch index (`download.pytorch.org/whl/cu130`) lists one for only some packages
+(torch, torchaudio and triton carry `data-upload-time`; numpy and nvidia-nccl-cu13 do not), and
+uv 0.13.5 warns about a file with no upload time and then excludes it rather than failing. The
+bound therefore still holds: those files are hidden, and resolution falls to PyPI where it needs
+them. A re-resolve then sees what existed when the lock was made, and an upstream
 release can no longer cause `LOCK_DRIFT`. `UV_EXCLUDE_NEWER` and `UV_EXCLUDE_NEWER_PACKAGE` are
 cleared for the compile, so only the committed bound applies.
 
@@ -49,18 +53,22 @@ bound existed keep their old header until their next re-lock.
 
 A bump is a deliberate PR that moves the bound and re-locks in the same change:
 
-1. Pick the new bound (usually `now`), and edit the lane's `.in` if the inputs change.
+1. Pick the new bound, and edit the lane's `.in` if the inputs change. Prefer an instant a few
+   minutes in the past over `now`: an index entry can appear after its recorded upload time, so a
+   bound at `now` could miss a file that a later re-resolve then sees (inferred, not observed).
 2. Run, with uv 0.13.5 on `PATH` or in `UV_BIN`:
 
    ```bash
-   bash scripts/colab/relock.sh lane1 --exclude-newer now
+   bash scripts/colab/relock.sh lane1 --exclude-newer 2026-11-20T11:55:00Z
    bash scripts/colab/relock.sh lane3 --exclude-newer 2026-11-20T12:00:00Z
    ```
 
    `relock.sh` runs the same compile as the drift check (`scripts/colab/lock_common.sh`) and,
    only after it succeeds, writes the lock and its `.exclude-newer` file together. It prints
    `RELOCK_OK lane=… exclude_newer=… pins=… lock_sha256=…`.
-3. Move the lock's sha256 pin in the kit: `PINNED_LOCK_SHA` in `launch_lane1_stub.sh` for lane 1,
+3. A relock always changes the lock's bytes, at least its header (which records the command and
+   the bound), so its sha256 changes even when no package does. Move the lock's sha256 pin in
+   the kit in the same PR, using the `lock_sha256` that `relock.sh` prints: `PINNED_LOCK_SHA` in `launch_lane1_stub.sh` for lane 1,
    `PINNED_OVERRIDE_SHA` in `launch_lane3_stub.sh` for lane 3, and whatever else the kit's
    sha checks then require (its `PINNED_*` block and `tests/colab`). `relock.sh` edits neither.
 4. Run `bash scripts/colab/preflight_resolve.sh lane1` and
@@ -74,4 +82,6 @@ A bump is a deliberate PR that moves the bound and re-locks in the same change:
   the pre-flight, not bounded by time.
 - A file an index removes or replaces in place after the bound (a yank, or a deleted wheel) can
   still change a re-resolve. That is rare and shows up as `LOCK_DRIFT` or `LOCK_COMPILE_FAILED`.
-- The bound relies on the indexes' reported upload times.
+- The bound relies on the indexes' reported upload times. If the PyTorch index later adds upload
+  times to files it lists today without one, uv stops hiding those files, and a re-resolve under
+  the same bound can change (`LOCK_DRIFT`).
