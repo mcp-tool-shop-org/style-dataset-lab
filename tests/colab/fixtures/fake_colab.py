@@ -661,10 +661,21 @@ run_uploaded_local_wheels_lock_block() {
     return 0
   fi
   rm -rf .lock-check-venv
-  uv venv --quiet --python "${host_py}" .lock-check-venv
-  local venv_py=".lock-check-venv/bin/python"
-  [ -e "${venv_py}" ] || venv_py=".lock-check-venv/Scripts/python.exe"
-  if ! uv pip install --python "${venv_py}" --require-hashes --only-binary :all: --no-index --find-links wheels --no-deps -r lane3_out/local-wheels.lock > lane3_out/local-wheels-check.log 2>&1; then
+  # uv runs in the background while this stub keeps emitting vitals and setup lines, so a cold uv
+  # never reads as a silent setup (SETUP_STALL) to the kit's live guards.
+  (
+    uv venv --quiet --python "${host_py}" .lock-check-venv || exit 1
+    venv_py=".lock-check-venv/bin/python"
+    [ -e "${venv_py}" ] || venv_py=".lock-check-venv/Scripts/python.exe"
+    uv pip install --python "${venv_py}" --require-hashes --only-binary :all: --no-index --find-links wheels --no-deps -r lane3_out/local-wheels.lock
+  ) > lane3_out/local-wheels-check.log 2>&1 &
+  local uv_pid="$!"
+  while kill -0 "${uv_pid}" 2>/dev/null; do
+    echo "LOCAL_WHEELS_LOCK_UV_CHECK running"
+    emit_vitals "setup" ""
+    sleep 0.2
+  done
+  if ! wait "${uv_pid}"; then
     cat lane3_out/local-wheels-check.log >&2
     echo "REFUSED: LOCAL_WHEELS_LOCK_REJECTED: uv refused lane3_out/local-wheels.lock" >&2
     exit 1
