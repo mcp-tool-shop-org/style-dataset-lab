@@ -715,6 +715,7 @@ if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
 if os.environ.get("FAKE_VM_TRAIN") == "hang_after_save":
     (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
     time.sleep(600)
+time.sleep(float(os.environ.get("FAKE_VM_TRAIN_SLEEP_S", "0")))
 if os.environ.get("FAKE_VM_TRAIN") != "no_sample":
     (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
 (out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
@@ -1108,13 +1109,22 @@ def main(argv: list[str] | None = None) -> int:
             rate_str = os.environ.get("FAKE_COLAB_GPU_RATE_STR", "8.88/hr")
         else:
             rate_str = os.environ.get("FAKE_COLAB_RATE_STR", "0.26/hr")
+        # FAKE_COLAB_ASSIGNMENTS_SEQ: the post-open "Active assignments" counts, one per post-open
+        # usage call (the last repeats), stepped with FAKE_COLAB_POST_OPEN_RATE_SEQ. Default 1;
+        # OMITLINE drops the line.
+        assignments = "1"
+        assign_seq_raw = os.environ.get("FAKE_COLAB_ASSIGNMENTS_SEQ")
+        if session_opened and assign_seq_raw:
+            aseq = [x.strip() for x in assign_seq_raw.split(",") if x.strip()]
+            assignments = aseq[min(post_count - 1, len(aseq) - 1)]
+        count_line = "" if assignments == "OMITLINE" else f"Active assignments: {assignments}"
         if rate_str == "OMIT":
             print(f"Current balance: {bal} compute units")
-            print("Active assignments: 1")
+            print(count_line)
             return 0
         print(f"Current balance: {bal} compute units")
         print(f"Usage rate: {rate_str}")
-        print("Active assignments: 1")
+        print(count_line)
         return 0
 
     if subcmd == "sessions":

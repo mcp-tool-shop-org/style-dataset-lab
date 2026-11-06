@@ -306,9 +306,13 @@ if card_class == "gpu" and session_opened:
         state = {}
     max_rate = _read_float(out_dir / "max_rate.txt")
     if parsed.get("ok"):
+        import time as _time
         state = lg.update_window_rate(state, account_rate=parsed.get("rate_measured"),
                                       pre_open_rate=existing_pre,
-                                      at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+                                      at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                      epoch=_time.time(),
+                                      assignments=lg.parse_active_assignments(raw_usage),
+                                      min_gap_s=float(os.environ.get("COLAB_RATE_READ_INTERVAL_S", lg.RATE_STABLE_GAP_S)))
         state_f.write_text(_json.dumps(state, indent=2) + "\n", encoding="utf-8", newline="\n")
     if max_rate is not None:
         parsed["rate_for_projection"] = lg.gpu_projection_rate(state, max_rate)
@@ -412,6 +416,10 @@ rec = {"decision": decision, "window_rate": state.get("best_stable"), "account_r
        "polls": polls, "priced_at": max(max_rate, state.get("best_stable") or 0.0)}
 (out / "rate_check.json").write_text(json.dumps(rec) + "\n", encoding="utf-8")
 PYEOF
+  if [ "${decision}" = "assignments_unreadable" ]; then
+    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
+    return 1
+  fi
   if [ "${decision}" = "unread" ]; then
     colab_refuse_logged "${out_dir}" RATE_UNREAD "no stable window rate at or above the GPU floor in ${i} polls after open; the window is not run on a configured or CPU rate"
     return 1
@@ -442,6 +450,10 @@ state = json.loads((out / "rate_window.json").read_text(encoding="utf-8"))
 print(lg.window_rate_decision(state, float((out / "max_rate.txt").read_text(encoding="utf-8").strip())))
 PYEOF
 )"
+  if [ "${decision}" = "assignments_unreadable" ]; then
+    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
+    return 1
+  fi
   if [ "${decision}" = "above_max" ]; then
     colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "mid-run: the window's stable rate rose above --max-rate $(cat "${out_dir}/max_rate.txt")/h (rate_window.json)"
     return 1
@@ -658,12 +670,57 @@ colab_card_is_cpu() {
   [ "$1" = "CPU-high-mem" ] || [ "$1" = "CPU" ]
 }
 
+# The GPU rate gate, shared by every lane. A kit calls colab_gpu_rate_gate_arm before it opens; a
+# GPU card then needs a positive --max-rate (MAX_RATE_REQUIRED otherwise), and the post-open rate
+# polls run 5 s apart (SDLAB_TEST_RATE_READ_INTERVAL_S only under the fake colab CLI). A CPU card
+# keeps its configured rate and is untouched. colab_open_session_locked refuses
+# GPU_RATE_GATE_NOT_ARMED for a GPU card that was not armed, so no lane can open a GPU window
+# without the gate: after `colab new` succeeds it starts the cap clock (START_EPOCH) and reads the
+# stable window rate (colab_read_post_open_rate), before the caller uploads anything.
+COLAB_RATE_READ_POLLS_DEFAULT=24
+COLAB_RATE_READ_INTERVAL_S_DEFAULT=5
+
+# colab_gpu_rate_gate_arm <out_dir> <card> <max_rate> <test_mode>
+colab_gpu_rate_gate_arm() {
+  local out_dir="$1"
+  local card="$2"
+  local max_rate="$3"
+  local test_mode="$4"
+  rm -f "${out_dir}/gpu_rate_gate_armed.txt"
+  if colab_card_is_cpu "${card}"; then
+    export COLAB_CARD_CLASS=cpu
+    return 0
+  fi
+  export COLAB_CARD_CLASS=gpu
+  if ! [[ "${max_rate}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${max_rate}" =~ ^0+(\.0+)?$ ]]; then
+    colab_refuse_logged "${out_dir}" MAX_RATE_REQUIRED "a GPU card (${card}) needs --max-rate <units/h>, the highest window rate it may run at"
+    return 2
+  fi
+  export COLAB_RATE_READ_POLLS="${COLAB_RATE_READ_POLLS_DEFAULT}"
+  export COLAB_RATE_READ_INTERVAL_S="${COLAB_RATE_READ_INTERVAL_S_DEFAULT}"
+  if [ -n "${SDLAB_TEST_RATE_READ_INTERVAL_S:-}" ]; then
+    if [ "${test_mode}" != "1" ]; then
+      colab_refuse_logged "${out_dir}" PIN_OVERRIDE_IN_LIVE_RUN "SDLAB_TEST_RATE_READ_INTERVAL_S set without SDLAB_TEST_FAKE_COLAB=1 and the fake colab CLI on PATH"
+      return 1
+    fi
+    export COLAB_RATE_READ_INTERVAL_S="${SDLAB_TEST_RATE_READ_INTERVAL_S}"
+  fi
+  printf '%s\n' "${max_rate}" > "${out_dir}/max_rate.txt"
+  printf '%s %s %s\n' "${card}" "${max_rate}" "${COLAB_RATE_READ_INTERVAL_S}" > "${out_dir}/gpu_rate_gate_armed.txt"
+}
+
 colab_open_session_locked() {
   local session="$1"
   local card="$2"
   local out_dir="$3"
   local lock_file="${COLAB_OPEN_LOCK:-/tmp/colab-window-open.lock}"
   mkdir -p "$(dirname "${lock_file}")"
+  if ! colab_card_is_cpu "${card}"; then
+    if [ "${COLAB_CARD_CLASS:-}" != "gpu" ] || [ ! -s "${out_dir}/gpu_rate_gate_armed.txt" ] || [ ! -s "${out_dir}/max_rate.txt" ]; then
+      colab_refuse_logged "${out_dir}" GPU_RATE_GATE_NOT_ARMED "a GPU card (${card}) opens only after colab_gpu_rate_gate_arm"
+      return 2
+    fi
+  fi
 
   local new_args=()
   if colab_card_is_cpu "${card}"; then
@@ -694,6 +751,14 @@ colab_open_session_locked() {
     fi
   fi
   printf '1\n' > "${out_dir}/session_opened.txt"
+  if ! colab_card_is_cpu "${card}"; then
+    # The cap and wall clock starts the moment `colab new` succeeds: the rate polls and everything
+    # after them are billed time and count.
+    START_EPOCH="$(date -u +%s)"
+    date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${out_dir}/cap_clock_started_at.txt"
+    colab_read_post_open_rate "${PY_BIN:?the kit must set PY_BIN}" "${out_dir}" "${COLAB_RATE_READ_POLLS}" \
+      "${COLAB_RATE_READ_INTERVAL_S}" "$(cat "${out_dir}/max_rate.txt")" || return 1
+  fi
 }
 
 colab_scrub_all_logs() {
@@ -872,6 +937,8 @@ REFUSAL_CODES = (
     "HF_READ_TOKEN_MISSING",
     "RATE_UNREAD",
     "RATE_ABOVE_MAX",
+    "ASSIGNMENTS_UNREADABLE",
+    "GPU_RATE_GATE_NOT_ARMED",
     "MAX_RATE_REQUIRED",
     "TRAIN_MAX_RATE_REQUIRED",
     "TRAIN_SAMPLE_MISSING",

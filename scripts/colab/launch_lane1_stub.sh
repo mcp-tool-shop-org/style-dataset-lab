@@ -24,10 +24,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="6e458a8037f6933d6e5f0b8497ca9d5c2e57323f8a08b0b9a526ca9d07026d2a"
+PINNED_LAUNCH_GUARDS_SHA="41a61b1a1de774b7d5c842557e8f0f7db60136cd695287269afa2564baa2a99e"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="5e19f1786b5179950129c1c3c283dd607c7513eb57651557f9cd08ac96196639"
-PINNED_SELF_SHA="863fb48a98fcc66efc1bea8d4f7acedbbb97a5596dc5bda9971ea474c683446a"
+PINNED_COLAB_WINDOW_SHA="9da858589cfe2832745c26f2f201772c578753a1e419691eb42011e5d7175a6e"
+PINNED_SELF_SHA="a2853d45f2c225e64b0356e3a0b5a162ab4a1c47c504b28bcaa84a8110ba7338"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -41,6 +41,7 @@ CAP="${CAP:-0.05}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
+MAX_RATE=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -51,6 +52,7 @@ while [ "$#" -gt 0 ]; do
     --wall-s) WALL_S="$2"; shift 2 ;;
     --grace-s) GRACE_S="$2"; shift 2 ;;
     --margin) MARGIN="$2"; shift 2 ;;
+    --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -163,13 +165,10 @@ fi
 printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
 # Pre-open cap and host-RAM check via launch_guards.py
-# The card class sets the rate policy (launch_guards.parse_usage_text): this CPU stub keeps the
-# labelled configured rate; a GPU card would be priced only by its live post-open rate.
-if colab_card_is_cpu "${CARD}"; then
-  export COLAB_CARD_CLASS=cpu
-else
-  export COLAB_CARD_CLASS=gpu
-fi
+# The card class sets the rate policy: a CPU stub keeps the labelled configured rate; a GPU card
+# goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
+# at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
 # Independent wall watcher (cannot be blocked by a child timeout)

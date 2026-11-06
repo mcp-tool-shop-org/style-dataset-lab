@@ -1255,10 +1255,12 @@ def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_pa
             os.kill(pid, 9)
 
 
-def test_a_midrun_rise_above_max_rate_refuses_and_bundles(tmp_path: Path) -> None:
+@pytest.mark.parametrize("rise", ["9.80", "12.00"])
+def test_a_midrun_rise_above_max_rate_refuses_and_bundles(tmp_path: Path, rise: str) -> None:
+    # Our own rise, the assignment count unchanged (the fake's default 1): it trips the max.
     state_dir, env, src = _rung_env(tmp_path)
     env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
-                "FAKE_COLAB_POST_OPEN_RATE_SEQ": "8.88/hr,8.88/hr,8.88/hr,8.88/hr,9.80/hr",
+                "FAKE_COLAB_POST_OPEN_RATE_SEQ": f"8.88/hr,8.88/hr,8.88/hr,8.88/hr,{rise}/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
     res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
     content = state_dir / "content"
@@ -1268,7 +1270,7 @@ def test_a_midrun_rise_above_max_rate_refuses_and_bundles(tmp_path: Path) -> Non
         assert win["refusal_code"] == "RATE_ABOVE_MAX"
         assert "mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
         assert "BUNDLE_AFTER_FAILURE: downloaded" in (out_dir / "guards.log").read_text(encoding="utf-8")
-        assert max(r["window_rate"] for r in win["rate_readings"]) == 9.8
+        assert max(r["window_rate"] or 0 for r in win["rate_readings"]) == float(rise)
     finally:
         for pid in _rung_processes(content):
             os.kill(pid, 9)
@@ -1301,22 +1303,114 @@ def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Pa
             os.kill(pid, 9)
 
 
+def _fold(st: dict, rates, *, pre, counts=None, start=0.0, step=5.0) -> dict:
+    import launch_guards as lg
+
+    for k, r in enumerate(rates):
+        lg.update_window_rate(st, account_rate=r, pre_open_rate=pre, at="t", epoch=start + k * step,
+                              assignments=1 if counts is None else counts[k])
+    return st
+
+
 def test_window_rate_state_unit() -> None:
     import launch_guards as lg
 
-    st: dict = {}
-    for r in (0.26, 9.14, 9.14):
-        lg.update_window_rate(st, account_rate=r, pre_open_rate=0.26, at="t")
+    st = _fold({}, (0.26, 9.14, 9.14), pre=0.26)
     assert st["best_stable"] == 8.88 and [x["stable"] for x in st["readings"]] == [False, False, True]
     assert lg.window_rate_decision(st, 8.0) == "above_max" and lg.window_rate_decision(st, 9.5) == "ok"
     assert lg.gpu_projection_rate(st, 9.5) == 9.5 and lg.gpu_projection_rate(st, 8.0) == 8.88
-    low: dict = {}
-    for r in (0.5, 0.5, 0.5):
-        lg.update_window_rate(low, account_rate=r, pre_open_rate=None, at="t")
+    low = _fold({}, (0.5, 0.5, 0.5), pre=None)
     assert lg.window_rate_decision(low, 9.5) == "unread" and lg.gpu_projection_rate(low, 9.5) == 9.5
-    gone: dict = {}
-    lg.update_window_rate(gone, account_rate=None, pre_open_rate=0.0, at="t")
+    gone = _fold({}, (None,), pre=0.0)
     assert gone["readings"][0]["window_rate"] is None and lg.GPU_RATE_FLOOR == 1.0
+    assert lg.parse_active_assignments("Current balance: 1 compute units\nActive assignments: 2\n") == 2
+    assert lg.parse_active_assignments("Usage rate: 1/hr") is None
+
+
+def test_the_stability_pair_is_five_seconds_apart() -> None:
+    import launch_guards as lg
+
+    assert lg.RATE_STABLE_GAP_S == 5.0
+    # Mid-run cycles poll every 2 s: a read 2 s after the last counted one is recorded, uncounted.
+    st = _fold({}, (8.88, 8.88), pre=0.0, step=2.0)
+    assert [r["counted"] for r in st["readings"]] == [True, False] and st.get("best_stable") is None
+    st = _fold(st, (8.88,), pre=0.0, start=5.0)
+    assert st["readings"][-1]["stable"] is True and st["best_stable"] == 8.88
+
+
+def test_a_count_change_rebaselines_the_neighbour_once_it_settles() -> None:
+    import launch_guards as lg
+
+    # A neighbour opens mid-run: 8.88 -> 17.76 with the count 1 -> 2. Two agreeing reads at the new
+    # count settle it; neither is judged; then the window reads 8.88 again.
+    st = _fold({}, (8.88, 8.88, 17.76, 17.76, 17.76, 17.76), pre=0.0, counts=(1, 1, 2, 2, 2, 2))
+    r = st["readings"]
+    assert r[2]["rebaseline_pending"] is True and r[2]["window_rate"] is None
+    assert r[3]["rebaselined"] is True and r[3]["neighbour_baseline"] == 8.88
+    assert [x["window_rate"] for x in r[4:]] == [8.88, 8.88]
+    assert st["best_stable"] == 8.88 and lg.gpu_projection_rate(st, 9.5) == 9.5
+    assert lg.window_rate_decision(st, 9.5) == "ok"
+    # A neighbour closes: pre-open 8.88, then 17.76 at count 2, then 8.88 at count 1; afterwards our
+    # own rise to 12.00 (count unchanged) is seen at full size and trips 9.5.
+    st = _fold({}, (17.76, 17.76, 8.88, 8.88, 8.88, 12.0, 12.0), pre=8.88, counts=(2, 2, 1, 1, 1, 1, 1))
+    assert st["readings"][3]["rebaselined"] is True and st["readings"][3]["neighbour_baseline"] == 0.0
+    assert [x["window_rate"] for x in st["readings"]] == [8.88, 8.88, None, 8.88, 8.88, 12.0, 12.0]
+    assert st["best_stable"] == 12.0 and lg.window_rate_decision(st, 9.5) == "above_max"
+
+
+def test_the_count_leading_the_rate_by_one_read_does_not_trip() -> None:
+    import launch_guards as lg
+
+    # The count reads 2 one read before the neighbour's rate arrives: 8.88 (count 2), then 17.76.
+    st = _fold({}, (8.88, 8.88, 8.88, 17.76, 17.76, 17.76, 17.76), pre=0.0, counts=(1, 1, 2, 2, 2, 2, 2))
+    assert lg.window_rate_decision(st, 9.5) == "ok" and st["best_stable"] == 8.88
+    reb = [x for x in st["readings"] if x.get("rebaselined")]
+    assert len(reb) == 1 and reb[0]["neighbour_baseline"] == 8.88
+    assert max(x["window_rate"] or 0 for x in st["readings"]) == 8.88
+
+
+@pytest.mark.parametrize("bad", [None, 0])
+def test_a_bad_count_for_three_reads_is_unreadable_and_one_is_recorded_only(bad) -> None:
+    import launch_guards as lg
+
+    one = _fold({}, (8.88, 8.88, 8.88, 8.88), pre=0.0, counts=(1, 1, bad, 1))
+    assert one["readings"][2]["assignments_bad"] is True
+    assert lg.window_rate_decision(one, 9.5) == "ok" and not one.get("assignments_unreadable")
+    three = _fold({}, (8.88, 8.88, 8.88, 8.88, 8.88), pre=0.0, counts=(1, 1, bad, bad, bad))
+    assert lg.window_rate_decision(three, 9.5) == "assignments_unreadable"
+    assert lg.parse_active_assignments("Current balance: 1 compute units\nUsage rate: 8.88/hr\n") is None
+
+
+def _rate_env(env: dict, seq: str, counts: str, pre: str = "0.00/hr") -> None:
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": pre, "FAKE_COLAB_POST_OPEN_RATE_SEQ": seq,
+                "FAKE_COLAB_ASSIGNMENTS_SEQ": counts, "FAKE_VM_TRAIN_SLEEP_S": "4",
+                "GUARD_POLL_INTERVAL_S": "0.3"})
+
+
+def test_a_neighbour_opening_midrun_rebaselines_and_our_window_runs_on(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    _rate_env(env, "8.88/hr,8.88/hr,8.88/hr,8.88/hr,17.76/hr", "1,1,1,1,2")
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    assert res.returncode == 0, res.stderr[-3000:]
+    win = _win(out_dir)
+    assert win["status"] == "ok" and win["refusal_code"] is None
+    reb = [r for r in win["rate_readings"] if r.get("rebaselined")]
+    assert reb and reb[0]["assignments_before"] == 1 and reb[0]["assignments"] == 2
+    assert any(r.get("rebaseline_pending") for r in win["rate_readings"])
+    assert reb[0]["neighbour_baseline"] == 8.88
+    assert all((r["window_rate"] or 0) <= 8.88 for r in win["rate_readings"])
+    assert win["rate_used_for_cap_and_projection"] == 9.5
+
+
+def test_a_neighbour_closing_midrun_is_not_an_under_read(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    _rate_env(env, "17.76/hr,17.76/hr,17.76/hr,17.76/hr,8.88/hr", "2,2,2,2,1", pre="8.88/hr")
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    assert res.returncode == 0, res.stderr[-3000:]
+    readings = _win(out_dir)["rate_readings"]
+    after = [r for r in readings if r["counted"] and r.get("assignments") == 1 and not r.get("rebaseline_pending")]
+    assert after and all(r["window_rate"] == 8.88 for r in after), after
+    assert any(r.get("rebaselined") and r["neighbour_baseline"] == 0.0 for r in readings)
 
 
 USAGE_0 = "Current balance: 1812.22 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n"

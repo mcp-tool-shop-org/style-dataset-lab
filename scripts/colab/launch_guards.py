@@ -148,34 +148,109 @@ class RateUnread(Exception):
 CARD_CLASSES = ("gpu", "cpu")
 
 # The window rate. `colab usage` reports the ACCOUNT's rate (docs/colab-cli-contract.md): a window's
-# own rate is the post-open reading minus the pre-open one. It counts only when it is stable (two
-# consecutive reads, one poll interval apart, within RATE_STABLE_TOLERANCE) and at or above
-# GPU_RATE_FLOOR. The floor is below the cheapest GPU measured, the T4 at 1.07/hr (16 reads in
-# E:/AI/Publisher/receipts/colab/windowC2-12-t4-s1a-20261027), and above the highest CPU rate,
-# 0.26/hr. A GPU window is priced on max(--max-rate, the highest stable window rate seen), never on
-# a window or account rate alone.
+# own rate is the account reading minus the neighbour baseline (at first the pre-open reading). It
+# counts only when it is stable (two reads at least RATE_STABLE_GAP_S apart agreeing within
+# RATE_STABLE_TOLERANCE) and at or above GPU_RATE_FLOOR. The floor is below the cheapest GPU
+# measured, the T4 at 1.07/hr (16 reads, receipt windowC2-12-t4-s1a-20261027), and above the highest
+# CPU rate, 0.26/hr. A GPU window is priced on max(--max-rate, the highest stable window rate seen),
+# never on a window or account rate alone.
+#
+# "Active assignments" is recorded with every reading. When it changes, another window opened or
+# closed. Nothing is judged until the count settles: two counted reads at the new count, at least
+# RATE_STABLE_GAP_S apart, whose account rates agree within the tolerance (the count can arrive a
+# read before the neighbour's rate). Then the neighbour is re-baselined: baseline = account - our
+# last stable rate. Pending or settling reads are never judged against the max and never raise our
+# priced rate, which stays max(--max-rate, highest stable seen). Only a read at an unchanged count
+# may raise our rate or trip the max. Known limit: a neighbour opening on the same read our own rate
+# rises folds that rise into the baseline; pricing at max(--max-rate, seen) bounds the cost.
+#
+# A missing count, or 0 while our window is open, is a bad read: recorded, the rate not judged, and
+# ASSIGNMENTS_UNREADABLE after ASSIGNMENTS_BAD_LIMIT consecutive bad reads.
 GPU_RATE_FLOOR = 1.00
 RATE_STABLE_TOLERANCE = 0.01
+RATE_STABLE_GAP_S = 5.0
+ASSIGNMENTS_BAD_LIMIT = 3
+
+
+def parse_active_assignments(raw_usage: str) -> int | None:
+    m = re.search(r"^\s*Active\s+assignments:\s*(\d+)\s*$", raw_usage or "", re.I | re.M)
+    return int(m.group(1)) if m else None
 
 
 def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre_open_rate: float | None,
-                       at: str, floor: float = GPU_RATE_FLOOR,
+                       at: str, epoch: float, assignments: int | None,
+                       min_gap_s: float = RATE_STABLE_GAP_S, floor: float = GPU_RATE_FLOOR,
                        tolerance: float = RATE_STABLE_TOLERANCE) -> dict[str, Any]:
-    """Fold one post-open `colab usage` reading into the window-rate state (kept in the out dir):
-    every reading is recorded; a window rate is `stable` when it is at or above the floor and agrees
-    with the previous reading's within the tolerance; `best_stable` is the highest stable one."""
+    """Fold one post-open `colab usage` reading into the window-rate state (kept in the out dir).
+    Every reading is recorded. A bad count (missing, or 0) is recorded and judged nothing; three in
+    a row set `assignments_unreadable`. A read less than `min_gap_s` after the last counted one is
+    recorded as `counted: false`. A changed count starts a pending re-baseline that settles on two
+    agreeing reads at the new count. Otherwise the window rate is `stable` when it is at or above
+    the floor and agrees with the last counted window rate within the tolerance; `best_stable` is
+    the highest stable one."""
     readings = state.setdefault("readings", [])
-    pre = float(pre_open_rate) if pre_open_rate is not None else 0.0
-    window = None if account_rate is None else round(max(float(account_rate) - pre, 0.0), 4)
+    state["floor"] = floor
+    if "neighbour_baseline" not in state:
+        state["neighbour_baseline"] = float(pre_open_rate) if pre_open_rate is not None else 0.0
+    base = float(state["neighbour_baseline"])
+    rec: dict[str, Any] = {"at": at, "epoch": round(float(epoch), 3), "account_rate": account_rate,
+                           "pre_open_rate": pre_open_rate, "assignments": assignments,
+                           "neighbour_baseline": base, "window_rate": None, "stable": False}
+    if assignments is None or int(assignments) <= 0:
+        state["assignments_bad_streak"] = int(state.get("assignments_bad_streak", 0)) + 1
+        if state["assignments_bad_streak"] >= ASSIGNMENTS_BAD_LIMIT:
+            state["assignments_unreadable"] = True
+        rec.update({"counted": False, "assignments_bad": True})
+        readings.append(rec)
+        return state
+    state["assignments_bad_streak"] = 0
+    last_epoch = state.get("last_counted_epoch")
+    if last_epoch is not None and float(epoch) - float(last_epoch) < float(min_gap_s):
+        rec["counted"] = False
+        readings.append(rec)
+        return state
+    rec["counted"] = True
+    state["last_counted_epoch"] = float(epoch)
+    known = "last_assignments" in state
+    prev_count = state.get("last_assignments")
+    state["last_assignments"] = assignments
+    pending = state.get("rebaseline_pending")
+    if known and assignments != prev_count:
+        # A new count: start (or restart) the pending re-baseline. Judge nothing.
+        state["rebaseline_pending"] = {"count": assignments, "from": prev_count, "last_account": account_rate}
+        rec.update({"rebaseline_pending": True, "assignments_before": prev_count})
+        readings.append(rec)
+        return state
+    if pending is not None:
+        last_acc = pending.get("last_account")
+        if (account_rate is None or last_acc is None
+                or abs(float(account_rate) - float(last_acc)) > tolerance):
+            pending["last_account"] = account_rate
+            rec["rebaseline_pending"] = True
+            readings.append(rec)
+            return state
+        # Settled: two agreeing reads at the new count.
+        ours = state.get("last_stable")
+        if ours is not None:
+            base = round(max(float(account_rate) - float(ours), 0.0), 4)
+            state["neighbour_baseline"] = base
+        state["last_window"] = ours
+        state.pop("rebaseline_pending", None)
+        rec.update({"rebaselined": True, "window_rate": ours, "neighbour_baseline": base,
+                    "assignments_before": pending.get("from")})
+        readings.append(rec)
+        return state
+    window = None if account_rate is None else round(max(float(account_rate) - base, 0.0), 4)
     prev = state.get("last_window")
     stable = (window is not None and window >= floor and prev is not None
               and abs(window - float(prev)) <= tolerance)
-    readings.append({"at": at, "account_rate": account_rate, "pre_open_rate": pre, "window_rate": window,
-                     "stable": stable})
+    rec.update({"window_rate": window, "stable": stable})
+    readings.append(rec)
     state["last_window"] = window
-    if stable and (state.get("best_stable") is None or window > state["best_stable"]):
-        state["best_stable"] = window
-    state["floor"] = floor
+    if stable:
+        state["last_stable"] = window
+        if state.get("best_stable") is None or window > state["best_stable"]:
+            state["best_stable"] = window
     return state
 
 
@@ -186,7 +261,10 @@ def gpu_projection_rate(state: dict[str, Any], max_rate: float) -> float:
 
 
 def window_rate_decision(state: dict[str, Any], max_rate: float) -> str:
-    """`unread` (no stable window rate at or above the floor yet), `above_max` or `ok`."""
+    """`assignments_unreadable`, `unread` (no stable window rate at or above the floor yet),
+    `above_max` or `ok`."""
+    if state.get("assignments_unreadable"):
+        return "assignments_unreadable"
     best = state.get("best_stable")
     if best is None:
         return "unread"
