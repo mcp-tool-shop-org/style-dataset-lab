@@ -353,7 +353,9 @@ def classify_hub_error(exc: BaseException) -> tuple[str, str]:
     status = status if isinstance(status, int) else getattr(exc, "code", None)
     # The detail is the status code and a fixed message only: never the exception's text, which can
     # echo the request (and so the token).
-    http = str(status) if isinstance(status, int) else "none"
+    # A label from a fixed table, so nothing of the failed call's own data reaches the message.
+    http = {401: "401", 403: "403", 404: "404", 429: "429", 500: "500", 502: "502", 503: "503"}.get(
+        status if isinstance(status, int) else -1, "other")
     if "RevisionNotFound" in name or (status == 404 and "revision" in str(exc).lower()):
         return "MODEL_REVISION_NOT_FOUND", f"the pinned revision was not found (http={http})"
     if status in (401, 403) or "Gated" in name:
