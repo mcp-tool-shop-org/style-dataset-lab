@@ -4,6 +4,19 @@
   "help_fixture": "tests/colab/fixtures/colab_help.txt",
   "session_row_shape": "[<SESSION>] <TOKEN> | <TOKEN>: <TOKEN> | <TOKEN>: <TOKEN> | <TOKEN>: <TOKEN>",
   "empty_sessions_line": "[colab] No active sessions found on server.",
+  "contents_api": {
+    "source": "google-colab-cli 0.7.4 colab_cli/contents.py:29-45 (_request: one HTTP call to /api/contents/<path>; 404 raises FileNotFoundError, any other error raise_for_status), :56-72 (upload: one PUT of the whole file, type file, no directory step), :74-90 (download: GET then a plain open(local_path, 'wb')); colab_cli/commands/files.py:88-102 (upload messages, exit 1 on any error), :121-132 (download messages, exit 1 on any error). HTTP 500 for a PUT into a missing directory observed in window sdlab-l3-stub-3 (2026-11-05).",
+    "remote_root": "/content",
+    "upload_creates_parent_dirs": false,
+    "upload_missing_parent_http_status": 500,
+    "download_creates_local_parent_dirs": false,
+    "upload_ok_line": "[colab] Uploaded '{local}' to '{remote}'",
+    "upload_failed_prefix": "[colab] Upload failed: ",
+    "upload_local_missing_line": "[colab] Local file '{local}' not found.",
+    "download_ok_line": "[colab] Downloaded '{remote}' to '{local}'",
+    "download_failed_prefix": "[colab] Download failed: ",
+    "download_missing_remote_error": "File or directory not found: {remote}"
+  },
   "global_options": [
     "--auth",
     "--client-oauth-config",

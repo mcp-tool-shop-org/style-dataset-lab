@@ -250,8 +250,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 8,
-        "lines": 142,
+        "commits": 7,
+        "lines": 143,
         "path": "CHANGELOG.md"
       },
       {
@@ -300,8 +300,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 12,
-        "lines": 459,
+        "commits": 11,
+        "lines": 452,
         "path": "atlas/README.md"
       },
       {
@@ -310,18 +310,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 12,
-        "lines": 1668,
+        "commits": 11,
+        "lines": 1644,
         "path": "atlas/page.json"
       },
       {
-        "commits": 12,
-        "lines": 53547,
+        "commits": 11,
+        "lines": 53496,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 12,
-        "lines": 30965,
+        "commits": 11,
+        "lines": 31073,
         "path": "atlas/structure.json"
       },
       {
@@ -645,13 +645,13 @@
         "path": "lib/workflow-profiles.js"
       },
       {
-        "commits": 9,
-        "lines": 604,
+        "commits": 8,
+        "lines": 600,
         "path": "package-lock.json"
       },
       {
-        "commits": 8,
-        "lines": 17,
+        "commits": 7,
+        "lines": 15,
         "path": "package.json"
       },
       {
@@ -7090,8 +7090,13 @@
         "path": "scripts/colab/ai-toolkit-override-py315.txt"
       },
       {
+        "commits": 1,
+        "lines": 100,
+        "path": "scripts/colab/classify_install_log.py"
+      },
+      {
         "commits": 4,
-        "lines": 730,
+        "lines": 738,
         "path": "scripts/colab/colab_window.sh"
       },
       {
@@ -7106,12 +7111,12 @@
       },
       {
         "commits": 5,
-        "lines": 477,
+        "lines": 485,
         "path": "scripts/colab/launch_lane1_stub.sh"
       },
       {
         "commits": 5,
-        "lines": 611,
+        "lines": 629,
         "path": "scripts/colab/launch_lane3_stub.sh"
       },
       {
@@ -7126,7 +7131,7 @@
       },
       {
         "commits": 1,
-        "lines": 25,
+        "lines": 24,
         "path": "scripts/colab/locks/lane3-local-wheels.json"
       },
       {
@@ -7141,7 +7146,7 @@
       },
       {
         "commits": 1,
-        "lines": 231,
+        "lines": 328,
         "path": "scripts/colab/preflight_resolve.sh"
       },
       {
@@ -7456,8 +7461,38 @@
       },
       {
         "commits": 4,
-        "lines": 1016,
+        "lines": 1092,
         "path": "tests/colab/fixtures/fake_colab.py"
+      },
+      {
+        "commits": 1,
+        "lines": 10,
+        "path": "tests/colab/fixtures/uv_logs/hash_mismatch.txt"
+      },
+      {
+        "commits": 1,
+        "lines": 7,
+        "path": "tests/colab/fixtures/uv_logs/network_retry.txt"
+      },
+      {
+        "commits": 1,
+        "lines": 2,
+        "path": "tests/colab/fixtures/uv_logs/no_hash.txt"
+      },
+      {
+        "commits": 1,
+        "lines": 5,
+        "path": "tests/colab/fixtures/uv_logs/no_wheel.txt"
+      },
+      {
+        "commits": 1,
+        "lines": 3,
+        "path": "tests/colab/fixtures/uv_logs/not_found.txt"
+      },
+      {
+        "commits": 1,
+        "lines": 89,
+        "path": "tests/colab/test_classify_install_log.py"
       },
       {
         "commits": 1,
@@ -7471,13 +7506,18 @@
       },
       {
         "commits": 5,
-        "lines": 1313,
+        "lines": 1367,
         "path": "tests/colab/test_launch_lane1_stub.py"
       },
       {
         "commits": 5,
-        "lines": 1064,
+        "lines": 1118,
         "path": "tests/colab/test_launch_lane3_stub.py"
+      },
+      {
+        "commits": 1,
+        "lines": 188,
+        "path": "tests/colab/test_preflight_resolve.py"
       },
       {
         "commits": 2,
@@ -7760,9 +7800,9 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-06T00:17:00.138Z",
+  "generatedAt": "2026-11-06T01:20:58.252Z",
   "generatedFrom": {
-    "commit": "c11e871f8a472edf2dd08b212cf5abc061af338c"
+    "commit": "4ee649bde382e2abe28dc16c35c8e92e0bd849fc"
   },
   "pairs": [
     {
@@ -7874,8 +7914,8 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-05T18:33:13-05:00",
-    "inScopeFiles": 3279,
+    "headDate": "2026-11-05T19:37:52-05:00",
+    "inScopeFiles": 3281,
     "pinnedStart": null,
     "priorFloor": "fallen",
     "qualifyingCommits": 111,
@@ -7883,7 +7923,7 @@
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-09T23:33:13.000Z",
+    "since": "2026-05-10T00:37:52.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

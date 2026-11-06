@@ -85,3 +85,6 @@ projects/*/outputs/sheets/
 
 # Blender module renders + saved scenes (regenerable from the module .py sources)
 projects/*/inputs/blender/out/
+
+# Out dirs of live-mode kit tests (tests/colab/conftest.py); removed after each test
+.pytest-live-out/

@@ -9,7 +9,11 @@ Enforces the recorded Colab CLI v0.7.4 contract against `colab_help.txt` and
 - `usage` prints the real text format (`Current balance: <float> compute units`,
   `Usage rate: <float>/hr`, `Active assignments: <int>`);
 - `exec -f` executes the given local `.py` file's source with cwd set to a fake
-  `/content` directory, `__file__` undefined, and the `--env` values applied.
+  `/content` directory, `__file__` undefined, and the `--env` values applied;
+- `upload` and `download` follow the contents-API facts in the contract's `contents_api`
+  block: an upload never creates a remote directory and one into a missing directory fails
+  with HTTP 500 and exit 1; a download of a missing remote file fails (404) and one into a
+  missing local directory fails; both print the real CLI's success and failure lines.
 """
 
 from __future__ import annotations
@@ -37,6 +41,23 @@ EMPTY_SESSIONS_LINE = "[colab] No active sessions found on server."
 DEFAULT_SESSION_ROW_TEMPLATE = (
     "[{sid}] m-s-fake-{sid} | hw: {gpu} | status: READY | age: 1m"
 )
+
+CONTENTS_API_KEYS = (
+    "source",
+    "remote_root",
+    "upload_creates_parent_dirs",
+    "upload_missing_parent_http_status",
+    "download_creates_local_parent_dirs",
+    "upload_ok_line",
+    "upload_failed_prefix",
+    "upload_local_missing_line",
+    "download_ok_line",
+    "download_failed_prefix",
+    "download_missing_remote_error",
+)
+# The query string the real CLI's failed-request message carries (contents.py:36): the session's
+# proxy token, which the kit must keep out of everything but the scrubbed colab.log.
+FAKE_CONTENTS_TOKEN = "secret_proxy_tok_contents_777"
 
 GLOBAL_VALUE_FLAGS: frozenset[str] = frozenset(
     {"--auth", "--client-oauth-config", "-c", "--config"}
@@ -102,6 +123,19 @@ def load_and_verify_contract(
         raise ValueError(
             f"Contract empty_sessions_line mismatch: {contract.get('empty_sessions_line')!r}"
         )
+
+    contents_api = contract.get("contents_api")
+    if not isinstance(contents_api, dict):
+        raise ValueError("Contract contents_api block missing")
+    for key in CONTENTS_API_KEYS:
+        if key not in contents_api:
+            raise ValueError(f"Contract contents_api.{key} missing")
+    if contents_api["upload_creates_parent_dirs"] is not False:
+        raise ValueError("Contract contents_api.upload_creates_parent_dirs must be false (one PUT, no mkdir)")
+    if contents_api["download_creates_local_parent_dirs"] is not False:
+        raise ValueError("Contract contents_api.download_creates_local_parent_dirs must be false (plain open)")
+    if contents_api["upload_missing_parent_http_status"] != 500:
+        raise ValueError("Contract contents_api.upload_missing_parent_http_status must be 500")
 
     top_opts = parsed_help.get("top", set())
     for gopt in contract.get("global_options", []):
@@ -375,6 +409,10 @@ def _write_fake_remote_scripts(content_dir: Path) -> None:
     echo "REFUSED: VENV_IMPORT_GATE_MISSING: post-install import gate missing in ${uploaded_sh}" >&2
     exit 1
   fi
+  if ! grep -Fq "PYTHON_IDENTITY " "${uploaded_sh}" || ! grep -Fq "PYTHON_BUILD_MISMATCH" "${uploaded_sh}"; then
+    echo "REFUSED: PYTHON_IDENTITY_GATE_MISSING: interpreter identity record and build gate missing in ${uploaded_sh}" >&2
+    exit 1
+  fi
 }
 """
     lane1_body = (
@@ -382,12 +420,26 @@ def _write_fake_remote_scripts(content_dir: Path) -> None:
 set -euo pipefail
 : "${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
 : "${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
+: "${PINNED_PYTHON_BUILD:?missing PINNED_PYTHON_BUILD}"
 : "${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
 : "${PINNED_COMFYUI_REPO:?missing PINNED_COMFYUI_REPO}"
 : "${PINNED_COMFYUI_COMMIT:?missing PINNED_COMFYUI_COMMIT}"
 : "${PINNED_COMFY_HEADLESS_SPEC:?missing PINNED_COMFY_HEADLESS_SPEC}"
 
-mkdir -p lane1_out
+
+# The uploaded script's sdlab-remote-dirs block is real kit code: run it here, with /content mapped
+# to this fake /content, so the lane's directories exist only if the kit's own block made them.
+run_uploaded_remote_dirs_block() {
+  local uploaded_sh="$1"
+  if [ ! -f "${uploaded_sh}" ] || ! grep -q '^# >>> sdlab-remote-dirs$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-remote-dirs$' "${uploaded_sh}"; then
+    echo "REFUSED: REMOTE_DIRS_BLOCK_MISSING: ${uploaded_sh} makes none of its remote directories" >&2
+    exit 1
+  fi
+  sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
+  bash .remote_dirs_block.sh
+}
+run_uploaded_remote_dirs_block "remote_lane1_stub.sh.uploaded"
+[ -d lane1_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane1_out not made by the kit" >&2; exit 1; }
 : > lane1_out/setup.log
 echo "setup" > lane1_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
@@ -457,6 +509,16 @@ elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usa
 fi
 
 verify_uploaded_venv_script "remote_lane1_stub.sh.uploaded" "1" 2>&1 | tee -a lane1_out/setup.log
+identity_build="20261021"
+if [ "${mode}" = "python_build_mismatch" ]; then
+  identity_build="20250101"
+fi
+echo 'PYTHON_IDENTITY {"key": "cpython-3.14.9-linux-x86_64-gnu", "build": "'"${identity_build}"'", "pinned_build": "'"${PINNED_PYTHON_BUILD}"'", "download_url": "https://releases.astral.sh/github/python-build-standalone/releases/download/20261021/cpython-3.14.9%2B20261021-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz", "sys_version": "3.14.9 (main, Oct 21 2026)", "binary": "/content/.sdlab_python_314/install/cpython-3.14.9-linux-x86_64-gnu/bin/python3.14", "binary_sha256": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}' | tee -a lane1_out/setup.log
+if [ "${identity_build}" != "${PINNED_PYTHON_BUILD}" ]; then
+  echo "REFUSED: PYTHON_BUILD_MISMATCH: cpython-3.14.9-linux-x86_64-gnu build=${identity_build} pinned=${PINNED_PYTHON_BUILD}" >&2
+  exit 1
+fi
+emit_vitals "setup" 'root        2216    2101 21 19:01 ?        00:00:02 /content/venv-lane1/bin/python -c  import importlib import sys  REQUIRED = ("comfy_headless", "torch", "safetensors", "PIL", "yaml", "aiohttp") for mod_name in REQUIRED:     try:         mod = importlib.import_module(mod_name)     except Exception as exc:         sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}")         raise SystemExit(1)     mod_file = getattr(mod, "__file__", None) or ""     if not mod_file.startswith("/content/venv-lane1/"):         sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}")         raise SystemExit(1)'
 for mod_name in comfy_headless torch safetensors PIL yaml aiohttp; do
   echo "VENV_IMPORT ${mod_name} /content/venv-lane1/lib/python3.14/site-packages/${mod_name}/__init__.py" | tee -a lane1_out/setup.log
 done
@@ -473,11 +535,25 @@ printf 'FAKE_TAR_BYTES' > lane1_stub_bundle.tar.gz
 set -euo pipefail
 : "${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
 : "${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
+: "${PINNED_PYTHON_BUILD:?missing PINNED_PYTHON_BUILD}"
 : "${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
 : "${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
 : "${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 
-mkdir -p lane3_out
+
+# The uploaded script's sdlab-remote-dirs block is real kit code: run it here, with /content mapped
+# to this fake /content, so the lane's directories exist only if the kit's own block made them.
+run_uploaded_remote_dirs_block() {
+  local uploaded_sh="$1"
+  if [ ! -f "${uploaded_sh}" ] || ! grep -q '^# >>> sdlab-remote-dirs$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-remote-dirs$' "${uploaded_sh}"; then
+    echo "REFUSED: REMOTE_DIRS_BLOCK_MISSING: ${uploaded_sh} makes none of its remote directories" >&2
+    exit 1
+  fi
+  sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
+  bash .remote_dirs_block.sh
+}
+run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
+[ -d lane3_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane3_out not made by the kit" >&2; exit 1; }
 : > lane3_out/setup.log
 echo "setup" > lane3_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
@@ -547,6 +623,16 @@ elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usa
 fi
 
 verify_uploaded_venv_script "remote_lane3_stub.sh.uploaded" "3" 2>&1 | tee -a lane3_out/setup.log
+identity_build="20261021"
+if [ "${mode}" = "python_build_mismatch" ]; then
+  identity_build="20250101"
+fi
+echo 'PYTHON_IDENTITY {"key": "cpython-3.12.15-linux-x86_64-gnu", "build": "'"${identity_build}"'", "pinned_build": "'"${PINNED_PYTHON_BUILD}"'", "download_url": "https://releases.astral.sh/github/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz", "sys_version": "3.12.15 (main, Oct 21 2026)", "binary": "/content/.sdlab_python_312/install/cpython-3.12.15-linux-x86_64-gnu/bin/python3.12", "binary_sha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}' | tee -a lane3_out/setup.log
+if [ "${identity_build}" != "${PINNED_PYTHON_BUILD}" ]; then
+  echo "REFUSED: PYTHON_BUILD_MISMATCH: cpython-3.12.15-linux-x86_64-gnu build=${identity_build} pinned=${PINNED_PYTHON_BUILD}" >&2
+  exit 1
+fi
+emit_vitals "setup" 'root        2216    2101 21 19:01 ?        00:00:02 /content/venv-lane3/bin/python -c  import importlib import sys  REQUIRED = ("sentencepiece", "torch", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris") for mod_name in REQUIRED:     try:         mod = importlib.import_module(mod_name)     except Exception as exc:         sys.stderr.write(f"REFUSED: VENV_IMPORT_FAILED {mod_name}: {exc}")         raise SystemExit(1)     mod_file = getattr(mod, "__file__", None) or ""     if not mod_file.startswith("/content/venv-lane3/"):         sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {mod_name}: {mod_file}")         raise SystemExit(1)'
 for mod_name in sentencepiece torch safetensors yaml oyaml PIL diffusers lycoris; do
   echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
@@ -808,17 +894,32 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab upload requires -s/--session\n")
             return 2
+        api = contract["contents_api"]
         local_src, remote_dst = positionals[0], _normalize_remote_content_path(positionals[1])
         src_path = _normalize_host_path(local_src)
         if not src_path.is_file():
-            sys.stderr.write(f"Local file not found: {local_src}\n")
+            print(api["upload_local_missing_line"].format(local=local_src))
             return 1
         if not remote_dst.startswith("/content/"):
             sys.stderr.write(f"Remote path must be under /content/: {remote_dst}\n")
             return 1
         rel = remote_dst.removeprefix("/content/")
         dst_path = content_dir / rel
-        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        # One contents-API PUT, as the real CLI does: no parent directory is ever created, and a PUT
+        # into one that does not exist fails on the server (HTTP 500), exit 1.
+        # FAKE_COLAB_UPLOAD_HTTP_500_FOR=<substring>: the same server error for a matching remote path.
+        forced_500 = os.environ.get("FAKE_COLAB_UPLOAD_HTTP_500_FOR", "")
+        if not dst_path.parent.is_dir() or (forced_500 and forced_500 in remote_dst):
+            status = api["upload_missing_parent_http_status"]
+            print(
+                api["upload_failed_prefix"]
+                + f"{status} Server Error: Internal Server Error for url: "
+                + f"https://colab.fake.invalid/api/contents/{remote_dst.strip('/')}"
+                + f"?authuser=0&colab-runtime-proxy-token={FAKE_CONTENTS_TOKEN}"
+            )
+            with (state_dir / "uploads.log").open("a", encoding="utf-8", newline="\n") as fh:
+                fh.write(f"UPLOAD_FAILED_{status} {' '.join(args)}\n")
+            return 1
         shutil.copyfile(src_path, dst_path)
         # Keep the uploaded script at `<name>.uploaded` and install the fake stub runner at `<name>`
         # unless `FAKE_COLAB_RUN_UPLOADED_SCRIPT=1` is requested.
@@ -829,6 +930,7 @@ def main(argv: list[str] | None = None) -> int:
                 shutil.copyfile(fake_stub, dst_path)
         with (state_dir / "uploads.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"UPLOAD_OK {' '.join(args)}\n")
+        print(api["upload_ok_line"].format(local=local_src, remote=positionals[1]))
         return 0
 
     if subcmd == "download":
@@ -840,14 +942,19 @@ def main(argv: list[str] | None = None) -> int:
         if not remote_src.startswith("/content/"):
             sys.stderr.write(f"Remote path must be under /content/: {remote_src}\n")
             return 1
+        api = contract["contents_api"]
         rel = remote_src.removeprefix("/content/")
         vm_src = content_dir / rel
         dst_path = _normalize_host_path(local_dst)
-        dst_path.parent.mkdir(parents=True, exist_ok=True)
-        if vm_src.is_file():
-            shutil.copyfile(vm_src, dst_path)
-        else:
-            dst_path.write_bytes(b"FAKE_TAR_BYTES")
+        if not vm_src.is_file():
+            print(api["download_failed_prefix"] + api["download_missing_remote_error"].format(remote=positionals[0]))
+            return 1
+        # The real CLI writes with a plain open(): no local directory is created.
+        if not dst_path.parent.is_dir():
+            print(api["download_failed_prefix"] + f"[Errno 2] No such file or directory: '{local_dst}'")
+            return 1
+        shutil.copyfile(vm_src, dst_path)
+        print(api["download_ok_line"].format(remote=positionals[0], local=local_dst))
         return 0
 
     if subcmd == "stop":

@@ -2,7 +2,8 @@
 # Free pre-flight resolve & pin check for sdlab Colab kits.
 # Usage: bash scripts/colab/preflight_resolve.sh <lane1|lane3|1|3> [--wheel-dir <dir>] [--skip-local-wheels]
 #
-# Checks, with zero colab CLI calls. Every failure is one named code on stderr, exit 1:
+# Checks, with zero colab CLI calls. Every failure is one line `REFUSED: <CODE>: <detail>` on
+# stderr, exit 1:
 # 1. Tools and inputs: git (and python for lane 3) on PATH and uv unless the compile is
 #    mocked (`PREFLIGHT_TOOL_MISSING`); the lane's .in, .lock and, for lane 3, the local-wheel
 #    manifest (`LOCK_INPUT_MISSING`).
@@ -30,7 +31,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 refuse() {
   local code="$1"
   shift
-  echo "${code}: $*" >&2
+  echo "REFUSED: ${code}: $*" >&2
   exit 1
 }
 
@@ -307,7 +308,7 @@ else
       "${IN_FILE}" \
       -o "${TMP_LOCK}" >"${COMPILE_LOG}" 2>&1
   ); then
-    echo "LOCK_COMPILE_FAILED: uv pip compile failed for ${LANE} (python ${PY_VER}); last lines:" >&2
+    echo "REFUSED: LOCK_COMPILE_FAILED: uv pip compile failed for ${LANE} (python ${PY_VER}); last lines:" >&2
     tail -n 15 "${COMPILE_LOG}" >&2 || true
     exit 1
   fi
@@ -319,7 +320,7 @@ tr -d '\r' < "${LOCK_FILE}" > "${NORM_COMMITTED}"
 tr -d '\r' < "${TMP_LOCK}" > "${NORM_COMPILED}"
 
 if ! diff -u "${NORM_COMMITTED}" "${NORM_COMPILED}" >/dev/null 2>&1; then
-  echo "LOCK_DRIFT: compiled output for ${LANE} differs from committed ${LOCK_FILE}" >&2
+  echo "REFUSED: LOCK_DRIFT: compiled output for ${LANE} differs from committed ${LOCK_FILE}" >&2
   diff -u "${NORM_COMMITTED}" "${NORM_COMPILED}" | head -n 40 >&2 || true
   exit 1
 fi
