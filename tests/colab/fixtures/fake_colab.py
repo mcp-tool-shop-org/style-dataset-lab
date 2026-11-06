@@ -552,6 +552,22 @@ run_uploaded_remote_dirs_block() {
   sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
   bash .remote_dirs_block.sh
 }
+# The uploaded script's sdlab-lane3-mode block is real kit code: run it on this fake CPU VM, where
+# nvidia-smi finds no GPU (a stand-in shadows any on the rig's PATH), so a kit that passed
+# LANE3_MODE=train fails here with the same refusal as on a real CPU card.
+run_uploaded_lane3_mode_block() {
+  local uploaded_sh="$1"
+  if ! grep -q '^# >>> sdlab-lane3-mode$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-lane3-mode$' "${uploaded_sh}"; then
+    echo "REFUSED: LANE3_MODE_BLOCK_MISSING: ${uploaded_sh} has no sdlab-lane3-mode gate" >&2
+    exit 1
+  fi
+  mkdir -p .fake-cpu-vm-bin
+  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-cpu-vm-bin/nvidia-smi
+  chmod +x .fake-cpu-vm-bin/nvidia-smi
+  sed -n '/^# >>> sdlab-lane3-mode$/,/^# <<< sdlab-lane3-mode$/p' "${uploaded_sh}" > .lane3_mode_block.sh
+  PATH="${PWD}/.fake-cpu-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane3_mode_block.sh; echo "LANE3_MODE=${LANE3_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+}
+run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
 [ -d lane3_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane3_out not made by the kit" >&2; exit 1; }
 : > lane3_out/setup.log
@@ -688,11 +704,23 @@ for mod_name in sentencepiece torch torchaudio safetensors yaml oyaml PIL diffus
   echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
 printf 'setup_complete\\n' >> lane3_out/setup.log
-echo "run" > lane3_out/phase.txt
-emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.12.15", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "beb94824c51480a04d3c86c718603676fdef6938", "override_sha256": "09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286", "checkpoint_path": "/content/lane3_out/checkpoints/synth_lora.safetensors"}'
-echo "LANE3_STUB_OK python=3.12.15 sentencepiece=0.2.1 checkpoint_written=true"
-printf 'FAKE_TAR_BYTES' > lane3_stub_bundle.tar.gz
+# The CPU install-path stub stops at the import gate: the uploaded script must say so and keep its
+# training step behind LANE3_MODE=train.
+if ! grep -Fq 'TRAIN_SKIPPED: cpu stub; training needs a GPU rung' "remote_lane3_stub.sh.uploaded" \\
+  || ! grep -Fq 'LANE3_TRAIN_STATE="skipped_cpu_stub"' "remote_lane3_stub.sh.uploaded"; then
+  echo "REFUSED: TRAIN_SKIP_MISSING: the uploaded script does not stop at the import gate" >&2
+  exit 1
+fi
+echo "TRAIN_SKIPPED: cpu stub; training needs a GPU rung" | tee -a lane3_out/setup.log
+printf 'SENTENCEPIECE_OK 0.2.1\\n' > lane3_out/sentencepiece.txt
+printf 'Installed 158 packages\\n' > lane3_out/wheels.log
+printf '{"key": "cpython-3.12.15-linux-x86_64-gnu", "build": "20261021"}\\n' > lane3_out/python_identity.json
+train_state="skipped_cpu_stub"
+window_rec='{"system_python": "3.13.16", "python": "3.12.15", "python_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "uv": "uv 0.13.5", "ai_toolkit_commit": "beb94824c51480a04d3c86c718603676fdef6938", "override_sha256": "09d15fae7473fd76131bb01578a6b060b20c3b10e91eccd8133377ea17b03286", "lane3_mode": "install", "train": "'"${train_state}"'", "checkpoint_path": null}'
+printf '%s\\n' "${window_rec}" > lane3_out/vm_window.json
+echo "WINDOW_JSON ${window_rec}"
+echo "LANE3_STUB_OK python=3.12.15 sentencepiece=0.2.1 train=${train_state}"
+tar -czf lane3_stub_bundle.tar.gz -C lane3_out .
 """
     )
     (content_dir / ".fake_remote_lane1_stub.sh").write_text(lane1_body, encoding="utf-8", newline="\n")
@@ -1056,12 +1084,14 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 env_vars[k] = v
 
-        # Build isolated kernel environment: strip rig-side PINNED_* and SDLAB_* (except SDLAB_PYTHON)
-        # so the remote runner only sees what was passed via --env, and set UV_SYSTEM_PYTHON=1 to match Colab.
+        # Build isolated kernel environment: strip rig-side PINNED_*, LANE3_* and SDLAB_* (except
+        # SDLAB_PYTHON) so the remote runner only sees what was passed via --env, and set
+        # UV_SYSTEM_PYTHON=1 to match Colab.
         kernel_env = {
             k: v
             for k, v in os.environ.items()
             if not k.startswith("PINNED_")
+            and not k.startswith("LANE3_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
         }
         kernel_env.setdefault("UV_SYSTEM_PYTHON", "1")

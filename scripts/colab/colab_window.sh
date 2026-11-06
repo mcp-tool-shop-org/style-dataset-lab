@@ -524,6 +524,11 @@ colab_stop_and_log_closing() {
   colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
 }
 
+# True when the card names a CPU runtime (no GPU): the kits' CPU-high-mem default, or CPU.
+colab_card_is_cpu() {
+  [ "$1" = "CPU-high-mem" ] || [ "$1" = "CPU" ]
+}
+
 colab_open_session_locked() {
   local session="$1"
   local card="$2"
@@ -532,7 +537,7 @@ colab_open_session_locked() {
   mkdir -p "$(dirname "${lock_file}")"
 
   local new_args=()
-  if [ "${card}" = "CPU-high-mem" ] || [ "${card}" = "CPU" ]; then
+  if colab_card_is_cpu "${card}"; then
     new_args=("new" "--high-mem" "-s" "${session}")
   else
     new_args=("new" "--gpu" "${card}" "--high-mem" "-s" "${session}")
@@ -717,6 +722,11 @@ REFUSAL_CODES = (
     "REMOTE_DIR_CREATE_FAILED",
     "REMOTE_PARENT_UNVERIFIED",
     "PYTHON_BUILD_MISMATCH",
+    "LANE3_MODE_INVALID",
+    "TRAIN_REQUIRES_GPU",
+    "TRAIN_MODEL_REQUIRED",
+    "TRAIN_FAILED",
+    "TRAIN_CHECKPOINT_MISSING",
 )
 # A refusal code comes only from a line the kit itself emits, starting `REFUSED: <CODE>`, in the
 # files those lines are written to: guards.log (rig side), the exec stream in vitals.log, and the
@@ -790,6 +800,19 @@ rate_source = read_text_file(out_dir / "rate_source.txt") or (
 
 final_status = "ok" if exit_code == 0 else (refusal_code or "failed")
 
+# Lane 3 (train): what the VM says about training, normalised so it cannot be read as a passed
+# training by accident. "skipped_cpu_stub" (the CPU install-path stub stopped at the import gate)
+# and any value other than "trained" mean not trained; `trained` is true only for a window that
+# ended ok AND whose VM reported train=trained. Other lanes carry neither field.
+train_fields: dict = {}
+if lane == "train":
+    vm_train = vm_facts.get("train")
+    train_state = vm_train if vm_train in ("skipped_cpu_stub", "trained") else None
+    train_fields = {
+        "train": train_state,
+        "trained": bool(final_status == "ok" and train_state == "trained"),
+    }
+
 window_payload = {
     **vm_facts,
     "window_id": session,
@@ -816,6 +839,7 @@ window_payload = {
     "opened_at": opened_at,
     "closed_at": closed_at,
     "exit_code": exit_code,
+    **train_fields,
 }
 (out_dir / "window.json").write_text(json.dumps(window_payload, indent=2) + "\n", encoding="utf-8", newline="\n")
 
@@ -829,6 +853,7 @@ outcome_payload = {
     "exit_code": exit_code,
     "opened_at": opened_at,
     "closed_at": closed_at,
+    **train_fields,
 }
 (out_dir / "outcome.draft.json").write_text(json.dumps(outcome_payload, indent=2) + "\n", encoding="utf-8", newline="\n")
 PYEOF

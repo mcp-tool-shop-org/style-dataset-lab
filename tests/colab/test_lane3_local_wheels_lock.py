@@ -271,38 +271,5 @@ def test_lane3_lock_and_import_gate_carry_torchaudio() -> None:
     assert 'REQUIRED = ("sentencepiece", "torch", "torchaudio",' in kit
 
 
-def _extract_block(script_text: str, name: str) -> str:
-    lines = script_text.split("\n")
-    start = lines.index(f"# >>> {name}")
-    end = lines.index(f"# <<< {name}", start)
-    return "\n".join(lines[start:end + 1]) + "\n"
-
-
-@pytest.mark.parametrize("train_rc", [0, 3])
-def test_train_step_names_its_failure_on_the_exec_stream(tmp_path: Path, train_rc: int) -> None:
-    emitted = tmp_path / "r.sh"
-    em = subprocess.run(
-        [_bash(), _p(LAUNCHER), "--emit-remote-script", _p(emitted)],
-        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
-    )
-    assert em.returncode == 0, em.stderr
-    block = _extract_block(emitted.read_text(encoding="utf-8"), "sdlab-train-step")
-    vm = tmp_path / "vm"
-    (vm / "lane3_out").mkdir(parents=True)
-    venv_bin = vm / "venv-lane3" / "bin"
-    venv_bin.mkdir(parents=True)
-    (venv_bin / "python").write_text(
-        f"#!/usr/bin/env bash\necho 'trainer line one'\necho 'ModuleNotFoundError: no torchaudio'\nexit {train_rc}\n",
-        encoding="utf-8", newline="\n",
-    )
-    (venv_bin / "python").chmod(0o755)
-    step = tmp_path / "train_step.sh"
-    step.write_text("set -euo pipefail\n" + block.replace("/content", _p(vm)), encoding="utf-8", newline="\n")
-    res = subprocess.run([_bash(), _p(step)], capture_output=True, text=True, timeout=30, check=False)
-    if train_rc == 0:
-        assert res.returncode == 0, res.stderr
-        assert "TRAIN_FAILED" not in res.stdout + res.stderr
-    else:
-        assert res.returncode == 1
-        assert "ModuleNotFoundError: no torchaudio" in res.stdout
-        assert "REFUSED: TRAIN_FAILED: ai-toolkit run.py exited 3" in res.stderr
+# The training step's tests (TRAIN_FAILED, now under LANE3_MODE=train) live in
+# tests/colab/test_lane3_install_stub.py.

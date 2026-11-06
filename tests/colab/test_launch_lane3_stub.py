@@ -127,6 +127,7 @@ def test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap(tmp_path: Pa
 
     outcome = json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8"))
     assert outcome["status"] == "ok"
+    assert outcome["train"] == "skipped_cpu_stub" and outcome["trained"] is False
 
 
 def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
@@ -176,7 +177,7 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
     assert "STOP -s sdlab-l3-wall" in (state_dir_wall / "stops.log").read_text(encoding="utf-8")
 
 
-def test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_verifies_checkpoint(tmp_path: Path) -> None:
+def test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode(tmp_path: Path) -> None:
     kit_text = LAUNCHER.read_text(encoding="utf-8")
     for required_var in (
         "PINNED_UV_VERSION=",
@@ -200,10 +201,14 @@ def test_trainer_kit_pins_filters_av_torchcodec_generates_synth_job_yaml_and_ver
     assert "https://download.pytorch.org/whl/cu130" in kit_text
     assert "git -C /content/ai-toolkit checkout" in kit_text
     assert "beb94824c51480a04d3c86c718603676fdef6938" in kit_text
-    # Generates synth_job.yaml for a 1-step CPU run and verifies .safetensors checkpoint exists
+    # The CPU stub stops at the import gate; the 1-step synth_job.yaml run and its .safetensors
+    # check stay in the script behind LANE3_MODE=train (GPU and model required).
+    assert 'echo "TRAIN_SKIPPED: cpu stub; training needs a GPU rung"' in kit_text
+    assert 'LANE3_MODE="\\${LANE3_MODE:-install}"' in kit_text
+    assert "TRAIN_REQUIRES_GPU" in kit_text and "TRAIN_MODEL_REQUIRED" in kit_text
     assert "/content/lane3_out/synth_job.yaml" in kit_text
     assert "steps: 1" in kit_text
-    assert "device: cpu" in kit_text
+    assert "device: cuda:0" in kit_text and "device: cpu" not in kit_text
     assert "synth_lora.safetensors" in kit_text
 
     # Self-sha refusal when EXPECTED_LAUNCH_LANE3_STUB_SHA mismatches
@@ -301,7 +306,8 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     win = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
     assert win["system_python"] == "3.13.16"
     assert win["python"] == "3.12.15"
-    assert win["checkpoint_path"] == "/content/lane3_out/checkpoints/synth_lora.safetensors"
+    assert win["checkpoint_path"] is None
+    assert win["train"] == "skipped_cpu_stub" and win["trained"] is False
     assert win["start_balance"] == 9.85
     assert win["end_balance"] == 9.85
     assert win["rate_measured"] == 0.26
@@ -477,7 +483,8 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
     assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
     vitals_txt = (out_ok / "vitals.log").read_text(encoding="utf-8")
     assert '"phase": "setup"' in vitals_txt
-    assert '"phase": "run"' in vitals_txt
+    # The CPU install-path stub ends at the import gate: it never enters the run phase.
+    assert '"phase": "run"' not in vitals_txt
     win_ok = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
     assert win_ok["rate_measured_pre_open"] == 0.0
     assert win_ok["rate_measured_post_open"] == 0.29
