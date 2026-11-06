@@ -715,6 +715,7 @@ if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
 if os.environ.get("FAKE_VM_TRAIN") == "hang_after_save":
     (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
     time.sleep(600)
+time.sleep(float(os.environ.get("FAKE_VM_TRAIN_SLEEP_S", "0")))
 if os.environ.get("FAKE_VM_TRAIN") != "no_sample":
     (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
 (out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
@@ -1102,15 +1103,37 @@ def main(argv: list[str] | None = None) -> int:
             rate_str = seq[min(post_count - 1, len(seq) - 1)]
         elif session_opened and post_rate_str is not None:
             rate_str = post_rate_str
+        elif session_opened and (state_dir / "card.txt").is_file() and                 (state_dir / "card.txt").read_text(encoding="utf-8").strip() != "CPU":
+            # A GPU session bills at its card's rate once open (an A100 High-RAM read 8.88/hr on
+            # 2026-11-06): the account rate the fake reports once a GPU session is open.
+            rate_str = os.environ.get("FAKE_COLAB_GPU_RATE_STR", "8.88/hr")
         else:
             rate_str = os.environ.get("FAKE_COLAB_RATE_STR", "0.26/hr")
+        # FAKE_COLAB_ASSIGNMENTS_SEQ: the post-open "Active assignments" counts, one per post-open
+        # usage call (the last repeats), stepped with FAKE_COLAB_POST_OPEN_RATE_SEQ. Default 1;
+        # OMITLINE drops the line.
+        assignments = "1"
+        assign_seq_raw = os.environ.get("FAKE_COLAB_ASSIGNMENTS_SEQ")
+        if session_opened and assign_seq_raw:
+            aseq = [x.strip() for x in assign_seq_raw.split(",") if x.strip()]
+            assignments = aseq[min(post_count - 1, len(aseq) - 1)]
+        # FAKE_COLAB_OPEN_REGISTERING=1: the session-registration fixture. The first three post-open
+        # reads print "Usage rate: 0.00/hr" with "Active assignments: 0", then the card's rate with
+        # count 1. Source: receipt windowC2-12-t4-s1a-20261027, whose post-open reads show 0.00 with
+        # 0 assignments until the session registered, then 1.07/hr with 1.
+        if session_opened and os.environ.get("FAKE_COLAB_OPEN_REGISTERING") == "1":
+            if post_count <= 3:
+                rate_str, assignments = "0.00/hr", "0"
+            elif not assign_seq_raw:
+                assignments = "1"
+        count_line = "" if assignments == "OMITLINE" else f"Active assignments: {assignments}"
         if rate_str == "OMIT":
             print(f"Current balance: {bal} compute units")
-            print("Active assignments: 1")
+            print(count_line)
             return 0
         print(f"Current balance: {bal} compute units")
         print(f"Usage rate: {rate_str}")
-        print("Active assignments: 1")
+        print(count_line)
         return 0
 
     if subcmd == "sessions":
@@ -1134,6 +1157,9 @@ def main(argv: list[str] | None = None) -> int:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
         (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
+        # FAKE_COLAB_NEW_DELAY_S: the open takes this long; the moment it succeeds is logged.
+        time.sleep(float(os.environ.get("FAKE_COLAB_NEW_DELAY_S", "0")))
+        (state_dir / "new_done_epoch.txt").write_text(f"{time.time()}\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
         print(
             f"Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_{lane_tag}_999&port=8188"

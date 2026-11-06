@@ -222,10 +222,11 @@ colab_poll_usage_and_ram() {
 
   local usage_text=""
   local usage_rc=0
-  usage_text="$(colab usage </dev/null 2>>"${out_dir}/colab.log")" || usage_rc=$?
+  # Bounded: a hung `colab usage` cannot stretch a poll (or the live guard loop) past 30 s.
+  usage_text="$(timeout -k 5 30 colab usage </dev/null 2>>"${out_dir}/colab.log")" || usage_rc=$?
   printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
 
-  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" << 'PYEOF'
+  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_CARD_CLASS:?the kit must set COLAB_CARD_CLASS to gpu or cpu}" << 'PYEOF'
 import os
 import re
 import sys
@@ -236,6 +237,7 @@ default_rate = float(sys.argv[2])
 usage_rc = int(sys.argv[3])
 raw_usage = sys.argv[4]
 guards_py = Path(sys.argv[5])
+card_class = sys.argv[6]
 
 sys.path.insert(0, str(guards_py.parent))
 import launch_guards as lg
@@ -264,14 +266,58 @@ session_opened = opened_marker.exists()
 existing_pre = _read_float(rate_pre_f)
 existing_post = _read_float(rate_post_f)
 
-parsed = lg.parse_usage_text(
-    raw_usage,
-    usage_rc=usage_rc,
-    configured_rate=default_rate,
-    session_opened=session_opened,
-    post_open_rate=existing_post,
-    pre_open_rate=existing_pre,
-)
+rate_unread = False
+try:
+    parsed = lg.parse_usage_text(
+        raw_usage,
+        card_class,
+        usage_rc=usage_rc,
+        configured_rate=default_rate,
+        session_opened=session_opened,
+        post_open_rate=existing_post,
+        pre_open_rate=existing_pre,
+    )
+except lg.RateUnread as exc:
+    # A GPU window without a positive live rate. Before the open there is no window to price, so
+    # only the balance and the pre-open reading are kept (projection 0). After the open it is
+    # RATE_UNREAD: the post-open rate read treats it as "not yet" and polls again; the live cap
+    # check refuses RATE_UNREAD. (Once a positive live rate has been read, parse_usage_text keeps
+    # it, so a later reading of 0.00 never gets here.)
+    part = exc.partial
+    rate_unread = session_opened
+    parsed = {
+        "ok": True,
+        "balance": part["balance"],
+        "rate_measured": part["rate_measured"],
+        "rate_measured_pre_open": part["rate_measured_pre_open"],
+        "rate_measured_post_open": part["rate_measured_post_open"],
+        "rate_for_projection": 0.0,
+        "rate_source": "live_rate_unread" if session_opened else "pre_open_no_window",
+        "error": None,
+    }
+
+if card_class == "gpu" and session_opened:
+    import json as _json
+    from datetime import datetime, timezone
+    state_f = out_dir / "rate_window.json"
+    try:
+        state = _json.loads(state_f.read_text(encoding="utf-8")) if state_f.exists() else {}
+    except ValueError:
+        state = {}
+    max_rate = _read_float(out_dir / "max_rate.txt")
+    if parsed.get("ok"):
+        import time as _time
+        state = lg.update_window_rate(state, account_rate=parsed.get("rate_measured"),
+                                      pre_open_rate=existing_pre,
+                                      at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                      epoch=_time.time(),
+                                      assignments=lg.parse_active_assignments(raw_usage),
+                                      min_gap_s=float(os.environ.get("COLAB_RATE_READ_INTERVAL_S", lg.RATE_STABLE_GAP_S)))
+        state_f.write_text(_json.dumps(state, indent=2) + "\n", encoding="utf-8", newline="\n")
+    if max_rate is not None:
+        parsed["rate_for_projection"] = lg.gpu_projection_rate(state, max_rate)
+        parsed["rate_source"] = "max_of_max_rate_and_stable_window"
+        rate_unread = state.get("best_stable") is None and rate_unread
 
 if parsed["ok"]:
     bal = parsed["balance"]
@@ -290,7 +336,7 @@ if parsed["ok"]:
         rate_f.write_text(f"{parsed['rate_measured_pre_open']}\n", encoding="utf-8", newline="\n")
     rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
-    err_tok = "NONE"
+    err_tok = "RATE_UNREAD" if rate_unread else "NONE"
 else:
     err_msg = str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED")
     err_f.write_text(f"{err_msg}\n", encoding="utf-8", newline="\n")
@@ -324,6 +370,94 @@ if vitals_f.exists():
 
 print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok} {anon_mb} {mem_total_mb} {cgroup_max_mb}")
 PYEOF
+}
+
+# colab_read_post_open_rate <py> <out_dir> <polls> <interval_s> <max_rate>: right after a GPU window
+# opens, poll `colab usage` (the account's rate) until the window rate (post-open minus pre-open)
+# is stable and at or above the floor (launch_guards.update_window_rate). None within <polls> polls
+# is RATE_UNREAD; a stable window rate above <max_rate> is RATE_ABOVE_MAX. Both are refusals the
+# caller ends the window on (the session is stopped by its EXIT trap, before any upload). Every
+# reading is kept in rate_window.json and lands in window.json.
+colab_read_post_open_rate() {
+  local py_bin="$1"
+  local out_dir="$2"
+  local polls="$3"
+  local interval_s="$4"
+  local max_rate="$5"
+  local guards_dir
+  guards_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local i=0
+  local decision="unread"
+  while [ "${i}" -lt "${polls}" ]; do
+    i=$((i + 1))
+    colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
+    decision="$("${py_bin}" - "${guards_dir}" "${out_dir}" "${max_rate}" << 'PYEOF'
+import json, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import launch_guards as lg
+f = Path(sys.argv[2]) / "rate_window.json"
+state = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+print(lg.window_rate_decision(state, float(sys.argv[3])))
+PYEOF
+)"
+    [ "${decision}" != "unread" ] && break
+    [ "${i}" -lt "${polls}" ] && sleep "${interval_s}"
+  done
+  "${py_bin}" - "${out_dir}" "${max_rate}" "${i}" "${decision}" << 'PYEOF'
+import json, sys
+from pathlib import Path
+out, max_rate, polls, decision = Path(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
+f = out / "rate_window.json"
+state = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+last = (state.get("readings") or [{}])[-1]
+rec = {"decision": decision, "window_rate": state.get("best_stable"), "account_rate": last.get("account_rate"),
+       "pre_open_rate": last.get("pre_open_rate"), "max_rate": max_rate, "floor": state.get("floor"),
+       "polls": polls, "priced_at": max(max_rate, state.get("best_stable") or 0.0)}
+(out / "rate_check.json").write_text(json.dumps(rec) + "\n", encoding="utf-8")
+PYEOF
+  if [ "${decision}" = "assignments_unreadable" ]; then
+    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
+    return 1
+  fi
+  if [ "${decision}" = "unread" ]; then
+    colab_refuse_logged "${out_dir}" RATE_UNREAD "no stable window rate at or above the GPU floor in ${i} polls after open; the window is not run on a configured or CPU rate"
+    return 1
+  fi
+  echo "RATE_READ $(cat "${out_dir}/rate_check.json")" >> "${out_dir}/guards.log"
+  if [ "${decision}" = "above_max" ]; then
+    colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "the window's stable rate is above --max-rate ${max_rate}/h (rate_check.json)"
+    return 1
+  fi
+}
+
+# colab_midrun_rate_check <py> <out_dir>: on a GPU window, every live cycle re-reads the rate (the
+# cap check's own poll); a stable window rate that has risen above --max-rate is RATE_ABOVE_MAX.
+colab_midrun_rate_check() {
+  local py_bin="$1"
+  local out_dir="$2"
+  [ "${COLAB_CARD_CLASS:-}" = "gpu" ] && [ -f "${out_dir}/max_rate.txt" ] && [ -f "${out_dir}/rate_window.json" ] || return 0
+  local guards_dir
+  guards_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local decision
+  decision="$("${py_bin}" - "${guards_dir}" "${out_dir}" << 'PYEOF'
+import json, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import launch_guards as lg
+out = Path(sys.argv[2])
+state = json.loads((out / "rate_window.json").read_text(encoding="utf-8"))
+print(lg.window_rate_decision(state, float((out / "max_rate.txt").read_text(encoding="utf-8").strip())))
+PYEOF
+)"
+  if [ "${decision}" = "assignments_unreadable" ]; then
+    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
+    return 1
+  fi
+  if [ "${decision}" = "above_max" ]; then
+    colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "mid-run: the window's stable rate rose above --max-rate $(cat "${out_dir}/max_rate.txt")/h (rate_window.json)"
+    return 1
+  fi
 }
 
 colab_check_cap_and_ram() {
@@ -369,6 +503,10 @@ colab_check_cap_and_ram() {
   if [ "${cur_bal}" != "NONE" ] && [ -n "${cur_bal}" ]; then
     guard_args+=("--current-balance" "${cur_bal}")
   fi
+  if [ "${err_tok}" = "RATE_UNREAD" ]; then
+    colab_refuse_logged "${out_dir}" RATE_UNREAD "a GPU window has no positive live post-open rate; it is not priced with a configured rate"
+    return 1
+  fi
   if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
     local err_detail="${err_tok}"
     if [ -f "${out_dir}/usage_parse_error.txt" ]; then
@@ -377,6 +515,9 @@ colab_check_cap_and_ram() {
     guard_args+=("--usage-parse-error" "${err_detail}")
   fi
 
+  if [ "${mode}" = "live" ] && ! colab_midrun_rate_check "${py_bin}" "${out_dir}"; then
+    return 1
+  fi
   local guard_rc=0
   "${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null >> "${out_dir}/guards.log" || guard_rc=$?
   if [ "${guard_rc}" -ne 0 ]; then
@@ -529,12 +670,57 @@ colab_card_is_cpu() {
   [ "$1" = "CPU-high-mem" ] || [ "$1" = "CPU" ]
 }
 
+# The GPU rate gate, shared by every lane. A kit calls colab_gpu_rate_gate_arm before it opens; a
+# GPU card then needs a positive --max-rate (MAX_RATE_REQUIRED otherwise), and the post-open rate
+# polls run 5 s apart (SDLAB_TEST_RATE_READ_INTERVAL_S only under the fake colab CLI). A CPU card
+# keeps its configured rate and is untouched. colab_open_session_locked refuses
+# GPU_RATE_GATE_NOT_ARMED for a GPU card that was not armed, so no lane can open a GPU window
+# without the gate: after `colab new` succeeds it starts the cap clock (START_EPOCH) and reads the
+# stable window rate (colab_read_post_open_rate), before the caller uploads anything.
+COLAB_RATE_READ_POLLS_DEFAULT=24
+COLAB_RATE_READ_INTERVAL_S_DEFAULT=5
+
+# colab_gpu_rate_gate_arm <out_dir> <card> <max_rate> <test_mode>
+colab_gpu_rate_gate_arm() {
+  local out_dir="$1"
+  local card="$2"
+  local max_rate="$3"
+  local test_mode="$4"
+  rm -f "${out_dir}/gpu_rate_gate_armed.txt"
+  if colab_card_is_cpu "${card}"; then
+    export COLAB_CARD_CLASS=cpu
+    return 0
+  fi
+  export COLAB_CARD_CLASS=gpu
+  if ! [[ "${max_rate}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${max_rate}" =~ ^0+(\.0+)?$ ]]; then
+    colab_refuse_logged "${out_dir}" MAX_RATE_REQUIRED "a GPU card (${card}) needs --max-rate <units/h>, the highest window rate it may run at"
+    return 2
+  fi
+  export COLAB_RATE_READ_POLLS="${COLAB_RATE_READ_POLLS_DEFAULT}"
+  export COLAB_RATE_READ_INTERVAL_S="${COLAB_RATE_READ_INTERVAL_S_DEFAULT}"
+  if [ -n "${SDLAB_TEST_RATE_READ_INTERVAL_S:-}" ]; then
+    if [ "${test_mode}" != "1" ]; then
+      colab_refuse_logged "${out_dir}" PIN_OVERRIDE_IN_LIVE_RUN "SDLAB_TEST_RATE_READ_INTERVAL_S set without SDLAB_TEST_FAKE_COLAB=1 and the fake colab CLI on PATH"
+      return 1
+    fi
+    export COLAB_RATE_READ_INTERVAL_S="${SDLAB_TEST_RATE_READ_INTERVAL_S}"
+  fi
+  printf '%s\n' "${max_rate}" > "${out_dir}/max_rate.txt"
+  printf '%s %s %s\n' "${card}" "${max_rate}" "${COLAB_RATE_READ_INTERVAL_S}" > "${out_dir}/gpu_rate_gate_armed.txt"
+}
+
 colab_open_session_locked() {
   local session="$1"
   local card="$2"
   local out_dir="$3"
   local lock_file="${COLAB_OPEN_LOCK:-/tmp/colab-window-open.lock}"
   mkdir -p "$(dirname "${lock_file}")"
+  if ! colab_card_is_cpu "${card}"; then
+    if [ "${COLAB_CARD_CLASS:-}" != "gpu" ] || [ ! -s "${out_dir}/gpu_rate_gate_armed.txt" ] || [ ! -s "${out_dir}/max_rate.txt" ]; then
+      colab_refuse_logged "${out_dir}" GPU_RATE_GATE_NOT_ARMED "a GPU card (${card}) opens only after colab_gpu_rate_gate_arm"
+      return 2
+    fi
+  fi
 
   local new_args=()
   if colab_card_is_cpu "${card}"; then
@@ -565,6 +751,14 @@ colab_open_session_locked() {
     fi
   fi
   printf '1\n' > "${out_dir}/session_opened.txt"
+  if ! colab_card_is_cpu "${card}"; then
+    # The cap and wall clock starts the moment `colab new` succeeds: the rate polls and everything
+    # after them are billed time and count.
+    START_EPOCH="$(date -u +%s)"
+    date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${out_dir}/cap_clock_started_at.txt"
+    colab_read_post_open_rate "${PY_BIN:?the kit must set PY_BIN}" "${out_dir}" "${COLAB_RATE_READ_POLLS}" \
+      "${COLAB_RATE_READ_INTERVAL_S}" "$(cat "${out_dir}/max_rate.txt")" || return 1
+  fi
 }
 
 colab_scrub_all_logs() {
@@ -741,6 +935,12 @@ REFUSAL_CODES = (
     "DATASET_SHA_MISMATCH",
     "JOB_TEMPLATE_INVALID",
     "HF_READ_TOKEN_MISSING",
+    "RATE_UNREAD",
+    "RATE_ABOVE_MAX",
+    "ASSIGNMENTS_UNREADABLE",
+    "GPU_RATE_GATE_NOT_ARMED",
+    "MAX_RATE_REQUIRED",
+    "TRAIN_MAX_RATE_REQUIRED",
     "TRAIN_SAMPLE_MISSING",
     "TRAIN_WALL_REQUIRED",
     "TRAIN_CAP_REQUIRED",
@@ -798,6 +998,19 @@ for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.saf
         downloaded_files[artifact.name] = sha256_path(artifact)
 
 usage_parse_error = read_text_file(out_dir / "usage_parse_error.txt")
+rate_readings = None
+if (out_dir / "rate_window.json").is_file():
+    try:
+        rate_readings = json.loads((out_dir / "rate_window.json").read_text(encoding="utf-8")).get("readings")
+    except ValueError:
+        rate_readings = None
+cap_clock_started_at = read_text_file(out_dir / "cap_clock_started_at.txt")
+rate_check = None
+if (out_dir / "rate_check.json").is_file():
+    try:
+        rate_check = json.loads((out_dir / "rate_check.json").read_text(encoding="utf-8"))
+    except ValueError:
+        rate_check = None
 rate_measured_pre_open = read_float_file(out_dir / "rate_measured_pre_open.txt")
 rate_measured_post_open = read_float_file(out_dir / "rate_measured_post_open.txt")
 rate_measured = (
@@ -857,6 +1070,9 @@ window_payload = {
     "rate_for_projection": rate_for_projection,
     "rate_source": rate_source,
     "usage_parse_error": usage_parse_error,
+    "rate_check": rate_check,
+    "rate_readings": rate_readings,
+    "cap_clock_started_at": cap_clock_started_at,
     "input_shas": shas_raw.get("verified_shas", shas_raw),
     "downloaded_files": downloaded_files,
     "opened_at": opened_at,

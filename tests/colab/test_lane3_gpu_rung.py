@@ -506,6 +506,7 @@ def _rung_env(tmp_path: Path) -> tuple[Path, dict[str, str], Path]:
     (tmp_path / "xdg").mkdir(mode=0o700)
     env["XDG_RUNTIME_DIR"] = str(tmp_path / "xdg")
     env["SDLAB_TEST_HF_ENDPOINT"] = HUB_API["url"]
+    env["SDLAB_TEST_RATE_READ_INTERVAL_S"] = "0.05"
     src, manifest = make_dataset(tmp_path)
     env.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
@@ -548,7 +549,7 @@ def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: st
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
             "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-            "--wall-s", "2900", "--cap", "5", *extra]
+            "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5", *extra]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     return res, out_dir
 
@@ -635,12 +636,14 @@ def test_rung_mid_run_failure_downloads_what_was_copied_off(tmp_path: Path) -> N
     [("--model-revision", "TRAIN_MODEL_REVISION_REQUIRED"), ("--host-ram-required-gib", "HOST_RAM_THRESHOLD_MISSING"),
      ("--download-max-seconds", "DOWNLOAD_LIMIT_MISSING"), ("--dataset-dir", "TRAIN_DATASET_REQUIRED"),
      ("--model", "TRAIN_MODEL_REQUIRED"), ("token", "HF_READ_TOKEN_MISSING"),
-     ("--wall-s", "TRAIN_WALL_REQUIRED"), ("--cap", "TRAIN_CAP_REQUIRED")],
+     ("--wall-s", "TRAIN_WALL_REQUIRED"), ("--cap", "TRAIN_CAP_REQUIRED"),
+     ("--max-rate", "TRAIN_MAX_RATE_REQUIRED")],
 )
 def test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call(tmp_path: Path, drop: str, code: str) -> None:
     state_dir, env, src = _rung_env(tmp_path)
     args = {"--model": "Qwen/Qwen-Image", "--model-revision": REVISION, "--host-ram-required-gib": "96.5",
-            "--download-max-seconds": "60", "--dataset-dir": fc._to_posix(src), "--wall-s": "2900", "--cap": "5"}
+            "--download-max-seconds": "60", "--dataset-dir": fc._to_posix(src), "--wall-s": "2900", "--cap": "5",
+            "--max-rate": "9.5"}
     if drop == "token":
         env.pop("HF_TOKEN_GGUF_READ")
     else:
@@ -1163,3 +1166,313 @@ def test_bundle_now_also_finds_the_download_grandchild(tmp_path: Path) -> None:
     (proc / "21" / "cmdline").write_bytes(
         b"python\0-c\0import os, sys\nfrom huggingface_hub import snapshot_download\npath = snapshot_download(repo_id=sys.argv[1], revision=x)\0a/b\0")
     assert lr.rung_pids(tmp_path / "content", proc) == [21]
+
+
+# --- live rate guard (rung 1 was stopped by hand at 8.88/h; the kit read 0.0 and projected 0.26) -
+
+
+def _no_uploads(state_dir: Path) -> bool:
+    uploads = state_dir / "uploads.log"
+    return not uploads.exists() or "UPLOAD_OK" not in uploads.read_text(encoding="utf-8")
+
+
+def _win(out_dir: Path) -> dict:
+    return json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+
+
+def _cap_records(out_dir: Path) -> list[dict]:
+    return [json.loads(ln)["cap"] for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
+            if ln.startswith("{") and '"cap"' in ln and '"live"' in ln]
+
+
+def test_gpu_window_with_no_post_open_rate_refuses_rate_unread(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "0.00/hr"})
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    win = _win(out_dir)
+    assert win["refusal_code"] == "RATE_UNREAD" and win["rate_check"]["polls"] == 24
+    # 24 open-time polls; the stop path's last usage read is recorded too.
+    assert win["rate_check"]["window_rate"] is None and len(win["rate_readings"]) >= 24
+    assert _no_uploads(state_dir) and "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("seq", ["0.50/hr", "2.15/hr,8.88/hr,2.16/hr,8.89/hr,2.15/hr,8.88/hr"])
+def test_a_window_rate_below_the_floor_or_never_stable_is_unread(tmp_path: Path, seq: str) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    alternating = ",".join(seq.split(",") * 5)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": alternating})
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0 and _win(out_dir)["refusal_code"] == "RATE_UNREAD" and _no_uploads(state_dir)
+
+
+def test_parallel_neighbour_reproducer_refuses_above_max(tmp_path: Path) -> None:
+    # The reviewer's case: a neighbour already bills 0.26/h, this window reads 0.26 then 9.14.
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.26/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.26/hr,9.14/hr"})
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "8.0")
+    assert res.returncode != 0
+    win = _win(out_dir)
+    assert win["refusal_code"] == "RATE_ABOVE_MAX" and _no_uploads(state_dir)
+    assert win["rate_check"]["window_rate"] == 8.88 and win["rate_check"]["account_rate"] == 9.14
+    assert win["rate_check"]["pre_open_rate"] == 0.26 and win["rate_check"]["polls"] == 3
+    assert [r["account_rate"] for r in win["rate_readings"][:3]] == [0.26, 9.14, 9.14]
+
+
+def test_rate_waits_for_stability_and_prices_at_the_max(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "4.00/hr,8.88/hr"})
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    assert res.returncode == 0, res.stderr
+    win = _win(out_dir)
+    assert win["status"] == "ok" and win["trained"] is True
+    assert win["rate_check"]["window_rate"] == 8.88 and win["rate_check"]["polls"] == 3
+    assert win["rate_check"]["priced_at"] == 9.5 and win["rate_used_for_cap_and_projection"] == 9.5
+    assert win["rate_source"] == "max_of_max_rate_and_stable_window"
+    assert [r["stable"] for r in win["rate_readings"][:3]] == [False, False, True]
+
+
+def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_path: Path) -> None:
+    # A stable 2.15/h reading must not stretch the cap: priced at max(9.5, 2.15) = 9.5, 0.05 units
+    # last 18.9 s (at 2.15/h they would last 84 s). The rung's 4.9 cap: 4.85/9.5 h, about 31 min.
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "2.15/hr",
+                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        # Wall-clock seconds from the cap clock's start to the trip, read off the wall record.
+        lines = [json.loads(ln) for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
+                 if ln.startswith("{") and '"cap"' in ln and '"live"' in ln]
+        tripped = [r for r in lines if r["cap"]["tripped"]]
+        assert tripped, "the cap never tripped"
+        elapsed = tripped[0]["wall"]["threshold_s"] - tripped[0]["wall"]["remaining_s"]
+        assert 18.9 <= elapsed <= 30, elapsed
+        assert _win(out_dir)["rate_check"]["window_rate"] == 2.15
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+@pytest.mark.parametrize("rise", ["9.80", "12.00"])
+def test_a_midrun_rise_above_max_rate_refuses_and_bundles(tmp_path: Path, rise: str) -> None:
+    # Our own rise, the assignment count unchanged (the fake's default 1): it trips the max.
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                "FAKE_COLAB_POST_OPEN_RATE_SEQ": f"8.88/hr,8.88/hr,8.88/hr,8.88/hr,{rise}/hr",
+                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        win = _win(out_dir)
+        assert win["refusal_code"] == "RATE_ABOVE_MAX"
+        assert "mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert "BUNDLE_AFTER_FAILURE: downloaded" in (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert max(r["window_rate"] or 0 for r in win["rate_readings"]) == float(rise)
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_NEW_DELAY_S": "3", "SDLAB_TEST_RATE_READ_INTERVAL_S": "1",
+                "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,8.88/hr,8.88/hr",
+                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
+    content = state_dir / "content"
+    try:
+        win = _win(out_dir)
+        new_done = float((state_dir / "new_done_epoch.txt").read_text(encoding="utf-8"))
+        import datetime as _dt
+
+        started = _dt.datetime.strptime(win["cap_clock_started_at"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=_dt.timezone.utc).timestamp()
+        opened = _dt.datetime.strptime(win["opened_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=_dt.timezone.utc).timestamp()
+        # The clock starts when `colab new` returns (after its 3 s), not when the kit started.
+        assert started >= int(new_done) and started - opened >= 3
+        # The 3 rate polls (1 s apart) after open are counted: the first live cap reading already
+        # holds at least their time, priced at 9.5/h.
+        first = _cap_records(out_dir)[0]
+        assert first["spend_ccu"] / 9.5 * 3600 >= 2.0
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def _fold(st: dict, rates, *, pre, counts=None, start=0.0, step=5.0) -> dict:
+    import launch_guards as lg
+
+    for k, r in enumerate(rates):
+        lg.update_window_rate(st, account_rate=r, pre_open_rate=pre, at="t", epoch=start + k * step,
+                              assignments=1 if counts is None else counts[k])
+    return st
+
+
+def test_window_rate_state_unit() -> None:
+    import launch_guards as lg
+
+    st = _fold({}, (0.26, 9.14, 9.14), pre=0.26)
+    assert st["best_stable"] == 8.88 and [x["stable"] for x in st["readings"]] == [False, False, True]
+    assert lg.window_rate_decision(st, 8.0) == "above_max" and lg.window_rate_decision(st, 9.5) == "ok"
+    assert lg.gpu_projection_rate(st, 9.5) == 9.5 and lg.gpu_projection_rate(st, 8.0) == 8.88
+    low = _fold({}, (0.5, 0.5, 0.5), pre=None)
+    assert lg.window_rate_decision(low, 9.5) == "unread" and lg.gpu_projection_rate(low, 9.5) == 9.5
+    gone = _fold({}, (None,), pre=0.0)
+    assert gone["readings"][0]["window_rate"] is None and lg.GPU_RATE_FLOOR == 1.0
+    assert lg.parse_active_assignments("Current balance: 1 compute units\nActive assignments: 2\n") == 2
+    assert lg.parse_active_assignments("Usage rate: 1/hr") is None
+
+
+def test_the_stability_pair_is_five_seconds_apart() -> None:
+    import launch_guards as lg
+
+    assert lg.RATE_STABLE_GAP_S == 5.0
+    # Mid-run cycles poll every 2 s: a read 2 s after the last counted one is recorded, uncounted.
+    st = _fold({}, (8.88, 8.88), pre=0.0, step=2.0)
+    assert [r["counted"] for r in st["readings"]] == [True, False] and st.get("best_stable") is None
+    st = _fold(st, (8.88,), pre=0.0, start=5.0)
+    assert st["readings"][-1]["stable"] is True and st["best_stable"] == 8.88
+
+
+def test_a_count_change_rebaselines_the_neighbour_once_it_settles() -> None:
+    import launch_guards as lg
+
+    # A neighbour opens mid-run: 8.88 -> 17.76 with the count 1 -> 2. Two agreeing reads at the new
+    # count settle it; neither is judged; then the window reads 8.88 again.
+    st = _fold({}, (8.88, 8.88, 17.76, 17.76, 17.76, 17.76), pre=0.0, counts=(1, 1, 2, 2, 2, 2))
+    r = st["readings"]
+    assert r[2]["rebaseline_pending"] is True and r[2]["window_rate"] is None
+    assert r[3]["rebaselined"] is True and r[3]["neighbour_baseline"] == 8.88
+    assert [x["window_rate"] for x in r[4:]] == [8.88, 8.88]
+    assert st["best_stable"] == 8.88 and lg.gpu_projection_rate(st, 9.5) == 9.5
+    assert lg.window_rate_decision(st, 9.5) == "ok"
+    # A neighbour closes: pre-open 8.88, then 17.76 at count 2, then 8.88 at count 1; afterwards our
+    # own rise to 12.00 (count unchanged) is seen at full size and trips 9.5.
+    st = _fold({}, (17.76, 17.76, 8.88, 8.88, 8.88, 12.0, 12.0), pre=8.88, counts=(2, 2, 1, 1, 1, 1, 1))
+    assert st["readings"][3]["rebaselined"] is True and st["readings"][3]["neighbour_baseline"] == 0.0
+    assert [x["window_rate"] for x in st["readings"]] == [8.88, 8.88, None, 8.88, 8.88, 12.0, 12.0]
+    assert st["best_stable"] == 12.0 and lg.window_rate_decision(st, 9.5) == "above_max"
+
+
+def test_the_count_leading_the_rate_by_one_read_does_not_trip() -> None:
+    import launch_guards as lg
+
+    # The count reads 2 one read before the neighbour's rate arrives: 8.88 (count 2), then 17.76.
+    st = _fold({}, (8.88, 8.88, 8.88, 17.76, 17.76, 17.76, 17.76), pre=0.0, counts=(1, 1, 2, 2, 2, 2, 2))
+    assert lg.window_rate_decision(st, 9.5) == "ok" and st["best_stable"] == 8.88
+    reb = [x for x in st["readings"] if x.get("rebaselined")]
+    assert len(reb) == 1 and reb[0]["neighbour_baseline"] == 8.88
+    assert max(x["window_rate"] or 0 for x in st["readings"]) == 8.88
+
+
+@pytest.mark.parametrize("bad", [None, 0])
+def test_a_bad_count_for_three_reads_is_unreadable_and_one_is_recorded_only(bad) -> None:
+    import launch_guards as lg
+
+    one = _fold({}, (8.88, 8.88, 8.88, 8.88), pre=0.0, counts=(1, 1, bad, 1))
+    assert one["readings"][2]["assignments_bad"] is True
+    assert lg.window_rate_decision(one, 9.5) == "ok" and not one.get("assignments_unreadable")
+    three = _fold({}, (8.88, 8.88, 8.88, 8.88, 8.88), pre=0.0, counts=(1, 1, bad, bad, bad))
+    assert lg.window_rate_decision(three, 9.5) == "assignments_unreadable"
+    assert lg.parse_active_assignments("Current balance: 1 compute units\nUsage rate: 8.88/hr\n") is None
+
+
+def test_no_count_before_the_first_stable_read_is_not_registered_yet() -> None:
+    import launch_guards as lg
+
+    # The receipt shape: 0.00 with 0 assignments until the session registers, then the rate.
+    st = _fold({}, (0.0, 0.0, 0.0, 8.88, 8.88), pre=0.0, counts=(0, 0, None, 1, 1))
+    assert [r.get("not_registered", False) for r in st["readings"]] == [True, True, True, False, False]
+    assert not st.get("assignments_unreadable") and lg.window_rate_decision(st, 9.5) == "ok"
+    never = _fold({}, (0.0,) * 24, pre=0.0, counts=(0,) * 24)
+    assert lg.window_rate_decision(never, 9.5) == "unread"
+
+
+def _rate_env(env: dict, seq: str, counts: str, pre: str = "0.00/hr") -> None:
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": pre, "FAKE_COLAB_POST_OPEN_RATE_SEQ": seq,
+                "FAKE_COLAB_ASSIGNMENTS_SEQ": counts, "FAKE_VM_TRAIN_SLEEP_S": "4",
+                "GUARD_POLL_INTERVAL_S": "0.3"})
+
+
+def test_a_neighbour_opening_midrun_rebaselines_and_our_window_runs_on(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    _rate_env(env, "8.88/hr,8.88/hr,8.88/hr,8.88/hr,17.76/hr", "1,1,1,1,2")
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    assert res.returncode == 0, res.stderr[-3000:]
+    win = _win(out_dir)
+    assert win["status"] == "ok" and win["refusal_code"] is None
+    reb = [r for r in win["rate_readings"] if r.get("rebaselined")]
+    assert reb and reb[0]["assignments_before"] == 1 and reb[0]["assignments"] == 2
+    assert any(r.get("rebaseline_pending") for r in win["rate_readings"])
+    assert reb[0]["neighbour_baseline"] == 8.88
+    assert all((r["window_rate"] or 0) <= 8.88 for r in win["rate_readings"])
+    assert win["rate_used_for_cap_and_projection"] == 9.5
+
+
+def test_a_neighbour_closing_midrun_is_not_an_under_read(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    _rate_env(env, "17.76/hr,17.76/hr,17.76/hr,17.76/hr,8.88/hr", "2,2,2,2,1", pre="8.88/hr")
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    assert res.returncode == 0, res.stderr[-3000:]
+    readings = _win(out_dir)["rate_readings"]
+    after = [r for r in readings if r["counted"] and r.get("assignments") == 1 and not r.get("rebaseline_pending")]
+    assert after and all(r["window_rate"] == 8.88 for r in after), after
+    assert any(r.get("rebaselined") and r["neighbour_baseline"] == 0.0 for r in readings)
+
+
+USAGE_0 = "Current balance: 1812.22 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n"
+
+
+def test_gpu_rate_selection_raises_rate_unread_without_a_live_rate() -> None:
+    import launch_guards as lg
+
+    for text in (USAGE_0, "Current balance: 1812.22 compute units\nActive assignments: 1\n"):
+        with pytest.raises(lg.RateUnread) as exc:
+            lg.parse_usage_text(text, "gpu", configured_rate=0.26, session_opened=True, pre_open_rate=0.0)
+        assert exc.value.code == "RATE_UNREAD" and exc.value.partial["balance"] == 1812.22
+    # Before the open there is no post-open rate either: still the raise, never a configured rate.
+    with pytest.raises(lg.RateUnread):
+        lg.parse_usage_text(USAGE_0, "gpu", configured_rate=0.26, session_opened=False)
+    # A failed usage read stays COLAB_USAGE_PARSE_FAILED, and carries no projection rate at all.
+    bad = lg.parse_usage_text("garbage", "gpu", configured_rate=0.26, session_opened=True)
+    assert bad["code"] == "COLAB_USAGE_PARSE_FAILED" and bad["rate_for_projection"] is None
+    assert bad["rate_source"] == "live_rate_unread"
+    with pytest.raises(ValueError):
+        lg.parse_usage_text(USAGE_0, "tpu")
+
+
+def test_gpu_rate_selection_uses_the_live_8_88_and_keeps_it() -> None:
+    import launch_guards as lg
+
+    live = lg.parse_usage_text(USAGE_0.replace("0.00/hr", "8.88/hr"), "gpu", configured_rate=0.26,
+                               session_opened=True, pre_open_rate=0.0)
+    assert live["rate_for_projection"] == 8.88 and live["rate_source"] == "post_open_measured"
+    # A later 0.00 reading keeps the last good live rate.
+    later = lg.parse_usage_text(USAGE_0, "gpu", configured_rate=0.26, session_opened=True, pre_open_rate=0.0,
+                                post_open_rate=8.88)
+    assert later["rate_for_projection"] == 8.88 and later["rate_source"] == "post_open_measured"
+
+
+def test_cpu_rate_selection_is_unchanged() -> None:
+    import launch_guards as lg
+
+    pending = lg.parse_usage_text(USAGE_0, "cpu", configured_rate=0.26, session_opened=True, pre_open_rate=0.0)
+    assert pending["rate_for_projection"] == 0.26 and pending["rate_source"] == "configured_pending_post_open_rate"
+    pre = lg.parse_usage_text(USAGE_0.replace("0.00/hr", "0.08/hr"), "cpu", configured_rate=0.26, session_opened=False)
+    assert pre["rate_for_projection"] == 0.26 and pre["rate_source"] == "max_of_pre_open_and_configured"
+    none = lg.parse_usage_text("Current balance: 1.0 compute units\n", "cpu", configured_rate=0.26, session_opened=False)
+    assert none["rate_for_projection"] == 0.26 and none["rate_source"] == "configured"
+
+
+def test_cap_at_8_88_per_hour_trips_at_20_3_seconds() -> None:
+    import launch_guards as lg
+
+    kw = dict(mode="live", cap=0.06, margin=0.01, start_balance=100.0, current_balance=100.0, rate_ccu_per_hour=8.88)
+    assert lg.evaluate_cap_guard(elapsed_s=20.0, **kw)["tripped"] is False
+    assert lg.evaluate_cap_guard(elapsed_s=20.3, **kw)["tripped"] is True
+    # The balance drop counts too: the larger of the drop and the projection is the spend.
+    assert lg.evaluate_cap_guard(elapsed_s=0.0, **{**kw, "current_balance": 99.94})["tripped"] is True

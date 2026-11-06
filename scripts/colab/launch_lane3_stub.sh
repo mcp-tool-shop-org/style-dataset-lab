@@ -30,14 +30,14 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
+PINNED_LAUNCH_GUARDS_SHA="0749b81fbc023adda80bdb1e99ce538e2b66a729b209519ee2f6721d04fe37ea"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="9058334198ec1225d71296c809592727089789960466b70e93df35026239187e"
+PINNED_COLAB_WINDOW_SHA="9da858589cfe2832745c26f2f201772c578753a1e419691eb42011e5d7175a6e"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="829fd49b24499813027ca216c09913892997d0003b210f874785cd58b7acee7f"
+PINNED_SELF_SHA="667aea07aaa83f167c9a08fe855f77fa0ee9546b7a34f0d22cd5ab5d6d531cbd"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -581,6 +581,7 @@ TRAIN_MODEL=""
 TRAIN_MODEL_REVISION=""
 TRAIN_HOST_RAM_REQUIRED_GIB=""
 TRAIN_DOWNLOAD_MAX_SECONDS=""
+TRAIN_MAX_RATE=""
 DATASET_DIR=""
 SESSION_ARGS=()
 
@@ -596,6 +597,7 @@ while [ "$#" -gt 0 ]; do
     --grace-s) SESSION_ARGS+=("$1"); GRACE_S="$2"; shift 2 ;;
     --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
     --train) TRAIN_REQUESTED=1; shift ;;
+    --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --host-ram-required-gib) TRAIN_HOST_RAM_REQUIRED_GIB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -665,6 +667,10 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   if ! [[ "${WALL_S}" =~ ^[0-9]+$ ]] || ! [[ "${GRACE_S}" =~ ^[0-9]+$ ]] \
     || [ "$(( WALL_S - GRACE_S ))" -lt "${TRAIN_NEED_S}" ]; then
     echo "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s ${WALL_S} minus grace ${GRACE_S} must cover ${TRAIN_NEED_S} s (download limit ${TRAIN_DOWNLOAD_MAX_SECONDS} + install ${LANE3_INSTALL_ALLOWANCE_S} + train ${LANE3_TRAIN_ALLOWANCE_S})" >&2
+    exit 2
+  fi
+  if ! [[ "${TRAIN_MAX_RATE}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${TRAIN_MAX_RATE}" =~ ^0+(\.0+)?$ ]]; then
+    echo "REFUSED: TRAIN_MAX_RATE_REQUIRED: --train needs --max-rate <units/h>, the highest live rate the window may run at" >&2
     exit 2
   fi
   if [ -z "${DATASET_DIR}" ]; then
@@ -744,6 +750,7 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_DOWNLOAD_PROBE_SECONDS
   SDLAB_TEST_DISK_REQUIRED_GIB
   SDLAB_TEST_GPU_SMOKE_SECONDS
+  SDLAB_TEST_RATE_READ_INTERVAL_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 EXP_OVERRIDE_SHA="${PINNED_OVERRIDE_SHA}"
@@ -912,6 +919,10 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   fi
 fi
 
+# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
+# max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}"
+
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
@@ -931,6 +942,12 @@ WALL_WATCHER_PID="$!"
 # Hold /tmp/colab-window-open.lock while opening with colab new (--high-mem default)
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
+# A GPU window's cap clock started, and its stable rate was read, inside colab_open_session_locked
+# (the shared GPU rate gate). A CPU stub's clock starts here, after the open, as before.
+if colab_card_is_cpu "${CARD}"; then
+  START_EPOCH="$(date -u +%s)"
+  date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${OUT_DIR}/cap_clock_started_at.txt"
+fi
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane3_stub.sh"

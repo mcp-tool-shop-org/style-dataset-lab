@@ -20,3 +20,14 @@ Source: google-colab-cli 0.7.4, read on 2026-11-06. The same contract is modelle
    - write an argv log.
 
    This repo's fake ends the cell's kernel process on `restart-kernel` and leaves the cell's spawned processes running (the case the kit must survive). It ends everything on `stop`, because the VM is gone.
+5. **`colab usage` reports the account's rate, not this window's.** Its "Usage rate: R/hr" line covers every assignment on the account, so another open window adds to it.
+   - The kit reads the window's own rate as post-open minus pre-open.
+   - A GPU window's rate counts only when it reads at least `GPU_RATE_FLOOR` (1.00/hr) and two reads 5 s apart agree within 0.01. Otherwise the kit refuses with `RATE_UNREAD`.
+   - The cap and the projection are priced at the higher of `--max-rate` and the highest stable window rate seen. A stable window rate above `--max-rate`, at open or mid-run, refuses with `RATE_ABOVE_MAX`.
+   - Every usage call runs under `timeout -k`, and every reading goes into the window record.
+   - It also prints "Active assignments: N". When N changes between two reads, another window opened or closed. The kit judges nothing until the count settles: two reads at the new count, 5 s apart, whose rates agree within 0.01 (the count can arrive a read before the neighbour's rate). Then it re-baselines the neighbour (baseline = account rate minus this window's last stable rate). Pending and settling reads are neither judged against `--max-rate` nor allowed to raise the priced rate; only a read with an unchanged count can do either.
+   - Before the window's first stable read, a missing count or 0 means the session has not registered yet. The receipts show the rate and the count arriving together: 0.00 with 0 assignments, then 1.07 with 1. Such reads count only against the `RATE_UNREAD` poll budget.
+   - After the first stable read, a missing count or 0 is recorded, and three in a row end the window with `ASSIGNMENTS_UNREADABLE` (stop and bundle).
+   - Known limit: a rate that leads its count by two or more reads at open waits for the count before it can be stable.
+   - Known limit: a neighbour opening on the same read this window's own rate rises folds that rise into the baseline. Pricing at the higher of `--max-rate` and the highest stable rate seen bounds the cost.
+   - Every lane goes through one gate (`colab_gpu_rate_gate_arm`, then `colab_open_session_locked`, which refuses `GPU_RATE_GATE_NOT_ARMED` for a GPU card that was not armed).

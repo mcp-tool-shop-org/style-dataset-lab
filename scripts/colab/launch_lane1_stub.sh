@@ -24,10 +24,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
+PINNED_LAUNCH_GUARDS_SHA="0749b81fbc023adda80bdb1e99ce538e2b66a729b209519ee2f6721d04fe37ea"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="9058334198ec1225d71296c809592727089789960466b70e93df35026239187e"
-PINNED_SELF_SHA="1bc9723e8261d7c297bf038633abd1192a560950ffede90a424771424017bca3"
+PINNED_COLAB_WINDOW_SHA="9da858589cfe2832745c26f2f201772c578753a1e419691eb42011e5d7175a6e"
+PINNED_SELF_SHA="28042f0a1118774f0b323dde7a42d4587987cf0b1a39c557bf2d190bc6741830"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -41,6 +41,7 @@ CAP="${CAP:-0.05}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
+MAX_RATE=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -51,6 +52,7 @@ while [ "$#" -gt 0 ]; do
     --wall-s) WALL_S="$2"; shift 2 ;;
     --grace-s) GRACE_S="$2"; shift 2 ;;
     --margin) MARGIN="$2"; shift 2 ;;
+    --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -163,6 +165,10 @@ fi
 printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
 # Pre-open cap and host-RAM check via launch_guards.py
+# The card class sets the rate policy: a CPU stub keeps the labelled configured rate; a GPU card
+# goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
+# at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
 # Independent wall watcher (cannot be blocked by a child timeout)

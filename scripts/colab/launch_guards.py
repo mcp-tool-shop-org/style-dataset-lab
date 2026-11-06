@@ -133,8 +133,156 @@ ACTIVE_ASSIGNMENTS_RE = re.compile(
 )
 
 
+class RateUnread(Exception):
+    """A GPU window has no positive live post-open rate. `partial` carries what the usage text did
+    give (balance, the readings), so a caller can record it; the caller decides whether this
+    means "not yet" (polling right after open) or a refusal (RATE_UNREAD)."""
+
+    code = "RATE_UNREAD"
+
+    def __init__(self, partial: dict[str, Any]) -> None:
+        super().__init__("RATE_UNREAD: no positive live post-open rate for a GPU window")
+        self.partial = partial
+
+
+CARD_CLASSES = ("gpu", "cpu")
+
+# The window rate. `colab usage` reports the ACCOUNT's rate (docs/colab-cli-contract.md): a window's
+# own rate is the account reading minus the neighbour baseline (at first the pre-open reading). It
+# counts only when it is stable (two reads at least RATE_STABLE_GAP_S apart agreeing within
+# RATE_STABLE_TOLERANCE) and at or above GPU_RATE_FLOOR. The floor is below the cheapest GPU
+# measured, the T4 at 1.07/hr (16 reads, receipt windowC2-12-t4-s1a-20261027), and above the highest
+# CPU rate, 0.26/hr. A GPU window is priced on max(--max-rate, the highest stable window rate seen),
+# never on a window or account rate alone.
+#
+# "Active assignments" is recorded with every reading. When it changes, another window opened or
+# closed. Nothing is judged until the count settles: two counted reads at the new count, at least
+# RATE_STABLE_GAP_S apart, whose account rates agree within the tolerance (the count can arrive a
+# read before the neighbour's rate). Then the neighbour is re-baselined: baseline = account - our
+# last stable rate. Pending or settling reads are never judged against the max and never raise our
+# priced rate, which stays max(--max-rate, highest stable seen). Only a read at an unchanged count
+# may raise our rate or trip the max. Known limit: a neighbour opening on the same read our own rate
+# rises folds that rise into the baseline; pricing at max(--max-rate, seen) bounds the cost.
+#
+# Before our window's first stable read, a missing count or 0 means "not yet registered": the
+# receipts show the rate and the count arriving together (windowC2-12-t4-s1a-20261027 reads 0.00
+# with 0 assignments until the session registers, then 1.07 with 1). Such a read is recorded,
+# uncounted, and spends only the RATE_UNREAD poll budget. After the first stable read, a missing
+# count or 0 is a bad read: recorded, the rate not judged, and ASSIGNMENTS_UNREADABLE after
+# ASSIGNMENTS_BAD_LIMIT consecutive bad reads. Known limit: a rate that leads its count by two or
+# more reads at open waits for the count before it can be stable.
+GPU_RATE_FLOOR = 1.00
+RATE_STABLE_TOLERANCE = 0.01
+RATE_STABLE_GAP_S = 5.0
+ASSIGNMENTS_BAD_LIMIT = 3
+
+
+def parse_active_assignments(raw_usage: str) -> int | None:
+    m = re.search(r"^\s*Active\s+assignments:\s*(\d+)\s*$", raw_usage or "", re.I | re.M)
+    return int(m.group(1)) if m else None
+
+
+def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre_open_rate: float | None,
+                       at: str, epoch: float, assignments: int | None,
+                       min_gap_s: float = RATE_STABLE_GAP_S, floor: float = GPU_RATE_FLOOR,
+                       tolerance: float = RATE_STABLE_TOLERANCE) -> dict[str, Any]:
+    """Fold one post-open `colab usage` reading into the window-rate state (kept in the out dir).
+    Every reading is recorded. A bad count (missing, or 0) is recorded and judged nothing; three in
+    a row set `assignments_unreadable`. A read less than `min_gap_s` after the last counted one is
+    recorded as `counted: false`. A changed count starts a pending re-baseline that settles on two
+    agreeing reads at the new count. Otherwise the window rate is `stable` when it is at or above
+    the floor and agrees with the last counted window rate within the tolerance; `best_stable` is
+    the highest stable one."""
+    readings = state.setdefault("readings", [])
+    state["floor"] = floor
+    if "neighbour_baseline" not in state:
+        state["neighbour_baseline"] = float(pre_open_rate) if pre_open_rate is not None else 0.0
+    base = float(state["neighbour_baseline"])
+    rec: dict[str, Any] = {"at": at, "epoch": round(float(epoch), 3), "account_rate": account_rate,
+                           "pre_open_rate": pre_open_rate, "assignments": assignments,
+                           "neighbour_baseline": base, "window_rate": None, "stable": False}
+    if (assignments is None or int(assignments) <= 0) and state.get("best_stable") is None:
+        rec.update({"counted": False, "not_registered": True})
+        readings.append(rec)
+        return state
+    if assignments is None or int(assignments) <= 0:
+        state["assignments_bad_streak"] = int(state.get("assignments_bad_streak", 0)) + 1
+        if state["assignments_bad_streak"] >= ASSIGNMENTS_BAD_LIMIT:
+            state["assignments_unreadable"] = True
+        rec.update({"counted": False, "assignments_bad": True})
+        readings.append(rec)
+        return state
+    state["assignments_bad_streak"] = 0
+    last_epoch = state.get("last_counted_epoch")
+    if last_epoch is not None and float(epoch) - float(last_epoch) < float(min_gap_s):
+        rec["counted"] = False
+        readings.append(rec)
+        return state
+    rec["counted"] = True
+    state["last_counted_epoch"] = float(epoch)
+    known = "last_assignments" in state
+    prev_count = state.get("last_assignments")
+    state["last_assignments"] = assignments
+    pending = state.get("rebaseline_pending")
+    if known and assignments != prev_count:
+        # A new count: start (or restart) the pending re-baseline. Judge nothing.
+        state["rebaseline_pending"] = {"count": assignments, "from": prev_count, "last_account": account_rate}
+        rec.update({"rebaseline_pending": True, "assignments_before": prev_count})
+        readings.append(rec)
+        return state
+    if pending is not None:
+        last_acc = pending.get("last_account")
+        if (account_rate is None or last_acc is None
+                or abs(float(account_rate) - float(last_acc)) > tolerance):
+            pending["last_account"] = account_rate
+            rec["rebaseline_pending"] = True
+            readings.append(rec)
+            return state
+        # Settled: two agreeing reads at the new count.
+        ours = state.get("last_stable")
+        if ours is not None:
+            base = round(max(float(account_rate) - float(ours), 0.0), 4)
+            state["neighbour_baseline"] = base
+        state["last_window"] = ours
+        state.pop("rebaseline_pending", None)
+        rec.update({"rebaselined": True, "window_rate": ours, "neighbour_baseline": base,
+                    "assignments_before": pending.get("from")})
+        readings.append(rec)
+        return state
+    window = None if account_rate is None else round(max(float(account_rate) - base, 0.0), 4)
+    prev = state.get("last_window")
+    stable = (window is not None and window >= floor and prev is not None
+              and abs(window - float(prev)) <= tolerance)
+    rec.update({"window_rate": window, "stable": stable})
+    readings.append(rec)
+    state["last_window"] = window
+    if stable:
+        state["last_stable"] = window
+        if state.get("best_stable") is None or window > state["best_stable"]:
+            state["best_stable"] = window
+    return state
+
+
+def gpu_projection_rate(state: dict[str, Any], max_rate: float) -> float:
+    """The rate a GPU window's cap is projected with: max(--max-rate, highest stable window rate)."""
+    best = state.get("best_stable")
+    return max(float(max_rate), float(best)) if best is not None else float(max_rate)
+
+
+def window_rate_decision(state: dict[str, Any], max_rate: float) -> str:
+    """`assignments_unreadable`, `unread` (no stable window rate at or above the floor yet),
+    `above_max` or `ok`."""
+    if state.get("assignments_unreadable"):
+        return "assignments_unreadable"
+    best = state.get("best_stable")
+    if best is None:
+        return "unread"
+    return "above_max" if float(best) > float(max_rate) else "ok"
+
+
 def parse_usage_text(
     raw_usage: str,
+    card_class: str,
     *,
     usage_rc: int = 0,
     configured_rate: float = 0.26,
@@ -142,6 +290,12 @@ def parse_usage_text(
     post_open_rate: float | None = None,
     pre_open_rate: float | None = None,
 ) -> dict[str, Any]:
+    """Parse `colab usage`. `card_class` ("gpu" or "cpu", required) decides the rate policy: a GPU
+    window is priced only by its live post-open rate, and `_select_rate` raises RateUnread when it
+    has none, so no GPU caller can reach a configured-rate branch. A CPU stub keeps the labelled
+    configured rate."""
+    if card_class not in CARD_CLASSES:
+        raise ValueError(f"card_class must be one of {CARD_CLASSES}, got {card_class!r}")
     cfg = float(configured_rate)
 
     def _select_rate(
@@ -160,6 +314,8 @@ def parse_usage_text(
 
         if eff_post is not None and eff_post > 0.0:
             return eff_pre, eff_post, float(eff_post), "post_open_measured"
+        if card_class == "gpu":
+            raise RateUnread({"rate_measured_pre_open": eff_pre, "rate_measured_post_open": eff_post})
         if eff_post is not None and eff_post == 0.0:
             pos_pre = float(eff_pre) if (eff_pre is not None and eff_pre > 0.0) else 0.0
             return eff_pre, eff_post, max(cfg, pos_pre), "configured_pending_post_open_rate"
@@ -167,8 +323,17 @@ def parse_usage_text(
             return eff_pre, None, max(float(eff_pre), cfg), "max_of_pre_open_and_configured"
         return None, None, cfg, "configured"
 
+    def _failure_rates() -> tuple[float | None, float | None, float | None, str]:
+        # A usage read that failed is COLAB_USAGE_PARSE_FAILED (the cap guard trips on it); for a
+        # GPU window without a live rate it carries no projection rate at all, never a configured one.
+        try:
+            return _select_rate(None)
+        except RateUnread as exc:
+            return (exc.partial["rate_measured_pre_open"], exc.partial["rate_measured_post_open"], None,
+                    "live_rate_unread")
+
     if usage_rc != 0:
-        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+        eff_pre, eff_post, rate_used, rate_src = _failure_rates()
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
@@ -185,7 +350,7 @@ def parse_usage_text(
     text = raw_usage or ""
     m_bal = CURRENT_BALANCE_RE.search(text)
     if not m_bal:
-        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+        eff_pre, eff_post, rate_used, rate_src = _failure_rates()
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
@@ -201,7 +366,7 @@ def parse_usage_text(
         }
     balance = float(m_bal.group(1))
     if balance < 0.0:
-        eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+        eff_pre, eff_post, rate_used, rate_src = _failure_rates()
         return {
             "ok": False,
             "code": "COLAB_USAGE_PARSE_FAILED",
@@ -219,7 +384,7 @@ def parse_usage_text(
     if m_rate:
         rate_measured: float | None = float(m_rate.group(1))
         if rate_measured < 0.0:
-            eff_pre, eff_post, rate_used, rate_src = _select_rate(None)
+            eff_pre, eff_post, rate_used, rate_src = _failure_rates()
             return {
                 "ok": False,
                 "code": "COLAB_USAGE_PARSE_FAILED",
@@ -235,9 +400,14 @@ def parse_usage_text(
             }
     else:
         rate_measured = None
-    eff_pre, eff_post, rate_for_projection, rate_source = _select_rate(rate_measured)
     m_assign = ACTIVE_ASSIGNMENTS_RE.search(text)
     active_assignments = int(m_assign.group(1)) if m_assign else None
+    try:
+        eff_pre, eff_post, rate_for_projection, rate_source = _select_rate(rate_measured)
+    except RateUnread as exc:
+        exc.partial.update({"balance": balance, "rate_measured": rate_measured,
+                            "active_assignments": active_assignments})
+        raise
     return {
         "ok": True,
         "code": None,
