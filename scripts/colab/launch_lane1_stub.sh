@@ -24,10 +24,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="e1c97cc2c854f20fcc8e37967afcdd6b96137f696de9b7fc5bea04c5090984a1"
+PINNED_LAUNCH_GUARDS_SHA="963b66bafa14780fec043e8988531517d5f3f9d8e7c2bbce72361c3a4b8e38d1"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="3fd61cb74eda69d1995b9a2712dc96595aa4239e81d4b315dd3abea8561a93aa"
-PINNED_SELF_SHA="c03c4d909eec18242a906f0ec617532c0fea505641766eaad8c8556b3f05aa2a"
+PINNED_COLAB_WINDOW_SHA="35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de"
+PINNED_SELF_SHA="e5077aa9604a07815d7b604d3a53443866aabeb7cd86294fcc644752da2a38ad"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -184,7 +184,7 @@ MAIN_PID="$$"
 (
   exec >/dev/null 2>&1 </dev/null
   sleep "${WALL_LIMIT_S}"
-  echo "WALL_GUARD_TRIPPED after ${WALL_LIMIT_S}s" >> "${OUT_DIR}/guards.log"
+  echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${WALL_LIMIT_S} s (wall - grace) elapsed" >> "${OUT_DIR}/guards.log"
   kill -TERM "${MAIN_PID}" 2>/dev/null || true
 ) &
 WALL_WATCHER_PID="$!"
@@ -242,7 +242,10 @@ echo "setup" > /content/lane1_out/phase.txt
       if [ -f /sys/fs/cgroup/memory.events ]; then
         sed 's/^/CGROUP_MEM: /' /sys/fs/cgroup/memory.events || true
       fi
-      grep -E '^(MemTotal|MemAvailable|AnonPages):' /proc/meminfo | sed 's/^/MEM: /' || true
+      if [ -f /sys/fs/cgroup/memory.stat ]; then
+        grep -E '^(anon|shmem|file) ' /sys/fs/cgroup/memory.stat | sed 's/^/CGROUP_MEM_STAT: /' || true
+      fi
+      grep -E '^(MemTotal|MemAvailable|AnonPages|Shmem):' /proc/meminfo | sed 's/^/MEM: /' || true
       SETUP_SZ="\$(wc -c < /content/lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
       echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"
