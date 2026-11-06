@@ -160,6 +160,38 @@ def test_lane1_a_bad_assignments_count_for_three_cycles_ends_the_window(tmp_path
     assert "STOP -s sdlab-l1-gpu" in (state_dir / "stops.log").read_text(encoding="utf-8")
 
 
+def test_lane1_count_0_until_the_session_registers_proceeds(tmp_path: Path) -> None:
+    # The fake's registration fixture (receipt windowC2-12-t4-s1a-20261027): 0.00 with 0 assignments
+    # for three reads, then the card's rate (8.88 for the A100) with 1.
+    res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                                        "FAKE_COLAB_OPEN_REGISTERING": "1"})
+    assert res.returncode == 0, res.stderr[-2000:]
+    win = _win(out_dir)
+    assert win["status"] == "ok" and win["rate_check"]["window_rate"] == 8.88
+    regs = [r for r in win["rate_readings"] if r.get("not_registered")]
+    assert len(regs) == 3 and all(r["account_rate"] == 0.0 and r["assignments"] == 0 for r in regs)
+
+
+def test_lane1_count_0_for_the_whole_open_budget_is_rate_unread(tmp_path: Path) -> None:
+    res, out_dir, state_dir = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                                                "FAKE_COLAB_POST_OPEN_RATE_STR": "0.00/hr",
+                                                "FAKE_COLAB_ASSIGNMENTS_SEQ": "0"})
+    assert res.returncode != 0
+    win = _win(out_dir)
+    assert win["refusal_code"] == "RATE_UNREAD" and win["rate_check"]["polls"] == 24
+    assert _no_uploads(state_dir)
+
+
+def test_lane1_count_0_at_open_then_mid_run_still_ends(tmp_path: Path) -> None:
+    res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                                        "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,0.00/hr,8.88/hr",
+                                        "FAKE_COLAB_ASSIGNMENTS_SEQ": "0,0,0,1,1,1,1,0"}, mode="stall")
+    assert res.returncode == 91, res.stderr[-2000:]
+    win = _win(out_dir)
+    assert win["refusal_code"] == "ASSIGNMENTS_UNREADABLE" and win["rate_check"]["window_rate"] == 8.88
+    assert "REFUSED: ASSIGNMENTS_UNREADABLE: mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
+
+
 def test_lane1_a_single_missing_count_is_recorded_only(tmp_path: Path) -> None:
     res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
                                         "FAKE_COLAB_ASSIGNMENTS_SEQ": "1,1,1,OMITLINE,1"})

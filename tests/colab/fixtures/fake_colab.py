@@ -1117,6 +1117,15 @@ def main(argv: list[str] | None = None) -> int:
         if session_opened and assign_seq_raw:
             aseq = [x.strip() for x in assign_seq_raw.split(",") if x.strip()]
             assignments = aseq[min(post_count - 1, len(aseq) - 1)]
+        # FAKE_COLAB_OPEN_REGISTERING=1: the session-registration fixture. The first three post-open
+        # reads print "Usage rate: 0.00/hr" with "Active assignments: 0", then the card's rate with
+        # count 1. Source: receipt windowC2-12-t4-s1a-20261027, whose post-open reads show 0.00 with
+        # 0 assignments until the session registered, then 1.07/hr with 1.
+        if session_opened and os.environ.get("FAKE_COLAB_OPEN_REGISTERING") == "1":
+            if post_count <= 3:
+                rate_str, assignments = "0.00/hr", "0"
+            elif not assign_seq_raw:
+                assignments = "1"
         count_line = "" if assignments == "OMITLINE" else f"Active assignments: {assignments}"
         if rate_str == "OMIT":
             print(f"Current balance: {bal} compute units")

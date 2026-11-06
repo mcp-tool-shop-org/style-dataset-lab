@@ -164,8 +164,13 @@ CARD_CLASSES = ("gpu", "cpu")
 # may raise our rate or trip the max. Known limit: a neighbour opening on the same read our own rate
 # rises folds that rise into the baseline; pricing at max(--max-rate, seen) bounds the cost.
 #
-# A missing count, or 0 while our window is open, is a bad read: recorded, the rate not judged, and
-# ASSIGNMENTS_UNREADABLE after ASSIGNMENTS_BAD_LIMIT consecutive bad reads.
+# Before our window's first stable read, a missing count or 0 means "not yet registered": the
+# receipts show the rate and the count arriving together (windowC2-12-t4-s1a-20261027 reads 0.00
+# with 0 assignments until the session registers, then 1.07 with 1). Such a read is recorded,
+# uncounted, and spends only the RATE_UNREAD poll budget. After the first stable read, a missing
+# count or 0 is a bad read: recorded, the rate not judged, and ASSIGNMENTS_UNREADABLE after
+# ASSIGNMENTS_BAD_LIMIT consecutive bad reads. Known limit: a rate that leads its count by two or
+# more reads at open waits for the count before it can be stable.
 GPU_RATE_FLOOR = 1.00
 RATE_STABLE_TOLERANCE = 0.01
 RATE_STABLE_GAP_S = 5.0
@@ -196,6 +201,10 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
     rec: dict[str, Any] = {"at": at, "epoch": round(float(epoch), 3), "account_rate": account_rate,
                            "pre_open_rate": pre_open_rate, "assignments": assignments,
                            "neighbour_baseline": base, "window_rate": None, "stable": False}
+    if (assignments is None or int(assignments) <= 0) and state.get("best_stable") is None:
+        rec.update({"counted": False, "not_registered": True})
+        readings.append(rec)
+        return state
     if assignments is None or int(assignments) <= 0:
         state["assignments_bad_streak"] = int(state.get("assignments_bad_streak", 0)) + 1
         if state["assignments_bad_streak"] >= ASSIGNMENTS_BAD_LIMIT:

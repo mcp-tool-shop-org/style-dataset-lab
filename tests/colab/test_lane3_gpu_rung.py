@@ -1381,6 +1381,17 @@ def test_a_bad_count_for_three_reads_is_unreadable_and_one_is_recorded_only(bad)
     assert lg.parse_active_assignments("Current balance: 1 compute units\nUsage rate: 8.88/hr\n") is None
 
 
+def test_no_count_before_the_first_stable_read_is_not_registered_yet() -> None:
+    import launch_guards as lg
+
+    # The receipt shape: 0.00 with 0 assignments until the session registers, then the rate.
+    st = _fold({}, (0.0, 0.0, 0.0, 8.88, 8.88), pre=0.0, counts=(0, 0, None, 1, 1))
+    assert [r.get("not_registered", False) for r in st["readings"]] == [True, True, True, False, False]
+    assert not st.get("assignments_unreadable") and lg.window_rate_decision(st, 9.5) == "ok"
+    never = _fold({}, (0.0,) * 24, pre=0.0, counts=(0,) * 24)
+    assert lg.window_rate_decision(never, 9.5) == "unread"
+
+
 def _rate_env(env: dict, seq: str, counts: str, pre: str = "0.00/hr") -> None:
     env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": pre, "FAKE_COLAB_POST_OPEN_RATE_SEQ": seq,
                 "FAKE_COLAB_ASSIGNMENTS_SEQ": counts, "FAKE_VM_TRAIN_SLEEP_S": "4",
