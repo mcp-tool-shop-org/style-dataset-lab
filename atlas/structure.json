@@ -16120,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "1a6257e03e4811922de709079c272940b69e66ba6fad9d4665a5b1b61aaa19bb",
+          "hash": "b2cd68c15d56d2b8facb0a44ff40d7eefa8a32666404d1bf3c4b31feb8e68383",
           "path": "CHANGELOG.md"
         },
         {
@@ -16817,7 +16817,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "2172d951ee0dcccb50acf9446ec49b1aa345c48bcf7c5446794ca25750756556",
+          "hash": "552ed26f9dccc7a70f216fe53f011bd2997d9614b81295c816ff2b3975262a54",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16837,7 +16837,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "79029af51608020fcf0898a9aba3add694612726474c00c7f755b213abb8fa1e",
+          "hash": "35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17394,12 +17394,15 @@
             "evaluate_wall_guard",
             "gpu_projection_rate",
             "host_ram_reading",
+            "host_ram_status",
+            "is_vitals_line",
             "main",
             "normalize_hex_sha",
             "parse_active_assignments",
             "parse_usage_text",
             "parse_vitals_log",
             "run_between_item_fetch",
+            "run_output_bytes",
             "scrub_colab_tokens",
             "scrub_file_in_place",
             "sha256_file",
@@ -17453,27 +17456,27 @@
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 768
+              "line": 858
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 855
+              "line": 954
             },
             {
               "kind": "raise",
-              "line": 918
+              "line": 1051
             }
           ],
-          "hash": "84b505966f476cf0a944147fb638e6128c17dde14bdd69bcb3c3762f3c284795",
+          "hash": "963b66bafa14780fec043e8988531517d5f3f9d8e7c2bbce72361c3a4b8e38d1",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "3c93e029cc4daa44d8dd2f1b532b15fbb88018422db21ea545a63ff70cb19143",
+          "hash": "d2a1f831cd47c0b328d9c648285d623c706746f5a0798e51e8ad2a21bda06ea3",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "912fa68ecaaeb0fb119ee455f96c5efb31cbf902929e777e6d317e57f23306e5",
+          "hash": "faf336dc17cdb1b446ad13a5ea9d357949ba2ff28912bdfa3f11d76bdd44af02",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19155,7 +19158,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 52,
+          "reads": 54,
           "where": [
             "caller"
           ],
@@ -19177,7 +19180,7 @@
           "writes": 0
         }
       ],
-      "outsideReads": 55,
+      "outsideReads": 57,
       "outsideWrites": 40,
       "role": "code",
       "testRunners": [
@@ -19874,7 +19877,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "c015ad69419a27f2fda9fb13591e29750c3fbdad34d7cdbd26ab8416af69610a",
+          "hash": "ba7e01e1839994b3fce1868240463f1d7299fbc747e6a0a6b2b0b10997f8daa8",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -19979,16 +19982,22 @@
           "exports": [
             "test_cgroup_memory_stat_is_preferred_and_shmem_counts_and_numeric_max_is_the_ceiling",
             "test_check_ram_cli_prints_the_tripping_record",
-            "test_kit_other_live_guard_trips_are_named_refusals",
+            "test_every_vitals_emitter_prints_only_listed_lines",
+            "test_kit_live_guard_trips_are_named_refusals",
             "test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log",
             "test_kit_replay_of_rung_g4a_does_not_trip_host_ram",
+            "test_kit_torn_final_sample_neither_trips_nor_reads_zero",
             "test_mem_available_floor_trips_when_unreclaimable_memory_is_not_anon",
+            "test_no_complete_sample_is_waiting_then_unreadable_and_never_a_default",
             "test_reading_uses_one_sample_and_skips_samples_without_private_memory",
             "test_real_private_growth_still_trips",
             "test_replay_of_rung_g4a_passes_on_private_memory_and_would_trip_on_memory_current",
-            "test_wall_cap_and_vitals_records_carry_a_refusal"
+            "test_run_output_bytes_skips_every_vitals_line_and_real_ps_rows",
+            "test_torn_newest_sample_falls_back_to_the_previous_complete_one",
+            "test_wall_cap_and_vitals_records_carry_a_refusal",
+            "vitals_ends_torn"
           ],
-          "hash": "01f007939ad5e2bc6820c848d5a1c9f6c28d439ee1506e0304148e7727f54e1d",
+          "hash": "9dabba380577350d4ceda1133e0324542b6fd84d7f45fadb0ab2e47125b76f40",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -22426,7 +22435,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "f114ff0f6f7d94f4aa9075d7ed09ddd89b444a25",
+    "commit": "06f0aa496852bd257c0163520f49fb89bf741c6e",
     "tracked": 3302
   },
   "landings": [

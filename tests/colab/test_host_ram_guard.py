@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -164,11 +165,12 @@ def _bash() -> str:
     return found
 
 
-def _replay_window(tmp_path: Path, replay: Path, name: str) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+def _replay_window(tmp_path: Path, replay: Path, name: str, **env_over: str) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     _, state_dir, env = fc.make_fake_colab_env(tmp_path / f"{name}_case")
     env["FAKE_COLAB_MODE"] = "ram_replay"
     env["FAKE_COLAB_RAM_REPLAY"] = fc._to_posix(replay)
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env.update(env_over)
     out_dir = tmp_path / f"out_{name}"
     res = subprocess.run(
         [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(out_dir), "--session", f"sdlab-l3-{name}"],
@@ -185,6 +187,9 @@ def _ram_records(out_dir: Path) -> list[dict]:
     return recs
 
 
+STAT_SOURCE = "cgroup_memory.stat:anon+shmem"
+
+
 # (a) e2e: the real sequence through the kit's live guards. It tripped the old kit on sample 17.
 def test_kit_replay_of_rung_g4a_does_not_trip_host_ram(tmp_path: Path) -> None:
     res, out_dir, _ = _replay_window(tmp_path, REPLAY, "g4a")
@@ -194,14 +199,14 @@ def test_kit_replay_of_rung_g4a_does_not_trip_host_ram(tmp_path: Path) -> None:
     assert win["refusal_code"] != "HOST_RAM_PROJECTION_EXCEEDED"
     recs = _ram_records(out_dir)
     assert recs and all(r["tripped"] is False for r in recs)
-    assert any(r["private_mb"] == 52492.8 and r["source"] == "meminfo:AnonPages" and r["mem_available_mb"] == 125790.7
-               for r in recs)
+    assert any(r.get("private_mb") == 52492.8 and r.get("source") == STAT_SOURCE and r.get("mem_available_mb") == 125790.7
+               and r.get("limit_mb") == 181130.0 for r in recs)
 
 
 # (c) + (d) e2e: a real private-memory climb trips as a named refusal, numbers in guards.log.
 def test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log(tmp_path: Path) -> None:
     tot_kb = 185477132
-    rows = [(2 * 1024**3, tot_kb, tot_kb - 2097152, 2097152), (50 * 1024**3, tot_kb, 80000000, 100000000),
+    rows = [(2 * 1024**3, tot_kb, tot_kb - 2097152, 2097152), (120 * 1024**3, tot_kb, 80000000, 100000000),
             (178 * 1024**3, tot_kb, 3000000, 180000000)]
     replay = tmp_path / "climb.txt"
     replay.write_text("".join(f"{a} {b} {c} {d}\n" for a, b, c, d in rows), encoding="utf-8", newline="\n")
@@ -209,31 +214,38 @@ def test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log(tmp_path
     assert res.returncode != 0
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["refusal_code"] == "HOST_RAM_PROJECTION_EXCEEDED" and win["status"] == "HOST_RAM_PROJECTION_EXCEEDED"
-    assert "private 175781.2 MB (meminfo:AnonPages) + delta 2048.0 MB x 1.05" in win["why"]
+    assert f"private 175781.2 MB ({STAT_SOURCE}) + delta 2048.0 MB x 1.05" in win["why"]
     draft = json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8"))
     assert draft["refusal_code"] == "HOST_RAM_PROJECTION_EXCEEDED" and draft["why"] == win["why"]
     tripped = [r for r in _ram_records(out_dir) if r["tripped"]]
     assert tripped, (out_dir / "guards.log").read_text(encoding="utf-8")
     rec = tripped[0]
     assert (rec["private_mb"], rec["delta_mb"], rec["factor"], rec["limit_mb"], rec["mem_available_mb"], rec["source"]) == (
-        175781.2, 2048.0, 1.05, 181130.0, 2929.7, "meminfo:AnonPages")
+        175781.2, 2048.0, 1.05, 181130.0, 2929.7, STAT_SOURCE)
     assert rec["tripped_on"] == ["private_projection", "mem_available_floor"]
     assert "REFUSED: HOST_RAM_PROJECTION_EXCEEDED: private 175781.2 MB" in (out_dir / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-climb" in (state_dir / "stops.log").read_text(encoding="utf-8")
 
 
-# The other live-guard trips also land as named refusals (they used to leave refusal_code null).
+# Every live-guard trip lands as a named refusal (they used to leave refusal_code null). The stall
+# case's fake prints the new CGROUP_MEM_STAT and MEM: Shmem lines like the real emitter; the
+# shell filter counted those as run output, so STALL_GUARD_TRIPPED could never fire.
 @pytest.mark.parametrize(
-    ("mode", "extra", "code"),
+    ("mode", "extra", "env_over", "code"),
     [
-        ("cap_burn", ["--cap", "0.05", "--margin", "0.01"], "CAP_GUARD_TRIPPED"),
-        ("dead_harness", [], "DEAD_HARNESS_TRIPPED"),
+        ("cap_burn", ["--cap", "0.05", "--margin", "0.01"], {}, "CAP_GUARD_TRIPPED"),
+        ("dead_harness", [], {}, "DEAD_HARNESS_TRIPPED"),
+        ("stall", [], {"STALL_S": "1"}, "STALL_GUARD_TRIPPED"),
+        ("setup_stall", [], {"SETUP_STALL_S": "3", "FAKE_COLAB_VITALS_INTERVAL_S": "0.2"}, "SETUP_STALL_TRIPPED"),
+        ("wall", ["--wall-s", "2", "--grace-s", "1"], {}, "WALL_GUARD_TRIPPED"),
+        ("stall", [], {"PROJECTED_DELTA_MB": "not-a-number"}, "GUARD_FAILED"),
     ],
 )
-def test_kit_other_live_guard_trips_are_named_refusals(tmp_path: Path, mode: str, extra: list[str], code: str) -> None:
+def test_kit_live_guard_trips_are_named_refusals(tmp_path: Path, mode: str, extra: list[str], env_over: dict, code: str) -> None:
     _, _, env = fc.make_fake_colab_env(tmp_path / f"{mode}_case")
     env["FAKE_COLAB_MODE"] = mode
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env.update(env_over)
     out_dir = tmp_path / f"out_{mode}"
     res = subprocess.run(
         [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(out_dir), "--session", f"sdlab-l3-{mode}", *extra],
@@ -241,5 +253,124 @@ def test_kit_other_live_guard_trips_are_named_refusals(tmp_path: Path, mode: str
     )
     assert res.returncode != 0
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-    assert win["refusal_code"] == code and win["status"] == code and win["why"]
+    assert win["refusal_code"] == code and win["status"] == code and win["why"], (win, res.stderr[-2000:])
     assert f"REFUSED: {code}: " in (out_dir / "guards.log").read_text(encoding="utf-8")
+
+
+# ---- torn samples: the poll can read vitals.log while the emitter is mid-write ------------------
+
+G4_LAST = _samples()[-1]
+
+
+def _stat_block(cg: int, tot: int, avail: int, anon_kb: int) -> str:
+    return (
+        "=== VITALS 2026-11-06T18:42:54Z ===\n"
+        f"CGROUP_MEM_CURRENT: {cg}\nCGROUP_MEM_MAX: max\nCGROUP_MEM: oom_kill 0\n"
+        f"CGROUP_MEM_STAT: anon {anon_kb * 1024}\nCGROUP_MEM_STAT: file {cg - anon_kb * 1024}\nCGROUP_MEM_STAT: shmem 0\n"
+        f"MEM: MemTotal:       {tot} kB\nMEM: MemAvailable:   {avail} kB\nMEM: AnonPages:      {anon_kb} kB\n"
+        "MEM: Shmem:          0 kB\nSETUP_BYTES: 0\nPROC:\nHARNESS: {\"phase\": \"run\"}\n"
+    )
+
+
+TORN_TAILS = {
+    "after_stat": (f"=== VITALS 2026-11-06T18:43:09Z ===\nCGROUP_MEM_CURRENT: {G4_LAST[0]}\nCGROUP_MEM_MAX: max\n"
+                   f"CGROUP_MEM: oom_kill 0\nCGROUP_MEM_STAT: anon {G4_LAST[3] * 1024}\nCGROUP_MEM_STAT: file 0\n"),
+    "number": f"=== VITALS 2026-11-06T18:43:09Z ===\nCGROUP_MEM_CURRENT: {G4_LAST[0]}\nCGROUP_MEM_STAT: anon 55",
+    "meminfo": (f"=== VITALS 2026-11-06T18:43:09Z ===\nCGROUP_MEM_CURRENT: {G4_LAST[0]}\nCGROUP_MEM_STAT: anon {G4_LAST[3] * 1024}\n"
+                f"CGROUP_MEM_STAT: file 0\nCGROUP_MEM_STAT: shmem 0\nMEM: MemTotal:       {G4_LAST[1]} kB\nMEM: MemAvail"),
+}
+
+
+@pytest.mark.parametrize("tail", sorted(TORN_TAILS))
+def test_torn_newest_sample_falls_back_to_the_previous_complete_one(tail: str) -> None:
+    text = _stat_block(*G4_LAST) + TORN_TAILS[tail]
+    status = lg.host_ram_status(text)
+    assert status["state"] == "ok"
+    r = status["reading"]
+    # Neither a 0 MB read (torn number) nor a missing MemTotal/MemAvailable (cut before MEM:).
+    assert (r["private_mb"], r["mem_total_mb"], r["mem_available_mb"], r["blocks_back"]) == (52492.8, 181130.0, 125790.7, 1)
+    assert _check(r)["tripped"] is False
+
+
+@pytest.mark.parametrize("tail", sorted(TORN_TAILS))
+def test_kit_torn_final_sample_neither_trips_nor_reads_zero(tmp_path: Path, tail: str) -> None:
+    replay = tmp_path / "last.txt"
+    replay.write_text(" ".join(str(x) for x in G4_LAST) + "\n", encoding="utf-8", newline="\n")
+    res, out_dir, _ = _replay_window(tmp_path, replay, f"torn-{tail.replace('_', '-')}", FAKE_COLAB_RAM_HOLD="3",
+                                     FAKE_COLAB_RAM_TORN=tail, FAKE_COLAB_RAM_TORN_QUIET_S="4")
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert "HOST_RAM_PROJECTION_EXCEEDED" not in guards and "HOST_RAM_UNREADABLE" not in guards
+    recs = [r for r in _ram_records(out_dir) if r.get("state") == "ok"]
+    assert recs and all(r["private_mb"] == 52492.8 and r["limit_mb"] == 181130.0 for r in recs)
+    assert vitals_ends_torn(out_dir)
+
+
+def vitals_ends_torn(out_dir: Path) -> bool:
+    text = (out_dir / "vitals.log").read_text(encoding="utf-8")
+    return "HARNESS" not in text.rsplit("=== VITALS", 1)[-1]
+
+
+def test_no_complete_sample_is_waiting_then_unreadable_and_never_a_default(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    assert lg.host_ram_status(None)["state"] == "no_vm"
+    assert lg.host_ram_status("")["state"] == "waiting"
+    assert lg.host_ram_status(TORN_TAILS["after_stat"])["state"] == "waiting"
+    blind = "=== VITALS a ===\nCGROUP_MEM_CURRENT: 5\nHARNESS: {}\n" * 2
+    st = lg.host_ram_status(blind)
+    assert st["state"] == "unreadable" and "2 vitals samples" in st["why"]
+    # A complete sample three samples back is stale: unreadable, not a reading.
+    stale = _stat_block(*G4_LAST) + "=== VITALS b ===\nHARNESS: {}\n" * 2
+    assert lg.host_ram_status(stale)["state"] == "unreadable"
+    f = tmp_path / "vitals.log"
+    f.write_text(blind, encoding="utf-8")
+    assert lg.main(["--check-ram", "--ram-vitals-file", str(f)]) == 1
+    rec = json.loads(capsys.readouterr().out)
+    assert rec["refusal"]["code"] == "HOST_RAM_UNREADABLE" and "private_mb" not in rec
+    assert lg.main(["--check-ram", "--ram-vitals-file", str(tmp_path / "missing.log")]) == 0
+    assert json.loads(capsys.readouterr().out)["state"] == "no_vm"
+    f.write_text(_stat_block(*G4_LAST), encoding="utf-8")
+    assert lg.main(["--check-ram", "--ram-vitals-file", str(f)]) == 0
+    assert json.loads(capsys.readouterr().out)["private_mb"] == 52492.8
+
+
+# ---- the stall guard's run-output count ---------------------------------------------------------
+
+
+def test_run_output_bytes_skips_every_vitals_line_and_real_ps_rows(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    ps_row = "root        2216    2101 21 19:01 ?        00:00:02 /content/venv-lane3/bin/python /content/ai-toolkit/run.py job.yaml\n"
+    block = _stat_block(*G4_LAST).replace("PROC:\n", "PROC:\n" + ps_row + "101 /content/ai-toolkit/run.py x\n")
+    assert lg.run_output_bytes(block) == 0
+    assert lg.run_output_bytes(block + block) == 0
+    assert lg.run_output_bytes(block + "step 3/20 loss 0.1\n") == len("step 3/20 loss 0.1\n")
+    f = tmp_path / "v.log"
+    f.write_text(block + "x\n", encoding="utf-8")
+    assert lg.main(["--run-output-bytes", str(f)]) == 0 and capsys.readouterr().out.strip() == "2"
+    assert lg.main(["--run-output-bytes", str(tmp_path / "none.log")]) == 0 and capsys.readouterr().out.strip() == "0"
+
+
+def _emitted_prefixes(text: str) -> set[str]:
+    out = set()
+    for m in re.finditer(r"""(?:echo\s+["']|printf\s+["']|sed\s+'s/\^/)(=== VITALS|[A-Z][A-Z_]*:)""", text):
+        out.add(m.group(1))
+    return out
+
+
+def test_every_vitals_emitter_prints_only_listed_lines() -> None:
+    sections = []
+    for lane in ("launch_lane1_stub.sh", "launch_lane3_stub.sh"):
+        t = (COLAB_DIR / lane).read_text(encoding="utf-8")
+        start = t.index('echo "=== VITALS')
+        sections.append((lane, t[start:t.index("HARNESS:", start) + 9]))
+    fake = (FIXTURES / "fake_colab.py").read_text(encoding="utf-8")
+    for name in ("emit_vitals() {", "emit_ram_head() {", "emit_ram_sample() {"):
+        i = 0
+        while (i := fake.find(name, i)) != -1:
+            sections.append((name, fake[i:re.compile(r"^\s*}\s*$", re.M).search(fake, i).start()]))
+            i += 1
+    assert len(sections) == 6
+    listed = set(lg.VITALS_LINE_PREFIXES)
+    for where, sec in sections:
+        printed = _emitted_prefixes(sec)
+        assert printed, where
+        assert printed <= listed, (where, printed - listed)
+    real = set().union(*(_emitted_prefixes(sec) for w, sec in sections[:2]))
+    assert {"CGROUP_MEM_STAT:", "MEM:", "HARNESS:", "PROC:"} <= real

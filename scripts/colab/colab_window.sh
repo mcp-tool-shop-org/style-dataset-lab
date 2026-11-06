@@ -348,29 +348,10 @@ else:
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
     err_tok = "COLAB_USAGE_PARSE_FAILED"
 
-# The VM's private memory (anon + shmem) from the newest vitals sample that carries it
-# (launch_guards.host_ram_reading), every value from that one sample. Never cgroup
-# memory.current: it counts the page cache, which the kernel reclaims before any OOM kill, and
-# a 57.7 GB model download alone filled it (window sdlab-l3-rung-g4a, 2026-11-06).
-anon_mb = float(os.environ.get("CURRENT_ANON_MB", "512")) if "os" in sys.modules else 512.0
-mem_total_mb = 12288.0
-mem_available_mb = "NONE"
-ram_source = "default"
-cgroup_max_mb = ""
-vitals_f = out_dir / "vitals.log"
-if vitals_f.exists():
-    reading = lg.host_ram_reading(vitals_f.read_text(encoding="utf-8", errors="replace"))
-    if reading is not None:
-        anon_mb = reading["private_mb"]
-        ram_source = reading["source"]
-        if reading["mem_total_mb"] is not None:
-            mem_total_mb = reading["mem_total_mb"]
-        if reading["mem_available_mb"] is not None:
-            mem_available_mb = str(reading["mem_available_mb"])
-        if reading["cgroup_max_mb"] is not None:
-            cgroup_max_mb = str(reading["cgroup_max_mb"])
-
-print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok} {anon_mb} {mem_total_mb} {mem_available_mb} {ram_source} {cgroup_max_mb}")
+# The host-RAM reading is not taken here: the RAM check reads vitals.log itself
+# (launch_guards.py --check-ram --ram-vitals-file, host_ram_status), so no default value can stand
+# in for a VM reading.
+print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok}")
 PYEOF
 }
 
@@ -476,12 +457,12 @@ colab_check_cap_and_ram() {
   local metrics=""
   local poll_rc=0
   metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || poll_rc=$?
-  local start_bal="" cur_bal="" rate_val="" err_tok="" anon_mb="" mem_total_mb="" mem_available_mb="" ram_source="" cgroup_max_mb=""
+  local start_bal="" cur_bal="" rate_val="" err_tok=""
   if [ "${poll_rc}" -ne 0 ]; then
     err_tok="COLAB_USAGE_PARSE_FAILED"
     printf 'COLAB_USAGE_PARSE_FAILED: usage poll helper exited with status %s\n' "${poll_rc}" > "${out_dir}/usage_parse_error.txt"
   else
-    read -r start_bal cur_bal rate_val err_tok anon_mb mem_total_mb mem_available_mb ram_source cgroup_max_mb <<< "${metrics}"
+    read -r start_bal cur_bal rate_val err_tok <<< "${metrics}"
     if [ -z "${metrics}" ] || [ -z "${start_bal}" ] || [ -z "${cur_bal}" ] || [ -z "${rate_val}" ] || [ -z "${err_tok}" ] || [ "${start_bal}" = "NONE" ] || [ "${cur_bal}" = "NONE" ]; then
       err_tok="COLAB_USAGE_PARSE_FAILED"
       if [ ! -s "${out_dir}/usage_parse_error.txt" ]; then
@@ -532,22 +513,13 @@ colab_check_cap_and_ram() {
     return 1
   fi
 
+  # Private memory from the newest complete vitals sample (or the one before it); no vitals yet is
+  # a skipped check, never a default. Two samples with no complete one is HOST_RAM_UNREADABLE.
   local ram_args=(
     "--check-ram"
-    "--current-anon-mb" "${CURRENT_ANON_MB:-${anon_mb:-512}}"
     "--projected-delta-mb" "${PROJECTED_DELTA_MB:-2048}"
-    "--mem-total-mb" "${MEM_TOTAL_MB:-${mem_total_mb:-12288}}"
-    "--ram-source" "${ram_source:-default}"
+    "--ram-vitals-file" "${out_dir}/vitals.log"
   )
-  if [ -n "${CURRENT_ANON_MB:-}" ]; then
-    ram_args[${#ram_args[@]}-1]="CURRENT_ANON_MB"
-  fi
-  if [ -n "${mem_available_mb:-}" ] && [ "${mem_available_mb}" != "NONE" ]; then
-    ram_args+=("--mem-available-mb" "${mem_available_mb}")
-  fi
-  if [ -n "${cgroup_max_mb:-}" ]; then
-    ram_args+=("--cgroup-max-mb" "${cgroup_max_mb}")
-  fi
   local ram_rc=0 ram_out=""
   ram_out="$("${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null)" || ram_rc=$?
   [ -n "${ram_out}" ] && printf '%s\n' "${ram_out}" >> "${out_dir}/guards.log"
@@ -643,7 +615,9 @@ colab_run_exec_with_live_guards() {
       return 91
     fi
 
-    run_only_bytes="$(grep -Ev '^(===[[:space:]]*VITALS|CGROUP_MEM(_CURRENT|_MAX)?:|MEM:|SETUP_BYTES:|PROC:|HARNESS:|[[:space:]]*[0-9]+[[:space:]]+.*(comfy|main\.py|ai-toolkit|run\.py|llama-server|ollama|lane1_render\.py))' "${out_dir}/vitals.log" 2>/dev/null | wc -c | tr -d '[:space:]' || echo 0)"
+    # Run output only: every vitals line the emitters print is skipped (launch_guards.VITALS_LINE_PREFIXES,
+    # one list, checked against the emitters by tests), so vitals blocks never count as progress.
+    run_only_bytes="$("${py_bin}" "${guards_py}" --run-output-bytes "${out_dir}/vitals.log" </dev/null 2>/dev/null || echo 0)"
     cur_size="${run_only_bytes:-0}"
     if [ "${cur_size:-0}" != "${last_size}" ]; then
       last_size="${cur_size:-0}"
@@ -697,7 +671,13 @@ colab_run_exec_with_live_guards() {
     return "${remote_rc}"
   fi
 
-  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log"
+  local final_vitals_rc=0 final_vitals_out=""
+  final_vitals_out="$("${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null)" || final_vitals_rc=$?
+  [ -n "${final_vitals_out}" ] && printf '%s\n' "${final_vitals_out}" >> "${out_dir}/guards.log"
+  if [ "${final_vitals_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${final_vitals_out}" GUARD_FAILED
+    return 93
+  fi
   local end_epoch elapsed_final
   end_epoch="$(date -u +%s)"
   elapsed_final="$((end_epoch - start_epoch))"
@@ -1113,6 +1093,7 @@ REFUSAL_CODES = (
     "HF_TOKEN_SHRED_FAILED",
     # Rig-side live guards (colab_check_cap_and_ram, colab_run_exec_with_live_guards).
     "HOST_RAM_PROJECTION_EXCEEDED",
+    "HOST_RAM_UNREADABLE",
     "WALL_GUARD_TRIPPED",
     "CAP_GUARD_TRIPPED",
     "COLAB_USAGE_PARSE_FAILED",
