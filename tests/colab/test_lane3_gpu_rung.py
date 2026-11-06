@@ -624,7 +624,7 @@ def test_rung_mid_run_failure_downloads_what_was_copied_off(tmp_path: Path) -> N
     assert win["refusal_code"] == "TRAIN_FAILED" and win["trained"] is False
     assert win["rung_outputs"]["checkpoints"] == ["rustline_style_v5/rustline_style_v5_000000020.safetensors"]
     members = _bundle(out_dir)
-    assert members["rung_outputs/rustline_style_v5/rustline_style_v5_000000020.safetensors"].startswith(b"FAKE-LORA-STEP-20")
+    assert b"FAKE-LORA-STEP-20" in members["rung_outputs/rustline_style_v5/rustline_style_v5_000000020.safetensors"]
     assert b"CUDA out of memory" in members["train.log"]
     _assert_token_nowhere(out_dir)
 
@@ -712,7 +712,9 @@ def test_rig_side_kill_still_brings_back_the_outputs(tmp_path: Path) -> None:
         assert "BUNDLE_AFTER_FAILURE: downloaded" in guards, guards[-2000:]
         assert "BUNDLE_NOW: killed" in (out_dir / "bundle_now.log").read_text(encoding="utf-8")
         members = _bundle(out_dir)
-        assert members["rung_outputs/rustline_style_v5/rustline_style_v5_000000020.safetensors"].startswith(b"FAKE-LORA")
+        assert b"FAKE-LORA-STEP-20" in members["rung_outputs/rustline_style_v5/rustline_style_v5_000000020.safetensors"]
+        # The killed exec's cell still held the session's one kernel: the kit restarted it first.
+        assert "RESTART -s sdlab-l3-gpu-rung" in (state_dir / "restarts.log").read_text(encoding="utf-8")
         assert "rung_outputs/rustline_style_v5/samples/1762400000000__000000020_0.jpg" in members
         assert json.loads(members["vm_window.json"])["train"] == "failed"
         assert _rung_processes(content) == []
@@ -890,3 +892,148 @@ def test_bundle_now_cell_needs_its_env_and_runs_lane3_rung(tmp_path: Path, capsy
     assert bn.bundle_now({**os.environ, "SDLAB_CONTENT": str(root), "SDLAB_BUNDLE_RC": "143"}) == 0
     assert "SDLAB_BUNDLE_NOW_RC=0" in capsys.readouterr().out
     assert (root / "lane3_stub_bundle.tar.gz").is_file()
+
+
+# --- fix round 3 -------------------------------------------------------------------------------
+
+
+def test_download_failure_tail_is_scrubbed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                           capsys: pytest.CaptureFixture[str]) -> None:
+    _dl_env(monkeypatch, HF_TOKEN_GGUF_READ=TOKEN)
+
+    class FailedChild:
+        def __init__(self, cmd: list, stdout, stderr, env) -> None:  # noqa: ANN001
+            stdout.write(f"Fetching 4 files\nusing token {TOKEN}\nOSError: 401 Client Error\n")
+            stdout.flush()
+
+        def poll(self) -> int:
+            return 1
+
+        def wait(self) -> int:
+            return 1
+
+    assert lr.run_download(_dl_args(tmp_path), expected_fn=lambda r, v, t: 1, popen=FailedChild) == 1
+    out = capsys.readouterr()
+    assert "REFUSED: MODEL_DOWNLOAD_FAILED: " in out.err and "using token hf_[REDACTED]" in out.err
+    assert TOKEN not in out.err
+    assert TOKEN not in out.out
+
+
+def test_remote_runner_scrubs_relayed_lines() -> None:
+    import remote_runner as rr
+
+    assert rr.scrub_line(f"Authenticated download with token {TOKEN}\n") == "Authenticated download with token hf_[REDACTED]\n"
+    assert lr.scrub_secrets("x hf_short y", "hf_short") == "x hf_[REDACTED] y"
+
+
+def test_failed_download_prints_no_token_into_exec_history(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    env["FAKE_HF_FAIL"] = "1"
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    assert json.loads((out_dir / "window.json").read_text(encoding="utf-8"))["refusal_code"] == "MODEL_DOWNLOAD_FAILED"
+    history = (tmp_path / "colab_state" / "history" / "sdlab-l3-gpu-rung.jsonl").read_text(encoding="utf-8")
+    assert '"outputs"' in history and "MODEL_DOWNLOAD_FAILED" in history
+    _assert_token_nowhere(out_dir)
+
+
+def test_token_file_is_removed_when_its_upload_fails(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    env["FAKE_COLAB_UPLOAD_HTTP_500_FOR"] = "lane3_hf_read_token"
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    assert "REFUSED: UPLOAD_FAILED: " in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert not list((tmp_path / "xdg").glob("sdlab-l3-tok.*")), "the trap left the rig's token file behind"
+
+
+def test_token_staging_failure_refuses_before_the_window_opens(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env["XDG_RUNTIME_DIR"] = str(tmp_path / "no-such-runtime-dir")
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    assert "REFUSED: HF_TOKEN_STAGING_FAILED: " in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert not (state_dir / "card.txt").exists(), "the session was opened before the token was staged"
+
+
+def test_truncated_checkpoint_is_partial_and_does_not_count(tmp_path: Path) -> None:
+    _, env, src = _rung_env(tmp_path)
+    env["FAKE_VM_TRAIN"] = "truncated_save"
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "TRAIN_CHECKPOINT_MISSING" and win["trained"] is False
+    manifest = [json.loads(x) for x in _bundle(out_dir)["rung_outputs/manifest.jsonl"].decode().splitlines()]
+    cks = [m for m in manifest if m["path"].endswith(".safetensors")]
+    assert cks and all(m["partial"] is True for m in cks)
+
+
+def _st(data: bytes = b"0123456789") -> bytes:
+    import struct
+
+    hdr = json.dumps({"w": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]},
+                      "__metadata__": {"format": "pt"}}).encode()
+    return struct.pack("<Q", len(hdr)) + hdr + data
+
+
+def test_safetensors_completeness_and_checkpoint_pick(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    good, short, junk, tiny = (tmp_path / n for n in ("g.safetensors", "s.safetensors", "j.safetensors", "t.safetensors"))
+    good.write_bytes(_st())
+    short.write_bytes(_st()[:-3])
+    junk.write_bytes(b"\xff" * 16)
+    tiny.write_bytes(b"1234")
+    assert lr.safetensors_complete(good) is True
+    assert not any(lr.safetensors_complete(p) for p in (short, junk, tiny, tmp_path / "missing.safetensors"))
+    bundle = tmp_path / "b"
+    manifest = bundle / "manifest.jsonl"
+    bundle.mkdir()
+    manifest.write_text('{"path": "job_000000020.safetensors", "bytes": 9, "partial": true}\n'
+                        '{"path": "samples/a.jpg", "bytes": 1}\nnot json\n', encoding="utf-8")
+    ns = argparse.Namespace(bundle=str(bundle), manifest=str(manifest))
+    assert lr.run_checkpoint(ns) == 1
+    with manifest.open("a", encoding="utf-8") as fh:
+        fh.write('{"path": "job_000000010.safetensors", "bytes": 9, "partial": false}\n')
+    capsys.readouterr()
+    assert lr.run_checkpoint(ns) == 0
+    assert capsys.readouterr().out.strip() == str(bundle / "job_000000010.safetensors")
+    assert lr.run_checkpoint(argparse.Namespace(bundle=str(bundle), manifest=str(tmp_path / "none.jsonl"))) == 1
+
+
+def test_model_check_refuses_a_cross_host_redirect_and_keeps_the_token(tmp_path: Path) -> None:
+    seen: list[str | None] = []
+
+    class Other(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            seen.append(self.headers.get("Authorization"))
+            data = json.dumps({"sha": REVISION}).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def log_message(self, *_a: object) -> None:
+            return None
+
+    other = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Other)
+    threading.Thread(target=other.serve_forever, daemon=True).start()
+    target = f"http://localhost:{other.server_address[1]}"
+
+    class Redirect(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            self.send_response(302)
+            self.send_header("Location", target + self.path)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def log_message(self, *_a: object) -> None:
+            return None
+
+    redir = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Redirect)
+    threading.Thread(target=redir.serve_forever, daemon=True).start()
+    try:
+        with pytest.raises(lr.Refusal) as exc:
+            lr.check_model_api("Qwen/Qwen-Image", REVISION, TOKEN, base=f"http://127.0.0.1:{redir.server_address[1]}")
+        assert exc.value.code == "MODEL_METADATA_FAILED" and "http=302" in exc.value.detail
+        assert seen == [], f"the redirect target received a request (Authorization={seen})"
+    finally:
+        other.shutdown()
+        redir.shutdown()

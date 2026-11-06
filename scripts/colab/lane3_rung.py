@@ -50,6 +50,35 @@ REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 REPO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$")
 PLACEHOLDERS = ("__LANE3_TRAINING_FOLDER__", "__LANE3_DATASET_DIR__", "__LANE3_MODEL_PATH__")
 COPY_OFF_SUFFIXES = (".safetensors", ".png", ".jpg", ".jpeg", ".webp")
+HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
+
+
+def scrub_secrets(text: str, token: str | None = None) -> str:
+    """Remove a Hugging Face token from text that is printed (exec output reaches the CLI history)."""
+    if token:
+        text = text.replace(token, "hf_[REDACTED]")
+    return HF_TOKEN_RE.sub("hf_[REDACTED]", text)
+
+
+def safetensors_complete(path: Path) -> bool:
+    """True when the file's header parses and its size is exactly 8 + header + the end of the last
+    tensor's data offsets; a checkpoint copied while it was still being written fails this."""
+    import struct  # noqa: PLC0415
+
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as fh:
+            raw = fh.read(8)
+            if len(raw) != 8:
+                return False
+            (n,) = struct.unpack("<Q", raw)
+            if n <= 0 or 8 + n > size:
+                return False
+            header = json.loads(fh.read(n).decode("utf-8"))
+        ends = [int(v["data_offsets"][1]) for k, v in header.items() if k != "__metadata__"]
+        return size == 8 + n + (max(ends) if ends else 0)
+    except (OSError, ValueError, KeyError, TypeError, IndexError, UnicodeDecodeError):
+        return False
 
 
 class Refusal(Exception):
@@ -338,11 +367,23 @@ def check_model_api(repo_id: str, revision: str, token: str | None, *, base: str
     """Rig-side check before a window opens: the model at the pinned revision is reachable with the
     request's read token (stdlib only; the token goes in a header, never in argv or a URL)."""
     import urllib.error  # noqa: PLC0415
+    import urllib.parse  # noqa: PLC0415
     import urllib.request  # noqa: PLC0415
 
     url = f"{base.rstrip('/')}/api/models/{repo_id}/revision/{revision}"
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"} if token else {})
-    opener = opener or urllib.request.urlopen
+    if opener is None:
+        origin = urllib.parse.urlsplit(url).netloc
+
+        class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
+            # urllib copies every header but Content-* onto a redirect (urllib/request.py:647-649),
+            # the bearer token included, whatever the new host is: refuse a cross-host redirect.
+            def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001, ANN201
+                if urllib.parse.urlsplit(newurl).netloc != origin:
+                    raise urllib.error.HTTPError(newurl, code, "cross-host redirect refused", headers, fp)
+                return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        opener = urllib.request.build_opener(_SameHostRedirects).open
     try:
         with opener(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -512,7 +553,7 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
                      f"probe {probe['probe_rate_mb_s']} MB/s over {probe['probe_seconds']} s projects "
                      f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {max_seconds} s")
     if rc != 0 or not snapshot:
-        tail = " | ".join(log_lines[-3:])
+        tail = scrub_secrets(" | ".join(log_lines[-3:]), token)
         return _fail(out_path, rec, "MODEL_DOWNLOAD_FAILED", f"snapshot_download rc={rc}: {tail}")
     write_json(out_path, rec)
     print("MODEL_DOWNLOAD " + json.dumps(rec), flush=True)
@@ -605,6 +646,8 @@ def copy_off_once(watch: Path, bundle: Path, manifest: Path, state: dict[str, An
             shutil.copy2(fp, dest)
             line = {"path": rel, "bytes": dest.stat().st_size, "sha256": sha256_file(dest),
                     "copied_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            if rel.endswith(".safetensors"):
+                line["partial"] = not safetensors_complete(dest)
             with manifest.open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(json.dumps(line) + "\n")
             print("COPY_OFF " + json.dumps(line), flush=True)
@@ -667,6 +710,24 @@ def read_json(path: Path) -> Any:
         return None
 
 
+def run_checkpoint(args: argparse.Namespace) -> int:
+    """Print the bundle path of the newest complete checkpoint the manifest lists (exit 1 if none)."""
+    good = []
+    mp = Path(args.manifest)
+    if mp.exists():
+        for ln in mp.read_text(encoding="utf-8").splitlines():
+            try:
+                m = json.loads(ln)
+            except ValueError:
+                continue
+            if m.get("path", "").endswith(".safetensors") and not m.get("partial") and m.get("bytes", 0) > 0:
+                good.append(m["path"])
+    if not good:
+        return 1
+    print(str(Path(args.bundle) / sorted(good)[-1]), flush=True)
+    return 0
+
+
 def run_finish(args: argparse.Namespace) -> int:
     out = Path(args.lane3_out)
     manifest_lines = []
@@ -684,7 +745,10 @@ def run_finish(args: argparse.Namespace) -> int:
         "model_download": download,
         "rung_outputs": {
             "manifest": "rung_outputs/manifest.jsonl" if mp.exists() else None,
-            "checkpoints": [m["path"] for m in manifest_lines if m["path"].endswith(".safetensors")],
+            "checkpoints": [m["path"] for m in manifest_lines
+                            if m["path"].endswith(".safetensors") and not m.get("partial")],
+            "partial_checkpoints": [m["path"] for m in manifest_lines
+                                    if m["path"].endswith(".safetensors") and m.get("partial")],
             "samples": [m["path"] for m in manifest_lines if not m["path"].endswith(".safetensors")],
         },
     }
@@ -820,6 +884,10 @@ def build_parser() -> argparse.ArgumentParser:
     mc.add_argument("--repo", required=True)
     mc.add_argument("--revision", required=True)
 
+    ck = sub.add_parser("checkpoint")
+    ck.add_argument("--bundle", required=True)
+    ck.add_argument("--manifest", required=True)
+
     bn = sub.add_parser("bundle-now")
     bn.add_argument("--content", required=True)
     bn.add_argument("--rc", required=True, type=int)
@@ -842,6 +910,7 @@ def main(argv: list[str] | None = None) -> int:
         "finish": run_finish,
         "model-check": run_model_check,
         "bundle-now": run_bundle_now,
+        "checkpoint": run_checkpoint,
     }
     return handlers[args.cmd](args)
 

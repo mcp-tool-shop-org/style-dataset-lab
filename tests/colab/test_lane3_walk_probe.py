@@ -262,3 +262,29 @@ def test_simple_index_links_every_wheel(tmp_path: Path, capsys: pytest.CaptureFi
     empty.mkdir()
     assert wp.main(["simple-index", "--wheelhouse", str(empty), "--link-root", "/x", "--out", str(tmp_path / "s2")]) == 2
     assert "REFUSED: WALK_INPUT_MISSING" in capsys.readouterr().err
+
+
+def test_sampler_stops_when_vram_cannot_be_read(tmp_path: Path) -> None:
+    proc = tmp_path / "proc"
+    _proc(proc, 100, 1, 1000)
+    _meminfo(proc, 20_000_000)
+    killed: list[int] = []
+    ns = argparse.Namespace(proc=str(proc), root_pid=100, train_log=str(tmp_path / "t.log"), out=str(tmp_path / "h.csv"),
+                            interval=0.0, oom_grace_s=60.0, mem_floor_gib=2.0, wall_s=1000.0,
+                            nvidia_smi="nvidia-smi", vram_csv=str(tmp_path / "v.csv"), vram_ceiling_mib=28672,
+                            vram_baseline_mib=2100)
+    ticks = iter([0.0, 0.0])
+    wp.run_sample(ns, clock=lambda: next(ticks), sleep=lambda s: None, kill=lambda p, s: killed.append(p),
+                  vram_fn=lambda smi: None)
+    assert killed == [100]
+    assert "VRAM_UNREADABLE" in (tmp_path / "h.stop.txt").read_text(encoding="utf-8")
+
+
+def test_query_vram_is_bounded() -> None:
+    seen = {}
+
+    def run(cmd, **kw):  # noqa: ANN001
+        seen.update(kw)
+        raise __import__("subprocess").TimeoutExpired(cmd, kw["timeout"])
+
+    assert wp.query_vram("smi", run=run) is None and seen["timeout"] == 5

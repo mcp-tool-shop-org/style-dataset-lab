@@ -95,6 +95,15 @@
         "-h"
       ],
       "usage": "Usage: colab usage [OPTIONS]"
+    },
+    "restart-kernel": {
+      "options": [
+        "--help",
+        "--session",
+        "-h",
+        "-s"
+      ],
+      "usage": "Usage: colab restart-kernel [OPTIONS]"
     }
   }
 }

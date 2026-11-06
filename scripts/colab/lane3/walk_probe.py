@@ -64,9 +64,9 @@ def refuse(code: str, detail: str) -> None:
 # ---------------------------------------------------------------------------------------------
 
 
-def _query(cmd: list[str], run: Callable[..., Any]) -> list[str]:
+def _query(cmd: list[str], run: Callable[..., Any], timeout: float = 30) -> list[str]:
     try:
-        res = run(cmd, capture_output=True, text=True, check=False, timeout=30)
+        res = run(cmd, capture_output=True, text=True, check=False, timeout=timeout)
     except (OSError, subprocess.SubprocessError):
         return []
     if res.returncode != 0:
@@ -168,7 +168,8 @@ def kill_tree(proc: Path, root: int, kill: Callable[[int, int], None] = os.kill)
 
 def query_vram(nvidia_smi: str, run: Callable[..., Any] = subprocess.run) -> tuple[str, int] | None:
     """(timestamp, memory.used MiB) of GPU 0, or None when nvidia-smi gives no reading."""
-    lines = _query([nvidia_smi, "--query-gpu=timestamp,memory.used", "--format=csv,noheader,nounits"], run)
+    # Bounded at 5 s, so a hung nvidia-smi cannot hold up the RAM and wall checks in the same loop.
+    lines = _query([nvidia_smi, "--query-gpu=timestamp,memory.used", "--format=csv,noheader,nounits"], run, timeout=5)
     if not lines:
         return None
     parts = [x.strip() for x in lines[0].split(",")]
@@ -216,6 +217,9 @@ def run_sample(args: argparse.Namespace, *, clock: Callable[[], float] = time.ti
                 stop_reason = f"oom line seen and the run still alive after {args.oom_grace_s} s"
             elif avail is not None and avail < float(args.mem_floor_gib) * GIB:
                 stop_reason = f"HOST_RAM_CEILING: MemAvailable {avail / GIB:.2f} GiB < floor {args.mem_floor_gib} GiB"
+            elif vram_fh is not None and getattr(args, "nvidia_smi", None) and vram is None:
+                # Fail closed: a walk whose VRAM cannot be read is stopped.
+                stop_reason = "VRAM_UNREADABLE: nvidia-smi gave no memory.used reading"
             elif (vram is not None and getattr(args, "vram_ceiling_mib", None)
                   and vram[1] - int(getattr(args, "vram_baseline_mib", None) or 0) > int(args.vram_ceiling_mib)):
                 base = int(getattr(args, "vram_baseline_mib", None) or 0)

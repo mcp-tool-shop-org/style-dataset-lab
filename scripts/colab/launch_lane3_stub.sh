@@ -31,13 +31,13 @@ PINNED_OVERRIDE_SHA="884a93794e857ce1b146eff87fe00673e16be4af7f8a8fb6524eb5c1aad
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
-PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
+PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
 PINNED_COLAB_WINDOW_SHA="9058334198ec1225d71296c809592727089789960466b70e93df35026239187e"
-PINNED_LANE3_RUNG_SHA="18a020977016e115c88a8ad0d50ed39d7128ff8bad0bf7a5be6ee9b5b5a3d9a6"
-PINNED_BUNDLE_NOW_SHA="8e47722109538bdc863e1bd948f69f471a5cb609dc0ffcda873c0ef7afde3211"
+PINNED_LANE3_RUNG_SHA="63db8ada382814b353508e3e2a776fd8f35126eaac545c539337d39be0540a98"
+PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="2277f97f32f6db131186cc764855335532b52cf5f2257914dc00676053f2cb2a"
+PINNED_SELF_SHA="9ac3a1a46a1f3a3d688bb598627b6b26d5009ba4287974a275439550f93c5a53"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -424,9 +424,12 @@ if [ "\${TRAIN_RC}" -ne 0 ]; then
 fi
 # <<< sdlab-train-step
 
-  FOUND_CKPT="\$(find /content/lane3_out/rung_outputs -name '*.safetensors' -type f -size +0 | sort | tail -n 1 || true)"
+  # Only a complete checkpoint counts: copy-off marks a .safetensors whose header does not parse or
+  # whose size does not match its data offsets as partial in the manifest.
+  FOUND_CKPT="\$("\${LANE3_PY}" /content/lane3_rung.py checkpoint --bundle /content/lane3_out/rung_outputs \
+    --manifest /content/lane3_out/rung_outputs/manifest.jsonl || true)"
   if [ -z "\${FOUND_CKPT}" ]; then
-    echo "REFUSED: TRAIN_CHECKPOINT_MISSING: no non-empty .safetensors checkpoint was copied off to lane3_out/rung_outputs" >&2
+    echo "REFUSED: TRAIN_CHECKPOINT_MISSING: no complete .safetensors checkpoint was copied off to lane3_out/rung_outputs" >&2
     exit 1
   fi
   CHECKPOINT_PATH="\${FOUND_CKPT}"
@@ -775,8 +778,12 @@ EXEC_PID=""
 EXEC_STARTED=0
 TOKEN_DIR=""
 
-# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, run lane3_bundle_now.py
-# on the VM first. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec: the
+# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, restart the session's
+# kernel, then run lane3_bundle_now.py on the VM. Every exec on a session runs on its one stored kernel
+# and Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed
+# exec's cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
+# Processes the cell spawned may outlive the restart, so bundle-now kills the rung's processes by
+# command line either way. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec: the
 # VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
 # training folder, writes the failure record and tars lane3_out. Then the bundle is downloaded:
 # whatever the run had saved. Nothing here writes a REFUSED line, so the window's refusal stays the
@@ -786,6 +793,7 @@ lane3_download_bundle_after_failure() {
   local dl_out=""
   local dl_rc=0
   local dst="${OUT_DIR}/lane3_stub_bundle.tar.gz"
+  timeout 180 colab restart-kernel -s "${SESSION}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
   colab exec -s "${SESSION}" -f "${BUNDLE_NOW_PY}" --timeout 300 --env "SDLAB_CONTENT=/content" \
     --env "SDLAB_BUNDLE_RC=${rc}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
   dl_out="$(colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${dst}" </dev/null 2>&1)" || dl_rc=$?
@@ -875,6 +883,21 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   printf '%s\n' "${MODEL_CHECK_OUT}" >> "${OUT_DIR}/guards.log"
 fi
 
+# Train mode: stage the read token before any colab call, as a mode-600 file in a private tmpfs
+# directory (removed after the upload and by the EXIT trap); HF_TOKEN_STAGING_FAILED otherwise.
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  if ! TOKEN_DIR="$(umask 077 && mktemp -d "${XDG_RUNTIME_DIR:-/dev/shm}/sdlab-l3-tok.XXXXXX" 2>/dev/null)"; then
+    TOKEN_DIR=""
+    colab_refuse_logged "${OUT_DIR}" HF_TOKEN_STAGING_FAILED "no private tmpfs directory (XDG_RUNTIME_DIR or /dev/shm) for the token file"
+    exit 1
+  fi
+  if ! ( umask 077 && printf '%s' "${HF_TOKEN_GGUF_READ}" > "${TOKEN_DIR}/lane3_hf_read_token" ) \
+    || ! chmod 600 "${TOKEN_DIR}/lane3_hf_read_token"; then
+    colab_refuse_logged "${OUT_DIR}" HF_TOKEN_STAGING_FAILED "could not write the token file in the private directory"
+    exit 1
+  fi
+fi
+
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
@@ -917,15 +940,7 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   colab_upload_checked "${SESSION}" "${RUNG_PY}" /content/lane3_rung.py "${OUT_DIR}"
   colab_upload_checked "${SESSION}" "${RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
   colab_upload_checked "${SESSION}" "${RUNG_DATASET_JSON}" /content/rung-dataset.json "${OUT_DIR}"
-  # The read token: a mode-600 file in a private directory on tmpfs (removed by the EXIT trap),
-  # uploaded as a file; the VM reads and shreds it before anything else runs.
-  if ! TOKEN_DIR="$(umask 077 && mktemp -d "${XDG_RUNTIME_DIR:-/dev/shm}/sdlab-l3-tok.XXXXXX" 2>/dev/null)"; then
-    TOKEN_DIR=""
-    colab_refuse_logged "${OUT_DIR}" HF_TOKEN_STAGING_FAILED "no private tmpfs directory (XDG_RUNTIME_DIR or /dev/shm) for the token file"
-    exit 1
-  fi
-  ( umask 077 && printf '%s' "${HF_TOKEN_GGUF_READ}" > "${TOKEN_DIR}/lane3_hf_read_token" )
-  chmod 600 "${TOKEN_DIR}/lane3_hf_read_token"
+  # The read token staged before the window opened; the VM reads and shreds it first thing.
   colab_upload_checked "${SESSION}" "${TOKEN_DIR}/lane3_hf_read_token" /content/lane3_hf_read_token "${OUT_DIR}"
   rm -rf "${TOKEN_DIR}"
   TOKEN_DIR=""

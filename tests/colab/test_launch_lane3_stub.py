@@ -470,7 +470,7 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
     env_ok["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
     env_ok["FAKE_COLAB_POST_OPEN_RATE_SEQ"] = "0.00/hr,0.29/hr"
     env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
-    env_ok["SETUP_STALL_S"] = "1"
+    env_ok["SETUP_STALL_S"] = "3"
     out_ok = tmp_path / "out_l3_setup_ok"
     res_ok = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_ok), "--session", "sdlab-l3-setup-ok"],
@@ -498,7 +498,7 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
     env_stall["FAKE_COLAB_MODE"] = "setup_stall"
     env_stall["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
     env_stall["GUARD_POLL_INTERVAL_S"] = "0.2"
-    env_stall["SETUP_STALL_S"] = "1"
+    env_stall["SETUP_STALL_S"] = "3"
     out_stall = tmp_path / "out_l3_setup_stall"
     res_stall = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_stall), "--session", "sdlab-l3-setup-stall"],

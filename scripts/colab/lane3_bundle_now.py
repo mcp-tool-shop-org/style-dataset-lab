@@ -12,8 +12,11 @@ lane3_out, so the kit's download that follows gets whatever the run had saved. P
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
+
+_HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
 
 
 def bundle_now(env: dict[str, str] | None = None) -> int:
@@ -27,7 +30,7 @@ def bundle_now(env: dict[str, str] | None = None) -> int:
     py = venv_py if os.path.exists(venv_py) else sys.executable
     res = subprocess.run([py, os.path.join(root, "lane3_rung.py"), "bundle-now", "--content", root, "--rc", rc],
                          stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False, env=env)
-    sys.stdout.write(res.stdout + res.stderr)
+    sys.stdout.write(_HF_TOKEN_RE.sub("hf_[REDACTED]", res.stdout + res.stderr))
     print(f"SDLAB_BUNDLE_NOW_RC={res.returncode}", flush=True)
     return res.returncode
 
