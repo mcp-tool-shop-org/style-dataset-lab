@@ -12,6 +12,11 @@ PINNED_UV_VERSION="0.13.5"
 # sha256 of uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl on PyPI (the Colab VM platform)
 PINNED_UV_WHEEL_SHA256="fa8d26e08e34c29c0c4e820cf3181757086d547240b4f4d31ff1d8bd810ca946"
 PINNED_PYTHON_VERSION="3.14.9"
+# python-build-standalone release that uv 0.13.5 installs for PINNED_PYTHON_VERSION. uv embeds the
+# archive URL and sha256 (crates/uv-python-managed/download-metadata.json at 0.13.5) and checks the
+# sha256 on download (crates/uv-python-managed/src/downloads.rs:770-777), so pinning uv by hash pins
+# the interpreter; the remote script refuses PYTHON_BUILD_MISMATCH if the install's BUILD differs.
+PINNED_PYTHON_BUILD="20261021"
 PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
@@ -21,8 +26,8 @@ PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="af85f6d3a3eceae88c4e1b49c0ee107d76cc9bb29efe678cd8df16cbcaf275eb"
-PINNED_SELF_SHA="e7094527d270aa521e0ec1f4bb1dfc95c4a5a40b58b66f78e7d2aed91eb888b0"
+PINNED_COLAB_WINDOW_SHA="188f2c2a445a21ab2ca77c3270b125354d7ed75de88c261426ed64f4f0e5b895"
+PINNED_SELF_SHA="9c4319cd65868be7c91d9f21eeae4a48f3e06a23c4ea0ba8f58ef4a4f21db98a"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -53,9 +58,21 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# The evidence directory is the operator's choice; there is no default location.
 if [ -z "${OUT_DIR}" ]; then
-  OUT_DIR="/tmp/${SESSION}"
+  echo "REFUSED: OUT_DIR_REQUIRED: pass --out-dir <dir> on a persistent disk" >&2
+  exit 2
 fi
+
+# Test mode needs the flag AND the fake-marked colab CLI on PATH (refused if the flag is set
+# without the fake). The pin overrides below are honoured only in test mode.
+colab_guard_fake_cli_if_test
+TEST_MODE=0
+if colab_fake_test_mode_active; then
+  TEST_MODE=1
+fi
+
+colab_refuse_volatile_out_dir "${OUT_DIR}" "${TEST_MODE}"
 colab_refuse_nonempty_out_dir "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 
@@ -67,15 +84,32 @@ CLASSIFIER_PY="${SCRIPT_DIR}/classify_install_log.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 LOCK_FILE="${SCRIPT_DIR}/locks/lane1.lock"
 
-colab_guard_fake_cli_if_test
-
-EXP_LOCK_SHA="${EXPECTED_LANE1_LOCK_SHA:-${PINNED_LOCK_SHA}}"
-EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${PINNED_LANE1_RENDER_SHA}}"
-EXP_CLASSIFIER_SHA="${EXPECTED_INSTALL_CLASSIFIER_SHA:-${PINNED_INSTALL_CLASSIFIER_SHA}}"
-EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
-EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${PINNED_REMOTE_RUNNER_SHA}}"
-EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
-EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE1_STUB_SHA:-${PINNED_SELF_SHA}}"
+PIN_OVERRIDE_VARS=(
+  EXPECTED_LANE1_LOCK_SHA
+  EXPECTED_LANE1_RENDER_SHA
+  EXPECTED_INSTALL_CLASSIFIER_SHA
+  EXPECTED_LAUNCH_GUARDS_SHA
+  EXPECTED_REMOTE_RUNNER_SHA
+  EXPECTED_COLAB_WINDOW_SHA
+  EXPECTED_LAUNCH_LANE1_STUB_SHA
+)
+colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
+EXP_LOCK_SHA="${PINNED_LOCK_SHA}"
+EXP_LANE1_SHA="${PINNED_LANE1_RENDER_SHA}"
+EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
+EXP_GUARDS_SHA="${PINNED_LAUNCH_GUARDS_SHA}"
+EXP_RUNNER_SHA="${PINNED_REMOTE_RUNNER_SHA}"
+EXP_WINDOW_SHA="${PINNED_COLAB_WINDOW_SHA}"
+EXP_SELF_SHA="${PINNED_SELF_SHA}"
+if [ "${TEST_MODE}" = "1" ]; then
+  EXP_LOCK_SHA="${EXPECTED_LANE1_LOCK_SHA:-${EXP_LOCK_SHA}}"
+  EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${EXP_LANE1_SHA}}"
+  EXP_CLASSIFIER_SHA="${EXPECTED_INSTALL_CLASSIFIER_SHA:-${EXP_CLASSIFIER_SHA}}"
+  EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${EXP_GUARDS_SHA}}"
+  EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${EXP_RUNNER_SHA}}"
+  EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${EXP_WINDOW_SHA}}"
+  EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE1_STUB_SHA:-${EXP_SELF_SHA}}"
+fi
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${LOCK_FILE}=${EXP_LOCK_SHA}" \
@@ -154,11 +188,27 @@ cat > "${REMOTE_RUNNER}" << REMOTEEOF
 #!/usr/bin/env bash
 set -euo pipefail
 export CUDA_VISIBLE_DEVICES=""
-mkdir -p /content/lane1_out
+
+# >>> sdlab-remote-dirs
+# The kit uploads every file flat into /content (colab upload creates no remote directory).
+# This block makes the run's directory and checks it exists afterwards.
+sdlab_remote_mkdir() {
+  local d
+  for d in "\$@"; do
+    mkdir -p "\${d}" 2>/dev/null || true
+    if [ ! -d "\${d}" ]; then
+      echo "REFUSED: REMOTE_DIR_CREATE_FAILED: \${d}" >&2
+      exit 1
+    fi
+  done
+}
+sdlab_remote_mkdir /content/lane1_out
+# <<< sdlab-remote-dirs
 
 : "\${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
 : "\${PINNED_UV_WHEEL_SHA256:?missing PINNED_UV_WHEEL_SHA256}"
 : "\${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
+: "\${PINNED_PYTHON_BUILD:?missing PINNED_PYTHON_BUILD}"
 : "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
 : "\${PINNED_COMFYUI_REPO:?missing PINNED_COMFYUI_REPO}"
 : "\${PINNED_COMFYUI_COMMIT:?missing PINNED_COMFYUI_COMMIT}"
@@ -210,6 +260,50 @@ if not (sys.version.startswith("3.14.9") and sys.prefix.startswith("/content/ven
     raise SystemExit(1)
 '
   /content/venv-lane1/bin/python -c 'import sys; assert sys.version.startswith("3.14.9"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
+  # Interpreter identity: uv's build tag, download URL, sys.version and the binary's sha256.
+  /content/venv-lane1/bin/python - "\${PINNED_PYTHON_VERSION}" "\${PINNED_PYTHON_BUILD}" "\${UV_PYTHON_INSTALL_DIR}" /content/lane1_out/python_identity.json << 'PYIDEOF'
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+version, want_build, install_dir, out_json = sys.argv[1:5]
+key = "cpython-" + version + "-linux-x86_64-gnu"
+inst = Path(install_dir) / key
+build_f = inst / "BUILD"
+build = build_f.read_text(encoding="utf-8").strip() if build_f.is_file() else None
+minor = ".".join(version.split(".")[:2])
+binary = inst / "bin" / ("python" + minor)
+binary_sha = None
+if binary.is_file():
+    binary_sha = "sha256:" + hashlib.sha256(binary.resolve().read_bytes()).hexdigest()
+download_url = None
+listing = subprocess.run(
+    ["uv", "python", "list", version, "--only-downloads", "--output-format", "json"],
+    capture_output=True, text=True, check=False,
+)
+try:
+    for entry in json.loads(listing.stdout or "[]"):
+        if entry.get("key") == key:
+            download_url = entry.get("url")
+except ValueError:
+    pass
+rec = {
+    "key": key,
+    "build": build,
+    "pinned_build": want_build,
+    "download_url": download_url,
+    "sys_version": sys.version,
+    "binary": str(binary.resolve()) if binary.exists() else str(binary),
+    "binary_sha256": binary_sha,
+}
+Path(out_json).write_text(json.dumps(rec, indent=2) + chr(10), encoding="utf-8")
+print("PYTHON_IDENTITY " + json.dumps(rec), flush=True)
+if build != want_build or binary_sha is None:
+    sys.stderr.write("REFUSED: PYTHON_BUILD_MISMATCH: " + key + " build=" + repr(build) + " pinned=" + want_build + chr(10))
+    raise SystemExit(1)
+PYIDEOF
 } 2>&1 | tee -a /content/lane1_out/setup.log
 {
   unset UV_SYSTEM_PYTHON
@@ -325,11 +419,13 @@ done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -
 tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
 REMOTEEOF
 
-colab upload -s "${SESSION}" "${LOCK_FILE}" /content/lane1.lock </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${LANE1_PY}" /content/lane1_render.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+# Every upload goes flat into /content, the one remote directory that exists before the remote
+# script runs.
+colab_upload_checked "${SESSION}" "${LOCK_FILE}" /content/lane1.lock "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${LANE1_PY}" /content/lane1_render.py "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh "${OUT_DIR}"
 
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \
@@ -338,6 +434,7 @@ colab_run_exec_with_live_guards \
   "PINNED_UV_VERSION=${PINNED_UV_VERSION}" \
   "PINNED_UV_WHEEL_SHA256=${PINNED_UV_WHEEL_SHA256}" \
   "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
+  "PINNED_PYTHON_BUILD=${PINNED_PYTHON_BUILD}" \
   "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
   "PINNED_COMFYUI_REPO=${PINNED_COMFYUI_REPO}" \
   "PINNED_COMFYUI_COMMIT=${PINNED_COMFYUI_COMMIT}" \
@@ -345,9 +442,5 @@ colab_run_exec_with_live_guards \
   "PINNED_LOCK_SHA=${EXP_LOCK_SHA}"
 
 # Download result tar before EXIT trap stops the session
-colab download -s "${SESSION}" /content/lane1_stub_bundle.tar.gz "${OUT_DIR}/lane1_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-if [ ! -s "${OUT_DIR}/lane1_stub_bundle.tar.gz" ]; then
-  echo "REFUSED: downloaded bundle ${OUT_DIR}/lane1_stub_bundle.tar.gz is missing or empty" >&2
-  exit 1
-fi
+colab_download_checked "${SESSION}" /content/lane1_stub_bundle.tar.gz "${OUT_DIR}/lane1_stub_bundle.tar.gz" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"

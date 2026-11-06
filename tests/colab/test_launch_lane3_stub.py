@@ -742,7 +742,7 @@ def test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_p
 
 
 
-def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: Path) -> None:
+def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: Path, persistent_out_root: Path) -> None:
     # No --wheel-dir and no SDLAB_WHEEL_DIR: named refusal, no default path, no colab call
     _, state_nd, env_nd = _make_fake_colab_env(tmp_path / "l3_nodir")
     env_nd.pop("SDLAB_WHEEL_DIR")
@@ -767,7 +767,7 @@ def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: P
     real_names_dir = tmp_path / "unused_wheels"
     real_names_dir.mkdir()
     env_live["SDLAB_WHEEL_DIR"] = _to_posix(real_names_dir)
-    out_live = tmp_path / "out_l3_live_hook"
+    out_live = persistent_out_root / "out_l3_live_hook"
     res_live = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_live), "--session", "sdlab-l3-livehook"],
         env=env_live,

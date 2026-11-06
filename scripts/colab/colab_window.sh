@@ -22,6 +22,159 @@ colab_refuse_nonempty_out_dir() {
   fi
 }
 
+# colab_refuse_logged <out_dir> <CODE> <message>: one refusal line, `REFUSED: <CODE>: <message>`,
+# on stderr and (when the out dir exists) in guards.log, where window.json reads refusal codes.
+colab_refuse_logged() {
+  local out_dir="$1"
+  local code="$2"
+  shift 2
+  local line="REFUSED: ${code}: $*"
+  if [ -n "${out_dir}" ] && [ -d "${out_dir}" ]; then
+    printf '%s\n' "${line}" >> "${out_dir}/guards.log"
+  fi
+  printf '%s\n' "${line}" >&2
+}
+
+# Fake-colab test mode: SDLAB_TEST_FAKE_COLAB=1 AND the `colab` on PATH carries the fake's
+# #SDLAB_FAKE_COLAB_CLI=1 marker. The same gate preflight_resolve.sh uses for its test hooks.
+colab_fake_test_mode_active() {
+  [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] || return 1
+  local colab_bin
+  colab_bin="$(command -v colab || true)"
+  [ -n "${colab_bin}" ] && grep -q '^#SDLAB_FAKE_COLAB_CLI=1$' "${colab_bin}" 2>/dev/null
+}
+
+# colab_refuse_volatile_out_dir <out_dir> <test_mode>: the evidence of a paid window must survive a
+# WSL VM restart, so a live run refuses an out dir on tmpfs/ramfs (filesystem type of the nearest
+# existing ancestor, read with `stat -f`, and `findmnt` when present) or under /tmp, /var/tmp or
+# /dev/shm (path prefix, for when the type cannot be read). Fake-colab tests use tmp dirs, so test
+# mode is exempt.
+colab_refuse_volatile_out_dir() {
+  local out_dir="$1"
+  local test_mode="$2"
+  if [ "${test_mode}" = "1" ]; then
+    return 0
+  fi
+  local abs
+  abs="$(realpath -m -- "${out_dir}" 2>/dev/null || printf '%s' "${out_dir}")"
+  local prefix
+  for prefix in /tmp /var/tmp /dev/shm; do
+    if [ "${abs}" = "${prefix}" ] || [ "${abs#"${prefix}"/}" != "${abs}" ]; then
+      echo "REFUSED: OUT_DIR_VOLATILE: --out-dir ${abs} is under ${prefix}, which does not survive a WSL VM restart; use a directory on a persistent disk" >&2
+      return 96
+    fi
+  done
+  local probe="${abs}"
+  while [ ! -e "${probe}" ] && [ "${probe}" != "/" ] && [ -n "${probe}" ]; do
+    probe="$(dirname -- "${probe}")"
+  done
+  local fstypes=""
+  fstypes="$(stat -f -c %T -- "${probe}" 2>/dev/null || true)"
+  if command -v findmnt >/dev/null 2>&1; then
+    fstypes="${fstypes} $(findmnt -n -o FSTYPE -T "${probe}" 2>/dev/null || true)"
+  fi
+  local fstype
+  for fstype in ${fstypes}; do
+    case "${fstype}" in
+      tmpfs|ramfs)
+        echo "REFUSED: OUT_DIR_VOLATILE: --out-dir ${abs} is on ${fstype} (checked at ${probe}), which does not survive a WSL VM restart; use a directory on a persistent disk" >&2
+        return 96
+        ;;
+    esac
+  done
+}
+
+# colab_refuse_live_pin_overrides <out_dir> <test_mode> <VAR>...: the EXPECTED_*_SHA overrides exist
+# for the fake-colab suite only. In a live run any of them set is PIN_OVERRIDE_IN_LIVE_RUN.
+colab_refuse_live_pin_overrides() {
+  local out_dir="$1"
+  local test_mode="$2"
+  shift 2
+  if [ "${test_mode}" = "1" ]; then
+    return 0
+  fi
+  local set_vars=()
+  local var
+  for var in "$@"; do
+    if [ -n "${!var:-}" ]; then
+      set_vars+=("${var}")
+    fi
+  done
+  if [ "${#set_vars[@]}" -gt 0 ]; then
+    colab_refuse_logged "${out_dir}" PIN_OVERRIDE_IN_LIVE_RUN "${set_vars[*]} set without SDLAB_TEST_FAKE_COLAB=1 and the fake colab CLI on PATH"
+    return 1
+  fi
+}
+
+# The one remote directory that exists before the kit runs anything on the VM: the kernel's working
+# directory. `colab upload` is a single Jupyter contents-API PUT of the file (google-colab-cli 0.7.4,
+# colab_cli/contents.py upload/_request); it creates no parent directory, and a PUT into a missing
+# one fails (HTTP 500 in window sdlab-l3-stub-3). So the kits upload flat into this directory and
+# the remote script makes and fills its own subdirectories.
+COLAB_REMOTE_ROOT="/content"
+
+# _colab_http_status <cli output>: the HTTP status a failed contents-API call reported, or "none".
+_colab_http_status() {
+  local status=""
+  status="$(grep -oE '\b[1-5][0-9]{2} (Client|Server) Error' <<< "$1" | head -n 1 | cut -d' ' -f1 || true)"
+  if [ -z "${status}" ] && grep -q 'File or directory not found' <<< "$1"; then
+    status="404"
+  fi
+  printf '%s' "${status:-none}"
+}
+
+# colab_upload_checked <session> <local> <remote> <out_dir>: upload one file into COLAB_REMOTE_ROOT.
+# Refuses REMOTE_PARENT_UNVERIFIED (before any call) for a destination in any other directory, and
+# UPLOAD_FAILED (keeping the HTTP status) when the CLI exits non-zero or does not print its success
+# line. The CLI's own text, which can carry the session token in a URL, goes to colab.log only.
+colab_upload_checked() {
+  local session="$1"
+  local src="$2"
+  local dst="$3"
+  local out_dir="$4"
+  local parent="${dst%/*}"
+  if [ "${parent}" != "${COLAB_REMOTE_ROOT}" ] || [ -z "${dst##*/}" ]; then
+    colab_refuse_logged "${out_dir}" REMOTE_PARENT_UNVERIFIED "${dst}: the kit uploads only into ${COLAB_REMOTE_ROOT}, the one remote directory that exists before the remote script runs"
+    return 1
+  fi
+  if [ ! -f "${src}" ]; then
+    colab_refuse_logged "${out_dir}" UPLOAD_FAILED "${src} -> ${dst}: local file missing (http=none)"
+    return 1
+  fi
+  local out=""
+  local rc=0
+  out="$(colab upload -s "${session}" "${src}" "${dst}" </dev/null 2>&1)" || rc=$?
+  printf '%s\n' "${out}" >> "${out_dir}/colab.log"
+  if [ "${rc}" -ne 0 ] || ! grep -Fq "[colab] Uploaded '" <<< "${out}"; then
+    colab_refuse_logged "${out_dir}" UPLOAD_FAILED "${src} -> ${dst}: colab upload rc=${rc} http=$(_colab_http_status "${out}") (CLI output in colab.log)"
+    return 1
+  fi
+}
+
+# colab_download_checked <session> <remote> <local> <out_dir>: the CLI writes the local file with a
+# plain open() and creates no local directory, so the local parent is checked first. Refuses
+# DOWNLOAD_FAILED (keeping the HTTP status; 404 when the remote file is missing).
+colab_download_checked() {
+  local session="$1"
+  local src="$2"
+  local dst="$3"
+  local out_dir="$4"
+  local dst_parent
+  dst_parent="$(dirname -- "${dst}")"
+  if [ ! -d "${dst_parent}" ]; then
+    colab_refuse_logged "${out_dir}" DOWNLOAD_FAILED "${src} -> ${dst}: local directory ${dst_parent} does not exist (http=none)"
+    return 1
+  fi
+  local out=""
+  local rc=0
+  out="$(colab download -s "${session}" "${src}" "${dst}" </dev/null 2>&1)" || rc=$?
+  printf '%s\n' "${out}" >> "${out_dir}/colab.log"
+  if [ "${rc}" -ne 0 ] || ! grep -Fq "[colab] Downloaded '" <<< "${out}" || [ ! -s "${dst}" ]; then
+    colab_refuse_logged "${out_dir}" DOWNLOAD_FAILED "${src} -> ${dst}: colab download rc=${rc} http=$(_colab_http_status "${out}") (CLI output in colab.log)"
+    return 1
+  fi
+}
+
 colab_guard_fake_cli_if_test() {
   local colab_bin
   colab_bin="$(command -v colab || true)"
@@ -516,6 +669,29 @@ if vitals_p.exists():
                 vm_facts.update(json.loads(line[len("WINDOW_JSON ") :].strip()))
             except Exception:
                 pass
+        elif line.startswith("PYTHON_IDENTITY "):
+            try:
+                vm_facts["python_identity"] = json.loads(line[len("PYTHON_IDENTITY ") :].strip())
+            except Exception:
+                pass
+
+
+def bundle_member_text(name: str) -> str | None:
+    """Text of the first member called `name` in a downloaded bundle, or None."""
+    for tar_p in sorted(out_dir.glob("*.tar.gz")):
+        if not tarfile.is_tarfile(tar_p):
+            continue
+        try:
+            with tarfile.open(tar_p, "r:gz") as tf:
+                for member in tf.getmembers():
+                    if Path(member.name).name == name and member.isfile():
+                        ext = tf.extractfile(member)
+                        if ext is not None:
+                            return ext.read().decode("utf-8", errors="replace")
+        except Exception:
+            continue
+    return None
+
 
 REFUSAL_CODES = (
     "WHEEL_MISSING",
@@ -535,18 +711,53 @@ REFUSAL_CODES = (
     "VENV_PYTHON_MISMATCH",
     "VENV_IMPORT_OUTSIDE_VENV",
     "VENV_IMPORT_FAILED",
+    "WHEEL_DIR_REQUIRED",
+    "UPLOAD_FAILED",
+    "DOWNLOAD_FAILED",
+    "REMOTE_DIR_CREATE_FAILED",
+    "REMOTE_PARENT_UNVERIFIED",
+    "PYTHON_BUILD_MISMATCH",
 )
-refusal_code: str | None = None
-for log_name in ("guards.log", "vitals.log", "colab.log"):
+# A refusal code comes only from a line the kit itself emits, starting `REFUSED: <CODE>`, in the
+# files those lines are written to: guards.log (rig side), the exec stream in vitals.log, and the
+# VM's setup.log inside a downloaded bundle. Free text never counts: colab.log (CLI output) is not
+# read, and every vitals PROC: section (a `ps` listing, which shows the import gate's own
+# `python -c` source with its refusal words) is skipped up to the block's HARNESS: line.
+REFUSED_LINE_RE = re.compile(r"^REFUSED: ([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)(?=[:\s]|$)")
+
+
+def first_refusal(text: str, skip_proc: bool) -> str | None:
+    in_proc = False
+    for raw in text.splitlines():
+        line = raw.rstrip("\r")
+        if skip_proc:
+            if line.startswith("PROC:"):
+                in_proc = True
+                continue
+            if in_proc:
+                if line.startswith("HARNESS:") or line.startswith("=== VITALS"):
+                    in_proc = False
+                else:
+                    continue
+        m = REFUSED_LINE_RE.match(line)
+        if m and m.group(1) in REFUSAL_CODES:
+            return m.group(1)
+    return None
+
+
+refusal_sources: list[tuple[str | None, bool]] = []
+for log_name, skip_proc in (("guards.log", False), ("vitals.log", True)):
     lp = out_dir / log_name
     if lp.exists():
-        ltxt = lp.read_text(encoding="utf-8", errors="replace")
-        for code in REFUSAL_CODES:
-            if re.search(rf"\b{code}\b", ltxt):
-                refusal_code = code
-                break
-    if refusal_code:
-        break
+        refusal_sources.append((lp.read_text(encoding="utf-8", errors="replace"), skip_proc))
+refusal_sources.append((bundle_member_text("setup.log"), False))
+
+refusal_code: str | None = None
+for src_text, skip_proc in refusal_sources:
+    if src_text:
+        refusal_code = first_refusal(src_text, skip_proc)
+        if refusal_code:
+            break
 
 downloaded_files: dict[str, str] = {}
 for artifact in sorted(list(out_dir.glob("*.tar.gz")) + list(out_dir.glob("*.safetensors"))):

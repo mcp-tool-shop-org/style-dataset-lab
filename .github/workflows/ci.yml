@@ -83,9 +83,19 @@ jobs:
       - name: Python tests and coverage (Node 22 only)
         id: pytest
         if: matrix.node-version == 22
+        # uv is installed by hash: only PyPI's uv 0.13.5 manylinux x86_64 wheel (the
+        # runner's platform) is accepted, into a throwaway venv (the runner's system
+        # Python is externally managed). Only the uv binary goes on PATH, and later
+        # steps find it through GITHUB_PATH.
         run: |
-          python3 -m pip install --user "uv==0.13.5" || pipx install "uv==0.13.5"
-          export PATH="$HOME/.local/bin:$PATH"
+          python3 -m venv "$RUNNER_TEMP/uv-bootstrap"
+          printf 'uv==0.13.5 --hash=sha256:fa8d26e08e34c29c0c4e820cf3181757086d547240b4f4d31ff1d8bd810ca946\n' > "$RUNNER_TEMP/uv-bootstrap.txt"
+          "$RUNNER_TEMP/uv-bootstrap/bin/python" -m pip install --quiet --require-hashes --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-bootstrap.txt"
+          mkdir -p "$RUNNER_TEMP/uv-bin"
+          ln -sf "$RUNNER_TEMP/uv-bootstrap/bin/uv" "$RUNNER_TEMP/uv-bin/uv"
+          echo "$RUNNER_TEMP/uv-bin" >> "$GITHUB_PATH"
+          export PATH="$RUNNER_TEMP/uv-bin:$HOME/.local/bin:$PATH"
+          uv --version
           uv python install 3.14.9 3.12.15
           PY_TARGET=3.14.9
           uv venv .venv-ci --python "${PY_TARGET}"

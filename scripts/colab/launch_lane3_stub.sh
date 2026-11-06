@@ -13,6 +13,11 @@ PINNED_UV_VERSION="0.13.5"
 # sha256 of uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl on PyPI (the Colab VM platform)
 PINNED_UV_WHEEL_SHA256="fa8d26e08e34c29c0c4e820cf3181757086d547240b4f4d31ff1d8bd810ca946"
 PINNED_PYTHON_VERSION="3.12.15"
+# python-build-standalone release that uv 0.13.5 installs for PINNED_PYTHON_VERSION. uv embeds the
+# archive URL and sha256 (crates/uv-python-managed/download-metadata.json at 0.13.5) and checks the
+# sha256 on download (crates/uv-python-managed/src/downloads.rs:770-777), so pinning uv by hash pins
+# the interpreter; the remote script refuses PYTHON_BUILD_MISMATCH if the install's BUILD differs.
+PINNED_PYTHON_BUILD="20261021"
 PINNED_PYTORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 PINNED_AI_TOOLKIT_REPO="https://github.com/ostris/ai-toolkit.git"
 PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
@@ -21,8 +26,8 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="8e664906e6deb45b498a0193e916d2d424f7e9b5839f39e63ea07f81a4682a78"
 PINNED_REMOTE_RUNNER_SHA="7d4fc25401c1504910615f1aaea4418a6694196530380c11c9a9a25b02f83537"
-PINNED_COLAB_WINDOW_SHA="af85f6d3a3eceae88c4e1b49c0ee107d76cc9bb29efe678cd8df16cbcaf275eb"
-PINNED_SELF_SHA="666beaa2ade7d3bffb71906381044a2a6081e8728e597ff87d47ef54fc33611d"
+PINNED_COLAB_WINDOW_SHA="188f2c2a445a21ab2ca77c3270b125354d7ed75de88c261426ed64f4f0e5b895"
+PINNED_SELF_SHA="530c51cc84c09571003d4e1ccf4fc65f52a7213b199b07db7f773c3a459ece32"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -61,9 +66,21 @@ if [ -z "${WHEEL_DIR}" ]; then
   exit 2
 fi
 
+# The evidence directory is the operator's choice; there is no default location.
 if [ -z "${OUT_DIR}" ]; then
-  OUT_DIR="/tmp/${SESSION}"
+  echo "REFUSED: OUT_DIR_REQUIRED: pass --out-dir <dir> on a persistent disk" >&2
+  exit 2
 fi
+
+# Test mode needs the flag AND the fake-marked colab CLI on PATH (refused if the flag is set
+# without the fake). Every test hook and pin override below is honoured only in test mode.
+colab_guard_fake_cli_if_test
+TEST_MODE=0
+if colab_fake_test_mode_active; then
+  TEST_MODE=1
+fi
+
+colab_refuse_volatile_out_dir "${OUT_DIR}" "${TEST_MODE}"
 colab_refuse_nonempty_out_dir "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 
@@ -72,22 +89,39 @@ GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
 LOCK_FILE="${SCRIPT_DIR}/locks/lane3.lock"
 LOCAL_WHEELS_JSON="${SCRIPT_DIR}/locks/lane3-local-wheels.json"
 # Test hook: a fixture manifest, used only under the fake colab CLI (the pre-flight refuses it live).
-if [ "${SDLAB_TEST_FAKE_COLAB:-0}" = "1" ] && [ -n "${SDLAB_PREFLIGHT_WHEELS_MANIFEST:-}" ]; then
+if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_PREFLIGHT_WHEELS_MANIFEST:-}" ]; then
   LOCAL_WHEELS_JSON="${SDLAB_PREFLIGHT_WHEELS_MANIFEST}"
 fi
 RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
 CLASSIFIER_PY="${SCRIPT_DIR}/classify_install_log.py"
 WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 
-colab_guard_fake_cli_if_test
-
-EXP_OVERRIDE_SHA="${EXPECTED_OVERRIDE_SHA:-${PINNED_OVERRIDE_SHA}}"
-EXP_LOCAL_WHEELS_SHA="${EXPECTED_LOCAL_WHEELS_MANIFEST_SHA:-${PINNED_LOCAL_WHEELS_MANIFEST_SHA}}"
-EXP_CLASSIFIER_SHA="${EXPECTED_INSTALL_CLASSIFIER_SHA:-${PINNED_INSTALL_CLASSIFIER_SHA}}"
-EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${PINNED_LAUNCH_GUARDS_SHA}}"
-EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${PINNED_REMOTE_RUNNER_SHA}}"
-EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${PINNED_COLAB_WINDOW_SHA}}"
-EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE3_STUB_SHA:-${PINNED_SELF_SHA}}"
+PIN_OVERRIDE_VARS=(
+  EXPECTED_OVERRIDE_SHA
+  EXPECTED_LOCAL_WHEELS_MANIFEST_SHA
+  EXPECTED_INSTALL_CLASSIFIER_SHA
+  EXPECTED_LAUNCH_GUARDS_SHA
+  EXPECTED_REMOTE_RUNNER_SHA
+  EXPECTED_COLAB_WINDOW_SHA
+  EXPECTED_LAUNCH_LANE3_STUB_SHA
+)
+colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
+EXP_OVERRIDE_SHA="${PINNED_OVERRIDE_SHA}"
+EXP_LOCAL_WHEELS_SHA="${PINNED_LOCAL_WHEELS_MANIFEST_SHA}"
+EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
+EXP_GUARDS_SHA="${PINNED_LAUNCH_GUARDS_SHA}"
+EXP_RUNNER_SHA="${PINNED_REMOTE_RUNNER_SHA}"
+EXP_WINDOW_SHA="${PINNED_COLAB_WINDOW_SHA}"
+EXP_SELF_SHA="${PINNED_SELF_SHA}"
+if [ "${TEST_MODE}" = "1" ]; then
+  EXP_OVERRIDE_SHA="${EXPECTED_OVERRIDE_SHA:-${EXP_OVERRIDE_SHA}}"
+  EXP_LOCAL_WHEELS_SHA="${EXPECTED_LOCAL_WHEELS_MANIFEST_SHA:-${EXP_LOCAL_WHEELS_SHA}}"
+  EXP_CLASSIFIER_SHA="${EXPECTED_INSTALL_CLASSIFIER_SHA:-${EXP_CLASSIFIER_SHA}}"
+  EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${EXP_GUARDS_SHA}}"
+  EXP_RUNNER_SHA="${EXPECTED_REMOTE_RUNNER_SHA:-${EXP_RUNNER_SHA}}"
+  EXP_WINDOW_SHA="${EXPECTED_COLAB_WINDOW_SHA:-${EXP_WINDOW_SHA}}"
+  EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE3_STUB_SHA:-${EXP_SELF_SHA}}"
+fi
 
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${LOCK_FILE}=${EXP_OVERRIDE_SHA}" \
@@ -174,11 +208,40 @@ cat > "${REMOTE_RUNNER}" << REMOTEEOF
 #!/usr/bin/env bash
 set -euo pipefail
 export CUDA_VISIBLE_DEVICES=""
-mkdir -p /content/lane3_out /content/lane3_out/checkpoints
+
+# >>> sdlab-remote-dirs
+# The kit uploads every file flat into /content (colab upload creates no remote directory).
+# This block makes the run's directories and moves the uploaded wheels into /content/wheels,
+# checking each directory and file exists afterwards.
+sdlab_remote_mkdir() {
+  local d
+  for d in "\$@"; do
+    mkdir -p "\${d}" 2>/dev/null || true
+    if [ ! -d "\${d}" ]; then
+      echo "REFUSED: REMOTE_DIR_CREATE_FAILED: \${d}" >&2
+      exit 1
+    fi
+  done
+}
+sdlab_remote_mkdir /content/lane3_out /content/lane3_out/checkpoints /content/wheels
+python3 -c 'import json, sys; [print(w["filename"]) for w in json.load(open(sys.argv[1], encoding="utf-8")).get("wheels", [])]' /content/lane3-local-wheels.json > /content/lane3_out/wheel-names.txt
+while IFS= read -r wheel_fname; do
+  [ -z "\${wheel_fname}" ] && continue
+  if [ ! -f "/content/\${wheel_fname}" ]; then
+    echo "REFUSED: LOCAL_WHEEL_MISSING on VM: /content/\${wheel_fname} was not uploaded" >&2
+    exit 1
+  fi
+  if ! mv -f "/content/\${wheel_fname}" "/content/wheels/\${wheel_fname}" || [ ! -f "/content/wheels/\${wheel_fname}" ]; then
+    echo "REFUSED: REMOTE_DIR_CREATE_FAILED: could not place \${wheel_fname} in /content/wheels" >&2
+    exit 1
+  fi
+done < /content/lane3_out/wheel-names.txt
+# <<< sdlab-remote-dirs
 
 : "\${PINNED_UV_VERSION:?missing PINNED_UV_VERSION}"
 : "\${PINNED_UV_WHEEL_SHA256:?missing PINNED_UV_WHEEL_SHA256}"
 : "\${PINNED_PYTHON_VERSION:?missing PINNED_PYTHON_VERSION}"
+: "\${PINNED_PYTHON_BUILD:?missing PINNED_PYTHON_BUILD}"
 : "\${PINNED_PYTORCH_INDEX_URL:?missing PINNED_PYTORCH_INDEX_URL}"
 : "\${PINNED_AI_TOOLKIT_REPO:?missing PINNED_AI_TOOLKIT_REPO}"
 : "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
@@ -232,6 +295,50 @@ if not (sys.version.startswith("3.12.15") and sys.prefix.startswith("/content/ve
     raise SystemExit(1)
 '
   /content/venv-lane3/bin/python -c 'import sys; assert sys.version.startswith("3.12.15"), sys.version; assert sys.prefix.startswith("/content/venv-lane"), sys.prefix'
+  # Interpreter identity: uv's build tag, download URL, sys.version and the binary's sha256.
+  /content/venv-lane3/bin/python - "\${PINNED_PYTHON_VERSION}" "\${PINNED_PYTHON_BUILD}" "\${UV_PYTHON_INSTALL_DIR}" /content/lane3_out/python_identity.json << 'PYIDEOF'
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+version, want_build, install_dir, out_json = sys.argv[1:5]
+key = "cpython-" + version + "-linux-x86_64-gnu"
+inst = Path(install_dir) / key
+build_f = inst / "BUILD"
+build = build_f.read_text(encoding="utf-8").strip() if build_f.is_file() else None
+minor = ".".join(version.split(".")[:2])
+binary = inst / "bin" / ("python" + minor)
+binary_sha = None
+if binary.is_file():
+    binary_sha = "sha256:" + hashlib.sha256(binary.resolve().read_bytes()).hexdigest()
+download_url = None
+listing = subprocess.run(
+    ["uv", "python", "list", version, "--only-downloads", "--output-format", "json"],
+    capture_output=True, text=True, check=False,
+)
+try:
+    for entry in json.loads(listing.stdout or "[]"):
+        if entry.get("key") == key:
+            download_url = entry.get("url")
+except ValueError:
+    pass
+rec = {
+    "key": key,
+    "build": build,
+    "pinned_build": want_build,
+    "download_url": download_url,
+    "sys_version": sys.version,
+    "binary": str(binary.resolve()) if binary.exists() else str(binary),
+    "binary_sha256": binary_sha,
+}
+Path(out_json).write_text(json.dumps(rec, indent=2) + chr(10), encoding="utf-8")
+print("PYTHON_IDENTITY " + json.dumps(rec), flush=True)
+if build != want_build or binary_sha is None:
+    sys.stderr.write("REFUSED: PYTHON_BUILD_MISMATCH: " + key + " build=" + repr(build) + " pinned=" + want_build + chr(10))
+    raise SystemExit(1)
+PYIDEOF
 } 2>&1 | tee -a /content/lane3_out/setup.log
 {
   unset UV_SYSTEM_PYTHON
@@ -420,15 +527,21 @@ done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -
 tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
 REMOTEEOF
 
-colab upload -s "${SESSION}" "${LOCK_FILE}" /content/lane3.lock </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${LOCAL_WHEELS_JSON}" /content/lane3-local-wheels.json </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+# Every upload goes flat into /content, the one remote directory that exists before the remote
+# script runs; the script's sdlab-remote-dirs block moves the wheels into /content/wheels.
+WHEEL_NAMES=()
 while IFS= read -r wheel_fname; do
   [ -z "${wheel_fname}" ] && continue
-  colab upload -s "${SESSION}" "${WHEEL_DIR}/${wheel_fname}" "/content/wheels/${wheel_fname}" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+  WHEEL_NAMES+=("${wheel_fname}")
 done < <("${PY_BIN}" -c 'import json, sys; d = json.load(open(sys.argv[1], encoding="utf-8")); print("\n".join(w["filename"] for w in d.get("wheels", [])))' "${LOCAL_WHEELS_JSON}")
-colab upload -s "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-colab upload -s "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.sh </dev/null >> "${OUT_DIR}/colab.log" 2>&1
+colab_upload_checked "${SESSION}" "${LOCK_FILE}" /content/lane3.lock "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${LOCAL_WHEELS_JSON}" /content/lane3-local-wheels.json "${OUT_DIR}"
+for wheel_fname in "${WHEEL_NAMES[@]}"; do
+  colab_upload_checked "${SESSION}" "${WHEEL_DIR}/${wheel_fname}" "/content/${wheel_fname}" "${OUT_DIR}"
+done
+colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
+colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.sh "${OUT_DIR}"
 
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \
@@ -437,15 +550,12 @@ colab_run_exec_with_live_guards \
   "PINNED_UV_VERSION=${PINNED_UV_VERSION}" \
   "PINNED_UV_WHEEL_SHA256=${PINNED_UV_WHEEL_SHA256}" \
   "PINNED_PYTHON_VERSION=${PINNED_PYTHON_VERSION}" \
+  "PINNED_PYTHON_BUILD=${PINNED_PYTHON_BUILD}" \
   "PINNED_PYTORCH_INDEX_URL=${PINNED_PYTORCH_INDEX_URL}" \
   "PINNED_AI_TOOLKIT_REPO=${PINNED_AI_TOOLKIT_REPO}" \
   "PINNED_AI_TOOLKIT_COMMIT=${PINNED_AI_TOOLKIT_COMMIT}" \
   "PINNED_OVERRIDE_SHA=${EXP_OVERRIDE_SHA}"
 
 # Download result tar before EXIT trap stops the session
-colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" </dev/null >> "${OUT_DIR}/colab.log" 2>&1
-if [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
-  echo "REFUSED: downloaded bundle ${OUT_DIR}/lane3_stub_bundle.tar.gz is missing or empty" >&2
-  exit 1
-fi
+colab_download_checked "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
