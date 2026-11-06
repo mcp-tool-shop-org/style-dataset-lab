@@ -937,14 +937,14 @@ def test_metadata_exception_text_never_reaches_any_output(tmp_path: Path, monkey
     assert "REFUSED: MODEL_AUTH_FAILED: " in out.err and "http=401" in out.err
     for text in (out.err, out.out, (tmp_path / "dl.json").read_text(encoding="utf-8")):
         assert TOKEN not in text and "Bearer" not in text
-    assert lr.scrub_secrets(f"Authorization: Bearer abc.def {TOKEN}") == "Authorization: Bearer [REDACTED] hf_[REDACTED]"
+    assert lr.mask_log_text(f"Authorization: Bearer abc.def {TOKEN}") == "Authorization: Bearer [REDACTED] hf_[REDACTED]"
 
 
 def test_remote_runner_scrubs_relayed_lines() -> None:
     import remote_runner as rr
 
     assert rr.scrub_line(f"Authenticated download with token {TOKEN}\n") == "Authenticated download with token hf_[REDACTED]\n"
-    assert lr.scrub_secrets("x hf_short y") == "x hf_short y"
+    assert lr.mask_log_text("x hf_short y") == "x hf_short y"
 
 
 def test_failed_download_prints_no_token_into_exec_history(tmp_path: Path) -> None:

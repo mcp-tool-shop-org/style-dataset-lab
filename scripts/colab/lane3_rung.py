@@ -54,7 +54,7 @@ HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
 BEARER_RE = re.compile(r"(?i)\bBearer\s+\S+")
 
 
-def scrub_secrets(text: str) -> str:
+def mask_log_text(text: str) -> str:
     """Remove every Hugging Face token and every bearer value from text that is printed (exec
     output reaches the CLI history)."""
     return BEARER_RE.sub("Bearer [REDACTED]", HF_TOKEN_RE.sub("hf_[REDACTED]", text))
@@ -558,7 +558,7 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
                      f"probe {probe['probe_rate_mb_s']} MB/s over {probe['probe_seconds']} s projects "
                      f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {max_seconds} s")
     if rc != 0 or not snapshot:
-        tail = scrub_secrets(" | ".join(log_lines[-3:]))
+        tail = mask_log_text(" | ".join(log_lines[-3:]))
         if token is not None and token in tail:
             tail = "[the download log tail is withheld: it held the read token]"
         return _fail(out_path, rec, "MODEL_DOWNLOAD_FAILED", f"snapshot_download rc={rc}: {tail}")
