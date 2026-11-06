@@ -1102,6 +1102,10 @@ def main(argv: list[str] | None = None) -> int:
             rate_str = seq[min(post_count - 1, len(seq) - 1)]
         elif session_opened and post_rate_str is not None:
             rate_str = post_rate_str
+        elif session_opened and (state_dir / "card.txt").is_file() and                 (state_dir / "card.txt").read_text(encoding="utf-8").strip() != "CPU":
+            # A GPU session bills at its card's rate once open (an A100 High-RAM read 8.88/hr on
+            # 2026-11-06): the account rate the fake reports once a GPU session is open.
+            rate_str = os.environ.get("FAKE_COLAB_GPU_RATE_STR", "8.88/hr")
         else:
             rate_str = os.environ.get("FAKE_COLAB_RATE_STR", "0.26/hr")
         if rate_str == "OMIT":
@@ -1134,6 +1138,9 @@ def main(argv: list[str] | None = None) -> int:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
         (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
+        # FAKE_COLAB_NEW_DELAY_S: the open takes this long; the moment it succeeds is logged.
+        time.sleep(float(os.environ.get("FAKE_COLAB_NEW_DELAY_S", "0")))
+        (state_dir / "new_done_epoch.txt").write_text(f"{time.time()}\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
         print(
             f"Opened tunnel https://colab.research.google.com/tun?colab-runtime-proxy-token=secret_proxy_tok_{lane_tag}_999&port=8188"

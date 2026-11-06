@@ -147,6 +147,51 @@ class RateUnread(Exception):
 
 CARD_CLASSES = ("gpu", "cpu")
 
+# The window rate. `colab usage` reports the ACCOUNT's rate (docs/colab-cli-contract.md): a window's
+# own rate is the post-open reading minus the pre-open one. It counts only when it is stable (two
+# consecutive reads, one poll interval apart, within RATE_STABLE_TOLERANCE) and at or above
+# GPU_RATE_FLOOR. The floor is below the cheapest GPU measured, the T4 at 1.07/hr (16 reads in
+# E:/AI/Publisher/receipts/colab/windowC2-12-t4-s1a-20261027), and above the highest CPU rate,
+# 0.26/hr. A GPU window is priced on max(--max-rate, the highest stable window rate seen), never on
+# a window or account rate alone.
+GPU_RATE_FLOOR = 1.00
+RATE_STABLE_TOLERANCE = 0.01
+
+
+def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre_open_rate: float | None,
+                       at: str, floor: float = GPU_RATE_FLOOR,
+                       tolerance: float = RATE_STABLE_TOLERANCE) -> dict[str, Any]:
+    """Fold one post-open `colab usage` reading into the window-rate state (kept in the out dir):
+    every reading is recorded; a window rate is `stable` when it is at or above the floor and agrees
+    with the previous reading's within the tolerance; `best_stable` is the highest stable one."""
+    readings = state.setdefault("readings", [])
+    pre = float(pre_open_rate) if pre_open_rate is not None else 0.0
+    window = None if account_rate is None else round(max(float(account_rate) - pre, 0.0), 4)
+    prev = state.get("last_window")
+    stable = (window is not None and window >= floor and prev is not None
+              and abs(window - float(prev)) <= tolerance)
+    readings.append({"at": at, "account_rate": account_rate, "pre_open_rate": pre, "window_rate": window,
+                     "stable": stable})
+    state["last_window"] = window
+    if stable and (state.get("best_stable") is None or window > state["best_stable"]):
+        state["best_stable"] = window
+    state["floor"] = floor
+    return state
+
+
+def gpu_projection_rate(state: dict[str, Any], max_rate: float) -> float:
+    """The rate a GPU window's cap is projected with: max(--max-rate, highest stable window rate)."""
+    best = state.get("best_stable")
+    return max(float(max_rate), float(best)) if best is not None else float(max_rate)
+
+
+def window_rate_decision(state: dict[str, Any], max_rate: float) -> str:
+    """`unread` (no stable window rate at or above the floor yet), `above_max` or `ok`."""
+    best = state.get("best_stable")
+    if best is None:
+        return "unread"
+    return "above_max" if float(best) > float(max_rate) else "ok"
+
 
 def parse_usage_text(
     raw_usage: str,

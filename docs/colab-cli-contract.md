@@ -20,3 +20,8 @@ Source: google-colab-cli 0.7.4, read on 2026-11-06. The same contract is modelle
    - write an argv log.
 
    This repo's fake ends the cell's kernel process on `restart-kernel` and leaves the cell's spawned processes running (the case the kit must survive). It ends everything on `stop`, because the VM is gone.
+5. **`colab usage` reports the account's rate, not this window's.** Its "Usage rate: R/hr" line covers every assignment on the account, so another open window adds to it.
+   - The kit reads the window's own rate as post-open minus pre-open.
+   - A GPU window's rate counts only when it reads at least `GPU_RATE_FLOOR` (1.00/hr) and two reads 5 s apart agree within 0.01. Otherwise the kit refuses with `RATE_UNREAD`.
+   - The cap and the projection are priced at the higher of `--max-rate` and the highest stable window rate seen. A stable window rate above `--max-rate`, at open or mid-run, refuses with `RATE_ABOVE_MAX`.
+   - Every usage call runs under `timeout -k`, and every reading goes into the window record.

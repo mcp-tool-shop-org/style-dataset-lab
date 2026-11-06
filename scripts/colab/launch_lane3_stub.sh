@@ -30,14 +30,14 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="0f5b0b9a77455e9eda06a782418aa3b018a56d3feb6c2e5bc95a6295aa4e151d"
+PINNED_LAUNCH_GUARDS_SHA="6e458a8037f6933d6e5f0b8497ca9d5c2e57323f8a08b0b9a526ca9d07026d2a"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="c1a9cb226eaab1924c82e7f41bf2e40e2147ec3aad2a98a211cca992a5ac73e5"
+PINNED_COLAB_WINDOW_SHA="5e19f1786b5179950129c1c3c283dd607c7513eb57651557f9cd08ac96196639"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="61bbe3f1ad28ee9002640776d82a4179e16783c042a54808999182449fe379ad"
+PINNED_SELF_SHA="91f390b7137c4f926a330a1f11d57525a35044d793af563ccae28d238f0f00d1"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -925,12 +925,17 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   fi
 fi
 
-# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced only
-# by its live post-open rate; a CPU stub keeps the labelled configured rate.
+# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
+# max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
 if colab_card_is_cpu "${CARD}"; then
   export COLAB_CARD_CLASS=cpu
 else
   export COLAB_CARD_CLASS=gpu
+  if [ -z "${TRAIN_MAX_RATE}" ]; then
+    colab_refuse_logged "${OUT_DIR}" MAX_RATE_REQUIRED "a GPU card needs --max-rate <units/h>"
+    exit 2
+  fi
+  printf '%s\n' "${TRAIN_MAX_RATE}" > "${OUT_DIR}/max_rate.txt"
 fi
 
 # Pre-open cap and host-RAM check via launch_guards.py
@@ -952,12 +957,15 @@ WALL_WATCHER_PID="$!"
 # Hold /tmp/colab-window-open.lock while opening with colab new (--high-mem default)
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
+# The cap and wall clock starts the moment `colab new` succeeds: the rate polls, the uploads and the
+# gate below are all billed time and all count.
+START_EPOCH="$(date -u +%s)"
+date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${OUT_DIR}/cap_clock_started_at.txt"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
 # A GPU window runs only on its live rate: read it right after open (bounded polls), refuse
 # RATE_UNREAD without one and RATE_ABOVE_MAX above --max-rate, before any upload. A CPU stub keeps
 # the configured rate (labelled `configured` in window.json).
 if ! colab_card_is_cpu "${CARD}"; then
-  [ -n "${TRAIN_MAX_RATE}" ] && printf '%s\n' "${TRAIN_MAX_RATE}" > "${OUT_DIR}/max_rate.txt"
   colab_read_post_open_rate "${PY_BIN}" "${OUT_DIR}" "${LANE3_RATE_READ_POLLS}" "${LANE3_RATE_READ_INTERVAL_S}" "${TRAIN_MAX_RATE}"
 fi
 

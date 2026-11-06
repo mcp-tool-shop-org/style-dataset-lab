@@ -506,6 +506,7 @@ def _rung_env(tmp_path: Path) -> tuple[Path, dict[str, str], Path]:
     (tmp_path / "xdg").mkdir(mode=0o700)
     env["XDG_RUNTIME_DIR"] = str(tmp_path / "xdg")
     env["SDLAB_TEST_HF_ENDPOINT"] = HUB_API["url"]
+    env["SDLAB_TEST_RATE_READ_INTERVAL_S"] = "0.05"
     src, manifest = make_dataset(tmp_path)
     env.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
@@ -1170,69 +1171,152 @@ def test_bundle_now_also_finds_the_download_grandchild(tmp_path: Path) -> None:
 # --- live rate guard (rung 1 was stopped by hand at 8.88/h; the kit read 0.0 and projected 0.26) -
 
 
+def _no_uploads(state_dir: Path) -> bool:
+    uploads = state_dir / "uploads.log"
+    return not uploads.exists() or "UPLOAD_OK" not in uploads.read_text(encoding="utf-8")
+
+
+def _win(out_dir: Path) -> dict:
+    return json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+
+
+def _cap_records(out_dir: Path) -> list[dict]:
+    return [json.loads(ln)["cap"] for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
+            if ln.startswith("{") and '"cap"' in ln and '"live"' in ln]
+
+
 def test_gpu_window_with_no_post_open_rate_refuses_rate_unread(tmp_path: Path) -> None:
     state_dir, env, src = _rung_env(tmp_path)
-    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "0.00/hr",
-                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05"})
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "0.00/hr"})
     res, out_dir = _launch(tmp_path, env, src)
     assert res.returncode != 0
-    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-    assert win["refusal_code"] == "RATE_UNREAD"
-    assert win["rate_check"]["live_rate"] is None and win["rate_check"]["polls"] == 24
-    uploads = state_dir / "uploads.log"
-    assert not uploads.exists() or "UPLOAD_OK" not in uploads.read_text(encoding="utf-8")
-    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
-    assert win["rate_source"] == "live_rate_unread" and win["rate_used_for_cap_and_projection"] == 0.0
+    win = _win(out_dir)
+    assert win["refusal_code"] == "RATE_UNREAD" and win["rate_check"]["polls"] == 24
+    # 24 open-time polls; the stop path's last usage read is recorded too.
+    assert win["rate_check"]["window_rate"] is None and len(win["rate_readings"]) >= 24
+    assert _no_uploads(state_dir) and "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
 
 
-def test_gpu_window_above_max_rate_refuses_before_any_upload(tmp_path: Path) -> None:
+@pytest.mark.parametrize("seq", ["0.50/hr", "2.15/hr,8.88/hr,2.16/hr,8.89/hr,2.15/hr,8.88/hr"])
+def test_a_window_rate_below_the_floor_or_never_stable_is_unread(tmp_path: Path, seq: str) -> None:
     state_dir, env, src = _rung_env(tmp_path)
-    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,8.88/hr",
-                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05"})
+    alternating = ",".join(seq.split(",") * 5)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": alternating})
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0 and _win(out_dir)["refusal_code"] == "RATE_UNREAD" and _no_uploads(state_dir)
+
+
+def test_parallel_neighbour_reproducer_refuses_above_max(tmp_path: Path) -> None:
+    # The reviewer's case: a neighbour already bills 0.26/h, this window reads 0.26 then 9.14.
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.26/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.26/hr,9.14/hr"})
     res, out_dir = _launch(tmp_path, env, src, "--max-rate", "8.0")
     assert res.returncode != 0
-    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-    assert win["refusal_code"] == "RATE_ABOVE_MAX"
-    assert win["rate_check"] == {"live_rate": 8.88, "pre_open_rate": 0.0, "window_rate": 8.88, "max_rate": 8.0, "polls": 2}
-    uploads = state_dir / "uploads.log"
-    assert not uploads.exists() or "UPLOAD_OK" not in uploads.read_text(encoding="utf-8")
-    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+    win = _win(out_dir)
+    assert win["refusal_code"] == "RATE_ABOVE_MAX" and _no_uploads(state_dir)
+    assert win["rate_check"]["window_rate"] == 8.88 and win["rate_check"]["account_rate"] == 9.14
+    assert win["rate_check"]["pre_open_rate"] == 0.26 and win["rate_check"]["polls"] == 3
+    assert [r["account_rate"] for r in win["rate_readings"][:3]] == [0.26, 9.14, 9.14]
 
 
-def test_gpu_window_under_max_rate_proceeds_on_the_live_rate(tmp_path: Path) -> None:
+def test_rate_waits_for_stability_and_prices_at_the_max(tmp_path: Path) -> None:
     _, env, src = _rung_env(tmp_path)
-    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,8.88/hr",
-                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05"})
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "4.00/hr,8.88/hr"})
     res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
     assert res.returncode == 0, res.stderr
-    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    win = _win(out_dir)
     assert win["status"] == "ok" and win["trained"] is True
-    assert win["rate_check"]["live_rate"] == 8.88 and win["rate_check"]["max_rate"] == 9.5
-    assert win["rate_source"] == "post_open_measured" and win["rate_used_for_cap_and_projection"] == 8.88
+    assert win["rate_check"]["window_rate"] == 8.88 and win["rate_check"]["polls"] == 3
+    assert win["rate_check"]["priced_at"] == 9.5 and win["rate_used_for_cap_and_projection"] == 9.5
+    assert win["rate_source"] == "max_of_max_rate_and_stable_window"
+    assert [r["stable"] for r in win["rate_readings"][:3]] == [False, False, True]
 
 
-def test_gpu_window_at_8_88_trips_the_cap_on_time(tmp_path: Path) -> None:
+def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_path: Path) -> None:
+    # A stable 2.15/h reading must not stretch the cap: priced at max(9.5, 2.15) = 9.5, 0.05 units
+    # last 18.9 s (at 2.15/h they would last 84 s). The rung's 4.9 cap: 4.85/9.5 h, about 31 min.
     state_dir, env, src = _rung_env(tmp_path)
-    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,8.88/hr",
-                "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05", "FAKE_VM_TRAIN": "hang_after_save",
-                "GUARD_POLL_INTERVAL_S": "0.5"})
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "2.15/hr",
+                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
     res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
-        win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-        assert win["refusal_code"] is None or win["status"] != "ok"
-        trips = [json.loads(ln)["cap"] for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
-                 if ln.startswith("{") and '"cap"' in ln]
-        tripped = [c for c in trips if c["tripped"]]
+        # Wall-clock seconds from the cap clock's start to the trip, read off the wall record.
+        lines = [json.loads(ln) for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
+                 if ln.startswith("{") and '"cap"' in ln and '"live"' in ln]
+        tripped = [r for r in lines if r["cap"]["tripped"]]
         assert tripped, "the cap never tripped"
-        # 0.05 units at 8.88/h is 20.3 s; with 0.5 s polls the trip lands within a few seconds of it.
-        elapsed = tripped[0]["spend_ccu"] / 8.88 * 3600
-        assert 20.2 <= elapsed <= 30, elapsed
-        assert all(c["spend_ccu"] < 0.05 for c in trips if not c["tripped"])
+        elapsed = tripped[0]["wall"]["threshold_s"] - tripped[0]["wall"]["remaining_s"]
+        assert 18.9 <= elapsed <= 30, elapsed
+        assert _win(out_dir)["rate_check"]["window_rate"] == 2.15
     finally:
         for pid in _rung_processes(content):
             os.kill(pid, 9)
+
+
+def test_a_midrun_rise_above_max_rate_refuses_and_bundles(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                "FAKE_COLAB_POST_OPEN_RATE_SEQ": "8.88/hr,8.88/hr,8.88/hr,8.88/hr,9.80/hr",
+                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
+    res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        win = _win(out_dir)
+        assert win["refusal_code"] == "RATE_ABOVE_MAX"
+        assert "mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert "BUNDLE_AFTER_FAILURE: downloaded" in (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert max(r["window_rate"] for r in win["rate_readings"]) == 9.8
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({"FAKE_COLAB_NEW_DELAY_S": "3", "SDLAB_TEST_RATE_READ_INTERVAL_S": "1",
+                "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,8.88/hr,8.88/hr",
+                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
+    content = state_dir / "content"
+    try:
+        win = _win(out_dir)
+        new_done = float((state_dir / "new_done_epoch.txt").read_text(encoding="utf-8"))
+        import datetime as _dt
+
+        started = _dt.datetime.strptime(win["cap_clock_started_at"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=_dt.timezone.utc).timestamp()
+        opened = _dt.datetime.strptime(win["opened_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=_dt.timezone.utc).timestamp()
+        # The clock starts when `colab new` returns (after its 3 s), not when the kit started.
+        assert started >= int(new_done) and started - opened >= 3
+        # The 3 rate polls (1 s apart) after open are counted: the first live cap reading already
+        # holds at least their time, priced at 9.5/h.
+        first = _cap_records(out_dir)[0]
+        assert first["spend_ccu"] / 9.5 * 3600 >= 2.0
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def test_window_rate_state_unit() -> None:
+    import launch_guards as lg
+
+    st: dict = {}
+    for r in (0.26, 9.14, 9.14):
+        lg.update_window_rate(st, account_rate=r, pre_open_rate=0.26, at="t")
+    assert st["best_stable"] == 8.88 and [x["stable"] for x in st["readings"]] == [False, False, True]
+    assert lg.window_rate_decision(st, 8.0) == "above_max" and lg.window_rate_decision(st, 9.5) == "ok"
+    assert lg.gpu_projection_rate(st, 9.5) == 9.5 and lg.gpu_projection_rate(st, 8.0) == 8.88
+    low: dict = {}
+    for r in (0.5, 0.5, 0.5):
+        lg.update_window_rate(low, account_rate=r, pre_open_rate=None, at="t")
+    assert lg.window_rate_decision(low, 9.5) == "unread" and lg.gpu_projection_rate(low, 9.5) == 9.5
+    gone: dict = {}
+    lg.update_window_rate(gone, account_rate=None, pre_open_rate=0.0, at="t")
+    assert gone["readings"][0]["window_rate"] is None and lg.GPU_RATE_FLOOR == 1.0
 
 
 USAGE_0 = "Current balance: 1812.22 compute units\nUsage rate: 0.00/hr\nActive assignments: 1\n"
