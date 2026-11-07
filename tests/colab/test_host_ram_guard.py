@@ -374,3 +374,60 @@ def test_every_vitals_emitter_prints_only_listed_lines() -> None:
         assert printed <= listed, (where, printed - listed)
     real = set().union(*(_emitted_prefixes(sec) for w, sec in sections[:2]))
     assert {"CGROUP_MEM_STAT:", "MEM:", "HARNESS:", "PROC:"} <= real
+
+
+# ---- completeness: each required part of a sample is load-bearing on its own ----------------
+
+
+def _cut_before(block: str, marker: str) -> str:
+    return block[: block.index(marker)]
+
+
+def test_sample_cut_after_mem_available_but_before_harness_is_not_a_reading() -> None:
+    # MemTotal, MemAvailable, AnonPages and the stat triple are all complete; only HARNESS: is
+    # missing. Without the HARNESS check this reads as the newest sample.
+    newer = _stat_block(G4_LAST[0], G4_LAST[1], 3000000, 180000000)
+    tail = _cut_before(newer.replace("2026-11-06T18:42:54Z", "2026-11-06T18:43:09Z"), "MEM: Shmem:")
+    assert "MEM: MemAvailable:   3000000 kB\nMEM: AnonPages:" in tail
+    assert lg.host_ram_status(tail)["state"] == "waiting"
+    st = lg.host_ram_status(_stat_block(*G4_LAST) + tail)
+    assert st["state"] == "ok"
+    assert (st["reading"]["private_mb"], st["reading"]["blocks_back"]) == (52492.8, 1)
+
+
+def test_sample_missing_only_mem_total_is_not_a_reading() -> None:
+    no_total = "".join(line for line in _stat_block(*G4_LAST).splitlines(keepends=True) if not line.startswith("MEM: MemTotal:"))
+    assert "HARNESS:" in no_total and "MemAvailable" in no_total and "MemTotal" not in no_total
+    assert lg.host_ram_status(no_total)["state"] == "waiting"
+    st = lg.host_ram_status(_stat_block(*G4_LAST) + no_total)
+    assert st["state"] == "ok"
+    assert (st["reading"]["mem_total_mb"], st["reading"]["blocks_back"]) == (181130.0, 1)
+
+
+def test_complete_sample_without_a_private_memory_source_is_not_a_reading() -> None:
+    # HARNESS, MemTotal and MemAvailable are there, but neither the full memory.stat triple nor
+    # AnonPages: nothing to read private memory from.
+    block = "".join(line for line in _stat_block(*G4_LAST).splitlines(keepends=True)
+                    if not line.startswith(("MEM: AnonPages:", "CGROUP_MEM_STAT: shmem")))
+    assert lg.host_ram_reading(block) is None
+    assert lg.host_ram_status(block)["state"] == "waiting"
+
+
+def test_header_not_at_column_zero_still_splits_and_no_block_merges_two_samples() -> None:
+    a = _stat_block(*G4_LAST)
+    # Sample B follows job output with no trailing newline (a \r progress bar), so its header is
+    # mid-line, and B was cut after its stat lines: anon from B must never pair with A's meminfo.
+    b = _cut_before(_stat_block(G4_LAST[0], G4_LAST[1], 3000000, 180000000).replace("18:42:54Z", "18:43:09Z"), "MEM: MemTotal:")
+    text = a + "Caching latents to disk:  67%|######    | 8/12\r" + b
+    st = lg.host_ram_status(text)
+    assert st["blocks_seen"] == 2 and st["state"] == "ok"
+    r = st["reading"]
+    assert (r["private_mb"], r["mem_available_mb"], r["blocks_back"], r["timestamp"]) == (
+        52492.8, 125790.7, 1, "2026-11-06T18:42:54Z")
+    # A complete B after a mid-line header is its own, newest sample.
+    b_full = _stat_block(G4_LAST[0], G4_LAST[1], 3000000, 180000000).replace("18:42:54Z", "18:43:09Z")
+    r2 = lg.host_ram_status(a + "step 3/20\r" + b_full)["reading"]
+    assert (r2["private_mb"], r2["mem_available_mb"], r2["blocks_back"]) == (175781.2, 2929.7, 0)
+    # Lines after a sample's HARNESS: line never join that sample.
+    trailing = a + "CGROUP_MEM_STAT: anon 1\nMEM: MemTotal:       1 kB\n"
+    assert lg.host_ram_reading(trailing)["private_mb"] == 52492.8

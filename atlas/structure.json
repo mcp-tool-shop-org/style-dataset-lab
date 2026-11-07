@@ -16120,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "b2cd68c15d56d2b8facb0a44ff40d7eefa8a32666404d1bf3c4b31feb8e68383",
+          "hash": "0a235d8760146041efb6f77993c059bc1187436f4119662da5d7664530aea4c8",
           "path": "CHANGELOG.md"
         },
         {
@@ -17456,27 +17456,27 @@
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 858
+              "line": 871
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 954
+              "line": 967
             },
             {
               "kind": "raise",
-              "line": 1051
+              "line": 1064
             }
           ],
-          "hash": "963b66bafa14780fec043e8988531517d5f3f9d8e7c2bbce72361c3a4b8e38d1",
+          "hash": "a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "d2a1f831cd47c0b328d9c648285d623c706746f5a0798e51e8ad2a21bda06ea3",
+          "hash": "5903d641a0a00e396c60a47ce843e57eb3bd6f5e1806767ef57f9507ee62323b",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "faf336dc17cdb1b446ad13a5ea9d357949ba2ff28912bdfa3f11d76bdd44af02",
+          "hash": "2bfeb8f00e58068e99302fbd041758e46c995e05d2d6d596bbea35e55c01a82d",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19982,7 +19982,9 @@
           "exports": [
             "test_cgroup_memory_stat_is_preferred_and_shmem_counts_and_numeric_max_is_the_ceiling",
             "test_check_ram_cli_prints_the_tripping_record",
+            "test_complete_sample_without_a_private_memory_source_is_not_a_reading",
             "test_every_vitals_emitter_prints_only_listed_lines",
+            "test_header_not_at_column_zero_still_splits_and_no_block_merges_two_samples",
             "test_kit_live_guard_trips_are_named_refusals",
             "test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log",
             "test_kit_replay_of_rung_g4a_does_not_trip_host_ram",
@@ -19993,11 +19995,13 @@
             "test_real_private_growth_still_trips",
             "test_replay_of_rung_g4a_passes_on_private_memory_and_would_trip_on_memory_current",
             "test_run_output_bytes_skips_every_vitals_line_and_real_ps_rows",
+            "test_sample_cut_after_mem_available_but_before_harness_is_not_a_reading",
+            "test_sample_missing_only_mem_total_is_not_a_reading",
             "test_torn_newest_sample_falls_back_to_the_previous_complete_one",
             "test_wall_cap_and_vitals_records_carry_a_refusal",
             "vitals_ends_torn"
           ],
-          "hash": "9dabba380577350d4ceda1133e0324542b6fd84d7f45fadb0ab2e47125b76f40",
+          "hash": "464647ecc58cdd58b562d7bc28fd802eead67e28dfce20ffb24a0064a450eace",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -22435,7 +22439,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "06f0aa496852bd257c0163520f49fb89bf741c6e",
+    "commit": "8d676ad6061924cf2be2685c9be32bda6548d20b",
     "tracked": 3302
   },
   "landings": [

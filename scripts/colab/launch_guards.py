@@ -691,8 +691,21 @@ def _ram_from_block(block: str) -> dict[str, Any] | None:
     }
 
 
+# A sample header is split on wherever it appears, not only at column 0: job output without a
+# trailing newline (a "\r" progress bar) can put "=== VITALS" mid-line. Each block is then cut
+# at the end of its first HARNESS: line, so no block can combine fields of two samples.
+_VITALS_HEADER_RE = re.compile(r"===[ \t]*VITALS[ \t]+")
+
+
 def _vitals_blocks(vitals_text: str) -> list[str]:
-    return [b for b in re.split(r"^===\s*VITALS\s+", vitals_text, flags=re.M)[1:] if b.strip()]
+    blocks = []
+    for part in _VITALS_HEADER_RE.split(vitals_text)[1:]:
+        m = _HARNESS_LINE_RE.search(part)
+        if m:
+            part = part[: m.end()]
+        if part.strip():
+            blocks.append(part)
+    return blocks
 
 
 def host_ram_reading(vitals_text: str) -> dict[str, Any] | None:
