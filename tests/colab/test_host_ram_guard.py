@@ -233,7 +233,7 @@ def test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log(tmp_path
 @pytest.mark.parametrize(
     ("mode", "extra", "env_over", "code"),
     [
-        ("cap_burn", ["--cap", "0.05", "--margin", "0.01"], {}, "CAP_GUARD_TRIPPED"),
+        ("cap_burn", ["--cap", "0.10", "--margin", "0.01"], {}, "CAP_GUARD_TRIPPED"),
         ("dead_harness", [], {}, "DEAD_HARNESS_TRIPPED"),
         ("stall", [], {"STALL_S": "1"}, "STALL_GUARD_TRIPPED"),
         ("setup_stall", [], {"SETUP_STALL_S": "3", "FAKE_COLAB_VITALS_INTERVAL_S": "0.2"}, "SETUP_STALL_TRIPPED"),

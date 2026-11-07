@@ -16120,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "a0f160362e85e7a5407e5b547aa14d55e87c1de9c9b285a85742fe94e8d18e4e",
+          "hash": "28b932cb2d4a9682c4be2ef20e3ab96b3e0a75c91dc0e0fbce2f6ced93a4c4d1",
           "path": "CHANGELOG.md"
         },
         {
@@ -16817,7 +16817,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "6cf2bdb356a701745663a1932999c695f75de848bd6612703748d69bdab04167",
+          "hash": "b7c6699842debfe54e60239648a76c4024ce589bd3f78a8b3ba6e414031ea255",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16837,7 +16837,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "34085e0326142c88ce9e32998f29af8a275f13443a843830ee5bd3c7b5abbe2f",
+          "hash": "a932a6b10d39a2ceedcef9469890591c5a300829e443ed8448e6a6c352f5ce15",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17392,10 +17392,13 @@
         {
           "exports": [
             "check_host_ram_projection",
+            "compute_cap_trip",
+            "evaluate_cap_budget",
             "evaluate_cap_guard",
             "evaluate_host_ram_projection",
             "evaluate_vitals_and_stall_guard",
             "evaluate_wall_guard",
+            "format_dry_cap_budget",
             "gpu_projection_rate",
             "host_ram_reading",
             "host_ram_status",
@@ -17455,32 +17458,32 @@
             {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 528
+              "line": 681
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 871
+              "line": 1024
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 967
+              "line": 1160
             },
             {
               "kind": "raise",
-              "line": 1064
+              "line": 1258
             }
           ],
-          "hash": "a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e",
+          "hash": "59225855920c485e575e37edbe7bc794c95529e81ea68a962113897b5c3dec7b",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "87d3288247153a3408211529dfb0476d2c17d6ca16672c6c934066fc99807516",
+          "hash": "ab15f01d29eb3283b42f47feae3bda0aab75b22d4f9c947ce080fbe17ccb4b76",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "92c74d25ef5f1598692cc9f6efbdd034d905401db876f3bb451396266683354b",
+          "hash": "ffe06e9ef038d403e2d2a105bbefe1e7531b561a2105bb0ea6b3a7d219bfbb5b",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19975,7 +19978,7 @@
             "test_open_refuses_a_gpu_card_that_was_not_armed",
             "test_the_gate_arms_five_second_reads_and_refuses_the_test_hook_live"
           ],
-          "hash": "94d28ff9a6d9183754db526fc7009b0547c6b0e681ade2a6b59139305197715f",
+          "hash": "b9e520706dde287b7c5f9417adf7eac0a5180b2abd44198466978c9517303423",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20005,7 +20008,7 @@
             "test_wall_cap_and_vitals_records_carry_a_refusal",
             "vitals_ends_torn"
           ],
-          "hash": "464647ecc58cdd58b562d7bc28fd802eead67e28dfce20ffb24a0064a450eace",
+          "hash": "25bdebe6c1fb2e11649a05104d63e9d0ffd06fc88a739253fda7eddaf7b53686",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -20083,6 +20086,8 @@
             "test_bundle_now_kills_sweeps_and_tars",
             "test_cap_at_8_88_per_hour_trips_at_20_3_seconds",
             "test_cap_clock_starts_at_open_success_and_counts_the_rate_polls",
+            "test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_window_json",
+            "test_cap_too_small_for_cleanup_or_min_runtime_refuses_before_any_colab_call",
             "test_check_model_api_names_each_failure",
             "test_cli_dispatches_every_subcommand",
             "test_committed_rung_dataset_hits_all_three_buckets",
@@ -20099,6 +20104,7 @@
             "test_download_offline_reads_only_the_cache",
             "test_download_records_token_used_from_the_variable",
             "test_download_too_slow_is_stopped_after_the_probe",
+            "test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls",
             "test_expected_repo_bytes_uses_the_listing",
             "test_failed_download_prints_no_token_into_exec_history",
             "test_final_sweep_recopies_a_partial_file",
@@ -20131,6 +20137,7 @@
             "test_render_job_fills_the_committed_rung_yaml",
             "test_repo_cache_dir_and_dir_bytes",
             "test_rig_side_kill_still_brings_back_the_outputs",
+            "test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip",
             "test_run_copy_off_follows_the_trainer_and_reports_log_growth",
             "test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound",
             "test_rung_500_stop_hangs_once_then_retries_and_stops_session",
@@ -20159,7 +20166,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "92cd176743f372cb2bf3300180d2dbf87609aebd72cdcdb3ba0d8cf24ec25b88",
+          "hash": "7045c4d5f45451f1ad8c525abf443fca1e6d227d76df0d56ddacb6e497afabbe",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -20318,7 +20325,7 @@
             "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "4667c45816ba03f7fd67881af04a5efced979ddc20d7a887cc7b7a8926e2f9c6",
+          "hash": "750c25b0fd97a514a178324f938ac8e55471f2ab6835371a680cfc23baed8817",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22451,7 +22458,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "3cda3fd84bdbcef7118855be15d60d37e0de1191",
+    "commit": "0cd3a85211db1891c8afa789f785d5a4f91d79ea",
     "tracked": 3303
   },
   "landings": [

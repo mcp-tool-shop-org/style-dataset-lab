@@ -17,6 +17,10 @@
 # total cleanup bound through `colab stop` completion (`cleanup_bound_s`):
 #   Lane 3 (train):  cleanup_stop_attempted_by_s = 840 s, cleanup_bound_s = 840 + 140 = 980 s
 #   Lane 1 (render): cleanup_stop_attempted_by_s = 0 s,   cleanup_bound_s = 140 s
+# Cap guard cleanup reserve (reserves cleanup_bound_s before the trip so total spend stays <= cap):
+#   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
+#   Refuses CAP_TOO_SMALL_FOR_CLEANUP before any colab call when effective_trip <= 0 or when
+#   runtime_to_trip < --min-runtime-s; --dry prints the trip arithmetic and exits.
 set -euo pipefail
 
 COLAB_KILL_GRACE_S_DEFAULT=10
@@ -73,6 +77,34 @@ colab_apply_test_cleanup_overrides() {
   else
     export SALVAGE_DEADLINE_S="${step_sum}"
   fi
+}
+
+# colab_compute_cleanup_bounds <lane>: compute and export COLAB_CLEANUP_STOP_ATTEMPTED_BY_S and
+# COLAB_CLEANUP_BOUND_S for <lane> ("train" = 840 s / 980 s default; "render" = 0 s / 140 s default)
+# so the pre-open cap budget check, --dry, the live cap guard, and window.json all share one figure.
+colab_compute_cleanup_bounds() {
+  local lane="$1"
+  local kill_grace_s="${COLAB_KILL_GRACE_S:-10}"
+  local salvage_restart_s="${COLAB_SALVAGE_RESTART_TIMEOUT_S:-180}"
+  local salvage_exec_s="${COLAB_SALVAGE_EXEC_TIMEOUT_S:-330}"
+  local salvage_download_s="${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300}"
+  local salvage_steps_sum=$(( (salvage_restart_s + kill_grace_s) \
+    + (salvage_exec_s + kill_grace_s) \
+    + (salvage_download_s + kill_grace_s) ))
+  local salvage_deadline_s="${SALVAGE_DEADLINE_S:-${salvage_steps_sum}}"
+  local stop_timeout_s="${COLAB_STOP_TIMEOUT_S:-60}"
+  local stop_attempts="${COLAB_STOP_ATTEMPTS:-2}"
+  local stop_bound_s=$(( stop_attempts * (stop_timeout_s + kill_grace_s) ))
+  local cleanup_stop_attempted_by_s=0
+  if [ "${lane}" = "train" ]; then
+    cleanup_stop_attempted_by_s="${salvage_steps_sum}"
+    if [ "${salvage_deadline_s}" -lt "${cleanup_stop_attempted_by_s}" ]; then
+      cleanup_stop_attempted_by_s="${salvage_deadline_s}"
+    fi
+  fi
+  export COLAB_LANE="${lane}"
+  export COLAB_CLEANUP_STOP_ATTEMPTED_BY_S="${cleanup_stop_attempted_by_s}"
+  export COLAB_CLEANUP_BOUND_S=$(( cleanup_stop_attempted_by_s + stop_bound_s ))
 }
 
 # colab_run_bounded <timeout_s> <kill_grace_s> <cmd> [args...]: run a command under `timeout -k`
@@ -605,6 +637,7 @@ colab_check_cap_and_ram() {
     "--grace-s" "${grace_s}"
     "--cap" "${cap}"
     "--margin" "${margin}"
+    "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S:-0}"
     "--rate" "${rate_val:-0.26}"
   )
   if [ "${start_bal}" != "NONE" ] && [ -n "${start_bal}" ]; then
@@ -625,9 +658,6 @@ colab_check_cap_and_ram() {
     guard_args+=("--usage-parse-error" "${err_detail}")
   fi
 
-  if [ "${mode}" = "live" ] && ! colab_midrun_rate_check "${py_bin}" "${out_dir}"; then
-    return 1
-  fi
   # Every guard trip below is a named refusal (REFUSED: <CODE>: <why> in guards.log, where
   # window.json reads refusal_code and why), and its record, with the numbers that tripped it,
   # goes to guards.log first. A trip used to leave refusal_code null: the wall/cap record had no
@@ -635,6 +665,9 @@ colab_check_cap_and_ram() {
   local guard_rc=0 guard_out=""
   guard_out="$("${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null)" || guard_rc=$?
   [ -n "${guard_out}" ] && printf '%s\n' "${guard_out}" >> "${out_dir}/guards.log"
+  if [ "${mode}" = "live" ] && ! colab_midrun_rate_check "${py_bin}" "${out_dir}"; then
+    return 1
+  fi
   if [ "${guard_rc}" -ne 0 ]; then
     colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_out}" GUARD_FAILED
     return 1
@@ -1029,6 +1062,92 @@ colab_shape_gate_arm() {
   printf '%s\n' "${shape}" > "${out_dir}/shape_requested.txt"
 }
 
+# colab_dry_cap_budget <py_bin> <guards_py> <lane> <card> <cap> <margin> <max_rate> <default_rate> <min_runtime_s>:
+# print the cap trip arithmetic (launch_guards.py --dry) and exit before any colab call.
+colab_dry_cap_budget() {
+  local py_bin="$1"
+  local guards_py="$2"
+  local lane="$3"
+  local card="$4"
+  local cap="$5"
+  local margin="$6"
+  local max_rate="$7"
+  local default_rate="$8"
+  local min_runtime_s="$9"
+  colab_compute_cleanup_bounds "${lane}"
+  local priced_rate="${default_rate}"
+  local eff_max_rate="${max_rate:-${default_rate}}"
+  if ! colab_card_is_cpu "${card}"; then
+    if ! [[ "${max_rate}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${max_rate}" =~ ^0+(\.0+)?$ ]]; then
+      echo "REFUSED: MAX_RATE_REQUIRED: a GPU card (${card}) needs --max-rate <units/h>, the highest window rate it may run at" >&2
+      return 2
+    fi
+    priced_rate="${max_rate}"
+    eff_max_rate="${max_rate}"
+  fi
+  local dry_args=(
+    "--dry"
+    "--cap" "${cap}"
+    "--margin" "${margin}"
+    "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
+    "--rate" "${priced_rate}"
+    "--max-rate" "${eff_max_rate}"
+  )
+  if [ -n "${min_runtime_s}" ]; then
+    if ! [[ "${min_runtime_s}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+      echo "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP: --min-runtime-s ${min_runtime_s} must be a non-negative number of seconds" >&2
+      return 2
+    fi
+    dry_args+=("--min-runtime-s" "${min_runtime_s}")
+  fi
+  "${py_bin}" "${guards_py}" "${dry_args[@]}" </dev/null
+}
+
+# colab_cap_budget_gate <py_bin> <guards_py> <out_dir> <lane> <card> <cap> <margin> <max_rate> <default_rate> <min_runtime_s>:
+# refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
+# or when the cap leaves less runtime than --min-runtime-s.
+colab_cap_budget_gate() {
+  local py_bin="$1"
+  local guards_py="$2"
+  local out_dir="$3"
+  local lane="$4"
+  local card="$5"
+  local cap="$6"
+  local margin="$7"
+  local max_rate="$8"
+  local default_rate="$9"
+  local min_runtime_s="${10:-}"
+  colab_compute_cleanup_bounds "${lane}"
+  if [ -n "${min_runtime_s}" ] && ! [[ "${min_runtime_s}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    colab_refuse_logged "${out_dir}" CAP_TOO_SMALL_FOR_CLEANUP "--min-runtime-s ${min_runtime_s} must be a non-negative number of seconds"
+    return 2
+  fi
+  local priced_rate="${default_rate}"
+  local eff_max_rate="${default_rate}"
+  if ! colab_card_is_cpu "${card}"; then
+    priced_rate="${max_rate}"
+    eff_max_rate="${max_rate}"
+  fi
+  local budget_args=(
+    "--check-cap-budget"
+    "--cap" "${cap}"
+    "--margin" "${margin}"
+    "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
+    "--rate" "${priced_rate}"
+    "--max-rate" "${eff_max_rate}"
+  )
+  if [ -n "${min_runtime_s}" ]; then
+    budget_args+=("--min-runtime-s" "${min_runtime_s}")
+  fi
+  local budget_rc=0 budget_out=""
+  budget_out="$("${py_bin}" "${guards_py}" "${budget_args[@]}" </dev/null 2>/dev/null)" || budget_rc=$?
+  [ -n "${budget_out}" ] && printf '%s\n' "${budget_out}" >> "${out_dir}/guards.log"
+  if [ "${budget_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${budget_out}" CAP_TOO_SMALL_FOR_CLEANUP
+    return 2
+  fi
+}
+
 # colab_check_session_shape <session> <out_dir> <shape>: after `colab new`, the session's row in
 # `colab sessions` must print the Shape the request asked for. Writes shape_check.json (requested,
 # expected and observed values) and refuses SHAPE_MISMATCH otherwise; the caller's EXIT trap stops
@@ -1318,6 +1437,7 @@ REFUSAL_CODES = (
     "SHAPE_MISMATCH",
     "MAX_RATE_REQUIRED",
     "TRAIN_MAX_RATE_REQUIRED",
+    "CAP_TOO_SMALL_FOR_CLEANUP",
     "TRAIN_SAMPLE_MISSING",
     "TRAIN_WALL_REQUIRED",
     "TRAIN_CAP_REQUIRED",
@@ -1470,6 +1590,35 @@ stop_bound_s = stop_attempts * (stop_timeout_s + kill_grace_s)
 cleanup_stop_attempted_by_s = min(salvage_steps_sum_s, salvage_deadline_s) if lane == "train" else 0
 cleanup_bound_s = cleanup_stop_attempted_by_s + stop_bound_s
 
+cap_trip_formula = (
+    "effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate"
+)
+priced_rate_for_cap: float | None = None
+if rate_used_for_cap_and_projection is not None and rate_used_for_cap_and_projection > 0.0:
+    priced_rate_for_cap = rate_used_for_cap_and_projection
+elif (out_dir / "max_rate.txt").is_file():
+    priced_rate_for_cap = read_float_file(out_dir / "max_rate.txt")
+if priced_rate_for_cap is None and (out_dir / "guards.log").is_file():
+    for gline in reversed((out_dir / "guards.log").read_text(encoding="utf-8", errors="replace").splitlines()):
+        if gline.startswith("{") and '"priced_rate"' in gline:
+            try:
+                grec = json.loads(gline)
+                pr = grec.get("priced_rate") or (grec.get("cap") or {}).get("priced_rate")
+                if pr is not None and float(pr) > 0.0:
+                    priced_rate_for_cap = float(pr)
+                    break
+            except Exception:
+                pass
+if priced_rate_for_cap is None and card in ("CPU-high-mem", "CPU"):
+    priced_rate_for_cap = float(os.environ.get("RATE_CCU_PER_HOUR", "0.26"))
+
+if priced_rate_for_cap is not None:
+    cleanup_reserve_units: float | None = round((cleanup_bound_s / 3600.0) * float(priced_rate_for_cap), 6)
+    effective_trip_units: float | None = round(float(cap) - float(margin) - cleanup_reserve_units, 6)
+else:
+    cleanup_reserve_units = None
+    effective_trip_units = None
+
 window_payload = {
     **vm_facts,
     "window_id": session,
@@ -1487,6 +1636,10 @@ window_payload = {
     "margin": margin,
     "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
     "cleanup_bound_s": cleanup_bound_s,
+    "cleanup_reserve_units": cleanup_reserve_units,
+    "effective_trip_units": effective_trip_units,
+    "cap_trip_formula": cap_trip_formula,
+    "formula": cap_trip_formula,
     "start_balance": read_float_file(out_dir / "start_balance.txt"),
     "end_balance": read_float_file(out_dir / "end_balance.txt"),
     "rate_measured": rate_measured,

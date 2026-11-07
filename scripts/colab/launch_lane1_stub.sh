@@ -10,6 +10,8 @@
 #   colab download: timeout -k 10 300 (310 s)
 #   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
 #   cleanup_stop_attempted_by_s = 0 s, cleanup_bound_s = 140 s
+#   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
+#   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -28,10 +30,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
+PINNED_LAUNCH_GUARDS_SHA="59225855920c485e575e37edbe7bc794c95529e81ea68a962113897b5c3dec7b"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="34085e0326142c88ce9e32998f29af8a275f13443a843830ee5bd3c7b5abbe2f"
-PINNED_SELF_SHA="ad350213bb9e636b265cb0524ef892a2406a9f5b11300861635bcfa78b033922"
+PINNED_COLAB_WINDOW_SHA="a932a6b10d39a2ceedcef9469890591c5a300829e443ed8448e6a6c352f5ce15"
+PINNED_SELF_SHA="fbfed957b64c252fcda4ca016d9798a8fe15a1077a308d45e4dcea0414d47956"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -47,6 +49,8 @@ GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
 MAX_RATE=""
 SHAPE=""
+MIN_RUNTIME_S=""
+DRY_RUN=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -59,12 +63,26 @@ while [ "$#" -gt 0 ]; do
     --margin) MARGIN="$2"; shift 2 ;;
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --min-runtime-s) MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --dry) DRY_RUN=1; shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
       ;;
   esac
 done
+
+if [ "${DRY_RUN}" = "1" ]; then
+  DRY_TEST_MODE=0
+  if colab_fake_test_mode_active; then
+    DRY_TEST_MODE=1
+  fi
+  colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
+  PY_BIN="$(colab_resolve_python)"
+  GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
+  colab_dry_cap_budget "${PY_BIN}" "${GUARDS_PY}" "render" "${CARD}" "${CAP}" "${MARGIN}" "${MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+  exit $?
+fi
 
 # The evidence directory is the operator's choice; there is no default location.
 if [ -z "${OUT_DIR}" ]; then
@@ -169,6 +187,17 @@ cleanup_on_exit() {
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
 
+# The card class sets the rate policy: a CPU stub keeps the labelled configured rate; a GPU card
+# goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
+# at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
+# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
+# card keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
+colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
+# Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
+# or when the cap leaves less runtime than --min-runtime-s.
+colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "render" "${CARD}" "${CAP}" "${MARGIN}" "${MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+
 # Free pre-flight resolve & git pin check before any colab CLI call.
 # The pre-flight honours its SDLAB_PREFLIGHT_* test hooks only under the fake colab CLI
 # and refuses them in a live run (PREFLIGHT_TEST_HOOK_IN_LIVE_RUN).
@@ -180,13 +209,6 @@ fi
 printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
 # Pre-open cap and host-RAM check via launch_guards.py
-# The card class sets the rate policy: a CPU stub keeps the labelled configured rate; a GPU card
-# goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
-# at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
-colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
-# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
-# card keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
-colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
 # Independent wall watcher (cannot be blocked by a child timeout)

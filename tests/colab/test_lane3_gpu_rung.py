@@ -1270,11 +1270,13 @@ def test_rate_waits_for_stability_and_prices_at_the_max(tmp_path: Path) -> None:
 
 def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_path: Path) -> None:
     # A stable 2.15/h reading must not stretch the cap: priced at max(9.5, 2.15) = 9.5, 0.05 units
-    # last 18.9 s (at 2.15/h they would last 84 s). The rung's 4.9 cap: 4.85/9.5 h, about 31 min.
+    # last 18.9 s (at 2.15/h they would last 84 s). With cleanup_bound_s = 980 s at 9.5/h,
+    # cleanup_reserve = (980 / 3600) * 9.5 = 2.586111 units, so cap 2.646111 minus margin 0.01
+    # minus reserve 2.586111 leaves effective_trip = 0.05 units (~18.95 s).
     state_dir, env, src = _rung_env(tmp_path)
     env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "2.15/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
-    res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "2.646111", "--margin", "0.01")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
@@ -1318,7 +1320,7 @@ def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Pa
                 "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
                 "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,8.88/hr,8.88/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
-    res, out_dir = _launch(tmp_path, env, src, "--cap", "0.06", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "2.646111", "--margin", "0.01")
     content = state_dir / "content"
     try:
         win = _win(out_dir)
@@ -1643,9 +1645,11 @@ def test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial
         "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
         "GUARD_POLL_INTERVAL_S": "0.5",
     })
-    # Priced at max(9.5, 8.88) = 9.5/h, cap 0.03 minus margin 0.01 = 0.02 units (~7.58 s): gives the VM time
-    # to download, write step 250 + 6 samples + half-written step 500, and hang before the cap guard trips.
-    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01")
+    # Priced at max(9.5, 8.88) = 9.5/h with cleanup_bound_s = 980 s -> cleanup_reserve = (980 / 3600) * 9.5 = 2.586111 units.
+    # Adding 2.586111 to the old 0.03 cap gives cap = 2.616111 (effective_trip = 2.616111 - 0.01 - 2.586111 = 0.02 units,
+    # ~7.58 s at 9.5/h): gives the VM time to download, write step 250 + 6 samples + half-written step 500, and hang
+    # before the cap guard trips.
+    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "2.616111", "--margin", "0.01")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
@@ -1777,9 +1781,10 @@ def test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound(
     })
     # Configured bounds: restart (5+1=6) + exec (5+1=6) + download (2+1=3) = 15 s;
     # stop (2 * (3+1) = 8 s) -> total cleanup_bound_s = 23 s.
+    # At 9.5/h, cleanup_reserve = (23 / 3600) * 9.5 = 0.060694 units; cap 0.090694 keeps effective_trip = 0.02 units.
     try:
         res, out_dir = _launch(
-            tmp_path, env, src, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01", timeout_s=28
+            tmp_path, env, src, "--rung-job", "500", "--cap", "0.090694", "--margin", "0.01", timeout_s=28
         )
         assert res.returncode != 0
         guards = (out_dir / "guards.log").read_text(encoding="utf-8")
@@ -1821,8 +1826,10 @@ def test_rung_500_stop_hangs_once_then_retries_and_stops_session(tmp_path: Path)
         "SDLAB_TEST_STOP_TIMEOUT_S": "2",
     })
     try:
+        # cleanup_bound_s = (181 + 331 + 301) + 2 * (2 + 1) = 819 s -> cleanup_reserve = (819 / 3600) * 9.5 = 2.16125 units;
+        # cap 2.19125 minus margin 0.01 minus reserve 2.16125 keeps effective_trip = 0.02 units (~7.58 s).
         res, out_dir = _launch(
-            tmp_path, env, src, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01", timeout_s=28
+            tmp_path, env, src, "--rung-job", "500", "--cap", "2.19125", "--margin", "0.01", timeout_s=28
         )
         assert res.returncode != 0
         _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "CAP_GUARD_TRIPPED")
@@ -1856,7 +1863,7 @@ def test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop(tmp_
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
         "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-        "--wall-s", "2900", "--cap", "0.03", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "2900", "--cap", "2.616111", "--margin", "0.01", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -1899,8 +1906,10 @@ def test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop(tmp_
         "SDLAB_TEST_SALVAGE_DEADLINE_S": "1",
     })
     try:
+        # cleanup_bound_s = 1 + 2 * (60 + 1) = 123 s -> cleanup_reserve = (123 / 3600) * 9.5 = 0.324583 units;
+        # cap 0.354583 minus margin 0.01 minus reserve 0.324583 keeps effective_trip = 0.02 units (~7.58 s).
         res2, out2 = _launch(
-            tmp_path / "deadline", env2, src2, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01", timeout_s=25
+            tmp_path / "deadline", env2, src2, "--rung-job", "500", "--cap", "0.354583", "--margin", "0.01", timeout_s=25
         )
         assert res2.returncode != 0
         guards2 = (out2 / "guards.log").read_text(encoding="utf-8")
@@ -1978,4 +1987,212 @@ def test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound(tmp_pat
         assert win2["status"] == "ok" and win2["cleanup_bound_s"] == 2 * (1 + 1) == 4
     finally:
         _kill_hung_test_pids(state2)
+
+
+# --- PR #66 fix round 2: cap guard reserves cleanup, up-front refusal, and --dry ---------------
+
+CAP_FORMULA_STR = (
+    "effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate"
+)
+
+
+def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_window_json(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "FAKE_VM_TRAIN": "hang_after_save",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+    })
+    # Hand-computed for Lane 3 (cleanup_bound_s = 980 s) on G4 priced at max(10.5, 8.88) = 10.5/h:
+    # cleanup_reserve = (980 / 3600) * 10.5 = 2.858333 units.
+    # With cap = 2.90, margin = 0.01:
+    # effective_trip = 2.90 - 0.01 - 2.858333 = 0.031667 units (~10.86 s at 10.5/h).
+    # Without cleanup_reserve, ceiling was 2.89 units (~990.86 s) and would not trip within this window.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src,
+            "--card", "G4", "--shape", "standard",
+            "--max-rate", "10.5", "--cap", "2.90", "--margin", "0.01",
+            timeout_s=40,
+        )
+        assert res.returncode != 0
+        win = _win(out_dir)
+        assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
+        assert win["cleanup_bound_s"] == 980
+        assert win["rate_used_for_cap_and_projection"] == 10.5
+        assert win["cleanup_reserve_units"] == round((980 / 3600) * 10.5, 6) == 2.858333
+        assert win["effective_trip_units"] == round(2.90 - 0.01 - 2.858333, 6) == 0.031667
+        assert win["cap_trip_formula"] == CAP_FORMULA_STR
+        tripped = [r for r in _cap_records(out_dir) if r["tripped"]]
+        assert tripped, "cap guard never tripped"
+        assert tripped[0]["cleanup_reserve_units"] == 2.858333
+        assert tripped[0]["effective_trip_units"] == 0.031667
+        assert tripped[0]["ceiling_ccu"] == 0.031667
+        assert tripped[0]["formula"] == CAP_FORMULA_STR
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip(tmp_path: Path) -> None:
+    import launch_guards as lg
+
+    # 1. Unit: as the stable window rate rises from 8.88/h to 10.50/h under --max-rate 9.5,
+    # priced_rate rises from 9.5 to 10.5, re-pricing cleanup_reserve from 2.586111 to 2.858333
+    # and lowering effective_trip (for cap 4.9, margin 0.01) from 2.303889 to 2.031667.
+    # A spend of 2.10 units (start 100.0 -> current 97.9) is below 2.303889 before the rise,
+    # and trips CAP_GUARD_TRIPPED once the rising rate re-prices the reserve.
+    st = _fold({}, (8.88, 8.88), pre=0.0)
+    rate_initial = lg.gpu_projection_rate(st, 9.5)
+    assert rate_initial == 9.5
+    before = lg.evaluate_cap_guard(
+        mode="live", cap=4.9, margin=0.01, cleanup_bound_s=980,
+        start_balance=100.0, current_balance=97.9, rate_ccu_per_hour=rate_initial, elapsed_s=0.0,
+    )
+    assert before["cleanup_reserve_units"] == 2.586111
+    assert before["effective_trip_units"] == 2.303889
+    assert before["tripped"] is False
+
+    st = _fold(st, (10.5, 10.5), pre=0.0, start=10.0)
+    rate_risen = lg.gpu_projection_rate(st, 9.5)
+    assert rate_risen == 10.5
+    after = lg.evaluate_cap_guard(
+        mode="live", cap=4.9, margin=0.01, cleanup_bound_s=980,
+        start_balance=100.0, current_balance=97.9, rate_ccu_per_hour=rate_risen, elapsed_s=0.0,
+    )
+    assert after["cleanup_reserve_units"] == 2.858333
+    assert after["effective_trip_units"] == 2.031667
+    assert after["tripped"] is True and after["code"] == "CAP_GUARD_TRIPPED"
+
+    # 2. End-to-end through the launcher: pre-open rate is 0.26/hr (reserve = 0.070778, effective_trip = 0.419222
+    # for cap 0.50, margin 0.01); post-open rate rises to 1.80/hr, re-pricing cleanup_reserve to
+    # (980 / 3600) * 1.80 = 0.49 units and effective_trip to 0.0, tripping CAP_GUARD_TRIPPED mid-run.
+    _, state_cpu, env_cpu = fc.make_fake_colab_env(tmp_path / "cpu_rise")
+    env_cpu.update({
+        "FAKE_COLAB_MODE": "setup_phase",
+        "FAKE_COLAB_SETUP_DURATION_S": "10",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.26/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "1.80/hr",
+        "GUARD_POLL_INTERVAL_S": "0.3",
+    })
+    out_cpu = tmp_path / "cpu_rise" / "out"
+    res_cpu = subprocess.run(
+        [
+            _bash(), fc._to_posix(LAUNCHER),
+            "--out-dir", fc._to_posix(out_cpu), "--session", "sdlab-l3-rise-cpu",
+            "--cap", "0.50", "--margin", "0.01",
+        ],
+        env=env_cpu, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=40, check=False,
+    )
+    assert res_cpu.returncode != 0
+    win_cpu = _win(out_cpu)
+    assert win_cpu["refusal_code"] == "CAP_GUARD_TRIPPED"
+    assert win_cpu["cleanup_reserve_units"] == round((980 / 3600) * 1.80, 6) == 0.49
+    assert win_cpu["effective_trip_units"] == 0.0
+    assert "STOP -s sdlab-l3-rise-cpu" in (state_cpu / "stops.log").read_text(encoding="utf-8")
+
+
+def test_cap_too_small_for_cleanup_or_min_runtime_refuses_before_any_colab_call(tmp_path: Path) -> None:
+    # 1. Lane 3 GPU rung: cap - margin - cleanup_reserve <= 0 (2.80 - 0.01 - 2.858333 = -0.068333 <= 0).
+    state1, env1, src1 = _rung_env(tmp_path / "l3_no_room")
+    res1, out1 = _launch(
+        tmp_path / "l3_no_room", env1, src1,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "2.80", "--margin", "0.01",
+    )
+    assert res1.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res1.stderr
+    assert not (state1 / "calls.log").exists() and not (state1 / "card.txt").exists()
+    win1 = _win(out1)
+    assert win1["refusal_code"] == "CAP_TOO_SMALL_FOR_CLEANUP"
+    assert "2.858333" in win1["why"] and "-0.068333" in win1["why"]
+    assert win1["cleanup_reserve_units"] == 2.858333 and win1["effective_trip_units"] == -0.068333
+
+    # 2. Lane 3 GPU rung with --min-runtime-s: cap 4.9 leaves 2.031667 units = 696.57 s at 10.5/h < 900 s.
+    state2, env2, src2 = _rung_env(tmp_path / "l3_min_rt")
+    res2, out2 = _launch(
+        tmp_path / "l3_min_rt", env2, src2,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "4.9", "--margin", "0.01",
+        "--min-runtime-s", "900",
+    )
+    assert res2.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res2.stderr
+    assert not (state2 / "calls.log").exists() and not (state2 / "card.txt").exists()
+    win2 = _win(out2)
+    assert win2["refusal_code"] == "CAP_TOO_SMALL_FOR_CLEANUP"
+    assert "696.57" in win2["why"] and "900" in win2["why"]
+
+    # 3. Lane 1 GPU window: cleanup_bound_s = 140 s at 10.5/h -> reserve = 0.408333; cap 0.40 -> -0.018333 <= 0.
+    _, state3, env3 = fc.make_fake_colab_env(tmp_path / "l1_no_room")
+    out3 = tmp_path / "l1_no_room" / "out"
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    res3 = subprocess.run(
+        [
+            _bash(), fc._to_posix(lane1_sh),
+            "--card", "G4", "--shape", "standard", "--out-dir", fc._to_posix(out3),
+            "--session", "sdlab-l1-smallcap", "--max-rate", "10.5", "--cap", "0.40", "--margin", "0.01",
+        ],
+        env=env3, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert res3.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res3.stderr
+    assert not (state3 / "calls.log").exists()
+    win3 = _win(out3)
+    assert win3["refusal_code"] == "CAP_TOO_SMALL_FOR_CLEANUP"
+    assert win3["cleanup_reserve_units"] == 0.408333 and win3["effective_trip_units"] == -0.018333
+
+
+def test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import launch_guards as lg
+
+    # 1. Direct guard call with --dry where priced_rate (12.0/h) > --max-rate (10.5/h):
+    rc = lg.main([
+        "--dry", "--cap", "4.9", "--margin", "0.01", "--cleanup-bound-s", "980",
+        "--rate", "12.0", "--max-rate", "10.5",
+    ])
+    out_guard = capsys.readouterr().out
+    assert rc == 0
+    rec_guard = json.loads(out_guard.strip().splitlines()[-1])
+    # reserve = (980 / 3600) * 12.0 = 3.266667; effective_trip = 4.9 - 0.01 - 3.266667 = 1.623333
+    assert rec_guard["cap"] == 4.9 and rec_guard["margin"] == 0.01
+    assert rec_guard["cleanup_bound_s"] == 980
+    assert rec_guard["priced_rate"] == 12.0 and rec_guard["max_rate"] == 10.5
+    assert rec_guard["reserve"] == 3.266667 and rec_guard["effective_trip"] == 1.623333
+    assert rec_guard["runtime_at_priced_rate_s"] == round((1.623333 / 12.0) * 3600, 2) == 487.0
+    assert rec_guard["runtime_at_max_rate_s"] == round((1.623333 / 10.5) * 3600, 2) == 556.57
+    assert rec_guard["worst_case_total_spend"] == 4.9
+
+    # 2. Lane 3 launcher with --dry on G4 at --max-rate 10.5, --cap 4.9, --margin 0.01:
+    state_l3, env_l3, src_l3 = _rung_env(tmp_path / "dry_l3")
+    res_l3, _ = _launch(
+        tmp_path / "dry_l3", env_l3, src_l3,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "4.9", "--margin", "0.01", "--dry",
+    )
+    assert res_l3.returncode == 0, res_l3.stderr
+    assert not (state_l3 / "calls.log").exists()
+    for token in (
+        "cap: 4.9", "margin: 0.01", "cleanup_bound_s: 980", "priced_rate: 10.5/h",
+        "2.858333", "2.031667", "696.57 s", "worst_case_total_spend: 4.9",
+    ):
+        assert token in res_l3.stdout, (token, res_l3.stdout)
+    rec_l3 = json.loads(res_l3.stdout.strip().splitlines()[-1])
+    assert rec_l3["reserve"] == 2.858333 and rec_l3["effective_trip"] == 2.031667
+    assert rec_l3["runtime_at_priced_rate_s"] == 696.57 and rec_l3["runtime_at_max_rate_s"] == 696.57
+    assert rec_l3["worst_case_total_spend"] == 4.9
+
+    # 3. Lane 1 launcher with --dry on G4 at --max-rate 10.5, --cap 2.0, --margin 0.01:
+    _, state_l1, env_l1 = fc.make_fake_colab_env(tmp_path / "dry_l1")
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    res_l1 = subprocess.run(
+        [
+            _bash(), fc._to_posix(lane1_sh),
+            "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "2.0", "--margin", "0.01", "--dry",
+        ],
+        env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert res_l1.returncode == 0, res_l1.stderr
+    assert not (state_l1 / "calls.log").exists()
+    rec_l1 = json.loads(res_l1.stdout.strip().splitlines()[-1])
+    assert rec_l1["cleanup_bound_s"] == 140
+    assert rec_l1["reserve"] == 0.408333 and rec_l1["effective_trip"] == 1.581667
+    assert rec_l1["runtime_at_priced_rate_s"] == 542.29 and rec_l1["worst_case_total_spend"] == 2.0
+
 

@@ -23,6 +23,8 @@
 #   SALVAGE_DEADLINE_S=840 (past 840 s, remaining salvage steps are skipped -> colab stop)
 #   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
 #   cleanup_stop_attempted_by_s = 840 s, cleanup_bound_s = 980 s
+#   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
+#   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -40,15 +42,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
+PINNED_LAUNCH_GUARDS_SHA="59225855920c485e575e37edbe7bc794c95529e81ea68a962113897b5c3dec7b"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="34085e0326142c88ce9e32998f29af8a275f13443a843830ee5bd3c7b5abbe2f"
+PINNED_COLAB_WINDOW_SHA="a932a6b10d39a2ceedcef9469890591c5a300829e443ed8448e6a6c352f5ce15"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="d8b0f179208755e525e6096f3ac01cb25faff95315c858c679fa83be1947dfd7"
+PINNED_SELF_SHA="eab196a4e66678b9b6597611d734b8e952f21546679eb435a826bcb9230b204b"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -582,7 +584,7 @@ CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane3-stub-$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR=""
 WHEEL_DIR="${SDLAB_WHEEL_DIR:-}"
-CAP="${CAP:-0.05}"
+CAP="${CAP:-0.15}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
@@ -599,6 +601,8 @@ TRAIN_MAX_RATE=""
 SHAPE=""
 DATASET_DIR=""
 RUNG_JOB=""
+MIN_RUNTIME_S=""
+DRY_RUN=0
 SESSION_ARGS=()
 
 while [ "$#" -gt 0 ]; do
@@ -615,6 +619,8 @@ while [ "$#" -gt 0 ]; do
     --train) TRAIN_REQUESTED=1; shift ;;
     --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SESSION_ARGS+=("$1"); SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --min-runtime-s) SESSION_ARGS+=("$1"); MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --dry) SESSION_ARGS+=("$1"); DRY_RUN=1; shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --host-ram-required-gib) TRAIN_HOST_RAM_REQUIRED_GIB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -654,6 +660,18 @@ if [ "${EMIT_REQUESTED}" = "1" ]; then
   lane3_remote_env "${PINNED_OVERRIDE_SHA}" > "${EMIT_REMOTE_SCRIPT}.env"
   echo "REMOTE_SCRIPT_EMITTED ${EMIT_REMOTE_SCRIPT} env=${EMIT_REMOTE_SCRIPT}.env"
   exit 0
+fi
+
+if [ "${DRY_RUN}" = "1" ]; then
+  DRY_TEST_MODE=0
+  if colab_fake_test_mode_active; then
+    DRY_TEST_MODE=1
+  fi
+  colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
+  PY_BIN="$(colab_resolve_python)"
+  GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
+  colab_dry_cap_budget "${PY_BIN}" "${GUARDS_PY}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+  exit $?
 fi
 
 # --train runs the GPU rung (LANE3_MODE=train): a GPU card, the model repo and its pinned revision,
@@ -914,6 +932,16 @@ cleanup_on_exit() {
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
 
+# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
+# max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}"
+# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
+# stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
+colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
+# Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
+# or when the cap leaves less runtime than --min-runtime-s.
+colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+
 if [[ "${WHEEL_DIR}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
   DRIVE_LOWER="${BASH_REMATCH[1],,}"
   REST_PATH="${BASH_REMATCH[2]}"
@@ -969,13 +997,6 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     exit 1
   fi
 fi
-
-# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
-# max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
-colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}"
-# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
-# stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
-colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
