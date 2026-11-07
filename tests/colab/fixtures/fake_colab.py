@@ -563,7 +563,13 @@ emit_vitals() {
   echo "CGROUP_MEM_CURRENT: 536870912"
   echo "CGROUP_MEM_MAX: 12884901888"
   echo "CGROUP_MEM: oom_kill 0"
-  echo "MEM: MemTotal: 12582912 kB"
+  echo "CGROUP_MEM_STAT: anon 268435456"
+  echo "CGROUP_MEM_STAT: file 268435456"
+  echo "CGROUP_MEM_STAT: shmem 0"
+  echo "MEM: MemTotal:       12582912 kB"
+  echo "MEM: MemAvailable:   11534336 kB"
+  echo "MEM: AnonPages:        262144 kB"
+  echo "MEM: Shmem:                 0 kB"
   echo "SETUP_BYTES: ${setup_sz:-0}"
   echo "PROC:"
   if [ -n "${worker_line}" ]; then
@@ -774,7 +780,13 @@ emit_vitals() {
   echo "CGROUP_MEM_CURRENT: 536870912"
   echo "CGROUP_MEM_MAX: 12884901888"
   echo "CGROUP_MEM: oom_kill 0"
-  echo "MEM: MemTotal: 12582912 kB"
+  echo "CGROUP_MEM_STAT: anon 268435456"
+  echo "CGROUP_MEM_STAT: file 268435456"
+  echo "CGROUP_MEM_STAT: shmem 0"
+  echo "MEM: MemTotal:       12582912 kB"
+  echo "MEM: MemAvailable:   11534336 kB"
+  echo "MEM: AnonPages:        262144 kB"
+  echo "MEM: Shmem:                 0 kB"
   echo "SETUP_BYTES: ${setup_sz:-0}"
   echo "PROC:"
   if [ -n "${worker_line}" ]; then
@@ -819,6 +831,60 @@ elif [ "${mode}" = "setup_stall" ]; then
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
+  exit 0
+elif [ "${mode}" = "ram_replay" ]; then
+  # Replays a real VM's memory readings: FAKE_COLAB_RAM_REPLAY names a file with one sample per
+  # line, "<cgroup memory.current bytes> <MemTotal kB> <MemAvailable kB> <AnonPages kB>", printed
+  # in the order and format of the kit's vitals emitter (cgroup memory.max "max", as on Colab).
+  # The replayed run's emitter predates the memory.stat and Shmem lines, so they are derived:
+  # anon = AnonPages, shmem = 0, file = memory.current - anon (Shmem 0 kB). The last sample is
+  # held so the live guards read it more than once; FAKE_COLAB_RAM_TORN then ends the stream on a
+  # sample cut mid-write (after_stat: after anon/file; number: inside "anon <n>"; meminfo:
+  # inside the MEM: lines) and goes quiet.
+  echo "run" > lane3_out/phase.txt
+  emit_ram_head() {
+    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "CGROUP_MEM_CURRENT: $1"
+    echo "CGROUP_MEM_MAX: max"
+    echo "CGROUP_MEM: oom_kill 0"
+  }
+  emit_ram_sample() {
+    local anon_b=$(( $4 * 1024 ))
+    local file_b=$(( $1 > anon_b ? $1 - anon_b : 0 ))
+    emit_ram_head "$1"
+    echo "CGROUP_MEM_STAT: anon ${anon_b}"
+    echo "CGROUP_MEM_STAT: file ${file_b}"
+    echo "CGROUP_MEM_STAT: shmem 0"
+    echo "MEM: MemTotal:       $2 kB"
+    echo "MEM: MemAvailable:   $3 kB"
+    echo "MEM: AnonPages:      $4 kB"
+    echo "MEM: Shmem:          0 kB"
+    echo "SETUP_BYTES: 0"
+    echo "PROC:"
+    echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+    printf 'HARNESS: {"phase": "run"}\\n'
+  }
+  last=""
+  while read -r cg tot avail anon; do
+    [ -n "${anon:-}" ] || continue
+    emit_ram_sample "${cg}" "${tot}" "${avail}" "${anon}"
+    last="${cg} ${tot} ${avail} ${anon}"
+    sleep "${vitals_interval}"
+  done < "${FAKE_COLAB_RAM_REPLAY:?ram_replay needs FAKE_COLAB_RAM_REPLAY}"
+  for _ in $(seq 1 "${FAKE_COLAB_RAM_HOLD:-40}"); do
+    emit_ram_sample ${last}
+    sleep "${vitals_interval}"
+  done
+  if [ -n "${FAKE_COLAB_RAM_TORN:-}" ]; then
+    set -- ${last}
+    emit_ram_head "$1"
+    case "${FAKE_COLAB_RAM_TORN}" in
+      after_stat) printf 'CGROUP_MEM_STAT: anon %s\nCGROUP_MEM_STAT: file %s\n' "$(( $4 * 1024 ))" "0" ;;
+      number) printf 'CGROUP_MEM_STAT: anon 55' ;;
+      meminfo) printf 'CGROUP_MEM_STAT: anon %s\nCGROUP_MEM_STAT: file 0\nCGROUP_MEM_STAT: shmem 0\nMEM: MemTotal:       %s kB\nMEM: MemAvail' "$(( $4 * 1024 ))" "$2" ;;
+    esac
+    sleep "${FAKE_COLAB_RAM_TORN_QUIET_S:-6}"
+  fi
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane3_out/phase.txt

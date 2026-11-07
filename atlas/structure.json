@@ -16120,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "08a60602ce7e530b2c5d7b8b8eb36d042b2eeeb7d3965735dfe3b0ab930a5502",
+          "hash": "0a235d8760146041efb6f77993c059bc1187436f4119662da5d7664530aea4c8",
           "path": "CHANGELOG.md"
         },
         {
@@ -16817,7 +16817,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "30a3265791e26875b47597ce44a2d27d2e88c67ffe76fa9693ffe13a39506295",
+          "hash": "552ed26f9dccc7a70f216fe53f011bd2997d9614b81295c816ff2b3975262a54",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16837,7 +16837,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "3fd61cb74eda69d1995b9a2712dc96595aa4239e81d4b315dd3abea8561a93aa",
+          "hash": "35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17389,21 +17389,27 @@
           "exports": [
             "check_host_ram_projection",
             "evaluate_cap_guard",
+            "evaluate_host_ram_projection",
             "evaluate_vitals_and_stall_guard",
             "evaluate_wall_guard",
             "gpu_projection_rate",
+            "host_ram_reading",
+            "host_ram_status",
+            "is_vitals_line",
             "main",
             "normalize_hex_sha",
             "parse_active_assignments",
             "parse_usage_text",
             "parse_vitals_log",
             "run_between_item_fetch",
+            "run_output_bytes",
             "scrub_colab_tokens",
             "scrub_file_in_place",
             "sha256_file",
             "sha256_self_normalized",
             "update_window_rate",
             "verify_input_shas",
+            "wall_cap_refusal",
             "window_rate_decision"
           ],
           "failurePaths": [
@@ -17450,32 +17456,27 @@
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 629
+              "line": 871
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 698
-            },
-            {
-              "in": "main",
-              "kind": "except",
-              "line": 717
+              "line": 967
             },
             {
               "kind": "raise",
-              "line": 749
+              "line": 1064
             }
           ],
-          "hash": "e1c97cc2c854f20fcc8e37967afcdd6b96137f696de9b7fc5bea04c5090984a1",
+          "hash": "a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "ac9b162d23b5fe9cb07301f2caddef97c1ea90ed60b5522716fa80232f82ce4f",
+          "hash": "5903d641a0a00e396c60a47ce843e57eb3bd6f5e1806767ef57f9507ee62323b",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "7d01b3c2fd08624dbcb0594d59f0a3b357d58f830e2f83634d407ab865958156",
+          "hash": "2bfeb8f00e58068e99302fbd041758e46c995e05d2d6d596bbea35e55c01a82d",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19157,7 +19158,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 52,
+          "reads": 54,
           "where": [
             "caller"
           ],
@@ -19179,14 +19180,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 55,
+      "outsideReads": 57,
       "outsideWrites": 40,
       "role": "code",
       "testRunners": [
         "node --test",
         "pytest"
       ],
-      "testedBy": 27,
+      "testedBy": 28,
       "unresolvedSites": 0
     },
     {
@@ -19876,7 +19877,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "accabb1316ff70469f4ecb3e3d657daf126f19db5559f7882244069c2f89a66d",
+          "hash": "ba7e01e1839994b3fce1868240463f1d7299fbc747e6a0a6b2b0b10997f8daa8",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -19918,6 +19919,10 @@
         {
           "hash": "e595c27cc0f037588b04567f5657dc1b7d03650245275fb046e774cd80acea34",
           "path": "tests/colab/fixtures/uv_logs/not_found.txt"
+        },
+        {
+          "hash": "974ae27b1dad3550a27733c0e0b6d17cef399d3f58ecc12c6b39ff5136e14b47",
+          "path": "tests/colab/fixtures/vitals_ram_sdlab-l3-rung-g4a.txt"
         },
         {
           "exports": [
@@ -19971,6 +19976,41 @@
             "tests/colab/fixtures/fake_colab.py"
           ],
           "path": "tests/colab/test_gpu_rate_gate.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_cgroup_memory_stat_is_preferred_and_shmem_counts_and_numeric_max_is_the_ceiling",
+            "test_check_ram_cli_prints_the_tripping_record",
+            "test_complete_sample_without_a_private_memory_source_is_not_a_reading",
+            "test_every_vitals_emitter_prints_only_listed_lines",
+            "test_header_not_at_column_zero_still_splits_and_no_block_merges_two_samples",
+            "test_kit_live_guard_trips_are_named_refusals",
+            "test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log",
+            "test_kit_replay_of_rung_g4a_does_not_trip_host_ram",
+            "test_kit_torn_final_sample_neither_trips_nor_reads_zero",
+            "test_mem_available_floor_trips_when_unreclaimable_memory_is_not_anon",
+            "test_no_complete_sample_is_waiting_then_unreadable_and_never_a_default",
+            "test_reading_uses_one_sample_and_skips_samples_without_private_memory",
+            "test_real_private_growth_still_trips",
+            "test_replay_of_rung_g4a_passes_on_private_memory_and_would_trip_on_memory_current",
+            "test_run_output_bytes_skips_every_vitals_line_and_real_ps_rows",
+            "test_sample_cut_after_mem_available_but_before_harness_is_not_a_reading",
+            "test_sample_missing_only_mem_total_is_not_a_reading",
+            "test_torn_newest_sample_falls_back_to_the_previous_complete_one",
+            "test_wall_cap_and_vitals_records_carry_a_refusal",
+            "vitals_ends_torn"
+          ],
+          "hash": "464647ecc58cdd58b562d7bc28fd802eead67e28dfce20ffb24a0064a450eace",
+          "importOrder": [
+            "tests/colab/fixtures/fake_colab.py",
+            "scripts/colab/launch_guards.py"
+          ],
+          "importsFiles": [
+            "scripts/colab/launch_guards.py",
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_host_ram_guard.py",
           "testFramework": "pytest"
         },
         {
@@ -21447,7 +21487,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 123
+          "files": 124
         },
         {
           "boundary": "lib",
@@ -21742,7 +21782,7 @@
         },
         {
           "coverage": true,
-          "files": 19,
+          "files": 20,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -22399,8 +22439,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "0471d9ff09a7ceb18ce3fc2c430cbc52eeb2b424",
-    "tracked": 3300
+    "commit": "8d676ad6061924cf2be2685c9be32bda6548d20b",
+    "tracked": 3302
   },
   "landings": [
     {
@@ -25335,7 +25375,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 132,
+  "testFiles": 134,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

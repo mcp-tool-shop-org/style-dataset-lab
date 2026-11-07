@@ -348,27 +348,10 @@ else:
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
     err_tok = "COLAB_USAGE_PARSE_FAILED"
 
-# Parse VM /proc/meminfo and cgroup memory from vitals.log when present
-anon_mb = float(os.environ.get("CURRENT_ANON_MB", "512")) if "os" in sys.modules else 512.0
-mem_total_mb = 12288.0
-cgroup_max_mb = ""
-vitals_f = out_dir / "vitals.log"
-if vitals_f.exists():
-    vtxt = vitals_f.read_text(encoding="utf-8", errors="replace")
-    m_tot = re.findall(r"MemTotal:\s*(\d+)\s*kB", vtxt)
-    if m_tot:
-        mem_total_mb = round(int(m_tot[-1]) / 1024.0, 1)
-    m_anon = re.findall(r"AnonPages:\s*(\d+)\s*kB", vtxt)
-    if m_anon:
-        anon_mb = round(int(m_anon[-1]) / 1024.0, 1)
-    m_cg_cur = re.findall(r"CGROUP_MEM_CURRENT:\s*(\d+)", vtxt)
-    if m_cg_cur:
-        anon_mb = round(int(m_cg_cur[-1]) / (1024.0 * 1024.0), 1)
-    m_cg_max = re.findall(r"CGROUP_MEM_MAX:\s*(\d+)", vtxt)
-    if m_cg_max:
-        cgroup_max_mb = str(round(int(m_cg_max[-1]) / (1024.0 * 1024.0), 1))
-
-print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok} {anon_mb} {mem_total_mb} {cgroup_max_mb}")
+# The host-RAM reading is not taken here: the RAM check reads vitals.log itself
+# (launch_guards.py --check-ram --ram-vitals-file, host_ram_status), so no default value can stand
+# in for a VM reading.
+print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok}")
 PYEOF
 }
 
@@ -474,12 +457,12 @@ colab_check_cap_and_ram() {
   local metrics=""
   local poll_rc=0
   metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || poll_rc=$?
-  local start_bal="" cur_bal="" rate_val="" err_tok="" anon_mb="" mem_total_mb="" cgroup_max_mb=""
+  local start_bal="" cur_bal="" rate_val="" err_tok=""
   if [ "${poll_rc}" -ne 0 ]; then
     err_tok="COLAB_USAGE_PARSE_FAILED"
     printf 'COLAB_USAGE_PARSE_FAILED: usage poll helper exited with status %s\n' "${poll_rc}" > "${out_dir}/usage_parse_error.txt"
   else
-    read -r start_bal cur_bal rate_val err_tok anon_mb mem_total_mb cgroup_max_mb <<< "${metrics}"
+    read -r start_bal cur_bal rate_val err_tok <<< "${metrics}"
     if [ -z "${metrics}" ] || [ -z "${start_bal}" ] || [ -z "${cur_bal}" ] || [ -z "${rate_val}" ] || [ -z "${err_tok}" ] || [ "${start_bal}" = "NONE" ] || [ "${cur_bal}" = "NONE" ]; then
       err_tok="COLAB_USAGE_PARSE_FAILED"
       if [ ! -s "${out_dir}/usage_parse_error.txt" ]; then
@@ -518,29 +501,64 @@ colab_check_cap_and_ram() {
   if [ "${mode}" = "live" ] && ! colab_midrun_rate_check "${py_bin}" "${out_dir}"; then
     return 1
   fi
-  local guard_rc=0
-  "${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null >> "${out_dir}/guards.log" || guard_rc=$?
+  # Every guard trip below is a named refusal (REFUSED: <CODE>: <why> in guards.log, where
+  # window.json reads refusal_code and why), and its record, with the numbers that tripped it,
+  # goes to guards.log first. A trip used to leave refusal_code null: the wall/cap record had no
+  # REFUSED line, and the RAM guard's message went to stderr only.
+  local guard_rc=0 guard_out=""
+  guard_out="$("${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null)" || guard_rc=$?
+  [ -n "${guard_out}" ] && printf '%s\n' "${guard_out}" >> "${out_dir}/guards.log"
   if [ "${guard_rc}" -ne 0 ]; then
-    if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
-      echo "REFUSED: COLAB_USAGE_PARSE_FAILED" >&2
-    fi
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_out}" GUARD_FAILED
     return 1
   fi
 
+  # Private memory from the newest complete vitals sample (or the one before it); no vitals yet is
+  # a skipped check, never a default. Two samples with no complete one is HOST_RAM_UNREADABLE.
   local ram_args=(
     "--check-ram"
-    "--current-anon-mb" "${CURRENT_ANON_MB:-${anon_mb:-512}}"
     "--projected-delta-mb" "${PROJECTED_DELTA_MB:-2048}"
-    "--mem-total-mb" "${MEM_TOTAL_MB:-${mem_total_mb:-12288}}"
+    "--ram-vitals-file" "${out_dir}/vitals.log"
   )
-  if [ -n "${cgroup_max_mb:-}" ]; then
-    ram_args+=("--cgroup-max-mb" "${cgroup_max_mb}")
-  fi
-  local ram_rc=0
-  "${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null >> "${out_dir}/guards.log" || ram_rc=$?
+  local ram_rc=0 ram_out=""
+  ram_out="$("${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null)" || ram_rc=$?
+  [ -n "${ram_out}" ] && printf '%s\n' "${ram_out}" >> "${out_dir}/guards.log"
   if [ "${ram_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
     return "${ram_rc}"
   fi
+}
+
+# colab_refuse_from_guard_record <py> <out_dir> <guard stdout> <fallback CODE>: a guard that exited
+# non-zero names its refusal in its JSON record (`refusal: {code, why}`); log it with
+# colab_refuse_logged. A guard that crashed before printing one is refused under <fallback CODE>.
+colab_refuse_from_guard_record() {
+  local py_bin="$1"
+  local out_dir="$2"
+  local record="$3"
+  local fallback="$4"
+  local parsed=""
+  parsed="$(printf '%s' "${record}" | "${py_bin}" -c '
+import json, sys
+code, why = "", ""
+for line in reversed(sys.stdin.read().splitlines()):
+    try:
+        rec = json.loads(line)
+    except ValueError:
+        continue
+    ref = rec.get("refusal") if isinstance(rec, dict) else None
+    if isinstance(ref, dict) and ref.get("code"):
+        code, why = str(ref["code"]), " ".join(str(ref.get("why") or "").split())
+        break
+print(code + "\t" + why)
+' 2>/dev/null || true)"
+  local code="${parsed%%$'\t'*}"
+  local why="${parsed#*$'\t'}"
+  if [ -z "${code}" ] || [ "${parsed}" = "${code}" ]; then
+    code="${fallback}"
+    why="the guard exited non-zero without a refusal record (its stderr is in the launcher output)"
+  fi
+  colab_refuse_logged "${out_dir}" "${code}" "${why}"
 }
 
 colab_run_exec_with_live_guards() {
@@ -597,7 +615,9 @@ colab_run_exec_with_live_guards() {
       return 91
     fi
 
-    run_only_bytes="$(grep -Ev '^(===[[:space:]]*VITALS|CGROUP_MEM(_CURRENT|_MAX)?:|MEM:|SETUP_BYTES:|PROC:|HARNESS:|[[:space:]]*[0-9]+[[:space:]]+.*(comfy|main\.py|ai-toolkit|run\.py|llama-server|ollama|lane1_render\.py))' "${out_dir}/vitals.log" 2>/dev/null | wc -c | tr -d '[:space:]' || echo 0)"
+    # Run output only: every vitals line the emitters print is skipped (launch_guards.VITALS_LINE_PREFIXES,
+    # one list, checked against the emitters by tests), so vitals blocks never count as progress.
+    run_only_bytes="$("${py_bin}" "${guards_py}" --run-output-bytes "${out_dir}/vitals.log" </dev/null 2>/dev/null || echo 0)"
     cur_size="${run_only_bytes:-0}"
     if [ "${cur_size:-0}" != "${last_size}" ]; then
       last_size="${cur_size:-0}"
@@ -612,14 +632,16 @@ colab_run_exec_with_live_guards() {
     fi
     setup_idle_s="$((now_epoch - last_setup_progress_epoch))"
 
-    local vitals_rc=0
-    "${py_bin}" "${guards_py}" \
+    local vitals_rc=0 vitals_out=""
+    vitals_out="$("${py_bin}" "${guards_py}" \
       --vitals-file "${out_dir}/vitals.log" \
       --idle-seconds "${idle_s}" \
       --setup-idle-seconds "${setup_idle_s}" \
       --stall-s "${stall_s}" \
-      --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log" || vitals_rc=$?
+      --setup-stall-s "${setup_stall_s}" </dev/null)" || vitals_rc=$?
+    [ -n "${vitals_out}" ] && printf '%s\n' "${vitals_out}" >> "${out_dir}/guards.log"
     if [ "${vitals_rc}" -ne 0 ]; then
+      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${vitals_out}" GUARD_FAILED
       pkill -P "${EXEC_PID}" 2>/dev/null || true
       kill -9 "${EXEC_PID}" 2>/dev/null || true
       wait "${EXEC_PID}" 2>/dev/null || true
@@ -649,7 +671,13 @@ colab_run_exec_with_live_guards() {
     return "${remote_rc}"
   fi
 
-  "${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null >> "${out_dir}/guards.log"
+  local final_vitals_rc=0 final_vitals_out=""
+  final_vitals_out="$("${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null)" || final_vitals_rc=$?
+  [ -n "${final_vitals_out}" ] && printf '%s\n' "${final_vitals_out}" >> "${out_dir}/guards.log"
+  if [ "${final_vitals_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${final_vitals_out}" GUARD_FAILED
+    return 93
+  fi
   local end_epoch elapsed_final
   end_epoch="$(date -u +%s)"
   elapsed_final="$((end_epoch - start_epoch))"
@@ -1063,6 +1091,16 @@ REFUSAL_CODES = (
     "MODEL_METADATA_FAILED",
     "HF_TOKEN_STAGING_FAILED",
     "HF_TOKEN_SHRED_FAILED",
+    # Rig-side live guards (colab_check_cap_and_ram, colab_run_exec_with_live_guards).
+    "HOST_RAM_PROJECTION_EXCEEDED",
+    "HOST_RAM_UNREADABLE",
+    "WALL_GUARD_TRIPPED",
+    "CAP_GUARD_TRIPPED",
+    "COLAB_USAGE_PARSE_FAILED",
+    "DEAD_HARNESS_TRIPPED",
+    "STALL_GUARD_TRIPPED",
+    "SETUP_STALL_TRIPPED",
+    "GUARD_FAILED",
 )
 # A refusal code comes only from a line the kit itself emits, starting `REFUSED: <CODE>`, in the
 # files those lines are written to: guards.log (rig side), the exec stream in vitals.log, and the
@@ -1072,7 +1110,8 @@ REFUSAL_CODES = (
 REFUSED_LINE_RE = re.compile(r"^REFUSED: ([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)(?=[:\s]|$)")
 
 
-def first_refusal(text: str, skip_proc: bool) -> str | None:
+def first_refusal(text: str, skip_proc: bool) -> tuple[str, str | None] | None:
+    """(code, why) of the first kit refusal line; why is the text after `REFUSED: <CODE>: `."""
     in_proc = False
     for raw in text.splitlines():
         line = raw.rstrip("\r")
@@ -1087,7 +1126,8 @@ def first_refusal(text: str, skip_proc: bool) -> str | None:
                     continue
         m = REFUSED_LINE_RE.match(line)
         if m and m.group(1) in REFUSAL_CODES:
-            return m.group(1)
+            rest = line[m.end():].lstrip(":").strip()
+            return m.group(1), (rest or None)
     return None
 
 
@@ -1099,10 +1139,12 @@ for log_name, skip_proc in (("guards.log", False), ("vitals.log", True)):
 refusal_sources.append((bundle_member_text("setup.log"), False))
 
 refusal_code: str | None = None
+refusal_why: str | None = None
 for src_text, skip_proc in refusal_sources:
     if src_text:
-        refusal_code = first_refusal(src_text, skip_proc)
-        if refusal_code:
+        found = first_refusal(src_text, skip_proc)
+        if found:
+            refusal_code, refusal_why = found
             break
 
 downloaded_files: dict[str, str] = {}
@@ -1181,6 +1223,7 @@ window_payload = {
     "shape_check": shape_check,
     "status": final_status,
     "refusal_code": refusal_code,
+    "why": refusal_why,
     "cap": cap,
     "wall_s": wall_s,
     "grace_s": grace_s,
@@ -1213,6 +1256,7 @@ outcome_payload = {
     "card": card,
     "status": final_status,
     "refusal_code": refusal_code,
+    "why": refusal_why,
     "exit_code": exit_code,
     "opened_at": opened_at,
     "closed_at": closed_at,
