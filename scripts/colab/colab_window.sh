@@ -1086,6 +1086,7 @@ REFUSAL_CODES = (
     "TRAIN_WALL_REQUIRED",
     "TRAIN_CAP_REQUIRED",
     "TRAIN_WALL_TOO_SHORT",
+    "RUNG_JOB_REQUIRED",
     "MODEL_AUTH_FAILED",
     "MODEL_REVISION_NOT_FOUND",
     "MODEL_METADATA_FAILED",
@@ -1208,9 +1209,13 @@ train_fields: dict = {}
 if lane == "train":
     vm_train = vm_facts.get("train")
     train_state = vm_train if vm_train in ("skipped_cpu_stub", "trained") else None
+    rung_job = read_text_file(out_dir / "rung_job.txt")
+    rung_job_sha256 = read_text_file(out_dir / "rung_job_sha256.txt")
     train_fields = {
         "train": train_state,
         "trained": bool(final_status == "ok" and train_state == "trained"),
+        "rung_job": rung_job,
+        "rung_job_sha256": rung_job_sha256,
     }
 
 window_payload = {

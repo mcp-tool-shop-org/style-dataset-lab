@@ -724,19 +724,41 @@ job = Path(sys.argv[1]).read_text(encoding="utf-8")
 tf = re.search(r'training_folder: "([^"]+)"', job).group(1)
 model = re.search(r'name_or_path: "([^"]+)"', job).group(1)
 name = re.search(r"^  name: (\\S+)$", job, re.M).group(1)
+steps = int(re.search(r"^\\s+steps: (\\d+)$", job, re.M).group(1))
+save_every = int(re.search(r"^\\s+save_every: (\\d+)$", job, re.M).group(1))
+sample_every = int(re.search(r"^\\s+sample_every: (\\d+)$", job, re.M).group(1))
 assert os.environ.get("HF_HUB_OFFLINE") == "1", "run.py must run with the hub offline"
 assert Path(model).is_dir(), f"model path {model} is not the local snapshot"
 out = Path(tf) / name
 (out / "samples").mkdir(parents=True, exist_ok=True)
 print("Loading Qwen Image model", flush=True)
 import json, struct
-def st(tag):
-    # A real safetensors layout: 8-byte header length, JSON header, data; =truncated_save cuts the tail.
+def st(tag, truncate=False):
+    # A real safetensors layout: 8-byte header length, JSON header, data; truncate cuts the tail.
     data = tag * 64
     hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}}).encode()
     blob = struct.pack("<Q", len(hdr)) + hdr + data
-    return blob[:-100] if os.environ.get("FAKE_VM_TRAIN") == "truncated_save" else blob
+    return blob[:-100] if (truncate or os.environ.get("FAKE_VM_TRAIN") == "truncated_save") else blob
 time.sleep(0.3)
+if os.environ.get("FAKE_VM_TRAIN") == "hang_after_step_250":
+    assert (steps, save_every, sample_every) == (500, 250, 250), (steps, save_every, sample_every)
+    (out / f"{name}_000000250.safetensors").write_bytes(st(b"FAKE-LORA-STEP-250"))
+    for idx in range(6):
+        (out / "samples" / f"1762400000000__000000250_{idx}.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    (out / f"{name}_000000500.safetensors").write_bytes(st(b"FAKE-LORA-STEP-500", truncate=True))
+    time.sleep(600)
+if steps == 500:
+    assert (save_every, sample_every) == (250, 250), (save_every, sample_every)
+    (out / f"{name}_000000250.safetensors").write_bytes(st(b"FAKE-LORA-STEP-250"))
+    for idx in range(6):
+        (out / "samples" / f"1762400000000__000000250_{idx}.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    time.sleep(0.3)
+    (out / f"{name}_000000500.safetensors").write_bytes(st(b"FAKE-LORA-STEP-500"))
+    for idx in range(6):
+        (out / "samples" / f"1762400000000__000000500_{idx}.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    (out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
+    print("Done", flush=True)
+    sys.exit(0)
 (out / f"{name}_000000020.safetensors").write_bytes(st(b"FAKE-LORA-STEP-20"))
 time.sleep(0.3)
 if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":

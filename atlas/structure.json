@@ -16120,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "0a235d8760146041efb6f77993c059bc1187436f4119662da5d7664530aea4c8",
+          "hash": "cde7f454093eb4f69507d7f516b19d016f8d10d6d5dc52913b7c482caf201377",
           "path": "CHANGELOG.md"
         },
         {
@@ -16817,7 +16817,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "552ed26f9dccc7a70f216fe53f011bd2997d9614b81295c816ff2b3975262a54",
+          "hash": "2f0ce95ad073eef1dc95156d059a0b7abae59882f67316966f6c0c4e38a3b750",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16837,7 +16837,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de",
+          "hash": "eb8c1376ede68b57af3ece43443e67edca1f3e0e5a968c7b3eeec6f1d044c961",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17472,11 +17472,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "5903d641a0a00e396c60a47ce843e57eb3bd6f5e1806767ef57f9507ee62323b",
+          "hash": "dfcf30e6c98dba16cae339090337652e2c5acd7a381f3b091ca8228c32b083ed",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "2bfeb8f00e58068e99302fbd041758e46c995e05d2d6d596bbea35e55c01a82d",
+          "hash": "f0b6400bb66ca87092b80a27d5868fd7cba5695cac5b9e44a2d5bbbc4390b530",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19877,7 +19877,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "ba7e01e1839994b3fce1868240463f1d7299fbc747e6a0a6b2b0b10997f8daa8",
+          "hash": "62df1f4419aa1d91ad92b11fe1d64cccb525191a78b7ac7d8807640547483a62",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -20110,6 +20110,7 @@
             "test_kit_refuses_a_dataset_that_does_not_match_its_manifest",
             "test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call",
             "test_kit_refuses_a_wall_that_cannot_cover_the_rung",
+            "test_kit_refuses_invalid_rung_job_or_rung_job_without_train",
             "test_meminfo_and_host_ram_measurement",
             "test_metadata_exception_text_never_reaches_any_output",
             "test_model_check_cli_reads_the_token_from_the_environment",
@@ -20126,6 +20127,8 @@
             "test_repo_cache_dir_and_dir_bytes",
             "test_rig_side_kill_still_brings_back_the_outputs",
             "test_run_copy_off_follows_the_trainer_and_reports_log_growth",
+            "test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial",
+            "test_rung_500_stopped_by_wall_guard_keeps_step_250_and_marks_step_500_partial",
             "test_rung_mid_run_failure_downloads_what_was_copied_off",
             "test_rung_refusals_stop_before_training_and_still_bundle",
             "test_rung_shape_mismatch_refuses_after_open_and_stops",
@@ -20147,7 +20150,7 @@
             "test_vm_metadata_failures_are_named",
             "test_window_rate_state_unit"
           ],
-          "hash": "c7a4b186d865f6c1ffed9d7cf493f8ac3407bda9b1eded3b58af1e5807dd1640",
+          "hash": "2b444b25610684410bc2da0dd550c45e77c986ef230059b5f472cb27d4574d48",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -20306,7 +20309,7 @@
             "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "7b81a868f92fbfa96d0d9e10dd5a93b701004230bc572046ff584ad0b121d7bb",
+          "hash": "4667c45816ba03f7fd67881af04a5efced979ddc20d7a887cc7b7a8926e2f9c6",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22439,7 +22442,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "8d676ad6061924cf2be2685c9be32bda6548d20b",
+    "commit": "4352f30839c4c10f357637452e28b2698f8af686",
     "tracked": 3302
   },
   "landings": [

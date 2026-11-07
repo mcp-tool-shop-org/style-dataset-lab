@@ -5,10 +5,12 @@
 # uv venv + wheel-only install from hash-locked lane3.lock and pre-built local wheels in
 # lane3-local-wheels.json + pinned ostris/ai-toolkit + the import gate. Without --train it stops
 # there: TRAIN_SKIPPED and train=skipped_cpu_stub in window.json (never a trained result). With
-# --train (a GPU card, --model, --model-revision, --host-ram-required-gib, --download-max-seconds and
-# --dataset-dir, each a named refusal when missing) the remote script's LANE3_MODE=train runs the
-# rung: GPU smoke / disk / host-RAM guards before the model download, the download with its
-# DOWNLOAD_TOO_SLOW probe, the fixture dataset, the committed rung YAML (lane3/rung-qwen-image.yaml)
+# --train (a GPU card, --rung-job 20|500, --model, --model-revision, --host-ram-required-gib,
+# --download-max-seconds and --dataset-dir, each a named refusal when missing) the remote script's
+# LANE3_MODE=train runs the rung: GPU smoke / disk / host-RAM guards before the model download, the
+# download with its DOWNLOAD_TOO_SLOW probe, the fixture dataset, the selected committed rung YAML
+# (lane3/rung-qwen-image.yaml for 20 or lane3/rung-qwen-image-500.yaml for 500, uploaded as
+# /content/rung-qwen-image.yaml)
 # and ai-toolkit's run.py, copying each checkpoint and sample into the bundle as it is saved; the
 # bundle is downloaded at the end and, after a failure, whatever it holds. Enforces live
 # launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring,
@@ -32,12 +34,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de"
+PINNED_COLAB_WINDOW_SHA="eb8c1376ede68b57af3ece43443e67edca1f3e0e5a968c7b3eeec6f1d044c961"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
+PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="d1762ecbcde597cee0bb4a478e24ebe28f648603f51b17fbf842eda97b40fefc"
+PINNED_SELF_SHA="9d1143945c2470904cef99cf1cac96d71adb8b30cf3f61f5fc4981db51ed8e25"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -587,6 +590,7 @@ TRAIN_DOWNLOAD_MAX_SECONDS=""
 TRAIN_MAX_RATE=""
 SHAPE=""
 DATASET_DIR=""
+RUNG_JOB=""
 SESSION_ARGS=()
 
 while [ "$#" -gt 0 ]; do
@@ -608,6 +612,7 @@ while [ "$#" -gt 0 ]; do
     --host-ram-required-gib) TRAIN_HOST_RAM_REQUIRED_GIB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-max-seconds) TRAIN_DOWNLOAD_MAX_SECONDS="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dataset-dir) SESSION_ARGS+=("$1"); DATASET_DIR="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --rung-job) SESSION_ARGS+=("$1"); RUNG_JOB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -615,8 +620,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}" ]; then
-  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds and --dataset-dir need --train" >&2
+if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}" ]; then
+  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir and --rung-job need --train" >&2
   exit 2
 fi
 
@@ -668,6 +673,14 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: TRAIN_CAP_REQUIRED: --train needs an explicit --cap (the CPU stub's default does not apply)" >&2
     exit 2
   fi
+  if colab_fake_test_mode_active; then
+    if [ -n "${SDLAB_TEST_INSTALL_ALLOWANCE_S:-}" ]; then
+      LANE3_INSTALL_ALLOWANCE_S="${SDLAB_TEST_INSTALL_ALLOWANCE_S}"
+    fi
+    if [ -n "${SDLAB_TEST_TRAIN_ALLOWANCE_S:-}" ]; then
+      LANE3_TRAIN_ALLOWANCE_S="${SDLAB_TEST_TRAIN_ALLOWANCE_S}"
+    fi
+  fi
   TRAIN_NEED_S="$(( TRAIN_DOWNLOAD_MAX_SECONDS + LANE3_INSTALL_ALLOWANCE_S + LANE3_TRAIN_ALLOWANCE_S ))"
   if ! [[ "${WALL_S}" =~ ^[0-9]+$ ]] || ! [[ "${GRACE_S}" =~ ^[0-9]+$ ]] \
     || [ "$(( WALL_S - GRACE_S ))" -lt "${TRAIN_NEED_S}" ]; then
@@ -682,6 +695,13 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: TRAIN_DATASET_REQUIRED: --train needs --dataset-dir <dir> holding the images listed in scripts/colab/lane3/rung-dataset.json" >&2
     exit 2
   fi
+  case "${RUNG_JOB}" in
+    20 | 500) ;;
+    *)
+      echo "REFUSED: RUNG_JOB_REQUIRED: --train needs --rung-job 20|500 (no default)" >&2
+      exit 2
+      ;;
+  esac
 fi
 
 # The pre-built wheels live outside the repository; there is no default location.
@@ -722,6 +742,7 @@ WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 RUNG_PY="${SCRIPT_DIR}/lane3_rung.py"
 BUNDLE_NOW_PY="${SCRIPT_DIR}/lane3_bundle_now.py"
 RUNG_YAML="${SCRIPT_DIR}/lane3/rung-qwen-image.yaml"
+RUNG500_YAML="${SCRIPT_DIR}/lane3/rung-qwen-image-500.yaml"
 RUNG_DATASET_JSON="${SCRIPT_DIR}/lane3/rung-dataset.json"
 # Test hooks: a fixture dataset manifest, a short download probe, a disk threshold and a short GPU
 # smoke, honoured only under the fake colab CLI (set in a live run, they are PIN_OVERRIDE_IN_LIVE_RUN below).
@@ -748,6 +769,7 @@ PIN_OVERRIDE_VARS=(
   EXPECTED_LAUNCH_LANE3_STUB_SHA
   EXPECTED_LANE3_RUNG_SHA
   EXPECTED_RUNG_YAML_SHA
+  EXPECTED_RUNG500_YAML_SHA
   EXPECTED_RUNG_DATASET_SHA
   EXPECTED_BUNDLE_NOW_SHA
   SDLAB_TEST_HF_ENDPOINT
@@ -756,6 +778,8 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_DISK_REQUIRED_GIB
   SDLAB_TEST_GPU_SMOKE_SECONDS
   SDLAB_TEST_RATE_READ_INTERVAL_S
+  SDLAB_TEST_INSTALL_ALLOWANCE_S
+  SDLAB_TEST_TRAIN_ALLOWANCE_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 EXP_OVERRIDE_SHA="${PINNED_OVERRIDE_SHA}"
@@ -767,6 +791,7 @@ EXP_WINDOW_SHA="${PINNED_COLAB_WINDOW_SHA}"
 EXP_SELF_SHA="${PINNED_SELF_SHA}"
 EXP_RUNG_SHA="${PINNED_LANE3_RUNG_SHA}"
 EXP_RUNG_YAML_SHA="${PINNED_RUNG_YAML_SHA}"
+EXP_RUNG500_YAML_SHA="${PINNED_RUNG500_YAML_SHA}"
 EXP_RUNG_DATASET_SHA="${PINNED_RUNG_DATASET_SHA}"
 EXP_BUNDLE_NOW_SHA="${PINNED_BUNDLE_NOW_SHA}"
 if [ "${TEST_MODE}" = "1" ]; then
@@ -779,6 +804,7 @@ if [ "${TEST_MODE}" = "1" ]; then
   EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE3_STUB_SHA:-${EXP_SELF_SHA}}"
   EXP_RUNG_SHA="${EXPECTED_LANE3_RUNG_SHA:-${EXP_RUNG_SHA}}"
   EXP_RUNG_YAML_SHA="${EXPECTED_RUNG_YAML_SHA:-${EXP_RUNG_YAML_SHA}}"
+  EXP_RUNG500_YAML_SHA="${EXPECTED_RUNG500_YAML_SHA:-${EXP_RUNG500_YAML_SHA}}"
   EXP_RUNG_DATASET_SHA="${EXPECTED_RUNG_DATASET_SHA:-${EXP_RUNG_DATASET_SHA}}"
   EXP_BUNDLE_NOW_SHA="${EXPECTED_BUNDLE_NOW_SHA:-${EXP_BUNDLE_NOW_SHA}}"
 fi
@@ -792,9 +818,22 @@ SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
   "${RUNG_PY}=${EXP_RUNG_SHA}" \
   "${RUNG_YAML}=${EXP_RUNG_YAML_SHA}" \
+  "${RUNG500_YAML}=${EXP_RUNG500_YAML_SHA}" \
   "${RUNG_DATASET_JSON}=${EXP_RUNG_DATASET_SHA}" \
   "${BUNDLE_NOW_PY}=${EXP_BUNDLE_NOW_SHA}" \
   "${SELF_SH}=${EXP_SELF_SHA}")"
+
+SELECTED_RUNG_YAML="${RUNG_YAML}"
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  if [ "${RUNG_JOB}" = "500" ]; then
+    SELECTED_RUNG_YAML="${RUNG500_YAML}"
+    printf '%s\n' "${EXP_RUNG500_YAML_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+  else
+    SELECTED_RUNG_YAML="${RUNG_YAML}"
+    printf '%s\n' "${EXP_RUNG_YAML_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+  fi
+  printf '%s\n' "${RUNG_JOB}" > "${OUT_DIR}/rung_job.txt"
+fi
 
 OPENED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date -u +%s)"
@@ -834,10 +873,12 @@ lane3_download_bundle_after_failure() {
 
 cleanup_on_exit() {
   local rc=$?
-  trap - EXIT TERM INT
+  trap - EXIT
+  trap '' TERM INT
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true
+    wait "${EXEC_PID}" 2>/dev/null || true
   fi
   if [ -n "${WALL_WATCHER_PID}" ]; then
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
@@ -978,7 +1019,7 @@ colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OU
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
   colab_upload_checked "${SESSION}" "${RUNG_PY}" /content/lane3_rung.py "${OUT_DIR}"
-  colab_upload_checked "${SESSION}" "${RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
+  colab_upload_checked "${SESSION}" "${SELECTED_RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
   colab_upload_checked "${SESSION}" "${RUNG_DATASET_JSON}" /content/rung-dataset.json "${OUT_DIR}"
   # The read token staged before the window opened; the VM reads and shreds it first thing.
   colab_upload_checked "${SESSION}" "${TOKEN_DIR}/lane3_hf_read_token" /content/lane3_hf_read_token "${OUT_DIR}"

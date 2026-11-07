@@ -209,7 +209,7 @@ def test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode(tmp_path: P
     assert "/content/lane3_out/rung_job.yaml" in kit_text
     assert "/content/rung-qwen-image.yaml" in kit_text
     assert "synth_job.yaml" not in kit_text and "synth_lora" not in kit_text
-    for pin in ("PINNED_LANE3_RUNG_SHA=", "PINNED_RUNG_YAML_SHA=", "PINNED_RUNG_DATASET_SHA="):
+    for pin in ("PINNED_LANE3_RUNG_SHA=", "PINNED_RUNG_YAML_SHA=", "PINNED_RUNG500_YAML_SHA=", "PINNED_RUNG_DATASET_SHA="):
         assert pin in kit_text, pin
 
     # Self-sha refusal when EXPECTED_LAUNCH_LANE3_STUB_SHA mismatches

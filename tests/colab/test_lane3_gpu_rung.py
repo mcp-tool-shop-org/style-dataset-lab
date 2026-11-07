@@ -366,6 +366,15 @@ def test_rung_yaml_differs_from_the_trained_config_only_where_stated() -> None:
                  "      quantize_te: false", "      seed: 42", "      walk_seed: true", "      width: 1024"):
         assert line in body, line
     assert sum(1 for ln in body if ln.strip().startswith("- rustline style") or "wooden chair" in ln) == 6
+    rung500 = (COLAB_DIR / "lane3" / "rung-qwen-image-500.yaml").read_text(encoding="utf-8")
+    body500 = [ln for ln in rung500.split("job: extension", 1)[1].splitlines()]
+    diff_20_500 = [(a.strip(), b.strip()) for a, b in zip(body, body500, strict=True) if a != b]
+    assert diff_20_500 == [
+        ("save_every: 20", "save_every: 250"),
+        ("steps: 20", "steps: 500"),
+        ("sample_every: 20", "sample_every: 250"),
+    ]
+    assert "      skip_first_sample: true" in body500 and "      num_workers: 0" in body500
 
 
 # --- copy-off and finish -----------------------------------------------------------------------
@@ -552,6 +561,8 @@ def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: st
             "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5", *extra]
     if "--shape" not in extra:
         args += ["--shape", "high-mem"]
+    if "--rung-job" not in extra:
+        args += ["--rung-job", "20"]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     return res, out_dir
 
@@ -568,6 +579,8 @@ def test_rung_success_trains_copies_off_and_records_the_guards(tmp_path: Path) -
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["status"] == "ok" and win["refusal_code"] is None
     assert win["train"] == "trained" and win["trained"] is True and win["lane3_mode"] == "train"
+    expected_20_sha = hashlib.sha256((COLAB_DIR / "lane3" / "rung-qwen-image.yaml").read_bytes()).hexdigest()
+    assert win["rung_job"] == "20" and win["rung_job_sha256"] == expected_20_sha
     # The machine shape: --shape high-mem reaches `colab new` as --high-mem and the row matches.
     calls = (out_dir.parent / "colab_state" / "calls.log").read_text(encoding="utf-8")
     assert "CALL new --gpu A100 --high-mem -s sdlab-l3-gpu-rung" in calls
@@ -643,13 +656,13 @@ def test_rung_mid_run_failure_downloads_what_was_copied_off(tmp_path: Path) -> N
      ("--download-max-seconds", "DOWNLOAD_LIMIT_MISSING"), ("--dataset-dir", "TRAIN_DATASET_REQUIRED"),
      ("--model", "TRAIN_MODEL_REQUIRED"), ("token", "HF_READ_TOKEN_MISSING"),
      ("--wall-s", "TRAIN_WALL_REQUIRED"), ("--cap", "TRAIN_CAP_REQUIRED"),
-     ("--max-rate", "TRAIN_MAX_RATE_REQUIRED")],
+     ("--max-rate", "TRAIN_MAX_RATE_REQUIRED"), ("--rung-job", "RUNG_JOB_REQUIRED")],
 )
 def test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call(tmp_path: Path, drop: str, code: str) -> None:
     state_dir, env, src = _rung_env(tmp_path)
     args = {"--model": "Qwen/Qwen-Image", "--model-revision": REVISION, "--host-ram-required-gib": "96.5",
             "--download-max-seconds": "60", "--dataset-dir": fc._to_posix(src), "--wall-s": "2900", "--cap": "5",
-            "--max-rate": "9.5"}
+            "--max-rate": "9.5", "--rung-job": "20"}
     if drop == "token":
         env.pop("HF_TOKEN_GGUF_READ")
     else:
@@ -660,6 +673,19 @@ def test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call(tmp_pa
                          capture_output=True, text=True, timeout=60, check=False)
     assert res.returncode == 2 and f"REFUSED: {code}:" in res.stderr
     assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
+
+
+def test_kit_refuses_invalid_rung_job_or_rung_job_without_train(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    res_bad, _ = _launch(tmp_path, env, src, "--rung-job", "100", out="out_bad_job")
+    assert res_bad.returncode == 2 and "REFUSED: RUNG_JOB_REQUIRED:" in res_bad.stderr
+    assert not (state_dir / "calls.log").exists()
+    res_notrain = subprocess.run(
+        [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(tmp_path / "out_notrain"), "--rung-job", "20"],
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+    )
+    assert res_notrain.returncode == 2 and "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN:" in res_notrain.stderr
+    assert not (state_dir / "calls.log").exists()
 
 
 def test_kit_refuses_a_dataset_that_does_not_match_its_manifest(tmp_path: Path) -> None:
@@ -1542,7 +1568,7 @@ def test_rung_without_shape_refuses_before_any_colab_call(tmp_path: Path) -> Non
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
             "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-            "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5"]
+            "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5", "--rung-job", "20"]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
     assert res.returncode == 2 and "REFUSED: SHAPE_REQUIRED:" in res.stderr, res.stderr[-2000:]
     assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
@@ -1561,3 +1587,89 @@ def test_rung_shape_mismatch_refuses_after_open_and_stops(tmp_path: Path) -> Non
     assert "CALL new --gpu A100 -s sdlab-l3-gpu-rung" in (state_dir / "calls.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
     assert _no_uploads(state_dir)
+
+
+def _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(
+    out_dir: Path, state_dir: Path, expected_refusal: str
+) -> None:
+    expected_500_sha = hashlib.sha256((COLAB_DIR / "lane3" / "rung-qwen-image-500.yaml").read_bytes()).hexdigest()
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["status"] == expected_refusal and win["refusal_code"] == expected_refusal
+    assert win["train"] is None and win["trained"] is False and win["lane3_mode"] == "train"
+    assert win["rung_job"] == "500" and win["rung_job_sha256"] == expected_500_sha
+    assert win.get("checkpoint_path") is None
+    expected_samples = [f"rustline_style_v5/samples/1762400000000__000000250_{i}.jpg" for i in range(6)]
+    assert win["rung_outputs"]["checkpoints"] == ["rustline_style_v5/rustline_style_v5_000000250.safetensors"]
+    assert win["rung_outputs"]["partial_checkpoints"] == ["rustline_style_v5/rustline_style_v5_000000500.safetensors"]
+    assert win["rung_outputs"]["samples"] == expected_samples
+
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert f"REFUSED: {expected_refusal}" in guards
+    assert "BUNDLE_AFTER_FAILURE: downloaded" in guards, guards[-2000:]
+    assert "RESTART -s sdlab-l3-gpu-rung" in (state_dir / "restarts.log").read_text(encoding="utf-8")
+    assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+
+    members = _bundle(out_dir)
+    job = members["rung_job.yaml"].decode()
+    assert "steps: 500" in job and "save_every: 250" in job and "sample_every: 250" in job
+    ck_250 = members["rung_outputs/rustline_style_v5/rustline_style_v5_000000250.safetensors"]
+    assert b"FAKE-LORA-STEP-250" in ck_250
+    for s in expected_samples:
+        assert f"rung_outputs/{s}" in members
+        assert members[f"rung_outputs/{s}"].startswith(b"\xff\xd8FAKEJPEG")
+
+    manifest_rows = [json.loads(x) for x in members["rung_outputs/manifest.jsonl"].decode().splitlines() if x.strip()]
+    by_path = {r["path"]: r for r in manifest_rows}
+    assert by_path["rustline_style_v5/rustline_style_v5_000000250.safetensors"]["partial"] is False
+    assert by_path["rustline_style_v5/rustline_style_v5_000000250.safetensors"]["sha256"] == hashlib.sha256(ck_250).hexdigest()
+    assert by_path["rustline_style_v5/rustline_style_v5_000000500.safetensors"]["partial"] is True
+    for s in expected_samples:
+        assert by_path[s]["sha256"] == hashlib.sha256(members[f"rung_outputs/{s}"]).hexdigest()
+
+    vm_win = json.loads(members["vm_window.json"])
+    assert vm_win["train"] == "failed" and vm_win["lane3_mode"] == "train"
+    _assert_token_nowhere(out_dir)
+
+
+def test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+    })
+    # Priced at max(9.5, 8.88) = 9.5/h, cap 0.03 minus margin 0.01 = 0.02 units (~7.58 s): gives the VM time
+    # to download, write step 250 + 6 samples + half-written step 500, and hang before the cap guard trips.
+    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01")
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "CAP_GUARD_TRIPPED")
+        assert _rung_processes(content) == []
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
+
+
+def test_rung_500_stopped_by_wall_guard_keeps_step_250_and_marks_step_500_partial(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+    })
+    # wall 10s - grace 2s = 8s wall limit (>= download 5 + install 1 + train 1 = 7s): the independent wall
+    # watcher fires after 8s while the VM hangs after step 250.
+    res, out_dir = _launch(
+        tmp_path, env, src, "--rung-job", "500", "--download-max-seconds", "5", "--wall-s", "10", "--grace-s", "2"
+    )
+    content = state_dir / "content"
+    try:
+        assert res.returncode != 0
+        _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "WALL_GUARD_TRIPPED")
+        assert _rung_processes(content) == []
+    finally:
+        for pid in _rung_processes(content):
+            os.kill(pid, 9)
