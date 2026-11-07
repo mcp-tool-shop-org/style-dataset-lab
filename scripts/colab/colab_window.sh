@@ -1,6 +1,126 @@
 #!/usr/bin/env bash
 # Shared Colab window lifecycle, lock, live wall/cap/vitals/RAM guards, token scrubber, and EXIT trap.
+#
+# Bounded cleanup and salvage contract (every step runs under `timeout -k` in a subshell with
+# default SIGTERM/SIGINT dispositions so a wedged child is killed by SIGKILL after the grace):
+#   COLAB_KILL_GRACE_S_DEFAULT=10               (`timeout -k 10` SIGTERM->SIGKILL grace)
+#   COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT=300        (5 min + 10 s -k = 310 s when bundle size is unknown)
+#   COLAB_SALVAGE_RESTART_TIMEOUT_S_DEFAULT=180 (3 min + 10 s -k = 190 s on `colab restart-kernel`)
+#   COLAB_SALVAGE_EXEC_TIMEOUT_S_DEFAULT=330    (330 s + 10 s -k = 340 s over bundle-now `--timeout 300`)
+#   COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT=300 (5 min + 10 s -k = 310 s on salvage `colab download`)
+#   SALVAGE_DEADLINE_S=840                      (190 + 340 + 310 = 840 s total salvage deadline;
+#                                                past it, cleanup skips remaining salvage and runs `colab stop`)
+#   COLAB_STOP_TIMEOUT_S_DEFAULT=60             (60 s + 10 s -k = 70 s per `colab stop` attempt)
+#   COLAB_STOP_ATTEMPTS_DEFAULT=2               (1 retry -> 2 * 70 = 140 s worst-case stop bound)
+#   COLAB_SESSIONS_TIMEOUT_S_DEFAULT=30         (30 s + 10 s -k = 40 s on closing `colab sessions`)
+# Worst-case time from guard trip to `colab stop` attempted (`cleanup_stop_attempted_by_s`) and
+# total cleanup bound through `colab stop` completion (`cleanup_bound_s`):
+#   Lane 3 (train):  cleanup_stop_attempted_by_s = 840 s, cleanup_bound_s = 840 + 140 = 980 s
+#   Lane 1 (render): cleanup_stop_attempted_by_s = 0 s,   cleanup_bound_s = 140 s
 set -euo pipefail
+
+COLAB_KILL_GRACE_S_DEFAULT=10
+COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT=300
+COLAB_SALVAGE_RESTART_TIMEOUT_S_DEFAULT=180
+COLAB_SALVAGE_EXEC_TIMEOUT_S_DEFAULT=330
+COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT=300
+SALVAGE_DEADLINE_S_DEFAULT=840
+COLAB_STOP_TIMEOUT_S_DEFAULT=60
+COLAB_STOP_ATTEMPTS_DEFAULT=2
+COLAB_SESSIONS_TIMEOUT_S_DEFAULT=30
+
+export COLAB_KILL_GRACE_S="${COLAB_KILL_GRACE_S_DEFAULT}"
+export COLAB_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+export COLAB_SALVAGE_RESTART_TIMEOUT_S="${COLAB_SALVAGE_RESTART_TIMEOUT_S_DEFAULT}"
+export COLAB_SALVAGE_EXEC_TIMEOUT_S="${COLAB_SALVAGE_EXEC_TIMEOUT_S_DEFAULT}"
+export COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S="${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+export SALVAGE_DEADLINE_S="${SALVAGE_DEADLINE_S_DEFAULT}"
+export COLAB_STOP_TIMEOUT_S="${COLAB_STOP_TIMEOUT_S_DEFAULT}"
+export COLAB_STOP_ATTEMPTS="${COLAB_STOP_ATTEMPTS_DEFAULT}"
+export COLAB_SESSIONS_TIMEOUT_S="${COLAB_SESSIONS_TIMEOUT_S_DEFAULT}"
+COLAB_CLEANUP_SIGNAL_COUNT=0
+COLAB_CLEANUP_SKIP_SALVAGE=0
+
+# colab_apply_test_cleanup_overrides <test_mode>: in fake-colab test mode only, allow short per-step
+# timeouts and salvage deadline so tests can exercise hung children and `timeout -k` in seconds.
+colab_apply_test_cleanup_overrides() {
+  local test_mode="$1"
+  [ "${test_mode}" = "1" ] || return 0
+  if [ -n "${SDLAB_TEST_KILL_GRACE_S:-}" ]; then
+    export COLAB_KILL_GRACE_S="${SDLAB_TEST_KILL_GRACE_S}"
+  fi
+  if [ -n "${SDLAB_TEST_DOWNLOAD_TIMEOUT_S:-}" ]; then
+    export COLAB_DOWNLOAD_TIMEOUT_S="${SDLAB_TEST_DOWNLOAD_TIMEOUT_S}"
+    export COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S="${SDLAB_TEST_DOWNLOAD_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S:-}" ]; then
+    export COLAB_SALVAGE_RESTART_TIMEOUT_S="${SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S:-}" ]; then
+    export COLAB_SALVAGE_EXEC_TIMEOUT_S="${SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_STOP_TIMEOUT_S:-}" ]; then
+    export COLAB_STOP_TIMEOUT_S="${SDLAB_TEST_STOP_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_SESSIONS_TIMEOUT_S:-}" ]; then
+    export COLAB_SESSIONS_TIMEOUT_S="${SDLAB_TEST_SESSIONS_TIMEOUT_S}"
+  fi
+  local step_sum=$(( (COLAB_SALVAGE_RESTART_TIMEOUT_S + COLAB_KILL_GRACE_S) \
+    + (COLAB_SALVAGE_EXEC_TIMEOUT_S + COLAB_KILL_GRACE_S) \
+    + (COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S + COLAB_KILL_GRACE_S) ))
+  if [ -n "${SDLAB_TEST_SALVAGE_DEADLINE_S:-}" ]; then
+    export SALVAGE_DEADLINE_S="${SDLAB_TEST_SALVAGE_DEADLINE_S}"
+  else
+    export SALVAGE_DEADLINE_S="${step_sum}"
+  fi
+}
+
+# colab_run_bounded <timeout_s> <kill_grace_s> <cmd> [args...]: run a command under `timeout -k`
+# in a subshell that resets TERM and INT to default dispositions (`trap - TERM INT`) before exec.
+# Children never inherit SIG_IGN, so `timeout`'s initial SIGTERM can terminate well-behaved
+# children and `timeout -k` sends SIGKILL after <kill_grace_s> if a child traps or ignores SIGTERM.
+colab_run_bounded() {
+  local timeout_s="$1"
+  local kill_grace_s="$2"
+  shift 2
+  (
+    trap - TERM INT
+    exec timeout -k "${kill_grace_s}" "${timeout_s}" "$@" </dev/null
+  )
+}
+
+# colab_rc_is_timeout <rc>: GNU `timeout` returns 124 when the command times out on SIGTERM and
+# 137 (128 + 9) when `-k` escalates to SIGKILL.
+colab_rc_is_timeout() {
+  local rc="$1"
+  [ "${rc}" -eq 124 ] || [ "${rc}" -eq 137 ]
+}
+
+# colab_on_cleanup_signal <out_dir>: trap handler installed during `cleanup_on_exit` instead of
+# `trap '' TERM INT`. Because a shell function handles TERM/INT rather than ignoring them (`SIG_IGN`),
+# child processes spawned from `cleanup_on_exit` inherit default signal dispositions (`SIG_DFL`) on
+# exec, while a late TERM/INT from the independent wall watcher or operator does not abort cleanup
+# before `colab stop`. A second signal sets COLAB_CLEANUP_SKIP_SALVAGE=1 so cleanup skips any
+# remaining salvage step and goes straight to `colab stop`.
+colab_on_cleanup_signal() {
+  local out_dir="$1"
+  COLAB_CLEANUP_SIGNAL_COUNT=$((COLAB_CLEANUP_SIGNAL_COUNT + 1))
+  local action="continue_bounded_cleanup"
+  if [ "${COLAB_CLEANUP_SIGNAL_COUNT}" -ge 2 ]; then
+    COLAB_CLEANUP_SKIP_SALVAGE=1
+    action="skip_remaining_salvage"
+  fi
+  if [ -n "${out_dir}" ] && [ -d "${out_dir}" ]; then
+    printf 'CLEANUP_SIGNAL count=%s action=%s\n' "${COLAB_CLEANUP_SIGNAL_COUNT}" "${action}" >> "${out_dir}/guards.log"
+  fi
+}
+
+# colab_enter_cleanup_trap <out_dir>: arm cleanup signal handling at the start of `cleanup_on_exit`.
+colab_enter_cleanup_trap() {
+  local out_dir="$1"
+  trap - EXIT
+  trap 'colab_on_cleanup_signal "'"${out_dir}"'"' TERM INT
+}
 
 colab_resolve_python() {
   if [ -n "${SDLAB_PYTHON:-}" ] && [ -x "${SDLAB_PYTHON}" ]; then
@@ -152,7 +272,9 @@ colab_upload_checked() {
 }
 
 # colab_download_checked <session> <remote> <local> <out_dir>: the CLI writes the local file with a
-# plain open() and creates no local directory, so the local parent is checked first. Refuses
+# plain open() and creates no local directory, so the local parent is checked first. Bounded by
+# `timeout -k ${COLAB_KILL_GRACE_S} ${COLAB_DOWNLOAD_TIMEOUT_S}` (default 300 s + 10 s -k = 310 s
+# when bundle size is unknown); logs `SALVAGE_STEP_TIMEOUT download` on timeout and refuses
 # DOWNLOAD_FAILED (keeping the HTTP status; 404 when the remote file is missing).
 colab_download_checked() {
   local session="$1"
@@ -165,10 +287,15 @@ colab_download_checked() {
     colab_refuse_logged "${out_dir}" DOWNLOAD_FAILED "${src} -> ${dst}: local directory ${dst_parent} does not exist (http=none)"
     return 1
   fi
+  local dl_timeout="${COLAB_DOWNLOAD_TIMEOUT_S:-300}"
+  local kill_grace="${COLAB_KILL_GRACE_S:-10}"
   local out=""
   local rc=0
-  out="$(colab download -s "${session}" "${src}" "${dst}" </dev/null 2>&1)" || rc=$?
+  out="$(colab_run_bounded "${dl_timeout}" "${kill_grace}" colab download -s "${session}" "${src}" "${dst}" 2>&1)" || rc=$?
   printf '%s\n' "${out}" >> "${out_dir}/colab.log"
+  if colab_rc_is_timeout "${rc}"; then
+    echo "SALVAGE_STEP_TIMEOUT download timeout_s=${dl_timeout} kill_grace_s=${kill_grace} rc=${rc}" >> "${out_dir}/guards.log"
+  fi
   if [ "${rc}" -ne 0 ] || ! grep -Fq "[colab] Downloaded '" <<< "${out}" || [ ! -s "${dst}" ]; then
     colab_refuse_logged "${out_dir}" DOWNLOAD_FAILED "${src} -> ${dst}: colab download rc=${rc} http=$(_colab_http_status "${out}") (CLI output in colab.log)"
     return 1
@@ -223,7 +350,7 @@ colab_poll_usage_and_ram() {
   local usage_text=""
   local usage_rc=0
   # Bounded: a hung `colab usage` cannot stretch a poll (or the live guard loop) past 30 s.
-  usage_text="$(timeout -k 5 30 colab usage </dev/null 2>>"${out_dir}/colab.log")" || usage_rc=$?
+  usage_text="$(colab_run_bounded 30 5 colab usage 2>>"${out_dir}/colab.log")" || usage_rc=$?
   printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
 
   "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_CARD_CLASS:?the kit must set COLAB_CARD_CLASS to gpu or cpu}" << 'PYEOF'
@@ -684,12 +811,120 @@ colab_run_exec_with_live_guards() {
   colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_final}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}"
 }
 
+# colab_salvage_bundle_after_failure <session> <bundle_now_py> <remote_path> <local_dst> <out_dir> <failed_rc>:
+# bounded post-failure salvage under SALVAGE_DEADLINE_S (default 840 s = 190 + 340 + 310):
+#   1. `colab restart-kernel` under `timeout -k ${COLAB_KILL_GRACE_S} ${COLAB_SALVAGE_RESTART_TIMEOUT_S}` (180 s + 10 s -k)
+#   2. bundle-now `colab exec --timeout 300` under `timeout -k ${COLAB_KILL_GRACE_S} ${COLAB_SALVAGE_EXEC_TIMEOUT_S}` (330 s + 10 s -k)
+#   3. `colab download` under `timeout -k ${COLAB_KILL_GRACE_S} ${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S}` (300 s + 10 s -k)
+# Past SALVAGE_DEADLINE_S (or when a second cleanup signal sets COLAB_CLEANUP_SKIP_SALVAGE=1),
+# remaining salvage steps are skipped (`SALVAGE_DEADLINE_EXCEEDED <step>` in guards.log) so cleanup
+# goes straight to `colab stop`. Every step timeout is logged as `SALVAGE_STEP_TIMEOUT <step>` in
+# guards.log. Nothing here writes a REFUSED line, so the window's refusal stays the one that stopped the run.
+colab_salvage_bundle_after_failure() {
+  local session="$1"
+  local bundle_now_py="$2"
+  local remote_path="$3"
+  local local_dst="$4"
+  local out_dir="$5"
+  local failed_rc="$6"
+
+  local kill_grace="${COLAB_KILL_GRACE_S:-10}"
+  local restart_t="${COLAB_SALVAGE_RESTART_TIMEOUT_S:-180}"
+  local exec_t="${COLAB_SALVAGE_EXEC_TIMEOUT_S:-330}"
+  local dl_t="${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300}"
+  local deadline_s="${SALVAGE_DEADLINE_S:-840}"
+  local start_epoch
+  start_epoch="$(date -u +%s)"
+
+  local now_epoch elapsed_s remaining_s step_t
+  now_epoch="$(date -u +%s)"
+  elapsed_s=$((now_epoch - start_epoch))
+  if [ "${COLAB_CLEANUP_SKIP_SALVAGE:-0}" = "1" ] || [ "${elapsed_s}" -ge "${deadline_s}" ]; then
+    echo "SALVAGE_DEADLINE_EXCEEDED restart-kernel elapsed_s=${elapsed_s} deadline_s=${deadline_s}" >> "${out_dir}/guards.log"
+  else
+    remaining_s=$((deadline_s - elapsed_s))
+    step_t="${restart_t}"
+    [ "${remaining_s}" -lt "${step_t}" ] && step_t="${remaining_s}"
+    local restart_rc=0
+    colab_run_bounded "${step_t}" "${kill_grace}" colab restart-kernel -s "${session}" >> "${out_dir}/bundle_now.log" 2>&1 || restart_rc=$?
+    if colab_rc_is_timeout "${restart_rc}"; then
+      echo "SALVAGE_STEP_TIMEOUT restart-kernel timeout_s=${step_t} kill_grace_s=${kill_grace} rc=${restart_rc}" >> "${out_dir}/guards.log"
+    fi
+  fi
+
+  now_epoch="$(date -u +%s)"
+  elapsed_s=$((now_epoch - start_epoch))
+  if [ "${COLAB_CLEANUP_SKIP_SALVAGE:-0}" = "1" ] || [ "${elapsed_s}" -ge "${deadline_s}" ]; then
+    echo "SALVAGE_DEADLINE_EXCEEDED bundle-now elapsed_s=${elapsed_s} deadline_s=${deadline_s}" >> "${out_dir}/guards.log"
+  else
+    remaining_s=$((deadline_s - elapsed_s))
+    step_t="${exec_t}"
+    [ "${remaining_s}" -lt "${step_t}" ] && step_t="${remaining_s}"
+    local exec_rc=0
+    colab_run_bounded "${step_t}" "${kill_grace}" colab exec -s "${session}" -f "${bundle_now_py}" --timeout 300 \
+      --env "SDLAB_CONTENT=/content" --env "SDLAB_BUNDLE_RC=${failed_rc}" >> "${out_dir}/bundle_now.log" 2>&1 || exec_rc=$?
+    if colab_rc_is_timeout "${exec_rc}"; then
+      echo "SALVAGE_STEP_TIMEOUT bundle-now timeout_s=${step_t} kill_grace_s=${kill_grace} rc=${exec_rc}" >> "${out_dir}/guards.log"
+    fi
+  fi
+
+  local dl_out=""
+  local dl_rc=0
+  now_epoch="$(date -u +%s)"
+  elapsed_s=$((now_epoch - start_epoch))
+  if [ "${COLAB_CLEANUP_SKIP_SALVAGE:-0}" = "1" ] || [ "${elapsed_s}" -ge "${deadline_s}" ]; then
+    echo "SALVAGE_DEADLINE_EXCEEDED download elapsed_s=${elapsed_s} deadline_s=${deadline_s}" >> "${out_dir}/guards.log"
+    dl_rc=124
+  else
+    remaining_s=$((deadline_s - elapsed_s))
+    step_t="${dl_t}"
+    [ "${remaining_s}" -lt "${step_t}" ] && step_t="${remaining_s}"
+    dl_out="$(colab_run_bounded "${step_t}" "${kill_grace}" colab download -s "${session}" "${remote_path}" "${local_dst}" 2>&1)" || dl_rc=$?
+    printf '%s\n' "${dl_out}" >> "${out_dir}/colab.log"
+    if colab_rc_is_timeout "${dl_rc}"; then
+      echo "SALVAGE_STEP_TIMEOUT download timeout_s=${step_t} kill_grace_s=${kill_grace} rc=${dl_rc}" >> "${out_dir}/guards.log"
+    fi
+  fi
+
+  if [ "${dl_rc}" -eq 0 ] && [ -s "${local_dst}" ]; then
+    echo "BUNDLE_AFTER_FAILURE: downloaded $(basename -- "${local_dst}") (rc=${failed_rc})" >> "${out_dir}/guards.log"
+  else
+    rm -f "${local_dst}"
+    echo "BUNDLE_AFTER_FAILURE: none on the VM (rc=${failed_rc}, download rc=${dl_rc})" >> "${out_dir}/guards.log"
+  fi
+}
+
 colab_stop_and_log_closing() {
   local py_bin="$1"
   local session="$2"
   local out_dir="$3"
-  colab stop -s "${session}" </dev/null >> "${out_dir}/colab.log" 2>&1 || true
-  colab sessions </dev/null >> "${out_dir}/colab.log" 2>&1 || true
+  local attempts="${COLAB_STOP_ATTEMPTS:-2}"
+  local stop_timeout="${COLAB_STOP_TIMEOUT_S:-60}"
+  local sessions_timeout="${COLAB_SESSIONS_TIMEOUT_S:-30}"
+  local kill_grace="${COLAB_KILL_GRACE_S:-10}"
+  local attempt=1
+  while [ "${attempt}" -le "${attempts}" ]; do
+    local stop_rc=0
+    colab_run_bounded "${stop_timeout}" "${kill_grace}" colab stop -s "${session}" >> "${out_dir}/colab.log" 2>&1 || stop_rc=$?
+    if [ "${stop_rc}" -eq 0 ]; then
+      break
+    fi
+    if colab_rc_is_timeout "${stop_rc}"; then
+      echo "STOP_TIMEOUT attempt=${attempt}/${attempts} session=${session} timeout_s=${stop_timeout} kill_grace_s=${kill_grace} rc=${stop_rc}" >> "${out_dir}/guards.log"
+    else
+      echo "STOP_FAILED attempt=${attempt}/${attempts} session=${session} rc=${stop_rc}" >> "${out_dir}/guards.log"
+    fi
+    if [ "${attempt}" -lt "${attempts}" ]; then
+      local next_attempt=$((attempt + 1))
+      echo "STOP_RETRY attempt=${next_attempt}/${attempts} session=${session}" >> "${out_dir}/guards.log"
+    fi
+    attempt=$((attempt + 1))
+  done
+  local sess_rc=0
+  colab_run_bounded "${sessions_timeout}" "${kill_grace}" colab sessions >> "${out_dir}/colab.log" 2>&1 || sess_rc=$?
+  if colab_rc_is_timeout "${sess_rc}"; then
+    echo "SESSIONS_TIMEOUT session=${session} timeout_s=${sessions_timeout} kill_grace_s=${kill_grace} rc=${sess_rc}" >> "${out_dir}/guards.log"
+  fi
   colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
 }
 
@@ -805,7 +1040,7 @@ colab_check_session_shape() {
   local expected
   expected="$(colab_shape_row_label "${shape}")"
   local rows_file="${out_dir}/sessions_after_open.txt"
-  colab sessions </dev/null > "${rows_file}" 2>&1 || true
+  colab_run_bounded "${COLAB_SESSIONS_TIMEOUT_S:-30}" "${COLAB_KILL_GRACE_S:-10}" colab sessions > "${rows_file}" 2>&1 || true
   cat "${rows_file}" >> "${out_dir}/colab.log"
   local observed rc=0
   observed="$("${PY_BIN:?the kit must set PY_BIN}" - "${session}" "${rows_file}" "${shape}" "${expected}" "${out_dir}/shape_check.json" << 'PYEOF'
@@ -931,6 +1166,7 @@ colab_write_window_and_outcome() {
   "${py_bin}" - "${out_dir}" "${lane}" "${session}" "${card}" "${cap}" "${wall_s}" "${grace_s}" "${margin}" "${opened_at}" "${closed_at}" "${exit_code}" "${shas_json}" << 'PYEOF'
 import hashlib
 import json
+import os
 import re
 import sys
 import tarfile
@@ -1218,6 +1454,22 @@ if lane == "train":
         "rung_job_sha256": rung_job_sha256,
     }
 
+kill_grace_s = int(os.environ.get("COLAB_KILL_GRACE_S", "10"))
+salvage_restart_s = int(os.environ.get("COLAB_SALVAGE_RESTART_TIMEOUT_S", "180"))
+salvage_exec_s = int(os.environ.get("COLAB_SALVAGE_EXEC_TIMEOUT_S", "330"))
+salvage_download_s = int(os.environ.get("COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S", "300"))
+salvage_steps_sum_s = (
+    (salvage_restart_s + kill_grace_s)
+    + (salvage_exec_s + kill_grace_s)
+    + (salvage_download_s + kill_grace_s)
+)
+salvage_deadline_s = int(os.environ.get("SALVAGE_DEADLINE_S", str(salvage_steps_sum_s)))
+stop_timeout_s = int(os.environ.get("COLAB_STOP_TIMEOUT_S", "60"))
+stop_attempts = int(os.environ.get("COLAB_STOP_ATTEMPTS", "2"))
+stop_bound_s = stop_attempts * (stop_timeout_s + kill_grace_s)
+cleanup_stop_attempted_by_s = min(salvage_steps_sum_s, salvage_deadline_s) if lane == "train" else 0
+cleanup_bound_s = cleanup_stop_attempted_by_s + stop_bound_s
+
 window_payload = {
     **vm_facts,
     "window_id": session,
@@ -1233,6 +1485,8 @@ window_payload = {
     "wall_s": wall_s,
     "grace_s": grace_s,
     "margin": margin,
+    "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
+    "cleanup_bound_s": cleanup_bound_s,
     "start_balance": read_float_file(out_dir / "start_balance.txt"),
     "end_balance": read_float_file(out_dir / "end_balance.txt"),
     "rate_measured": rate_measured,

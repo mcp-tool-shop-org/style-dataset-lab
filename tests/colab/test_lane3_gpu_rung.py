@@ -553,7 +553,9 @@ def _assert_token_nowhere(out_dir: Path) -> None:
     assert not list((out_dir.parent / "xdg").glob("sdlab-l3-tok.*"))
 
 
-def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: str = "out") -> tuple[subprocess.CompletedProcess[str], Path]:
+def _launch(
+    tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: str = "out", timeout_s: int = 240
+) -> tuple[subprocess.CompletedProcess[str], Path]:
     out_dir = tmp_path / out
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
@@ -563,7 +565,9 @@ def _launch(tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: st
         args += ["--shape", "high-mem"]
     if "--rung-job" not in extra:
         args += ["--rung-job", "20"]
-    res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False)
+    res = subprocess.run(
+        args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout_s, check=False
+    )
     return res, out_dir
 
 
@@ -1673,3 +1677,305 @@ def test_rung_500_stopped_by_wall_guard_keeps_step_250_and_marks_step_500_partia
     finally:
         for pid in _rung_processes(content):
             os.kill(pid, 9)
+
+
+def _kill_hung_test_pids(state_dir: Path) -> None:
+    content = state_dir / "content"
+    for pid in _rung_processes(content):
+        try:
+            os.kill(pid, 9)
+        except OSError:
+            pass
+    hung_f = state_dir / "hung_pids.txt"
+    if hung_f.is_file():
+        for line in hung_f.read_text(encoding="utf-8").splitlines():
+            if line.strip().isdigit():
+                try:
+                    os.kill(int(line.strip()), 9)
+                except OSError:
+                    pass
+
+
+def _assert_children_had_default_signals(state_dir: Path, *subcmds: str) -> None:
+    sig_f = state_dir / "child_signals.jsonl"
+    assert sig_f.is_file(), "child_signals.jsonl missing"
+    rows = [json.loads(x) for x in sig_f.read_text(encoding="utf-8").splitlines() if x.strip()]
+    seen = {r["subcmd"] for r in rows}
+    for subcmd in subcmds:
+        assert subcmd in seen, (subcmd, seen)
+    # In cleanup/salvage (from restart-kernel onwards, plus download/stop), commands run synchronously
+    # in a subshell with `trap - TERM INT`, so both SIGTERM and SIGINT are SIG_DFL. (The main run's
+    # `colab exec ... &` is backgrounded with `&`, which in POSIX non-interactive shells sets SIGINT
+    # to SIG_IGN while keeping SIGTERM as SIG_DFL.)
+    in_cleanup = False
+    for r in rows:
+        if r["subcmd"] in ("restart-kernel", "download", "stop"):
+            in_cleanup = True
+        if r["subcmd"] in subcmds:
+            assert r["sigterm_ign"] is False, r
+            if in_cleanup or r["subcmd"] != "exec":
+                assert r["sigint_ign"] is False, r
+
+
+def test_window_json_records_cleanup_bounds_equal_to_configured_sum(tmp_path: Path) -> None:
+    # Default configured sum for lane 3 (train):
+    # restart (180 + 10) + bundle-now exec (330 + 10) + download (300 + 10) = 840 s;
+    # plus 2 stop attempts (2 * (60 + 10) = 140 s) -> cleanup_bound_s = 980 s.
+    _, env3, src = _rung_env(tmp_path / "l3_def")
+    res3, out3 = _launch(tmp_path / "l3_def", env3, src)
+    assert res3.returncode == 0, res3.stderr
+    win3 = json.loads((out3 / "window.json").read_text(encoding="utf-8"))
+    assert win3["cleanup_stop_attempted_by_s"] == (180 + 10) + (330 + 10) + (300 + 10) == 840
+    assert win3["cleanup_bound_s"] == 840 + 2 * (60 + 10) == 980
+
+    # Default configured sum for lane 1 (render):
+    # no post-failure salvage step in cleanup_on_exit -> cleanup_stop_attempted_by_s = 0 s;
+    # 2 stop attempts (2 * (60 + 10) = 140 s) -> cleanup_bound_s = 140 s.
+    _, _, env1 = fc.make_fake_colab_env(tmp_path / "l1_def")
+    env1["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out1 = tmp_path / "l1_def" / "out"
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    res1 = subprocess.run(
+        [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-bounds"],
+        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+    )
+    assert res1.returncode == 0, res1.stderr
+    win1 = json.loads((out1 / "window.json").read_text(encoding="utf-8"))
+    assert win1["cleanup_stop_attempted_by_s"] == 0
+    assert win1["cleanup_bound_s"] == 2 * (60 + 10) == 140
+
+    # Custom configured sums in test mode reflect the overridden step timeouts and deadline.
+    _, env3_custom, src_custom = _rung_env(tmp_path / "l3_custom")
+    env3_custom.update({
+        "SDLAB_TEST_KILL_GRACE_S": "2",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "10",
+        "SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S": "20",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "15",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "8",
+    })
+    res3_c, out3_c = _launch(tmp_path / "l3_custom", env3_custom, src_custom)
+    assert res3_c.returncode == 0, res3_c.stderr
+    win3_c = json.loads((out3_c / "window.json").read_text(encoding="utf-8"))
+    expected_salvage_c = (10 + 2) + (20 + 2) + (15 + 2)
+    assert win3_c["cleanup_stop_attempted_by_s"] == expected_salvage_c == 51
+    assert win3_c["cleanup_bound_s"] == expected_salvage_c + 2 * (8 + 2) == 71
+
+
+def test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+        "FAKE_COLAB_DOWNLOAD_HANG": "ignore_term",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "5",
+        "SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S": "5",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "2",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "3",
+    })
+    # Configured bounds: restart (5+1=6) + exec (5+1=6) + download (2+1=3) = 15 s;
+    # stop (2 * (3+1) = 8 s) -> total cleanup_bound_s = 23 s.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01", timeout_s=28
+        )
+        assert res.returncode != 0
+        guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert "REFUSED: CAP_GUARD_TRIPPED" in guards
+        assert "SALVAGE_STEP_TIMEOUT download timeout_s=2 kill_grace_s=1 rc=137" in guards, guards
+        assert "BUNDLE_AFTER_FAILURE: none on the VM" in guards
+
+        calls = (state_dir / "calls.log").read_text(encoding="utf-8")
+        assert "CALL stop -s sdlab-l3-gpu-rung" in calls
+        assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+        assert not (state_dir / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+
+        calls_rows = [
+            json.loads(x) for x in (state_dir / "calls.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()
+        ]
+        restart_ts = next(r["ts"] for r in calls_rows if r["subcmd"] == "restart-kernel")
+        stop_ts = next(r["ts"] for r in calls_rows if r["subcmd"] == "stop")
+        assert stop_ts - restart_ts <= 15.0, (restart_ts, stop_ts)
+
+        win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+        assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
+        assert win["cleanup_stop_attempted_by_s"] == 15
+        assert win["cleanup_bound_s"] == 23
+        _assert_children_had_default_signals(state_dir, "restart-kernel", "exec", "download", "stop")
+        _assert_token_nowhere(out_dir)
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_rung_500_stop_hangs_once_then_retries_and_stops_session(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+        "FAKE_COLAB_STOP_HANG_ONCE": "ignore_term",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+    })
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01", timeout_s=28
+        )
+        assert res.returncode != 0
+        _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "CAP_GUARD_TRIPPED")
+        guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert "STOP_TIMEOUT attempt=1/2 session=sdlab-l3-gpu-rung timeout_s=2 kill_grace_s=1 rc=137" in guards
+        assert "STOP_RETRY attempt=2/2 session=sdlab-l3-gpu-rung" in guards
+        calls = (state_dir / "calls.log").read_text(encoding="utf-8").splitlines()
+        assert calls.count("CALL stop -s sdlab-l3-gpu-rung") == 2
+        assert not (state_dir / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+        _assert_children_had_default_signals(state_dir, "restart-kernel", "exec", "download", "stop")
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop(tmp_path: Path) -> None:
+    import signal as _signal
+    import time as _time
+
+    # 1. A single TERM sent to the launcher during salvage is recorded, does not abort salvage halfway,
+    # and still runs `colab stop`.
+    state_dir, env, src = _rung_env(tmp_path / "sig1")
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+        "FAKE_COLAB_RESTART_DELAY_S": "1.2",
+    })
+    out_dir = tmp_path / "sig1" / "out"
+    args = [
+        _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
+        "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
+        "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
+        "--wall-s", "2900", "--cap", "0.03", "--margin", "0.01", "--max-rate", "9.5",
+        "--shape", "high-mem", "--rung-job", "500",
+    ]
+    try:
+        proc = subprocess.Popen(
+            args, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        restarts_f = state_dir / "restarts.log"
+        deadline = _time.monotonic() + 25.0
+        sent_term = False
+        while _time.monotonic() < deadline:
+            if restarts_f.is_file() and not sent_term:
+                proc.send_signal(_signal.SIGTERM)
+                sent_term = True
+                break
+            if proc.poll() is not None:
+                break
+            _time.sleep(0.05)
+        assert sent_term, "launcher never reached restart-kernel in salvage"
+        proc.communicate(timeout=20)
+        assert proc.returncode != 0
+        _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "CAP_GUARD_TRIPPED")
+        guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert "CLEANUP_SIGNAL count=1 action=continue_bounded_cleanup" in guards, guards
+        assert "CALL stop -s sdlab-l3-gpu-rung" in (state_dir / "calls.log").read_text(encoding="utf-8")
+        _assert_children_had_default_signals(state_dir, "restart-kernel", "exec", "download", "stop")
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+    # 2. Past SALVAGE_DEADLINE_S (here after a hung restart-kernel that ignores TERM is killed by timeout -k),
+    # cleanup skips any remaining salvage step and goes straight to `colab stop`.
+    state_dir2, env2, src2 = _rung_env(tmp_path / "deadline")
+    env2.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.5",
+        "FAKE_COLAB_RESTART_HANG": "ignore_term",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "1",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "1",
+    })
+    try:
+        res2, out2 = _launch(
+            tmp_path / "deadline", env2, src2, "--rung-job", "500", "--cap", "0.03", "--margin", "0.01", timeout_s=25
+        )
+        assert res2.returncode != 0
+        guards2 = (out2 / "guards.log").read_text(encoding="utf-8")
+        assert "SALVAGE_STEP_TIMEOUT restart-kernel timeout_s=1 kill_grace_s=1 rc=137" in guards2, guards2
+        assert "SALVAGE_DEADLINE_EXCEEDED bundle-now" in guards2, guards2
+        assert "SALVAGE_DEADLINE_EXCEEDED download" in guards2, guards2
+        calls2 = (state_dir2 / "calls.log").read_text(encoding="utf-8")
+        assert "CALL download" not in calls2
+        assert "CALL stop -s sdlab-l3-gpu-rung" in calls2
+        assert "STOP -s sdlab-l3-gpu-rung" in (state_dir2 / "stops.log").read_text(encoding="utf-8")
+    finally:
+        _kill_hung_test_pids(state_dir2)
+
+
+def test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound(tmp_path: Path) -> None:
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+
+    # 1. Lane 1 hung `colab download` that ignores TERM: bounded by timeout -k, logs timeout, runs `colab stop`.
+    _, state1, env1 = fc.make_fake_colab_env(tmp_path / "l1_dl")
+    env1.update({
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "FAKE_COLAB_DOWNLOAD_HANG": "ignore_term",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "2",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+    })
+    out1 = tmp_path / "l1_dl" / "out"
+    try:
+        res1 = subprocess.run(
+            [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-dlhang"],
+            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=20, check=False,
+        )
+        assert res1.returncode != 0
+        guards1 = (out1 / "guards.log").read_text(encoding="utf-8")
+        assert "SALVAGE_STEP_TIMEOUT download timeout_s=2 kill_grace_s=1 rc=137" in guards1, guards1
+        assert "REFUSED: DOWNLOAD_FAILED:" in guards1
+        calls1 = (state1 / "calls.log").read_text(encoding="utf-8")
+        assert "CALL stop -s sdlab-l1-dlhang" in calls1
+        assert "STOP -s sdlab-l1-dlhang" in (state1 / "stops.log").read_text(encoding="utf-8")
+        win1 = json.loads((out1 / "window.json").read_text(encoding="utf-8"))
+        assert win1["refusal_code"] == "DOWNLOAD_FAILED"
+        assert win1["cleanup_stop_attempted_by_s"] == 0
+        assert win1["cleanup_bound_s"] == 2 * (2 + 1) == 6
+        _assert_children_had_default_signals(state1, "download", "stop")
+    finally:
+        _kill_hung_test_pids(state1)
+
+    # 2. Lane 1 `colab stop` hangs once (ignoring TERM) then succeeds on retry, and closing `colab sessions`
+    # hangs and times out cleanly.
+    _, state2, env2 = fc.make_fake_colab_env(tmp_path / "l1_stop")
+    env2.update({
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "FAKE_COLAB_STOP_HANG_ONCE": "ignore_term",
+        "FAKE_COLAB_SESSIONS_CLOSE_HANG": "ignore_term",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "1",
+        "SDLAB_TEST_SESSIONS_TIMEOUT_S": "1",
+    })
+    out2 = tmp_path / "l1_stop" / "out"
+    try:
+        res2 = subprocess.run(
+            [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out2), "--session", "sdlab-l1-stophang"],
+            env=env2, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=20, check=False,
+        )
+        assert res2.returncode == 0, res2.stderr
+        guards2 = (out2 / "guards.log").read_text(encoding="utf-8")
+        assert "STOP_TIMEOUT attempt=1/2 session=sdlab-l1-stophang timeout_s=1 kill_grace_s=1 rc=137" in guards2
+        assert "STOP_RETRY attempt=2/2 session=sdlab-l1-stophang" in guards2
+        assert "SESSIONS_TIMEOUT session=sdlab-l1-stophang timeout_s=1 kill_grace_s=1 rc=137" in guards2
+        calls2 = (state2 / "calls.log").read_text(encoding="utf-8").splitlines()
+        assert calls2.count("CALL stop -s sdlab-l1-stophang") == 2
+        assert "STOP -s sdlab-l1-stophang" in (state2 / "stops.log").read_text(encoding="utf-8")
+        assert not (state2 / "open_sessions" / "sdlab-l1-stophang.json").exists()
+        win2 = json.loads((out2 / "window.json").read_text(encoding="utf-8"))
+        assert win2["status"] == "ok" and win2["cleanup_bound_s"] == 2 * (1 + 1) == 4
+    finally:
+        _kill_hung_test_pids(state2)
+

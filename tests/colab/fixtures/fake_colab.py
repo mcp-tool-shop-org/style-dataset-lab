@@ -399,6 +399,30 @@ def _kill_recorded_groups(state_dir: Path, sid: str) -> None:
     pg_f.unlink(missing_ok=True)
 
 
+def _record_inherited_signals(state_dir: Path, subcmd: str) -> None:
+    import signal as _signal
+
+    rec = {
+        "subcmd": subcmd,
+        "pid": os.getpid(),
+        "sigterm_ign": _signal.getsignal(_signal.SIGTERM) == _signal.SIG_IGN,
+        "sigint_ign": _signal.getsignal(_signal.SIGINT) == _signal.SIG_IGN,
+    }
+    with (state_dir / "child_signals.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(rec) + "\n")
+
+
+def _hang_process(state_dir: Path, ignore_term: bool) -> None:
+    import signal as _signal
+
+    if ignore_term:
+        _signal.signal(_signal.SIGTERM, _signal.SIG_IGN)
+        _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
+    with (state_dir / "hung_pids.txt").open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(f"{os.getpid()}\n")
+    time.sleep(3600)
+
+
 def _write_fake_remote_scripts(content_dir: Path) -> None:
     uv_logs_dst = content_dir / ".uv_logs"
     uv_logs_dst.mkdir(parents=True, exist_ok=True)
@@ -1151,6 +1175,7 @@ def main(argv: list[str] | None = None) -> int:
         return None
 
     # Record validated call in calls.log and calls.jsonl
+    _record_inherited_signals(state_dir, subcmd)
     with (state_dir / "calls.log").open("a", encoding="utf-8", newline="\n") as fh:
         fh.write(f"CALL {' '.join(raw_args)}\n")
     with (state_dir / "calls.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
@@ -1250,6 +1275,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if subcmd == "sessions":
+        if (state_dir / "stops.log").exists() and os.environ.get("FAKE_COLAB_SESSIONS_CLOSE_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_SESSIONS_CLOSE_HANG") == "ignore_term")
         with (state_dir / "sessions.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write("SESSION_LIST_AFTER_STOP\n")
         # FAKE_COLAB_SESSIONS_EMPTY=1: the server lists nothing, even for an open session.
@@ -1352,6 +1379,8 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab download requires -s/--session\n")
             return 2
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") == "ignore_term")
         remote_src, local_dst = _normalize_remote_content_path(positionals[0]), positionals[1]
         if not remote_src.startswith("/content/"):
             sys.stderr.write(f"Remote path must be under /content/: {remote_src}\n")
@@ -1376,6 +1405,14 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab stop requires -s/--session\n")
             return 2
+        stop_cnt_f = state_dir / "stop_attempts.txt"
+        stop_cnt = int(stop_cnt_f.read_text(encoding="utf-8").strip()) if stop_cnt_f.is_file() else 0
+        stop_cnt += 1
+        stop_cnt_f.write_text(f"{stop_cnt}\n", encoding="utf-8", newline="\n")
+        if os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") in ("1", "ignore_term") and stop_cnt == 1:
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") == "ignore_term")
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"STOP {' '.join(args)}\n")
         (_open_sessions_dir(state_dir) / f"{sid}.json").unlink(missing_ok=True)
@@ -1388,6 +1425,8 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab restart-kernel requires -s/--session\n")
             return 2
+        if os.environ.get("FAKE_COLAB_RESTART_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_RESTART_HANG") == "ignore_term")
         # The kernel process ends (and with it the running cell); processes the cell spawned in
         # its own process group are left alone. stop() still ends them with the VM.
         import signal as _signal
@@ -1405,6 +1444,8 @@ def main(argv: list[str] | None = None) -> int:
         _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
         with (state_dir / "restarts.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"RESTART -s {sid} cell={cell}\n")
+        if os.environ.get("FAKE_COLAB_RESTART_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_RESTART_DELAY_S"]))
         return 0
 
     if subcmd == "exec":
@@ -1413,6 +1454,8 @@ def main(argv: list[str] | None = None) -> int:
         if not sid or not py_file:
             sys.stderr.write("colab exec requires -s/--session and -f/--file\n")
             return 2
+        if "lane3_bundle_now.py" in py_file and os.environ.get("FAKE_COLAB_BUNDLE_NOW_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_BUNDLE_NOW_HANG") == "ignore_term")
         py_path = _normalize_host_path(py_file)
         if not py_path.is_file() or py_path.suffix != ".py":
             sys.stderr.write(f"colab exec -f must be an existing .py file: {py_file}\n")

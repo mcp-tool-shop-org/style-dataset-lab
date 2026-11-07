@@ -16120,7 +16120,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "cde7f454093eb4f69507d7f516b19d016f8d10d6d5dc52913b7c482caf201377",
+          "hash": "a0f160362e85e7a5407e5b547aa14d55e87c1de9c9b285a85742fe94e8d18e4e",
           "path": "CHANGELOG.md"
         },
         {
@@ -16817,7 +16817,7 @@
           "path": "scripts/card.js"
         },
         {
-          "hash": "2f0ce95ad073eef1dc95156d059a0b7abae59882f67316966f6c0c4e38a3b750",
+          "hash": "6cf2bdb356a701745663a1932999c695f75de848bd6612703748d69bdab04167",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -16837,7 +16837,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "eb8c1376ede68b57af3ece43443e67edca1f3e0e5a968c7b3eeec6f1d044c961",
+          "hash": "34085e0326142c88ce9e32998f29af8a275f13443a843830ee5bd3c7b5abbe2f",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17062,6 +17062,10 @@
         {
           "hash": "fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d",
           "path": "scripts/colab/lane3/rung-dataset.json"
+        },
+        {
+          "hash": "36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d",
+          "path": "scripts/colab/lane3/rung-qwen-image-500.yaml"
         },
         {
           "hash": "f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533",
@@ -17472,11 +17476,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "dfcf30e6c98dba16cae339090337652e2c5acd7a381f3b091ca8228c32b083ed",
+          "hash": "87d3288247153a3408211529dfb0476d2c17d6ca16672c6c934066fc99807516",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "f0b6400bb66ca87092b80a27d5868fd7cba5695cac5b9e44a2d5bbbc4390b530",
+          "hash": "92c74d25ef5f1598692cc9f6efbdd034d905401db876f3bb451396266683354b",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19877,7 +19881,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "62df1f4419aa1d91ad92b11fe1d64cccb525191a78b7ac7d8807640547483a62",
+          "hash": "53241eaef0bf6ba04db9377c2b523988765f59a7ac383e910b95dfa517db9519",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -20033,7 +20037,7 @@
             "test_upload_and_download_helpers_refuse_by_name",
             "test_upload_failure_is_upload_failed_with_http_status_and_no_token"
           ],
-          "hash": "9f27580a9555ef3e50c43d2374e289cd5deff9bf804efe3c415147f9e1623c43",
+          "hash": "ffcfa8897a4c55346c6a22c5aaea5ff8ee409b67fa5b5061d94a56be32bd9cf1",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20111,6 +20115,7 @@
             "test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call",
             "test_kit_refuses_a_wall_that_cannot_cover_the_rung",
             "test_kit_refuses_invalid_rung_job_or_rung_job_without_train",
+            "test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound",
             "test_meminfo_and_host_ram_measurement",
             "test_metadata_exception_text_never_reaches_any_output",
             "test_model_check_cli_reads_the_token_from_the_environment",
@@ -20127,8 +20132,11 @@
             "test_repo_cache_dir_and_dir_bytes",
             "test_rig_side_kill_still_brings_back_the_outputs",
             "test_run_copy_off_follows_the_trainer_and_reports_log_growth",
+            "test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound",
+            "test_rung_500_stop_hangs_once_then_retries_and_stops_session",
             "test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial",
             "test_rung_500_stopped_by_wall_guard_keeps_step_250_and_marks_step_500_partial",
+            "test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop",
             "test_rung_mid_run_failure_downloads_what_was_copied_off",
             "test_rung_refusals_stop_before_training_and_still_bundle",
             "test_rung_shape_mismatch_refuses_after_open_and_stops",
@@ -20148,9 +20156,10 @@
             "test_token_variable_reaches_the_download_only_when_a_token_was_staged",
             "test_truncated_checkpoint_is_partial_and_does_not_count",
             "test_vm_metadata_failures_are_named",
+            "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "2b444b25610684410bc2da0dd550c45e77c986ef230059b5f472cb27d4574d48",
+          "hash": "92cd176743f372cb2bf3300180d2dbf87609aebd72cdcdb3ba0d8cf24ec25b88",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -22442,8 +22451,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "4352f30839c4c10f357637452e28b2698f8af686",
-    "tracked": 3302
+    "commit": "3cda3fd84bdbcef7118855be15d60d37e0de1191",
+    "tracked": 3303
   },
   "landings": [
     {

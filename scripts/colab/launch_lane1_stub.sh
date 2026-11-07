@@ -6,6 +6,10 @@
 # stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap, vitals/DEAD HARNESS,
 # host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges VM facts/balances/rate/
 # downloaded shas into window.json, and stops its own session in an EXIT trap.
+# Bounded download and stop contract (colab_window.sh):
+#   colab download: timeout -k 10 300 (310 s)
+#   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
+#   cleanup_stop_attempted_by_s = 0 s, cleanup_bound_s = 140 s
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -26,8 +30,8 @@ PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="eb8c1376ede68b57af3ece43443e67edca1f3e0e5a968c7b3eeec6f1d044c961"
-PINNED_SELF_SHA="4b425e88fa1e9f4d946ef529737611aa8ea2ebbab590c465d44a61c11e5c4a22"
+PINNED_COLAB_WINDOW_SHA="34085e0326142c88ce9e32998f29af8a275f13443a843830ee5bd3c7b5abbe2f"
+PINNED_SELF_SHA="ad350213bb9e636b265cb0524ef892a2406a9f5b11300861635bcfa78b033922"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -96,8 +100,17 @@ PIN_OVERRIDE_VARS=(
   EXPECTED_REMOTE_RUNNER_SHA
   EXPECTED_COLAB_WINDOW_SHA
   EXPECTED_LAUNCH_LANE1_STUB_SHA
+  SDLAB_TEST_RATE_READ_INTERVAL_S
+  SDLAB_TEST_KILL_GRACE_S
+  SDLAB_TEST_DOWNLOAD_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_DEADLINE_S
+  SDLAB_TEST_STOP_TIMEOUT_S
+  SDLAB_TEST_SESSIONS_TIMEOUT_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
+colab_apply_test_cleanup_overrides "${TEST_MODE}"
 EXP_LOCK_SHA="${PINNED_LOCK_SHA}"
 EXP_LANE1_SHA="${PINNED_LANE1_RENDER_SHA}"
 EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
@@ -132,7 +145,7 @@ EXEC_PID=""
 
 cleanup_on_exit() {
   local rc=$?
-  trap - EXIT TERM INT
+  colab_enter_cleanup_trap "${OUT_DIR}"
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true

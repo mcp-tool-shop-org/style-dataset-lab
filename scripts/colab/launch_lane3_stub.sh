@@ -15,6 +15,14 @@
 # bundle is downloaded at the end and, after a failure, whatever it holds. Enforces live
 # launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring,
 # and stops its own session in an EXIT trap on every exit path.
+#
+# Bounded post-failure salvage and stop contract (colab_window.sh):
+#   restart-kernel: timeout -k 10 180 (190 s)
+#   bundle-now exec (--timeout 300): timeout -k 10 330 (340 s)
+#   salvage download: timeout -k 10 300 (310 s)
+#   SALVAGE_DEADLINE_S=840 (past 840 s, remaining salvage steps are skipped -> colab stop)
+#   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
+#   cleanup_stop_attempted_by_s = 840 s, cleanup_bound_s = 980 s
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -34,13 +42,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="eb8c1376ede68b57af3ece43443e67edca1f3e0e5a968c7b3eeec6f1d044c961"
+PINNED_COLAB_WINDOW_SHA="34085e0326142c88ce9e32998f29af8a275f13443a843830ee5bd3c7b5abbe2f"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="9d1143945c2470904cef99cf1cac96d71adb8b30cf3f61f5fc4981db51ed8e25"
+PINNED_SELF_SHA="d8b0f179208755e525e6096f3ac01cb25faff95315c858c679fa83be1947dfd7"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -780,8 +788,16 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_RATE_READ_INTERVAL_S
   SDLAB_TEST_INSTALL_ALLOWANCE_S
   SDLAB_TEST_TRAIN_ALLOWANCE_S
+  SDLAB_TEST_KILL_GRACE_S
+  SDLAB_TEST_DOWNLOAD_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_DEADLINE_S
+  SDLAB_TEST_STOP_TIMEOUT_S
+  SDLAB_TEST_SESSIONS_TIMEOUT_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
+colab_apply_test_cleanup_overrides "${TEST_MODE}"
 EXP_OVERRIDE_SHA="${PINNED_OVERRIDE_SHA}"
 EXP_LOCAL_WHEELS_SHA="${PINNED_LOCAL_WHEELS_MANIFEST_SHA}"
 EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
@@ -840,41 +856,30 @@ START_EPOCH="$(date -u +%s)"
 SESSION_OPENED=0
 WALL_WATCHER_PID=""
 EXEC_PID=""
-EXEC_STARTED=0
+EXEC_IN_FLIGHT=0
 TOKEN_DIR=""
 
-# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, restart the session's
-# kernel, then run lane3_bundle_now.py on the VM. Every exec on a session runs on its one stored kernel
-# and Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed
-# exec's cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
+# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, run bounded salvage via
+# colab_salvage_bundle_after_failure (`colab restart-kernel` under `timeout -k 10 180`, bundle-now
+# `colab exec --timeout 300` under `timeout -k 10 330`, and `colab download` under `timeout -k 10 300`,
+# all under `SALVAGE_DEADLINE_S=840`). Every exec on a session runs on its one stored kernel and
+# Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed exec's
+# cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
 # Processes the cell spawned may outlive the restart, so bundle-now kills the rung's processes by
-# command line either way. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec: the
-# VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
-# training folder, writes the failure record and tars lane3_out. Then the bundle is downloaded:
-# whatever the run had saved. Nothing here writes a REFUSED line, so the window's refusal stays the
-# one that stopped the run.
+# command line either way. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec:
+# the VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
+# training folder, writes the failure record and tars lane3_out. Nothing here writes a REFUSED line,
+# so the window's refusal stays the one that stopped the run.
 lane3_download_bundle_after_failure() {
   local rc="$1"
-  local dl_out=""
-  local dl_rc=0
-  local dst="${OUT_DIR}/lane3_stub_bundle.tar.gz"
-  timeout 180 colab restart-kernel -s "${SESSION}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
-  colab exec -s "${SESSION}" -f "${BUNDLE_NOW_PY}" --timeout 300 --env "SDLAB_CONTENT=/content" \
-    --env "SDLAB_BUNDLE_RC=${rc}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
-  dl_out="$(colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${dst}" </dev/null 2>&1)" || dl_rc=$?
-  printf '%s\n' "${dl_out}" >> "${OUT_DIR}/colab.log"
-  if [ "${dl_rc}" -eq 0 ] && [ -s "${dst}" ]; then
-    echo "BUNDLE_AFTER_FAILURE: downloaded lane3_stub_bundle.tar.gz (rc=${rc})" >> "${OUT_DIR}/guards.log"
-  else
-    rm -f "${dst}"
-    echo "BUNDLE_AFTER_FAILURE: none on the VM (rc=${rc}, download rc=${dl_rc})" >> "${OUT_DIR}/guards.log"
-  fi
+  colab_salvage_bundle_after_failure \
+    "${SESSION}" "${BUNDLE_NOW_PY}" /content/lane3_stub_bundle.tar.gz \
+    "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}" "${rc}"
 }
 
 cleanup_on_exit() {
   local rc=$?
-  trap - EXIT
-  trap '' TERM INT
+  colab_enter_cleanup_trap "${OUT_DIR}"
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true
@@ -887,7 +892,7 @@ cleanup_on_exit() {
   if [ -n "${TOKEN_DIR}" ]; then
     rm -rf "${TOKEN_DIR}" || true
   fi
-  if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_STARTED}" = "1" ] \
+  if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_IN_FLIGHT}" = "1" ] \
     && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
     lane3_download_bundle_after_failure "${rc}" || true
   fi
@@ -1034,12 +1039,13 @@ colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.
 
 REMOTE_ENV=()
 mapfile -t REMOTE_ENV < <(lane3_remote_env "${EXP_OVERRIDE_SHA}")
-EXEC_STARTED=1
+EXEC_IN_FLIGHT=1
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \
   "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}" \
   "SDLAB_REMOTE_SCRIPT=/content/remote_lane3_stub.sh" \
   "${REMOTE_ENV[@]}"
+EXEC_IN_FLIGHT=0
 
 # Download result tar before EXIT trap stops the session
 colab_download_checked "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}"
