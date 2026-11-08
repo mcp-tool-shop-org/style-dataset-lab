@@ -20,6 +20,7 @@ flags:
   python:
     paths:
       - scripts/colab/
+      - scripts/checkpoint-eval/
     carryforward: true
 
 comment:

@@ -49,6 +49,7 @@ const COMMANDS = {
   'training-manifest':   '../scripts/training-manifest.js',
   'training-package':    '../scripts/training-package.js',
   'eval-run':            '../scripts/eval-run.js',
+  'checkpoint-eval':     '../scripts/checkpoint-eval.js',
   'implementation-pack': '../scripts/implementation-pack.js',
   'reingest':            '../scripts/reingest.js',
   'verify':              '../scripts/verify.js',
@@ -374,6 +375,23 @@ Flags:
   --snapshot <id>      Verify all records in a snapshot
   --json               Emit machine-readable JSON report`,
 
+  'checkpoint-eval': `sdlab checkpoint-eval --training-dir <dir> --run A=<dir> [--run B=<dir>] --prompts <config.yaml|json> --out <dir> [options]
+
+Score seed-matched early-checkpoint sample trajectories (CSD top-k, content-only CLIP-T,
+DINOv2 nearest-neighbour, DreamSim distance, and LoRA weight-space stable rank) on CPU
+or Intel OpenVINO.
+
+Flags:
+  --training-dir <dir>        Training images directory (embedded once and cached under --out)
+  --run NAME=DIR              Run sample directory (e.g. --run A=<dir> [--run B=<dir>])
+  --steps <s1,s2,...>         Comma-separated checkpoint steps (e.g. 0,250,500,...)
+  --prompts <path>            Trainer config.yaml or JSON with sample prompts and seed
+  --prompts-b <path>          Optional separate config for run B
+  --out <dir>                 Output directory (must be outside git-tracked paths for private data)
+  --device <cpu|openvino>     Compute device (default: cpu; CUDA_VISIBLE_DEVICES="" always enforced)
+  --checkpoint <path>         Optional LoRA .safetensors checkpoint(s) for weight-space stable rank
+  --corridors <path>          Optional explicit path to corridors.md (defaults to <out>/corridors.md)`,
+
   'asset ingest': `sdlab asset ingest <dir> --project <name> [--dry-run] [--json]
 
 Register a provenance-carrying asset export into a project. The export
@@ -473,6 +491,7 @@ function printHelp() {
   console.log('  eval-run score <id> --outputs <p>  Score against eval pack');
   console.log('  eval-run show <id>                 Show eval run details');
   console.log('  eval-run list                      List all eval runs');
+  console.log('  checkpoint-eval                    Paired early-checkpoint metrics for style LoRAs');
   console.log('  implementation-pack build           Build implementation example pack');
   console.log('  implementation-pack show <id>       Show pack details');
   console.log('  implementation-pack list            List all packs');

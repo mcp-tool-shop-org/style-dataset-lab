@@ -84,13 +84,13 @@
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-06; 5 files changed content.",
+        "sentence": "Nothing structural changed since 2026-11-07; 5 files changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "06f0aa496852bd257c0163520f49fb89bf741c6e",
-      "generatedAt": "2026-11-06T20:09:25.572Z"
+      "commit": "e35fcd813efddf49bb1a3caabd49253f9d674245",
+      "generatedAt": "2026-11-07T22:49:25.661Z"
     },
     "unchanged": true
   },
@@ -98,7 +98,7 @@
     {
       "a": "tests/colab/fixtures/fake_colab.py",
       "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 13,
+      "either": 12,
       "partLabels": [
         "tests",
         "tests"
@@ -116,9 +116,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "8d676ad6061924cf2be2685c9be32bda6548d20b",
+  "commit": "7c41b59ad75dc1a9e893bc9e0be4708433893018",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (247), Python (57), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (59), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -138,12 +138,12 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 48
+          "files": 50
         },
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 124
+          "files": 126
         },
         {
           "boundary": "lib",
@@ -154,6 +154,7 @@
       "runs": [
         "bin/sdlab.js",
         "scripts/colab/preflight_resolve.sh",
+        "tests/checkpoint_eval/",
         "tests/colab/",
         "tests/canon-star-freight/",
         "tests/cli-scripts/",
@@ -186,8 +187,8 @@
         "tests/lib-pipeline/",
         "tests/lib-runtime/"
       ],
-      "runsCount": 33,
-      "runsMore": 100,
+      "runsCount": 34,
+      "runsMore": 121,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -216,7 +217,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 104
+          "files": 105
         },
         {
           "boundary": "lib",
@@ -226,7 +227,7 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 40
+          "files": 41
         }
       ],
       "runs": [
@@ -328,7 +329,7 @@
         {
           "boundary": "scripts",
           "depth": 1,
-          "files": 33
+          "files": 34
         }
       ],
       "runs": [
@@ -436,16 +437,16 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-07T16:54:51.911Z",
+  "generatedAt": "2026-11-08T01:31:17.059Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
-    "40 writes and 73 reads use paths built at run time and are not named here.",
+    "40 writes and 74 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "160 writes and 297 reads go to a path their caller passes, not to this repository.",
+    "163 writes and 307 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
-    "11 commands are built at run time and not followed, 9 of them in tests.",
+    "12 commands are built at run time and not followed, 9 of them in tests.",
     "Statistics confidence is low: fewer than 25 source files reach 10 revisions in the window."
   ],
   "mainDoor": ".github/workflows/ci.yml",
@@ -722,11 +723,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 134,
+  "testFiles": 136,
   "testedBy": {
-    "bin": 10,
-    "lib": 97,
-    "scripts": 28
+    "bin": 11,
+    "lib": 98,
+    "scripts": 30
   },
   "unnamedWrites": 40,
   "unread": [

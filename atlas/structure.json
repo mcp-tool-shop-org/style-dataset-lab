@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "5d9cf9deb8e57918f59a6b4ecbd7d91ad02c1d3973defe8939c8f1cdb26775b3",
+          "hash": "621d32a860f65b98fbee7d2e0eecb02ff191097e7b120f32c3bc29945a9a5102",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -64,21 +64,22 @@
             {
               "in": "main",
               "kind": "throw",
-              "line": 624
+              "line": 643
             },
             {
               "in": "main",
               "kind": "throw",
-              "line": 665
+              "line": 684
             }
           ],
-          "hash": "8c56e1d335e065c5362f04b7465df42b4a229e8e98956de114cf51e0470aed49",
+          "hash": "fb2bd05588e4121af06d2f1de50e2d2943c6fb6e55b912a40300a07e0167fd24",
           "importsFiles": [
             "lib/args.js",
             "lib/errors.js",
             "lib/log.js",
             "scripts/canon-bind.js",
             "scripts/card.js",
+            "scripts/checkpoint-eval.js",
             "scripts/compare.js",
             "scripts/critique-show.js",
             "scripts/critique.js",
@@ -114,14 +115,14 @@
             {
               "calls": [
                 {
-                  "line": 563,
+                  "line": 582,
                   "name": "enableDebug",
                   "target": {
                     "file": "lib/errors.js"
                   }
                 },
                 {
-                  "line": 564,
+                  "line": 583,
                   "name": "setLogLevel",
                   "target": {
                     "file": "lib/log.js"
@@ -129,7 +130,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 620,
+                  "line": 639,
                   "name": "findClosest",
                   "over": "namespaces",
                   "target": {
@@ -138,7 +139,7 @@
                 },
                 {
                   "branch": "command === head",
-                  "line": 624,
+                  "line": 643,
                   "name": "inputError",
                   "over": "namespaces",
                   "target": {
@@ -229,7 +230,7 @@
                       }
                     }
                   ],
-                  "line": 639,
+                  "line": 658,
                   "name": "run",
                   "target": {
                     "file": "scripts/critique.js"
@@ -302,7 +303,7 @@
                       }
                     }
                   ],
-                  "line": 647,
+                  "line": 666,
                   "name": "run",
                   "target": {
                     "file": "scripts/refine.js"
@@ -369,7 +370,7 @@
                       }
                     }
                   ],
-                  "line": 655,
+                  "line": 674,
                   "name": "run",
                   "target": {
                     "file": "scripts/select.js"
@@ -377,7 +378,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 661,
+                  "line": 680,
                   "name": "findClosest",
                   "target": {
                     "file": "lib/args.js"
@@ -385,7 +386,7 @@
                 },
                 {
                   "branch": "!modulePath",
-                  "line": 665,
+                  "line": 684,
                   "name": "inputError",
                   "target": {
                     "file": "lib/errors.js"
@@ -410,7 +411,7 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 10,
+      "testedBy": 11,
       "testedThroughSpawn": true,
       "unresolvedNamed": [
         {
@@ -4180,7 +4181,7 @@
       "testRunners": [
         "node --test"
       ],
-      "testedBy": 97,
+      "testedBy": 98,
       "unresolvedNamed": [
         {
           "path": "lib/training-adapters.js",
@@ -16112,7 +16113,7 @@
       "externals": 0,
       "files": [
         {
-          "hash": "f657b35f0a7c8d7e27db46b0a965ada347f4c79d55a6e69e920728ea82ec47e3",
+          "hash": "01a559fe51f4cb8fa4dbb8c95bc6a070021471d42a6387412de19f3cee080e80",
           "path": ".gitattributes"
         },
         {
@@ -16120,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "0a235d8760146041efb6f77993c059bc1187436f4119662da5d7664530aea4c8",
+          "hash": "3d56d2593737830f2ef30f07e376c9536c40a81d3ae6f6bf7a6663a18e62e089",
           "path": "CHANGELOG.md"
         },
         {
@@ -16184,7 +16185,7 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "9a956260d11b53d157c882bfcc6af84eccff7df59da3fc89cbaef07da0bedcdb",
+          "hash": "ab2ecf2fa6f8e35de051e6dd2c0f76a2e0b01b13ed7046b4af0ed6ef5932c936",
           "path": "codecov.yml"
         },
         {
@@ -16278,8 +16279,8 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 12,
-      "dynamicSpawns": 0,
+      "dynamicReads": 13,
+      "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
       "dynamicWrites": 18,
       "entryPoints": [],
@@ -16815,6 +16816,440 @@
             "lib/split.js"
           ],
           "path": "scripts/card.js"
+        },
+        {
+          "exports": [
+            "run"
+          ],
+          "failurePaths": [
+            {
+              "in": "run",
+              "kind": "throw",
+              "line": 45
+            }
+          ],
+          "hash": "1562ce6339d7e02702b8a3436b005cfd709b436f816867b6b059f52780d75177",
+          "importOrder": [
+            "lib/paths.js",
+            "lib/measure.js",
+            "lib/errors.js"
+          ],
+          "importsFiles": [
+            "lib/errors.js",
+            "lib/measure.js",
+            "lib/paths.js"
+          ],
+          "path": "scripts/checkpoint-eval.js"
+        },
+        {
+          "hash": "26bd6ed40527a9ed4ef3ebdb892e61d716a755145695e845540ad030c93c3915",
+          "path": "scripts/checkpoint-eval/README.md"
+        },
+        {
+          "exports": [
+            "build_arg_parser",
+            "build_corridors_payload",
+            "compute_mde_one_sided",
+            "compute_paired_stats",
+            "compute_run_samples_fingerprint",
+            "compute_stable_rank_from_lora_pair",
+            "evaluate_runs",
+            "extract_trigger_words",
+            "get_or_create_training_embeddings",
+            "load_prompts_config",
+            "main",
+            "pair_run_samples",
+            "read_and_verify_corridors",
+            "read_safetensors_weight_space",
+            "score_run_b_against_corridors",
+            "strip_trigger_words",
+            "verify_configs_match",
+            "write_corridors_file"
+          ],
+          "failurePaths": [
+            {
+              "in": "compute_paired_stats",
+              "kind": "raise",
+              "line": 284
+            },
+            {
+              "in": "compute_paired_stats",
+              "kind": "raise",
+              "line": 290
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "raise",
+              "line": 407
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "except",
+              "line": 417
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "except",
+              "line": 420
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "raise",
+              "line": 424
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "raise",
+              "line": 443
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "raise",
+              "line": 451
+            },
+            {
+              "in": "compute_run_samples_fingerprint",
+              "kind": "raise",
+              "line": 554
+            },
+            {
+              "in": "compute_run_samples_fingerprint",
+              "kind": "raise",
+              "line": 560
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 577
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 589
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 595
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 603
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 613
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 620
+            },
+            {
+              "in": "verify_configs_match",
+              "kind": "raise",
+              "line": 632
+            },
+            {
+              "in": "verify_configs_match",
+              "kind": "raise",
+              "line": 638
+            },
+            {
+              "in": "compute_stable_rank_from_lora_pair",
+              "kind": "raise",
+              "line": 758
+            },
+            {
+              "in": "compute_stable_rank_from_lora_pair",
+              "kind": "except",
+              "line": 770
+            },
+            {
+              "in": "compute_stable_rank_from_lora_pair",
+              "kind": "raise",
+              "line": 777
+            },
+            {
+              "in": "_lora_inner_product_and_norms",
+              "kind": "except",
+              "line": 832
+            },
+            {
+              "in": "_load_safetensors_tensors",
+              "kind": "except",
+              "line": 858
+            },
+            {
+              "in": "_load_safetensors_tensors",
+              "kind": "raise",
+              "line": 861
+            },
+            {
+              "in": "_load_safetensors_tensors",
+              "kind": "raise",
+              "line": 881
+            },
+            {
+              "in": "read_safetensors_weight_space",
+              "kind": "raise",
+              "line": 909
+            },
+            {
+              "in": "read_safetensors_weight_space",
+              "kind": "raise",
+              "line": 933
+            },
+            {
+              "in": "__init__",
+              "kind": "raise",
+              "line": 1207
+            },
+            {
+              "in": "__init__",
+              "kind": "raise",
+              "line": 1273
+            },
+            {
+              "in": "_extract_tensor",
+              "kind": "raise",
+              "line": 1301
+            },
+            {
+              "in": "get_or_create_training_embeddings",
+              "kind": "raise",
+              "line": 1388
+            },
+            {
+              "in": "get_or_create_training_embeddings",
+              "kind": "raise",
+              "line": 1394
+            },
+            {
+              "in": "get_or_create_training_embeddings",
+              "kind": "except",
+              "line": 1412
+            },
+            {
+              "in": "_get_step_dict",
+              "kind": "raise",
+              "line": 1444
+            },
+            {
+              "in": "_get_step_dict",
+              "kind": "raise",
+              "line": 1449
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1461
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1468
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "except",
+              "line": 1475
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1476
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1481
+            },
+            {
+              "in": "build_corridors_payload",
+              "kind": "raise",
+              "line": 1545
+            },
+            {
+              "in": "build_corridors_payload",
+              "kind": "raise",
+              "line": 1551
+            },
+            {
+              "in": "write_corridors_file",
+              "kind": "raise",
+              "line": 1691
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1722
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "except",
+              "line": 1730
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1731
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1737
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1747
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1755
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "except",
+              "line": 1759
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1760
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1763
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1768
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "except",
+              "line": 1778
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1779
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1781
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1788
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1794
+            },
+            {
+              "in": "score_run_b_against_corridors",
+              "kind": "raise",
+              "line": 1816
+            },
+            {
+              "in": "_evaluate_single_run",
+              "kind": "raise",
+              "line": 1931
+            },
+            {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2088
+            },
+            {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2098
+            },
+            {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2165
+            },
+            {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2176
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2222
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2228
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2244
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2251
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2261
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2274
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2292
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2305
+            },
+            {
+              "in": "_parse_run_args",
+              "kind": "raise",
+              "line": 2417
+            },
+            {
+              "in": "_parse_run_args",
+              "kind": "raise",
+              "line": 2422
+            },
+            {
+              "in": "_parse_steps_arg",
+              "kind": "raise",
+              "line": 2436
+            },
+            {
+              "in": "main",
+              "kind": "except",
+              "line": 2529
+            }
+          ],
+          "hash": "3cac328ec8795d67844bc72a80afdc8c27da4fd4fb690c46d63ff6d6e8730d92",
+          "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
           "hash": "552ed26f9dccc7a70f216fe53f011bd2997d9614b81295c816ff2b3975262a54",
@@ -19158,11 +19593,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 54,
+          "reads": 64,
           "where": [
             "caller"
           ],
-          "writes": 28
+          "writes": 31
         },
         {
           "reads": 2,
@@ -19180,14 +19615,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 57,
-      "outsideWrites": 40,
+      "outsideReads": 67,
+      "outsideWrites": 43,
       "role": "code",
       "testRunners": [
         "node --test",
         "pytest"
       ],
-      "testedBy": 28,
+      "testedBy": 30,
       "unresolvedSites": 0
     },
     {
@@ -19561,6 +19996,38 @@
           "testFramework": "node --test"
         },
         {
+          "exports": [
+            "test_corridors_band_check_alone_refused",
+            "test_corridors_generation_and_tamper_refusal_end_to_end",
+            "test_corridors_overwrite_refused",
+            "test_corridors_reseal_bypass_refused",
+            "test_math_verdict_and_cli_refusal_branches",
+            "test_missing_dreamsim_refused",
+            "test_missing_step_500_refused",
+            "test_paired_statistics_against_hand_computed_values",
+            "test_pairing_by_name_and_refusals",
+            "test_per_layer_singular_values_from_safetensors_match_numpy",
+            "test_pure_stdlib_fallbacks_and_edge_branches",
+            "test_run_b_config_same_as_run_a_refused",
+            "test_run_b_dir_same_as_run_a_refused",
+            "test_run_b_seed_999_via_config_beside_refused",
+            "test_run_b_without_config_refused",
+            "test_seed_and_prompt_mismatch_refusal",
+            "test_shared_parent_config_not_picked_up_for_run_b_refused",
+            "test_stable_rank_on_known_matrices_and_safetensors",
+            "test_swapped_run_a_dir_refused",
+            "test_wilcoxon_normal_approx_p_less_with_ties_kills_m3",
+            "test_wilcoxon_p_less_and_normal_approximation_above_n20",
+            "test_wrong_corridors_sha_refused"
+          ],
+          "hash": "9210f35fddc6447e723b4c276805b8920e9b8dd61a08092246470b8aa214cfa3",
+          "importsFiles": [
+            "scripts/checkpoint-eval/checkpoint_eval.py"
+          ],
+          "path": "tests/checkpoint_eval/test_checkpoint_eval.py",
+          "testFramework": "pytest"
+        },
+        {
           "hash": "d5b4dac1ff0e676aa0d520b4f5983d1edc5935d32ad31b253a6af21bc2691b54",
           "importsFiles": [
             "lib/args.js"
@@ -19593,6 +20060,14 @@
             "scripts/canon-unfreeze.js"
           ],
           "path": "tests/cli-scripts/canon-cwd-independence.test.js",
+          "spawns": [
+            "bin/sdlab.js"
+          ],
+          "testFramework": "node --test"
+        },
+        {
+          "hash": "cff2cdbc402900bdcf1585910b842aa3fd8013dfd05e364777b7c48a7df40d9a",
+          "path": "tests/cli-scripts/checkpoint-eval.test.js",
           "spawns": [
             "bin/sdlab.js"
           ],
@@ -21482,12 +21957,12 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 48
+          "files": 50
         },
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 124
+          "files": 126
         },
         {
           "boundary": "lib",
@@ -21516,6 +21991,12 @@
           "job": "verify",
           "matched": true,
           "path": "tests/canon-star-freight/",
+          "runKind": "executes"
+        },
+        {
+          "directory": true,
+          "job": "verify",
+          "path": "tests/checkpoint_eval/",
           "runKind": "executes"
         },
         {
@@ -21705,7 +22186,7 @@
           "runKind": "executes"
         }
       ],
-      "runsCount": 33,
+      "runsCount": 34,
       "secrets": [],
       "sends": {
         "deploysPages": false,
@@ -21760,7 +22241,7 @@
           "step": "Smoke test — training profiles"
         },
         {
-          "files": 100,
+          "files": 101,
           "job": "verify",
           "runner": "node --test",
           "step": "Tests",
@@ -21770,7 +22251,7 @@
         },
         {
           "coverage": true,
-          "files": 100,
+          "files": 101,
           "job": "verify",
           "junit": true,
           "runner": "node --test",
@@ -21782,7 +22263,7 @@
         },
         {
           "coverage": true,
-          "files": 20,
+          "files": 21,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -22076,7 +22557,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 104
+          "files": 105
         },
         {
           "boundary": "lib",
@@ -22094,7 +22575,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 40
+          "files": 41
         }
       ],
       "readers": [],
@@ -22316,7 +22797,7 @@
       "stages": [],
       "tests": [
         {
-          "files": 100,
+          "files": 101,
           "job": "publish",
           "runner": "node --test",
           "step": "Tests",
@@ -22375,7 +22856,7 @@
             "file": "scripts/critique-show.js",
             "from": "bin/sdlab.js"
           },
-          "files": 33
+          "files": 34
         }
       ],
       "readers": [],
@@ -22439,12 +22920,47 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "8d676ad6061924cf2be2685c9be32bda6548d20b",
-    "tracked": 3302
+    "commit": "7c41b59ad75dc1a9e893bc9e0be4708433893018",
+    "tracked": 3307
   },
   "landings": [
     {
       "readers": [
+        {
+          "by": "scripts/checkpoint-eval/checkpoint_eval.py",
+          "call": "raw-url",
+          "confidence": "ast",
+          "ref": "main",
+          "repo": "facebookresearch/dinov2"
+        },
+        {
+          "by": "scripts/checkpoint-eval/checkpoint_eval.py",
+          "call": "raw-url",
+          "confidence": "ast",
+          "ref": "main",
+          "repo": "learn2phoenix/CSD"
+        },
+        {
+          "by": "scripts/checkpoint-eval/checkpoint_eval.py",
+          "call": "raw-url",
+          "confidence": "ast",
+          "ref": "main",
+          "repo": "mlfoundations/open_clip"
+        },
+        {
+          "by": "scripts/checkpoint-eval/checkpoint_eval.py",
+          "call": "raw-url",
+          "confidence": "ast",
+          "ref": "main",
+          "repo": "openai/CLIP"
+        },
+        {
+          "by": "scripts/checkpoint-eval/checkpoint_eval.py",
+          "call": "raw-url",
+          "confidence": "ast",
+          "ref": "main",
+          "repo": "ssundaram21/dreamsim"
+        },
         {
           "by": "tests/lib-pipeline/lane1-render.test.js",
           "call": "raw-url",
@@ -22486,6 +23002,12 @@
         },
         {
           "by": "tests/cli-scripts/canon-cwd-independence.test.js",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        },
+        {
+          "by": "tests/cli-scripts/checkpoint-eval.test.js",
           "call": "literal",
           "confidence": "ast",
           "fromTests": true
@@ -25007,6 +25529,17 @@
     {
       "readers": [
         {
+          "by": "scripts/checkpoint-eval.js",
+          "call": "literal",
+          "confidence": "ast"
+        }
+      ],
+      "target": "scripts/checkpoint-eval/checkpoint_eval.py",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
           "by": "lib/adapters/ai-toolkit.js",
           "call": "literal",
           "confidence": "ast"
@@ -25375,7 +25908,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 134,
+  "testFiles": 136,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
