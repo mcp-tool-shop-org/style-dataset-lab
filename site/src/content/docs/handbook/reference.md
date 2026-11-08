@@ -493,6 +493,17 @@ sdlab eval-pack show <eval-id> [--project <name>]
 
 See [Dataset Workflow](./dataset-workflow/) for the full end-to-end walkthrough.
 
+### sdlab checkpoint-eval
+
+Paired evaluation of early style-LoRA checkpoints on CPU or Intel OpenVINO (never an NVIDIA GPU). Scores seed-matched sample trajectories for run A, writes a sealed corridors file, then scores run B against it.
+
+```bash
+sdlab checkpoint-eval --training-dir <dir> --run A=<dir> --prompts <config> --out <dir>
+sdlab checkpoint-eval --training-dir <dir> --run A=<dir> --run B=<dir> --prompts <config> --prompts-b <config> --corridors-sha <hex> --out <dir>
+```
+
+Run `sdlab checkpoint-eval --help` for all options. B-run scoring refuses if the corridors file or run A's samples changed since run A was scored.
+
 ---
 
 ## Training Commands
