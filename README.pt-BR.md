@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.md">English</a>
+  <a href="README.md">English</a> | <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
 
 Escreva suas regras visuais. Gere arte. Avalie cada imagem com base nessas regras. Envie os resultados como dados de treinamento versionados e auditáveis — e, em seguida, coloque os modelos treinados em uso em fluxos de trabalho de produção reais e alimente os melhores resultados de volta ao seu corpus.
 
-O Style Dataset Lab conecta o que você escreveu sobre seu estilo artístico ao conjunto de dados do qual você realmente treina, e, em seguida, fecha o ciclo até a produção. Você define uma constituição — regras de silhueta, restrições de paleta, linguagem de materiais, qualquer coisa que seja importante para o seu projeto. O pipeline gera candidatos, avalia-os com base nessas regras e empacota o trabalho aprovado em conjuntos de dados reproduzíveis, onde cada registro explica por que foi incluído.
+O Style Dataset Lab conecta o que você escreveu sobre seu estilo artístico ao conjunto de dados do qual você realmente treina, e então fecha o ciclo até a produção. Você define uma constituição — regras de silhueta, restrições de paleta, linguagem de materiais, qualquer coisa que seja importante para o seu projeto. O pipeline gera candidatos, avalia-os com base nessas regras e empacota o trabalho aprovado em conjuntos de dados reproduzíveis, onde cada registro explica por que foi incluído.
 
 Em seguida, o ambiente de trabalho de produção assume o controle: compile resumos de geração a partir da verdade do projeto, execute-os no ComfyUI, critique os resultados, produza em lote folhas de expressão e painéis de ambiente, selecione os melhores resultados e reimporte-os como novos candidatos. O ciclo se fecha: produzir, selecionar, revisar, aprimorar.
 
@@ -85,31 +85,31 @@ O diretório de exportação contém um manifesto `asset-source.json` (esquema *
 seus canais, faixas de paleta, limites do portão, veredicto de aceitação, registro de estilo, como
 as renderizações foram criadas e sua procedência de geração. O sdlab comprova cada declaração
 em relação aos bytes reais e rejeita toda a ingestão em caso de violação — nada é registrado
-com um manifesto inválido.
+em um manifesto inválido.
 
 **A junção:** o sdlab fornece o mecanismo, o ativo fornece a semântica. O sdlab nunca faz ray tracing,
 nunca renderiza e nunca aprende que um canal chamado "procedência" é especial. Ele comprova,
 mede, registra e empacota. O que os números *significam* permanece com o ativo.
 
-O que o contrato exige:
+O que o contrato impõe:
 
 | estágio | o que é comprovado |
 |---|---|
 | **schema** | forma, IDs, faixas de paleta bem formadas e um veredicto de aceitação que é literalmente `"accepted"` |
-| **containment** | cada caminho referenciado resolve *dentro* do diretório de exportação (é uma entrada não confiável) e existe |
+| **containment** | cada caminho referenciado se resolve *dentro* do diretório de exportação (é uma entrada não confiável) e existe |
 | **encoding** | o IHDR de um PNG corresponde à sua codificação declarada; um cabeçalho NPY corresponde ao seu dtype e forma declarados. Um manifesto que "parece correto", mas discorda de seus bytes, é a classe de falha que este fluxo existe para impedir |
 | **categorical** | PNGs indexados comprovam que PLTE ⊆ paleta declarada; canais filtrados por `nearest` recebem uma decodificação de pixel *exaustiva*; NPYs categóricos recebem uma varredura de valor exaustiva |
 | **gates** | o portão de paleta é executado por renderização, a partir das próprias faixas e limites do manifesto — uma renderização com falha é rejeitada de forma clara e relatada, nunca admitida silenciosamente |
 
 Os registros são armazenados **sem curadoria** (`judgment: null`) com `provenance.source: "asset"`, contendo
 o bloco de aceitação literalmente, hashes por arquivo, câmera e orientação derivada, as
-medidas do portão, o registro de estilo declarado e, por imagem, o quadro de geração + semente. Em seguida,
+medidas do portão, o registro de estilo declarado e, por imagem, o quadro e a semente de geração. Em seguida,
 eles passam pelo mesmo processo de curadoria que todos os outros registros.
 
 A ingestão também relata o que um manifesto *não* declarou — um registro de estilo desconhecido, uma
 falta de `identity.subject_name`, ausência de procedência de geração — como **avisos** em vez de
 falhas. Eles são incluídos no recibo e impressos no CLI. Uma lacuna sobre a qual ninguém é informado é uma lacuna
-que ninguém pode preencher; e, como um manifesto pode *declarar* que suas renderizações são derivações determinísticas sem uma semente própria, o fluxo nunca relata uma lacuna em uma exportação que está
+que ninguém pode corrigir; e, como um manifesto pode *declarar* que suas renderizações são derivações determinísticas sem uma semente própria, o fluxo nunca relata uma lacuna em uma exportação que está
 correta.
 
 Contrato completo, a escada de validação e o raciocínio por trás de cada campo:
@@ -133,11 +133,11 @@ sdlab canon freeze kael_maren --project my-project --reason "prologue portrait l
 sdlab canon drift --project my-project
 ```
 
-Um modelo local também pode criar conteúdo canônico, mas nunca decide sobre ele. `sdlab canon draft <class_id> --endpoint <url> --brief "<text>" --out <path>` solicita a um servidor compatível com OpenAI e com loopback apenas uma entrada canônica e prompts, e os grava com `status: "draft"`, `judgment: null` e o modelo de criação carimbado em cada saída. Uma versão preliminar não pode ser congelada até que uma pessoa a aprove: o portão de congelamento rejeita qualquer entrada criada por um modelo sem uma aprovação humana, um motivo e o hash do rascunho exato que foi aprovado.
+Um modelo local também pode criar conteúdo canônico, mas nunca decide sobre ele. `sdlab canon draft <class_id> --endpoint <url> --brief "<text>" --out <path>` solicita a um servidor compatível com OpenAI e com loopback apenas uma entrada canônica e prompts, e os grava com `status: "draft"`, `judgment: null` e o modelo de criação carimbado em cada saída. Uma versão preliminar não pode ser congelada até que uma pessoa a aprove: o portão de congelamento rejeita qualquer entrada criada por um modelo sem uma aprovação humana, um motivo e o hash da versão preliminar exata que foi aprovada.
 
-`canon build` é endereçável por conteúdo — sua saída é indexada por um `canon_sha` e armazenada em cache, portanto, uma reconstrução canônica inalterada é feita instantaneamente. `canon freeze` testemunha cada congelamento em relação a uma versão específica e anexa a um rastreamento de auditoria `freeze-events.jsonl`: as entradas `frozen` rejeitam a regeneração diretamente, as entradas `soft-advisory` rejeitam por padrão (ignorar com `--i-know`). `canon drift` recalcula o hash de cada entrada monitorada e sinaliza qualquer coisa que tenha se movido desde a última construção limpa.
+`canon build` é endereçável por conteúdo — sua saída é indexada por um `canon_sha` e armazenada em cache, portanto, uma reconstrução canônica inalterada é feita instantaneamente. `canon freeze` testemunha cada congelamento em relação a uma versão específica e anexa a um rastreamento de auditoria `freeze-events.jsonl`: as entradas `frozen` rejeitam a regeneração diretamente, as entradas `soft-advisory` rejeitam por padrão (ignorar com `--i-know`). `canon drift` recalcula o hash de cada entrada monitorada e sinaliza qualquer coisa que tenha se movido desde a última reconstrução limpa.
 
-Fluxo de trabalho completo no manual: [Construção canônica](handbook/canon-build/), [Congelamento canônico](handbook/canon-freeze/) e [Empilhamento de duas LORAs](handbook/two-lora-stacking/).
+Fluxo de trabalho completo no manual: [Criação canônica](handbook/canon-build/), [Congelamento canônico](handbook/canon-freeze/) e [Empilhamento de duas LORAs](handbook/two-lora-stacking/).
 
 ## O que ele produz
 
@@ -146,8 +146,8 @@ Sete artefatos de conjunto de dados e um ambiente de trabalho de produção comp
 | Artefato | O que é |
 |----------|-----------|
 | **Snapshot** | Registro de seleção congelado com impressão digital de configuração. Cada inclusão tem uma razão explícita. |
-| **Split** | Partição de treinamento/validação/teste onde as famílias de assuntos nunca cruzam as fronteiras. |
-| **Export package** | Conjunto de dados autônomo: manifesto, metadados, imagens, divisões, cartão de conjunto de dados, somas de verificação. |
+| **Split** | Partição de treinamento/validação/teste onde as famílias de objetos nunca cruzam as fronteiras. |
+| **Export package** | Conjunto de dados autônomo: manifesto, metadados, imagens, divisões, cartão do conjunto de dados, somas de verificação. |
 | **Eval pack** | Tarefas de teste com conhecimento do cânone: cobertura de faixa, desvio proibido, âncora/ouro, continuidade do assunto. |
 | **Training package** | Layout pronto para treinamento por meio de adaptadores (`diffusers-lora`, `generic-image-caption`). A mesma verdade, formato diferente. |
 | **Eval scorecard** | Aprovação/reprovação por tarefa, a partir da avaliação dos resultados gerados em relação aos pacotes de avaliação. |
@@ -158,28 +158,28 @@ O ambiente de produção adiciona:
 | Superfície | O que faz |
 |---------|-------------|
 | **Compiled brief** | Instrução de geração determinística a partir do perfil do fluxo de trabalho + verdade do projeto. |
-| **Run** | Artefato de execução congelado: resumo + sementes + resultados ComfyUI + manifesto. |
+| **Run** | Artefato de execução congelado: breve descrição + sementes + resultados ComfyUI + manifesto. |
 | **Critique** | Avaliação estruturada multidimensional dos resultados da execução em relação ao cânone. |
 | **Batch** | Produção coordenada em vários slots (folhas de expressão, painéis de ambiente, pacotes de silhueta). |
 | **Selection** | Artefato de decisão criativa: quais resultados foram escolhidos, por quê e de onde vieram. |
-| **Re-ingest** | Os resultados selecionados são retornados como registros candidatos com a proveniência completa da geração. |
+| **Re-ingest** | Os resultados selecionados são retornados como registros candidatos com toda a proveniência da geração. |
 
 ## Por que isso existe
 
 Os dados de treinamento são o artefato de maior impacto em qualquer pipeline de IA visual. Mas a maioria dos dados de treinamento é uma pasta de imagens sem histórico, sem rastreamento de julgamento e sem conexão com as regras de estilo que deveriam ser seguidas.
 
-O Style Dataset Lab torna a conexão explícita. Sua constituição define as regras. Sua rubrica define as dimensões de avaliação. Seus registros de curadoria registram o julgamento. Sua vinculação ao cânone comprova a conexão. E seu conjunto de dados carrega tudo isso para frente como uma verdade estruturada, pesquisável e reproduzível.
+O Style Dataset Lab torna a conexão explícita. Sua constituição define as regras. Sua rubrica define as dimensões de avaliação. Sua curadoria registra o julgamento. Sua vinculação ao cânone comprova a conexão. E seu conjunto de dados carrega tudo isso para frente como uma verdade estruturada, pesquisável e reproduzível.
 
-O resultado prático: quando seu LoRA se desvia, você pode perguntar *por quê*. Quando sua próxima rodada de treinamento precisar de dados melhores, você saberá exatamente quais registros estão próximos de falhar e qual regra específica eles não cumpriram. Quando um novo membro da equipe perguntar qual é a linguagem visual do projeto, a resposta não será um painel do Figma — será uma constituição pesquisável com 1.182 exemplos graduados.
+O resultado prático: quando seu LoRA se desviar, você pode perguntar *por quê*. Quando sua próxima rodada de treinamento precisar de dados melhores, você saberá exatamente quais registros estão próximos de falhar e qual regra específica eles não cumpriram. Quando um novo membro da equipe perguntar qual é a linguagem visual do projeto, a resposta não será um painel do Figma — será uma constituição pesquisável com 1.182 exemplos graduados.
 
 ## Comprovado na produção
 
 Este não é um pipeline de demonstração. Duas LoRAs de estilo reais foram implementadas de ponta a ponta por meio dele — o mesmo ciclo cânone → curadoria → treinamento → implementação, em extremidades opostas do espectro de curadoria.
 
-- **[Tallow Fen](handbook/case-study-tallow-fen/)** (design de criaturas) — um cânone de bestiário criado do zero, **~34% de aprovação** em 293 registros selecionados (169 rejeitados — o filtro rejeita com rigor). Implementado `tallow_fen_style_v3.safetensors` @ 1.5 em `qwen-image`.
-- **[Rustline](handbook/case-study-rustline/)** (design de conceito) — cânone denso e pré-formado, **~96% de aprovação** em 180 registros. Implementado `rustline_v3ckpt_1500.safetensors` @ 1.0 em `qwen-image`, reutilizado em um segundo projeto.
+- **[Tallow Fen](handbook/case-study-tallow-fen/)** (design de criaturas) — um cânone de bestiário criado do zero, **~34% de aprovação** em 293 registros selecionados (169 rejeitados — a barreira rejeita com rigor). Implementado `tallow_fen_style_v3.safetensors` @ 1.5 em `qwen-image`.
+- **[Rustline](handbook/case-study-rustline/)** (design de conceito) — cânone denso e pré-formado, **~96% de aprovação** em 180 registros. Implementado `rustline_v3ckpt_1500.safetensors` @ 1.0 em `qwen-image`, reutilizado posteriormente por um segundo projeto.
 
-O mesmo pipeline, dois perfis de produção: o filtro de curadoria é real (ele rejeita com rigor em assuntos abertos) e o cânone disciplinado gera alta aceitação.
+O mesmo pipeline, dois perfis de produção: a barreira de curadoria é real (ela rejeita com rigor em assuntos abertos) e o cânone disciplinado gera alta aceitação.
 
 ## Cinco domínios, regras reais
 
@@ -187,7 +187,7 @@ Não são apenas modelos de exemplo. Cada domínio é fornecido com regras de co
 
 | Domínio | Faixas | O que é avaliado |
 |--------|-------|-----------------|
-| **game-art** | personagem, ambiente, acessório, IU, nave, interior, equipamento | Silhueta na escala de jogabilidade, identificação de facção, desgaste e envelhecimento |
+| **game-art** | personagem, ambiente, objeto de cena, interface do usuário, nave, interior, equipamento | Silhueta na escala de jogabilidade, identificação de facção, desgaste e envelhecimento |
 | **character-design** | retrato, corpo inteiro, rotação, folha de expressão, pose de ação | Proporções, lógica do traje, personalidade, clareza da linguagem corporal |
 | **creature-design** | conceito, ortográfico, estudo de detalhes, ação, referência de escala, habitat | Anatomia, lógica evolutiva, distinção de silhueta |
 | **architecture** | exterior, interior, paisagem urbana, detalhes estruturais, ruína, paisagem | Estrutura, consistência do material, perspectiva, coerência de época |
@@ -224,14 +224,14 @@ Não são apenas aspirações. São aplicadas.
 - **As capturas de tela são imutáveis.** A impressão digital da configuração (SHA-256) prova que nada mudou. Os IDs são reivindicados atomicamente, portanto, duas execuções simultâneas não podem se intercalar em um único diretório.
 - **As divisões evitam vazamentos — e a verificação que confirma isso é independente.** As famílias de objetos (por identidade, linhagem ou ID normalizado) nunca cruzam os limites da partição, e uma segunda verificação rederiva a identidade do objeto do zero, em vez de reler o mapa que a própria divisão usou. Um cartão de conjunto de dados apenas afirma "vazamento: nenhum (verificado)" quando ambas as verificações são executadas e aprovadas; uma divisão anterior à segunda verificação afirma exatamente isso.
 - **Os manifestos são contratos congelados.** Hash de exportação + impressão digital da configuração, e `validate` recalcula o hash de cada arquivo `checksums.txt` listado — portanto, substituir uma imagem dentro de uma exportação concluída é detectado, incluindo para manifestos criados antes que essa verificação existisse.
-- **As execuções fixam seu gráfico exato.** Cada geração registra `comfy_workflow_sha` + hashes de conteúdo do modelo/LoRA + política de semente, para que uma onda possa ser reproduzida byte a byte. Os executores JS e Python são mantidos em um hash byte a byte por um teste que os inicia. O hash do modelo é opcional (`--hash-models`) e nunca é fabricado — um arquivo irresolvível registra `sha256: null` com uma nota.
+- **As execuções fixam seu grafo exato.** Cada geração registra `comfy_workflow_sha` + hashes de conteúdo do modelo/LoRA + política de semente, para que uma onda possa ser reproduzida byte a byte. Os executores JS e Python são mantidos em um hash idêntico em bytes por um teste que os inicia. O hash do modelo é opcional (`--hash-models`) e nunca é fabricado — um arquivo irresolvível registra `sha256: null` com uma nota.
 - **Nenhum modelo verifica sua própria saída.** Os julgamentos registram `judged_by_model` e `generator_model`; um aviso é acionado se eles forem o mesmo modelo.
 - **Um julgamento indica quem o fez.** `eligibility audit` distingue os julgamentos escritos por uma pessoa dos julgamentos gerados por um script em lote, para que uma justificativa que descreva uma categoria em vez de uma imagem não possa ser considerada como curadoria.
-- **A medição não é o veredicto.** `sdlab measure` anexa números a um registro. Nunca define um julgamento, um ajuste ou uma aprovação — e onde uma medida é indefinida para uma imagem, registra `null` em vez de um número plausível.
+- **A medição não é um veredicto.** `sdlab measure` anexa números a um registro. Nunca define um julgamento, uma adequação ou uma aprovação — e onde uma medida é indefinida para uma imagem, registra `null` em vez de um número plausível.
 - **Uma versão pode provar de onde veio cada imagem.** `sdlab verify --project <name>` percorre a cadeia offline para cada registro: o proprietário e a licença no registro, a entrada do cânone à qual estava vinculado (por hash), a licença de cada modelo e LoRA que o criou (ID SPDX, URL da licença, a data em que foi lido e o hash do arquivo) e o hash do fluxo de trabalho no manifesto da execução. Uma ligação ausente faz com que a verificação falhe, em vez de ser aprovada.
 - **Os adaptadores não podem alterar a verdade.** Layout diferente, mesmos registros. Sem adições, sem remoções, sem reclassificação.
 - **As saídas geradas entram novamente por meio da revisão.** Sem desvio. Curadoria e vinculação como tudo o mais. As imagens geradas externamente entram da mesma forma por meio de `sdlab ingest`, sem curadoria.
-- **As falhas são visíveis.** Um registro ausente, uma imagem que não pode ser colocada ou uma legenda que não pode ser criada interrompe uma exportação ou pacote de treinamento, em vez de simplesmente reduzi-lo.
+- **As falhas são visíveis.** Um registro ausente, uma imagem que não pode ser colocada ou uma legenda que não pode ser criada interrompe uma exportação ou pacote de treinamento, em vez de simplesmente reduzi-lo silenciosamente.
 
 ## Star Freight
 
@@ -274,7 +274,7 @@ sdlab snapshot create --dry-run --project star-freight
 
 `sdlab project doctor` valida cada configuração de projeto (constituição, rotas, rubrica, terminologia) e relata a elegibilidade sem tocar na GPU. Qualquer comando que modifique o estado gerado aceita `--dry-run` para visualizar o efeito primeiro.
 
-Se você esquecer `--project`, a CLI volta ao primeiro projeto que encontrar em `projects/` e imprime um aviso — passe `--project` explicitamente para silenciá-lo.
+Se você esquecer `--project`, a CLI retorna ao primeiro projeto que encontrar em `projects/` e imprime um aviso — passe `--project` explicitamente para silenciá-lo.
 
 ### Retomando uma execução interrompida
 
@@ -315,11 +315,11 @@ Um aviso suave. Passe `--project <name>` explicitamente para selecionar o projet
 Consulte `docs/internal/HANDOFF.md` para obter as notas de ajuste de desfoque "painterly". Em resumo: diminua a força do desfoque, reduza o tamanho do lote ou altere para um ponto de verificação menor em seu perfil de fluxo de trabalho.
 
 **Relatando bugs**
-Crie um problema em https://github.com/mcp-tool-shop-org/style-dataset-lab/issues com sua versão do sdlab (`sdlab --version`), versão do Node (`node -v`), o comando completo e a saída de erro estruturada. Um modelo de relatório de bug preenche os campos.
+Crie um problema em https://github.com/mcp-tool-shop-org/style-dataset-lab/issues com sua versão sdlab (`sdlab --version`), versão do Node (`node -v`), o comando completo e a saída de erro estruturada. Um modelo de relatório de bug preenche os campos.
 
 ## Segurança
 
-Local por padrão. Sem telemetria, sem análise e sem solicitações externas da CLI `sdlab`: as imagens permanecem em sua GPU e sistema de arquivos, e `canon draft` recusa qualquer ponto de extremidade que não seja o loopback.
+Local por padrão. Sem telemetria, sem análises e sem solicitações externas da CLI `sdlab`: as imagens permanecem em sua GPU e sistema de arquivos, e `canon draft` recusa qualquer ponto de extremidade que não seja o loopback.
 
 A única exceção é a opção de adesão voluntária. `scripts/colab/` contém kits de lançamento para executar um processo de renderização ou uma etapa de treinamento LoRA na sua própria conta do Google Colab. Eles carregam apenas os arquivos que você especificar, são executados dentro de um limite de gastos lido do saldo atual da sua conta Colab e encerram a própria sessão ao serem encerrados. Estes kits são **experimentais**: ainda não passaram por um teste completo em um ambiente real.
 
