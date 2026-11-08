@@ -1415,6 +1415,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") in ("1", "ignore_term"):
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_DOWNLOAD_DELAY_S"]))
         remote_src, local_dst = _normalize_remote_content_path(positionals[0]), positionals[1]
         if not remote_src.startswith("/content/"):
             sys.stderr.write(f"Remote path must be under /content/: {remote_src}\n")
@@ -1447,6 +1449,8 @@ def main(argv: list[str] | None = None) -> int:
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") == "ignore_term")
         if os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") in ("1", "ignore_term"):
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_STOP_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_STOP_DELAY_S"]))
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"STOP {' '.join(args)}\n")
         with (state_dir / "stops.jsonl").open("a", encoding="utf-8", newline="\n") as fh:

@@ -585,6 +585,7 @@ def evaluate_cap_guard(
     elapsed_s: float = 0.0,
     usage_parse_error: str | None = None,
     phase: str | None = None,
+    checkpoint: str | None = None,
 ) -> dict[str, Any]:
     trip = compute_cap_trip(
         cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=rate_ccu_per_hour
@@ -602,6 +603,8 @@ def evaluate_cap_guard(
     }
     if phase is not None:
         extra["phase"] = phase
+    if checkpoint is not None:
+        extra["checkpoint"] = checkpoint
     if usage_parse_error:
         return {
             "mode": mode,
@@ -1072,6 +1075,8 @@ def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any
         ref: dict[str, Any] = {"code": cap.get("code"), "why": why}
         if phase is not None:
             ref["phase"] = phase
+        if cap.get("checkpoint") is not None:
+            ref["checkpoint"] = cap.get("checkpoint")
         return ref
     if wall.get("tripped"):
         return {
@@ -1085,6 +1090,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="sdlab C2 launcher guards CLI")
     parser.add_argument("--mode", default="stub")
     parser.add_argument("--phase", default=None, help="Execution phase (e.g. pre_exec or live)")
+    parser.add_argument("--checkpoint", default=None, help="Pre-exec or live check point name")
     parser.add_argument("--elapsed-s", type=float, default=0.0)
     parser.add_argument("--wall-s", type=float, default=3000.0)
     parser.add_argument("--grace-s", type=float, default=60.0)
@@ -1255,10 +1261,13 @@ def main(argv: list[str] | None = None) -> int:
         elapsed_s=args.elapsed_s,
         usage_parse_error=args.usage_parse_error,
         phase=args.phase,
+        checkpoint=args.checkpoint,
     )
     out: dict[str, Any] = {"wall": wall, "cap": cap}
     if args.phase is not None:
         out["phase"] = args.phase
+    if args.checkpoint is not None:
+        out["checkpoint"] = args.checkpoint
     refusal = wall_cap_refusal(wall, cap)
     if refusal is not None:
         out["refusal"] = refusal

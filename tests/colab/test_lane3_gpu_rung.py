@@ -2303,8 +2303,9 @@ def test_wall_trip_during_hung_foreground_step_reaches_stop_by_watcher_path(tmp_
     _, state_dir, env = fc.make_fake_colab_env(tmp_path)
     env.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
-        "FAKE_COLAB_UPLOAD_HANG": "ignore_term",
-        "SDLAB_TEST_UPLOAD_TIMEOUT_S": "30",
+        "FAKE_COLAB_NEW_HANG": "ignore_term",
+        "SDLAB_TEST_NEW_TIMEOUT_S": "30",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "1",
         "SDLAB_TEST_WALL_ESCALATE_S": "2",
         "SDLAB_TEST_STOP_TIMEOUT_S": "2",
         "SDLAB_TEST_KILL_GRACE_S": "1",
@@ -2349,7 +2350,7 @@ def test_wall_trip_during_post_exec_download_keeps_total_time_within_cleanup_bou
         "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
         "SDLAB_TEST_KILL_GRACE_S": "1",
         "SDLAB_TEST_STOP_TIMEOUT_S": "1",
-        "SDLAB_TEST_WALL_ESCALATE_S": "30",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
     })
     out_dir = tmp_path / "out_dl_wall"
     try:
@@ -2530,8 +2531,20 @@ def test_pre_exec_cap_trip_during_slow_rate_polls(tmp_path: Path) -> None:
         assert win["cap_trip_phase"] == "pre_exec"
         total_spend = round(win["start_balance"] - win["end_balance"], 6)
         assert 0 < total_spend <= win["cap_ccu"], (total_spend, win["cap_ccu"])
+        post_open_polls = int((state_dir / "post_open_usage_count.txt").read_text(encoding="utf-8").strip())
+        assert post_open_polls == 2 < 24, post_open_polls
+        assert len(win["rate_readings"]) == 2 < 24, win["rate_readings"]
+        assert not (out_dir / "rate_check.json").exists()
+        assert win["rate_check"] is None
         guards = (out_dir / "guards.log").read_text(encoding="utf-8")
         assert '"phase": "pre_exec"' in guards and "CAP_GUARD_TRIPPED" in guards, guards
+        trip_recs = [
+            json.loads(line)
+            for line in guards.splitlines()
+            if line.strip().startswith("{") and '"CAP_GUARD_TRIPPED"' in line
+        ]
+        assert trip_recs and str(trip_recs[-1].get("checkpoint", "")).startswith("rate_poll_"), trip_recs
+        assert str(trip_recs[-1].get("refusal", {}).get("checkpoint", "")).startswith("rate_poll_"), trip_recs
     finally:
         _kill_hung_test_pids(state_dir)
 
@@ -2678,6 +2691,7 @@ def test_launch_guards_pre_exec_phase_unit_and_cli(capsys: pytest.CaptureFixture
     rc = lg.main([
         "--mode", "pre_exec",
         "--phase", "pre_exec",
+        "--checkpoint", "rate_poll_1",
         "--elapsed-s", "2.0",
         "--wall-s", "2900",
         "--grace-s", "120",
@@ -2697,3 +2711,264 @@ def test_launch_guards_pre_exec_phase_unit_and_cli(capsys: pytest.CaptureFixture
     assert rec["refusal"]["code"] == "CAP_GUARD_TRIPPED"
     assert rec["refusal"]["phase"] == "pre_exec"
     assert "cap guard (phase=pre_exec):" in rec["refusal"]["why"]
+
+
+# --- PR #66 fix round 5: first wait covers in-flight work; mutations (v) & (vi); launcher death ---
+
+
+def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_path: Path) -> None:
+    # 1. Lane 1: escalate 2 s, in-flight bound 6 + 1 = 7 s, download succeeds in ~5 s.
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    _, state1, env1 = fc.make_fake_colab_env(tmp_path / "l1")
+    env1.update({
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "FAKE_COLAB_DOWNLOAD_DELAY_S": "5.0",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+    })
+    out1 = tmp_path / "l1" / "out"
+    try:
+        res1 = subprocess.run(
+            [
+                _bash(), fc._to_posix(lane1_sh),
+                "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-legit-dl",
+                "--wall-s", "5", "--grace-s", "2",
+            ],
+            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=25, check=False,
+        )
+        assert res1.returncode != 0
+        assert not (out1 / "watcher_escalated.txt").exists()
+        assert (out1 / "lane1_stub_bundle.tar.gz").is_file()
+        assert (out1 / "lane1_stub_bundle.tar.gz").stat().st_size > 0
+        win1 = json.loads((out1 / "window.json").read_text(encoding="utf-8"))
+        assert win1["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win1["stop_path"] == "trap"
+        assert win1["watcher_wait"] == "cleanup_seen"
+        assert win1["cleanup_stop_attempted_by_s"] == 7
+        assert win1["cleanup_bound_s"] == 13
+        trip_ts1 = float((out1 / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        stop_done_ts1 = json.loads((state1 / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts1 - trip_ts1 <= win1["cleanup_bound_s"], (stop_done_ts1 - trip_ts1, win1["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state1)
+
+    # 2. Lane 3: escalate 2 s, in-flight bound 6 + 1 = 7 s, download succeeds in ~5 s; step-250 checkpoint is in bundle.
+    state3, env3, src3 = _rung_env(tmp_path / "l3")
+    env3.update({
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "FAKE_COLAB_DOWNLOAD_DELAY_S": "5.0",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "6",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    try:
+        res3, out3 = _launch(
+            tmp_path / "l3", env3, src3,
+            "--download-max-seconds", "3", "--wall-s", "22", "--grace-s", "2",
+            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--shape", "high-mem", "--rung-job", "500",
+            timeout_s=45,
+        )
+        assert res3.returncode != 0
+        assert not (out3 / "watcher_escalated.txt").exists()
+        assert (out3 / "lane3_stub_bundle.tar.gz").is_file()
+        members3 = _bundle(out3)
+        assert "rung_outputs/rustline_style_v5/rustline_style_v5_000000250.safetensors" in members3
+        win3 = _win(out3)
+        assert win3["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win3["stop_path"] == "trap"
+        assert win3["watcher_wait"] == "cleanup_seen"
+        assert win3["cleanup_stop_attempted_by_s"] == 13
+        assert win3["cleanup_bound_s"] == 19
+        trip_ts3 = float((out3 / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        stop_done_ts3 = json.loads((state3 / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts3 - trip_ts3 <= win3["cleanup_bound_s"], (stop_done_ts3 - trip_ts3, win3["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state3)
+
+
+def test_wall_watcher_late_cleanup_start_and_overrunning_salvage_kills_mutation_vi(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "FAKE_COLAB_DOWNLOAD_HANG_ONCE": "ignore_term",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "1",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "0",
+        "FAKE_COLAB_RESTART_HANG": "ignore_term",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+        "FAKE_COLAB_STOP_HANG_ONCE": "ignore_term",
+        "FAKE_COLAB_STOP_DELAY_S": "1.5",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    # in_flight_bound_s = 6 + 1 = 7 s; salvage_bound_s = 1 s -> cleanup_stop_attempted_by_s = 8 s;
+    # stop_bound_s = 2 * (2 + 1) = 6 s -> cleanup_bound_s = 14 s.
+    # Wall trips at 18 s during the post-exec download (which started at ~16.3 s and runs until ~23.3 s,
+    # so cleanup_started.txt is written late at ~trip + 5.3 s). Then salvage overruns and the 2 stop
+    # attempts take 3.0 + 1.5 = 4.5 s. Measured from the trip, the watcher escalates at trip + 8.0 s
+    # and stop finishes at ~trip + 12.5 s <= 14 s. If measured from cleanup_start, stop finishes at
+    # ~trip + 5.3 + 8.0 + 4.5 = 17.8 s > 14 s.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src,
+            "--download-max-seconds", "3", "--wall-s", "22", "--grace-s", "2",
+            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--shape", "high-mem", "--rung-job", "500",
+            timeout_s=45,
+        )
+        assert res.returncode != 0
+        assert (out_dir / "cleanup_started.txt").is_file()
+        assert (out_dir / "watcher_escalated.txt").is_file()
+        win = _win(out_dir)
+        assert win["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win["stop_path"] == "watcher"
+        assert win["watcher_wait"] == "escalated_cleanup_overran"
+        assert win["cleanup_stop_attempted_by_s"] == 8
+        assert win["cleanup_bound_s"] == 14
+        trip_ts = float((out_dir / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        cleanup_start_mtime = (out_dir / "cleanup_started.txt").stat().st_mtime
+        assert cleanup_start_mtime - trip_ts >= 2.5, (cleanup_start_mtime - trip_ts)
+        stop_done_ts = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts - trip_ts <= win["cleanup_bound_s"], (stop_done_ts - trip_ts, win["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_wall_watcher_stops_session_when_launcher_dies_mid_cleanup(tmp_path: Path) -> None:
+    import signal as _signal
+    import time as _time
+
+    # 1. Launcher dies mid-salvage (after cleanup_started.txt, before stop_reached.txt):
+    # watcher escalates immediately with watcher_wait == "escalated_launcher_gone" and stops the session.
+    state1, env1, src1 = _rung_env(tmp_path / "mid_salvage")
+    env1.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "4",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "8",
+        "FAKE_COLAB_RESTART_DELAY_S": "3.0",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    out1 = tmp_path / "mid_salvage" / "out"
+    args1 = [
+        _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-kill-salvage",
+        "--out-dir", fc._to_posix(out1), "--dataset-dir", fc._to_posix(src1), "--model", "Qwen/Qwen-Image",
+        "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
+        "--wall-s", "9", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--shape", "high-mem", "--rung-job", "500",
+    ]
+    try:
+        proc1 = subprocess.Popen(
+            args1, env=env1, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        deadline1 = _time.monotonic() + 20.0
+        killed1 = False
+        while _time.monotonic() < deadline1:
+            if (out1 / "cleanup_started.txt").is_file() and (state1 / "restarts.log").is_file():
+                assert not (out1 / "stop_reached.txt").exists()
+                proc1.send_signal(_signal.SIGKILL)
+                killed1 = True
+                break
+            if proc1.poll() is not None:
+                break
+            _time.sleep(0.05)
+        assert killed1, "launcher never entered salvage restart-kernel after wall trip"
+        proc1.wait(timeout=5)
+        wait_end1 = _time.monotonic() + 4.0
+        while _time.monotonic() < wait_end1:
+            if (out1 / "outcome.draft.json").is_file() and (state1 / "stops.jsonl").is_file():
+                break
+            _time.sleep(0.05)
+        assert (state1 / "stops.jsonl").is_file(), "watcher never ran colab stop after launcher SIGKILL mid-salvage"
+        assert not (state1 / "open_sessions" / "sdlab-l3-kill-salvage.json").exists()
+        win1 = _win(out1)
+        assert win1["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win1["stop_path"] == "watcher"
+        assert win1["watcher_wait"] == "escalated_launcher_gone"
+        trip_ts1 = float((out1 / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        stop_done_ts1 = json.loads((state1 / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts1 - trip_ts1 <= win1["cleanup_bound_s"], (stop_done_ts1 - trip_ts1, win1["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state1)
+
+    # 2. Variant: launcher wrote stop_reached.txt and then died before the stop completed.
+    state2, env2, src2 = _rung_env(tmp_path / "after_stop_reached")
+    env2.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "3",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "4",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "3",
+        "FAKE_COLAB_STOP_HANG_ONCE": "ignore_term",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    out2 = tmp_path / "after_stop_reached" / "out"
+    args2 = [
+        _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-kill-stopreached",
+        "--out-dir", fc._to_posix(out2), "--dataset-dir", fc._to_posix(src2), "--model", "Qwen/Qwen-Image",
+        "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
+        "--wall-s", "9", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--shape", "high-mem", "--rung-job", "500",
+    ]
+    try:
+        proc2 = subprocess.Popen(
+            args2, env=env2, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        deadline2 = _time.monotonic() + 25.0
+        killed2 = False
+        while _time.monotonic() < deadline2:
+            if (out2 / "stop_reached.txt").is_file() and (state2 / "stop_attempts.txt").is_file():
+                assert not (state2 / "stops.jsonl").exists()
+                proc2.send_signal(_signal.SIGKILL)
+                killed2 = True
+                break
+            if proc2.poll() is not None:
+                break
+            _time.sleep(0.05)
+        assert killed2, "launcher never reached stop_reached.txt with in-flight colab stop"
+        proc2.wait(timeout=5)
+        wait_end2 = _time.monotonic() + 10.0
+        while _time.monotonic() < wait_end2:
+            if (out2 / "outcome.draft.json").is_file() and (state2 / "stops.jsonl").is_file():
+                break
+            _time.sleep(0.05)
+        assert (out2 / "stop_reached.txt").is_file()
+        assert (state2 / "stops.jsonl").is_file(), "watcher never completed colab stop after launcher died post-stop_reached"
+        assert not (state2 / "open_sessions" / "sdlab-l3-kill-stopreached.json").exists()
+        win2 = _win(out2)
+        assert win2["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win2["stop_path"] == "watcher"
+        assert win2["watcher_wait"] == "escalated_launcher_gone"
+        trip_ts2 = float((out2 / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        stop_done_ts2 = json.loads((state2 / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts2 - trip_ts2 <= win2["cleanup_bound_s"], (stop_done_ts2 - trip_ts2, win2["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state2)

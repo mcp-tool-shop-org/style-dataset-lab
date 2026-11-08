@@ -34,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="4209755a053bda0926a59aa1c22963c5f723f4f103c15c6eb3c96e2d0ed603b1"
+PINNED_LAUNCH_GUARDS_SHA="30369dfa66bdade39325f6af42e05da72b2e102dd9f1b70afacd97a663319467"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="f14618b592c42330ddc6494b22d703e2101f4f6f3eaf25d6171c3a24e597b1f8"
-PINNED_SELF_SHA="d523372064c784f7aca09c5751c218df0bc8771e74b48e150401fc4434e28770"
+PINNED_COLAB_WINDOW_SHA="cfd69578c181643e28b5e575f6ec269d053229dfc34239ffae77741a06bddf5d"
+PINNED_SELF_SHA="91b44e89f189eeccc095bc5d77114cc96d8e81b7824667f1bbe230f1d1b82987"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -186,6 +186,13 @@ cleanup_on_exit() {
   fi
   printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
   printf '1\n' > "${OUT_DIR}/stop_reached.txt"
+  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; }; then
+    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
+  fi
+  if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
+    sleep 3600
+    exit 137
+  fi
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
@@ -193,9 +200,7 @@ cleanup_on_exit() {
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
   fi
-  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; }; then
-    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
-  fi
+  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \

@@ -1,18 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-08 from commit 6668f9b by Atlas 1.24.0.
+Mapped at 2026-11-08 from commit 62575ad by Atlas 1.24.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (59), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-08 (38e0844)
+## What changed since 2026-11-08 (6668f9b)
 
-- CI now also runs tests/checkpoint_eval/.
-- LICENSE is now also read by scripts/checkpoint-eval/checkpoint_eval.py.
-- bin/sdlab.js is now also read by tests/cli-scripts/checkpoint-eval.test.js.
-- scripts/checkpoint-eval/checkpoint_eval.py is now read by scripts/checkpoint-eval.js.
-- 5 files added and 13 changed content, across 5 parts.
+Nothing structural changed since 2026-11-08; 9 files changed content.
 
 ## What comes in
 
@@ -66,11 +62,11 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 9 of 17 commits, inside the tests part.
+- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 9 of 18 commits, inside the tests part.
 
 Confidence is low: fewer than 25 source files reach 10 revisions in the window.
 
-Window: 180 days; a pair counts from 3 shared commits, since 2 source files reach 10 revisions; the floor rises to 10 when 25 do.
+Window: 180 days; a pair counts from 3 shared commits, since 3 source files reach 10 revisions; the floor rises to 10 when 25 do.
 
 ## What no test touches
 
