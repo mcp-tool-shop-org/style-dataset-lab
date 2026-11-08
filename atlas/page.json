@@ -89,8 +89,8 @@
       }
     ],
     "since": {
-      "commit": "af5b25276855eff8f68fe86274918850d2819f85",
-      "generatedAt": "2026-11-07T21:41:33.836Z"
+      "commit": "e35fcd813efddf49bb1a3caabd49253f9d674245",
+      "generatedAt": "2026-11-07T22:49:25.661Z"
     },
     "unchanged": true
   },
@@ -116,7 +116,7 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "e35fcd813efddf49bb1a3caabd49253f9d674245",
+  "commit": "7c41b59ad75dc1a9e893bc9e0be4708433893018",
   "defaultBranch": "main",
   "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (59), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
@@ -437,7 +437,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-07T22:49:25.661Z",
+  "generatedAt": "2026-11-08T01:31:17.059Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
     "40 writes and 74 reads use paths built at run time and are not named here.",

@@ -78,8 +78,10 @@ All model licences were read at their upstream source prior to downloading or ru
    - The in-file `body_sha256` field is kept only as a naive-edit check and **is not the lock** (anyone with the script could otherwise edit a band and re-run the body hash function; `read_and_verify_corridors` also re-derives the decision bands from `run_a_anchors` and enforces the external `--corridors-sha`).
 3. **Run A sample-set binding (`run_a_fingerprint` / `RUN_A_FINGERPRINT_MISMATCH`):**
    - `corridors.md` embeds `run_a_fingerprint`, the SHA-256 over run A's sorted sample filenames and per-file SHA-256 digests. When scoring run B, `checkpoint-eval` re-fingerprints `--run A=<dir>` and refuses (`RUN_A_FINGERPRINT_MISMATCH`) if run A's sample directory was swapped or altered.
-4. **Run B must bring its own config (`RUN_B_CONFIG_MISSING`):**
-   - Scoring run B requires either `--prompts-b <path>` or a `config.yaml` / `config.yml` / `config.json` alongside run B's sample directory (or its parent). `checkpoint-eval` never falls back to run A's config and refuses (`RUN_B_CONFIG_MISSING` or `SEED_MISMATCH` / `PROMPT_MISMATCH`) before scoring.
+4. **Run B must bring its own distinct directory and config (`RUN_B_IS_RUN_A`, `RUN_B_CONFIG_MISSING`, `RUN_B_CONFIG_IS_RUN_A`):**
+   - Run B's sample directory must not resolve (`Path.resolve()`) to run A's sample directory (`RUN_B_IS_RUN_A`).
+   - Scoring run B requires either `--prompts-b <path>` or a `config.yaml` / `config.yml` / `config.json` **inside** run B's own sample directory (`RUN_B_CONFIG_MISSING`). There is no parent-directory fallback (so a shared parent `runs/config.yaml` is never picked up as B's config).
+   - Run B's config must not resolve (`Path.resolve()`) to run A's config or `--prompts` (`RUN_B_CONFIG_IS_RUN_A`), and must match run A's `seed`, `walk_seed`, and `prompts` (`SEED_MISMATCH` / `PROMPT_MISMATCH`) before any scoring.
 5. **Fail closed on missing steps or metrics (`STEP_MISSING` / `METRIC_MISSING`):**
    - Missing required steps (`0`, `250`, `500`) or any missing/non-finite metric refuses immediately with `STEP_MISSING` or `METRIC_MISSING` naming the step and metric.
    - Scoring run B writes its output to `<out>/summary-B-<name>.json` and never overwrites run A's `summary.json`.

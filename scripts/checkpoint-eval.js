@@ -23,10 +23,10 @@ or Intel OpenVINO.
 
 Flags:
   --training-dir <dir>        Training images directory (embedded once and cached under --out)
-  --run NAME=DIR              Run sample directory (e.g. --run A=<dir> [--run B=<dir>])
+  --run NAME=DIR              Run sample directory: --run A=<dir> [--run B=<dir>] (B must not resolve to A)
   --steps <s1,s2,...>         Comma-separated checkpoint steps (e.g. 0,250,500,...)
-  --prompts <path>            Trainer config.yaml or JSON with sample prompts and seed
-  --prompts-b <path>          Optional separate config for run B
+  --prompts <path>            Trainer config.yaml or JSON for run A with sample prompts and seed
+  --prompts-b <path>          Config file for run B when not inside B's samples dir (must not resolve to A's config)
   --out <dir>                 Output directory (must be outside git-tracked paths for private data)
   --device <cpu|openvino>     Compute device (default: cpu; CUDA_VISIBLE_DEVICES="" always enforced)
   --checkpoint <path>         Optional LoRA .safetensors checkpoint(s) for weight-space stable rank

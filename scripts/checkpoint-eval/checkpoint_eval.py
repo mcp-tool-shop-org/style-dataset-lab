@@ -4,10 +4,14 @@
 Hard invariants:
 - Never touches an NVIDIA GPU (`CUDA_VISIBLE_DEVICES=""` enforced on import and run).
 - Pairs sample images by `(prompt_index, step)` from filenames (`<ts>__<step>_<prompt_idx>.<ext>`).
-- Verifies that run A and run B share identical `seed`, `walk_seed`, and `prompts`, refusing with
-  a named error (`SEED_MISMATCH`, `PROMPT_MISMATCH`, `PAIRING_MISMATCH`) otherwise.
-- Writes `corridors.md` from run A's numbers before any run B exists, carrying its own sha256 and
-  creation timestamp, and refuses with `CORRIDORS_TAMPERED` if modified before scoring run B.
+- Verifies that run A and run B are distinct directories (`RUN_B_IS_RUN_A`) with distinct config files
+  (`RUN_B_CONFIG_MISSING`, `RUN_B_CONFIG_IS_RUN_A`) sharing identical `seed`, `walk_seed`, and `prompts`
+  (`SEED_MISMATCH`, `PROMPT_MISMATCH`, `PAIRING_MISMATCH`).
+- Seals `corridors.md` from run A's numbers before any run B exists (`CORRIDORS_EXISTS` on overwrite),
+  records its external full-file SHA-256 in run A's `summary.json` and `run_a_fingerprint` inside
+  `corridors.md`, and verifies `--corridors-sha` (`CORRIDORS_SHA_MISMATCH`), `run_a_fingerprint`
+  (`RUN_A_FINGERPRINT_MISMATCH`), re-derived bands from `run_a_anchors`, and naive-edit `body_sha256`
+  (`CORRIDORS_TAMPERED`) before scoring run B.
 """
 
 from __future__ import annotations
@@ -2234,6 +2238,13 @@ def evaluate_runs(
     # If sealing run A alone, refuse to overwrite an existing corridors file (no force flag).
     locked_corridors: dict[str, Any] | None = None
     if "B" in run_dirs:
+        a_dir_resolved = Path(run_dirs["A"]).resolve()
+        b_dir_resolved = Path(run_dirs["B"]).resolve()
+        if b_dir_resolved == a_dir_resolved:
+            raise CheckpointEvalRefusal(
+                "RUN_B_IS_RUN_A",
+                f"run B samples directory ({b_dir_resolved}) resolves to run A's samples directory",
+            )
         locked_corridors = read_and_verify_corridors(corridors_file, expected_sha256=corridors_sha)
     else:
         if corridors_file.exists():
@@ -2245,29 +2256,44 @@ def evaluate_runs(
     cfg_a = load_prompts_config(prompts_path)
     if "B" in run_dirs:
         if prompts_b_path is not None:
-            if not Path(prompts_b_path).is_file():
+            b_cfg_file = Path(prompts_b_path)
+            if not b_cfg_file.is_file():
                 raise CheckpointEvalRefusal(
                     "RUN_B_CONFIG_MISSING",
                     f"run B config file not found: {prompts_b_path}",
                 )
-            cfg_b = load_prompts_config(prompts_b_path)
         else:
             b_dir = Path(run_dirs["B"])
             candidate_cfgs = [
                 b_dir / "config.yaml",
                 b_dir / "config.yml",
                 b_dir / "config.json",
-                b_dir.parent / "config.yaml",
-                b_dir.parent / "config.yml",
-                b_dir.parent / "config.json",
             ]
             found_b = next((c for c in candidate_cfgs if c.is_file()), None)
             if found_b is None:
                 raise CheckpointEvalRefusal(
                     "RUN_B_CONFIG_MISSING",
-                    f"run B must bring its own config (--prompts-b or config.yaml/config.json beside {b_dir}); refusing to fall back to run A's config",
+                    f"run B must bring its own config (--prompts-b or config.yaml/config.yml/config.json inside {b_dir}); refusing to fall back to parent directory or run A's config",
                 )
-            cfg_b = load_prompts_config(found_b)
+            b_cfg_file = found_b
+
+        a_dir = Path(run_dirs["A"])
+        a_cfg_resolved_set = {
+            Path(prompts_path).resolve(),
+            Path(cfg_a["path"]).resolve(),
+            *(
+                (a_dir / name).resolve()
+                for name in ("config.yaml", "config.yml", "config.json")
+                if (a_dir / name).is_file()
+            ),
+        }
+        b_cfg_resolved = b_cfg_file.resolve()
+        if b_cfg_resolved in a_cfg_resolved_set:
+            raise CheckpointEvalRefusal(
+                "RUN_B_CONFIG_IS_RUN_A",
+                f"run B config ({b_cfg_resolved}) resolves to run A's config",
+            )
+        cfg_b = load_prompts_config(b_cfg_file)
         verify_configs_match(cfg_a, cfg_b)
 
     paired_a = pair_run_samples(run_dirs["A"], len(cfg_a["prompts"]), steps, run_label="A")
@@ -2384,9 +2410,8 @@ def evaluate_runs(
 # ---------------------------------------------------------------------------
 
 
-def _parse_run_args(raw_runs: Sequence[str]) -> tuple[dict[str, str], dict[str, str]]:
+def _parse_run_args(raw_runs: Sequence[str]) -> dict[str, str]:
     run_dirs: dict[str, str] = OrderedDict()
-    run_cfgs: dict[str, str] = OrderedDict()
     for item in raw_runs:
         if "=" not in item:
             raise CheckpointEvalRefusal("INVALID_ARGS", f"--run expects NAME=DIR (got {item!r})")
@@ -2396,7 +2421,7 @@ def _parse_run_args(raw_runs: Sequence[str]) -> tuple[dict[str, str], dict[str, 
         if not name or not val:
             raise CheckpointEvalRefusal("INVALID_ARGS", f"--run expects non-empty NAME=DIR (got {item!r})")
         run_dirs[name] = val
-    return run_dirs, run_cfgs
+    return run_dirs
 
 
 def _parse_steps_arg(raw_steps: str | None) -> list[int] | None:
@@ -2424,7 +2449,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         metavar="NAME=DIR",
-        help="Run sample directory mapping: --run A=<samples_dir> [--run B=<samples_dir>].",
+        help="Run sample directory mapping: --run A=<samples_dir> [--run B=<samples_dir>] (B must not resolve to A).",
     )
     parser.add_argument(
         "--steps",
@@ -2434,12 +2459,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompts",
         required=True,
-        help="Path to trainer config.yaml or JSON containing sample prompts and seed.",
+        help="Path to trainer config.yaml or JSON for run A containing sample prompts and seed.",
     )
     parser.add_argument(
         "--prompts-b",
         default=None,
-        help="Optional separate config.yaml or JSON for run B (to verify seed/prompt parity).",
+        help="Config file (config.yaml or JSON) for run B when not inside B's samples directory (must not resolve to run A's config).",
     )
     parser.add_argument("--out", required=True, help="Output directory for summary.json, corridors.md, and cache.")
     parser.add_argument(
@@ -2483,7 +2508,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(argv)
     try:
-        run_dirs, _ = _parse_run_args(args.run)
+        run_dirs = _parse_run_args(args.run)
         steps = _parse_steps_arg(args.steps)
         embedder = FakeEmbedder() if args.fake_embedder else None
         evaluate_runs(

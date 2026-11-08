@@ -80,6 +80,7 @@ def _make_synthetic_fixture_tree(tmp_path: Path) -> dict[str, Path]:
         "a plain wooden chair on a white background",
     ]
     cfg_a_path = tmp_path / "config_a.yaml"
+    cfg_b_path = tmp_path / "config_b.yaml"
     cfg_lines = [
         "job: extension",
         "config:",
@@ -93,7 +94,9 @@ def _make_synthetic_fixture_tree(tmp_path: Path) -> dict[str, Path]:
     ]
     for p in prompts:
         cfg_lines.append(f'          - "{p}"')
-    cfg_a_path.write_text("\n".join(cfg_lines) + "\n", encoding="utf-8")
+    cfg_text = "\n".join(cfg_lines) + "\n"
+    cfg_a_path.write_text(cfg_text, encoding="utf-8")
+    cfg_b_path.write_text(cfg_text, encoding="utf-8")
 
     run_a_dir = tmp_path / "run_a" / "samples"
     run_b_dir = tmp_path / "run_b" / "samples"
@@ -113,6 +116,7 @@ def _make_synthetic_fixture_tree(tmp_path: Path) -> dict[str, Path]:
     return {
         "train_dir": train_dir,
         "cfg_a": cfg_a_path,
+        "cfg_b": cfg_b_path,
         "run_a": run_a_dir,
         "run_b": run_b_dir,
     }
@@ -366,7 +370,7 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
             "--prompts",
             str(fx["cfg_a"]),
             "--prompts-b",
-            str(fx["cfg_a"]),
+            str(fx["cfg_b"]),
             "--corridors",
             str(corridors_file),
             "--corridors-sha",
@@ -409,7 +413,7 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
             "--prompts",
             str(fx["cfg_a"]),
             "--prompts-b",
-            str(fx["cfg_a"]),
+            str(fx["cfg_b"]),
             "--corridors",
             str(corridors_file),
             "--corridors-sha",
@@ -794,7 +798,7 @@ def test_wrong_corridors_sha_refused(tmp_path: Path) -> None:
             training_dir=fx["train_dir"],
             run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
             prompts_path=fx["cfg_a"],
-            prompts_b_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_b"],
             out_dir=out_a,
             steps=[0, 250, 500],
             corridors_path=corridors_file,
@@ -836,7 +840,7 @@ def test_swapped_run_a_dir_refused(tmp_path: Path) -> None:
             training_dir=fx["train_dir"],
             run_dirs={"A": swapped_a, "B": fx["run_b"]},
             prompts_path=fx["cfg_a"],
-            prompts_b_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_b"],
             out_dir=out_a,
             steps=[0, 250, 500],
             corridors_path=corridors_file,
@@ -860,7 +864,7 @@ def test_run_b_without_config_refused(tmp_path: Path) -> None:
     corridors_file = out_a / "corridors.md"
     corridors_sha = summary_a["corridors"]["file_sha256"]
 
-    # No --prompts-b and no config.yaml/config.json beside run_b -> must refuse RUN_B_CONFIG_MISSING
+    # No --prompts-b and no config.yaml/config.json inside run_b -> must refuse RUN_B_CONFIG_MISSING
     with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
         _eval_runs_compat(
             training_dir=fx["train_dir"],
@@ -890,8 +894,8 @@ def test_run_b_seed_999_via_config_beside_refused(tmp_path: Path) -> None:
     corridors_sha = summary_a["corridors"]["file_sha256"]
     cfg_a_data = ce.load_prompts_config(fx["cfg_a"])
 
-    # Place config.yaml beside run_b (in run_b.parent) where seed: 999 is under config/train
-    beside_cfg = fx["run_b"].parent / "config.yaml"
+    # Place config.yaml inside run_b where seed: 999 is under config/train
+    beside_cfg = fx["run_b"] / "config.yaml"
     beside_lines = [
         "job: extension",
         "config:",
@@ -1156,5 +1160,221 @@ def test_wilcoxon_p_less_and_normal_approximation_above_n20() -> None:
     assert w21["w_minus"] == 231.0
     assert w21["p_less"] < 1e-4
     assert w21["p_greater"] > 0.9999
+
+
+def test_shared_parent_config_not_picked_up_for_run_b_refused(tmp_path: Path) -> None:
+    """Layout runs/A, runs/B, and runs/config.yaml (run A's config) with no config inside runs/B must refuse RUN_B_CONFIG_MISSING."""
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    runs_dir = tmp_path / "runs"
+    run_a = runs_dir / "A"
+    run_b = runs_dir / "B"
+    run_a.mkdir(parents=True, exist_ok=True)
+    run_b.mkdir(parents=True, exist_ok=True)
+    for p in fx["run_a"].iterdir():
+        (run_a / p.name).write_bytes(p.read_bytes())
+    for p in fx["run_b"].iterdir():
+        (run_b / p.name).write_bytes(p.read_bytes())
+    shared_cfg = runs_dir / "config.yaml"
+    shared_cfg.write_text(fx["cfg_a"].read_text(encoding="utf-8"), encoding="utf-8")
+
+    out_a = tmp_path / "eval_shared"
+    summary_a = ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": run_a},
+        prompts_path=shared_cfg,
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+    corridors_sha = summary_a["corridors"]["file_sha256"]
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": run_a, "B": run_b},
+            prompts_path=shared_cfg,
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "RUN_B_CONFIG_MISSING"
+
+
+def test_run_b_config_same_as_run_a_refused(tmp_path: Path) -> None:
+    """Refuse RUN_B_CONFIG_IS_RUN_A when B's config resolves to the same file as run A's config or --prompts."""
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    summary_a = ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": fx["run_a"]},
+        prompts_path=fx["cfg_a"],
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+    corridors_sha = summary_a["corridors"]["file_sha256"]
+
+    # Case 1: --prompts-b resolves to the same file as --prompts
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_a"].parent / "." / fx["cfg_a"].name,
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "RUN_B_CONFIG_IS_RUN_A"
+
+    # Case 2: --prompts points to config inside B's samples dir, and B auto-discovers that same file
+    cfg_in_b = fx["run_b"] / "config.yaml"
+    cfg_in_b.write_text(fx["cfg_a"].read_text(encoding="utf-8"), encoding="utf-8")
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info2:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=cfg_in_b,
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info2.value.code == "RUN_B_CONFIG_IS_RUN_A"
+
+    # Case 3: run A has config.yaml inside run A's samples dir, and --prompts-b points to it
+    cfg_in_a = fx["run_a"] / "config.yaml"
+    cfg_in_a.write_text(fx["cfg_a"].read_text(encoding="utf-8"), encoding="utf-8")
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info3:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            prompts_b_path=cfg_in_a,
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info3.value.code == "RUN_B_CONFIG_IS_RUN_A"
+
+
+def test_run_b_dir_same_as_run_a_refused(tmp_path: Path) -> None:
+    """Refuse RUN_B_IS_RUN_A when B's samples directory resolves to A's."""
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    summary_a = ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": fx["run_a"]},
+        prompts_path=fx["cfg_a"],
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+    corridors_sha = summary_a["corridors"]["file_sha256"]
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_a"] / "."},
+            prompts_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_b"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "RUN_B_IS_RUN_A"
+
+
+def test_corridors_band_check_alone_refused(tmp_path: Path) -> None:
+    """Re-seal a band-tampered corridors file, pass that file's own sha as --corridors-sha, and assert CORRIDORS_TAMPERED."""
+    import hashlib
+
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": fx["run_a"]},
+        prompts_path=fx["cfg_a"],
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+
+    text = corridors_file.read_text(encoding="utf-8")
+    edited = text.replace('"kill_below": -0.035', '"kill_below": -99.0', 1)
+    assert edited != text
+    m_sha = ce.re.search(r"^- \*\*body_sha256:\*\* `([0-9a-f]{64})`$", edited, flags=ce.re.MULTILINE)
+    assert m_sha is not None
+    with_placeholder = edited[: m_sha.start(1)] + ce.CORRIDORS_SHA_PLACEHOLDER + edited[m_sha.end(1) :]
+    resealed_body_sha = ce._compute_corridors_body_sha256(with_placeholder)
+    resealed_text = with_placeholder.replace(ce.CORRIDORS_SHA_PLACEHOLDER, resealed_body_sha, 1)
+    corridors_file.write_text(resealed_text, encoding="utf-8", newline="\n")
+    tampered_file_sha = hashlib.sha256(corridors_file.read_bytes()).hexdigest()
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.read_and_verify_corridors(corridors_file, expected_sha256=tampered_file_sha)
+    assert exc_info.value.code == "CORRIDORS_TAMPERED"
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info2:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_b"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=tampered_file_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info2.value.code == "CORRIDORS_TAMPERED"
+
+
+def test_wilcoxon_normal_approx_p_less_with_ties_kills_m3() -> None:
+    """Hand-computed normal-approximation p_less with ties at n=21 (> 20) that kills continuity-correction sign mutation M3."""
+    # n = 21 non-zero diffs:
+    # - 4 tied at +1.0 -> ranks 1..4, avg rank 2.5 -> W+ contribution = 10.0 (tie group t=4: 4*3*5 = 60)
+    # - 3 tied at -2.0 -> ranks 5..7, avg rank 6.0 -> W- contribution = 18.0 (tie group t=3: 3*2*4 = 24)
+    # - 10 distinct negative diffs -3.0..-12.0 -> ranks 8..17 -> W- contribution = 125.0
+    # - 4 distinct positive diffs +13.0..+16.0 -> ranks 18..21 -> W+ contribution = 78.0
+    # Total: W+ = 88.0, W- = 143.0, mu = 0.25 * 21 * 22 = 115.5
+    # tie_term = 0.5 * (60 + 24) = 42.0
+    # var = (21 * 22 * 43 - 42.0) / 24.0 = 19824 / 24.0 = 826.0, sigma = sqrt(826.0)
+    # z_less = (88.0 - 115.5 + 0.5) / sqrt(826.0) = -27.0 / sqrt(826.0)
+    # p_less = 0.5 * (1 + erf(-27.0 / sqrt(1652.0))) = 0.1737499974 -> 0.17375
+    # (Under M3 where +0.5 is mutated to -0.5, z_less = -28.0 / sqrt(826.0) -> p_less = 0.16496427)
+    diffs = (
+        [1.0, 1.0, 1.0, 1.0]
+        + [-2.0, -2.0, -2.0]
+        + [-float(k) for k in range(3, 13)]
+        + [float(k) for k in range(13, 17)]
+    )
+    res = ce._wilcoxon_signed_rank(diffs)
+    assert res["n_nonzero"] == 21
+    assert res["method"] == "normal_approx"
+    assert res["w_plus"] == 88.0
+    assert res["w_minus"] == 143.0
+    assert res["statistic"] == 88.0
+    expected_p_less = round(0.5 * (1.0 + math.erf(-27.0 / math.sqrt(1652.0))), 8)
+    expected_p_greater = round(0.5 * math.erfc(-28.0 / math.sqrt(1652.0)), 8)
+    expected_p_two = round(math.erfc(27.0 / math.sqrt(1652.0)), 8)
+    assert expected_p_less == 0.17374984
+    assert math.isclose(res["p_less"], expected_p_less, abs_tol=1e-8)
+    assert math.isclose(res["p_greater"], expected_p_greater, abs_tol=1e-8)
+    assert math.isclose(res["p_two_sided"], expected_p_two, abs_tol=1e-8)
+
 
 

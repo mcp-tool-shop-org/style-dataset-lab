@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "969570388aa8b09676aeddd38d981a2862bbc9cfe210d601953c2ea798e7ca5b",
+          "hash": "3d56d2593737830f2ef30f07e376c9536c40a81d3ae6f6bf7a6663a18e62e089",
           "path": "CHANGELOG.md"
         },
         {
@@ -16828,7 +16828,7 @@
               "line": 45
             }
           ],
-          "hash": "977ea96556aa502a07a89895d77863c94f4060235fc23ffc28f0d7ebf7c12d83",
+          "hash": "1562ce6339d7e02702b8a3436b005cfd709b436f816867b6b059f52780d75177",
           "importOrder": [
             "lib/paths.js",
             "lib/measure.js",
@@ -16842,7 +16842,7 @@
           "path": "scripts/checkpoint-eval.js"
         },
         {
-          "hash": "1e40f7fe0da465036803e5758f8a3f5a1d7ef987d504ec6d955ab1d55f260949",
+          "hash": "26bd6ed40527a9ed4ef3ebdb892e61d716a755145695e845540ad030c93c3915",
           "path": "scripts/checkpoint-eval/README.md"
         },
         {
@@ -16870,375 +16870,385 @@
             {
               "in": "compute_paired_stats",
               "kind": "raise",
-              "line": 280
+              "line": 284
             },
             {
               "in": "compute_paired_stats",
               "kind": "raise",
-              "line": 286
+              "line": 290
             },
             {
               "in": "load_prompts_config",
               "kind": "raise",
-              "line": 403
+              "line": 407
             },
             {
               "in": "load_prompts_config",
               "kind": "except",
-              "line": 413
+              "line": 417
             },
             {
               "in": "load_prompts_config",
               "kind": "except",
-              "line": 416
-            },
-            {
-              "in": "load_prompts_config",
-              "kind": "raise",
               "line": 420
             },
             {
               "in": "load_prompts_config",
               "kind": "raise",
-              "line": 439
+              "line": 424
             },
             {
               "in": "load_prompts_config",
               "kind": "raise",
-              "line": 447
+              "line": 443
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "raise",
+              "line": 451
             },
             {
               "in": "compute_run_samples_fingerprint",
               "kind": "raise",
-              "line": 550
+              "line": 554
             },
             {
               "in": "compute_run_samples_fingerprint",
               "kind": "raise",
-              "line": 556
+              "line": 560
             },
             {
               "in": "pair_run_samples",
               "kind": "raise",
-              "line": 573
+              "line": 577
             },
             {
               "in": "pair_run_samples",
               "kind": "raise",
-              "line": 585
+              "line": 589
             },
             {
               "in": "pair_run_samples",
               "kind": "raise",
-              "line": 591
+              "line": 595
             },
             {
               "in": "pair_run_samples",
               "kind": "raise",
-              "line": 599
+              "line": 603
             },
             {
               "in": "pair_run_samples",
               "kind": "raise",
-              "line": 609
+              "line": 613
             },
             {
               "in": "pair_run_samples",
               "kind": "raise",
-              "line": 616
+              "line": 620
             },
             {
               "in": "verify_configs_match",
               "kind": "raise",
-              "line": 628
+              "line": 632
             },
             {
               "in": "verify_configs_match",
               "kind": "raise",
-              "line": 634
+              "line": 638
             },
             {
               "in": "compute_stable_rank_from_lora_pair",
               "kind": "raise",
-              "line": 754
+              "line": 758
             },
             {
               "in": "compute_stable_rank_from_lora_pair",
               "kind": "except",
-              "line": 766
+              "line": 770
             },
             {
               "in": "compute_stable_rank_from_lora_pair",
               "kind": "raise",
-              "line": 773
+              "line": 777
             },
             {
               "in": "_lora_inner_product_and_norms",
               "kind": "except",
-              "line": 828
+              "line": 832
             },
             {
               "in": "_load_safetensors_tensors",
               "kind": "except",
-              "line": 854
+              "line": 858
             },
             {
               "in": "_load_safetensors_tensors",
               "kind": "raise",
-              "line": 857
+              "line": 861
             },
             {
               "in": "_load_safetensors_tensors",
               "kind": "raise",
-              "line": 877
+              "line": 881
             },
             {
               "in": "read_safetensors_weight_space",
               "kind": "raise",
-              "line": 905
+              "line": 909
             },
             {
               "in": "read_safetensors_weight_space",
               "kind": "raise",
-              "line": 929
+              "line": 933
             },
             {
               "in": "__init__",
               "kind": "raise",
-              "line": 1203
+              "line": 1207
             },
             {
               "in": "__init__",
               "kind": "raise",
-              "line": 1269
+              "line": 1273
             },
             {
               "in": "_extract_tensor",
               "kind": "raise",
-              "line": 1297
+              "line": 1301
             },
             {
               "in": "get_or_create_training_embeddings",
               "kind": "raise",
-              "line": 1384
+              "line": 1388
             },
             {
               "in": "get_or_create_training_embeddings",
               "kind": "raise",
-              "line": 1390
+              "line": 1394
             },
             {
               "in": "get_or_create_training_embeddings",
               "kind": "except",
-              "line": 1408
+              "line": 1412
             },
             {
               "in": "_get_step_dict",
               "kind": "raise",
-              "line": 1440
+              "line": 1444
             },
             {
               "in": "_get_step_dict",
               "kind": "raise",
-              "line": 1445
+              "line": 1449
             },
             {
               "in": "_get_required_metric",
               "kind": "raise",
-              "line": 1457
+              "line": 1461
             },
             {
               "in": "_get_required_metric",
               "kind": "raise",
-              "line": 1464
+              "line": 1468
             },
             {
               "in": "_get_required_metric",
               "kind": "except",
-              "line": 1471
+              "line": 1475
             },
             {
               "in": "_get_required_metric",
               "kind": "raise",
-              "line": 1472
+              "line": 1476
             },
             {
               "in": "_get_required_metric",
               "kind": "raise",
-              "line": 1477
+              "line": 1481
             },
             {
               "in": "build_corridors_payload",
               "kind": "raise",
-              "line": 1541
+              "line": 1545
             },
             {
               "in": "build_corridors_payload",
               "kind": "raise",
-              "line": 1547
+              "line": 1551
             },
             {
               "in": "write_corridors_file",
               "kind": "raise",
-              "line": 1687
+              "line": 1691
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1718
+              "line": 1722
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "except",
-              "line": 1726
+              "line": 1730
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1727
+              "line": 1731
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1733
+              "line": 1737
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1743
+              "line": 1747
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1751
-            },
-            {
-              "in": "read_and_verify_corridors",
-              "kind": "except",
               "line": 1755
             },
             {
               "in": "read_and_verify_corridors",
-              "kind": "raise",
-              "line": 1756
-            },
-            {
-              "in": "read_and_verify_corridors",
-              "kind": "raise",
+              "kind": "except",
               "line": 1759
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1764
+              "line": 1760
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1763
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1768
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "except",
-              "line": 1774
+              "line": 1778
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1775
+              "line": 1779
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1777
+              "line": 1781
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1784
+              "line": 1788
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1790
+              "line": 1794
             },
             {
               "in": "score_run_b_against_corridors",
               "kind": "raise",
-              "line": 1812
+              "line": 1816
             },
             {
               "in": "_evaluate_single_run",
               "kind": "raise",
-              "line": 1927
+              "line": 1931
             },
             {
               "in": "_compare_run_b_vs_run_a",
               "kind": "raise",
-              "line": 2084
+              "line": 2088
             },
             {
               "in": "_compare_run_b_vs_run_a",
               "kind": "raise",
-              "line": 2094
+              "line": 2098
             },
             {
               "in": "_compare_run_b_vs_run_a",
               "kind": "raise",
-              "line": 2161
+              "line": 2165
             },
             {
               "in": "_compare_run_b_vs_run_a",
               "kind": "raise",
-              "line": 2172
+              "line": 2176
             },
             {
               "in": "evaluate_runs",
               "kind": "raise",
-              "line": 2218
+              "line": 2222
             },
             {
               "in": "evaluate_runs",
               "kind": "raise",
-              "line": 2224
+              "line": 2228
             },
             {
               "in": "evaluate_runs",
               "kind": "raise",
-              "line": 2240
+              "line": 2244
             },
             {
               "in": "evaluate_runs",
               "kind": "raise",
-              "line": 2249
+              "line": 2251
             },
             {
               "in": "evaluate_runs",
               "kind": "raise",
-              "line": 2266
+              "line": 2261
             },
             {
               "in": "evaluate_runs",
               "kind": "raise",
-              "line": 2279
+              "line": 2274
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2292
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2305
             },
             {
               "in": "_parse_run_args",
               "kind": "raise",
-              "line": 2392
+              "line": 2417
             },
             {
               "in": "_parse_run_args",
               "kind": "raise",
-              "line": 2397
+              "line": 2422
             },
             {
               "in": "_parse_steps_arg",
               "kind": "raise",
-              "line": 2411
+              "line": 2436
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 2504
+              "line": 2529
             }
           ],
-          "hash": "37474530046879173277d397849d7f880ded8268d5fd9830c0ed1ae61ce46335",
+          "hash": "3cac328ec8795d67844bc72a80afdc8c27da4fd4fb690c46d63ff6d6e8730d92",
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
@@ -19987,6 +19997,7 @@
         },
         {
           "exports": [
+            "test_corridors_band_check_alone_refused",
             "test_corridors_generation_and_tamper_refusal_end_to_end",
             "test_corridors_overwrite_refused",
             "test_corridors_reseal_bypass_refused",
@@ -19997,15 +20008,19 @@
             "test_pairing_by_name_and_refusals",
             "test_per_layer_singular_values_from_safetensors_match_numpy",
             "test_pure_stdlib_fallbacks_and_edge_branches",
+            "test_run_b_config_same_as_run_a_refused",
+            "test_run_b_dir_same_as_run_a_refused",
             "test_run_b_seed_999_via_config_beside_refused",
             "test_run_b_without_config_refused",
             "test_seed_and_prompt_mismatch_refusal",
+            "test_shared_parent_config_not_picked_up_for_run_b_refused",
             "test_stable_rank_on_known_matrices_and_safetensors",
             "test_swapped_run_a_dir_refused",
+            "test_wilcoxon_normal_approx_p_less_with_ties_kills_m3",
             "test_wilcoxon_p_less_and_normal_approximation_above_n20",
             "test_wrong_corridors_sha_refused"
           ],
-          "hash": "bcf069013ae6751ee33536c68bb162bd2509db2f27da05e2d3e93e385751e04e",
+          "hash": "9210f35fddc6447e723b4c276805b8920e9b8dd61a08092246470b8aa214cfa3",
           "importsFiles": [
             "scripts/checkpoint-eval/checkpoint_eval.py"
           ],
@@ -22905,7 +22920,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "e35fcd813efddf49bb1a3caabd49253f9d674245",
+    "commit": "7c41b59ad75dc1a9e893bc9e0be4708433893018",
     "tracked": 3307
   },
   "landings": [
