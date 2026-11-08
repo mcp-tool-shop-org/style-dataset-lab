@@ -235,9 +235,14 @@ os.execvp("timeout", ["timeout", "-k", sys.argv[1], sys.argv[2], *sys.argv[3:]])
   return "${step_rc}"
 }
 
-# colab_enter_cleanup_trap <out_dir>: arm cleanup signal handling at the start of `cleanup_on_exit`.
+# colab_enter_cleanup_trap <out_dir>: arm cleanup signal handling and record cleanup_started.txt
+# at the very top of `cleanup_on_exit` (before post-failure salvage) so `colab_run_wall_watcher`
+# knows the main shell entered cleanup and waits up to COLAB_CLEANUP_STOP_ATTEMPTED_BY_S for salvage.
 colab_enter_cleanup_trap() {
   local out_dir="$1"
+  if [ -n "${out_dir}" ] && [ -d "${out_dir}" ] && [ ! -f "${out_dir}/cleanup_started.txt" ]; then
+    date -u +%s > "${out_dir}/cleanup_started.txt"
+  fi
   trap - EXIT
   trap 'colab_on_cleanup_signal "'"${out_dir}"'"' TERM INT
 }
@@ -382,6 +387,7 @@ colab_upload_checked() {
     colab_refuse_logged "${out_dir}" UPLOAD_FAILED "${src} -> ${dst}: local file missing (http=none)"
     return 1
   fi
+  colab_check_pre_exec_cap "${out_dir}" || return 1
   local upload_timeout="${COLAB_UPLOAD_TIMEOUT_S:-120}"
   local kill_grace="${COLAB_KILL_GRACE_S:-10}"
   local out=""
@@ -395,6 +401,7 @@ colab_upload_checked() {
     colab_refuse_logged "${out_dir}" UPLOAD_FAILED "${src} -> ${dst}: colab upload rc=${rc} http=$(_colab_http_status "${out}") (CLI output in colab.log)"
     return 1
   fi
+  colab_check_pre_exec_cap "${out_dir}" || return 1
 }
 
 # colab_download_checked <session> <remote> <local> <out_dir>: the CLI writes the local file with a
@@ -629,6 +636,7 @@ colab_read_post_open_rate() {
   while [ "${i}" -lt "${polls}" ]; do
     i=$((i + 1))
     colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
+    colab_check_pre_exec_cap "${out_dir}" || return 1
     decision="$("${py_bin}" - "${guards_dir}" "${out_dir}" "${max_rate}" << 'PYEOF'
 import json, sys
 from pathlib import Path
@@ -640,7 +648,10 @@ print(lg.window_rate_decision(state, float(sys.argv[3])))
 PYEOF
 )"
     [ "${decision}" != "unread" ] && break
-    [ "${i}" -lt "${polls}" ] && sleep "${interval_s}"
+    if [ "${i}" -lt "${polls}" ]; then
+      sleep "${interval_s}"
+      colab_check_pre_exec_cap "${out_dir}" || return 1
+    fi
   done
   "${py_bin}" - "${out_dir}" "${max_rate}" "${i}" "${decision}" << 'PYEOF'
 import json, sys
@@ -859,7 +870,11 @@ colab_run_exec_with_live_guards() {
     fi
     local now_epoch elapsed_s cur_size idle_s cur_setup_bytes setup_idle_s run_only_bytes
     now_epoch="$(date -u +%s)"
-    elapsed_s="$((now_epoch - start_epoch))"
+    if [ -f "${out_dir}/session_open_epoch.txt" ]; then
+      elapsed_s="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((now_epoch - start_epoch))")"
+    else
+      elapsed_s="$((now_epoch - start_epoch))"
+    fi
 
     local check_rc=0
     colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}" || check_rc=$?
@@ -1244,6 +1259,109 @@ colab_cap_budget_gate() {
     colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${budget_out}" CAP_TOO_SMALL_FOR_CLEANUP
     return 2
   fi
+  export COLAB_ACTIVE_PY_BIN="${py_bin}"
+  export COLAB_ACTIVE_GUARDS_PY="${guards_py}"
+  export COLAB_ACTIVE_OUT_DIR="${out_dir}"
+  export COLAB_ACTIVE_CAP="${cap}"
+  export COLAB_ACTIVE_MARGIN="${margin}"
+}
+
+# colab_check_pre_exec_cap <out_dir>: evaluate the cap guard during pre-exec (between `colab new`
+# succeeding and `colab exec` starting: rate polls, shape check, and uploads) using elapsed time
+# since session_open_epoch.txt, the latest account balance, and the priced rate known at that moment
+# (on GPU: max(--max-rate, highest stable window rate so far); on CPU: configured/pre-open rate).
+# On a trip, records phase="pre_exec", logs REFUSED: CAP_GUARD_TRIPPED, and returns 1 so the caller's
+# EXIT trap stops the session immediately (without salvage, since EXEC_IN_FLIGHT=0).
+colab_check_pre_exec_cap() {
+  local out_dir="$1"
+  [ -n "${out_dir}" ] && [ -f "${out_dir}/session_opened.txt" ] || return 0
+  [ "${EXEC_IN_FLIGHT:-0}" != "1" ] && [ ! -f "${out_dir}/cleanup_started.txt" ] && [ ! -f "${out_dir}/stop_reached.txt" ] || return 0
+  local py_bin="${COLAB_ACTIVE_PY_BIN:-${PY_BIN:-}}"
+  local guards_py="${COLAB_ACTIVE_GUARDS_PY:-${GUARDS_PY:-}}"
+  local cap="${COLAB_ACTIVE_CAP:-${CAP:-}}"
+  local margin="${COLAB_ACTIVE_MARGIN:-${MARGIN:-0.01}}"
+  local wall_s="${WALL_S:-1800}"
+  local grace_s="${GRACE_S:-120}"
+  [ -n "${py_bin}" ] && [ -n "${guards_py}" ] && [ -n "${cap}" ] || return 0
+
+  local guard_out=""
+  local guard_rc=0
+  guard_out="$("${py_bin}" - "${guards_py}" "${out_dir}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${COLAB_CLEANUP_BOUND_S:-0}" "${COLAB_CARD_CLASS:-cpu}" "${RATE_CCU_PER_HOUR:-0.26}" << 'PYEOF'
+import json, sys, time
+from pathlib import Path
+
+guards_py = Path(sys.argv[1])
+out_dir = Path(sys.argv[2])
+wall_s = float(sys.argv[3])
+grace_s = float(sys.argv[4])
+cap = float(sys.argv[5])
+margin = float(sys.argv[6])
+cleanup_bound_s = float(sys.argv[7])
+card_class = sys.argv[8]
+default_rate = float(sys.argv[9])
+
+sys.path.insert(0, str(guards_py.parent))
+import launch_guards as lg
+
+def _read_float(p: Path) -> float | None:
+    if not p.is_file():
+        return None
+    try:
+        return float(p.read_text(encoding="utf-8").strip())
+    except Exception:
+        return None
+
+open_epoch = _read_float(out_dir / "session_open_epoch.txt")
+elapsed_s = max(0.0, time.time() - open_epoch) if open_epoch is not None else 0.0
+
+if card_class == "gpu":
+    max_rate = _read_float(out_dir / "max_rate.txt") or default_rate
+    state_f = out_dir / "rate_window.json"
+    try:
+        state = json.loads(state_f.read_text(encoding="utf-8")) if state_f.is_file() else {}
+    except Exception:
+        state = {}
+    proj = lg.gpu_projection_rate(state, max_rate)
+    priced_rate = float(proj) if proj is not None and float(proj) > 0.0 else float(max_rate)
+else:
+    priced_rate = _read_float(out_dir / "rate_for_projection.txt") or default_rate
+
+start_bal = _read_float(out_dir / "start_balance.txt")
+cur_bal = _read_float(out_dir / "end_balance.txt")
+if cur_bal is None:
+    cur_bal = start_bal
+err_f = out_dir / "usage_parse_error.txt"
+usage_err = err_f.read_text(encoding="utf-8").strip() if err_f.is_file() and err_f.stat().st_size > 0 else None
+
+argv = [
+    "--mode", "pre_exec",
+    "--phase", "pre_exec",
+    "--elapsed-s", f"{elapsed_s:.6f}",
+    "--wall-s", str(wall_s),
+    "--grace-s", str(grace_s),
+    "--cap", str(cap),
+    "--margin", str(margin),
+    "--cleanup-bound-s", str(cleanup_bound_s),
+    "--rate", str(priced_rate),
+]
+if start_bal is not None:
+    argv += ["--start-balance", str(start_bal)]
+if cur_bal is not None:
+    argv += ["--current-balance", str(cur_bal)]
+if usage_err:
+    argv += ["--usage-parse-error", usage_err]
+raise SystemExit(lg.main(argv))
+PYEOF
+)" || guard_rc=$?
+
+  if [ -n "${guard_out}" ]; then
+    printf '%s\n' "${guard_out}" >> "${out_dir}/guards.log"
+  fi
+  if [ "${guard_rc}" -ne 0 ]; then
+    printf 'pre_exec\n' > "${out_dir}/cap_trip_phase.txt"
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_out}" CAP_GUARD_TRIPPED
+    return 1
+  fi
 }
 
 # colab_check_session_shape <session> <out_dir> <shape>: after `colab new`, the session's row in
@@ -1373,14 +1491,20 @@ colab_open_session_locked() {
     fi
   fi
   printf '1\n' > "${out_dir}/session_opened.txt"
+  # The cap clock starts the moment `colab new` succeeds on both GPU and CPU: rate polls, shape check,
+  # and uploads are billed time and are checked against effective_trip throughout pre-exec.
+  START_EPOCH="$(date -u +%s)"
+  export START_EPOCH
+  "${PY_BIN:?the kit must set PY_BIN}" -c 'import sys, time; open(sys.argv[1], "w", encoding="utf-8").write(f"{time.time():.6f}\n")' "${out_dir}/session_open_epoch.txt" 2>/dev/null \
+    || printf '%s\n' "${START_EPOCH}" > "${out_dir}/session_open_epoch.txt"
+  date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${out_dir}/cap_clock_started_at.txt"
+  colab_check_pre_exec_cap "${out_dir}" || return 1
   if ! colab_card_is_cpu "${card}"; then
-    # The cap and wall clock starts the moment `colab new` succeeds: the rate polls and everything
-    # after them are billed time and count.
-    START_EPOCH="$(date -u +%s)"
-    date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${out_dir}/cap_clock_started_at.txt"
     colab_check_session_shape "${session}" "${out_dir}" "${shape}" || return 1
+    colab_check_pre_exec_cap "${out_dir}" || return 1
     colab_read_post_open_rate "${PY_BIN:?the kit must set PY_BIN}" "${out_dir}" "${COLAB_RATE_READ_POLLS}" \
       "${COLAB_RATE_READ_INTERVAL_S}" "$(cat "${out_dir}/max_rate.txt")" || return 1
+    colab_check_pre_exec_cap "${out_dir}" || return 1
   fi
 }
 
@@ -1416,29 +1540,76 @@ colab_run_wall_watcher() {
   echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${wall_limit_s} s (wall - grace) elapsed" >> "${out_dir}/guards.log"
   kill -TERM "${main_pid}" 2>/dev/null || true
 
+  colab_compute_cleanup_bounds "${lane}"
   local escalate_s="${COLAB_WALL_ESCALATE_S:-30}"
-  "${py_bin}" - "${main_pid}" "${escalate_s}" "${out_dir}/stop_reached.txt" << 'PYEOF'
+  local cleanup_stop_by_s="${COLAB_CLEANUP_STOP_ATTEMPTED_BY_S:-310}"
+  local wait_rc=0
+  "${py_bin}" - "${main_pid}" "${escalate_s}" "${cleanup_stop_by_s}" "${out_dir}" << 'PYEOF' || wait_rc=$?
 import os, sys, time
+from pathlib import Path
+
 main_pid = int(sys.argv[1])
 escalate_s = float(sys.argv[2])
-stop_reached_p = sys.argv[3]
-deadline = time.monotonic() + escalate_s
-while time.monotonic() < deadline:
-    if os.path.exists(stop_reached_p):
+cleanup_stop_by_s = float(sys.argv[3])
+out_dir = Path(sys.argv[4])
+cleanup_started_p = out_dir / "cleanup_started.txt"
+stop_reached_p = out_dir / "stop_reached.txt"
+watcher_wait_p = out_dir / "watcher_wait.txt"
+
+trip_mono = time.monotonic()
+escalate_deadline = trip_mono + escalate_s
+cleanup_seen = False
+
+while time.monotonic() < escalate_deadline:
+    if stop_reached_p.exists():
+        watcher_wait_p.write_text("cleanup_seen\n", encoding="utf-8", newline="\n")
+        sys.exit(0)
+    if cleanup_started_p.exists():
+        cleanup_seen = True
+        watcher_wait_p.write_text("cleanup_seen\n", encoding="utf-8", newline="\n")
+        break
+    try:
+        os.kill(main_pid, 0)
+    except OSError:
+        if cleanup_started_p.exists() or stop_reached_p.exists():
+            watcher_wait_p.write_text("cleanup_seen\n", encoding="utf-8", newline="\n")
+        sys.exit(0)
+    time.sleep(0.05)
+
+if not cleanup_seen:
+    if stop_reached_p.exists() or cleanup_started_p.exists():
+        cleanup_seen = True
+        watcher_wait_p.write_text("cleanup_seen\n", encoding="utf-8", newline="\n")
+    else:
+        watcher_wait_p.write_text("escalated_no_cleanup\n", encoding="utf-8", newline="\n")
+        sys.exit(1)
+
+stop_deadline = trip_mono + cleanup_stop_by_s
+while time.monotonic() < stop_deadline:
+    if stop_reached_p.exists():
+        watcher_wait_p.write_text("cleanup_seen\n", encoding="utf-8", newline="\n")
         sys.exit(0)
     try:
         os.kill(main_pid, 0)
     except OSError:
         sys.exit(0)
     time.sleep(0.05)
+
+if stop_reached_p.exists():
+    watcher_wait_p.write_text("cleanup_seen\n", encoding="utf-8", newline="\n")
+    sys.exit(0)
+watcher_wait_p.write_text("escalated_cleanup_overran\n", encoding="utf-8", newline="\n")
+sys.exit(1)
 PYEOF
-  if [ -f "${out_dir}/stop_reached.txt" ]; then
+  if [ "${wait_rc}" -eq 0 ] || [ -f "${out_dir}/stop_reached.txt" ]; then
     return 0
   fi
 
+  local watcher_wait_state
+  watcher_wait_state="$(cat "${out_dir}/watcher_wait.txt" 2>/dev/null || echo escalated_no_cleanup)"
   printf '1\n' > "${out_dir}/watcher_escalated.txt"
   printf 'watcher\n' > "${out_dir}/stop_path.txt"
-  echo "WALL_WATCHER_ESCALATED session=${session} escalate_s=${escalate_s}" >> "${out_dir}/guards.log"
+  echo "WALL_WATCHER_ESCALATED session=${session} escalate_s=${escalate_s} cleanup_stop_attempted_by_s=${cleanup_stop_by_s} watcher_wait=${watcher_wait_state}" >> "${out_dir}/guards.log"
   if [ -f "${out_dir}/session_open_started.txt" ] || [ -f "${out_dir}/session_opened.txt" ]; then
     colab_stop_and_log_closing "${py_bin}" "${session}" "${out_dir}"
   fi
@@ -1834,6 +2005,13 @@ cleanup_stop_attempted_by_s = in_flight_bound_s + salvage_bound_s
 cleanup_bound_s = cleanup_stop_attempted_by_s + stop_bound_s
 stop_path_raw = read_text_file(out_dir / "stop_path.txt")
 stop_path = stop_path_raw if stop_path_raw in ("trap", "watcher") else "trap"
+watcher_wait_raw = read_text_file(out_dir / "watcher_wait.txt")
+watcher_wait = (
+    watcher_wait_raw
+    if watcher_wait_raw in ("none", "cleanup_seen", "escalated_no_cleanup", "escalated_cleanup_overran")
+    else "none"
+)
+cap_trip_phase = read_text_file(out_dir / "cap_trip_phase.txt")
 
 cap_trip_formula = (
     "effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate"
@@ -1876,12 +2054,16 @@ window_payload = {
     "refusal_code": refusal_code,
     "why": refusal_why,
     "cap": cap,
+    "cap_ccu": cap,
     "wall_s": wall_s,
     "grace_s": grace_s,
     "margin": margin,
     "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
     "cleanup_bound_s": cleanup_bound_s,
     "stop_path": stop_path,
+    "watcher_wait": watcher_wait,
+    "phase": cap_trip_phase if cap_trip_phase else ("live" if (out_dir / "session_opened.txt").is_file() else "pre_open"),
+    "cap_trip_phase": cap_trip_phase,
     "cleanup_reserve_units": cleanup_reserve_units,
     "effective_trip_units": effective_trip_units,
     "cap_trip_formula": cap_trip_formula,
@@ -1915,6 +2097,9 @@ outcome_payload = {
     "status": final_status,
     "refusal_code": refusal_code,
     "why": refusal_why,
+    "phase": cap_trip_phase if cap_trip_phase else ("live" if (out_dir / "session_opened.txt").is_file() else "pre_open"),
+    "cap_trip_phase": cap_trip_phase,
+    "watcher_wait": watcher_wait,
     "exit_code": exit_code,
     "opened_at": opened_at,
     "closed_at": closed_at,

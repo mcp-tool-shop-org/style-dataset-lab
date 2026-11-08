@@ -1221,6 +1221,17 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         bal = "9.75" if (mode == "cap_burn" and c >= 2) else os.environ.get("FAKE_COLAB_BALANCE", "9.85")
         session_opened = (state_dir / "session_opened.txt").is_file()
+        if session_opened and os.environ.get("FAKE_COLAB_USAGE_DELAY_S") and not (state_dir / "stops.log").exists():
+            time.sleep(float(os.environ["FAKE_COLAB_USAGE_DELAY_S"]))
+        if session_opened and os.environ.get("FAKE_COLAB_BURN_BALANCE") == "1" and (state_dir / "new_done_epoch.txt").is_file():
+            open_ts = float((state_dir / "new_done_epoch.txt").read_text(encoding="utf-8").strip())
+            if (state_dir / "stops.jsonl").is_file():
+                end_ts = float(json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"])
+            else:
+                end_ts = time.time()
+            burn_rate = float(os.environ.get("FAKE_COLAB_BURN_RATE_CCU_PER_H", "10.5"))
+            base_bal = float(os.environ.get("FAKE_COLAB_BALANCE", "9.85"))
+            bal = f"{max(0.0, base_bal - max(0.0, end_ts - open_ts) * (burn_rate / 3600.0)):.4f}"
         post_count = 0
         if session_opened:
             post_count_file = state_dir / "post_open_usage_count.txt"
@@ -1341,6 +1352,8 @@ def main(argv: list[str] | None = None) -> int:
         upload_hang_for = os.environ.get("FAKE_COLAB_UPLOAD_HANG_FOR", "")
         if upload_hang in ("1", "ignore_term") and (not upload_hang_for or upload_hang_for in positionals[1]):
             _hang_process(state_dir, upload_hang == "ignore_term")
+        if os.environ.get("FAKE_COLAB_UPLOAD_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_UPLOAD_DELAY_S"]))
         api = contract["contents_api"]
         local_src, remote_dst = positionals[0], _normalize_remote_content_path(positionals[1])
         src_path = _normalize_host_path(local_src)

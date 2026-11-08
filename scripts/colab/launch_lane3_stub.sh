@@ -48,15 +48,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="59225855920c485e575e37edbe7bc794c95529e81ea68a962113897b5c3dec7b"
+PINNED_LAUNCH_GUARDS_SHA="4209755a053bda0926a59aa1c22963c5f723f4f103c15c6eb3c96e2d0ed603b1"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="924873bdd0a380b9e5d3ce96affbd8794f2dee757983b3aa9e56e8dbb251cfc8"
+PINNED_COLAB_WINDOW_SHA="f14618b592c42330ddc6494b22d703e2101f4f6f3eaf25d6171c3a24e597b1f8"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="8c28058402c60486c450c8325ca065ea16d20d9213dd97c278cce037385244e6"
+PINNED_SELF_SHA="a67a2a627c8fd62aef8080585deefb1fc3871cbeb5341f294efb850a7751b036"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -913,10 +913,6 @@ cleanup_on_exit() {
     kill -9 "${EXEC_PID}" 2>/dev/null || true
     wait "${EXEC_PID}" 2>/dev/null || true
   fi
-  if [ ! -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
   if [ -n "${TOKEN_DIR}" ]; then
     rm -rf "${TOKEN_DIR}" || true
   fi
@@ -930,6 +926,9 @@ cleanup_on_exit() {
   fi
   printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
   printf '1\n' > "${OUT_DIR}/stop_reached.txt"
+  if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
+    printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
+  fi
   if [ -n "${WALL_WATCHER_PID}" ]; then
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
@@ -1036,16 +1035,12 @@ WALL_WATCHER_PID="$!"
 # only for --shape high-mem, then the session row's Shape is checked: SHAPE_MISMATCH)
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
-# A GPU window's cap clock started, and its stable rate was read, inside colab_open_session_locked
-# (the shared GPU rate gate). A CPU stub's clock starts here, after the open, as before.
-if colab_card_is_cpu "${CARD}"; then
-  START_EPOCH="$(date -u +%s)"
-  date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${OUT_DIR}/cap_clock_started_at.txt"
-fi
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane3_stub.sh"
 lane3_write_remote_script "${REMOTE_RUNNER}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 # Every upload goes flat into /content, the one remote directory that exists before the remote
 # script runs; the script's sdlab-remote-dirs block moves the wheels into /content/wheels.
@@ -1078,6 +1073,7 @@ colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.
 
 REMOTE_ENV=()
 mapfile -t REMOTE_ENV < <(lane3_remote_env "${EXP_OVERRIDE_SHA}")
+colab_check_pre_exec_cap "${OUT_DIR}"
 EXEC_IN_FLIGHT=1
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \

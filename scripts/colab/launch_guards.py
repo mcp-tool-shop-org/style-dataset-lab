@@ -584,12 +584,13 @@ def evaluate_cap_guard(
     rate_ccu_per_hour: float = 0.0,
     elapsed_s: float = 0.0,
     usage_parse_error: str | None = None,
+    phase: str | None = None,
 ) -> dict[str, Any]:
     trip = compute_cap_trip(
         cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=rate_ccu_per_hour
     )
     ceiling = trip["ceiling_ccu"]
-    extra = {
+    extra: dict[str, Any] = {
         "cap_ccu": trip["cap_ccu"],
         "margin_ccu": trip["margin_ccu"],
         "cleanup_bound_s": trip["cleanup_bound_s"],
@@ -599,6 +600,8 @@ def evaluate_cap_guard(
         "formula": CAP_TRIP_FORMULA,
         "cap_trip_formula": CAP_TRIP_FORMULA,
     }
+    if phase is not None:
+        extra["phase"] = phase
     if usage_parse_error:
         return {
             "mode": mode,
@@ -1054,17 +1057,22 @@ def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any
     """The kit's named refusal for a wall/cap trip, with the numbers that tripped it. When both trip,
     the cap's code is the one named (a failed usage read or a spent cap is the costlier finding)."""
     if cap.get("tripped"):
+        phase = cap.get("phase")
+        prefix = f"cap guard (phase={phase}):" if phase else "cap guard:"
         if cap.get("code") == "COLAB_USAGE_PARSE_FAILED":
-            why = f"cap guard: {cap.get('usage_parse_error')} (ceiling {cap.get('ceiling_ccu')} ccu)"
+            why = f"{prefix} {cap.get('usage_parse_error')} (ceiling {cap.get('ceiling_ccu')} ccu)"
         elif cap.get("cleanup_bound_s", 0):
             why = (
-                f"cap guard: spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu "
+                f"{prefix} spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu "
                 f"(effective_trip {cap.get('effective_trip_units')} = cap {cap.get('cap_ccu')} "
                 f"- margin {cap.get('margin_ccu')} - cleanup_reserve {cap.get('cleanup_reserve_units')})"
             )
         else:
-            why = f"cap guard: spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu"
-        return {"code": cap.get("code"), "why": why}
+            why = f"{prefix} spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu"
+        ref: dict[str, Any] = {"code": cap.get("code"), "why": why}
+        if phase is not None:
+            ref["phase"] = phase
+        return ref
     if wall.get("tripped"):
         return {
             "code": wall.get("code"),
@@ -1076,6 +1084,7 @@ def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="sdlab C2 launcher guards CLI")
     parser.add_argument("--mode", default="stub")
+    parser.add_argument("--phase", default=None, help="Execution phase (e.g. pre_exec or live)")
     parser.add_argument("--elapsed-s", type=float, default=0.0)
     parser.add_argument("--wall-s", type=float, default=3000.0)
     parser.add_argument("--grace-s", type=float, default=60.0)
@@ -1245,8 +1254,11 @@ def main(argv: list[str] | None = None) -> int:
         rate_ccu_per_hour=args.rate,
         elapsed_s=args.elapsed_s,
         usage_parse_error=args.usage_parse_error,
+        phase=args.phase,
     )
     out: dict[str, Any] = {"wall": wall, "cap": cap}
+    if args.phase is not None:
+        out["phase"] = args.phase
     refusal = wall_cap_refusal(wall, cap)
     if refusal is not None:
         out["refusal"] = refusal

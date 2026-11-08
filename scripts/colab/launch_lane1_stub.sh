@@ -34,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="59225855920c485e575e37edbe7bc794c95529e81ea68a962113897b5c3dec7b"
+PINNED_LAUNCH_GUARDS_SHA="4209755a053bda0926a59aa1c22963c5f723f4f103c15c6eb3c96e2d0ed603b1"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="924873bdd0a380b9e5d3ce96affbd8794f2dee757983b3aa9e56e8dbb251cfc8"
-PINNED_SELF_SHA="018bd45eb1d66e33ef5a8b5ecba9aacf225563a15572db912cf7f4118abc2916"
+PINNED_COLAB_WINDOW_SHA="f14618b592c42330ddc6494b22d703e2101f4f6f3eaf25d6171c3a24e597b1f8"
+PINNED_SELF_SHA="d523372064c784f7aca09c5751c218df0bc8771e74b48e150401fc4434e28770"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -186,6 +186,9 @@ cleanup_on_exit() {
   fi
   printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
   printf '1\n' > "${OUT_DIR}/stop_reached.txt"
+  if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
+    printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
+  fi
   if [ -n "${WALL_WATCHER_PID}" ]; then
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
@@ -245,6 +248,7 @@ WALL_WATCHER_PID="$!"
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane1_stub.sh"
 cat > "${REMOTE_RUNNER}" << REMOTEEOF
@@ -492,6 +496,7 @@ colab_upload_checked "${SESSION}" "${LANE1_PY}" /content/lane1_render.py "${OUT_
 colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OUT_DIR}"
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh "${OUT_DIR}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \

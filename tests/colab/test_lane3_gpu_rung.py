@@ -2013,6 +2013,18 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
     # effective_trip = 3.80 - 0.01 - 3.7625 = 0.0275 units (~9.43 s at 10.5/h).
     # Without cleanup_reserve, ceiling was 3.79 units (~1299.43 s) and would not trip within this window.
     try:
+        dry_res, _ = _launch(
+            tmp_path / "dry_check", env, src,
+            "--card", "G4", "--shape", "standard",
+            "--max-rate", "10.5", "--cap", "3.80", "--margin", "0.01", "--dry",
+            timeout_s=15,
+        )
+        assert dry_res.returncode == 0, dry_res.stderr
+        dry_rec = json.loads(dry_res.stdout.strip().splitlines()[-1])
+        assert dry_rec["cleanup_bound_s"] == 1290
+        assert dry_rec["reserve"] == 3.7625
+        assert dry_rec["effective_trip"] == 0.0275
+
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
@@ -2021,8 +2033,8 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
         )
         assert res.returncode != 0
         win = _win(out_dir)
-        assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
         assert win["cleanup_bound_s"] == 1290
+        assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
         assert win["rate_used_for_cap_and_projection"] == 10.5
         assert win["cleanup_reserve_units"] == round((1290 / 3600) * 10.5, 6) == 3.7625
         assert win["effective_trip_units"] == round(3.80 - 0.01 - 3.7625, 6) == 0.0275
@@ -2177,6 +2189,7 @@ def test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls(
     ):
         assert token in res_l3.stdout, (token, res_l3.stdout)
     rec_l3 = json.loads(res_l3.stdout.strip().splitlines()[-1])
+    assert rec_l3["cleanup_bound_s"] == 1290
     assert rec_l3["reserve"] == 3.7625 and rec_l3["effective_trip"] == 1.1275
     assert rec_l3["runtime_at_priced_rate_s"] == 386.57 and rec_l3["runtime_at_max_rate_s"] == 386.57
     assert rec_l3["worst_case_total_spend"] == 4.9
@@ -2319,6 +2332,7 @@ def test_wall_trip_during_hung_foreground_step_reaches_stop_by_watcher_path(tmp_
         win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
         assert win["refusal_code"] == "WALL_GUARD_TRIPPED"
         assert win["stop_path"] == "watcher"
+        assert win["watcher_wait"] == "escalated_no_cleanup"
         trip_ts = float((out_dir / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
         stop_done_ts = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
         assert stop_done_ts - trip_ts <= win["cleanup_bound_s"], (stop_done_ts - trip_ts, win["cleanup_bound_s"])
@@ -2478,4 +2492,208 @@ def test_lane1_ignores_salvage_timeout_overrides_in_cleanup_bounds(tmp_path: Pat
     assert win1["cleanup_bound_s"] == 450
 
 
+# --- PR #66 fix round 4: cap checked from session open; watcher waits for salvage --------------
 
+
+def test_pre_exec_cap_trip_during_slow_rate_polls(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "10.50/hr",
+        "FAKE_COLAB_USAGE_DELAY_S": "0.6",
+        "FAKE_COLAB_BURN_BALANCE": "1",
+        "FAKE_COLAB_BURN_RATE_CCU_PER_H": "10.5",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.8",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+    })
+    # cleanup_reserve = (1290 / 3600) * 10.5 = 3.7625 units.
+    # With cap = 3.775, margin = 0.01: effective_trip = 0.0025 units (~0.86 s at 10.5/h).
+    # Slow post-open rate polls (~0.6 s per usage call + 0.8 s interval) cross effective_trip
+    # during colab_read_post_open_rate before any upload or exec is called.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src,
+            "--card", "G4", "--shape", "standard",
+            "--max-rate", "10.5", "--cap", "3.775", "--margin", "0.01",
+            timeout_s=20,
+        )
+        assert res.returncode != 0
+        calls = (state_dir / "calls.log").read_text(encoding="utf-8")
+        assert "CALL upload" not in calls, calls
+        assert "CALL exec" not in calls, calls
+        assert "CALL stop -s sdlab-l3-gpu-rung" in calls, calls
+        assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+        assert not (state_dir / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+        win = _win(out_dir)
+        assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
+        assert win["phase"] == "pre_exec"
+        assert win["cap_trip_phase"] == "pre_exec"
+        total_spend = round(win["start_balance"] - win["end_balance"], 6)
+        assert 0 < total_spend <= win["cap_ccu"], (total_spend, win["cap_ccu"])
+        guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert '"phase": "pre_exec"' in guards and "CAP_GUARD_TRIPPED" in guards, guards
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_pre_exec_cap_trip_between_slow_uploads(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "10.50/hr",
+        "FAKE_COLAB_UPLOAD_DELAY_S": "0.35",
+        "FAKE_COLAB_BURN_BALANCE": "1",
+        "FAKE_COLAB_BURN_RATE_CCU_PER_H": "10.5",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+    })
+    # cleanup_reserve = (1290 / 3600) * 10.5 = 3.7625 units.
+    # With cap = 3.780, margin = 0.01: effective_trip = 0.0075 units (~2.57 s at 10.5/h).
+    # Fast rate polls finish in ~0.25 s, then slow-but-successful uploads (0.35 s each) push
+    # spend over effective_trip mid-upload-sequence before `colab exec` is ever called.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src,
+            "--card", "G4", "--shape", "standard",
+            "--max-rate", "10.5", "--cap", "3.780", "--margin", "0.01",
+            timeout_s=25,
+        )
+        assert res.returncode != 0
+        calls = (state_dir / "calls.log").read_text(encoding="utf-8")
+        assert "CALL upload" in calls, calls
+        assert "CALL exec" not in calls, calls
+        assert "CALL stop -s sdlab-l3-gpu-rung" in calls, calls
+        assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+        assert not (state_dir / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+        win = _win(out_dir)
+        assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
+        assert win["phase"] == "pre_exec"
+        assert win["cap_trip_phase"] == "pre_exec"
+        total_spend = round(win["start_balance"] - win["end_balance"], 6)
+        assert 0 < total_spend <= win["cap_ccu"], (total_spend, win["cap_ccu"])
+        guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+        assert '"phase": "pre_exec"' in guards and "CAP_GUARD_TRIPPED" in guards, guards
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_wall_watcher_waits_for_salvage_and_keeps_step_250(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.3",
+        "SDLAB_TEST_WALL_ESCALATE_S": "1",
+        "FAKE_COLAB_RESTART_DELAY_S": "2.5",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "5",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "10",
+        "SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S": "5",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    # WALL_LIMIT_S = 9 - 2 = 7 s. Salvage takes >2.5 s (longer than SDLAB_TEST_WALL_ESCALATE_S=1 s,
+    # shorter than cleanup_stop_attempted_by_s=30 s). Because cleanup_started.txt is written at the
+    # start of cleanup_on_exit, the watcher waits for salvage instead of escalating at 1 s.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src,
+            "--download-max-seconds", "5", "--wall-s", "9", "--grace-s", "2",
+            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--shape", "high-mem", "--rung-job", "500",
+            timeout_s=25,
+        )
+        assert res.returncode != 0
+        assert (out_dir / "cleanup_started.txt").is_file()
+        assert not (out_dir / "watcher_escalated.txt").exists()
+        win = _win(out_dir)
+        assert win["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win["stop_path"] == "trap"
+        assert win["watcher_wait"] == "cleanup_seen"
+        assert (out_dir / "lane3_stub_bundle.tar.gz").is_file()
+        members = _bundle(out_dir)
+        assert "rung_outputs/rustline_style_v5/rustline_style_v5_000000250.safetensors" in members
+        samples_250 = [
+            k for k in members
+            if k.startswith("rung_outputs/rustline_style_v5/samples/") and "__000000250_" in k
+        ]
+        assert len(samples_250) == 6, samples_250
+        trip_ts = float((out_dir / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        stop_done_ts = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts - trip_ts <= win["cleanup_bound_s"], (stop_done_ts - trip_ts, win["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_wall_watcher_escalates_when_salvage_overruns_cleanup_stop_attempted_by_s(tmp_path: Path) -> None:
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "GUARD_POLL_INTERVAL_S": "0.3",
+        "SDLAB_TEST_WALL_ESCALATE_S": "2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "1",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "1",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "0",
+        "FAKE_COLAB_RESTART_HANG": "ignore_term",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    # in_flight_bound_s = 1 + 1 = 2 s; salvage_bound_s = min(salvage_steps_sum, 1) = 1 s;
+    # cleanup_stop_attempted_by_s = 3 s; cleanup_bound_s = 3 + 2*(2+1) = 9 s.
+    # cleanup_started.txt appears within SDLAB_TEST_WALL_ESCALATE_S=2 s, then salvage's restart-kernel
+    # hangs past cleanup_stop_attempted_by_s=3 s, so the watcher escalates and stops the session.
+    try:
+        res, out_dir = _launch(
+            tmp_path, env, src,
+            "--download-max-seconds", "5", "--wall-s", "9", "--grace-s", "2",
+            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--shape", "high-mem", "--rung-job", "500",
+            timeout_s=20,
+        )
+        assert res.returncode != 0
+        assert (out_dir / "cleanup_started.txt").is_file()
+        assert (out_dir / "watcher_escalated.txt").is_file()
+        win = _win(out_dir)
+        assert win["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win["stop_path"] == "watcher"
+        assert win["watcher_wait"] == "escalated_cleanup_overran"
+        assert "STOP -s sdlab-l3-gpu-rung" in (state_dir / "stops.log").read_text(encoding="utf-8")
+        assert not (state_dir / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+        trip_ts = float((out_dir / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
+        stop_done_ts = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
+        assert stop_done_ts - trip_ts <= win["cleanup_bound_s"], (stop_done_ts - trip_ts, win["cleanup_bound_s"])
+    finally:
+        _kill_hung_test_pids(state_dir)
+
+
+def test_launch_guards_pre_exec_phase_unit_and_cli(capsys: pytest.CaptureFixture[str]) -> None:
+    import launch_guards as lg
+
+    rc = lg.main([
+        "--mode", "pre_exec",
+        "--phase", "pre_exec",
+        "--elapsed-s", "2.0",
+        "--wall-s", "2900",
+        "--grace-s", "120",
+        "--cap", "3.775",
+        "--margin", "0.01",
+        "--cleanup-bound-s", "1290",
+        "--rate", "10.5",
+        "--start-balance", "9.85",
+        "--current-balance", "9.84",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 1
+    rec = json.loads(out.strip().splitlines()[-1])
+    assert rec["phase"] == "pre_exec"
+    assert rec["cap"]["phase"] == "pre_exec"
+    assert rec["cap"]["tripped"] is True
+    assert rec["refusal"]["code"] == "CAP_GUARD_TRIPPED"
+    assert rec["refusal"]["phase"] == "pre_exec"
+    assert "cap guard (phase=pre_exec):" in rec["refusal"]["why"]
