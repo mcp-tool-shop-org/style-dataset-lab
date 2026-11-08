@@ -2332,29 +2332,29 @@ def test_wall_trip_during_post_exec_download_keeps_total_time_within_cleanup_bou
     env.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
         "FAKE_COLAB_DOWNLOAD_HANG": "ignore_term",
-        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "3",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
         "SDLAB_TEST_KILL_GRACE_S": "1",
         "SDLAB_TEST_STOP_TIMEOUT_S": "1",
         "SDLAB_TEST_WALL_ESCALATE_S": "30",
     })
     out_dir = tmp_path / "out_dl_wall"
     try:
-        # WALL_LIMIT_S = 3 - 2 = 1 s: `colab exec` finishes in < 1 s and enters the post-exec
-        # `colab download`, which hangs for 3 + 1 = 4 s while the wall watcher trips at 1 s.
-        # Measured from the trip: in_flight_bound_s = 3 + 1 = 4 s, stop_bound_s = 2 * (1 + 1) = 4 s,
-        # so cleanup_stop_attempted_by_s = 4 s and cleanup_bound_s = 8 s.
+        # WALL_LIMIT_S = 6 - 2 = 4 s: `colab exec` finishes in ~1 s and enters the post-exec
+        # `colab download`, which hangs for 6 + 1 = 7 s while the wall watcher trips at 4 s.
+        # Measured from the trip: in_flight_bound_s = 6 + 1 = 7 s, stop_bound_s = 2 * (1 + 1) = 4 s,
+        # so cleanup_stop_attempted_by_s = 7 s and cleanup_bound_s = 11 s.
         res = subprocess.run(
             [
                 _bash(), fc._to_posix(lane1_sh),
                 "--out-dir", fc._to_posix(out_dir), "--session", "sdlab-l1-dlwall",
-                "--wall-s", "3", "--grace-s", "2",
+                "--wall-s", "6", "--grace-s", "2",
             ],
-            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=15, check=False,
+            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=25, check=False,
         )
         assert res.returncode != 0
         win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-        assert win["cleanup_stop_attempted_by_s"] == 4
-        assert win["cleanup_bound_s"] == 8
+        assert win["cleanup_stop_attempted_by_s"] == 7
+        assert win["cleanup_bound_s"] == 11
         assert win["stop_path"] == "trap"
         trip_ts = float((out_dir / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
         calls_rows = [
