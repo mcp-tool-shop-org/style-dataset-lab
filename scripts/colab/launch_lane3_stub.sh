@@ -16,13 +16,19 @@
 # launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring,
 # and stops its own session in an EXIT trap on every exit path.
 #
-# Bounded post-failure salvage and stop contract (colab_window.sh):
+# Bounded setup, post-failure salvage, and stop contract (colab_window.sh):
+#   open-lock wait: timeout -k 10 180 (190 s)
+#   colab new: timeout -k 10 180 (190 s)
+#   colab upload: timeout -k 10 120 (130 s)
+#   colab download: timeout -k 10 300 (310 s)
 #   restart-kernel: timeout -k 10 180 (190 s)
 #   bundle-now exec (--timeout 300): timeout -k 10 330 (340 s)
 #   salvage download: timeout -k 10 300 (310 s)
 #   SALVAGE_DEADLINE_S=840 (past 840 s, remaining salvage steps are skipped -> colab stop)
 #   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
-#   cleanup_stop_attempted_by_s = 840 s, cleanup_bound_s = 980 s
+#   wall watcher escalation: 30 s after TERM -> watcher runs `colab stop` itself (stop_path: trap | watcher)
+#   measured from trip: cleanup_stop_attempted_by_s = 310 + 840 = 1150 s,
+#                       cleanup_bound_s = 310 + 840 + 140 = 1290 s
 #   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
 #   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
 set -euo pipefail
@@ -44,13 +50,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="59225855920c485e575e37edbe7bc794c95529e81ea68a962113897b5c3dec7b"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="a932a6b10d39a2ceedcef9469890591c5a300829e443ed8448e6a6c352f5ce15"
+PINNED_COLAB_WINDOW_SHA="924873bdd0a380b9e5d3ce96affbd8794f2dee757983b3aa9e56e8dbb251cfc8"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="eab196a4e66678b9b6597611d734b8e952f21546679eb435a826bcb9230b204b"
+PINNED_SELF_SHA="8c28058402c60486c450c8325ca065ea16d20d9213dd97c278cce037385244e6"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -813,6 +819,10 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_SALVAGE_DEADLINE_S
   SDLAB_TEST_STOP_TIMEOUT_S
   SDLAB_TEST_SESSIONS_TIMEOUT_S
+  SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
+  SDLAB_TEST_NEW_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_WALL_ESCALATE_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 colab_apply_test_cleanup_overrides "${TEST_MODE}"
@@ -903,7 +913,7 @@ cleanup_on_exit() {
     kill -9 "${EXEC_PID}" 2>/dev/null || true
     wait "${EXEC_PID}" 2>/dev/null || true
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
+  if [ ! -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ -n "${WALL_WATCHER_PID}" ]; then
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
   fi
@@ -914,7 +924,17 @@ cleanup_on_exit() {
     && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
     lane3_download_bundle_after_failure "${rc}" || true
   fi
-  if [ "${SESSION_OPENED}" -eq 1 ]; then
+  if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
+    sleep 3600
+    exit 137
+  fi
+  printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
+  printf '1\n' > "${OUT_DIR}/stop_reached.txt"
+  if [ -n "${WALL_WATCHER_PID}" ]; then
+    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
+    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
+  fi
+  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; }; then
     colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
   fi
   local closed_at
@@ -1001,17 +1021,15 @@ fi
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
-# Independent wall watcher (cannot be blocked by a child timeout)
+# Independent wall watcher (cannot be blocked by a child timeout; escalates to `colab stop` + SIGKILL)
 WALL_INT="${WALL_S%.*}"
 GRACE_INT="${GRACE_S%.*}"
 WALL_LIMIT_S="$(( WALL_INT > GRACE_INT ? WALL_INT - GRACE_INT : 1 ))"
 MAIN_PID="$$"
-(
-  exec >/dev/null 2>&1 </dev/null
-  sleep "${WALL_LIMIT_S}"
-  echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${WALL_LIMIT_S} s (wall - grace) elapsed" >> "${OUT_DIR}/guards.log"
-  kill -TERM "${MAIN_PID}" 2>/dev/null || true
-) &
+colab_run_wall_watcher \
+  "${MAIN_PID}" "${WALL_LIMIT_S}" "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" \
+  "train" "${SESSION}" "${CARD}" "${CAP}" "${WALL_S}" "${GRACE_S}" "${MARGIN}" \
+  "${OPENED_AT}" "${SHAS_JSON}" &
 WALL_WATCHER_PID="$!"
 
 # Hold /tmp/colab-window-open.lock while opening with colab new (CPU: --high-mem; GPU: --high-mem
@@ -1066,8 +1084,9 @@ colab_run_exec_with_live_guards \
   "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}" \
   "SDLAB_REMOTE_SCRIPT=/content/remote_lane3_stub.sh" \
   "${REMOTE_ENV[@]}"
-EXEC_IN_FLIGHT=0
 
-# Download result tar before EXIT trap stops the session
+# Download result tar before EXIT trap stops the session (EXEC_IN_FLIGHT stays 1 so a failed
+# normal download still triggers post-failure salvage in cleanup_on_exit).
 colab_download_checked "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}"
+EXEC_IN_FLIGHT=0
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"

@@ -1321,6 +1321,8 @@ def main(argv: list[str] | None = None) -> int:
             newline="\n",
         )
         # FAKE_COLAB_NEW_DELAY_S: the open takes this long; the moment it succeeds is logged.
+        if os.environ.get("FAKE_COLAB_NEW_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_NEW_HANG") == "ignore_term")
         time.sleep(float(os.environ.get("FAKE_COLAB_NEW_DELAY_S", "0")))
         (state_dir / "new_done_epoch.txt").write_text(f"{time.time()}\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
@@ -1335,6 +1337,10 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab upload requires -s/--session\n")
             return 2
+        upload_hang = os.environ.get("FAKE_COLAB_UPLOAD_HANG", "")
+        upload_hang_for = os.environ.get("FAKE_COLAB_UPLOAD_HANG_FOR", "")
+        if upload_hang in ("1", "ignore_term") and (not upload_hang_for or upload_hang_for in positionals[1]):
+            _hang_process(state_dir, upload_hang == "ignore_term")
         api = contract["contents_api"]
         local_src, remote_dst = positionals[0], _normalize_remote_content_path(positionals[1])
         src_path = _normalize_host_path(local_src)
@@ -1379,6 +1385,21 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab download requires -s/--session\n")
             return 2
+        dl_cnt_f = state_dir / "download_attempts.txt"
+        dl_cnt = int(dl_cnt_f.read_text(encoding="utf-8").strip()) if dl_cnt_f.is_file() else 0
+        dl_cnt += 1
+        dl_cnt_f.write_text(f"{dl_cnt}\n", encoding="utf-8", newline="\n")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG_ONCE") in ("1", "ignore_term") and dl_cnt == 1:
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG_ONCE") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_FAIL_ONCE") == "1" and dl_cnt == 1:
+            api = contract["contents_api"]
+            print(
+                api["download_failed_prefix"]
+                + "500 Server Error: Internal Server Error for url: "
+                + f"https://colab.fake.invalid/api/contents/{positionals[0].strip('/')}"
+                + f"?authuser=0&colab-runtime-proxy-token={FAKE_CONTENTS_TOKEN}"
+            )
+            return 1
         if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") in ("1", "ignore_term"):
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") == "ignore_term")
         remote_src, local_dst = _normalize_remote_content_path(positionals[0]), positionals[1]
@@ -1415,6 +1436,8 @@ def main(argv: list[str] | None = None) -> int:
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") == "ignore_term")
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"STOP {' '.join(args)}\n")
+        with (state_dir / "stops.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps({"sid": sid, "attempt": stop_cnt, "done_ts": time.time()}) + "\n")
         (_open_sessions_dir(state_dir) / f"{sid}.json").unlink(missing_ok=True)
         _kill_recorded_groups(state_dir, sid)
         _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)

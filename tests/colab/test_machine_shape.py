@@ -38,7 +38,7 @@ def _lane1(tmp_path: Path, card: str, shape: str | None, extra_env: dict[str, st
     env.update(extra_env or {})
     out_dir = tmp_path / "out"
     args = [_bash(), fc._to_posix(LANE1), "--card", card, "--session", session,
-            "--out-dir", fc._to_posix(out_dir), "--cap", "1", "--max-rate", "9.5"]
+            "--out-dir", fc._to_posix(out_dir), "--cap", "2", "--max-rate", "9.5"]
     if shape is not None:
         args += ["--shape", shape]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True,
