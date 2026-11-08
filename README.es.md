@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.md">English</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
+  <a href="README.md">English</a> | <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
 </p>
 
 <p align="center">
@@ -13,11 +13,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-Escribe tus reglas visuales. Genera arte. Evalúa cada imagen según esas reglas. Entrega los resultados como datos de entrenamiento auditables y con versiones, y luego pon en funcionamiento los modelos entrenados en flujos de trabajo de producción reales y reintroduce las mejores salidas en tu corpus.
+Escribe tus reglas visuales. Genera arte. Evalúa cada imagen según esas reglas. Entrega los resultados como datos de entrenamiento auditables y con versiones, y luego pon en práctica los modelos entrenados en flujos de trabajo de producción reales y reintroduce las mejores salidas en tu corpus.
 
 Style Dataset Lab conecta lo que escribiste sobre tu estilo artístico con el conjunto de datos del que realmente entrenas, y luego cierra el ciclo a lo largo de todo el proceso de producción. Defines una constitución: reglas de silueta, restricciones de paleta, lenguaje de materiales, lo que sea importante para tu proyecto. El flujo de trabajo genera candidatos, los evalúa según esas reglas y empaqueta el trabajo aprobado en conjuntos de datos reproducibles donde cada registro explica por qué se incluyó.
 
-Luego, el entorno de trabajo de producción se encarga de lo demás: compila resúmenes de generación a partir de la información del proyecto, ejecútalos a través de ComfyUI, evalúa las salidas, produce por lotes hojas de expresión y paneles de entorno, selecciona los mejores resultados y los vuelve a incorporar como nuevos candidatos. El ciclo se cierra: produce, selecciona, revisa, mejora.
+Luego, el entorno de trabajo de producción toma el control: compila resúmenes de generación a partir de la información del proyecto, ejecútalos a través de ComfyUI, critica las salidas, produce en lote hojas de expresión y paneles de entorno, selecciona los mejores resultados y los vuelve a incorporar como nuevos candidatos. El ciclo se cierra: produce, selecciona, revisa, mejora.
 
 ## El flujo de trabajo
 
@@ -82,7 +82,7 @@ sdlab asset ingest ~/exports/dragon_dense --project my-project
 El directorio de exportación contiene un manifiesto `asset-source.json` (esquema **1.3.0**) que declara
 sus canales, bandas de paleta, umbrales de aceptación, veredicto de aceptación, registro de estilo, cómo
 se crearon los renders y su procedencia de generación. sdlab verifica cada declaración
-frente a los bytes reales y rechaza la ingestión completa en caso de cualquier violación; nada se registra
+frente a los bytes reales y rechaza la ingestión completa en caso de cualquier violación: nada se registra
 si el manifiesto es incorrecto.
 
 **La conexión:** sdlab proporciona el mecanismo, el activo proporciona la semántica. sdlab nunca realiza un trazado de rayos,
@@ -95,9 +95,9 @@ Lo que el contrato exige:
 |---|---|
 | **schema** | forma, identificadores, bandas de paleta bien formadas y un veredicto de aceptación que es literalmente `"accepted"` |
 | **containment** | cada ruta de referencia se resuelve *dentro* del directorio de exportación (es una entrada no confiable) y existe |
-| **encoding** | el IHDR de un PNG coincide con su codificación declarada; un encabezado NPY coincide con su dtype y forma declarados. Un manifiesto que "parece correcto" pero que no coincide con sus bytes es la clase de fallo que esta línea de activos está diseñada para evitar |
+| **encoding** | el IHDR de un PNG coincide con su codificación declarada; una cabecera NPY coincide con su dtype y forma declarados. Un manifiesto que "parece correcto" pero que no coincide con sus bytes es la clase de fallo que esta línea de activos está diseñada para evitar |
 | **categorical** | los PNG indexados demuestran que PLTE ⊆ paleta declarada; los canales filtrados con `nearest` obtienen una decodificación de píxeles *exhaustiva*; los NPY categóricos obtienen un escaneo de valores exhaustivo |
-| **gates** | la puerta de enlace de la paleta se ejecuta por cada render, a partir de las propias bandas y umbrales del manifiesto; un render fallido se rechaza de forma clara y se informa, nunca se admite en silencio |
+| **gates** | la puerta de enlace de la paleta se ejecuta por cada render, a partir de las propias bandas y umbrales del manifiesto: un render fallido se rechaza de forma clara y se informa, nunca se admite en silencio |
 
 Los registros se almacenan **sin curar** (`judgment: null`) con `provenance.source: "asset"`, llevando
 el bloque de aceptación textualmente, hashes por archivo, cámara y orientación derivada, las mediciones de la puerta de enlace, el registro de estilo declarado y el fotograma de generación por imagen + semilla. Luego,
@@ -130,11 +130,11 @@ sdlab canon freeze kael_maren --project my-project --reason "prologue portrait l
 sdlab canon drift --project my-project
 ```
 
-Un modelo local también puede redactar el canon, pero nunca decide sobre él. `sdlab canon draft <class_id> --endpoint <url> --brief "<text>" --out <path>` solicita a un servidor de solo bucle, compatible con OpenAI, una entrada canónica y avisos, y los escribe con `status: "draft"`, `judgment: null` y el modelo de redacción estampados en cada salida. Un borrador no puede congelarse hasta que una persona lo ratifique: la puerta de enlace de congelación rechaza cualquier entrada redactada por un modelo sin la aprobación de un humano, una razón y el hash del borrador exacto que se aprobó.
+Un modelo local también puede redactar el canon, pero nunca decide sobre él. `sdlab canon draft <class_id> --endpoint <url> --brief "<text>" --out <path>` solicita a un servidor de solo bucle, compatible con OpenAI, una entrada canónica y avisos, y los escribe con `status: "draft"`, `judgment: null` y el modelo de redacción estampados en cada salida. Un borrador no puede congelarse hasta que una persona lo ratifique: la puerta de enlace de congelación rechaza cualquier entrada redactada por un modelo sin una aprobación humana, una razón y el hash del borrador exacto que se aprobó.
 
 `canon build` es direccionable por contenido: su salida se basa en una `canon_sha` y se almacena en caché, por lo que una reconstrucción del canon sin cambios se realiza instantáneamente. `canon freeze` da testimonio de cada congelación frente a una versión específica y se agrega a un registro de auditoría `freeze-events.jsonl`: las entradas `frozen` rechazan la regeneración por completo, las entradas `soft-advisory` la rechazan por defecto (se omite con `--i-know`). `canon drift` vuelve a calcular el hash de cada entrada observada y marca cualquier cosa que haya cambiado desde la última compilación limpia.
 
-Flujo de trabajo completo en el manual: [Compilación del canon](handbook/canon-build/), [Congelación del canon](handbook/canon-freeze/) y [Apilamiento de dos LORA](handbook/two-lora-stacking/).
+Flujo de trabajo completo en el manual: [Canon build](handbook/canon-build/), [Canon freeze](handbook/canon-freeze/) y [Two-LoRA stacking](handbook/two-lora-stacking/).
 
 ## Lo que produce
 
@@ -185,10 +185,10 @@ No son plantillas de marcador de posición. Cada dominio se entrega con reglas d
 | Dominio | Carriles | Qué se evalúa |
 |--------|-------|-----------------|
 | **game-art** | personaje, entorno, accesorio, interfaz de usuario, nave, interior, equipo | Silueta a escala de juego, identificación de facción, desgaste y envejecimiento |
-| **character-design** | retrato, cuerpo completo, rotación, hoja de expresión, pose de acción | Proporciones, lógica del vestuario, personalidad, claridad del gesto |
+| **character-design** | retrato, cuerpo completo, giro de 360 grados, hoja de expresiones, pose de acción | Proporciones, lógica del vestuario, personalidad, claridad del gesto |
 | **creature-design** | concepto, ortográfico, estudio de detalles, acción, referencia de escala, hábitat | Anatomía, lógica evolutiva, distinción de la silueta |
 | **architecture** | exterior, interior, paisaje urbano, detalle estructural, ruina, paisaje | Estructura, consistencia del material, perspectiva, coherencia de la época |
-| **vehicle-mech** | exterior, cabina, componente, esquema, hoja de silueta, variante de daño | Lógica mecánica, lenguaje de diseño, puntos de acceso, narrativa del daño |
+| **vehicle-mech** | exterior, cabina, componente, esquema, hoja de siluetas, variante de daño | Lógica mecánica, lenguaje de diseño, puntos de acceso, narrativa del daño |
 
 ## Estructura del proyecto
 
@@ -221,7 +221,7 @@ Estas no son aspiracionales. Se aplican.
 - **Las instantáneas son inmutables.** La huella digital de la configuración (SHA-256) demuestra que no se ha realizado ningún cambio. Los ID se asignan de forma atómica, por lo que dos ejecuciones concurrentes no pueden intercalarse en un solo directorio.
 - **Las divisiones evitan fugas de datos, y la comprobación que lo confirma es independiente.** Las familias de sujetos (por identidad, linaje o raíz de ID normalizada) nunca cruzan los límites de la partición, y una segunda comprobación vuelve a derivar la identidad del sujeto desde cero en lugar de volver a leer el mapa que utilizó la propia división. Una tarjeta de conjunto de datos solo afirma que "no hay fugas (verificado)" cuando ambas comprobaciones se han ejecutado y han tenido éxito; una división anterior a la segunda comprobación indica exactamente eso.
 - **Los manifiestos son contratos congelados.** Hash de exportación + huella digital de la configuración, y `validate` vuelve a calcular el hash de cada archivo que enumera `checksums.txt`, por lo que reemplazar una imagen dentro de una exportación finalizada se detecta, incluso para los manifiestos creados antes de que existiera esa comprobación.
-- **Las ejecuciones fijan su gráfico exacto.** Cada generación registra `comfy_workflow_sha` + hashes del contenido del modelo/LoRA + política de semillas, por lo que una iteración se puede reproducir byte por byte. Los ejecutores de JS y Python se ajustan a un hash idéntico en bytes mediante una prueba que inicia ambos. El hash del modelo es opcional (`--hash-models`) y nunca se fabrica; un archivo irresoluble registra `sha256: null` con una nota.
+- **Las ejecuciones fijan su gráfico exacto.** Cada generación registra `comfy_workflow_sha` + hashes del contenido del modelo/LoRA + política de semillas, por lo que una iteración se puede reproducir byte por byte. Los ejecutores de JS y Python deben cumplir con un hash idéntico en bytes mediante una prueba que inicia ambos. El hash del modelo es opcional (`--hash-models`) y nunca se falsifica; un archivo irresoluble registra `sha256: null` con una nota.
 - **Ningún modelo verifica su propia salida.** Los juicios registran `judged_by_model` y `generator_model`; se genera una advertencia si alguna vez son el mismo modelo.
 - **Un juicio indica quién lo realizó.** `eligibility audit` distingue los juicios escritos por una persona de los juicios generados por un script masivo, por lo que una justificación que describe una categoría en lugar de una imagen no puede considerarse como una curación.
 - **La medición no es un veredicto.** `sdlab measure` adjunta números a un registro. Nunca establece un juicio, un ajuste o una aprobación, y cuando una medida no está definida para una imagen, registra `null` en lugar de un número plausible.
@@ -256,7 +256,7 @@ Requiere Node.js 20+ y [ComfyUI](https://github.com/comfyanonymous/ComfyUI) en l
 
 ### Pruébalo sin ComfyUI
 
-Puede explorar toda la superficie no relacionada con la generación (inspección, curación, instantánea, división, exportación) utilizando el proyecto Star Freight incluido sin instalar ComfyUI ni descargar ningún peso de SDXL.
+Puede explorar toda la superficie sin generación (inspección, curación, instantánea, división, exportación) utilizando el proyecto Star Freight incluido sin instalar ComfyUI ni descargar ningún peso de SDXL.
 
 ```bash
 # Scaffold a fresh project (no ComfyUI needed)
@@ -297,28 +297,28 @@ Modos de falla comunes y soluciones:
 ComfyUI no se está ejecutando. Inicia ComfyUI (`python main.py --listen 127.0.0.1 --port 8188`) y confirma con `curl http://127.0.0.1:8188/system_stats`. Para apuntar a un host/puerto diferente, establece `COMFY_URL=http://host:port`.
 
 **`missing checkpoint` / `LoRA weight not found`**
-Tu perfil de flujo de trabajo nombra un archivo de modelo que no está en la carpeta `models/checkpoints/` o `models/loras/` de ComfyUI. Abre `projects/<project>/workflows/profiles/<profile>.json`, localiza el campo `checkpoint` o `lora` y, ya sea descarga el peso de referencia o cámbialo por uno que ya tengas. Vuelve a ejecutar `sdlab project doctor --project <project>` para confirmar la solución.
+Tu perfil de flujo de trabajo nombra un archivo de modelo que no está en la carpeta `models/checkpoints/` o `models/loras/` de ComfyUI. Abre `projects/<project>/workflows/profiles/<profile>.json`, localiza el campo `checkpoint` o `lora` y, ya sea descarga el peso de referencia o cámbialo por uno que ya tengas. Vuelve a ejecutar `sdlab project doctor --project <project>` para confirmar la corrección.
 
 **Errores de `sdlab project doctor`**
 Doctor devuelve códigos de error estructurados. Algunos comunes:
 - `E_PROJECT_NOT_FOUND`: el directorio del proyecto no existe en `projects/`. Verifica la ortografía.
-- `E_CONFIG_INVALID`: uno de los cinco archivos de configuración JSON no superó la validación del esquema. El campo `hint` indica el archivo y el campo incorrectos.
+- `E_CONFIG_INVALID`: uno de los cinco archivos de configuración JSON falló la validación del esquema. El campo `hint` indica el archivo y el campo incorrectos.
 - `E_RECORD_DRIFT`: la huella digital de la configuración de un registro ya no coincide con su origen. Vuelve a curar o vuelve a vincular según lo que sugiera la indicación.
 
 **`No --project specified, falling back to <name>`**
 Una advertencia suave. Pasa `--project <name>` explícitamente para seleccionar el proyecto correcto y silenciar la advertencia.
 
-**Problemas de memoria VRAM / "Painterly"**
-Consulta `docs/internal/HANDOFF.md` para obtener las notas de ajuste de la configuración de "painterly". En resumen: reduce la intensidad del ruido, reduce el tamaño del lote o cambia a un punto de control más pequeño en tu perfil de flujo de trabajo.
+**Problemas de "Painterly" / falta de memoria VRAM**
+Consulta `docs/internal/HANDOFF.md` para obtener las notas de ajuste de la configuración de "painterly". En resumen: reduce la intensidad del desenfoque, reduce el tamaño del lote o cambia a un punto de control más pequeño en tu perfil de flujo de trabajo.
 
 **Informar errores**
 Crea un problema en https://github.com/mcp-tool-shop-org/style-dataset-lab/issues con tu versión de sdlab (`sdlab --version`), versión de Node (`node -v`), el comando completo y la salida de error estructurada. Una plantilla de informe de errores rellena previamente los campos.
 
 ## Seguridad
 
-Local por defecto. Sin telemetría, sin análisis y sin solicitudes externas desde la CLI de `sdlab`: las imágenes permanecen en tu GPU y sistema de archivos, y `canon draft` rechaza cualquier punto final que no sea de bucle local.
+Local por defecto. Sin telemetría, sin análisis y sin solicitudes externas de la CLI de `sdlab`: las imágenes permanecen en tu GPU y sistema de archivos, y `canon draft` rechaza cualquier punto final que no sea de bucle local.
 
-La única excepción es la opción de participación voluntaria. `scripts/colab/` contiene los kits de inicio para ejecutar un proceso de renderizado o un paso de entrenamiento LoRA en su propia cuenta de Google Colab. Solo cargan los archivos que usted indique, se ejecutan dentro de un límite de gasto que se lee del saldo actual de su cuenta de Colab y cierran su propia sesión al finalizar. Estos kits son **experimentales**: aún no han completado una prueba completa de principio a fin.
+La única excepción es la opción de participación voluntaria. `scripts/colab/` contiene los kits de inicio para ejecutar un proceso de renderizado o un paso de entrenamiento LoRA en su propia cuenta de Google Colab. Solo cargan los archivos que usted especifique, se ejecutan dentro de un límite de gasto que se lee del saldo actual de su cuenta de Colab y cierran su propia sesión al finalizar. Estos kits son **experimentales**: aún no han completado una prueba completa de principio a fin en un entorno real.
 
 ## Licencia
 
