@@ -31,9 +31,11 @@ import zlib
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 SAMPLE_FILENAME_RE = re.compile(
-    r"^(?:(?P<ts>\d+)__)?0*(?P<step>\d+)_(?P<prompt_idx>\d+)\.(?P<ext>jpg|jpeg|png|webp|ppm)$",
+    r"^(?:(?P<ts>\d+)__)?(?P<step>\d{9})_(?P<prompt_idx>\d+)\.(?P<ext>jpg|jpeg|png|webp|ppm)$",
     re.IGNORECASE,
 )
+REQUIRED_CORRIDOR_STEPS = (250, 500)
+REQUIRED_RUN_STEPS = (0, 250, 500)
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".ppm"}
 CORRIDORS_SHA_PLACEHOLDER = "__CORRIDORS_BODY_SHA256__"
 CORRIDORS_JSON_BEGIN = "<!-- CORRIDORS_JSON_BEGIN"
@@ -196,13 +198,14 @@ def _student_t_ppf(p: float, df: int) -> float:
     return sign * 0.5 * (lo + hi)
 
 
-def _wilcoxon_signed_rank(diffs: Sequence[float]) -> dict[str, float]:
-    """Exact Wilcoxon signed-rank test on paired differences (zero_method='wilcox')."""
+def _wilcoxon_signed_rank(diffs: Sequence[float]) -> dict[str, Any]:
+    """Wilcoxon signed-rank test on paired differences (exact for n <= 20, normal approx above n = 20)."""
     nz = [float(d) for d in diffs if abs(d) > 0.0]
     n_nz = len(nz)
     if n_nz == 0:
         return {
             "n_nonzero": 0,
+            "method": "exact",
             "w_plus": 0.0,
             "w_minus": 0.0,
             "statistic": 0.0,
@@ -212,6 +215,7 @@ def _wilcoxon_signed_rank(diffs: Sequence[float]) -> dict[str, float]:
         }
     abs_With_idx = sorted(enumerate(abs(d) for d in nz), key=lambda t: t[1])
     ranks = [0.0] * n_nz
+    tie_counts: list[int] = []
     i = 0
     while i < n_nz:
         j = i
@@ -220,29 +224,47 @@ def _wilcoxon_signed_rank(diffs: Sequence[float]) -> dict[str, float]:
         avg_rank = 0.5 * ((i + 1) + (j + 1))
         for k in range(i, j + 1):
             ranks[abs_With_idx[k][0]] = avg_rank
+        tie_counts.append(j - i + 1)
         i = j + 1
 
     w_plus = sum(r for r, d in zip(ranks, nz) if d > 0)
     w_minus = sum(r for r, d in zip(ranks, nz) if d < 0)
     stat = min(w_plus, w_minus)
 
-    total_outcomes = 1 << n_nz
-    le_count = 0
-    ge_count = 0
-    for mask in range(total_outcomes):
-        s = 0.0
-        for bit_idx in range(n_nz):
-            if (mask >> bit_idx) & 1:
-                s += ranks[bit_idx]
-        if s <= w_plus + 1e-12:
-            le_count += 1
-        if s >= w_plus - 1e-12:
-            ge_count += 1
-    p_less = le_count / total_outcomes
-    p_greater = ge_count / total_outcomes
-    p_two = min(1.0, 2.0 * min(p_less, p_greater))
+    if n_nz <= 20:
+        method = "exact"
+        total_outcomes = 1 << n_nz
+        le_count = 0
+        ge_count = 0
+        for mask in range(total_outcomes):
+            s = 0.0
+            for bit_idx in range(n_nz):
+                if (mask >> bit_idx) & 1:
+                    s += ranks[bit_idx]
+            if s <= w_plus + 1e-12:
+                le_count += 1
+            if s >= w_plus - 1e-12:
+                ge_count += 1
+        p_less = le_count / total_outcomes
+        p_greater = ge_count / total_outcomes
+        p_two = min(1.0, 2.0 * min(p_less, p_greater))
+    else:
+        method = "normal_approx"
+        mu = 0.25 * n_nz * (n_nz + 1)
+        tie_term = 0.5 * sum(t * (t - 1) * (t + 1) for t in tie_counts if t > 1)
+        var = (n_nz * (n_nz + 1) * (2 * n_nz + 1) - tie_term) / 24.0
+        sigma = math.sqrt(max(1e-15, var))
+        sqrt2 = math.sqrt(2.0)
+        z_less = (w_plus - mu + 0.5) / sigma
+        z_greater = (w_plus - mu - 0.5) / sigma
+        z_two = max(0.0, abs(w_plus - mu) - 0.5) / sigma
+        p_less = min(1.0, max(0.0, 0.5 * (1.0 + math.erf(z_less / sqrt2))))
+        p_greater = min(1.0, max(0.0, 0.5 * math.erfc(z_greater / sqrt2)))
+        p_two = min(1.0, max(0.0, math.erfc(z_two / sqrt2)))
+
     return {
         "n_nonzero": n_nz,
+        "method": method,
         "w_plus": round(w_plus, 6),
         "w_minus": round(w_minus, 6),
         "statistic": round(stat, 6),
@@ -359,6 +381,8 @@ def _minimal_yaml_parse(text: str) -> dict[str, Any]:
         m_kv = re.match(r"^([A-Za-z0-9_]+):\s*(.+)$", stripped)
         if m_kv:
             k, v = m_kv.group(1), m_kv.group(2).strip()
+            if not (v.startswith('"') or v.startswith("'")) and "#" in v:
+                v = v.split("#", 1)[0].strip()
             if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
                 v = v[1:-1]
             if k == "seed" and re.match(r"^-?\d+$", v):
@@ -399,6 +423,11 @@ def load_prompts_config(config_path: str | Path) -> dict[str, Any]:
     cfg_block = data.get("config") if isinstance(data.get("config"), dict) else data
     proc_list = cfg_block.get("process") if isinstance(cfg_block, dict) else None
     proc0 = proc_list[0] if isinstance(proc_list, list) and proc_list and isinstance(proc_list[0], dict) else {}
+    train_block = (
+        proc0.get("train")
+        if isinstance(proc0.get("train"), dict)
+        else (cfg_block.get("train") if isinstance(cfg_block, dict) and isinstance(cfg_block.get("train"), dict) else {})
+    )
     sample_block = proc0.get("sample") if isinstance(proc0.get("sample"), dict) else (
         cfg_block.get("sample") if isinstance(cfg_block, dict) and isinstance(cfg_block.get("sample"), dict) else data
     )
@@ -409,8 +438,21 @@ def load_prompts_config(config_path: str | Path) -> dict[str, Any]:
     if not isinstance(prompts, list) or not prompts or not all(isinstance(p, str) for p in prompts):
         raise CheckpointEvalRefusal("INVALID_CONFIG", f"no non-empty prompts list found in {path}")
 
-    seed = sample_block.get("seed", data.get("seed", 42))
-    walk_seed = sample_block.get("walk_seed", data.get("walk_seed", True))
+    seed: Any = None
+    for src in (sample_block, train_block, proc0, cfg_block, data):
+        if isinstance(src, dict) and src.get("seed") is not None:
+            seed = src["seed"]
+            break
+    if seed is None:
+        raise CheckpointEvalRefusal("INVALID_CONFIG", f"no seed found in {path}")
+
+    walk_seed: Any = None
+    for src in (sample_block, train_block, proc0, cfg_block, data):
+        if isinstance(src, dict) and src.get("walk_seed") is not None:
+            walk_seed = src["walk_seed"]
+            break
+    if walk_seed is None:
+        walk_seed = True
     name = (
         (cfg_block.get("name") if isinstance(cfg_block, dict) else None)
         or (data.get("meta", {}).get("name") if isinstance(data.get("meta"), dict) else None)
@@ -501,6 +543,24 @@ def strip_trigger_words(prompt: str, trigger_words: Sequence[str]) -> str:
 # ---------------------------------------------------------------------------
 
 
+def compute_run_samples_fingerprint(samples_dir: str | Path, run_label: str = "A") -> str:
+    """Fingerprint a run's sample set by hashing sorted sample filenames and their per-file sha256."""
+    sdir = Path(samples_dir)
+    if not sdir.is_dir():
+        raise CheckpointEvalRefusal("RUN_DIR_NOT_FOUND", f"run {run_label} samples directory not found: {sdir}")
+    sample_files = sorted(
+        [p for p in sdir.iterdir() if p.is_file() and SAMPLE_FILENAME_RE.match(p.name)],
+        key=lambda p: p.name,
+    )
+    if not sample_files:
+        raise CheckpointEvalRefusal("PAIRING_MISMATCH", f"no matching sample files found in run {run_label}: {sdir}")
+    h = hashlib.sha256()
+    for p in sample_files:
+        file_sha = hashlib.sha256(p.read_bytes()).hexdigest()
+        h.update(f"{p.name}:{file_sha}\n".encode("utf-8"))
+    return h.hexdigest()
+
+
 def pair_run_samples(
     samples_dir: str | Path,
     num_prompts: int,
@@ -545,8 +605,9 @@ def pair_run_samples(
     selected: dict[int, dict[int, Path]] = OrderedDict()
     for step in sorted(set(steps_to_check)):
         if step not in by_step:
+            refusal_code = "STEP_MISSING" if step in REQUIRED_RUN_STEPS else "PAIRING_MISMATCH"
             raise CheckpointEvalRefusal(
-                "PAIRING_MISMATCH",
+                refusal_code,
                 f"run {run_label} is missing step {step} in {sdir} (available: {sorted(by_step.keys())})",
             )
         step_map = by_step[step]
@@ -668,11 +729,22 @@ def _jacobi_eigh_symmetric(mat: list[list[float]], max_sweeps: int = 60) -> tupl
     return evals, v
 
 
+def _extract_scalar_float(val: Any) -> float:
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, list):
+        return float(val[0]) if val else 1.0
+    if hasattr(val, "reshape"):
+        return float(val.reshape(-1)[0])
+    return float(val)
+
+
 def compute_stable_rank_from_lora_pair(
     b_matrix: Any,
     a_matrix: Any,
+    alpha: float | None = None,
 ) -> dict[str, Any]:
-    """Compute singular values, stable rank, top singular value, and Frobenius norm of ΔW = B @ A."""
+    """Compute singular values, stable rank, top singular value, and Frobenius norm of ΔW = (alpha/r) * B @ A."""
     try:
         import numpy as np  # type: ignore
 
@@ -714,12 +786,17 @@ def compute_stable_rank_from_lora_pair(
         out_shape = [m_dim, n_dim]
         rank = r_dim
 
+    scale = (float(alpha) / float(rank)) if (alpha is not None and rank > 0) else 1.0
+    if scale != 1.0:
+        svals_list = [s * abs(scale) for s in svals_list]
     frob_sq = sum(s * s for s in svals_list)
     frob = math.sqrt(frob_sq)
     top_sv = svals_list[0] if svals_list else 0.0
     stable_rank = (frob_sq / (top_sv * top_sv)) if top_sv > 1e-15 else 0.0
     return {
         "rank": rank,
+        "alpha": round(float(alpha), 6) if alpha is not None else None,
+        "alpha_scale": round(float(scale), 6),
         "shape": out_shape,
         "singular_values": [round(s, 8) for s in svals_list],
         "top_singular_value": round(top_sv, 8),
@@ -728,8 +805,15 @@ def compute_stable_rank_from_lora_pair(
     }
 
 
-def _lora_inner_product_and_norms(b1: Any, a1: Any, b2: Any, a2: Any) -> tuple[float, float, float]:
-    """Compute (||B1 A1||_F, ||B2 A2||_F, <B1 A1, B2 A2>_F) via r x r trace without forming m x n."""
+def _lora_inner_product_and_norms(
+    b1: Any,
+    a1: Any,
+    b2: Any,
+    a2: Any,
+    scale1: float = 1.0,
+    scale2: float = 1.0,
+) -> tuple[float, float, float]:
+    """Compute (||s1 B1 A1||_F, ||s2 B2 A2||_F, <s1 B1 A1, s2 B2 A2>_F) via r x r trace without forming m x n."""
     try:
         import numpy as np  # type: ignore
 
@@ -737,9 +821,9 @@ def _lora_inner_product_and_norms(b1: Any, a1: Any, b2: Any, a2: Any) -> tuple[f
         a1_arr = np.asarray(a1, dtype=np.float64)
         b2_arr = np.asarray(b2, dtype=np.float64)
         a2_arr = np.asarray(a2, dtype=np.float64)
-        norm1 = float(np.sqrt(max(0.0, np.trace((b1_arr.T @ b1_arr) @ (a1_arr @ a1_arr.T)))))
-        norm2 = float(np.sqrt(max(0.0, np.trace((b2_arr.T @ b2_arr) @ (a2_arr @ a2_arr.T)))))
-        inner = float(np.trace((b1_arr.T @ b2_arr) @ (a2_arr @ a1_arr.T)))
+        norm1 = abs(scale1) * float(np.sqrt(max(0.0, np.trace((b1_arr.T @ b1_arr) @ (a1_arr @ a1_arr.T)))))
+        norm2 = abs(scale2) * float(np.sqrt(max(0.0, np.trace((b2_arr.T @ b2_arr) @ (a2_arr @ a2_arr.T)))))
+        inner = (scale1 * scale2) * float(np.trace((b1_arr.T @ b2_arr) @ (a2_arr @ a1_arr.T)))
         return norm1, norm2, inner
     except ImportError:
         m = len(b1)
@@ -754,7 +838,7 @@ def _lora_inner_product_and_norms(b1: Any, a1: Any, b2: Any, a2: Any) -> tuple[f
         tr1 = sum(b1t_b1[i][j] * a1_a1t[j][i] for i in range(r) for j in range(r))
         tr2 = sum(b2t_b2[i][j] * a2_a2t[j][i] for i in range(r) for j in range(r))
         inner = sum(b1t_b2[i][j] * a2_a1t[j][i] for i in range(r) for j in range(r))
-        return math.sqrt(max(0.0, tr1)), math.sqrt(max(0.0, tr2)), inner
+        return abs(scale1) * math.sqrt(max(0.0, tr1)), abs(scale2) * math.sqrt(max(0.0, tr2)), (scale1 * scale2) * inner
 
 
 def _load_safetensors_tensors(path: Path) -> dict[str, Any]:
@@ -822,11 +906,11 @@ def read_safetensors_weight_space(
         loaded.append((p.name, p, _load_safetensors_tensors(p)))
 
     per_checkpoint: dict[str, Any] = OrderedDict()
-    layer_tensors_by_ckpt: list[dict[str, tuple[Any, Any]]] = []
+    layer_tensors_by_ckpt: list[dict[str, tuple[Any, Any, float]]] = []
 
     for ckpt_name, ckpt_path, tensors in loaded:
         ckpt_t0 = time.perf_counter()
-        pairs: dict[str, tuple[Any, Any]] = OrderedDict()
+        pairs: dict[str, tuple[Any, Any, float | None]] = OrderedDict()
         a_suffixes = (".lora_A.weight", ".lora_down.weight")
         for key in sorted(tensors.keys()):
             for a_sfx in a_suffixes:
@@ -835,23 +919,30 @@ def read_safetensors_weight_space(
                     b_sfx = ".lora_B.weight" if a_sfx == ".lora_A.weight" else ".lora_up.weight"
                     b_key = base + b_sfx
                     if b_key in tensors:
-                        pairs[base] = (tensors[b_key], tensors[key])
+                        alpha_val: float | None = None
+                        for alpha_sfx in (".alpha", ".lora_alpha"):
+                            if (base + alpha_sfx) in tensors:
+                                alpha_val = _extract_scalar_float(tensors[base + alpha_sfx])
+                                break
+                        pairs[base] = (tensors[b_key], tensors[key], alpha_val)
         if not pairs:
             raise CheckpointEvalRefusal("INVALID_SAFETENSORS", f"no LoRA A/B layer pairs found in {ckpt_path}")
 
-        layer_tensors_by_ckpt.append(pairs)
+        scaled_pairs: dict[str, tuple[Any, Any, float]] = OrderedDict()
         layers_out: dict[str, Any] = OrderedDict()
         by_block: dict[str, list[dict[str, Any]]] = OrderedDict()
         by_submodule: dict[str, list[dict[str, Any]]] = OrderedDict()
 
-        for base_key, (b_mat, a_mat) in pairs.items():
-            stats = compute_stable_rank_from_lora_pair(b_mat, a_mat)
+        for base_key, (b_mat, a_mat, alpha_val) in pairs.items():
+            stats = compute_stable_rank_from_lora_pair(b_mat, a_mat, alpha=alpha_val)
+            scaled_pairs[base_key] = (b_mat, a_mat, float(stats["alpha_scale"]))
             block_name, submod_name = _block_and_submodule(base_key)
             stats["block"] = block_name
             stats["submodule"] = submod_name
             layers_out[base_key] = stats
             by_block.setdefault(block_name, []).append(stats)
             by_submodule.setdefault(submod_name, []).append(stats)
+        layer_tensors_by_ckpt.append(scaled_pairs)
 
         def _summarize_group(items: Sequence[dict[str, Any]]) -> dict[str, Any]:
             sr = [float(x["stable_rank"]) for x in items]
@@ -895,9 +986,9 @@ def read_safetensors_weight_space(
         by_submod_cmp: dict[str, list[dict[str, float]]] = OrderedDict()
 
         for k in common_keys:
-            b1, a1 = pairs1[k]
-            b2, a2 = pairs2[k]
-            n1, n2, inner = _lora_inner_product_and_norms(b1, a1, b2, a2)
+            b1, a1, s1 = pairs1[k]
+            b2, a2, s2 = pairs2[k]
+            n1, n2, inner = _lora_inner_product_and_norms(b1, a1, b2, a2, scale1=s1, scale2=s2)
             ratio = (n2 / n1) if n1 > 1e-15 else 0.0
             cos = (inner / (n1 * n2)) if (n1 > 1e-15 and n2 > 1e-15) else 0.0
             cos = max(-1.0, min(1.0, cos))
@@ -1344,42 +1435,162 @@ def _compute_corridors_body_sha256(text_with_placeholder: str) -> str:
     return hashlib.sha256(text_with_placeholder.encode("utf-8")).hexdigest()
 
 
-def build_corridors_payload(run_a_summary: dict[str, Any], topk: int = 5) -> dict[str, Any]:
-    """Build run-A-anchored decision corridors for steps 250, 500, and pooled 250+500 (n=12)."""
-    steps_map = run_a_summary["steps"]
-    step250 = steps_map.get("250") or steps_map.get(250)
-    step500 = steps_map.get("500") or steps_map.get(500)
-    if not step250 or not step500:
-        # Fallback if synthetic test uses different step numbers: pick first two non-zero steps
-        nz_keys = [k for k in steps_map.keys() if int(k) != 0]
-        if len(nz_keys) >= 2:
-            step250 = steps_map[nz_keys[0]]
-            step500 = steps_map[nz_keys[1]]
-        elif len(nz_keys) == 1:
-            step250 = step500 = steps_map[nz_keys[0]]
-        else:
-            step250 = step500 = next(iter(steps_map.values()))
+def _get_step_dict(steps_map: Any, step: int | str, context: str) -> dict[str, Any]:
+    if not isinstance(steps_map, dict):
+        raise CheckpointEvalRefusal("STEP_MISSING", f"{context} is missing required step {step}")
+    step_str = str(step)
+    step_int = int(step) if str(step).isdigit() else None
+    step_obj = steps_map.get(step_str) if step_str in steps_map else (steps_map.get(step_int) if step_int is not None else None)
+    if not isinstance(step_obj, dict):
+        raise CheckpointEvalRefusal("STEP_MISSING", f"{context} is missing required step {step}")
+    return step_obj
 
+
+def _get_required_metric(
+    container: Any,
+    metric: str,
+    step: int | str,
+    subkey: str | None = "mean",
+) -> float:
+    metric_label = f"{metric}.{subkey}" if subkey is not None else metric
+    if not isinstance(container, dict) or metric not in container or container[metric] is None:
+        raise CheckpointEvalRefusal(
+            "METRIC_MISSING",
+            f"step {step} is missing required metric {metric_label}",
+        )
+    raw = container[metric]
+    if subkey is not None:
+        if not isinstance(raw, dict) or subkey not in raw or raw[subkey] is None:
+            raise CheckpointEvalRefusal(
+                "METRIC_MISSING",
+                f"step {step} is missing required metric {metric_label}",
+            )
+        raw = raw[subkey]
+    try:
+        val = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise CheckpointEvalRefusal(
+            "METRIC_MISSING",
+            f"step {step} has invalid metric {metric_label}",
+        ) from exc
+    if not math.isfinite(val):
+        raise CheckpointEvalRefusal(
+            "METRIC_MISSING",
+            f"step {step} has non-finite metric {metric_label}",
+        )
+    return val
+
+
+def _build_bands_from_anchors(a250: dict[str, float], a500: dict[str, float]) -> dict[str, Any]:
+    a_csd_250 = float(a250["csd_topk_mean"])
+    a_csd_500 = float(a500["csd_topk_mean"])
+    a_dcsd_250 = float(a250["delta_csd_mean"])
+    a_dcsd_500 = float(a500["delta_csd_mean"])
+    a_dclip_250 = float(a250["delta_clip_t_mean"])
+    a_dclip_500 = float(a500["delta_clip_t_mean"])
+    a_ddino_250 = float(a250["delta_dino_nn_mean"])
+    a_ddino_500 = float(a500["delta_dino_nn_mean"])
+    return {
+        "velocity_ratio_rho": {
+            "promote_min": 0.85,
+            "kill_below": 0.70,
+            "step_250_promote_min_delta_csd": round(0.85 * a_dcsd_250, 6),
+            "step_250_kill_below_delta_csd": round(0.70 * a_dcsd_250, 6),
+            "step_500_promote_min_delta_csd": round(0.85 * a_dcsd_500, 6),
+            "step_500_kill_below_delta_csd": round(0.70 * a_dcsd_500, 6),
+        },
+        "b_minus_a_csd": {
+            "promote_min": -0.020,
+            "kill_below": -0.035,
+            "step_250_promote_min_csd": round(a_csd_250 - 0.020, 6),
+            "step_250_kill_below_csd": round(a_csd_250 - 0.035, 6),
+            "step_500_promote_min_csd": round(a_csd_500 - 0.020, 6),
+            "step_500_kill_below_csd": round(a_csd_500 - 0.035, 6),
+        },
+        "delta_clip_t_guard": {
+            "relative_promote_min": -0.012,
+            "relative_kill_below": -0.025,
+            "step_250_promote_min_delta_clip_t": round(a_dclip_250 - 0.012, 6),
+            "step_250_kill_below_delta_clip_t": round(a_dclip_250 - 0.025, 6),
+            "step_500_promote_min_delta_clip_t": round(a_dclip_500 - 0.012, 6),
+            "step_500_kill_below_delta_clip_t": round(a_dclip_500 - 0.025, 6),
+        },
+        "delta_dino_nn_guard": {
+            "relative_promote_max_above_a": 0.050,
+            "relative_kill_above_a": 0.085,
+            "step_250_promote_max_delta_dino_nn": round(a_ddino_250 + 0.050, 6),
+            "step_250_kill_above_delta_dino_nn": round(a_ddino_250 + 0.085, 6),
+            "step_500_promote_max_delta_dino_nn": round(a_ddino_500 + 0.050, 6),
+            "step_500_kill_above_delta_dino_nn": round(a_ddino_500 + 0.085, 6),
+            "must_not_exceed_delta_csd": True,
+        },
+        "dreamsim_b_vs_a": {
+            "promote_max": 0.180,
+            "kill_above": 0.250,
+        },
+    }
+
+
+def build_corridors_payload(
+    run_a_summary: dict[str, Any],
+    topk: int = 5,
+    run_a_fingerprint: str | None = None,
+) -> dict[str, Any]:
+    """Build run-A-anchored decision corridors for steps 250, 500, and pooled 250+500 (n=12)."""
+    if not isinstance(run_a_summary, dict):
+        raise CheckpointEvalRefusal("STEP_MISSING", "run A summary is missing required steps 250 and 500")
+    steps_map = run_a_summary.get("steps")
+    step250 = _get_step_dict(steps_map, 250, "run A")
+    step500 = _get_step_dict(steps_map, 500, "run A")
+
+    if "num_prompts" not in run_a_summary or run_a_summary["num_prompts"] is None:
+        raise CheckpointEvalRefusal("METRIC_MISSING", "run A is missing required metric num_prompts")
     n_per_step = int(run_a_summary["num_prompts"])
     n_pooled = 2 * n_per_step
-    sd_est = float(run_a_summary["paired_diff_sd_estimate"]["value"])
+    sd_est = _get_required_metric(run_a_summary, "paired_diff_sd_estimate", "250,500", subkey="value")
+    sd_estimator = str(run_a_summary["paired_diff_sd_estimate"].get("estimator", "unknown"))
     mde_pooled_one_sided = round(compute_mde_one_sided(sd_est, n_pooled, alpha=0.05, power=0.80), 6)
     mde_single_one_sided = round(compute_mde_one_sided(sd_est, n_per_step, alpha=0.05, power=0.80), 6)
 
-    a_csd_250 = float(step250["csd_topk"]["mean"])
-    a_csd_500 = float(step500["csd_topk"]["mean"])
-    a_dcsd_250 = float(step250["delta_csd"]["mean"])
-    a_dcsd_500 = float(step500["delta_csd"]["mean"])
-    a_dclip_250 = float(step250["delta_clip_t"]["mean"])
-    a_dclip_500 = float(step500["delta_clip_t"]["mean"])
-    a_ddino_250 = float(step250["delta_dino_nn"]["mean"])
-    a_ddino_500 = float(step500["delta_dino_nn"]["mean"])
-    a_ds0_250 = float(step250["dreamsim_to_step0"]["mean"])
-    a_ds0_500 = float(step500["dreamsim_to_step0"]["mean"])
+    a_csd_250 = _get_required_metric(step250, "csd_topk", 250, "mean")
+    a_csd_500 = _get_required_metric(step500, "csd_topk", 500, "mean")
+    a_dcsd_250 = _get_required_metric(step250, "delta_csd", 250, "mean")
+    a_dcsd_500 = _get_required_metric(step500, "delta_csd", 500, "mean")
+    a_dcsd_sd_250 = _get_required_metric(step250, "delta_csd", 250, "sd")
+    a_dcsd_sd_500 = _get_required_metric(step500, "delta_csd", 500, "sd")
+    a_dclip_250 = _get_required_metric(step250, "delta_clip_t", 250, "mean")
+    a_dclip_500 = _get_required_metric(step500, "delta_clip_t", 500, "mean")
+    a_ddino_250 = _get_required_metric(step250, "delta_dino_nn", 250, "mean")
+    a_ddino_500 = _get_required_metric(step500, "delta_dino_nn", 500, "mean")
+    a_ds0_250 = _get_required_metric(step250, "dreamsim_to_step0", 250, "mean")
+    a_ds0_500 = _get_required_metric(step500, "dreamsim_to_step0", 500, "mean")
+
+    run_a_fp = (
+        run_a_fingerprint
+        or run_a_summary.get("samples_fingerprint_sha256")
+        or run_a_summary.get("run_a_fingerprint")
+        or hashlib.sha256(json.dumps(steps_map, sort_keys=True).encode("utf-8")).hexdigest()
+    )
+
+    anchors_250 = {
+        "csd_topk_mean": round(a_csd_250, 6),
+        "delta_csd_mean": round(a_dcsd_250, 6),
+        "delta_clip_t_mean": round(a_dclip_250, 6),
+        "delta_dino_nn_mean": round(a_ddino_250, 6),
+        "dreamsim_to_step0_mean": round(a_ds0_250, 6),
+    }
+    anchors_500 = {
+        "csd_topk_mean": round(a_csd_500, 6),
+        "delta_csd_mean": round(a_dcsd_500, 6),
+        "delta_clip_t_mean": round(a_dclip_500, 6),
+        "delta_dino_nn_mean": round(a_ddino_500, 6),
+        "dreamsim_to_step0_mean": round(a_ds0_500, 6),
+    }
 
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "anchored_to_run": "A",
+        "run_a_fingerprint": str(run_a_fp),
         "topk": topk,
         "sample_size": {
             "per_step_n": n_per_step,
@@ -1387,83 +1598,24 @@ def build_corridors_payload(run_a_summary: dict[str, Any], topk: int = 5) -> dic
         },
         "measured_sd": {
             "paired_diff_sd_estimate": round(sd_est, 6),
-            "estimator": run_a_summary["paired_diff_sd_estimate"]["estimator"],
-            "step_250_delta_csd_sd": float(step250["delta_csd"]["sd"]),
-            "step_500_delta_csd_sd": float(step500["delta_csd"]["sd"]),
+            "estimator": sd_estimator,
+            "step_250_delta_csd_sd": round(a_dcsd_sd_250, 6),
+            "step_500_delta_csd_sd": round(a_dcsd_sd_500, 6),
             "report_assumed_sd_replaced": 0.035,
             "mde_one_sided_alpha05_power80_pooled_n12": mde_pooled_one_sided,
             "mde_one_sided_alpha05_power80_single_n6": mde_single_one_sided,
         },
         "run_a_anchors": {
-            "step_250": {
-                "csd_topk_mean": round(a_csd_250, 6),
-                "delta_csd_mean": round(a_dcsd_250, 6),
-                "delta_clip_t_mean": round(a_dclip_250, 6),
-                "delta_dino_nn_mean": round(a_ddino_250, 6),
-                "dreamsim_to_step0_mean": round(a_ds0_250, 6),
-            },
-            "step_500": {
-                "csd_topk_mean": round(a_csd_500, 6),
-                "delta_csd_mean": round(a_dcsd_500, 6),
-                "delta_clip_t_mean": round(a_dclip_500, 6),
-                "delta_dino_nn_mean": round(a_ddino_500, 6),
-                "dreamsim_to_step0_mean": round(a_ds0_500, 6),
-            },
+            "step_250": anchors_250,
+            "step_500": anchors_500,
         },
-        "bands": {
-            "velocity_ratio_rho": {
-                "promote_min": 0.85,
-                "kill_below": 0.70,
-                "step_250_promote_min_delta_csd": round(0.85 * a_dcsd_250, 6),
-                "step_250_kill_below_delta_csd": round(0.70 * a_dcsd_250, 6),
-                "step_500_promote_min_delta_csd": round(0.85 * a_dcsd_500, 6),
-                "step_500_kill_below_delta_csd": round(0.70 * a_dcsd_500, 6),
-            },
-            "b_minus_a_csd": {
-                "promote_min": -0.020,
-                "kill_below": -0.035,
-                "step_250_promote_min_csd": round(a_csd_250 - 0.020, 6),
-                "step_250_kill_below_csd": round(a_csd_250 - 0.035, 6),
-                "step_500_promote_min_csd": round(a_csd_500 - 0.020, 6),
-                "step_500_kill_below_csd": round(a_csd_500 - 0.035, 6),
-            },
-            "delta_clip_t_guard": {
-                "relative_promote_min": -0.012,
-                "relative_kill_below": -0.025,
-                "step_250_promote_min_delta_clip_t": round(a_dclip_250 - 0.012, 6),
-                "step_250_kill_below_delta_clip_t": round(a_dclip_250 - 0.025, 6),
-                "step_500_promote_min_delta_clip_t": round(a_dclip_500 - 0.012, 6),
-                "step_500_kill_below_delta_clip_t": round(a_dclip_500 - 0.025, 6),
-            },
-            "delta_dino_nn_guard": {
-                "relative_promote_max_above_a": 0.050,
-                "relative_kill_above_a": 0.085,
-                "step_250_promote_max_delta_dino_nn": round(a_ddino_250 + 0.050, 6),
-                "step_250_kill_above_delta_dino_nn": round(a_ddino_250 + 0.085, 6),
-                "step_500_promote_max_delta_dino_nn": round(a_ddino_500 + 0.050, 6),
-                "step_500_kill_above_delta_dino_nn": round(a_ddino_500 + 0.085, 6),
-                "must_not_exceed_delta_csd": True,
-            },
-            "dreamsim_b_vs_a": {
-                "promote_max": 0.180,
-                "kill_above": 0.250,
-            },
-        },
+        "bands": _build_bands_from_anchors(anchors_250, anchors_500),
     }
 
 
-def write_corridors_file(
-    corridors_path: str | Path,
-    run_a_summary: dict[str, Any],
-    created_at: str | None = None,
-) -> dict[str, Any]:
-    """Write `corridors.md` from run A's numbers before any run B exists, embedding its creation time and sha256."""
-    cpath = Path(corridors_path)
-    cpath.parent.mkdir(parents=True, exist_ok=True)
-    ts = created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    payload = build_corridors_payload(run_a_summary)
-    payload["created_at"] = ts
-
+def _render_corridors_template(payload: dict[str, Any]) -> str:
+    ts = payload["created_at"]
+    run_a_fp = payload["run_a_fingerprint"]
     a250 = payload["run_a_anchors"]["step_250"]
     a500 = payload["run_a_anchors"]["step_500"]
     bands = payload["bands"]
@@ -1474,12 +1626,12 @@ def write_corridors_file(
     ds_b = bands["dreamsim_b_vs_a"]
     msd = payload["measured_sd"]
     ssz = payload["sample_size"]
-
     json_block = json.dumps(payload, indent=2, sort_keys=True)
 
-    template = f"""# Early-Checkpoint Promotion Corridors (Anchored to Run A)
+    return f"""# Early-Checkpoint Promotion Corridors (Anchored to Run A)
 
 - **created_at:** `{ts}`
+- **run_a_fingerprint:** `{run_a_fp}`
 - **body_sha256:** `{CORRIDORS_SHA_PLACEHOLDER}`
 - **per_step_sample_size:** `n = {ssz['per_step_n']}` prompts per step
 - **pooled_sample_size:** `n = {ssz['pooled_250_500_n']}` paired samples (steps 250 + 500 pooled)
@@ -1521,6 +1673,27 @@ def write_corridors_file(
 {json_block}
 {CORRIDORS_JSON_END}
 """
+
+
+def write_corridors_file(
+    corridors_path: str | Path,
+    run_a_summary: dict[str, Any],
+    created_at: str | None = None,
+    run_a_fingerprint: str | None = None,
+) -> dict[str, Any]:
+    """Write `corridors.md` from run A's numbers before any run B exists; refuse if file already exists."""
+    cpath = Path(corridors_path)
+    if cpath.exists():
+        raise CheckpointEvalRefusal(
+            "CORRIDORS_EXISTS",
+            f"refusing to overwrite existing corridors file at {cpath}; specify a new file name",
+        )
+    cpath.parent.mkdir(parents=True, exist_ok=True)
+    ts = created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    payload = build_corridors_payload(run_a_summary, run_a_fingerprint=run_a_fingerprint)
+    payload["created_at"] = ts
+
+    template = _render_corridors_template(payload)
     body_sha = _compute_corridors_body_sha256(template)
     final_text = template.replace(CORRIDORS_SHA_PLACEHOLDER, body_sha, 1)
     cpath.write_text(final_text, encoding="utf-8", newline="\n")
@@ -1528,14 +1701,18 @@ def write_corridors_file(
     return {
         "path": str(cpath.resolve()),
         "created_at": ts,
+        "run_a_fingerprint": payload["run_a_fingerprint"],
         "body_sha256": body_sha,
         "file_sha256": file_sha,
         "payload": payload,
     }
 
 
-def read_and_verify_corridors(corridors_path: str | Path) -> dict[str, Any]:
-    """Read `corridors.md` and refuse with `CORRIDORS_TAMPERED` if modified after creation."""
+def read_and_verify_corridors(
+    corridors_path: str | Path,
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Read `corridors.md` and verify both its naive-edit body check and its external `--corridors-sha` lock."""
     cpath = Path(corridors_path)
     if not cpath.is_file():
         raise CheckpointEvalRefusal(
@@ -1543,6 +1720,7 @@ def read_and_verify_corridors(corridors_path: str | Path) -> dict[str, Any]:
             f"corridors file not found at {cpath}; generate it from run A before scoring run B",
         )
     raw_bytes = cpath.read_bytes()
+    file_sha = hashlib.sha256(raw_bytes).hexdigest()
     try:
         text = raw_bytes.decode("utf-8").replace("\r\n", "\n")
     except UnicodeDecodeError as exc:
@@ -1550,13 +1728,15 @@ def read_and_verify_corridors(corridors_path: str | Path) -> dict[str, Any]:
 
     m_sha = re.search(r"^- \*\*body_sha256:\*\* `([0-9a-f]{64})`$", text, flags=re.MULTILINE)
     m_ts = re.search(r"^- \*\*created_at:\*\* `([^`]+)`$", text, flags=re.MULTILINE)
-    if not m_sha or not m_ts:
+    m_fp = re.search(r"^- \*\*run_a_fingerprint:\*\* `([0-9a-f]{64})`$", text, flags=re.MULTILINE)
+    if not m_sha or not m_ts or not m_fp:
         raise CheckpointEvalRefusal(
             "CORRIDORS_TAMPERED",
-            f"corridors.md at {cpath} is missing required created_at or body_sha256 header",
+            f"corridors.md at {cpath} is missing required created_at, run_a_fingerprint, or body_sha256 header",
         )
     recorded_body_sha = m_sha.group(1)
     created_at = m_ts.group(1)
+    recorded_fp = m_fp.group(1)
     reconstructed = text[: m_sha.start(1)] + CORRIDORS_SHA_PLACEHOLDER + text[m_sha.end(1) :]
     actual_body_sha = _compute_corridors_body_sha256(reconstructed)
     if actual_body_sha != recorded_body_sha:
@@ -1566,7 +1746,7 @@ def read_and_verify_corridors(corridors_path: str | Path) -> dict[str, Any]:
             f"computed={actual_body_sha})",
         )
 
-    # Also extract and verify the embedded JSON block
+    # Extract and verify the embedded JSON block
     if CORRIDORS_JSON_BEGIN not in text or CORRIDORS_JSON_END not in text:
         raise CheckpointEvalRefusal("CORRIDORS_TAMPERED", "corridors.md is missing embedded JSON specification")
     json_part = text.split(CORRIDORS_JSON_BEGIN, 1)[1].split(CORRIDORS_JSON_END, 1)[0].strip()
@@ -1580,11 +1760,42 @@ def read_and_verify_corridors(corridors_path: str | Path) -> dict[str, Any]:
             "CORRIDORS_TAMPERED",
             f"corridors.md created_at mismatch between header ({created_at}) and payload ({payload.get('created_at')})",
         )
+    if payload.get("run_a_fingerprint") != recorded_fp:
+        raise CheckpointEvalRefusal(
+            "CORRIDORS_TAMPERED",
+            "corridors.md run_a_fingerprint mismatch between header and payload",
+        )
 
-    file_sha = hashlib.sha256(raw_bytes).hexdigest()
+    # Verify that bands and markdown table match run_a_anchors (catches in-file band edits even if re-sealed)
+    try:
+        anchors = payload["run_a_anchors"]
+        expected_bands = _build_bands_from_anchors(anchors["step_250"], anchors["step_500"])
+        expected_template = _render_corridors_template(payload)
+    except Exception as exc:
+        raise CheckpointEvalRefusal("CORRIDORS_TAMPERED", f"corridors.md structure is invalid: {exc}") from exc
+    if payload.get("bands") != expected_bands or reconstructed != expected_template:
+        raise CheckpointEvalRefusal(
+            "CORRIDORS_TAMPERED",
+            "corridors.md bands or table were altered from run_a_anchors",
+        )
+
+    # Verify external sha256 lock (--corridors-sha from run A's summary.json)
+    if expected_sha256 is None or not str(expected_sha256).strip():
+        raise CheckpointEvalRefusal(
+            "CORRIDORS_SHA_MISMATCH",
+            "--corridors-sha <hex> is required when verifying corridors.md against its external lock",
+        )
+    norm_expected = str(expected_sha256).strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", norm_expected) or file_sha != norm_expected:
+        raise CheckpointEvalRefusal(
+            "CORRIDORS_SHA_MISMATCH",
+            f"corridors.md file sha256 ({file_sha}) does not match expected --corridors-sha ({norm_expected})",
+        )
+
     return {
         "path": str(cpath.resolve()),
         "created_at": created_at,
+        "run_a_fingerprint": recorded_fp,
         "body_sha256": recorded_body_sha,
         "file_sha256": file_sha,
         "payload": payload,
@@ -1596,7 +1807,9 @@ def score_run_b_against_corridors(
     run_b_summary: dict[str, Any],
     b_vs_a_summary: dict[str, Any],
 ) -> dict[str, Any]:
-    """Classify candidate run B into promote / borderline / kill against the locked corridors."""
+    """Classify candidate run B into promote / borderline / kill against the locked corridors; fail closed on missing data."""
+    if not isinstance(corridors_payload, dict) or "bands" not in corridors_payload:
+        raise CheckpointEvalRefusal("METRIC_MISSING", "corridors_payload is missing required bands")
     bands = corridors_payload["bands"]
     vel_band = bands["velocity_ratio_rho"]
     csd_band = bands["b_minus_a_csd"]
@@ -1604,35 +1817,50 @@ def score_run_b_against_corridors(
     dino_band = bands["delta_dino_nn_guard"]
     ds_band = bands["dreamsim_b_vs_a"]
 
-    rho = b_vs_a_summary.get("velocity_ratio_rho_500")
-    pooled_csd_diff = b_vs_a_summary.get("pooled_250_500", {}).get("csd_topk", {}).get("mean")
-    b_steps = run_b_summary["steps"]
-    b500 = b_steps.get("500") or b_steps.get(500) or next(iter(b_steps.values()))
-    b500_dclip = float(b500["delta_clip_t"]["mean"])
-    b500_ddino = float(b500["delta_dino_nn"]["mean"])
-    b500_dcsd = float(b500["delta_csd"]["mean"])
-    ds_500 = (
-        b_vs_a_summary.get("by_step", {}).get("500", {}).get("dreamsim_b_vs_a_mean")
-        or b_vs_a_summary.get("by_step", {}).get(500, {}).get("dreamsim_b_vs_a_mean")
-        or 0.0
-    )
+    required_steps: list[int] = list(REQUIRED_CORRIDOR_STEPS)
+    anchors = corridors_payload.get("run_a_anchors")
+    if isinstance(anchors, dict):
+        for k in anchors.keys():
+            if k.startswith("step_") and k[5:].isdigit():
+                s_val = int(k[5:])
+                if s_val not in required_steps:
+                    required_steps.append(s_val)
+
+    b_steps = run_b_summary.get("steps") if isinstance(run_b_summary, dict) else None
+    by_step = b_vs_a_summary.get("by_step") if isinstance(b_vs_a_summary, dict) else None
+
+    for req_s in sorted(required_steps):
+        b_step_obj = _get_step_dict(b_steps, req_s, "run B")
+        _get_required_metric(b_step_obj, "delta_clip_t", req_s, "mean")
+        _get_required_metric(b_step_obj, "delta_dino_nn", req_s, "mean")
+        _get_required_metric(b_step_obj, "delta_csd", req_s, "mean")
+        cmp_step_obj = _get_step_dict(by_step, req_s, "b_vs_a.by_step")
+        _get_required_metric(cmp_step_obj, "dreamsim_b_vs_a_mean", req_s, subkey=None)
+
+    b500 = _get_step_dict(b_steps, 500, "run B")
+    b500_dclip = _get_required_metric(b500, "delta_clip_t", 500, "mean")
+    b500_ddino = _get_required_metric(b500, "delta_dino_nn", 500, "mean")
+    b500_dcsd = _get_required_metric(b500, "delta_csd", 500, "mean")
+    cmp500 = _get_step_dict(by_step, 500, "b_vs_a.by_step")
+    ds_500 = _get_required_metric(cmp500, "dreamsim_b_vs_a_mean", 500, subkey=None)
+    rho = _get_required_metric(b_vs_a_summary, "velocity_ratio_rho_500", 500, subkey=None)
+    pooled_block = b_vs_a_summary.get("pooled_250_500") if isinstance(b_vs_a_summary, dict) else None
+    pooled_csd_diff = _get_required_metric(pooled_block, "csd_topk", "250,500", subkey="mean")
 
     decisions: dict[str, str] = {}
-    if rho is not None:
-        if rho >= vel_band["promote_min"]:
-            decisions["velocity_ratio_rho"] = "promote"
-        elif rho < vel_band["kill_below"]:
-            decisions["velocity_ratio_rho"] = "kill"
-        else:
-            decisions["velocity_ratio_rho"] = "borderline"
+    if rho >= vel_band["promote_min"]:
+        decisions["velocity_ratio_rho"] = "promote"
+    elif rho < vel_band["kill_below"]:
+        decisions["velocity_ratio_rho"] = "kill"
+    else:
+        decisions["velocity_ratio_rho"] = "borderline"
 
-    if pooled_csd_diff is not None:
-        if pooled_csd_diff >= csd_band["promote_min"]:
-            decisions["pooled_b_minus_a_csd"] = "promote"
-        elif pooled_csd_diff < csd_band["kill_below"]:
-            decisions["pooled_b_minus_a_csd"] = "kill"
-        else:
-            decisions["pooled_b_minus_a_csd"] = "borderline"
+    if pooled_csd_diff >= csd_band["promote_min"]:
+        decisions["pooled_b_minus_a_csd"] = "promote"
+    elif pooled_csd_diff < csd_band["kill_below"]:
+        decisions["pooled_b_minus_a_csd"] = "kill"
+    else:
+        decisions["pooled_b_minus_a_csd"] = "borderline"
 
     if b500_dclip >= clip_band["step_500_promote_min_delta_clip_t"]:
         decisions["delta_clip_t_500"] = "promote"
@@ -1650,7 +1878,7 @@ def score_run_b_against_corridors(
 
     if ds_500 <= ds_band["promote_max"]:
         decisions["dreamsim_500"] = "promote"
-    elif ds_500 > ds_band["kill_above"] and (pooled_csd_diff is not None and pooled_csd_diff < 0.0):
+    elif ds_500 > ds_band["kill_above"] and pooled_csd_diff < 0.0:
         decisions["dreamsim_500"] = "kill"
     else:
         decisions["dreamsim_500"] = "borderline"
@@ -1694,8 +1922,12 @@ def _evaluate_single_run(
 
     # Embed step 0 first so paired differences and DreamSim-to-step-0 have their baseline
     steps_sorted = sorted(paired_samples.keys())
-    if 0 not in steps_sorted:
-        raise CheckpointEvalRefusal("MISSING_STEP_ZERO", f"run {run_label} does not contain step 0 samples")
+    for req_step in REQUIRED_RUN_STEPS:
+        if req_step not in steps_sorted:
+            raise CheckpointEvalRefusal(
+                "STEP_MISSING",
+                f"run {run_label} does not contain required step {req_step} samples",
+            )
 
     per_step_results: dict[str, Any] = OrderedDict()
     step0_metrics_by_prompt: dict[int, dict[str, Any]] = {}
@@ -1839,16 +2071,30 @@ def _compare_run_b_vs_run_a(
     run_b_res: dict[str, Any],
 ) -> dict[str, Any]:
     """Compute paired B - A differences per step, pooled over steps 250 and 500 (n=12), and velocity ratio ρ."""
+    for req_step in REQUIRED_CORRIDOR_STEPS:
+        _get_step_dict(run_a_res.get("steps"), req_step, "run A")
+        _get_step_dict(run_b_res.get("steps"), req_step, "run B")
+
     common_steps = sorted(set(run_a_res["steps_evaluated"]) & set(run_b_res["steps_evaluated"]))
     by_step_cmp: dict[str, Any] = OrderedDict()
 
-    ds_a = run_a_res["_dreamsim_embeds_by_step"]
-    ds_b = run_b_res["_dreamsim_embeds_by_step"]
+    ds_a = run_a_res.get("_dreamsim_embeds_by_step")
+    ds_b = run_b_res.get("_dreamsim_embeds_by_step")
+    if not isinstance(ds_a, dict) or not isinstance(ds_b, dict):
+        raise CheckpointEvalRefusal(
+            "METRIC_MISSING",
+            "missing metric '_dreamsim_embeds_by_step' required for B vs A DreamSim distance",
+        )
 
     for step in common_steps:
         sk = str(step)
-        a_step = run_a_res["steps"][sk]
-        b_step = run_b_res["steps"][sk]
+        a_step = _get_step_dict(run_a_res.get("steps"), step, "run A")
+        b_step = _get_step_dict(run_b_res.get("steps"), step, "run B")
+        if step not in ds_a or step not in ds_b:
+            raise CheckpointEvalRefusal(
+                "METRIC_MISSING",
+                f"missing metric 'dreamsim_b_vs_a' embeddings at step {step}",
+            )
         ds_dists = [
             max(0.0, 1.0 - _cosine(vb, va))
             for vb, va in zip(ds_b[step], ds_a[step])
@@ -1878,10 +2124,8 @@ def _compare_run_b_vs_run_a(
             "dreamsim_b_vs_a_values": [round(x, 6) for x in ds_dists],
         }
 
-    # Pooled over steps 250 and 500 (n = 12 for 6 prompts)
-    pool_steps = [s for s in (250, 500) if str(s) in by_step_cmp]
-    if not pool_steps:
-        pool_steps = [s for s in common_steps if s != 0][:2]
+    # Pooled over required steps 250 and 500 (n = 12 for 6 prompts; never fall back to other steps)
+    pool_steps = list(REQUIRED_CORRIDOR_STEPS)
 
     pooled_csd_b: list[float] = []
     pooled_csd_a: list[float] = []
@@ -1909,17 +2153,27 @@ def _compare_run_b_vs_run_a(
     pooled_ddino_stats = compute_paired_stats(pooled_ddino_b, pooled_ddino_a)
 
     # Velocity ratio ρ = ΔCSD_B(500) / ΔCSD_A(500)
-    rho_500: float | None = None
-    if "500" in run_a_res["steps"] and "500" in run_b_res["steps"]:
-        denom = float(run_a_res["steps"]["500"]["delta_csd"]["mean"])
-        num = float(run_b_res["steps"]["500"]["delta_csd"]["mean"])
-        rho_500 = round(num / denom, 6) if abs(denom) > 1e-12 else None
+    a_500 = _get_step_dict(run_a_res.get("steps"), 500, "run A")
+    b_500 = _get_step_dict(run_b_res.get("steps"), 500, "run B")
+    denom = _get_required_metric(a_500, "delta_csd", 500, "mean")
+    num = _get_required_metric(b_500, "delta_csd", 500, "mean")
+    if abs(denom) <= 1e-12:
+        raise CheckpointEvalRefusal(
+            "METRIC_MISSING",
+            "cannot compute velocity_ratio_rho_500 at step 500: run A delta_csd.mean is zero",
+        )
+    rho_500 = round(num / denom, 6)
 
-    rho_250: float | None = None
-    if "250" in run_a_res["steps"] and "250" in run_b_res["steps"]:
-        denom250 = float(run_a_res["steps"]["250"]["delta_csd"]["mean"])
-        num250 = float(run_b_res["steps"]["250"]["delta_csd"]["mean"])
-        rho_250 = round(num250 / denom250, 6) if abs(denom250) > 1e-12 else None
+    a_250 = _get_step_dict(run_a_res.get("steps"), 250, "run A")
+    b_250 = _get_step_dict(run_b_res.get("steps"), 250, "run B")
+    denom250 = _get_required_metric(a_250, "delta_csd", 250, "mean")
+    num250 = _get_required_metric(b_250, "delta_csd", 250, "mean")
+    if abs(denom250) <= 1e-12:
+        raise CheckpointEvalRefusal(
+            "METRIC_MISSING",
+            "cannot compute velocity_ratio_rho_250 at step 250: run A delta_csd.mean is zero",
+        )
+    rho_250 = round(num250 / denom250, 6)
 
     return {
         "pooled_steps": pool_steps,
@@ -1937,6 +2191,13 @@ def _compare_run_b_vs_run_a(
     }
 
 
+def _derive_run_b_summary_name(b_dir: Path) -> str:
+    """Derive a clean filename suffix for `summary-B-<name>.json` from run B's sample path."""
+    raw_name = b_dir.parent.name if b_dir.name.lower() == "samples" and b_dir.parent.name else b_dir.name
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", raw_name).strip("_")
+    return cleaned or "B"
+
+
 def evaluate_runs(
     training_dir: str | Path,
     run_dirs: dict[str, str | Path],
@@ -1947,6 +2208,7 @@ def evaluate_runs(
     prompts_b_path: str | Path | None = None,
     checkpoint_paths: Sequence[str | Path] | None = None,
     corridors_path: str | Path | None = None,
+    corridors_sha: str | None = None,
     embedder: Any | None = None,
     topk: int = 5,
 ) -> dict[str, Any]:
@@ -1955,47 +2217,89 @@ def evaluate_runs(
     if "A" not in run_dirs:
         raise CheckpointEvalRefusal("MISSING_RUN_A", "--run A=<samples_dir> is required")
 
+    if steps is not None:
+        steps_set = set(int(s) for s in steps)
+        for req_step in REQUIRED_RUN_STEPS:
+            if req_step not in steps_set:
+                raise CheckpointEvalRefusal(
+                    "STEP_MISSING",
+                    f"required step {req_step} is missing from --steps {sorted(steps_set)}",
+                )
+
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     corridors_file = Path(corridors_path) if corridors_path else (out_path / "corridors.md")
 
-    # If scoring run B, verify existing corridors.md BEFORE computing or writing anything
+    # If scoring run B, verify existing corridors.md and external sha256 BEFORE computing or writing anything.
+    # If sealing run A alone, refuse to overwrite an existing corridors file (no force flag).
     locked_corridors: dict[str, Any] | None = None
     if "B" in run_dirs:
-        locked_corridors = read_and_verify_corridors(corridors_file)
+        locked_corridors = read_and_verify_corridors(corridors_file, expected_sha256=corridors_sha)
+    else:
+        if corridors_file.exists():
+            raise CheckpointEvalRefusal(
+                "CORRIDORS_EXISTS",
+                f"refusing to overwrite existing corridors file: {corridors_file} (write a new file name for a new run A)",
+            )
 
     cfg_a = load_prompts_config(prompts_path)
     if "B" in run_dirs:
         if prompts_b_path is not None:
+            if not Path(prompts_b_path).is_file():
+                raise CheckpointEvalRefusal(
+                    "RUN_B_CONFIG_MISSING",
+                    f"run B config file not found: {prompts_b_path}",
+                )
             cfg_b = load_prompts_config(prompts_b_path)
         else:
             b_dir = Path(run_dirs["B"])
             candidate_cfgs = [
                 b_dir / "config.yaml",
+                b_dir / "config.yml",
                 b_dir / "config.json",
                 b_dir.parent / "config.yaml",
+                b_dir.parent / "config.yml",
                 b_dir.parent / "config.json",
             ]
             found_b = next((c for c in candidate_cfgs if c.is_file()), None)
-            cfg_b = load_prompts_config(found_b) if found_b else cfg_a
+            if found_b is None:
+                raise CheckpointEvalRefusal(
+                    "RUN_B_CONFIG_MISSING",
+                    f"run B must bring its own config (--prompts-b or config.yaml/config.json beside {b_dir}); refusing to fall back to run A's config",
+                )
+            cfg_b = load_prompts_config(found_b)
         verify_configs_match(cfg_a, cfg_b)
 
     paired_a = pair_run_samples(run_dirs["A"], len(cfg_a["prompts"]), steps, run_label="A")
+    run_a_fp = compute_run_samples_fingerprint(run_dirs["A"], run_label="A")
+
+    if locked_corridors is not None:
+        expected_run_a_fp = locked_corridors["payload"].get("run_a_fingerprint")
+        if not isinstance(expected_run_a_fp, str) or run_a_fp != expected_run_a_fp:
+            raise CheckpointEvalRefusal(
+                "RUN_A_FINGERPRINT_MISMATCH",
+                f"run A sample fingerprint ({run_a_fp}) does not match locked corridors run_a_fingerprint ({expected_run_a_fp})",
+            )
+
     paired_b: dict[int, dict[int, Path]] | None = None
+    run_b_fp: str | None = None
     if "B" in run_dirs:
         target_steps = steps if steps is not None else list(paired_a.keys())
         paired_b = pair_run_samples(run_dirs["B"], len(cfg_a["prompts"]), target_steps, run_label="B")
+        run_b_fp = compute_run_samples_fingerprint(run_dirs["B"], run_label="B")
 
     active_embedder = embedder if embedder is not None else RealEmbedder(device=device)
     training_cache = get_or_create_training_embeddings(training_dir, out_path, active_embedder)
 
     run_a_res = _evaluate_single_run("A", paired_a, cfg_a, training_cache, active_embedder, topk=topk)
+    run_a_res["samples_fingerprint_sha256"] = run_a_fp
     run_b_res: dict[str, Any] | None = None
     b_vs_a_res: dict[str, Any] | None = None
     corridors_verdict: dict[str, Any] | None = None
 
     if paired_b is not None:
         run_b_res = _evaluate_single_run("B", paired_b, cfg_a, training_cache, active_embedder, topk=topk)
+        run_b_res["samples_fingerprint_sha256"] = run_b_fp
         b_vs_a_res = _compare_run_b_vs_run_a(run_a_res, run_b_res)
         assert locked_corridors is not None
         corridors_info = locked_corridors
@@ -2003,9 +2307,11 @@ def evaluate_runs(
             locked_corridors["payload"], run_b_res, b_vs_a_res
         )
     else:
-        corridors_info = write_corridors_file(corridors_file, run_a_res)
+        corridors_info = write_corridors_file(
+            corridors_file, run_a_res, run_a_fingerprint=run_a_fp
+        )
 
-    # Clean internal embedding caches before serializing summary.json
+    # Clean internal embedding caches before serializing summary JSON
     run_a_res.pop("_dreamsim_embeds_by_step", None)
     if run_b_res is not None:
         run_b_res.pop("_dreamsim_embeds_by_step", None)
@@ -2014,10 +2320,17 @@ def evaluate_runs(
     if checkpoint_paths:
         weight_space = read_safetensors_weight_space(checkpoint_paths)
 
+    if "B" in run_dirs:
+        b_name = _derive_run_b_summary_name(Path(run_dirs["B"]))
+        summary_path = out_path / f"summary-B-{b_name}.json"
+    else:
+        summary_path = out_path / "summary.json"
+
     summary = OrderedDict(
         [
-            ("schema_version", "1.0"),
+            ("schema_version", "1.1"),
             ("created_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
+            ("summary_path", str(summary_path.resolve())),
             ("device", getattr(active_embedder, "device_description", device)),
             ("cuda_visible_devices", os.environ.get("CUDA_VISIBLE_DEVICES", "")),
             ("models_and_licences", getattr(active_embedder, "models_used", MODEL_LICENCE_TABLE)),
@@ -2050,6 +2363,7 @@ def evaluate_runs(
                 {
                     "path": corridors_info["path"],
                     "created_at": corridors_info["created_at"],
+                    "run_a_fingerprint": corridors_info["run_a_fingerprint"],
                     "body_sha256": corridors_info["body_sha256"],
                     "file_sha256": corridors_info["file_sha256"],
                 },
@@ -2061,7 +2375,6 @@ def evaluate_runs(
         ]
     )
 
-    summary_path = out_path / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8", newline="\n")
     return summary
 
@@ -2147,6 +2460,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Optional explicit path to corridors.md (defaults to <out>/corridors.md).",
     )
     parser.add_argument(
+        "--corridors-sha",
+        default=None,
+        help="Required external full SHA-256 hex of the corridors file when scoring run B.",
+    )
+    parser.add_argument(
         "--topk",
         type=int,
         default=5,
@@ -2178,6 +2496,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             prompts_b_path=args.prompts_b,
             checkpoint_paths=args.checkpoint if args.checkpoint else None,
             corridors_path=args.corridors,
+            corridors_sha=args.corridors_sha,
             embedder=embedder,
             topk=args.topk,
         )

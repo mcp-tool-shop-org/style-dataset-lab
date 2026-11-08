@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "a20d824210abad4e902fa3b925999430236ae34bfaadc32c14d4af0e45f71d51",
+          "hash": "969570388aa8b09676aeddd38d981a2862bbc9cfe210d601953c2ea798e7ca5b",
           "path": "CHANGELOG.md"
         },
         {
@@ -16279,7 +16279,7 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 12,
+      "dynamicReads": 13,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
       "dynamicWrites": 18,
@@ -16825,10 +16825,10 @@
             {
               "in": "run",
               "kind": "throw",
-              "line": 44
+              "line": 45
             }
           ],
-          "hash": "9e78073c2bc924e50e533c346757a8f0f84e92efc2d487f4ce68df97f93f7031",
+          "hash": "977ea96556aa502a07a89895d77863c94f4060235fc23ffc28f0d7ebf7c12d83",
           "importOrder": [
             "lib/paths.js",
             "lib/measure.js",
@@ -16842,7 +16842,7 @@
           "path": "scripts/checkpoint-eval.js"
         },
         {
-          "hash": "d218c6962cba3cbdab51c98e73755a337025dda5233a9d05d55304c8417c2862",
+          "hash": "1e40f7fe0da465036803e5758f8a3f5a1d7ef987d504ec6d955ab1d55f260949",
           "path": "scripts/checkpoint-eval/README.md"
         },
         {
@@ -16851,6 +16851,7 @@
             "build_corridors_payload",
             "compute_mde_one_sided",
             "compute_paired_stats",
+            "compute_run_samples_fingerprint",
             "compute_stable_rank_from_lora_pair",
             "evaluate_runs",
             "extract_trigger_words",
@@ -16869,230 +16870,375 @@
             {
               "in": "compute_paired_stats",
               "kind": "raise",
-              "line": 258
+              "line": 280
             },
             {
               "in": "compute_paired_stats",
               "kind": "raise",
-              "line": 264
+              "line": 286
             },
             {
               "in": "load_prompts_config",
               "kind": "raise",
-              "line": 379
-            },
-            {
-              "in": "load_prompts_config",
-              "kind": "except",
-              "line": 389
+              "line": 403
             },
             {
               "in": "load_prompts_config",
               "kind": "except",
-              "line": 392
+              "line": 413
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "except",
+              "line": 416
             },
             {
               "in": "load_prompts_config",
               "kind": "raise",
-              "line": 396
+              "line": 420
             },
             {
               "in": "load_prompts_config",
               "kind": "raise",
-              "line": 410
+              "line": 439
+            },
+            {
+              "in": "load_prompts_config",
+              "kind": "raise",
+              "line": 447
+            },
+            {
+              "in": "compute_run_samples_fingerprint",
+              "kind": "raise",
+              "line": 550
+            },
+            {
+              "in": "compute_run_samples_fingerprint",
+              "kind": "raise",
+              "line": 556
             },
             {
               "in": "pair_run_samples",
-              "kind": "raise",
-              "line": 513
-            },
-            {
-              "in": "pair_run_samples",
-              "kind": "raise",
-              "line": 525
-            },
-            {
-              "in": "pair_run_samples",
-              "kind": "raise",
-              "line": 531
-            },
-            {
-              "in": "pair_run_samples",
-              "kind": "raise",
-              "line": 539
-            },
-            {
-              "in": "pair_run_samples",
-              "kind": "raise",
-              "line": 548
-            },
-            {
-              "in": "pair_run_samples",
-              "kind": "raise",
-              "line": 555
-            },
-            {
-              "in": "verify_configs_match",
-              "kind": "raise",
-              "line": 567
-            },
-            {
-              "in": "verify_configs_match",
               "kind": "raise",
               "line": 573
             },
             {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 585
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 591
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 599
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 609
+            },
+            {
+              "in": "pair_run_samples",
+              "kind": "raise",
+              "line": 616
+            },
+            {
+              "in": "verify_configs_match",
+              "kind": "raise",
+              "line": 628
+            },
+            {
+              "in": "verify_configs_match",
+              "kind": "raise",
+              "line": 634
+            },
+            {
               "in": "compute_stable_rank_from_lora_pair",
               "kind": "raise",
-              "line": 682
+              "line": 754
             },
             {
               "in": "compute_stable_rank_from_lora_pair",
               "kind": "except",
-              "line": 694
+              "line": 766
             },
             {
               "in": "compute_stable_rank_from_lora_pair",
-              "kind": "raise",
-              "line": 701
-            },
-            {
-              "in": "_lora_inner_product_and_norms",
-              "kind": "except",
-              "line": 744
-            },
-            {
-              "in": "_load_safetensors_tensors",
-              "kind": "except",
-              "line": 770
-            },
-            {
-              "in": "_load_safetensors_tensors",
               "kind": "raise",
               "line": 773
             },
             {
+              "in": "_lora_inner_product_and_norms",
+              "kind": "except",
+              "line": 828
+            },
+            {
+              "in": "_load_safetensors_tensors",
+              "kind": "except",
+              "line": 854
+            },
+            {
               "in": "_load_safetensors_tensors",
               "kind": "raise",
-              "line": 793
+              "line": 857
+            },
+            {
+              "in": "_load_safetensors_tensors",
+              "kind": "raise",
+              "line": 877
             },
             {
               "in": "read_safetensors_weight_space",
               "kind": "raise",
-              "line": 821
+              "line": 905
             },
             {
               "in": "read_safetensors_weight_space",
               "kind": "raise",
-              "line": 840
+              "line": 929
             },
             {
               "in": "__init__",
               "kind": "raise",
-              "line": 1112
+              "line": 1203
             },
             {
               "in": "__init__",
               "kind": "raise",
-              "line": 1178
+              "line": 1269
             },
             {
               "in": "_extract_tensor",
               "kind": "raise",
-              "line": 1206
+              "line": 1297
             },
             {
               "in": "get_or_create_training_embeddings",
               "kind": "raise",
-              "line": 1293
+              "line": 1384
             },
             {
               "in": "get_or_create_training_embeddings",
               "kind": "raise",
-              "line": 1299
+              "line": 1390
             },
             {
               "in": "get_or_create_training_embeddings",
               "kind": "except",
-              "line": 1317
+              "line": 1408
             },
             {
-              "in": "read_and_verify_corridors",
+              "in": "_get_step_dict",
+              "kind": "raise",
+              "line": 1440
+            },
+            {
+              "in": "_get_step_dict",
+              "kind": "raise",
+              "line": 1445
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1457
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1464
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "except",
+              "line": 1471
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1472
+            },
+            {
+              "in": "_get_required_metric",
+              "kind": "raise",
+              "line": 1477
+            },
+            {
+              "in": "build_corridors_payload",
               "kind": "raise",
               "line": 1541
             },
             {
-              "in": "read_and_verify_corridors",
-              "kind": "except",
-              "line": 1548
+              "in": "build_corridors_payload",
+              "kind": "raise",
+              "line": 1547
+            },
+            {
+              "in": "write_corridors_file",
+              "kind": "raise",
+              "line": 1687
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1549
-            },
-            {
-              "in": "read_and_verify_corridors",
-              "kind": "raise",
-              "line": 1554
-            },
-            {
-              "in": "read_and_verify_corridors",
-              "kind": "raise",
-              "line": 1563
-            },
-            {
-              "in": "read_and_verify_corridors",
-              "kind": "raise",
-              "line": 1571
+              "line": 1718
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "except",
-              "line": 1575
+              "line": 1726
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1576
+              "line": 1727
             },
             {
               "in": "read_and_verify_corridors",
               "kind": "raise",
-              "line": 1579
+              "line": 1733
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1743
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1751
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "except",
+              "line": 1755
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1756
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1759
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1764
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "except",
+              "line": 1774
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1775
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1777
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1784
+            },
+            {
+              "in": "read_and_verify_corridors",
+              "kind": "raise",
+              "line": 1790
+            },
+            {
+              "in": "score_run_b_against_corridors",
+              "kind": "raise",
+              "line": 1812
             },
             {
               "in": "_evaluate_single_run",
               "kind": "raise",
-              "line": 1698
+              "line": 1927
             },
             {
-              "in": "evaluate_runs",
-              "kind": "raise",
-              "line": 1956
-            },
-            {
-              "in": "_parse_run_args",
-              "kind": "raise",
-              "line": 2079
-            },
-            {
-              "in": "_parse_run_args",
+              "in": "_compare_run_b_vs_run_a",
               "kind": "raise",
               "line": 2084
             },
             {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2094
+            },
+            {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2161
+            },
+            {
+              "in": "_compare_run_b_vs_run_a",
+              "kind": "raise",
+              "line": 2172
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2218
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2224
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2240
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2249
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2266
+            },
+            {
+              "in": "evaluate_runs",
+              "kind": "raise",
+              "line": 2279
+            },
+            {
+              "in": "_parse_run_args",
+              "kind": "raise",
+              "line": 2392
+            },
+            {
+              "in": "_parse_run_args",
+              "kind": "raise",
+              "line": 2397
+            },
+            {
               "in": "_parse_steps_arg",
               "kind": "raise",
-              "line": 2098
+              "line": 2411
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 2185
+              "line": 2504
             }
           ],
-          "hash": "8ad923c9b168f7b70050e6737fd0f0edc83e5db97804539b54696fd5832915d1",
+          "hash": "37474530046879173277d397849d7f880ded8268d5fd9830c0ed1ae61ce46335",
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
@@ -19437,7 +19583,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 62,
+          "reads": 64,
           "where": [
             "caller"
           ],
@@ -19459,7 +19605,7 @@
           "writes": 0
         }
       ],
-      "outsideReads": 65,
+      "outsideReads": 67,
       "outsideWrites": 43,
       "role": "code",
       "testRunners": [
@@ -19842,14 +19988,24 @@
         {
           "exports": [
             "test_corridors_generation_and_tamper_refusal_end_to_end",
+            "test_corridors_overwrite_refused",
+            "test_corridors_reseal_bypass_refused",
             "test_math_verdict_and_cli_refusal_branches",
+            "test_missing_dreamsim_refused",
+            "test_missing_step_500_refused",
             "test_paired_statistics_against_hand_computed_values",
             "test_pairing_by_name_and_refusals",
+            "test_per_layer_singular_values_from_safetensors_match_numpy",
             "test_pure_stdlib_fallbacks_and_edge_branches",
+            "test_run_b_seed_999_via_config_beside_refused",
+            "test_run_b_without_config_refused",
             "test_seed_and_prompt_mismatch_refusal",
-            "test_stable_rank_on_known_matrices_and_safetensors"
+            "test_stable_rank_on_known_matrices_and_safetensors",
+            "test_swapped_run_a_dir_refused",
+            "test_wilcoxon_p_less_and_normal_approximation_above_n20",
+            "test_wrong_corridors_sha_refused"
           ],
-          "hash": "b3b5ec4e694d3e0517f880edc9e6f8e653a463031139ab889bf5c83a295f2813",
+          "hash": "bcf069013ae6751ee33536c68bb162bd2509db2f27da05e2d3e93e385751e04e",
           "importsFiles": [
             "scripts/checkpoint-eval/checkpoint_eval.py"
           ],
@@ -22749,7 +22905,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "af5b25276855eff8f68fe86274918850d2819f85",
+    "commit": "e35fcd813efddf49bb1a3caabd49253f9d674245",
     "tracked": 3307
   },
   "landings": [

@@ -31,6 +31,7 @@ Flags:
   --device <cpu|openvino>     Compute device (default: cpu; CUDA_VISIBLE_DEVICES="" always enforced)
   --checkpoint <path>         Optional LoRA .safetensors checkpoint(s) for weight-space stable rank
   --corridors <path>          Optional explicit path to corridors.md (defaults to <out>/corridors.md)
+  --corridors-sha <hex>       Required external full SHA-256 hex of corridors file when scoring run B
   --fake-embedder             Use deterministic synthetic embedder (for synthetic fixture tests)`;
 
 export async function run(argv = process.argv.slice(2)) {

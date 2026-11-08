@@ -140,10 +140,15 @@ def test_pairing_by_name_and_refusals(tmp_path: Path) -> None:
     # Duplicate (step, prompt_idx) refuses with PAIRING_MISMATCH
     _write_tiny_ppm(fx["run_a"] / "9999999999999__000000250_2.ppm", (1, 2, 3))
     with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
-        ce.pair_run_samples(fx["run_a"], num_prompts=6, requested_steps=[0, 250])
+        ce.pair_run_samples(fx["run_a"], num_prompts=6, requested_steps=[0, 250, 500])
     assert exc_info.value.code == "PAIRING_MISMATCH"
     assert "duplicate sample" in exc_info.value.why
     (fx["run_a"] / "9999999999999__000000250_2.ppm").unlink()
+
+    # Non-9-digit step filenames must not match SAMPLE_FILENAME_RE
+    assert ce.SAMPLE_FILENAME_RE.match("1780000000000__00250_0.png") is None
+    assert ce.SAMPLE_FILENAME_RE.match("1780000000000__0000000250_0.png") is None
+    assert ce.SAMPLE_FILENAME_RE.match("1780000000000__000000250_0.png") is not None
 
     # Out-of-range prompt index refuses with PAIRING_MISMATCH
     _write_tiny_ppm(fx["run_a"] / "9999999999999__000000250_9.ppm", (1, 2, 3))
@@ -343,7 +348,7 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
     assert summary_a["training_set"]["cache_hit"] is False
 
     # Verify corridors.md carries its own sha256 and creation time and passes verification
-    verified = ce.read_and_verify_corridors(corridors_file)
+    verified = ce.read_and_verify_corridors(corridors_file, summary_a["corridors"]["file_sha256"])
     assert verified["body_sha256"] == summary_a["corridors"]["body_sha256"]
     assert verified["file_sha256"] == summary_a["corridors"]["file_sha256"]
 
@@ -364,13 +369,19 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
             str(fx["cfg_a"]),
             "--corridors",
             str(corridors_file),
+            "--corridors-sha",
+            summary_a["corridors"]["file_sha256"],
             "--out",
             str(out_a),
             "--fake-embedder",
         ]
     )
     assert rc_b == 0
-    summary_b = json.loads((out_a / "summary.json").read_text(encoding="utf-8"))
+    summary_b_file = out_a / "summary-B-run_b.json"
+    assert summary_b_file.is_file()
+    # Run A's summary.json must never be overwritten by Run B
+    assert json.loads(summary_a_file.read_text(encoding="utf-8")) == summary_a
+    summary_b = json.loads(summary_b_file.read_text(encoding="utf-8"))
     assert summary_b["training_set"]["cache_hit"] is True
     assert summary_b["b_vs_a"]["pooled_n"] == 12
     assert summary_b["corridors_verdict"]["overall"] in ("promote", "borderline", "kill")
@@ -382,8 +393,8 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
     corridors_file.write_text(tampered_text, encoding="utf-8")
 
     with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
-        ce.read_and_verify_corridors(corridors_file)
-    assert exc_info.value.code == "CORRIDORS_TAMPERED"
+        ce.read_and_verify_corridors(corridors_file, summary_a["corridors"]["file_sha256"])
+    assert exc_info.value.code in ("CORRIDORS_TAMPERED", "CORRIDORS_SHA_MISMATCH")
 
     rc_tampered = ce.main(
         [
@@ -397,8 +408,12 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
             "0,250,500",
             "--prompts",
             str(fx["cfg_a"]),
+            "--prompts-b",
+            str(fx["cfg_a"]),
             "--corridors",
             str(corridors_file),
+            "--corridors-sha",
+            summary_a["corridors"]["file_sha256"],
             "--out",
             str(tmp_path / "eval_tampered"),
             "--fake-embedder",
@@ -408,7 +423,7 @@ def test_corridors_generation_and_tamper_refusal_end_to_end(tmp_path: Path) -> N
 
     # 4. Missing corridors.md when scoring Run B -> must refuse with CORRIDORS_MISSING
     with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
-        ce.read_and_verify_corridors(tmp_path / "missing_corridors.md")
+        ce.read_and_verify_corridors(tmp_path / "missing_corridors.md", summary_a["corridors"]["file_sha256"])
     assert exc_info.value.code == "CORRIDORS_MISSING"
 
 
@@ -445,12 +460,12 @@ def test_pure_stdlib_fallbacks_and_edge_branches(tmp_path: Path, monkeypatch: py
     yaml_cfg_path.write_text(
         "---\n"
         "# comment\n"
-        'name: "rustline_style_v5"\n'
+        'name: "synthstyle_v1"\n'
         "seed: 42\n"
         "walk_seed: true\n"
-        "trigger_word: 'rustline style'\n"
+        "trigger_word: 'synthstyle style'\n"
         "prompts:\n"
-        '  - "rustline style, prompt one\n'
+        '  - "synthstyle style, prompt one\n'
         '    continued line"\n'
         "  - 'prompt two ood'\n"
         "after_prompts: done\n",
@@ -474,7 +489,7 @@ def test_pure_stdlib_fallbacks_and_edge_branches(tmp_path: Path, monkeypatch: py
         assert parsed_yaml["seed"] == 42
         assert parsed_yaml["walk_seed"] is True
         assert len(parsed_yaml["prompts"]) == 2
-        assert "rustline style" in parsed_yaml["trigger_words"]
+        assert "synthstyle style" in parsed_yaml["trigger_words"]
 
         # Invalid safetensors cases under pure-stdlib reader
         short_st = tmp_path / "short.safetensors"
@@ -567,17 +582,25 @@ def test_math_verdict_and_cli_refusal_branches(tmp_path: Path) -> None:
         corridors_payload,
         {
             "steps": {
+                "250": {
+                    "delta_clip_t": {"mean": 0.01},
+                    "delta_dino_nn": {"mean": 0.05},
+                    "delta_csd": {"mean": 0.15},
+                },
                 "500": {
                     "delta_clip_t": {"mean": 0.01},
                     "delta_dino_nn": {"mean": 0.08},
                     "delta_csd": {"mean": 0.20},
-                }
+                },
             }
         },
         {
             "velocity_ratio_rho_500": 0.95,
             "pooled_250_500": {"csd_topk": {"mean": 0.01}},
-            "by_step": {"500": {"dreamsim_b_vs_a_mean": 0.12}},
+            "by_step": {
+                "250": {"dreamsim_b_vs_a_mean": 0.10},
+                "500": {"dreamsim_b_vs_a_mean": 0.12},
+            },
         },
     )
     assert verdict_promote["overall"] == "promote"
@@ -587,17 +610,25 @@ def test_math_verdict_and_cli_refusal_branches(tmp_path: Path) -> None:
         corridors_payload,
         {
             "steps": {
+                "250": {
+                    "delta_clip_t": {"mean": -0.018},
+                    "delta_dino_nn": {"mean": 0.10},
+                    "delta_csd": {"mean": 0.12},
+                },
                 "500": {
                     "delta_clip_t": {"mean": -0.018},
                     "delta_dino_nn": {"mean": 0.12},
                     "delta_csd": {"mean": 0.15},
-                }
+                },
             }
         },
         {
             "velocity_ratio_rho_500": 0.78,
             "pooled_250_500": {"csd_topk": {"mean": -0.028}},
-            "by_step": {"500": {"dreamsim_b_vs_a_mean": 0.21}},
+            "by_step": {
+                "250": {"dreamsim_b_vs_a_mean": 0.20},
+                "500": {"dreamsim_b_vs_a_mean": 0.21},
+            },
         },
     )
     assert verdict_borderline["overall"] == "borderline"
@@ -607,17 +638,25 @@ def test_math_verdict_and_cli_refusal_branches(tmp_path: Path) -> None:
         corridors_payload,
         {
             "steps": {
+                "250": {
+                    "delta_clip_t": {"mean": -0.040},
+                    "delta_dino_nn": {"mean": 0.18},
+                    "delta_csd": {"mean": 0.08},
+                },
                 "500": {
                     "delta_clip_t": {"mean": -0.040},
                     "delta_dino_nn": {"mean": 0.20},
                     "delta_csd": {"mean": 0.10},
-                }
+                },
             }
         },
         {
             "velocity_ratio_rho_500": 0.50,
             "pooled_250_500": {"csd_topk": {"mean": -0.050}},
-            "by_step": {"500": {"dreamsim_b_vs_a_mean": 0.30}},
+            "by_step": {
+                "250": {"dreamsim_b_vs_a_mean": 0.28},
+                "500": {"dreamsim_b_vs_a_mean": 0.30},
+            },
         },
     )
     assert verdict_kill["overall"] == "kill"
@@ -648,4 +687,474 @@ def test_math_verdict_and_cli_refusal_branches(tmp_path: Path) -> None:
     with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
         ce.load_prompts_config(no_prompts_json)
     assert exc_info.value.code == "INVALID_CONFIG"
+
+
+def test_corridors_reseal_bypass_refused(tmp_path: Path) -> None:
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    assert (
+        ce.main(
+            [
+                "--training-dir",
+                str(fx["train_dir"]),
+                "--run",
+                f"A={fx['run_a']}",
+                "--steps",
+                "0,250,500",
+                "--prompts",
+                str(fx["cfg_a"]),
+                "--out",
+                str(out_a),
+                "--fake-embedder",
+            ]
+        )
+        == 0
+    )
+    corridors_file = out_a / "corridors.md"
+    summary_a = json.loads((out_a / "summary.json").read_text(encoding="utf-8"))
+    orig_file_sha = summary_a["corridors"]["file_sha256"]
+
+    # Edit a kill band to -99 and re-seal body_sha256 using _compute_corridors_body_sha256
+    text = corridors_file.read_text(encoding="utf-8")
+    edited = text.replace('"kill_below": -0.035', '"kill_below": -99.0', 1)
+    assert edited != text
+    m_sha = ce.re.search(r"^- \*\*body_sha256:\*\* `([0-9a-f]{64})`$", edited, flags=ce.re.MULTILINE)
+    assert m_sha is not None
+    with_placeholder = edited[: m_sha.start(1)] + ce.CORRIDORS_SHA_PLACEHOLDER + edited[m_sha.end(1) :]
+    resealed_body_sha = ce._compute_corridors_body_sha256(with_placeholder)
+    resealed_text = with_placeholder.replace(ce.CORRIDORS_SHA_PLACEHOLDER, resealed_body_sha, 1)
+    corridors_file.write_text(resealed_text, encoding="utf-8", newline="\n")
+
+    # Calling read_and_verify_corridors (both without sha and with original sha) must refuse
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.read_and_verify_corridors(corridors_file)
+    assert exc_info.value.code in ("CORRIDORS_SHA_MISMATCH", "CORRIDORS_TAMPERED")
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info2:
+        ce.read_and_verify_corridors(corridors_file, orig_file_sha)
+    assert exc_info2.value.code in ("CORRIDORS_SHA_MISMATCH", "CORRIDORS_TAMPERED")
+
+
+def test_corridors_overwrite_refused(tmp_path: Path) -> None:
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    args_a = [
+        "--training-dir",
+        str(fx["train_dir"]),
+        "--run",
+        f"A={fx['run_a']}",
+        "--steps",
+        "0,250,500",
+        "--prompts",
+        str(fx["cfg_a"]),
+        "--out",
+        str(out_a),
+        "--fake-embedder",
+    ]
+    assert ce.main(args_a) == 0
+    # Second run A to the same corridors path must refuse with CORRIDORS_EXISTS (rc == 2)
+    assert ce.main(args_a) == 2
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"]},
+            prompts_path=fx["cfg_a"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "CORRIDORS_EXISTS"
+
+
+def test_wrong_corridors_sha_refused(tmp_path: Path) -> None:
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    assert (
+        ce.main(
+            [
+                "--training-dir",
+                str(fx["train_dir"]),
+                "--run",
+                f"A={fx['run_a']}",
+                "--steps",
+                "0,250,500",
+                "--prompts",
+                str(fx["cfg_a"]),
+                "--out",
+                str(out_a),
+                "--fake-embedder",
+            ]
+        )
+        == 0
+    )
+    corridors_file = out_a / "corridors.md"
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.evaluate_runs(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_a"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha="0" * 64,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "CORRIDORS_SHA_MISMATCH"
+
+
+def _eval_runs_compat(**kwargs: Any) -> dict[str, Any]:
+    import inspect
+
+    sig = inspect.signature(ce.evaluate_runs)
+    filtered = {k: v for k, v in kwargs.items() if k in sig.parameters}
+    return ce.evaluate_runs(**filtered)
+
+
+def test_swapped_run_a_dir_refused(tmp_path: Path) -> None:
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    summary_a = ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": fx["run_a"]},
+        prompts_path=fx["cfg_a"],
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+    corridors_sha = summary_a["corridors"]["file_sha256"]
+
+    # Create a swapped run-A directory with identical filenames but altered pixel bytes
+    swapped_a = tmp_path / "run_a_swapped" / "samples"
+    for p in fx["run_a"].iterdir():
+        _write_tiny_ppm(swapped_a / p.name, (200, 100, 50))
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        _eval_runs_compat(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": swapped_a, "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            prompts_b_path=fx["cfg_a"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "RUN_A_FINGERPRINT_MISMATCH"
+
+
+def test_run_b_without_config_refused(tmp_path: Path) -> None:
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    summary_a = ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": fx["run_a"]},
+        prompts_path=fx["cfg_a"],
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+    corridors_sha = summary_a["corridors"]["file_sha256"]
+
+    # No --prompts-b and no config.yaml/config.json beside run_b -> must refuse RUN_B_CONFIG_MISSING
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        _eval_runs_compat(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "RUN_B_CONFIG_MISSING"
+
+
+def test_run_b_seed_999_via_config_beside_refused(tmp_path: Path) -> None:
+    fx = _make_synthetic_fixture_tree(tmp_path)
+    out_a = tmp_path / "eval_a"
+    summary_a = ce.evaluate_runs(
+        training_dir=fx["train_dir"],
+        run_dirs={"A": fx["run_a"]},
+        prompts_path=fx["cfg_a"],
+        out_dir=out_a,
+        steps=[0, 250, 500],
+        embedder=ce.FakeEmbedder(),
+    )
+    corridors_file = out_a / "corridors.md"
+    corridors_sha = summary_a["corridors"]["file_sha256"]
+    cfg_a_data = ce.load_prompts_config(fx["cfg_a"])
+
+    # Place config.yaml beside run_b (in run_b.parent) where seed: 999 is under config/train
+    beside_cfg = fx["run_b"].parent / "config.yaml"
+    beside_lines = [
+        "job: extension",
+        "config:",
+        "  name: synthstyle_style_v1",
+        "  seed: 999",
+        "  process:",
+        "    - type: sd_trainer",
+        "      train:",
+        "        seed: 999",
+        "      sample:",
+        "        walk_seed: true",
+        "        prompts:",
+    ]
+    for p in cfg_a_data["prompts"]:
+        beside_lines.append(f'          - "{p}"')
+    beside_cfg.write_text("\n".join(beside_lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        _eval_runs_compat(
+            training_dir=fx["train_dir"],
+            run_dirs={"A": fx["run_a"], "B": fx["run_b"]},
+            prompts_path=fx["cfg_a"],
+            out_dir=out_a,
+            steps=[0, 250, 500],
+            corridors_path=corridors_file,
+            corridors_sha=corridors_sha,
+            embedder=ce.FakeEmbedder(),
+        )
+    assert exc_info.value.code == "SEED_MISMATCH"
+
+
+def test_missing_step_500_refused(tmp_path: Path) -> None:
+    fake_run_a = {
+        "num_prompts": 6,
+        "paired_diff_sd_estimate": {"value": 0.02, "estimator": "test"},
+        "steps": {
+            "250": {
+                "csd_topk": {"mean": 0.50, "sd": 0.02},
+                "delta_csd": {"mean": 0.15, "sd": 0.02},
+                "delta_clip_t": {"mean": 0.00, "sd": 0.01},
+                "delta_dino_nn": {"mean": 0.05, "sd": 0.01},
+                "dreamsim_to_step0": {"mean": 0.30, "sd": 0.02},
+            },
+            "500": {
+                "csd_topk": {"mean": 0.55, "sd": 0.02},
+                "delta_csd": {"mean": 0.20, "sd": 0.02},
+                "delta_clip_t": {"mean": 0.00, "sd": 0.01},
+                "delta_dino_nn": {"mean": 0.06, "sd": 0.01},
+                "dreamsim_to_step0": {"mean": 0.35, "sd": 0.02},
+            },
+        },
+    }
+    corridors_payload = ce.build_corridors_payload(fake_run_a)
+
+    # 1. Missing step 500 in run_b_summary when scoring against corridors must refuse STEP_MISSING
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.score_run_b_against_corridors(
+            corridors_payload,
+            {
+                "steps": {
+                    "0": {
+                        "csd_topk": {"mean": 0.40},
+                        "delta_clip_t": {"mean": 0.0},
+                        "delta_dino_nn": {"mean": 0.0},
+                        "delta_csd": {"mean": 0.0},
+                    },
+                    "250": {
+                        "csd_topk": {"mean": 0.50},
+                        "delta_clip_t": {"mean": 0.01},
+                        "delta_dino_nn": {"mean": 0.04},
+                        "delta_csd": {"mean": 0.15},
+                    },
+                }
+            },
+            {
+                "velocity_ratio_rho_500": 0.95,
+                "pooled_250_500": {"csd_topk": {"mean": 0.01}},
+                "by_step": {
+                    "250": {"dreamsim_b_vs_a_mean": 0.10},
+                    "500": {"dreamsim_b_vs_a_mean": 0.12},
+                },
+            },
+        )
+    assert exc_info.value.code == "STEP_MISSING"
+    assert "500" in exc_info.value.why
+
+    # 2. Missing step 500 in build_corridors_payload must refuse STEP_MISSING
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info2:
+        ce.build_corridors_payload(
+            {
+                "num_prompts": 6,
+                "paired_diff_sd_estimate": {"value": 0.02, "estimator": "test"},
+                "steps": {"0": fake_run_a["steps"]["250"], "250": fake_run_a["steps"]["250"]},
+            }
+        )
+    assert exc_info2.value.code == "STEP_MISSING"
+    assert "500" in exc_info2.value.why
+
+
+def test_missing_dreamsim_refused() -> None:
+    fake_run_a = {
+        "num_prompts": 6,
+        "paired_diff_sd_estimate": {"value": 0.02, "estimator": "test"},
+        "steps": {
+            "250": {
+                "csd_topk": {"mean": 0.50, "sd": 0.02},
+                "delta_csd": {"mean": 0.15, "sd": 0.02},
+                "delta_clip_t": {"mean": 0.00, "sd": 0.01},
+                "delta_dino_nn": {"mean": 0.05, "sd": 0.01},
+                "dreamsim_to_step0": {"mean": 0.30, "sd": 0.02},
+            },
+            "500": {
+                "csd_topk": {"mean": 0.55, "sd": 0.02},
+                "delta_csd": {"mean": 0.20, "sd": 0.02},
+                "delta_clip_t": {"mean": 0.00, "sd": 0.01},
+                "delta_dino_nn": {"mean": 0.06, "sd": 0.01},
+                "dreamsim_to_step0": {"mean": 0.35, "sd": 0.02},
+            },
+        },
+    }
+    corridors_payload = ce.build_corridors_payload(fake_run_a)
+
+    with pytest.raises(ce.CheckpointEvalRefusal) as exc_info:
+        ce.score_run_b_against_corridors(
+            corridors_payload,
+            {
+                "steps": {
+                    "250": {
+                        "csd_topk": {"mean": 0.50},
+                        "delta_clip_t": {"mean": 0.01},
+                        "delta_dino_nn": {"mean": 0.05},
+                        "delta_csd": {"mean": 0.15},
+                    },
+                    "500": {
+                        "csd_topk": {"mean": 0.56},
+                        "delta_clip_t": {"mean": 0.01},
+                        "delta_dino_nn": {"mean": 0.08},
+                        "delta_csd": {"mean": 0.20},
+                    },
+                }
+            },
+            {
+                "velocity_ratio_rho_500": 0.95,
+                "pooled_250_500": {"csd_topk": {"mean": 0.01}},
+                "by_step": {
+                    "250": {"dreamsim_b_vs_a_mean": 0.10},
+                    "500": {"dreamsim_b_vs_a_mean": None},
+                },
+            },
+        )
+    assert exc_info.value.code == "METRIC_MISSING"
+    assert "500" in exc_info.value.why
+    assert "dreamsim" in exc_info.value.why.lower()
+
+
+def test_per_layer_singular_values_from_safetensors_match_numpy(tmp_path: Path) -> None:
+    try:
+        import numpy as np  # type: ignore
+    except ImportError:
+        np = None  # type: ignore
+    # Asymmetric shapes B=(6, 2), A=(2, 4) so B @ A is (6, 4) and A @ B is invalid,
+    # plus a second layer B2=(4, 2), A2=(2, 4) with .alpha = 8.0 (scale = 8.0 / 2 = 4.0)
+    b_asym = [
+        [2.5, -0.5],
+        [0.0, 1.5],
+        [-1.0, 0.25],
+        [0.75, 2.0],
+        [1.25, -1.5],
+        [-0.5, 0.5],
+    ]
+    a_asym = [
+        [1.5, -0.5, 2.0, 0.25],
+        [-0.75, 1.25, 0.5, -1.0],
+    ]
+    b_sq = [
+        [3.0, 0.5],
+        [-1.0, 2.0],
+        [0.5, -1.5],
+        [2.0, 1.0],
+    ]
+    a_sq = [
+        [1.0, 2.0, -0.5, 0.0],
+        [0.5, -1.0, 1.5, 2.5],
+    ]
+    ckpt = tmp_path / "tiny_synth.safetensors"
+    _write_synthetic_safetensors(
+        ckpt,
+        {
+            "diffusion_model.transformer_blocks.0.attn.to_q.lora_B.weight": _pack_f32_matrix(b_asym),
+            "diffusion_model.transformer_blocks.0.attn.to_q.lora_A.weight": _pack_f32_matrix(a_asym),
+            "diffusion_model.transformer_blocks.0.img_mlp.net.lora_B.weight": _pack_f32_matrix(b_sq),
+            "diffusion_model.transformer_blocks.0.img_mlp.net.lora_A.weight": _pack_f32_matrix(a_sq),
+            "diffusion_model.transformer_blocks.0.img_mlp.net.alpha": ("F32", [1], struct.pack("<f", 8.0)),
+        },
+    )
+    ws = ce.read_safetensors_weight_space([ckpt])
+    layers = ws["checkpoints"]["tiny_synth.safetensors"]["layers"]
+
+    # Exact numpy.linalg.svd(B @ A, compute_uv=False) reference values
+    expected_sv_q = [8.633089549381317, 4.8445603342680235]
+    expected_frob_q = 9.899494936611665
+    expected_sv_mlp = [37.98849334874042, 29.493632755099956]
+    swapped_sv_mlp_top = 33.55708982476848
+
+    if np is not None:
+        dw_q = np.asarray(b_asym, dtype=np.float64) @ np.asarray(a_asym, dtype=np.float64)
+        expected_sv_q = [float(x) for x in np.linalg.svd(dw_q, compute_uv=False)]
+        expected_frob_q = float(np.linalg.norm(dw_q, "fro"))
+        dw_mlp = (8.0 / 2.0) * (np.asarray(b_sq, dtype=np.float64) @ np.asarray(a_sq, dtype=np.float64))
+        expected_sv_mlp = [float(x) for x in np.linalg.svd(dw_mlp, compute_uv=False)]
+        swapped_sv_mlp_top = float(
+            np.linalg.svd(
+                (8.0 / 2.0) * (np.asarray(a_sq, dtype=np.float64) @ np.asarray(b_sq, dtype=np.float64)),
+                compute_uv=False,
+            )[0]
+        )
+
+    # Layer 1: unscaled B @ A (6x4)
+    q_layer = layers["diffusion_model.transformer_blocks.0.attn.to_q"]
+    assert q_layer["shape"] == [6, 4]
+    assert q_layer["rank"] == 2
+    assert len(q_layer["singular_values"]) == 2
+    for got, exp in zip(q_layer["singular_values"], expected_sv_q):
+        assert math.isclose(got, float(exp), abs_tol=1e-5)
+    assert math.isclose(q_layer["top_singular_value"], float(expected_sv_q[0]), abs_tol=1e-5)
+    assert math.isclose(q_layer["frobenius_norm"], expected_frob_q, abs_tol=1e-5)
+
+    # Layer 2: scaled by alpha / rank = 8.0 / 2 = 4.0, and differs from swapped A @ B
+    mlp_layer = layers["diffusion_model.transformer_blocks.0.img_mlp.net"]
+    assert not math.isclose(float(expected_sv_mlp[0]), swapped_sv_mlp_top, abs_tol=1e-3)
+    for got, exp in zip(mlp_layer["singular_values"], expected_sv_mlp):
+        assert math.isclose(got, float(exp), abs_tol=1e-5)
+    assert math.isclose(mlp_layer["top_singular_value"], float(expected_sv_mlp[0]), abs_tol=1e-5)
+
+
+def test_wilcoxon_p_less_and_normal_approximation_above_n20() -> None:
+    # 1. All-negative diffs (n=6): B < A -> W+ = 0, W- = 21, p_less = 1/64 = 0.015625, p_greater = 1.0
+    a = [0.54, 0.52, 0.56, 0.51, 0.55, 0.53]
+    b = [0.50, 0.50, 0.50, 0.50, 0.50, 0.50]
+    stats_neg = ce.compute_paired_stats(b, a)
+    assert math.isclose(stats_neg["t_p_less"], 0.002967, abs_tol=5e-6)
+    assert math.isclose(stats_neg["t_p_greater"], 1.0 - 0.00296677, abs_tol=5e-6)
+    assert stats_neg["wilcoxon"]["w_plus"] == 0.0
+    assert stats_neg["wilcoxon"]["w_minus"] == 21.0
+    assert math.isclose(stats_neg["wilcoxon"]["p_less"], 1.0 / 64.0, abs_tol=1e-8)
+    assert math.isclose(stats_neg["wilcoxon"]["p_greater"], 1.0, abs_tol=1e-8)
+
+    # 2. Mixed diffs (n=4): diffs = [-0.01, -0.02, -0.03, +0.04] -> W+ = 4, W- = 6
+    # Subset sums <= 4 out of 16: {}, {1}, {2}, {3}, {4}, {1,2}, {1,3} -> 7 / 16 = 0.4375; >= 4 is 11 / 16 = 0.6875
+    stats_mix = ce.compute_paired_stats([0.49, 0.48, 0.47, 0.54], [0.50, 0.50, 0.50, 0.50])
+    assert stats_mix["wilcoxon"]["w_plus"] == 4.0
+    assert stats_mix["wilcoxon"]["w_minus"] == 6.0
+    assert math.isclose(stats_mix["wilcoxon"]["p_less"], 7.0 / 16.0, abs_tol=1e-8)
+    assert math.isclose(stats_mix["wilcoxon"]["p_greater"], 11.0 / 16.0, abs_tol=1e-8)
+
+    # 3. Normal approximation above n=20 (n=21 all-negative diffs)
+    diffs_21 = [-0.01 * (i + 1) for i in range(21)]
+    w21 = ce._wilcoxon_signed_rank(diffs_21)
+    assert w21["n_nonzero"] == 21
+    assert w21.get("method") == "normal_approx"
+    assert w21["w_plus"] == 0.0
+    assert w21["w_minus"] == 231.0
+    assert w21["p_less"] < 1e-4
+    assert w21["p_greater"] > 0.9999
+
 
