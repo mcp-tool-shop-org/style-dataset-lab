@@ -101,7 +101,12 @@ jobs:
           uv venv .venv-ci --python "${PY_TARGET}"
           uv pip install --python .venv-ci/bin/python pytest pytest-cov
           .venv-ci/bin/python --version
-          SDLAB_PYTHON="$(pwd)/.venv-ci/bin/python" .venv-ci/bin/python -m pytest tests/colab             --cov=scripts/colab             --cov-report=term-missing             --cov-report=xml:coverage/coverage-python.xml             --cov-fail-under=90
+          SDLAB_PYTHON="$(pwd)/.venv-ci/bin/python" .venv-ci/bin/python -m pytest tests/colab tests/checkpoint_eval \
+            --cov=scripts/colab \
+            --cov=scripts/checkpoint-eval \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage/coverage-python.xml \
+            --cov-fail-under=90
       - name: Colab pre-flight resolve — lane 1 (Node 22 only)
         if: matrix.node-version == 22
         run: |
