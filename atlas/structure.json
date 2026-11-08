@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "3d56d2593737830f2ef30f07e376c9536c40a81d3ae6f6bf7a6663a18e62e089",
+          "hash": "5fc927156d8e7de8fca665a194bfdd262b333e748187104d97a75475de7783f6",
           "path": "CHANGELOG.md"
         },
         {
@@ -17252,7 +17252,11 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "552ed26f9dccc7a70f216fe53f011bd2997d9614b81295c816ff2b3975262a54",
+          "hash": "713610e819f87939bcbf3c08426bc9144b5bb59f6064feba893789d1d2a9fe8c",
+          "path": "scripts/colab/README.md"
+        },
+        {
+          "hash": "66bbd789dd9d1e85c51af48dac33af02fc0acf960aab17d8a92ab782c0951b8b",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -17272,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de",
+          "hash": "cfd69578c181643e28b5e575f6ec269d053229dfc34239ffae77741a06bddf5d",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17497,6 +17501,10 @@
         {
           "hash": "fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d",
           "path": "scripts/colab/lane3/rung-dataset.json"
+        },
+        {
+          "hash": "36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d",
+          "path": "scripts/colab/lane3/rung-qwen-image-500.yaml"
         },
         {
           "hash": "f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533",
@@ -17823,10 +17831,13 @@
         {
           "exports": [
             "check_host_ram_projection",
+            "compute_cap_trip",
+            "evaluate_cap_budget",
             "evaluate_cap_guard",
             "evaluate_host_ram_projection",
             "evaluate_vitals_and_stall_guard",
             "evaluate_wall_guard",
+            "format_dry_cap_budget",
             "gpu_projection_rate",
             "host_ram_reading",
             "host_ram_status",
@@ -17886,32 +17897,32 @@
             {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 528
+              "line": 687
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 871
+              "line": 1030
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 967
+              "line": 1175
             },
             {
               "kind": "raise",
-              "line": 1064
+              "line": 1279
             }
           ],
-          "hash": "a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e",
+          "hash": "30369dfa66bdade39325f6af42e05da72b2e102dd9f1b70afacd97a663319467",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "5903d641a0a00e396c60a47ce843e57eb3bd6f5e1806767ef57f9507ee62323b",
+          "hash": "ce32b54b834a01e62b5678b9032f5bb10110d0ab4a0e9ae0ec1b420d240d4753",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "2bfeb8f00e58068e99302fbd041758e46c995e05d2d6d596bbea35e55c01a82d",
+          "hash": "9aeb2bb19a9a53c9244db68ebd2ccf99d3eb868ede8c89fe5497a82e82662ea7",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -20352,7 +20363,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "ba7e01e1839994b3fce1868240463f1d7299fbc747e6a0a6b2b0b10997f8daa8",
+          "hash": "52d41a3f1497da39f37189850d99ef22e4342f193777cbb1e14d4d3b5c5c6f0d",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -20446,7 +20457,7 @@
             "test_open_refuses_a_gpu_card_that_was_not_armed",
             "test_the_gate_arms_five_second_reads_and_refuses_the_test_hook_live"
           ],
-          "hash": "94d28ff9a6d9183754db526fc7009b0547c6b0e681ade2a6b59139305197715f",
+          "hash": "41210696d36db5fb265b59552cdf4c2a01123d2b8245e1966dc67527fd636aa9",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20476,7 +20487,7 @@
             "test_wall_cap_and_vitals_records_carry_a_refusal",
             "vitals_ends_torn"
           ],
-          "hash": "464647ecc58cdd58b562d7bc28fd802eead67e28dfce20ffb24a0064a450eace",
+          "hash": "270a82d8189ddb206fc18d7afd6fdcb09a5a26082bd4114b7ff4e2efa3bde10b",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -20508,7 +20519,7 @@
             "test_upload_and_download_helpers_refuse_by_name",
             "test_upload_failure_is_upload_failed_with_http_status_and_no_token"
           ],
-          "hash": "9f27580a9555ef3e50c43d2374e289cd5deff9bf804efe3c415147f9e1623c43",
+          "hash": "9166ff9f765252c945699e3a9636a1e92f18e1f8765bf4245fa4144d28c700fd",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20554,6 +20565,8 @@
             "test_bundle_now_kills_sweeps_and_tars",
             "test_cap_at_8_88_per_hour_trips_at_20_3_seconds",
             "test_cap_clock_starts_at_open_success_and_counts_the_rate_polls",
+            "test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_window_json",
+            "test_cap_too_small_for_cleanup_or_min_runtime_refuses_before_any_colab_call",
             "test_check_model_api_names_each_failure",
             "test_cli_dispatches_every_subcommand",
             "test_committed_rung_dataset_hits_all_three_buckets",
@@ -20570,8 +20583,10 @@
             "test_download_offline_reads_only_the_cache",
             "test_download_records_token_used_from_the_variable",
             "test_download_too_slow_is_stopped_after_the_probe",
+            "test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls",
             "test_expected_repo_bytes_uses_the_listing",
             "test_failed_download_prints_no_token_into_exec_history",
+            "test_failed_normal_download_still_salvages_bundle",
             "test_final_sweep_recopies_a_partial_file",
             "test_finish_gathers_records_and_marks_a_failed_run",
             "test_gpu_rate_selection_raises_rate_unread_without_a_live_rate",
@@ -20581,10 +20596,16 @@
             "test_gpu_window_with_no_post_open_rate_refuses_rate_unread",
             "test_guards_pass_and_record_every_measurement",
             "test_guards_refuse_by_name_and_still_record_all_three",
+            "test_hung_new_and_open_lock_wait_are_cut_at_bound",
+            "test_hung_upload_is_cut_at_bound_and_session_is_stopped",
             "test_kit_model_check_refuses_a_dead_token_before_any_spend",
             "test_kit_refuses_a_dataset_that_does_not_match_its_manifest",
             "test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call",
             "test_kit_refuses_a_wall_that_cannot_cover_the_rung",
+            "test_kit_refuses_invalid_rung_job_or_rung_job_without_train",
+            "test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound",
+            "test_lane1_ignores_salvage_timeout_overrides_in_cleanup_bounds",
+            "test_launch_guards_pre_exec_phase_unit_and_cli",
             "test_meminfo_and_host_ram_measurement",
             "test_metadata_exception_text_never_reaches_any_output",
             "test_model_check_cli_reads_the_token_from_the_environment",
@@ -20592,6 +20613,8 @@
             "test_no_count_before_the_first_stable_read_is_not_registered_yet",
             "test_parallel_neighbour_reproducer_refuses_above_max",
             "test_parse_positive_number_refuses_missing_and_bad_values",
+            "test_pre_exec_cap_trip_between_slow_uploads",
+            "test_pre_exec_cap_trip_during_slow_rate_polls",
             "test_probe_projection",
             "test_query_driver_reads_nvidia_smi_or_records_why_not",
             "test_rate_waits_for_stability_and_prices_at_the_max",
@@ -20600,7 +20623,13 @@
             "test_render_job_fills_the_committed_rung_yaml",
             "test_repo_cache_dir_and_dir_bytes",
             "test_rig_side_kill_still_brings_back_the_outputs",
+            "test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip",
             "test_run_copy_off_follows_the_trainer_and_reports_log_growth",
+            "test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound",
+            "test_rung_500_stop_hangs_once_then_retries_and_stops_session",
+            "test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial",
+            "test_rung_500_stopped_by_wall_guard_keeps_step_250_and_marks_step_500_partial",
+            "test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop",
             "test_rung_mid_run_failure_downloads_what_was_copied_off",
             "test_rung_refusals_stop_before_training_and_still_bundle",
             "test_rung_shape_mismatch_refuses_after_open_and_stops",
@@ -20609,6 +20638,7 @@
             "test_rung_without_shape_refuses_before_any_colab_call",
             "test_rung_yaml_differs_from_the_trained_config_only_where_stated",
             "test_safetensors_completeness_and_checkpoint_pick",
+            "test_second_term_during_salvage_aborts_salvage_and_reaches_stop",
             "test_shm_record_and_its_error",
             "test_the_count_leading_the_rate_by_one_read_does_not_trip",
             "test_the_rebaseline_uses_the_highest_stable_rate_seen",
@@ -20620,9 +20650,17 @@
             "test_token_variable_reaches_the_download_only_when_a_token_was_staged",
             "test_truncated_checkpoint_is_partial_and_does_not_count",
             "test_vm_metadata_failures_are_named",
+            "test_wall_trip_during_hung_foreground_step_reaches_stop_by_watcher_path",
+            "test_wall_trip_during_legitimate_post_exec_download_with_short_escalate",
+            "test_wall_trip_during_post_exec_download_keeps_total_time_within_cleanup_bound",
+            "test_wall_watcher_escalates_when_salvage_overruns_cleanup_stop_attempted_by_s",
+            "test_wall_watcher_late_cleanup_start_and_overrunning_salvage_kills_mutation_vi",
+            "test_wall_watcher_stops_session_when_launcher_dies_mid_cleanup",
+            "test_wall_watcher_waits_for_salvage_and_keeps_step_250",
+            "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "c7a4b186d865f6c1ffed9d7cf493f8ac3407bda9b1eded3b58af1e5807dd1640",
+          "hash": "c1b41c91ce6f7a49ef16d74e92b84d9ac10ae9f6407dbaa5a9f048bf250d8a88",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -20636,6 +20674,9 @@
             "scripts/colab/launch_guards.py",
             "scripts/colab/remote_runner.py",
             "tests/colab/fixtures/fake_colab.py"
+          ],
+          "names": [
+            "scripts/colab/classify_install_log.py"
           ],
           "path": "tests/colab/test_lane3_gpu_rung.py",
           "testFramework": "pytest"
@@ -20750,7 +20791,7 @@
             "test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_usage_text_parsed_into_live_balance_and_rate_in_window_json"
           ],
-          "hash": "dcdf0e1af05e7ce0a9a65f88fcf5d723d6c486bfa904283d6a94017e882e060a",
+          "hash": "cd85ccc33c7c229b365e61f773a2f6f7bb241f509c724b236dba457373fc7427",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/remote_runner.py"
@@ -20781,7 +20822,7 @@
             "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "7b81a868f92fbfa96d0d9e10dd5a93b701004230bc572046ff584ad0b121d7bb",
+          "hash": "4057ec6be333b8102837d0af4aa55bc38d760894f646966e3897b4c3b796963b",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -20802,7 +20843,7 @@
             "test_open_refuses_a_gpu_card_whose_shape_was_not_armed",
             "test_the_cpu_stub_is_unchanged_and_takes_no_shape"
           ],
-          "hash": "b04c3428b4d1ee6d5c46183a0f397a597f3e4c37d16e35f5a5e5a2f6cd65b531",
+          "hash": "ecca9cec908b2b62826a8752800924ec11d5efa0b49615dc40ae19d64c8136f4",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22920,8 +22961,8 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "7c41b59ad75dc1a9e893bc9e0be4708433893018",
-    "tracked": 3307
+    "commit": "62575ad784f540ace3e3c66385e94f19c764ba73",
+    "tracked": 3309
   },
   "landings": [
     {

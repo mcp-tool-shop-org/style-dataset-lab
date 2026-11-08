@@ -6,6 +6,16 @@
 # stamp read-back + kill + resume, enforces live launch_guards.py (wall, cap, vitals/DEAD HARNESS,
 # host-RAM), scrubs VM-side logs before tarring, downloads result tar, merges VM facts/balances/rate/
 # downloaded shas into window.json, and stops its own session in an EXIT trap.
+# Bounded setup, download, and stop contract (colab_window.sh):
+#   open-lock wait: timeout -k 10 180 (190 s)
+#   colab new: timeout -k 10 180 (190 s)
+#   colab upload: timeout -k 10 120 (130 s)
+#   colab download: timeout -k 10 300 (310 s)
+#   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
+#   wall watcher escalation: 30 s after TERM -> watcher runs `colab stop` itself (stop_path: trap | watcher)
+#   measured from trip: cleanup_stop_attempted_by_s = 310 s, cleanup_bound_s = 310 + 140 = 450 s
+#   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
+#   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -24,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
+PINNED_LAUNCH_GUARDS_SHA="30369dfa66bdade39325f6af42e05da72b2e102dd9f1b70afacd97a663319467"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de"
-PINNED_SELF_SHA="93aae94a1fa43fcc8a9de6b482015740451078f59afda491621d01000af5f071"
+PINNED_COLAB_WINDOW_SHA="cfd69578c181643e28b5e575f6ec269d053229dfc34239ffae77741a06bddf5d"
+PINNED_SELF_SHA="91b44e89f189eeccc095bc5d77114cc96d8e81b7824667f1bbe230f1d1b82987"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -37,12 +47,14 @@ source "${SCRIPT_DIR}/colab_window.sh"
 CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane1-stub-$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR=""
-CAP="${CAP:-0.05}"
+CAP="${CAP:-0.10}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
 MAX_RATE=""
 SHAPE=""
+MIN_RUNTIME_S=""
+DRY_RUN=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -55,12 +67,26 @@ while [ "$#" -gt 0 ]; do
     --margin) MARGIN="$2"; shift 2 ;;
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --min-runtime-s) MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --dry) DRY_RUN=1; shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
       ;;
   esac
 done
+
+if [ "${DRY_RUN}" = "1" ]; then
+  DRY_TEST_MODE=0
+  if colab_fake_test_mode_active; then
+    DRY_TEST_MODE=1
+  fi
+  colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
+  PY_BIN="$(colab_resolve_python)"
+  GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
+  colab_dry_cap_budget "${PY_BIN}" "${GUARDS_PY}" "render" "${CARD}" "${CAP}" "${MARGIN}" "${MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+  exit $?
+fi
 
 # The evidence directory is the operator's choice; there is no default location.
 if [ -z "${OUT_DIR}" ]; then
@@ -96,8 +122,21 @@ PIN_OVERRIDE_VARS=(
   EXPECTED_REMOTE_RUNNER_SHA
   EXPECTED_COLAB_WINDOW_SHA
   EXPECTED_LAUNCH_LANE1_STUB_SHA
+  SDLAB_TEST_RATE_READ_INTERVAL_S
+  SDLAB_TEST_KILL_GRACE_S
+  SDLAB_TEST_DOWNLOAD_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_DEADLINE_S
+  SDLAB_TEST_STOP_TIMEOUT_S
+  SDLAB_TEST_SESSIONS_TIMEOUT_S
+  SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
+  SDLAB_TEST_NEW_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_WALL_ESCALATE_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
+colab_apply_test_cleanup_overrides "${TEST_MODE}"
 EXP_LOCK_SHA="${PINNED_LOCK_SHA}"
 EXP_LANE1_SHA="${PINNED_LANE1_RENDER_SHA}"
 EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
@@ -132,18 +171,36 @@ EXEC_PID=""
 
 cleanup_on_exit() {
   local rc=$?
-  trap - EXIT TERM INT
+  colab_enter_cleanup_trap "${OUT_DIR}"
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true
+  fi
+  if [ ! -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ -n "${WALL_WATCHER_PID}" ]; then
+    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
+    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
+  fi
+  if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
+    sleep 3600
+    exit 137
+  fi
+  printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
+  printf '1\n' > "${OUT_DIR}/stop_reached.txt"
+  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; }; then
+    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
+  fi
+  if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
+    sleep 3600
+    exit 137
+  fi
+  if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
+    printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
   if [ -n "${WALL_WATCHER_PID}" ]; then
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
   fi
-  if [ "${SESSION_OPENED}" -eq 1 ]; then
-    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
-  fi
+  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \
@@ -156,6 +213,17 @@ cleanup_on_exit() {
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
 
+# The card class sets the rate policy: a CPU stub keeps the labelled configured rate; a GPU card
+# goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
+# at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
+# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
+# card keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
+colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
+# Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
+# or when the cap leaves less runtime than --min-runtime-s.
+colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "render" "${CARD}" "${CAP}" "${MARGIN}" "${MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+
 # Free pre-flight resolve & git pin check before any colab CLI call.
 # The pre-flight honours its SDLAB_PREFLIGHT_* test hooks only under the fake colab CLI
 # and refuses them in a live run (PREFLIGHT_TEST_HOOK_IN_LIVE_RUN).
@@ -167,26 +235,17 @@ fi
 printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
 # Pre-open cap and host-RAM check via launch_guards.py
-# The card class sets the rate policy: a CPU stub keeps the labelled configured rate; a GPU card
-# goes through the shared GPU rate gate (colab_window.sh: required --max-rate, a stable window rate
-# at or above the floor, max pricing, the mid-run re-read and the assignment-count re-baseline).
-colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${MAX_RATE}" "$(colab_fake_test_mode_active && echo 1 || echo 0)"
-# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
-# card keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
-colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
-# Independent wall watcher (cannot be blocked by a child timeout)
+# Independent wall watcher (cannot be blocked by a child timeout; escalates to `colab stop` + SIGKILL)
 WALL_INT="${WALL_S%.*}"
 GRACE_INT="${GRACE_S%.*}"
 WALL_LIMIT_S="$(( WALL_INT > GRACE_INT ? WALL_INT - GRACE_INT : 1 ))"
 MAIN_PID="$$"
-(
-  exec >/dev/null 2>&1 </dev/null
-  sleep "${WALL_LIMIT_S}"
-  echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${WALL_LIMIT_S} s (wall - grace) elapsed" >> "${OUT_DIR}/guards.log"
-  kill -TERM "${MAIN_PID}" 2>/dev/null || true
-) &
+colab_run_wall_watcher \
+  "${MAIN_PID}" "${WALL_LIMIT_S}" "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" \
+  "render" "${SESSION}" "${CARD}" "${CAP}" "${WALL_S}" "${GRACE_S}" "${MARGIN}" \
+  "${OPENED_AT}" "${SHAS_JSON}" &
 WALL_WATCHER_PID="$!"
 
 # Hold /tmp/colab-window-open.lock while opening with colab new (CPU: --high-mem; GPU: --high-mem
@@ -194,6 +253,7 @@ WALL_WATCHER_PID="$!"
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane1_stub.sh"
 cat > "${REMOTE_RUNNER}" << REMOTEEOF
@@ -441,6 +501,7 @@ colab_upload_checked "${SESSION}" "${LANE1_PY}" /content/lane1_render.py "${OUT_
 colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OUT_DIR}"
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane1_stub.sh "${OUT_DIR}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \

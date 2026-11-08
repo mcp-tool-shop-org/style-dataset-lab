@@ -5,14 +5,32 @@
 # uv venv + wheel-only install from hash-locked lane3.lock and pre-built local wheels in
 # lane3-local-wheels.json + pinned ostris/ai-toolkit + the import gate. Without --train it stops
 # there: TRAIN_SKIPPED and train=skipped_cpu_stub in window.json (never a trained result). With
-# --train (a GPU card, --model, --model-revision, --host-ram-required-gib, --download-max-seconds and
-# --dataset-dir, each a named refusal when missing) the remote script's LANE3_MODE=train runs the
-# rung: GPU smoke / disk / host-RAM guards before the model download, the download with its
-# DOWNLOAD_TOO_SLOW probe, the fixture dataset, the committed rung YAML (lane3/rung-qwen-image.yaml)
+# --train (a GPU card, --rung-job 20|500, --model, --model-revision, --host-ram-required-gib,
+# --download-max-seconds and --dataset-dir, each a named refusal when missing) the remote script's
+# LANE3_MODE=train runs the rung: GPU smoke / disk / host-RAM guards before the model download, the
+# download with its DOWNLOAD_TOO_SLOW probe, the fixture dataset, the selected committed rung YAML
+# (lane3/rung-qwen-image.yaml for 20 or lane3/rung-qwen-image-500.yaml for 500, uploaded as
+# /content/rung-qwen-image.yaml)
 # and ai-toolkit's run.py, copying each checkpoint and sample into the bundle as it is saved; the
 # bundle is downloaded at the end and, after a failure, whatever it holds. Enforces live
 # launch_guards.py (wall, cap, vitals/DEAD HARNESS, host-RAM), scrubs VM-side logs before tarring,
 # and stops its own session in an EXIT trap on every exit path.
+#
+# Bounded setup, post-failure salvage, and stop contract (colab_window.sh):
+#   open-lock wait: timeout -k 10 180 (190 s)
+#   colab new: timeout -k 10 180 (190 s)
+#   colab upload: timeout -k 10 120 (130 s)
+#   colab download: timeout -k 10 300 (310 s)
+#   restart-kernel: timeout -k 10 180 (190 s)
+#   bundle-now exec (--timeout 300): timeout -k 10 330 (340 s)
+#   salvage download: timeout -k 10 300 (310 s)
+#   SALVAGE_DEADLINE_S=840 (past 840 s, remaining salvage steps are skipped -> colab stop)
+#   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
+#   wall watcher escalation: 30 s after TERM -> watcher runs `colab stop` itself (stop_path: trap | watcher)
+#   measured from trip: cleanup_stop_attempted_by_s = 310 + 840 = 1150 s,
+#                       cleanup_bound_s = 310 + 840 + 140 = 1290 s
+#   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
+#   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -30,14 +48,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="a7d0ee4eff604792caf89523d24a953a00de70958b8a1a570bbffb41ad945e3e"
+PINNED_LAUNCH_GUARDS_SHA="30369dfa66bdade39325f6af42e05da72b2e102dd9f1b70afacd97a663319467"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="35558752927bdbfa63c706768f08693ccbb84da955f0e89bf1327a5cc949d3de"
+PINNED_COLAB_WINDOW_SHA="cfd69578c181643e28b5e575f6ec269d053229dfc34239ffae77741a06bddf5d"
 PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
+PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="d1762ecbcde597cee0bb4a478e24ebe28f648603f51b17fbf842eda97b40fefc"
+PINNED_SELF_SHA="ad2c27c96199fb8bc8696aec77e690b022ffc19b90e4f33e15bd42fc11ca8fa3"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -571,7 +590,7 @@ CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane3-stub-$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR=""
 WHEEL_DIR="${SDLAB_WHEEL_DIR:-}"
-CAP="${CAP:-0.05}"
+CAP="${CAP:-0.15}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
@@ -587,6 +606,9 @@ TRAIN_DOWNLOAD_MAX_SECONDS=""
 TRAIN_MAX_RATE=""
 SHAPE=""
 DATASET_DIR=""
+RUNG_JOB=""
+MIN_RUNTIME_S=""
+DRY_RUN=0
 SESSION_ARGS=()
 
 while [ "$#" -gt 0 ]; do
@@ -603,11 +625,14 @@ while [ "$#" -gt 0 ]; do
     --train) TRAIN_REQUESTED=1; shift ;;
     --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SESSION_ARGS+=("$1"); SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --min-runtime-s) SESSION_ARGS+=("$1"); MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --dry) SESSION_ARGS+=("$1"); DRY_RUN=1; shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --host-ram-required-gib) TRAIN_HOST_RAM_REQUIRED_GIB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-max-seconds) TRAIN_DOWNLOAD_MAX_SECONDS="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dataset-dir) SESSION_ARGS+=("$1"); DATASET_DIR="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --rung-job) SESSION_ARGS+=("$1"); RUNG_JOB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -615,8 +640,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}" ]; then
-  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds and --dataset-dir need --train" >&2
+if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}" ]; then
+  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir and --rung-job need --train" >&2
   exit 2
 fi
 
@@ -641,6 +666,18 @@ if [ "${EMIT_REQUESTED}" = "1" ]; then
   lane3_remote_env "${PINNED_OVERRIDE_SHA}" > "${EMIT_REMOTE_SCRIPT}.env"
   echo "REMOTE_SCRIPT_EMITTED ${EMIT_REMOTE_SCRIPT} env=${EMIT_REMOTE_SCRIPT}.env"
   exit 0
+fi
+
+if [ "${DRY_RUN}" = "1" ]; then
+  DRY_TEST_MODE=0
+  if colab_fake_test_mode_active; then
+    DRY_TEST_MODE=1
+  fi
+  colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
+  PY_BIN="$(colab_resolve_python)"
+  GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
+  colab_dry_cap_budget "${PY_BIN}" "${GUARDS_PY}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+  exit $?
 fi
 
 # --train runs the GPU rung (LANE3_MODE=train): a GPU card, the model repo and its pinned revision,
@@ -668,6 +705,14 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: TRAIN_CAP_REQUIRED: --train needs an explicit --cap (the CPU stub's default does not apply)" >&2
     exit 2
   fi
+  if colab_fake_test_mode_active; then
+    if [ -n "${SDLAB_TEST_INSTALL_ALLOWANCE_S:-}" ]; then
+      LANE3_INSTALL_ALLOWANCE_S="${SDLAB_TEST_INSTALL_ALLOWANCE_S}"
+    fi
+    if [ -n "${SDLAB_TEST_TRAIN_ALLOWANCE_S:-}" ]; then
+      LANE3_TRAIN_ALLOWANCE_S="${SDLAB_TEST_TRAIN_ALLOWANCE_S}"
+    fi
+  fi
   TRAIN_NEED_S="$(( TRAIN_DOWNLOAD_MAX_SECONDS + LANE3_INSTALL_ALLOWANCE_S + LANE3_TRAIN_ALLOWANCE_S ))"
   if ! [[ "${WALL_S}" =~ ^[0-9]+$ ]] || ! [[ "${GRACE_S}" =~ ^[0-9]+$ ]] \
     || [ "$(( WALL_S - GRACE_S ))" -lt "${TRAIN_NEED_S}" ]; then
@@ -682,6 +727,13 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: TRAIN_DATASET_REQUIRED: --train needs --dataset-dir <dir> holding the images listed in scripts/colab/lane3/rung-dataset.json" >&2
     exit 2
   fi
+  case "${RUNG_JOB}" in
+    20 | 500) ;;
+    *)
+      echo "REFUSED: RUNG_JOB_REQUIRED: --train needs --rung-job 20|500 (no default)" >&2
+      exit 2
+      ;;
+  esac
 fi
 
 # The pre-built wheels live outside the repository; there is no default location.
@@ -722,6 +774,7 @@ WINDOW_SH="${SCRIPT_DIR}/colab_window.sh"
 RUNG_PY="${SCRIPT_DIR}/lane3_rung.py"
 BUNDLE_NOW_PY="${SCRIPT_DIR}/lane3_bundle_now.py"
 RUNG_YAML="${SCRIPT_DIR}/lane3/rung-qwen-image.yaml"
+RUNG500_YAML="${SCRIPT_DIR}/lane3/rung-qwen-image-500.yaml"
 RUNG_DATASET_JSON="${SCRIPT_DIR}/lane3/rung-dataset.json"
 # Test hooks: a fixture dataset manifest, a short download probe, a disk threshold and a short GPU
 # smoke, honoured only under the fake colab CLI (set in a live run, they are PIN_OVERRIDE_IN_LIVE_RUN below).
@@ -748,6 +801,7 @@ PIN_OVERRIDE_VARS=(
   EXPECTED_LAUNCH_LANE3_STUB_SHA
   EXPECTED_LANE3_RUNG_SHA
   EXPECTED_RUNG_YAML_SHA
+  EXPECTED_RUNG500_YAML_SHA
   EXPECTED_RUNG_DATASET_SHA
   EXPECTED_BUNDLE_NOW_SHA
   SDLAB_TEST_HF_ENDPOINT
@@ -756,8 +810,22 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_DISK_REQUIRED_GIB
   SDLAB_TEST_GPU_SMOKE_SECONDS
   SDLAB_TEST_RATE_READ_INTERVAL_S
+  SDLAB_TEST_INSTALL_ALLOWANCE_S
+  SDLAB_TEST_TRAIN_ALLOWANCE_S
+  SDLAB_TEST_KILL_GRACE_S
+  SDLAB_TEST_DOWNLOAD_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S
+  SDLAB_TEST_SALVAGE_DEADLINE_S
+  SDLAB_TEST_STOP_TIMEOUT_S
+  SDLAB_TEST_SESSIONS_TIMEOUT_S
+  SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
+  SDLAB_TEST_NEW_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_WALL_ESCALATE_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
+colab_apply_test_cleanup_overrides "${TEST_MODE}"
 EXP_OVERRIDE_SHA="${PINNED_OVERRIDE_SHA}"
 EXP_LOCAL_WHEELS_SHA="${PINNED_LOCAL_WHEELS_MANIFEST_SHA}"
 EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
@@ -767,6 +835,7 @@ EXP_WINDOW_SHA="${PINNED_COLAB_WINDOW_SHA}"
 EXP_SELF_SHA="${PINNED_SELF_SHA}"
 EXP_RUNG_SHA="${PINNED_LANE3_RUNG_SHA}"
 EXP_RUNG_YAML_SHA="${PINNED_RUNG_YAML_SHA}"
+EXP_RUNG500_YAML_SHA="${PINNED_RUNG500_YAML_SHA}"
 EXP_RUNG_DATASET_SHA="${PINNED_RUNG_DATASET_SHA}"
 EXP_BUNDLE_NOW_SHA="${PINNED_BUNDLE_NOW_SHA}"
 if [ "${TEST_MODE}" = "1" ]; then
@@ -779,6 +848,7 @@ if [ "${TEST_MODE}" = "1" ]; then
   EXP_SELF_SHA="${EXPECTED_LAUNCH_LANE3_STUB_SHA:-${EXP_SELF_SHA}}"
   EXP_RUNG_SHA="${EXPECTED_LANE3_RUNG_SHA:-${EXP_RUNG_SHA}}"
   EXP_RUNG_YAML_SHA="${EXPECTED_RUNG_YAML_SHA:-${EXP_RUNG_YAML_SHA}}"
+  EXP_RUNG500_YAML_SHA="${EXPECTED_RUNG500_YAML_SHA:-${EXP_RUNG500_YAML_SHA}}"
   EXP_RUNG_DATASET_SHA="${EXPECTED_RUNG_DATASET_SHA:-${EXP_RUNG_DATASET_SHA}}"
   EXP_BUNDLE_NOW_SHA="${EXPECTED_BUNDLE_NOW_SHA:-${EXP_BUNDLE_NOW_SHA}}"
 fi
@@ -792,67 +862,85 @@ SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
   "${RUNG_PY}=${EXP_RUNG_SHA}" \
   "${RUNG_YAML}=${EXP_RUNG_YAML_SHA}" \
+  "${RUNG500_YAML}=${EXP_RUNG500_YAML_SHA}" \
   "${RUNG_DATASET_JSON}=${EXP_RUNG_DATASET_SHA}" \
   "${BUNDLE_NOW_PY}=${EXP_BUNDLE_NOW_SHA}" \
   "${SELF_SH}=${EXP_SELF_SHA}")"
+
+SELECTED_RUNG_YAML="${RUNG_YAML}"
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  if [ "${RUNG_JOB}" = "500" ]; then
+    SELECTED_RUNG_YAML="${RUNG500_YAML}"
+    printf '%s\n' "${EXP_RUNG500_YAML_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+  else
+    SELECTED_RUNG_YAML="${RUNG_YAML}"
+    printf '%s\n' "${EXP_RUNG_YAML_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+  fi
+  printf '%s\n' "${RUNG_JOB}" > "${OUT_DIR}/rung_job.txt"
+fi
 
 OPENED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date -u +%s)"
 SESSION_OPENED=0
 WALL_WATCHER_PID=""
 EXEC_PID=""
-EXEC_STARTED=0
+EXEC_IN_FLIGHT=0
 TOKEN_DIR=""
 
-# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, restart the session's
-# kernel, then run lane3_bundle_now.py on the VM. Every exec on a session runs on its one stored kernel
-# and Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed
-# exec's cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
+# lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, run bounded salvage via
+# colab_salvage_bundle_after_failure (`colab restart-kernel` under `timeout -k 10 180`, bundle-now
+# `colab exec --timeout 300` under `timeout -k 10 330`, and `colab download` under `timeout -k 10 300`,
+# all under `SALVAGE_DEADLINE_S=840`). Every exec on a session runs on its one stored kernel and
+# Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed exec's
+# cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
 # Processes the cell spawned may outlive the restart, so bundle-now kills the rung's processes by
-# command line either way. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec: the
-# VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
-# training folder, writes the failure record and tars lane3_out. Then the bundle is downloaded:
-# whatever the run had saved. Nothing here writes a REFUSED line, so the window's refusal stays the
-# one that stopped the run.
+# command line either way. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec:
+# the VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
+# training folder, writes the failure record and tars lane3_out. Nothing here writes a REFUSED line,
+# so the window's refusal stays the one that stopped the run.
 lane3_download_bundle_after_failure() {
   local rc="$1"
-  local dl_out=""
-  local dl_rc=0
-  local dst="${OUT_DIR}/lane3_stub_bundle.tar.gz"
-  timeout 180 colab restart-kernel -s "${SESSION}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
-  colab exec -s "${SESSION}" -f "${BUNDLE_NOW_PY}" --timeout 300 --env "SDLAB_CONTENT=/content" \
-    --env "SDLAB_BUNDLE_RC=${rc}" </dev/null >> "${OUT_DIR}/bundle_now.log" 2>&1 || true
-  dl_out="$(colab download -s "${SESSION}" /content/lane3_stub_bundle.tar.gz "${dst}" </dev/null 2>&1)" || dl_rc=$?
-  printf '%s\n' "${dl_out}" >> "${OUT_DIR}/colab.log"
-  if [ "${dl_rc}" -eq 0 ] && [ -s "${dst}" ]; then
-    echo "BUNDLE_AFTER_FAILURE: downloaded lane3_stub_bundle.tar.gz (rc=${rc})" >> "${OUT_DIR}/guards.log"
-  else
-    rm -f "${dst}"
-    echo "BUNDLE_AFTER_FAILURE: none on the VM (rc=${rc}, download rc=${dl_rc})" >> "${OUT_DIR}/guards.log"
-  fi
+  colab_salvage_bundle_after_failure \
+    "${SESSION}" "${BUNDLE_NOW_PY}" /content/lane3_stub_bundle.tar.gz \
+    "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}" "${rc}"
 }
 
 cleanup_on_exit() {
   local rc=$?
-  trap - EXIT TERM INT
+  colab_enter_cleanup_trap "${OUT_DIR}"
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true
+    wait "${EXEC_PID}" 2>/dev/null || true
+  fi
+  if [ -n "${TOKEN_DIR}" ]; then
+    rm -rf "${TOKEN_DIR}" || true
+  fi
+  if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_IN_FLIGHT}" = "1" ] \
+    && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
+    lane3_download_bundle_after_failure "${rc}" || true
+  fi
+  if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
+    sleep 3600
+    exit 137
+  fi
+  printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
+  printf '1\n' > "${OUT_DIR}/stop_reached.txt"
+  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; }; then
+    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
+  fi
+  if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
+    sleep 3600
+    exit 137
+  fi
+  if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
+    printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
   if [ -n "${WALL_WATCHER_PID}" ]; then
     pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
     kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
   fi
-  if [ -n "${TOKEN_DIR}" ]; then
-    rm -rf "${TOKEN_DIR}" || true
-  fi
-  if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_STARTED}" = "1" ] \
-    && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
-    lane3_download_bundle_after_failure "${rc}" || true
-  fi
-  if [ "${SESSION_OPENED}" -eq 1 ]; then
-    colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
-  fi
+  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \
@@ -867,6 +955,16 @@ cleanup_on_exit() {
 }
 trap cleanup_on_exit EXIT
 trap 'exit 143' TERM INT
+
+# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
+# max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
+colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}"
+# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
+# stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
+colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
+# Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
+# or when the cap leaves less runtime than --min-runtime-s.
+colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
 
 if [[ "${WHEEL_DIR}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
   DRIVE_LOWER="${BASH_REMATCH[1],,}"
@@ -924,43 +1022,30 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   fi
 fi
 
-# The card class sets the rate policy (launch_guards.parse_usage_text): a GPU window is priced on
-# max(--max-rate, the highest stable window rate); a CPU stub keeps the labelled configured rate.
-colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}"
-# A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
-# stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
-colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
-
 # Pre-open cap and host-RAM check via launch_guards.py
 colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}"
 
-# Independent wall watcher (cannot be blocked by a child timeout)
+# Independent wall watcher (cannot be blocked by a child timeout; escalates to `colab stop` + SIGKILL)
 WALL_INT="${WALL_S%.*}"
 GRACE_INT="${GRACE_S%.*}"
 WALL_LIMIT_S="$(( WALL_INT > GRACE_INT ? WALL_INT - GRACE_INT : 1 ))"
 MAIN_PID="$$"
-(
-  exec >/dev/null 2>&1 </dev/null
-  sleep "${WALL_LIMIT_S}"
-  echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${WALL_LIMIT_S} s (wall - grace) elapsed" >> "${OUT_DIR}/guards.log"
-  kill -TERM "${MAIN_PID}" 2>/dev/null || true
-) &
+colab_run_wall_watcher \
+  "${MAIN_PID}" "${WALL_LIMIT_S}" "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" \
+  "train" "${SESSION}" "${CARD}" "${CAP}" "${WALL_S}" "${GRACE_S}" "${MARGIN}" \
+  "${OPENED_AT}" "${SHAS_JSON}" &
 WALL_WATCHER_PID="$!"
 
 # Hold /tmp/colab-window-open.lock while opening with colab new (CPU: --high-mem; GPU: --high-mem
 # only for --shape high-mem, then the session row's Shape is checked: SHAPE_MISMATCH)
 SESSION_OPENED=1
 colab_open_session_locked "${SESSION}" "${CARD}" "${OUT_DIR}"
-# A GPU window's cap clock started, and its stable rate was read, inside colab_open_session_locked
-# (the shared GPU rate gate). A CPU stub's clock starts here, after the open, as before.
-if colab_card_is_cpu "${CARD}"; then
-  START_EPOCH="$(date -u +%s)"
-  date -u -d "@${START_EPOCH}" +%Y-%m-%dT%H:%M:%SZ > "${OUT_DIR}/cap_clock_started_at.txt"
-fi
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 REMOTE_RUNNER="${OUT_DIR}/remote_lane3_stub.sh"
 lane3_write_remote_script "${REMOTE_RUNNER}"
+colab_check_pre_exec_cap "${OUT_DIR}"
 
 # Every upload goes flat into /content, the one remote directory that exists before the remote
 # script runs; the script's sdlab-remote-dirs block moves the wheels into /content/wheels.
@@ -978,7 +1063,7 @@ colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OU
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
   colab_upload_checked "${SESSION}" "${RUNG_PY}" /content/lane3_rung.py "${OUT_DIR}"
-  colab_upload_checked "${SESSION}" "${RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
+  colab_upload_checked "${SESSION}" "${SELECTED_RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
   colab_upload_checked "${SESSION}" "${RUNG_DATASET_JSON}" /content/rung-dataset.json "${OUT_DIR}"
   # The read token staged before the window opened; the VM reads and shreds it first thing.
   colab_upload_checked "${SESSION}" "${TOKEN_DIR}/lane3_hf_read_token" /content/lane3_hf_read_token "${OUT_DIR}"
@@ -993,13 +1078,16 @@ colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.
 
 REMOTE_ENV=()
 mapfile -t REMOTE_ENV < <(lane3_remote_env "${EXP_OVERRIDE_SHA}")
-EXEC_STARTED=1
+colab_check_pre_exec_cap "${OUT_DIR}"
+EXEC_IN_FLIGHT=1
 colab_run_exec_with_live_guards \
   "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${RUNNER_PY}" \
   "${START_EPOCH}" "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}" "${OUT_DIR}" \
   "SDLAB_REMOTE_SCRIPT=/content/remote_lane3_stub.sh" \
   "${REMOTE_ENV[@]}"
 
-# Download result tar before EXIT trap stops the session
+# Download result tar before EXIT trap stops the session (EXEC_IN_FLIGHT stays 1 so a failed
+# normal download still triggers post-failure salvage in cleanup_on_exit).
 colab_download_checked "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}"
+EXEC_IN_FLIGHT=0
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"

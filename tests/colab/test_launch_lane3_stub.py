@@ -209,7 +209,7 @@ def test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode(tmp_path: P
     assert "/content/lane3_out/rung_job.yaml" in kit_text
     assert "/content/rung-qwen-image.yaml" in kit_text
     assert "synth_job.yaml" not in kit_text and "synth_lora" not in kit_text
-    for pin in ("PINNED_LANE3_RUNG_SHA=", "PINNED_RUNG_YAML_SHA=", "PINNED_RUNG_DATASET_SHA="):
+    for pin in ("PINNED_LANE3_RUNG_SHA=", "PINNED_RUNG_YAML_SHA=", "PINNED_RUNG500_YAML_SHA=", "PINNED_RUNG_DATASET_SHA="):
         assert pin in kit_text, pin
 
     # Self-sha refusal when EXPECTED_LAUNCH_LANE3_STUB_SHA mismatches
@@ -274,7 +274,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
     out_cap = tmp_path / "out_cap"
     res_cap = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l3-cap", "--cap", "0.05", "--margin", "0.01"],
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l3-cap", "--cap", "0.15", "--margin", "0.01"],
         env=env_cap,
         stdin=subprocess.DEVNULL,
         capture_output=True,

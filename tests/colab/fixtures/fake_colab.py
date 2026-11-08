@@ -399,6 +399,30 @@ def _kill_recorded_groups(state_dir: Path, sid: str) -> None:
     pg_f.unlink(missing_ok=True)
 
 
+def _record_inherited_signals(state_dir: Path, subcmd: str) -> None:
+    import signal as _signal
+
+    rec = {
+        "subcmd": subcmd,
+        "pid": os.getpid(),
+        "sigterm_ign": _signal.getsignal(_signal.SIGTERM) == _signal.SIG_IGN,
+        "sigint_ign": _signal.getsignal(_signal.SIGINT) == _signal.SIG_IGN,
+    }
+    with (state_dir / "child_signals.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(rec) + "\n")
+
+
+def _hang_process(state_dir: Path, ignore_term: bool) -> None:
+    import signal as _signal
+
+    if ignore_term:
+        _signal.signal(_signal.SIGTERM, _signal.SIG_IGN)
+        _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
+    with (state_dir / "hung_pids.txt").open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(f"{os.getpid()}\n")
+    time.sleep(3600)
+
+
 def _write_fake_remote_scripts(content_dir: Path) -> None:
     uv_logs_dst = content_dir / ".uv_logs"
     uv_logs_dst.mkdir(parents=True, exist_ok=True)
@@ -724,19 +748,41 @@ job = Path(sys.argv[1]).read_text(encoding="utf-8")
 tf = re.search(r'training_folder: "([^"]+)"', job).group(1)
 model = re.search(r'name_or_path: "([^"]+)"', job).group(1)
 name = re.search(r"^  name: (\\S+)$", job, re.M).group(1)
+steps = int(re.search(r"^\\s+steps: (\\d+)$", job, re.M).group(1))
+save_every = int(re.search(r"^\\s+save_every: (\\d+)$", job, re.M).group(1))
+sample_every = int(re.search(r"^\\s+sample_every: (\\d+)$", job, re.M).group(1))
 assert os.environ.get("HF_HUB_OFFLINE") == "1", "run.py must run with the hub offline"
 assert Path(model).is_dir(), f"model path {model} is not the local snapshot"
 out = Path(tf) / name
 (out / "samples").mkdir(parents=True, exist_ok=True)
 print("Loading Qwen Image model", flush=True)
 import json, struct
-def st(tag):
-    # A real safetensors layout: 8-byte header length, JSON header, data; =truncated_save cuts the tail.
+def st(tag, truncate=False):
+    # A real safetensors layout: 8-byte header length, JSON header, data; truncate cuts the tail.
     data = tag * 64
     hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}}).encode()
     blob = struct.pack("<Q", len(hdr)) + hdr + data
-    return blob[:-100] if os.environ.get("FAKE_VM_TRAIN") == "truncated_save" else blob
+    return blob[:-100] if (truncate or os.environ.get("FAKE_VM_TRAIN") == "truncated_save") else blob
 time.sleep(0.3)
+if os.environ.get("FAKE_VM_TRAIN") == "hang_after_step_250":
+    assert (steps, save_every, sample_every) == (500, 250, 250), (steps, save_every, sample_every)
+    (out / f"{name}_000000250.safetensors").write_bytes(st(b"FAKE-LORA-STEP-250"))
+    for idx in range(6):
+        (out / "samples" / f"1762400000000__000000250_{idx}.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    (out / f"{name}_000000500.safetensors").write_bytes(st(b"FAKE-LORA-STEP-500", truncate=True))
+    time.sleep(600)
+if steps == 500:
+    assert (save_every, sample_every) == (250, 250), (save_every, sample_every)
+    (out / f"{name}_000000250.safetensors").write_bytes(st(b"FAKE-LORA-STEP-250"))
+    for idx in range(6):
+        (out / "samples" / f"1762400000000__000000250_{idx}.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    time.sleep(0.3)
+    (out / f"{name}_000000500.safetensors").write_bytes(st(b"FAKE-LORA-STEP-500"))
+    for idx in range(6):
+        (out / "samples" / f"1762400000000__000000500_{idx}.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    (out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
+    print("Done", flush=True)
+    sys.exit(0)
 (out / f"{name}_000000020.safetensors").write_bytes(st(b"FAKE-LORA-STEP-20"))
 time.sleep(0.3)
 if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
@@ -1129,6 +1175,7 @@ def main(argv: list[str] | None = None) -> int:
         return None
 
     # Record validated call in calls.log and calls.jsonl
+    _record_inherited_signals(state_dir, subcmd)
     with (state_dir / "calls.log").open("a", encoding="utf-8", newline="\n") as fh:
         fh.write(f"CALL {' '.join(raw_args)}\n")
     with (state_dir / "calls.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
@@ -1174,6 +1221,17 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         bal = "9.75" if (mode == "cap_burn" and c >= 2) else os.environ.get("FAKE_COLAB_BALANCE", "9.85")
         session_opened = (state_dir / "session_opened.txt").is_file()
+        if session_opened and os.environ.get("FAKE_COLAB_USAGE_DELAY_S") and not (state_dir / "stops.log").exists():
+            time.sleep(float(os.environ["FAKE_COLAB_USAGE_DELAY_S"]))
+        if session_opened and os.environ.get("FAKE_COLAB_BURN_BALANCE") == "1" and (state_dir / "new_done_epoch.txt").is_file():
+            open_ts = float((state_dir / "new_done_epoch.txt").read_text(encoding="utf-8").strip())
+            if (state_dir / "stops.jsonl").is_file():
+                end_ts = float(json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"])
+            else:
+                end_ts = time.time()
+            burn_rate = float(os.environ.get("FAKE_COLAB_BURN_RATE_CCU_PER_H", "10.5"))
+            base_bal = float(os.environ.get("FAKE_COLAB_BALANCE", "9.85"))
+            bal = f"{max(0.0, base_bal - max(0.0, end_ts - open_ts) * (burn_rate / 3600.0)):.4f}"
         post_count = 0
         if session_opened:
             post_count_file = state_dir / "post_open_usage_count.txt"
@@ -1228,6 +1286,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if subcmd == "sessions":
+        if (state_dir / "stops.log").exists() and os.environ.get("FAKE_COLAB_SESSIONS_CLOSE_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_SESSIONS_CLOSE_HANG") == "ignore_term")
         with (state_dir / "sessions.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write("SESSION_LIST_AFTER_STOP\n")
         # FAKE_COLAB_SESSIONS_EMPTY=1: the server lists nothing, even for an open session.
@@ -1272,6 +1332,8 @@ def main(argv: list[str] | None = None) -> int:
             newline="\n",
         )
         # FAKE_COLAB_NEW_DELAY_S: the open takes this long; the moment it succeeds is logged.
+        if os.environ.get("FAKE_COLAB_NEW_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_NEW_HANG") == "ignore_term")
         time.sleep(float(os.environ.get("FAKE_COLAB_NEW_DELAY_S", "0")))
         (state_dir / "new_done_epoch.txt").write_text(f"{time.time()}\n", encoding="utf-8", newline="\n")
         lane_tag = "lane3" if "l3" in sid or "lane3" in sid else "lane1"
@@ -1286,6 +1348,12 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab upload requires -s/--session\n")
             return 2
+        upload_hang = os.environ.get("FAKE_COLAB_UPLOAD_HANG", "")
+        upload_hang_for = os.environ.get("FAKE_COLAB_UPLOAD_HANG_FOR", "")
+        if upload_hang in ("1", "ignore_term") and (not upload_hang_for or upload_hang_for in positionals[1]):
+            _hang_process(state_dir, upload_hang == "ignore_term")
+        if os.environ.get("FAKE_COLAB_UPLOAD_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_UPLOAD_DELAY_S"]))
         api = contract["contents_api"]
         local_src, remote_dst = positionals[0], _normalize_remote_content_path(positionals[1])
         src_path = _normalize_host_path(local_src)
@@ -1330,6 +1398,25 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab download requires -s/--session\n")
             return 2
+        dl_cnt_f = state_dir / "download_attempts.txt"
+        dl_cnt = int(dl_cnt_f.read_text(encoding="utf-8").strip()) if dl_cnt_f.is_file() else 0
+        dl_cnt += 1
+        dl_cnt_f.write_text(f"{dl_cnt}\n", encoding="utf-8", newline="\n")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG_ONCE") in ("1", "ignore_term") and dl_cnt == 1:
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG_ONCE") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_FAIL_ONCE") == "1" and dl_cnt == 1:
+            api = contract["contents_api"]
+            print(
+                api["download_failed_prefix"]
+                + "500 Server Error: Internal Server Error for url: "
+                + f"https://colab.fake.invalid/api/contents/{positionals[0].strip('/')}"
+                + f"?authuser=0&colab-runtime-proxy-token={FAKE_CONTENTS_TOKEN}"
+            )
+            return 1
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_DOWNLOAD_DELAY_S"]))
         remote_src, local_dst = _normalize_remote_content_path(positionals[0]), positionals[1]
         if not remote_src.startswith("/content/"):
             sys.stderr.write(f"Remote path must be under /content/: {remote_src}\n")
@@ -1354,8 +1441,20 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab stop requires -s/--session\n")
             return 2
+        stop_cnt_f = state_dir / "stop_attempts.txt"
+        stop_cnt = int(stop_cnt_f.read_text(encoding="utf-8").strip()) if stop_cnt_f.is_file() else 0
+        stop_cnt += 1
+        stop_cnt_f.write_text(f"{stop_cnt}\n", encoding="utf-8", newline="\n")
+        if os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") in ("1", "ignore_term") and stop_cnt == 1:
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") == "ignore_term")
+        if os.environ.get("FAKE_COLAB_STOP_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_STOP_DELAY_S"]))
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"STOP {' '.join(args)}\n")
+        with (state_dir / "stops.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps({"sid": sid, "attempt": stop_cnt, "done_ts": time.time()}) + "\n")
         (_open_sessions_dir(state_dir) / f"{sid}.json").unlink(missing_ok=True)
         _kill_recorded_groups(state_dir, sid)
         _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
@@ -1366,6 +1465,8 @@ def main(argv: list[str] | None = None) -> int:
         if not sid:
             sys.stderr.write("colab restart-kernel requires -s/--session\n")
             return 2
+        if os.environ.get("FAKE_COLAB_RESTART_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_RESTART_HANG") == "ignore_term")
         # The kernel process ends (and with it the running cell); processes the cell spawned in
         # its own process group are left alone. stop() still ends them with the VM.
         import signal as _signal
@@ -1383,6 +1484,8 @@ def main(argv: list[str] | None = None) -> int:
         _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
         with (state_dir / "restarts.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"RESTART -s {sid} cell={cell}\n")
+        if os.environ.get("FAKE_COLAB_RESTART_DELAY_S"):
+            time.sleep(float(os.environ["FAKE_COLAB_RESTART_DELAY_S"]))
         return 0
 
     if subcmd == "exec":
@@ -1391,6 +1494,8 @@ def main(argv: list[str] | None = None) -> int:
         if not sid or not py_file:
             sys.stderr.write("colab exec requires -s/--session and -f/--file\n")
             return 2
+        if "lane3_bundle_now.py" in py_file and os.environ.get("FAKE_COLAB_BUNDLE_NOW_HANG") in ("1", "ignore_term"):
+            _hang_process(state_dir, os.environ.get("FAKE_COLAB_BUNDLE_NOW_HANG") == "ignore_term")
         py_path = _normalize_host_path(py_file)
         if not py_path.is_file() or py_path.suffix != ".py":
             sys.stderr.write(f"colab exec -f must be an existing .py file: {py_file}\n")

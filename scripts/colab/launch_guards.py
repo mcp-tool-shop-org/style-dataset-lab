@@ -438,18 +438,173 @@ def parse_usage_text(
     }
 
 
+CAP_TRIP_FORMULA = (
+    "effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate"
+)
+
+
+def compute_cap_trip(
+    cap: float,
+    margin: float,
+    cleanup_bound_s: float = 0.0,
+    priced_rate: float = 0.0,
+) -> dict[str, Any]:
+    bound_s = max(0.0, float(cleanup_bound_s))
+    rate = max(0.0, float(priced_rate))
+    cleanup_reserve = round((bound_s / 3600.0) * rate, 6)
+    effective_trip = round(float(cap) - float(margin) - cleanup_reserve, 6)
+    ceiling = round(max(0.0, effective_trip), 6)
+    return {
+        "cap_ccu": round(float(cap), 6),
+        "margin_ccu": round(float(margin), 6),
+        "cleanup_bound_s": int(bound_s) if bound_s == int(bound_s) else round(bound_s, 6),
+        "priced_rate": round(rate, 6),
+        "cleanup_reserve_units": cleanup_reserve,
+        "effective_trip_units": effective_trip,
+        "ceiling_ccu": ceiling,
+        "formula": CAP_TRIP_FORMULA,
+        "cap_trip_formula": CAP_TRIP_FORMULA,
+    }
+
+
+def evaluate_cap_budget(
+    *,
+    cap: float,
+    margin: float,
+    cleanup_bound_s: float,
+    priced_rate: float,
+    max_rate: float | None = None,
+    min_runtime_s: float | None = None,
+) -> dict[str, Any]:
+    trip = compute_cap_trip(cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=priced_rate)
+    eff_max_rate = round(float(max_rate), 6) if max_rate is not None else trip["priced_rate"]
+    effective_trip = trip["effective_trip_units"]
+    cleanup_reserve = trip["cleanup_reserve_units"]
+    p_rate = trip["priced_rate"]
+    bound_s = trip["cleanup_bound_s"]
+    cap_v = trip["cap_ccu"]
+    margin_v = trip["margin_ccu"]
+
+    runtime_at_priced_rate_s = round((effective_trip / p_rate) * 3600.0, 2) if p_rate > 0.0 else 0.0
+    runtime_at_max_rate_s = (
+        round((effective_trip / eff_max_rate) * 3600.0, 2) if eff_max_rate > 0.0 else runtime_at_priced_rate_s
+    )
+    worst_case_total_spend = round(effective_trip + margin_v + cleanup_reserve, 6)
+
+    tripped = False
+    code: str | None = None
+    why: str | None = None
+    if effective_trip <= 0.0:
+        tripped = True
+        code = "CAP_TOO_SMALL_FOR_CLEANUP"
+        why = (
+            f"effective_trip = cap {cap_v} - margin {margin_v} - cleanup_reserve {cleanup_reserve} "
+            f"(cleanup_bound_s {bound_s} / 3600 * priced_rate {p_rate}/h) = {effective_trip} <= 0"
+        )
+    elif min_runtime_s is not None and runtime_at_priced_rate_s < float(min_runtime_s):
+        min_rt = (
+            int(min_runtime_s)
+            if float(min_runtime_s) == int(float(min_runtime_s))
+            else round(float(min_runtime_s), 2)
+        )
+        tripped = True
+        code = "CAP_TOO_SMALL_FOR_CLEANUP"
+        why = (
+            f"effective_trip = cap {cap_v} - margin {margin_v} - cleanup_reserve {cleanup_reserve} "
+            f"(cleanup_bound_s {bound_s} / 3600 * priced_rate {p_rate}/h) = {effective_trip} units "
+            f"leaves {runtime_at_priced_rate_s} s at {p_rate}/h < --min-runtime-s {min_rt} s"
+        )
+
+    rec: dict[str, Any] = {
+        "check": "cap_budget",
+        "ok": not tripped,
+        "tripped": tripped,
+        "code": code,
+        "why": why,
+        "cap": cap_v,
+        "cap_ccu": cap_v,
+        "margin": margin_v,
+        "margin_ccu": margin_v,
+        "cleanup_bound_s": bound_s,
+        "priced_rate": p_rate,
+        "max_rate": eff_max_rate,
+        "reserve": cleanup_reserve,
+        "cleanup_reserve": cleanup_reserve,
+        "cleanup_reserve_units": cleanup_reserve,
+        "effective_trip": effective_trip,
+        "effective_trip_units": effective_trip,
+        "runtime_to_trip_s": runtime_at_priced_rate_s,
+        "runtime_at_priced_rate_s": runtime_at_priced_rate_s,
+        "runtime_at_max_rate_s": runtime_at_max_rate_s,
+        "min_runtime_s": (
+            None
+            if min_runtime_s is None
+            else (
+                int(min_runtime_s)
+                if float(min_runtime_s) == int(float(min_runtime_s))
+                else round(float(min_runtime_s), 2)
+            )
+        ),
+        "worst_case_total_spend": worst_case_total_spend,
+        "worst_case_total_spend_units": worst_case_total_spend,
+        "formula": CAP_TRIP_FORMULA,
+        "cap_trip_formula": CAP_TRIP_FORMULA,
+    }
+    if tripped and code and why:
+        rec["refusal"] = {"code": code, "why": why}
+    return rec
+
+
+def format_dry_cap_budget(rec: dict[str, Any]) -> str:
+    lines = [
+        f"formula: {rec['formula']}",
+        f"cap: {rec['cap']}",
+        f"margin: {rec['margin']}",
+        f"cleanup_bound_s: {rec['cleanup_bound_s']}",
+        f"priced_rate: {rec['priced_rate']}/h",
+        f"max_rate: {rec['max_rate']}/h",
+        f"reserve (cleanup_reserve): {rec['cleanup_reserve_units']} ({rec['cleanup_bound_s']} / 3600 * {rec['priced_rate']})",
+        f"effective_trip: {rec['effective_trip_units']} ({rec['cap']} - {rec['margin']} - {rec['cleanup_reserve_units']})",
+        f"runtime_to_trip (priced_rate {rec['priced_rate']}/h): {rec['runtime_at_priced_rate_s']} s",
+        f"runtime_to_trip (--max-rate {rec['max_rate']}/h): {rec['runtime_at_max_rate_s']} s",
+        f"worst_case_total_spend: {rec['worst_case_total_spend']} (= cap {rec['cap']})",
+        json.dumps(rec),
+    ]
+    return "\n".join(lines)
+
+
 def evaluate_cap_guard(
     *,
     mode: str = "live",
     cap: float = 0.05,
     margin: float = 0.01,
+    cleanup_bound_s: float = 0.0,
     start_balance: float | None = None,
     current_balance: float | None = None,
     rate_ccu_per_hour: float = 0.0,
     elapsed_s: float = 0.0,
     usage_parse_error: str | None = None,
+    phase: str | None = None,
+    checkpoint: str | None = None,
 ) -> dict[str, Any]:
-    ceiling = round(max(0.0, float(cap) - float(margin)), 6)
+    trip = compute_cap_trip(
+        cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=rate_ccu_per_hour
+    )
+    ceiling = trip["ceiling_ccu"]
+    extra: dict[str, Any] = {
+        "cap_ccu": trip["cap_ccu"],
+        "margin_ccu": trip["margin_ccu"],
+        "cleanup_bound_s": trip["cleanup_bound_s"],
+        "priced_rate": trip["priced_rate"],
+        "cleanup_reserve_units": trip["cleanup_reserve_units"],
+        "effective_trip_units": trip["effective_trip_units"],
+        "formula": CAP_TRIP_FORMULA,
+        "cap_trip_formula": CAP_TRIP_FORMULA,
+    }
+    if phase is not None:
+        extra["phase"] = phase
+    if checkpoint is not None:
+        extra["checkpoint"] = checkpoint
     if usage_parse_error:
         return {
             "mode": mode,
@@ -457,6 +612,7 @@ def evaluate_cap_guard(
             "code": "COLAB_USAGE_PARSE_FAILED",
             "spend_ccu": None,
             "ceiling_ccu": ceiling,
+            **extra,
             "usage_parse_error": usage_parse_error,
         }
     if (start_balance is not None and float(start_balance) < 0.0) or (
@@ -468,6 +624,7 @@ def evaluate_cap_guard(
             "code": "COLAB_USAGE_PARSE_FAILED",
             "spend_ccu": None,
             "ceiling_ccu": ceiling,
+            **extra,
             "usage_parse_error": "COLAB_USAGE_PARSE_FAILED: negative balance is impossible",
         }
     if mode not in ("fake", "dry_run", "offline") and (start_balance is None or current_balance is None):
@@ -477,6 +634,7 @@ def evaluate_cap_guard(
             "code": "COLAB_USAGE_PARSE_FAILED",
             "spend_ccu": None,
             "ceiling_ccu": ceiling,
+            **extra,
             "usage_parse_error": "COLAB_USAGE_PARSE_FAILED: missing start_balance or current_balance in non-fake mode",
         }
     drop = (
@@ -493,6 +651,7 @@ def evaluate_cap_guard(
         "code": "CAP_GUARD_TRIPPED" if tripped else None,
         "spend_ccu": spend,
         "ceiling_ccu": ceiling,
+        **extra,
     }
 
 
@@ -901,11 +1060,24 @@ def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any
     """The kit's named refusal for a wall/cap trip, with the numbers that tripped it. When both trip,
     the cap's code is the one named (a failed usage read or a spent cap is the costlier finding)."""
     if cap.get("tripped"):
+        phase = cap.get("phase")
+        prefix = f"cap guard (phase={phase}):" if phase else "cap guard:"
         if cap.get("code") == "COLAB_USAGE_PARSE_FAILED":
-            why = f"cap guard: {cap.get('usage_parse_error')} (ceiling {cap.get('ceiling_ccu')} ccu)"
+            why = f"{prefix} {cap.get('usage_parse_error')} (ceiling {cap.get('ceiling_ccu')} ccu)"
+        elif cap.get("cleanup_bound_s", 0):
+            why = (
+                f"{prefix} spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu "
+                f"(effective_trip {cap.get('effective_trip_units')} = cap {cap.get('cap_ccu')} "
+                f"- margin {cap.get('margin_ccu')} - cleanup_reserve {cap.get('cleanup_reserve_units')})"
+            )
         else:
-            why = f"cap guard: spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu"
-        return {"code": cap.get("code"), "why": why}
+            why = f"{prefix} spend {cap.get('spend_ccu')} ccu >= ceiling {cap.get('ceiling_ccu')} ccu"
+        ref: dict[str, Any] = {"code": cap.get("code"), "why": why}
+        if phase is not None:
+            ref["phase"] = phase
+        if cap.get("checkpoint") is not None:
+            ref["checkpoint"] = cap.get("checkpoint")
+        return ref
     if wall.get("tripped"):
         return {
             "code": wall.get("code"),
@@ -917,12 +1089,19 @@ def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="sdlab C2 launcher guards CLI")
     parser.add_argument("--mode", default="stub")
+    parser.add_argument("--phase", default=None, help="Execution phase (e.g. pre_exec or live)")
+    parser.add_argument("--checkpoint", default=None, help="Pre-exec or live check point name")
     parser.add_argument("--elapsed-s", type=float, default=0.0)
     parser.add_argument("--wall-s", type=float, default=3000.0)
     parser.add_argument("--grace-s", type=float, default=60.0)
     parser.add_argument("--cap", type=float, default=0.05)
     parser.add_argument("--margin", type=float, default=0.01)
+    parser.add_argument("--cleanup-bound-s", type=float, default=0.0)
     parser.add_argument("--rate", type=float, default=0.0)
+    parser.add_argument("--max-rate", type=float, default=None)
+    parser.add_argument("--min-runtime-s", type=float, default=None)
+    parser.add_argument("--check-cap-budget", action="store_true", help="Check cap budget against cleanup reserve and --min-runtime-s")
+    parser.add_argument("--dry", action="store_true", help="Print cap trip arithmetic and exit")
     parser.add_argument("--start-balance", type=float, default=None)
     parser.add_argument("--current-balance", type=float, default=None)
     parser.add_argument("--usage-parse-error", default=None, help="Usage parse failure message causing cap guard to trip")
@@ -946,6 +1125,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-output-bytes", type=Path, default=None,
                         help="Print the bytes of this vitals.log that are not vitals lines (stall guard progress)")
     args = parser.parse_args(argv)
+
+    if args.dry or args.check_cap_budget:
+        eff_rate = (
+            float(args.rate)
+            if float(args.rate) > 0.0
+            else (float(args.max_rate) if args.max_rate is not None else 0.26)
+        )
+        if args.max_rate is not None:
+            priced_rate = max(eff_rate, float(args.max_rate))
+            max_rate_val = float(args.max_rate)
+        else:
+            priced_rate = eff_rate
+            max_rate_val = eff_rate
+        rec = evaluate_cap_budget(
+            cap=args.cap,
+            margin=args.margin,
+            cleanup_bound_s=args.cleanup_bound_s,
+            priced_rate=priced_rate,
+            max_rate=max_rate_val,
+            min_runtime_s=args.min_runtime_s,
+        )
+        if args.dry:
+            print(format_dry_cap_budget(rec))
+        else:
+            print(json.dumps(rec))
+        if rec["tripped"]:
+            print(f"REFUSED: {rec['code']}: {rec['why']}", file=sys.stderr)
+            return 2
+        return 0
 
     if args.run_output_bytes is not None:
         f = args.run_output_bytes
@@ -1046,13 +1254,20 @@ def main(argv: list[str] | None = None) -> int:
         mode=args.mode,
         cap=args.cap,
         margin=args.margin,
+        cleanup_bound_s=args.cleanup_bound_s,
         start_balance=args.start_balance,
         current_balance=args.current_balance,
         rate_ccu_per_hour=args.rate,
         elapsed_s=args.elapsed_s,
         usage_parse_error=args.usage_parse_error,
+        phase=args.phase,
+        checkpoint=args.checkpoint,
     )
     out: dict[str, Any] = {"wall": wall, "cap": cap}
+    if args.phase is not None:
+        out["phase"] = args.phase
+    if args.checkpoint is not None:
+        out["checkpoint"] = args.checkpoint
     refusal = wall_cap_refusal(wall, cap)
     if refusal is not None:
         out["refusal"] = refusal
