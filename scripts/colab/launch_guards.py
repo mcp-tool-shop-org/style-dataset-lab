@@ -489,7 +489,17 @@ def evaluate_cap_budget(
     runtime_at_max_rate_s = (
         round((effective_trip / eff_max_rate) * 3600.0, 2) if eff_max_rate > 0.0 else runtime_at_priced_rate_s
     )
-    worst_case_total_spend = round(effective_trip + margin_v + cleanup_reserve, 6)
+    death_time_exact_s = max(0.0, (effective_trip / p_rate) * 3600.0) if p_rate > 0.0 else 0.0
+    death_time_max_s = max(0.0, runtime_at_priced_rate_s)
+    worst_case_cap_path = round(effective_trip + margin_v + cleanup_reserve, 6)
+    worst_case_launcher_death_path = round(((death_time_exact_s + bound_s) / 3600.0) * p_rate, 6)
+    worst_case_total_spend = round(max(worst_case_cap_path, worst_case_launcher_death_path), 6)
+    assumptions = {
+        "cap_path": "live launcher trips cap guard and runs cleanup_on_exit",
+        "launcher_death_path": (
+            "wall watcher survives launcher death to poll kill -0 every 1 s and run bounded colab stop"
+        ),
+    }
 
     tripped = False
     code: str | None = None
@@ -536,6 +546,7 @@ def evaluate_cap_budget(
         "runtime_to_trip_s": runtime_at_priced_rate_s,
         "runtime_at_priced_rate_s": runtime_at_priced_rate_s,
         "runtime_at_max_rate_s": runtime_at_max_rate_s,
+        "death_time_max_s": death_time_max_s,
         "min_runtime_s": (
             None
             if min_runtime_s is None
@@ -545,8 +556,11 @@ def evaluate_cap_budget(
                 else round(float(min_runtime_s), 2)
             )
         ),
+        "worst_case_cap_path": worst_case_cap_path,
+        "worst_case_launcher_death_path": worst_case_launcher_death_path,
         "worst_case_total_spend": worst_case_total_spend,
         "worst_case_total_spend_units": worst_case_total_spend,
+        "assumptions": assumptions,
         "formula": CAP_TRIP_FORMULA,
         "cap_trip_formula": CAP_TRIP_FORMULA,
     }
@@ -556,6 +570,7 @@ def evaluate_cap_budget(
 
 
 def format_dry_cap_budget(rec: dict[str, Any]) -> str:
+    assumptions = rec.get("assumptions") or {}
     lines = [
         f"formula: {rec['formula']}",
         f"cap: {rec['cap']}",
@@ -567,7 +582,19 @@ def format_dry_cap_budget(rec: dict[str, Any]) -> str:
         f"effective_trip: {rec['effective_trip_units']} ({rec['cap']} - {rec['margin']} - {rec['cleanup_reserve_units']})",
         f"runtime_to_trip (priced_rate {rec['priced_rate']}/h): {rec['runtime_at_priced_rate_s']} s",
         f"runtime_to_trip (--max-rate {rec['max_rate']}/h): {rec['runtime_at_max_rate_s']} s",
-        f"worst_case_total_spend: {rec['worst_case_total_spend']} (= cap {rec['cap']})",
+        f"worst_case_cap_path: {rec['worst_case_cap_path']} (= cap {rec['cap']})",
+        (
+            f"worst_case_launcher_death_path: {rec['worst_case_launcher_death_path']} "
+            f"((death_time <= {rec['death_time_max_s']} s + cleanup_bound_s {rec['cleanup_bound_s']} s) / 3600 * {rec['priced_rate']}/h)"
+        ),
+        (
+            f"worst_case_total_spend: {rec['worst_case_total_spend']} "
+            f"(= max(cap_path {rec['worst_case_cap_path']}, launcher_death_path {rec['worst_case_launcher_death_path']}) = cap {rec['cap']})"
+        ),
+        (
+            f"assumptions: cap_path assumes {assumptions.get('cap_path', '')}; "
+            f"launcher_death_path assumes {assumptions.get('launcher_death_path', '')}"
+        ),
         json.dumps(rec),
     ]
     return "\n".join(lines)

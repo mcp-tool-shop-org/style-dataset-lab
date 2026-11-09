@@ -873,6 +873,7 @@ colab_run_exec_with_live_guards() {
 
   colab exec "${exec_args[@]}" </dev/null > "${out_dir}/vitals.log" 2>&1 &
   EXEC_PID="$!"
+  printf '%s\n' "${EXEC_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
 
   while kill -0 "${EXEC_PID}" 2>/dev/null; do
     sleep "${poll_s}"
@@ -1528,13 +1529,16 @@ colab_open_session_locked() {
 }
 
 # colab_run_wall_watcher <main_pid> <wall_limit_s> <py_bin> <guards_py> <out_dir> <lane> <session> <card> <cap> <wall_s> <grace_s> <margin> <opened_at> <shas_json>:
-# independent wall watcher with escalation. After <wall_limit_s>, writes wall_trip_epoch.txt, logs
-# REFUSED: WALL_GUARD_TRIPPED, and sends SIGTERM to <main_pid>. Waits up to COLAB_WALL_ESCALATE_S
-# (default 30 s) for the launcher's trap to reach `colab stop` (`stop_reached.txt`). If the launcher
-# has not reached `colab stop` within that bound (e.g. a hung foreground step prevents bash from
-# running the trap), the watcher escalates: records `stop_path: watcher`, runs `colab stop -s <session>`
-# itself (bounded, with retries as the trap does), writes window.json and outcome.draft.json, scrubs
-# logs, and SIGKILLs the launcher and its descendants.
+# independent wall watcher with pre-trip liveness polling and post-trip escalation. During the
+# <wall_limit_s> pre-trip wait, polls <main_pid> (`kill -0`) about every 1 s. If <main_pid> exits
+# normally before the trip (`STOP_COMPLETED` logged), or dies before `colab new` (neither
+# `session_open_started.txt` nor `session_opened.txt` exists), the watcher cleans up and exits 0
+# without calling `colab stop`. If <main_pid> disappears before the trip after a session open was
+# started/completed and before `STOP_COMPLETED`, the watcher kills tracked child pids, runs bounded
+# `colab_stop_and_log_closing`, and writes `watcher_wait: "launcher_gone_pre_trip"` and
+# `stop_path: "watcher"`, plus `window.json` and `outcome.draft.json`. Otherwise, when <wall_limit_s>
+# elapses, writes `wall_trip_epoch.txt`, logs `REFUSED: WALL_GUARD_TRIPPED`, sends SIGTERM to
+# <main_pid>, and waits for bounded trap cleanup or escalates.
 colab_run_wall_watcher() {
   local main_pid="$1"
   local wall_limit_s="$2"
@@ -1553,12 +1557,6 @@ colab_run_wall_watcher() {
 
   exec >/dev/null 2>&1 </dev/null
   trap - EXIT TERM INT
-  sleep "${wall_limit_s}"
-  "${py_bin}" -c 'import sys, time; open(sys.argv[1], "w", encoding="utf-8").write(f"{time.time():.6f}\n")' "${out_dir}/wall_trip_epoch.txt" 2>/dev/null \
-    || date -u +%s > "${out_dir}/wall_trip_epoch.txt"
-  echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${wall_limit_s} s (wall - grace) elapsed" >> "${out_dir}/guards.log"
-  kill -TERM "${main_pid}" 2>/dev/null || true
-
   colab_compute_cleanup_bounds "${lane}"
   local escalate_s="${COLAB_WALL_ESCALATE_S:-30}"
   local in_flight_bound_s="${COLAB_IN_FLIGHT_BOUND_S:-310}"
@@ -1568,8 +1566,151 @@ colab_run_wall_watcher() {
   fi
   local cleanup_stop_by_s="${COLAB_CLEANUP_STOP_ATTEMPTED_BY_S:-310}"
   local watcher_pid="${BASHPID:-$$}"
+
+  local pre_trip_rc=0
+  "${py_bin}" - "${main_pid}" "${watcher_pid}" "${wall_limit_s}" "${session}" "${out_dir}" << 'PYEOF' || pre_trip_rc=$?
+import os, signal, sys, time
+from pathlib import Path
+
+main_pid = int(sys.argv[1])
+watcher_pid = int(sys.argv[2])
+wall_limit_s = float(sys.argv[3])
+session = sys.argv[4]
+out_dir = Path(sys.argv[5])
+watcher_wait_p = out_dir / "watcher_wait.txt"
+tracked_p = out_dir / ".watcher_tracked_pids.txt"
+self_pid = os.getpid()
+
+def stop_completed() -> bool:
+    marker = f"session={session}"
+    for log_name in ("stop.log", "guards.log"):
+        lp = out_dir / log_name
+        if not lp.is_file():
+            continue
+        try:
+            for line in lp.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("STOP_COMPLETED ") and marker in line:
+                    return True
+        except OSError:
+            continue
+    return False
+
+tracked_pids: set[int] = set()
+last_written_pids: set[int] = set()
+
+def record_children(flush: bool = False) -> None:
+    if tracked_p.is_file():
+        try:
+            for line in tracked_p.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = line.strip()
+                if line.isdigit():
+                    pid = int(line)
+                    if pid not in (main_pid, watcher_pid, self_pid):
+                        tracked_pids.add(pid)
+        except OSError:
+            pass
+    stack = [main_pid, *list(tracked_pids)]
+    seen: set[int] = set()
+    used_task_children = False
+    while stack:
+        cur = stack.pop()
+        if cur in seen or cur in (watcher_pid, self_pid):
+            continue
+        seen.add(cur)
+        if cur != main_pid:
+            tracked_pids.add(cur)
+        ch_file = Path(f"/proc/{cur}/task/{cur}/children")
+        if ch_file.is_file():
+            used_task_children = True
+            try:
+                for tok in ch_file.read_text(encoding="utf-8").split():
+                    if tok.isdigit():
+                        stack.append(int(tok))
+            except OSError:
+                pass
+    if not used_task_children:
+        children: dict[int, list[int]] = {}
+        for stat_p in Path("/proc").glob("[0-9]*/stat"):
+            try:
+                data = stat_p.read_text(encoding="utf-8")
+                pid_s, rest = data.split(" (", 1)
+                ppid_s = rest.rsplit(") ", 1)[1].split()[1]
+                children.setdefault(int(ppid_s), []).append(int(pid_s))
+            except Exception:
+                continue
+        stack = [main_pid, *list(tracked_pids)]
+        seen = set()
+        while stack:
+            cur = stack.pop()
+            if cur in seen or cur in (watcher_pid, self_pid):
+                continue
+            seen.add(cur)
+            if cur != main_pid:
+                tracked_pids.add(cur)
+            stack.extend(children.get(cur, []))
+    if tracked_pids and (flush or tracked_pids != last_written_pids):
+        try:
+            tracked_p.write_text("".join(f"{p}\n" for p in sorted(tracked_pids)), encoding="utf-8", newline="\n")
+            last_written_pids.clear()
+            last_written_pids.update(tracked_pids)
+        except OSError:
+            pass
+
+def launcher_alive() -> bool:
+    try:
+        os.kill(main_pid, 0)
+        return True
+    except OSError:
+        return False
+
+def session_was_opened() -> bool:
+    return (out_dir / "session_open_started.txt").is_file() or (out_dir / "session_opened.txt").is_file()
+
+def kill_tracked() -> None:
+    record_children(flush=True)
+    for pid in sorted(tracked_pids, reverse=True):
+        if pid not in (main_pid, watcher_pid, self_pid):
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass
+
+deadline = time.monotonic() + max(0.0, wall_limit_s)
+while True:
+    record_children()
+    if stop_completed():
+        sys.exit(0)
+    if not launcher_alive():
+        if stop_completed():
+            sys.exit(0)
+        if not session_was_opened():
+            kill_tracked()
+            sys.exit(0)
+        record_children(flush=True)
+        watcher_wait_p.write_text("launcher_gone_pre_trip\n", encoding="utf-8", newline="\n")
+        sys.exit(1)
+    rem = deadline - time.monotonic()
+    if rem <= 0.0:
+        break
+    time.sleep(min(1.0, rem))
+
+record_children(flush=True)
+sys.exit(2)
+PYEOF
+
   local wait_rc=0
-  "${py_bin}" - "${main_pid}" "${watcher_pid}" "${escalate_s}" "${in_flight_bound_s}" "${cleanup_stop_by_s}" "${session}" "${out_dir}" << 'PYEOF' || wait_rc=$?
+  if [ "${pre_trip_rc}" -eq 0 ]; then
+    rm -f "${out_dir}/.watcher_tracked_pids.txt"
+    return 0
+  elif [ "${pre_trip_rc}" -eq 1 ]; then
+    wait_rc=1
+  elif [ "${pre_trip_rc}" -eq 2 ]; then
+    "${py_bin}" -c 'import sys, time; open(sys.argv[1], "w", encoding="utf-8").write(f"{time.time():.6f}\n")' "${out_dir}/wall_trip_epoch.txt" 2>/dev/null \
+      || date -u +%s > "${out_dir}/wall_trip_epoch.txt"
+    echo "REFUSED: WALL_GUARD_TRIPPED: independent wall watcher: ${wall_limit_s} s (wall - grace) elapsed" >> "${out_dir}/guards.log"
+    kill -TERM "${main_pid}" 2>/dev/null || true
+
+    "${py_bin}" - "${main_pid}" "${watcher_pid}" "${escalate_s}" "${in_flight_bound_s}" "${cleanup_stop_by_s}" "${session}" "${out_dir}" << 'PYEOF' || wait_rc=$?
 import os, sys, time
 from pathlib import Path
 
@@ -1709,7 +1850,12 @@ if not launcher_alive():
 watcher_wait_p.write_text("escalated_cleanup_overran\n", encoding="utf-8", newline="\n")
 sys.exit(1)
 PYEOF
-  if [ "${wait_rc}" -eq 0 ]; then
+  else
+    rm -f "${out_dir}/.watcher_tracked_pids.txt"
+    return 0
+  fi
+
+  if [ "${wait_rc}" -ne 1 ] || grep -q "^STOP_COMPLETED .*session=${session}" "${out_dir}/stop.log" 2>/dev/null; then
     rm -f "${out_dir}/.watcher_tracked_pids.txt"
     return 0
   fi
@@ -1718,7 +1864,7 @@ PYEOF
   watcher_wait_state="$(cat "${out_dir}/watcher_wait.txt" 2>/dev/null || echo escalated_no_cleanup)"
   printf '1\n' > "${out_dir}/watcher_escalated.txt"
   printf 'watcher\n' > "${out_dir}/stop_path.txt"
-  if [ "${watcher_wait_state}" = "escalated_launcher_gone" ] || [ -f "${out_dir}/stop_reached.txt" ]; then
+  if [ "${watcher_wait_state}" = "launcher_gone_pre_trip" ] || [ "${watcher_wait_state}" = "escalated_launcher_gone" ] || [ -f "${out_dir}/stop_reached.txt" ]; then
     "${py_bin}" - "${main_pid}" "${watcher_pid}" "${out_dir}/.watcher_tracked_pids.txt" << 'PYEOF'
 import os, signal, sys
 from pathlib import Path
@@ -2159,7 +2305,14 @@ stop_path = stop_path_raw if stop_path_raw in ("trap", "watcher") else "trap"
 watcher_wait_raw = read_text_file(out_dir / "watcher_wait.txt")
 watcher_wait = (
     watcher_wait_raw
-    if watcher_wait_raw in ("none", "cleanup_seen", "escalated_no_cleanup", "escalated_cleanup_overran", "escalated_launcher_gone")
+    if watcher_wait_raw in (
+        "none",
+        "cleanup_seen",
+        "escalated_no_cleanup",
+        "escalated_cleanup_overran",
+        "escalated_launcher_gone",
+        "launcher_gone_pre_trip",
+    )
     else "none"
 )
 cap_trip_phase = read_text_file(out_dir / "cap_trip_phase.txt")

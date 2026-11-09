@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "5fc927156d8e7de8fca665a194bfdd262b333e748187104d97a75475de7783f6",
+          "hash": "d385959182335ccf565e846e7fb8cd8a27088c6e869e76ada207d79bcc5eb9ab",
           "path": "CHANGELOG.md"
         },
         {
@@ -17252,11 +17252,11 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "713610e819f87939bcbf3c08426bc9144b5bb59f6064feba893789d1d2a9fe8c",
+          "hash": "93e0586e1e1f7cb0b2c3b871fc163b5cc6440da00163cbfb5e7661ddac586c88",
           "path": "scripts/colab/README.md"
         },
         {
-          "hash": "66bbd789dd9d1e85c51af48dac33af02fc0acf960aab17d8a92ab782c0951b8b",
+          "hash": "b466250df006438e33312707ce2b9cf781a4d9a39e14c5a3a097e211a827dc25",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "cfd69578c181643e28b5e575f6ec269d053229dfc34239ffae77741a06bddf5d",
+          "hash": "6da6d2a5a1ea9050ec6d5ed57e8f45651b0f3da9f3767f7672d34819729942ac",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17897,32 +17897,32 @@
             {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 687
+              "line": 714
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 1030
+              "line": 1057
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 1175
+              "line": 1202
             },
             {
               "kind": "raise",
-              "line": 1279
+              "line": 1306
             }
           ],
-          "hash": "30369dfa66bdade39325f6af42e05da72b2e102dd9f1b70afacd97a663319467",
+          "hash": "1504995de0307816e8d715600e725dffb8d5bee74cda22d512e6c44fa727aed2",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "ce32b54b834a01e62b5678b9032f5bb10110d0ab4a0e9ae0ec1b420d240d4753",
+          "hash": "1c904cbf28f7b19159ed1b929e981930252e95c635891178d9dbee344742b417",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "9aeb2bb19a9a53c9244db68ebd2ccf99d3eb868ede8c89fe5497a82e82662ea7",
+          "hash": "70bf6b60281876eb107f76e79cf9b9696f9fdcdd5500c97217d6ae28f51245c0",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -20583,6 +20583,7 @@
             "test_download_offline_reads_only_the_cache",
             "test_download_records_token_used_from_the_variable",
             "test_download_too_slow_is_stopped_after_the_probe",
+            "test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05",
             "test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls",
             "test_expected_repo_bytes_uses_the_listing",
             "test_failed_download_prints_no_token_into_exec_history",
@@ -20655,12 +20656,16 @@
             "test_wall_trip_during_post_exec_download_keeps_total_time_within_cleanup_bound",
             "test_wall_watcher_escalates_when_salvage_overruns_cleanup_stop_attempted_by_s",
             "test_wall_watcher_late_cleanup_start_and_overrunning_salvage_kills_mutation_vi",
+            "test_wall_watcher_launcher_death_before_colab_new_exits_without_stop",
+            "test_wall_watcher_normal_early_finish_single_stop_and_not_launcher_gone_pre_trip",
             "test_wall_watcher_stops_session_when_launcher_dies_mid_cleanup",
+            "test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane1",
+            "test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane3",
             "test_wall_watcher_waits_for_salvage_and_keeps_step_250",
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "c1b41c91ce6f7a49ef16d74e92b84d9ac10ae9f6407dbaa5a9f048bf250d8a88",
+          "hash": "508dac12475e390c1300ff62fcc644661d10fbdcbd6026f5631ad07c16ad18b6",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -22961,7 +22966,7 @@
   ],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "62575ad784f540ace3e3c66385e94f19c764ba73",
+    "commit": "a21ca8598d88ab8cc40afc637c35d089fb608872",
     "tracked": 3309
   },
   "landings": [

@@ -2972,3 +2972,309 @@ def test_wall_watcher_stops_session_when_launcher_dies_mid_cleanup(tmp_path: Pat
         assert stop_done_ts2 - trip_ts2 <= win2["cleanup_bound_s"], (stop_done_ts2 - trip_ts2, win2["cleanup_bound_s"])
     finally:
         _kill_hung_test_pids(state2)
+
+
+# --- Pre-trip launcher death: wall watcher polls liveness every ~1 s & honest --dry ------------
+
+
+def _kill_state_dir_procs(state_dir: Path) -> None:
+    import signal as _signal
+
+    target = str(state_dir)
+    self_pid = os.getpid()
+    for env_p in Path("/proc").glob("[0-9]*/environ"):
+        try:
+            pid = int(env_p.parent.name)
+            if pid == self_pid:
+                continue
+            raw = env_p.read_bytes().decode("utf-8", errors="replace")
+            if f"FAKE_COLAB_STATE_DIR={target}" in raw:
+                os.kill(pid, _signal.SIGKILL)
+        except Exception:
+            continue
+
+
+def test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane3(tmp_path: Path) -> None:
+    import signal as _signal
+    import time as _time
+
+    state_dir, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_TRAIN": "hang_after_step_250",
+        "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+        "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "4",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "4",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+    })
+    # stop_bound_s = 2 * (2 + 1) = 6 s -> must finish within 2 + stop_bound_s = 8 s of SIGKILL.
+    # wall_limit_s = 30 - 2 = 28 s, so the wall does not trip during the 8 s window.
+    stop_bound_s = 2 * (2 + 1)
+    out_dir = tmp_path / "out_l3_pretrip"
+    args = [
+        _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-pretrip-kill",
+        "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
+        "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
+        "--wall-s", "30", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--shape", "high-mem", "--rung-job", "500",
+    ]
+    try:
+        proc = subprocess.Popen(
+            args, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        deadline = _time.monotonic() + 20.0
+        kill_ts = 0.0
+        while _time.monotonic() < deadline:
+            if (out_dir / "session_opened.txt").is_file() and (out_dir / "vitals.log").is_file():
+                assert not (out_dir / "wall_trip_epoch.txt").exists()
+                kill_ts = _time.time()
+                proc.send_signal(_signal.SIGKILL)
+                break
+            if proc.poll() is not None:
+                break
+            _time.sleep(0.05)
+        assert kill_ts > 0.0, "launcher never reached live session_opened.txt before wall trip"
+        proc.wait(timeout=5)
+        wait_end = _time.monotonic() + (2.0 + stop_bound_s)
+        while _time.monotonic() < wait_end:
+            if (out_dir / "outcome.draft.json").is_file() and (state_dir / "stops.jsonl").is_file():
+                break
+            _time.sleep(0.05)
+        assert (state_dir / "stops.jsonl").is_file(), "watcher did not stop session within 2 + stop_bound_s of pre-trip SIGKILL"
+        assert not (out_dir / "wall_trip_epoch.txt").exists()
+        assert not (state_dir / "open_sessions" / "sdlab-l3-pretrip-kill.json").exists()
+        stop_row = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        assert stop_row["sid"] == "sdlab-l3-pretrip-kill"
+        assert stop_row["done_ts"] - kill_ts <= 2.0 + stop_bound_s, (stop_row["done_ts"] - kill_ts, 2.0 + stop_bound_s)
+        win = _win(out_dir)
+        assert win["stop_path"] == "watcher"
+        assert win["watcher_wait"] == "launcher_gone_pre_trip"
+        outcome = json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8"))
+        assert outcome["watcher_wait"] == "launcher_gone_pre_trip"
+    finally:
+        _kill_hung_test_pids(state_dir)
+        _kill_state_dir_procs(state_dir)
+
+
+def test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane1(tmp_path: Path) -> None:
+    import signal as _signal
+    import time as _time
+
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    _, state_dir, env = fc.make_fake_colab_env(tmp_path)
+    env.update({
+        "FAKE_COLAB_MODE": "setup_phase",
+        "FAKE_COLAB_SETUP_DURATION_S": "20",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "4",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+    })
+    stop_bound_s = 2 * (2 + 1)
+    out_dir = tmp_path / "out_l1_pretrip"
+    args = [
+        _bash(), fc._to_posix(lane1_sh),
+        "--out-dir", fc._to_posix(out_dir), "--session", "sdlab-l1-pretrip-kill",
+        "--wall-s", "30", "--grace-s", "2",
+    ]
+    try:
+        proc = subprocess.Popen(
+            args, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        deadline = _time.monotonic() + 15.0
+        kill_ts = 0.0
+        while _time.monotonic() < deadline:
+            if (out_dir / "session_opened.txt").is_file() and (out_dir / "vitals.log").is_file():
+                assert not (out_dir / "wall_trip_epoch.txt").exists()
+                kill_ts = _time.time()
+                proc.send_signal(_signal.SIGKILL)
+                break
+            if proc.poll() is not None:
+                break
+            _time.sleep(0.05)
+        assert kill_ts > 0.0, "Lane 1 launcher never reached live session_opened.txt before wall trip"
+        proc.wait(timeout=5)
+        wait_end = _time.monotonic() + (2.0 + stop_bound_s)
+        while _time.monotonic() < wait_end:
+            if (out_dir / "outcome.draft.json").is_file() and (state_dir / "stops.jsonl").is_file():
+                break
+            _time.sleep(0.05)
+        assert (state_dir / "stops.jsonl").is_file(), "Lane 1 watcher did not stop session within 2 + stop_bound_s of pre-trip SIGKILL"
+        assert not (out_dir / "wall_trip_epoch.txt").exists()
+        assert not (state_dir / "open_sessions" / "sdlab-l1-pretrip-kill.json").exists()
+        stop_row = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        assert stop_row["sid"] == "sdlab-l1-pretrip-kill"
+        assert stop_row["done_ts"] - kill_ts <= 2.0 + stop_bound_s, (stop_row["done_ts"] - kill_ts, 2.0 + stop_bound_s)
+        win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+        assert win["stop_path"] == "watcher"
+        assert win["watcher_wait"] == "launcher_gone_pre_trip"
+        outcome = json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8"))
+        assert outcome["watcher_wait"] == "launcher_gone_pre_trip"
+    finally:
+        _kill_hung_test_pids(state_dir)
+        _kill_state_dir_procs(state_dir)
+
+
+def test_wall_watcher_normal_early_finish_single_stop_and_not_launcher_gone_pre_trip(tmp_path: Path) -> None:
+    import time as _time
+
+    # 1. Lane 1 normal early finish before wall trip:
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    _, state1, env1 = fc.make_fake_colab_env(tmp_path / "l1_early")
+    env1["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out1 = tmp_path / "l1_early" / "out"
+    res1 = subprocess.run(
+        [
+            _bash(), fc._to_posix(lane1_sh),
+            "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-early-ok",
+            "--wall-s", "30", "--grace-s", "2",
+        ],
+        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert res1.returncode == 0, res1.stderr
+    _time.sleep(1.2)
+    stops1 = [
+        json.loads(line)
+        for line in (state1 / "stops.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(stops1) == 1, stops1
+    win1 = json.loads((out1 / "window.json").read_text(encoding="utf-8"))
+    assert win1["stop_path"] == "trap"
+    assert win1["watcher_wait"] != "launcher_gone_pre_trip"
+    assert win1["watcher_wait"] == "none"
+
+    # 2. Lane 3 normal early finish before wall trip:
+    state3, env3, src3 = _rung_env(tmp_path / "l3_early")
+    env3.update({
+        "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+    })
+    res3, out3 = _launch(tmp_path / "l3_early", env3, src3, timeout_s=40)
+    assert res3.returncode == 0, res3.stderr
+    _time.sleep(1.2)
+    stops3 = [
+        json.loads(line)
+        for line in (state3 / "stops.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(stops3) == 1, stops3
+    win3 = _win(out3)
+    assert win3["stop_path"] == "trap"
+    assert win3["watcher_wait"] != "launcher_gone_pre_trip"
+    assert win3["watcher_wait"] == "none"
+
+
+def test_wall_watcher_launcher_death_before_colab_new_exits_without_stop(tmp_path: Path) -> None:
+    import signal as _signal
+    import time as _time
+
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    _, state_dir, env = fc.make_fake_colab_env(tmp_path)
+    env.update({
+        "SDLAB_TEST_OPEN_LOCK_TIMEOUT_S": "20",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+    })
+    lock_file = env["COLAB_OPEN_LOCK"]
+    holder = subprocess.Popen(
+        [_bash(), "-c", f'exec 9>"{lock_file}"; flock -x 9; sleep 30'],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    out_dir = tmp_path / "out_pre_new_kill"
+    try:
+        _time.sleep(0.2)
+        proc = subprocess.Popen(
+            [
+                _bash(), fc._to_posix(lane1_sh),
+                "--out-dir", fc._to_posix(out_dir), "--session", "sdlab-l1-pre-new-kill",
+                "--wall-s", "30", "--grace-s", "2",
+            ],
+            env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        deadline = _time.monotonic() + 10.0
+        killed = False
+        while _time.monotonic() < deadline:
+            if (
+                (out_dir / "guards.log").is_file()
+                and '"check": "host_ram"' in (out_dir / "guards.log").read_text(encoding="utf-8")
+            ):
+                _time.sleep(0.2)
+                assert not (out_dir / "session_open_started.txt").exists()
+                assert not (out_dir / "session_opened.txt").exists()
+                proc.send_signal(_signal.SIGKILL)
+                killed = True
+                break
+            if proc.poll() is not None:
+                break
+            _time.sleep(0.05)
+        assert killed, "launcher never reached open-lock wait before colab new"
+        proc.wait(timeout=5)
+        # Wait up to 2.5 s for the watcher to detect launcher death before colab new and exit 0.
+        wait_end = _time.monotonic() + 2.5
+        while _time.monotonic() < wait_end:
+            if not (out_dir / ".watcher_tracked_pids.txt").exists():
+                break
+            _time.sleep(0.05)
+        assert not (out_dir / ".watcher_tracked_pids.txt").exists(), "watcher did not clean up and exit after pre-new launcher death"
+        assert not (state_dir / "stops.jsonl").exists()
+        assert not (state_dir / "stops.log").exists()
+        assert not (out_dir / "watcher_escalated.txt").exists()
+        calls = (state_dir / "calls.log").read_text(encoding="utf-8") if (state_dir / "calls.log").exists() else ""
+        assert "CALL new" not in calls
+        assert "CALL stop" not in calls
+    finally:
+        holder.kill()
+        holder.wait()
+        _kill_hung_test_pids(state_dir)
+        _kill_state_dir_procs(state_dir)
+
+
+def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
+    # 1. Lane 3 --dry at --card G4 --max-rate 10.5 --cap 8.3 --margin 0.05:
+    state_l3, env_l3, src_l3 = _rung_env(tmp_path / "dry_g4_l3")
+    res_l3, _ = _launch(
+        tmp_path / "dry_g4_l3", env_l3, src_l3,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--dry",
+    )
+    assert res_l3.returncode == 0, res_l3.stderr
+    assert not (state_l3 / "calls.log").exists()
+    out_l3 = res_l3.stdout
+    assert "worst_case_cap_path: 8.3 (= cap 8.3)" in out_l3, out_l3
+    assert (
+        "worst_case_launcher_death_path: 8.25 ((death_time <= 1538.57 s + cleanup_bound_s 1290 s) / 3600 * 10.5/h)"
+        in out_l3
+    ), out_l3
+    assert "worst_case_total_spend: 8.3 (= max(cap_path 8.3, launcher_death_path 8.25) = cap 8.3)" in out_l3, out_l3
+    assert "assumptions: cap_path assumes " in out_l3 and "launcher_death_path assumes " in out_l3, out_l3
+    rec_l3 = json.loads(out_l3.strip().splitlines()[-1])
+    assert rec_l3["worst_case_cap_path"] == 8.3
+    assert rec_l3["worst_case_launcher_death_path"] == 8.25
+    assert rec_l3["worst_case_total_spend"] == 8.3
+    assert "cap_path" in rec_l3["assumptions"] and "launcher_death_path" in rec_l3["assumptions"]
+
+    # 2. Lane 1 --dry at --card G4 --max-rate 10.5 --cap 8.3 --margin 0.05:
+    _, state_l1, env_l1 = fc.make_fake_colab_env(tmp_path / "dry_g4_l1")
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    res_l1 = subprocess.run(
+        [
+            _bash(), fc._to_posix(lane1_sh),
+            "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--dry",
+        ],
+        env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert res_l1.returncode == 0, res_l1.stderr
+    assert not (state_l1 / "calls.log").exists()
+    out_l1 = res_l1.stdout
+    assert "worst_case_cap_path: 8.3 (= cap 8.3)" in out_l1, out_l1
+    assert (
+        "worst_case_launcher_death_path: 8.25 ((death_time <= 2378.57 s + cleanup_bound_s 450 s) / 3600 * 10.5/h)"
+        in out_l1
+    ), out_l1
+    assert "worst_case_total_spend: 8.3 (= max(cap_path 8.3, launcher_death_path 8.25) = cap 8.3)" in out_l1, out_l1
+    assert "assumptions: cap_path assumes " in out_l1 and "launcher_death_path assumes " in out_l1, out_l1
+

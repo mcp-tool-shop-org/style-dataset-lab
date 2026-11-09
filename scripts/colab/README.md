@@ -38,7 +38,14 @@ Because a wall or signal trip can arrive while a synchronous foreground step (`c
   - `cleanup_bound_s` = `310 + 840 + 2 * (60 + 10) = 1290` s
   - `cleanup_reserve` at `10.5`/h = `(1290 / 3600) * 10.5 = 3.7625` CCU (`3.404167` CCU at `9.5`/h; `0.093167` CCU on CPU at `0.26`/h).
 
-### Wall Watcher Escalation (`stop_path` and `watcher_wait`)
+### Wall Watcher Pre-Trip Liveness Poll and Post-Trip Escalation (`stop_path` and `watcher_wait`)
+
+During the pre-trip wait (`wall_s - grace_s`), the independent wall watcher (`colab_run_wall_watcher`) polls the launcher's liveness (`kill -0` / `os.kill(main_pid, 0)`) about every `1` s instead of sleeping in a single long `sleep`:
+- **Normal early finish before the trip (`STOP_COMPLETED` logged):** If the launcher exits normally before the wall trip after `colab_stop_and_log_closing` logs `STOP_COMPLETED`, the watcher exits `0` without running a stop (**no double stop**; `stop_path: "trap"`, `watcher_wait: "none"`).
+- **Launcher death before `colab new` (no session opened):** If `MAIN_PID` disappears before `session_open_started.txt` or `session_opened.txt` is written, the watcher kills any tracked child processes, cleans up `.watcher_tracked_pids.txt`, and exits `0` with no `colab stop` call.
+- **Launcher death before the trip after a session was opened (`watcher_wait: "launcher_gone_pre_trip"`):** If `MAIN_PID` disappears before the wall trip when `session_open_started.txt` or `session_opened.txt` exists and `STOP_COMPLETED` has not been logged, the watcher kills all tracked child PIDs (`out_dir/.watcher_tracked_pids.txt`), runs the bounded `colab_stop_and_log_closing` itself, and writes `watcher_wait: "launcher_gone_pre_trip"` and `stop_path: "watcher"`, plus `window.json` and `outcome.draft.json`, exactly as on the post-trip escalation path.
+  - **Pre-trip launcher-death bound:** The stop starts within about `1` s plus the in-flight kill grace (`COLAB_KILL_GRACE_S = 10` s) of the launcher's death, and completes within `stop_bound_s` (`2 * (60 + 10) = 140` s default) after that.
+  - **Honest `--dry` bounds:** `--dry` prints both spend bounds and their max — the cap path (`worst_case_cap_path = cap`) and the launcher-death path (`worst_case_launcher_death_path = (death_time + cleanup_bound_s) / 3600 * priced_rate`, where `death_time` is at most the moment the cap would trip) — along with one `assumptions:` line naming the assumption each bound rests on (`cap_path` assumes a live launcher trips the cap guard and runs `cleanup_on_exit`; `launcher_death_path` assumes the wall watcher survives launcher death to poll `kill -0` every `1` s and run bounded `colab stop`).
 
 When the independent wall watcher (`colab_run_wall_watcher`) trips at `wall_s - grace_s`:
 1. It writes the trip epoch (`time.time()` float seconds formatted as `%.6f\n`) to `wall_trip_epoch.txt`, logs `REFUSED: WALL_GUARD_TRIPPED`, kills `EXEC_PID` if set, and sends `SIGTERM` to the launcher (`MAIN_PID`).
@@ -53,7 +60,7 @@ When the independent wall watcher (`colab_run_wall_watcher`) trips at `wall_s - 
    - Bounded `colab stop` runs at most `COLAB_STOP_ATTEMPTS = 2` attempts under `timeout -k 10 60` (`2 * (60 + 10) = 140` s). Therefore `colab stop` finishes by at most:
      $$\text{in\_flight\_bound\_s} + \text{salvage\_bound\_s} + \text{stop\_bound\_s} = 310 + 840 + 140 = 1290\text{ s} = \text{cleanup\_bound\_s}$$
      on Lane 3 (and $310 + 0 + 140 = 450\text{ s} = \text{cleanup\_bound\_s}$ on Lane 1).
-   - `window.json` and `outcome.draft.json` record `stop_path: "watcher" | "trap"` and `watcher_wait: "none" | "cleanup_seen" | "escalated_no_cleanup" | "escalated_cleanup_overran" | "escalated_launcher_gone"`.
+   - `window.json` and `outcome.draft.json` record `stop_path: "watcher" | "trap"` and `watcher_wait: "none" | "cleanup_seen" | "escalated_no_cleanup" | "escalated_cleanup_overran" | "escalated_launcher_gone" | "launcher_gone_pre_trip"`.
 
 ### Interruptible Salvage and Post-Exec Download Salvage
 
@@ -68,7 +75,10 @@ No in-process shell trap (`EXIT`, `TERM`, `INT`) can catch `SIGKILL` (`kill -9`)
 
 - **What is left running if an external `SIGKILL` kills the launcher (and its wall watcher) before `colab stop` runs:**
   - The remote Colab runtime assignment (VM, GPU/CPU session, and any running kernel/training processes on the VM) remains active on Google Colab's servers and continues billing compute units against the account until Colab's server-side idle/assignment timeout or manual termination.
-  - If `SIGKILL` hits only `MAIN_PID` while the background wall watcher is still alive, the watcher detects that `MAIN_PID` is gone as soon as the wall limit trips (or immediately if the wall has already tripped, even if `cleanup_started.txt` or `stop_reached.txt` was already written before `STOP_COMPLETED`), kills any tracked child processes, and runs bounded `colab stop -s <session>` itself (`watcher_wait: "escalated_launcher_gone"`), finishing within `cleanup_bound_s` of the trip. If `SIGKILL` kills the entire process group (both launcher and watcher), no local process remains to call `colab stop`.
+  - If `SIGKILL` hits only `MAIN_PID` while the background wall watcher is still alive:
+    - **Before the wall trip (`watcher_wait: "launcher_gone_pre_trip"`):** The watcher polls `kill -0` about every `1` s during the pre-trip wait. When `MAIN_PID` disappears after a session was opened (`session_open_started.txt` or `session_opened.txt`) and before `STOP_COMPLETED`, the stop starts within about `1` s plus the in-flight kill grace of the launcher's death and completes within `stop_bound_s` (`140` s default) after that (`stop_path: "watcher"`, `watcher_wait: "launcher_gone_pre_trip"`).
+    - **At or after the wall trip (`watcher_wait: "escalated_launcher_gone"`):** The watcher immediately kills any tracked child processes and runs bounded `colab stop -s <session>` itself (`watcher_wait: "escalated_launcher_gone"`), finishing within `cleanup_bound_s` of the trip.
+    - If `SIGKILL` kills the entire process group (both launcher and watcher), no local process remains to call `colab stop`.
 - **How a stranded session is found and stopped:**
   1. **Automatic visibility on the next window open:** Every GPU window open runs `colab sessions` (`sessions_after_open.txt`) and reads `colab usage`'s `Active assignments: <n>` (`rate_readings`). An unexpected extra assignment (`Active assignments > 1`) or an unexpected session row in `colab sessions` immediately surfaces the still-open session.
   2. **Manual inspection and stop from the rig:** Run `colab sessions` to list all active server assignments and `colab usage` to verify `Active assignments` and current burn rate, then stop each stranded session by name with:
