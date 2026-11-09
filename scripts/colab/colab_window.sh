@@ -243,13 +243,16 @@ os.execvp("timeout", ["timeout", "-k", sys.argv[1], sys.argv[2], *sys.argv[3:]])
   return "${step_rc}"
 }
 
-# colab_enter_cleanup_trap <out_dir>: arm cleanup signal handling and record cleanup_started.txt
+# colab_enter_cleanup_trap <out_dir>: arm cleanup signal handling and record the cleanup start
+# epoch (`time.time()` float seconds, matching wall_trip_epoch.txt) in cleanup_started.txt
 # at the very top of `cleanup_on_exit` (before post-failure salvage) so `colab_run_wall_watcher`
 # knows the main shell entered cleanup and waits up to COLAB_CLEANUP_STOP_ATTEMPTED_BY_S for salvage.
 colab_enter_cleanup_trap() {
   local out_dir="$1"
   if [ -n "${out_dir}" ] && [ -d "${out_dir}" ] && [ ! -f "${out_dir}/cleanup_started.txt" ]; then
-    date -u +%s > "${out_dir}/cleanup_started.txt"
+    local py_bin="${PY_BIN:-$(colab_resolve_python)}"
+    "${py_bin}" -c 'import sys, time; open(sys.argv[1], "w", encoding="utf-8").write(f"{time.time():.6f}\n")' "${out_dir}/cleanup_started.txt" 2>/dev/null \
+      || date -u +%s > "${out_dir}/cleanup_started.txt"
   fi
   trap - EXIT
   trap 'colab_on_cleanup_signal "'"${out_dir}"'"' TERM INT

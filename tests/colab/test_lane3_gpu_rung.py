@@ -2841,8 +2841,8 @@ def test_wall_watcher_late_cleanup_start_and_overrunning_salvage_kills_mutation_
         assert win["cleanup_stop_attempted_by_s"] == 8
         assert win["cleanup_bound_s"] == 14
         trip_ts = float((out_dir / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
-        cleanup_start_mtime = (out_dir / "cleanup_started.txt").stat().st_mtime
-        assert cleanup_start_mtime - trip_ts >= 2.5, (cleanup_start_mtime - trip_ts)
+        cleanup_start_ts = float((out_dir / "cleanup_started.txt").read_text(encoding="utf-8").strip())
+        assert cleanup_start_ts - trip_ts >= 2.5, (cleanup_start_ts - trip_ts)
         stop_done_ts = json.loads((state_dir / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
         assert stop_done_ts - trip_ts <= win["cleanup_bound_s"], (stop_done_ts - trip_ts, win["cleanup_bound_s"])
     finally:
