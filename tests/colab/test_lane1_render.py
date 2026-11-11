@@ -678,4 +678,509 @@ def test_comfy_pid_fd_fail_closed_and_socket_match_mode_recorded(
         )
 
 
+def _make_safetensors_blob(tag: bytes = b"WEIGHT_BLOB", *, truncate: bool = False) -> bytes:
+    data = tag * 16
+    hdr = json.dumps(
+        {"w": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}},
+        separators=(",", ":"),
+    ).encode("utf-8")
+    blob = struct.pack("<Q", len(hdr)) + hdr + data
+    return blob[:-8] if truncate else blob
 
+
+def test_validate_weights_manifest_and_render_jobs_refusals(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import hashlib
+
+    # Missing, malformed, and empty manifests
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_weights_manifest(tmp_path / "missing_manifest.json")
+    assert exc_info.value.code == "WEIGHTS_MANIFEST_INVALID"
+
+    bad_json = tmp_path / "bad.json"
+    bad_json.write_text("{not-json", encoding="utf-8")
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_weights_manifest(bad_json)
+    assert exc_info.value.code == "WEIGHTS_MANIFEST_INVALID"
+
+    empty_list = tmp_path / "empty.json"
+    empty_list.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_weights_manifest(empty_list)
+    assert exc_info.value.code == "WEIGHTS_MANIFEST_INVALID"
+
+    non_dict = tmp_path / "non_dict.json"
+    non_dict.write_text('["not_an_object"]\n', encoding="utf-8")
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_weights_manifest(non_dict)
+    assert exc_info.value.code == "WEIGHTS_MANIFEST_INVALID"
+
+    valid_item = {
+        "repo": "Qwen/Qwen-Image",
+        "revision": "a" * 40,
+        "file": "qwen_image_fp8.safetensors",
+        "dest": "diffusion_models",
+        "sha256": "sha256:" + "b" * 64,
+        "licence_id": "Apache-2.0",
+    }
+    manifest_bad_cases = [
+        ({k: v for k, v in valid_item.items() if k != "licence_id"}, "WEIGHTS_LICENCE_INVALID"),
+        ({**valid_item, "licence_id": "Proprietary-Unknown"}, "WEIGHTS_LICENCE_INVALID"),
+        ({**valid_item, "repo": "bad repo without slash"}, "WEIGHTS_MANIFEST_INVALID"),
+        ({**valid_item, "revision": "main"}, "WEIGHTS_REVISION_INVALID"),
+        ({**valid_item, "file": "../escape.safetensors"}, "WEIGHTS_MANIFEST_INVALID"),
+        ({**valid_item, "dest": "checkpoints"}, "WEIGHTS_DEST_INVALID"),
+        ({**valid_item, "sha256": "short"}, "WEIGHTS_MANIFEST_INVALID"),
+    ]
+    for idx, (row_obj, expected_code) in enumerate(manifest_bad_cases):
+        p = tmp_path / f"bad_manifest_{idx}.json"
+        p.write_text(json.dumps([row_obj]), encoding="utf-8")
+        with pytest.raises(l1.Refusal) as exc_info:
+            l1.validate_weights_manifest(p)
+        assert exc_info.value.code == expected_code
+
+    good_manifest = tmp_path / "good_manifest.json"
+    good_manifest.write_text(json.dumps([{**valid_item, "hf_token_required": True}]), encoding="utf-8")
+    parsed_manifest = l1.validate_weights_manifest(good_manifest)
+    assert parsed_manifest[0]["sha256"] == "b" * 64
+    assert parsed_manifest[0]["hf_token_required"] is True
+
+    # Jobs validation refusals (and prompt privacy check)
+    valid_job = {
+        "job_id": "job_01",
+        "run_id": "run_01",
+        "template_id": "qwen_txt2img_lora",
+        "prompt": "PRIVATE_PROMPT_MARKER_9911",
+        "seed": 42,
+        "width": 512,
+        "height": 512,
+        "steps": 20,
+        "canon_sha": "a" * 40,
+        "entry_id": "ships/brig",
+        "entry_sha256": "sha256:" + "1" * 64,
+    }
+    good_jobs = tmp_path / "good_jobs.jsonl"
+    good_jobs.write_text(json.dumps(valid_job) + "\n", encoding="utf-8")
+    good_jobs_sha = hashlib.sha256(good_jobs.read_bytes()).hexdigest()
+
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_render_jobs(good_jobs, "not-64-hex")
+    assert exc_info.value.code == "RENDER_JOBS_SHA_REQUIRED"
+
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_render_jobs(tmp_path / "missing.jsonl", good_jobs_sha)
+    assert exc_info.value.code == "JOBS_FILE_MISSING"
+
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.validate_render_jobs(good_jobs, "0" * 64)
+    assert exc_info.value.code == "JOBS_SHA_MISMATCH"
+
+    def _write_jobs_text(name: str, text: str) -> tuple[Path, str]:
+        p = tmp_path / name
+        p.write_text(text, encoding="utf-8")
+        return p, hashlib.sha256(p.read_bytes()).hexdigest()
+
+    job_bad_cases = [
+        ("empty.jsonl", "\n", "RENDER_JOB_INVALID"),
+        ("badjson.jsonl", "{broken\n", "RENDER_JOB_INVALID"),
+        ("nonobj.jsonl", "[1,2,3]\n", "RENDER_JOB_INVALID"),
+        ("badid.jsonl", json.dumps({**valid_job, "job_id": "../bad"}) + "\n", "RENDER_JOB_INVALID"),
+        ("dupid.jsonl", (json.dumps(valid_job) + "\n") * 2, "RENDER_JOB_INVALID"),
+        ("stubtpl.jsonl", json.dumps({**valid_job, "template_id": "stub_fixture_64"}) + "\n", "JOB_TEMPLATE_INVALID"),
+        ("norun.jsonl", json.dumps({**valid_job, "run_id": ""}) + "\n", "RENDER_JOB_INVALID"),
+        ("noprompt.jsonl", json.dumps({**valid_job, "prompt": "   "}) + "\n", "RENDER_JOB_INVALID"),
+        ("boolseed.jsonl", json.dumps({**valid_job, "seed": True}) + "\n", "RENDER_JOB_INVALID"),
+        ("badsize.jsonl", json.dumps({**valid_job, "width": 0}) + "\n", "RENDER_JOB_INVALID"),
+        ("badsteps.jsonl", json.dumps({**valid_job, "steps": 0}) + "\n", "RENDER_JOB_INVALID"),
+    ]
+    for fname, body, expected_code in job_bad_cases:
+        jp, jsha = _write_jobs_text(fname, body)
+        with pytest.raises(l1.Refusal) as exc_info:
+            l1.validate_render_jobs(jp, jsha)
+        assert exc_info.value.code == expected_code
+        assert "PRIVATE_PROMPT_MARKER_9911" not in exc_info.value.detail
+
+    # run_validate_inputs & main --validate-render-inputs (including HF_READ_TOKEN_MISSING)
+    monkeypatch.delenv("HF_TOKEN_GGUF_READ", raising=False)
+    rc_missing_tok = l1.main(
+        [
+            "--validate-render-inputs",
+            "--weights-manifest",
+            str(good_manifest),
+            "--jobs",
+            str(good_jobs),
+            "--jobs-sha256",
+            good_jobs_sha,
+        ]
+    )
+    assert rc_missing_tok == 1
+    assert "REFUSED: HF_READ_TOKEN_MISSING:" in capsys.readouterr().err
+
+    assert l1.main(["--validate-render-inputs"]) == 1
+    assert "REFUSED: RENDER_MANIFEST_REQUIRED:" in capsys.readouterr().err
+
+    monkeypatch.setenv("HF_TOKEN_GGUF_READ", "hf_unitTestToken1234567890")
+    with pytest.raises(l1.Refusal) as exc_info:
+        l1.run_validate_inputs(manifest_path=good_manifest, jobs_path=None, jobs_sha256=None, allow_no_jobs=False)
+    assert exc_info.value.code == "RENDER_JOBS_REQUIRED"
+
+    rc_ok = l1.main(
+        [
+            "--validate-render-inputs",
+            "--weights-manifest",
+            str(good_manifest),
+            "--jobs",
+            str(good_jobs),
+            "--jobs-sha256",
+            good_jobs_sha,
+        ]
+    )
+    assert rc_ok == 0
+    assert "RENDER_INPUTS_OK " in capsys.readouterr().out
+
+
+def test_lane1_gpu_smoke_and_vm_guards_branches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake_site = REPO_ROOT / "tests" / "colab" / "fixtures" / "fake_vm_site"
+    monkeypatch.syspath_prepend(str(fake_site))
+    import importlib
+
+    fake_torch = importlib.import_module("torch")
+
+    # Happy GPU smoke
+    ticks = iter([0.0, 0.02, 0.06, 0.06])
+    smoke_rec = l1.lane1_gpu_smoke(torch_mod=fake_torch, clock=lambda: next(ticks, 0.1), target_s=0.05)
+    assert smoke_rec["device_name"] == "NVIDIA A100-SXM4-80GB"
+    assert smoke_rec["matmul_iters"] >= 64
+
+    # No CUDA available
+    monkeypatch.setenv("FAKE_VM_GPU_SMOKE", "no_cuda")
+    with pytest.raises(RuntimeError, match="is_available"):
+        l1.lane1_gpu_smoke(torch_mod=fake_torch, target_s=0.01)
+    monkeypatch.delenv("FAKE_VM_GPU_SMOKE", raising=False)
+
+    # Non-finite matmul check
+    class _NanTorch:
+        __version__ = "2.15.0+cu130"
+        bfloat16 = "bfloat16"
+        version = fake_torch.version
+        cuda = fake_torch.cuda
+        device = staticmethod(fake_torch.device)
+        randn = staticmethod(fake_torch.randn)
+
+        @staticmethod
+        def isfinite(_t: Any) -> Any:
+            return fake_torch._Bool(False)
+
+    with pytest.raises(RuntimeError, match="not finite"):
+        l1.lane1_gpu_smoke(torch_mod=_NanTorch, clock=lambda: 1.0, target_s=0.0)
+
+    meminfo = tmp_path / "meminfo"
+    meminfo.write_text("MemTotal:       33554432 kB\nMemAvailable:   25165824 kB\n", encoding="utf-8")
+    shm = tmp_path / "shm"
+    shm.mkdir()
+    hf_home = tmp_path / "hf"
+    models_dir = tmp_path / "models"
+    lane1_out = tmp_path / "out"
+    for d in (hf_home, models_dir, lane1_out):
+        d.mkdir()
+
+    class _Usage:
+        def __init__(self, free_gib: float) -> None:
+            self.total = int(100 * l1.GIB)
+            self.used = int((100 - free_gib) * l1.GIB)
+            self.free = int(free_gib * l1.GIB)
+
+    # GPU + disk + RAM failures all reported in refusals
+    guards_fail = tmp_path / "guards_fail.json"
+    rc_fail = l1.run_vm_guards(
+        hf_home=hf_home,
+        models_dir=models_dir,
+        lane1_out=lane1_out,
+        disk_required_gib=50.0,
+        smoke_seconds=0.01,
+        ram_required_gib="64",
+        meminfo_path=meminfo,
+        shm_path=shm,
+        out_path=guards_fail,
+        cpu_stub=False,
+        smoke_fn=lambda **_kw: (_ for _ in ()).throw(RuntimeError("no gpu")),
+        driver_fn=lambda: {"nvidia_smi_rc": 9},
+        disk_usage_fn=lambda _p: _Usage(5.0),
+    )
+    assert rc_fail == 1
+    err_txt = capsys.readouterr().err
+    assert "REFUSED: GPU_SMOKE_FAILED:" in err_txt
+    assert "REFUSED: DISK_FREE_LOW:" in err_txt
+    assert "REFUSED: HOST_RAM_LOW:" in err_txt
+
+    # Missing RAM threshold
+    rc_noram = l1.run_vm_guards(
+        hf_home=hf_home,
+        models_dir=models_dir,
+        lane1_out=lane1_out,
+        disk_required_gib=0.001,
+        smoke_seconds=0.01,
+        ram_required_gib=None,
+        meminfo_path=meminfo,
+        shm_path=shm,
+        out_path=tmp_path / "guards_noram.json",
+        cpu_stub=True,
+        disk_usage_fn=lambda _p: _Usage(80.0),
+    )
+    assert rc_noram == 1
+    assert "REFUSED: HOST_RAM_THRESHOLD_MISSING:" in capsys.readouterr().err
+
+    # CLI --vm-guards --cpu-stub pass
+    monkeypatch.setenv("SDLAB_TEST_DISK_REQUIRED_GIB", "0.001")
+    guards_ok = tmp_path / "guards_ok.json"
+    rc_cli = l1.main(
+        [
+            "--vm-guards",
+            "--cpu-stub",
+            "--hf-home",
+            str(hf_home),
+            "--models-dir",
+            str(models_dir),
+            "--lane1-out",
+            str(lane1_out),
+            "--ram-required-gib",
+            "4",
+            "--meminfo",
+            str(meminfo),
+            "--shm",
+            str(shm),
+            "--guards-out",
+            str(guards_ok),
+        ]
+    )
+    assert rc_cli == 0
+    assert json.loads(guards_ok.read_text(encoding="utf-8"))["gpu"]["skipped_cpu_stub"] is True
+
+
+def test_run_weights_download_merge_facts_and_peak_vram(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import hashlib
+    import os
+    import subprocess
+
+    fake_site = REPO_ROOT / "tests" / "colab" / "fixtures" / "fake_vm_site"
+    monkeypatch.syspath_prepend(str(fake_site))
+    monkeypatch.setenv(
+        "PYTHONPATH",
+        str(fake_site) + (os.pathsep + os.environ["PYTHONPATH"] if os.environ.get("PYTHONPATH") else ""),
+    )
+
+    blobs_dir = tmp_path / "blobs"
+    blobs_dir.mkdir()
+    good_st = _make_safetensors_blob(b"GOOD_VAE_ST")
+    (blobs_dir / "vae.safetensors").write_bytes(good_st)
+    good_sha = hashlib.sha256(good_st).hexdigest()
+    monkeypatch.setenv("FAKE_HF_BLOBS_DIR", str(blobs_dir))
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "madebyollin/taesd",
+                    "revision": "6" * 40,
+                    "file": "vae.safetensors",
+                    "dest": "vae",
+                    "sha256": good_sha,
+                    "licence_id": "MIT",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    # expected_file_bytes matches sibling by filename and falls back to sum
+    assert l1.expected_file_bytes("madebyollin/taesd", "6" * 40, "vae.safetensors") == len(good_st)
+    assert l1.expected_file_bytes("madebyollin/taesd", "6" * 40, "other.bin") > len(good_st)
+
+    # Missing --weights-manifest on CLI
+    assert l1.main(["--download-weights"]) == 1
+    assert "REFUSED: RENDER_MANIFEST_REQUIRED:" in capsys.readouterr().err
+
+    # Missing max_seconds
+    assert (
+        l1.run_weights_download(
+            manifest_path=manifest,
+            hf_home=tmp_path / "hf0",
+            models_dir=tmp_path / "m0",
+            max_seconds_raw=None,
+            log_path=tmp_path / "dl0.log",
+            out_path=tmp_path / "dl0.json",
+        )
+        == 1
+    )
+    assert "REFUSED: DOWNLOAD_LIMIT_MISSING:" in capsys.readouterr().err
+
+    # Hub metadata error classification (401 -> MODEL_AUTH_FAILED, 404rev -> MODEL_REVISION_NOT_FOUND)
+    for err_mode, exp_code in (("401", "MODEL_AUTH_FAILED"), ("404rev", "MODEL_REVISION_NOT_FOUND")):
+        monkeypatch.setenv("FAKE_HF_INFO_ERROR", err_mode)
+        rc_err = l1.run_weights_download(
+            manifest_path=manifest,
+            hf_home=tmp_path / f"hf_{err_mode}",
+            models_dir=tmp_path / f"m_{err_mode}",
+            max_seconds_raw="60",
+            log_path=tmp_path / f"dl_{err_mode}.log",
+            out_path=tmp_path / f"dl_{err_mode}.json",
+        )
+        assert rc_err == 1
+        assert f"REFUSED: {exp_code}:" in capsys.readouterr().err
+    monkeypatch.delenv("FAKE_HF_INFO_ERROR", raising=False)
+
+    # Probe DOWNLOAD_TOO_SLOW (slow rate against large expected size)
+    monkeypatch.setenv("FAKE_HF_STREAM_BYTES", str(50_000_000))
+    monkeypatch.setenv("FAKE_HF_RATE_BPS", "5000")
+    rc_slow = l1.run_weights_download(
+        manifest_path=manifest,
+        hf_home=tmp_path / "hf_slow",
+        models_dir=tmp_path / "m_slow",
+        max_seconds_raw="10",
+        probe_seconds=0.1,
+        probe_bytes=100,
+        poll_s=0.05,
+        log_path=tmp_path / "dl_slow.log",
+        out_path=tmp_path / "dl_slow.json",
+    )
+    assert rc_slow == 1
+    assert "REFUSED: DOWNLOAD_TOO_SLOW:" in capsys.readouterr().err
+    monkeypatch.delenv("FAKE_HF_STREAM_BYTES", raising=False)
+    monkeypatch.delenv("FAKE_HF_RATE_BPS", raising=False)
+
+    # Child download failure -> MODEL_DOWNLOAD_FAILED
+    monkeypatch.setenv("FAKE_HF_FAIL", "1")
+    rc_dlfail = l1.run_weights_download(
+        manifest_path=manifest,
+        hf_home=tmp_path / "hf_fail",
+        models_dir=tmp_path / "m_fail",
+        max_seconds_raw="60",
+        poll_s=0.02,
+        log_path=tmp_path / "dl_fail.log",
+        out_path=tmp_path / "dl_fail.json",
+    )
+    assert rc_dlfail == 1
+    assert "REFUSED: MODEL_DOWNLOAD_FAILED:" in capsys.readouterr().err
+    monkeypatch.delenv("FAKE_HF_FAIL", raising=False)
+
+    # WEIGHTS_SHA_MISMATCH
+    monkeypatch.setenv("FAKE_HF_CORRUPT_SHA", "1")
+    rc_shafail = l1.run_weights_download(
+        manifest_path=manifest,
+        hf_home=tmp_path / "hf_corrupt",
+        models_dir=tmp_path / "m_corrupt",
+        max_seconds_raw="60",
+        poll_s=0.02,
+        log_path=tmp_path / "dl_corrupt.log",
+        out_path=tmp_path / "dl_corrupt.json",
+    )
+    assert rc_shafail == 1
+    assert "REFUSED: WEIGHTS_SHA_MISMATCH:" in capsys.readouterr().err
+    assert not (tmp_path / "m_corrupt" / "vae" / "vae.safetensors").exists()
+    monkeypatch.delenv("FAKE_HF_CORRUPT_SHA", raising=False)
+
+    # WEIGHTS_CORRUPT (matching sha256 on truncated safetensors)
+    trunc_st = _make_safetensors_blob(b"TRUNCATED_VAE", truncate=True)
+    (blobs_dir / "trunc.safetensors").write_bytes(trunc_st)
+    trunc_manifest = tmp_path / "trunc_manifest.json"
+    trunc_manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "madebyollin/taesd",
+                    "revision": "6" * 40,
+                    "file": "trunc.safetensors",
+                    "dest": "vae",
+                    "sha256": hashlib.sha256(trunc_st).hexdigest(),
+                    "licence_id": "MIT",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    rc_trunc = l1.run_weights_download(
+        manifest_path=trunc_manifest,
+        hf_home=tmp_path / "hf_trunc",
+        models_dir=tmp_path / "m_trunc",
+        max_seconds_raw="60",
+        poll_s=0.02,
+        log_path=tmp_path / "dl_trunc.log",
+        out_path=tmp_path / "dl_trunc.json",
+    )
+    assert rc_trunc == 1
+    assert "REFUSED: WEIGHTS_CORRUPT:" in capsys.readouterr().err
+    assert not (tmp_path / "m_trunc" / "vae" / "trunc.safetensors").exists()
+
+    # Happy authenticated download + log token scrubbing + merge_render_facts
+    secret_tok = "hf_unitDownloadSecretToken9988776655"
+    monkeypatch.setenv("HF_TOKEN_GGUF_READ", secret_tok)
+    monkeypatch.setenv("FAKE_HF_EXPECT_TOKEN", secret_tok)
+    lane1_out = tmp_path / "lane1_out_ok"
+    lane1_out.mkdir()
+    dl_log = lane1_out / "weights_download.log"
+    dl_json = lane1_out / "weights_download.json"
+    rc_good = l1.main(
+        [
+            "--download-weights",
+            "--weights-manifest",
+            str(manifest),
+            "--hf-home",
+            str(tmp_path / "hf_good"),
+            "--models-dir",
+            str(tmp_path / "m_good"),
+            "--max-seconds",
+            "60",
+            "--probe-seconds",
+            "0.1",
+            "--probe-bytes",
+            "64",
+            "--poll-s",
+            "0.02",
+            "--download-log",
+            str(dl_log),
+            "--download-out",
+            str(dl_json),
+        ]
+    )
+    assert rc_good == 0
+    assert secret_tok not in dl_log.read_text(encoding="utf-8")
+    assert (tmp_path / "m_good" / "vae" / "vae.safetensors").is_file()
+    capsys.readouterr()
+
+    assert (
+        l1.main(
+            [
+                "--merge-render-facts",
+                "--lane1-out",
+                str(lane1_out),
+                "--render-state",
+                "rendered",
+            ]
+        )
+        == 0
+    )
+    merged_win = json.loads((lane1_out / "vm_window.json").read_text(encoding="utf-8"))
+    assert merged_win["render"] == "rendered"
+    assert merged_win["hf_token_used"] is True
+    assert merged_win["weights_download"]["files"][0]["safetensors_verified"] is True
+
+    # read_peak_vram_mib on CUDA stats + smi_runner and on CPU stats
+    vram_cuda = l1.read_peak_vram_mib(
+        "http://127.0.0.1:8188",
+        system_stats_fetcher=lambda _u: {
+            "devices": [{"type": "cuda", "name": "cuda:0", "vram_total": 80 * l1.GIB, "vram_free": 68 * l1.GIB, "vram_peak": 15 * l1.GIB}]
+        },
+        smi_runner=lambda *_a, **_kw: subprocess.CompletedProcess(["nvidia-smi"], 0, "16384\n", ""),
+    )
+    assert vram_cuda == 16384.0
+    vram_cpu = l1.read_peak_vram_mib(
+        "http://127.0.0.1:8188",
+        system_stats_fetcher=lambda _u: {"devices": [{"type": "cpu", "name": "cpu", "vram_total": 0, "vram_free": 0}]},
+    )
+    assert vram_cpu == 0.0

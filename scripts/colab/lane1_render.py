@@ -15,24 +15,58 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import struct
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
 import zlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+_SCRIPT_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+from lane3_rung import (  # noqa: E402
+    GIB,
+    REPO_ID_RE,
+    REVISION_RE,
+    Refusal,
+    classify_hub_error,
+    count_throttle_signals,
+    dir_bytes,
+    evaluate_probe,
+    mask_log_text,
+    measure_disk,
+    measure_host_ram,
+    measure_shm,
+    parse_positive_number,
+    query_driver,
+    refuse_line,
+    repo_cache_dir,
+    safetensors_complete,
+    sha256_file as hex_sha256_file,
+    write_json,
+)
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PY_VERSION_EXPECTED = "3.14.9"
 UV_PIN = "uv==0.13.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
 CLEARED_LICENCES = {"Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "CC-BY-4.0"}
+VALID_WEIGHT_DESTS = ("diffusion_models", "text_encoders", "vae", "loras")
+REAL_MODEL_TEMPLATES = {"qwen_txt2img_lora", "qwen_image"}
+FORBIDDEN_RENDER_TEMPLATES = {"stub_fixture_64"}
+JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+MIB = 1024**2
 
 
 @dataclass
@@ -739,6 +773,560 @@ def sync_copy_back(renders_path: Path, current_json: Path, out_dir: Path, copy_b
             shutil.copy2(src, copy_back_dir / fname)
 
 
+def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
+    """Validate a `--weights-manifest` JSON list: `{repo, revision, file, dest, sha256, licence_id}`."""
+    if not manifest_path.is_file():
+        raise Refusal("WEIGHTS_MANIFEST_INVALID", f"{manifest_path} does not exist")
+    try:
+        raw = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise Refusal("WEIGHTS_MANIFEST_INVALID", f"{manifest_path}: invalid JSON ({type(exc).__name__})") from None
+    if not isinstance(raw, list) or not raw:
+        raise Refusal("WEIGHTS_MANIFEST_INVALID", f"{manifest_path} must be a non-empty JSON list")
+
+    entries: list[dict[str, Any]] = []
+    for idx, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: manifest row must be an object")
+        lic = item.get("licence_id")
+        if not isinstance(lic, str) or not lic.strip():
+            raise Refusal("WEIGHTS_LICENCE_INVALID", f"row {idx}: missing licence_id")
+        lic_clean = lic.strip()
+        if lic_clean not in CLEARED_LICENCES:
+            raise Refusal("WEIGHTS_LICENCE_INVALID", f"row {idx}: licence_id {lic_clean!r} is not cleared")
+        repo = item.get("repo")
+        if not isinstance(repo, str) or not REPO_ID_RE.match(repo.strip()):
+            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: {repo!r} is not a Hugging Face repo id")
+        revision = item.get("revision")
+        if not isinstance(revision, str) or not REVISION_RE.match(revision.strip()):
+            raise Refusal("WEIGHTS_REVISION_INVALID", f"row {idx}: revision {revision!r} is not a 40-hex commit")
+        rel_file = item.get("file")
+        if (
+            not isinstance(rel_file, str)
+            or not rel_file.strip()
+            or "\\" in rel_file
+            or rel_file.startswith("/")
+            or any(part in ("", ".", "..") for part in rel_file.strip().split("/"))
+        ):
+            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: invalid relative file {rel_file!r}")
+        dest = item.get("dest")
+        if dest not in VALID_WEIGHT_DESTS:
+            raise Refusal("WEIGHTS_DEST_INVALID", f"row {idx}: dest {dest!r} must be one of {VALID_WEIGHT_DESTS}")
+        norm_sha = normalize_sha256(item.get("sha256"))
+        if norm_sha is None:
+            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: sha256 must be a 64-hex digest")
+        entries.append(
+            {
+                "repo": repo.strip(),
+                "revision": revision.strip(),
+                "file": rel_file.strip(),
+                "dest": dest,
+                "sha256": norm_sha[7:],
+                "licence_id": lic_clean,
+                "hf_token_required": bool(item.get("hf_token_required", False)),
+            }
+        )
+    return entries
+
+
+def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> dict[str, Any]:
+    """Check `jobs.jsonl` against `--jobs-sha256` and validate every row without logging prompt text."""
+    exp_norm = normalize_sha256(expected_jobs_sha256)
+    if exp_norm is None:
+        raise Refusal("RENDER_JOBS_SHA_REQUIRED", "--jobs-sha256 must be a 64-hex sha256")
+    if not jobs_path.is_file():
+        raise Refusal("JOBS_FILE_MISSING", f"{jobs_path} does not exist")
+    exp_hex = exp_norm[7:]
+    actual_hex = hex_sha256_file(jobs_path)
+    if actual_hex != exp_hex:
+        raise Refusal("JOBS_SHA_MISMATCH", f"{jobs_path} sha256={actual_hex} expected={exp_hex}")
+
+    raw_lines = [ln for ln in jobs_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if not raw_lines:
+        raise Refusal("RENDER_JOB_INVALID", f"{jobs_path} contains no jobs")
+
+    seen_ids: set[str] = set()
+    first_job_id: str | None = None
+    for idx, line in enumerate(raw_lines):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            raise Refusal("RENDER_JOB_INVALID", f"row {idx}: malformed JSON") from None
+        if not isinstance(row, dict):
+            raise Refusal("RENDER_JOB_INVALID", f"row {idx}: job row must be a JSON object")
+        job_id = row.get("job_id")
+        if not isinstance(job_id, str) or not JOB_ID_RE.match(job_id) or job_id in seen_ids:
+            raise Refusal("RENDER_JOB_INVALID", f"row {idx}: missing, unsafe or duplicate job_id")
+        seen_ids.add(job_id)
+        if first_job_id is None:
+            first_job_id = job_id
+
+        template_id = row.get("template_id")
+        if (
+            not isinstance(template_id, str)
+            or not template_id.strip()
+            or template_id.strip() in FORBIDDEN_RENDER_TEMPLATES
+            or template_id.strip() not in REAL_MODEL_TEMPLATES
+        ):
+            raise Refusal(
+                "JOB_TEMPLATE_INVALID",
+                f"job {job_id}: template_id {template_id!r} must be a real-model template (never stub_fixture_64)",
+            )
+        for req_str in ("run_id", "canon_sha", "entry_id", "entry_sha256"):
+            val = row.get(req_str)
+            if not isinstance(val, str) or not val.strip():
+                raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing {req_str}")
+        prompt = row.get("prompt")
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing prompt")
+        seed = row.get("seed")
+        if not isinstance(seed, int) or isinstance(seed, bool):
+            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing or non-integer seed")
+        width = row.get("width")
+        height = row.get("height")
+        if (
+            not isinstance(width, int)
+            or isinstance(width, bool)
+            or width <= 0
+            or not isinstance(height, int)
+            or isinstance(height, bool)
+            or height <= 0
+        ):
+            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive width/height")
+        steps = row.get("steps")
+        if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
+            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive steps")
+
+    return {"jobs_sha256": actual_hex, "job_count": len(seen_ids), "first_job_id": first_job_id}
+
+
+def run_validate_inputs(
+    *,
+    manifest_path: Path,
+    jobs_path: Path | None = None,
+    jobs_sha256: str | None = None,
+    allow_no_jobs: bool = False,
+) -> dict[str, Any]:
+    entries = validate_weights_manifest(manifest_path)
+    needs_token = any(e["hf_token_required"] for e in entries)
+    if needs_token:
+        tok = os.environ.get("HF_TOKEN_GGUF_READ", "")
+        if not tok or any(ch.isspace() for ch in tok):
+            raise Refusal(
+                "HF_READ_TOKEN_MISSING",
+                "manifest marks hf_token_required=true; pass token via HF_TOKEN_GGUF_READ environment variable",
+            )
+    jobs_info: dict[str, Any] | None = None
+    if not allow_no_jobs or jobs_path is not None:
+        if jobs_path is None:
+            raise Refusal("RENDER_JOBS_REQUIRED", "--render needs --jobs <jobs.jsonl>")
+        jobs_info = validate_render_jobs(jobs_path, jobs_sha256)
+    return {
+        "manifest_entries": len(entries),
+        "hf_token_required": needs_token,
+        "jobs": jobs_info,
+    }
+
+
+def lane1_gpu_smoke(
+    torch_mod: Any = None,
+    clock: Callable[[], float] = time.perf_counter,
+    target_s: float = 5.0,
+) -> dict[str, Any]:
+    """Timed bf16 1024x1024 CUDA matmul check through Lane 1's torch."""
+    if torch_mod is None:
+        import torch as torch_mod  # noqa: PLC0415 - imported on the VM only
+    rec: dict[str, Any] = {
+        "torch_version": getattr(torch_mod, "__version__", None),
+        "torch_cuda": getattr(getattr(torch_mod, "version", None), "cuda", None),
+    }
+    if not torch_mod.cuda.is_available():
+        raise RuntimeError("torch.cuda.is_available() is False")
+    dev = torch_mod.device("cuda")
+    rec["device_name"] = torch_mod.cuda.get_device_name(0)
+    a = torch_mod.randn(1024, 1024, device=dev, dtype=torch_mod.bfloat16)
+    b = torch_mod.randn(1024, 1024, device=dev, dtype=torch_mod.bfloat16)
+    torch_mod.cuda.synchronize()
+    start = clock()
+    iters = 0
+    while True:
+        c = a @ b
+        iters += 1
+        if iters % 64 == 0:
+            torch_mod.cuda.synchronize()
+            if clock() - start >= target_s:
+                break
+    torch_mod.cuda.synchronize()
+    elapsed = clock() - start
+    if not bool(torch_mod.isfinite(c).all()):
+        raise RuntimeError("matmul result is not finite")
+    rec.update(
+        {
+            "matmul_iters": iters,
+            "matmul_seconds": round(elapsed, 3),
+            "matmul_tflops": round(iters * 2 * 1024**3 / max(elapsed, 1e-9) / 1e12, 2),
+        }
+    )
+    return rec
+
+
+def run_vm_guards(
+    *,
+    hf_home: Path,
+    models_dir: Path,
+    lane1_out: Path,
+    disk_required_gib: float,
+    smoke_seconds: float,
+    ram_required_gib: str | None,
+    meminfo_path: Path,
+    shm_path: Path,
+    out_path: Path,
+    cpu_stub: bool = False,
+    smoke_fn: Callable[..., dict[str, Any]] = lane1_gpu_smoke,
+    driver_fn: Callable[[], dict[str, Any]] = query_driver,
+    disk_usage_fn: Callable[[str], Any] = shutil.disk_usage,
+) -> int:
+    rec: dict[str, Any] = {"cpu_stub": cpu_stub}
+    refusals: list[tuple[str, str]] = []
+
+    try:
+        ram_req = parse_positive_number(ram_required_gib, "HOST_RAM_THRESHOLD_MISSING", "LANE1_HOST_RAM_REQUIRED_GIB")
+    except Refusal as exc:
+        ram_req = None
+        refusals.append((exc.code, exc.detail))
+
+    if cpu_stub:
+        rec["gpu"] = {"skipped_cpu_stub": True, "ok": True}
+    else:
+        gpu: dict[str, Any] = dict(driver_fn())
+        try:
+            gpu.update(smoke_fn(target_s=float(smoke_seconds)))
+            gpu["ok"] = True
+        except Exception as exc:  # noqa: BLE001
+            gpu["ok"] = False
+            gpu["error"] = f"{type(exc).__name__}: {exc}".splitlines()[0]
+            refusals.append(("GPU_SMOKE_FAILED", gpu["error"]))
+        rec["gpu"] = gpu
+
+    disk = measure_disk([hf_home, models_dir, lane1_out], float(disk_required_gib), disk_usage_fn)
+    rec["disk"] = disk
+    if not disk["ok"]:
+        low = [fs for fs in disk["filesystems"] if fs["free_bytes"] < float(disk_required_gib) * GIB]
+        refusals.append(
+            (
+                "DISK_FREE_LOW",
+                "; ".join(f"{fs['measured_at']} free {fs['free_gib']} GiB < {disk_required_gib} GiB" for fs in low),
+            )
+        )
+
+    meminfo_text = meminfo_path.read_text(encoding="utf-8", errors="replace")
+    ram = measure_host_ram(meminfo_text, ram_req if ram_req is not None else 0.0)
+    if ram_req is None:
+        ram["required_available_gib"] = None
+        ram["ok"] = False
+    elif not ram["ok"]:
+        refusals.append(
+            (
+                "HOST_RAM_LOW",
+                f"MemAvailable {ram['mem_available_gib']} GiB < required {ram_req} GiB (MemTotal {ram['mem_total_gib']} GiB)",
+            )
+        )
+    rec["host_ram"] = ram
+    rec["shm"] = measure_shm(shm_path, disk_usage_fn)
+    rec["refusals"] = [code for code, _ in refusals]
+    write_json(out_path, rec)
+    print("RENDER_GUARDS " + json.dumps(rec), flush=True)
+    for code, detail in refusals:
+        print(refuse_line(code, detail), file=sys.stderr, flush=True)
+    return 1 if refusals else 0
+
+
+FILE_DOWNLOAD_CHILD = (
+    "import os, sys\n"
+    "from huggingface_hub import hf_hub_download\n"
+    "path = hf_hub_download(repo_id=sys.argv[1], filename=sys.argv[2], revision=sys.argv[3], "
+    "token=os.environ.get('HF_TOKEN') or False)\n"
+    "print('FILE_PATH ' + path, flush=True)\n"
+)
+
+
+def expected_file_bytes(repo_id: str, revision: str, filename: str, token: str | None = None) -> int:
+    from huggingface_hub import HfApi  # noqa: PLC0415
+
+    info = HfApi().model_info(repo_id, revision=revision, files_metadata=True, token=token or False)
+    siblings = list(info.siblings or [])
+    for sib in siblings:
+        if getattr(sib, "rfilename", None) == filename:
+            return int(sib.size or 0)
+    return sum(int(s.size or 0) for s in siblings)
+
+
+def _fail_weights(out_path: Path, rec: dict[str, Any], code: str, detail: str) -> int:
+    rec["refusal"] = code
+    write_json(out_path, rec)
+    print("WEIGHTS_DOWNLOAD " + json.dumps(rec), flush=True)
+    print(refuse_line(code, detail), file=sys.stderr, flush=True)
+    return 1
+
+
+def run_weights_download(
+    *,
+    manifest_path: Path,
+    hf_home: Path,
+    models_dir: Path,
+    max_seconds_raw: str | None,
+    probe_seconds: float = 60.0,
+    probe_bytes: int = 2 * GIB,
+    poll_s: float = 0.25,
+    log_path: Path,
+    out_path: Path,
+    expected_fn: Callable[..., int] = expected_file_bytes,
+    popen: Callable[..., Any] = subprocess.Popen,
+    clock: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> int:
+    token = os.environ.get("HF_TOKEN_GGUF_READ") or None
+    offline = os.environ.get("HF_HUB_OFFLINE") == "1"
+    rec: dict[str, Any] = {
+        "token_used": "HF_TOKEN_GGUF_READ" in os.environ,
+        "offline": offline,
+        "files": [],
+    }
+    try:
+        max_seconds = parse_positive_number(max_seconds_raw, "DOWNLOAD_LIMIT_MISSING", "LANE1_DOWNLOAD_MAX_SECONDS")
+        entries = validate_weights_manifest(manifest_path)
+    except Refusal as exc:
+        return _fail_weights(out_path, rec, exc.code, exc.detail)
+
+    rec["max_seconds"] = max_seconds
+    rec["probe_window"] = {"seconds": float(probe_seconds), "bytes": int(probe_bytes)}
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text("", encoding="utf-8", newline="\n")
+
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HF_TOKEN_GGUF_READ")
+    }
+    env.update({"HF_HOME": str(hf_home), "HF_HUB_DISABLE_IMPLICIT_TOKEN": "1", "PYTHONUNBUFFERED": "1"})
+    if token is not None:
+        env["HF_TOKEN"] = token
+
+    overall_start = clock()
+    for entry in entries:
+        repo = entry["repo"]
+        revision = entry["revision"]
+        filename = entry["file"]
+        dest = entry["dest"]
+        exp_sha = entry["sha256"]
+
+        cache = repo_cache_dir(hf_home, repo)
+        baseline = dir_bytes(cache)
+        if offline:
+            expected = baseline
+        else:
+            try:
+                expected = int(expected_fn(repo, revision, filename, token))
+            except Exception as exc:  # noqa: BLE001
+                code, detail = classify_hub_error(exc)
+                return _fail_weights(out_path, rec, code, f"model_info {repo}@{revision}: {detail}")
+        remaining = max(expected - baseline, 0)
+        spent = max(clock() - overall_start, 0.0)
+        budget_s = max(max_seconds - spent, 0.01)
+
+        file_start = clock()
+        hard_stop = threading.Event()
+        item_log = log_path.parent / f".dl_{len(rec['files'])}.log"
+        with item_log.open("w", encoding="utf-8", newline="\n") as log_fh:
+            proc = popen(
+                [sys.executable, "-c", FILE_DOWNLOAD_CHILD, repo, filename, revision],
+                stdout=log_fh,
+                stderr=subprocess.STDOUT,
+                env=env,
+            )
+
+            def _hard_limit(p: Any = proc, hs: threading.Event = hard_stop) -> None:
+                if p.poll() is None:
+                    hs.set()
+                    p.kill()
+
+            timer = threading.Timer(budget_s, _hard_limit)
+            timer.daemon = True
+            timer.start()
+            probe: dict[str, Any] | None = None
+            try:
+                while proc.poll() is None:
+                    sleep(float(poll_s))
+                    elapsed = clock() - file_start
+                    new_bytes = max(dir_bytes(cache) - baseline, 0)
+                    if not offline and probe is None and (elapsed >= float(probe_seconds) or new_bytes >= int(probe_bytes)):
+                        probe = evaluate_probe(new_bytes, elapsed, remaining, budget_s)
+                        print("WEIGHTS_DOWNLOAD_PROBE " + json.dumps(probe), flush=True)
+                        if probe["too_slow"]:
+                            proc.kill()
+                            proc.wait()
+                            break
+                rc = proc.wait()
+            finally:
+                timer.cancel()
+
+        elapsed = clock() - file_start
+        raw_log = item_log.read_text(encoding="utf-8", errors="replace")
+        item_log.unlink(missing_ok=True)
+        scrubbed_log = mask_log_text(raw_log)
+        if token is not None and token in scrubbed_log:
+            scrubbed_log = scrubbed_log.replace(token, "[REDACTED]")
+        with log_path.open("a", encoding="utf-8", newline="\n") as main_log:
+            main_log.write(scrubbed_log)
+        log_lines = raw_log.splitlines()
+        new_bytes = max(dir_bytes(cache) - baseline, 0)
+        downloaded_path = next((ln.split(" ", 1)[1].strip() for ln in log_lines if ln.startswith("FILE_PATH ")), None)
+
+        file_rec: dict[str, Any] = {
+            "repo": repo,
+            "revision": revision,
+            "file": filename,
+            "dest": dest,
+            "licence_id": entry["licence_id"],
+            "expected_bytes": expected,
+            "downloaded_bytes": new_bytes,
+            "seconds": round(elapsed, 2),
+            "probe": probe,
+            "hard_limit_hit": hard_stop.is_set(),
+            **count_throttle_signals(log_lines),
+        }
+        rec["files"].append(file_rec)
+
+        if hard_stop.is_set():
+            return _fail_weights(
+                out_path,
+                rec,
+                "DOWNLOAD_TOO_SLOW",
+                f"hard limit: {repo}:{filename} still downloading after {budget_s:.1f} s ({new_bytes} bytes)",
+            )
+        if probe is not None and probe["too_slow"]:
+            return _fail_weights(
+                out_path,
+                rec,
+                "DOWNLOAD_TOO_SLOW",
+                f"probe {probe['probe_rate_mb_s']} MB/s over {probe['probe_seconds']} s projects "
+                f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {budget_s:.1f} s",
+            )
+        if rc != 0 or not downloaded_path or not Path(downloaded_path).is_file():
+            tail = mask_log_text(" | ".join(log_lines[-3:]))
+            if token is not None and token in tail:
+                tail = "[the download log tail is withheld: it held the read token]"
+            return _fail_weights(out_path, rec, "MODEL_DOWNLOAD_FAILED", f"hf_hub_download {repo}:{filename} rc={rc}: {tail}")
+
+        target_dir = models_dir / dest
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / Path(filename).name
+        shutil.copyfile(downloaded_path, target_path)
+        got_sha = hex_sha256_file(target_path)
+        file_rec["staged_path"] = str(target_path)
+        file_rec["sha256"] = got_sha
+        if got_sha != exp_sha:
+            target_path.unlink(missing_ok=True)
+            return _fail_weights(
+                out_path,
+                rec,
+                "WEIGHTS_SHA_MISMATCH",
+                f"{dest}/{target_path.name} sha256={got_sha} expected={exp_sha}",
+            )
+        if target_path.suffix == ".safetensors":
+            if not safetensors_complete(target_path):
+                target_path.unlink(missing_ok=True)
+                return _fail_weights(
+                    out_path,
+                    rec,
+                    "WEIGHTS_CORRUPT",
+                    f"{dest}/{target_path.name} failed safetensors header/offset unpack check",
+                )
+            file_rec["safetensors_verified"] = True
+
+    write_json(out_path, rec)
+    print("WEIGHTS_DOWNLOAD " + json.dumps(rec), flush=True)
+    return 0
+
+
+def merge_render_facts(lane1_out: Path, *, render_state: str | None = None, failed_rc: int | None = None) -> dict[str, Any]:
+    """Merge `render_guards.json` and `weights_download.json` into `vm_window.json`."""
+    vm_win_path = lane1_out / "vm_window.json"
+    rec: dict[str, Any] = {}
+    if vm_win_path.is_file():
+        try:
+            rec.update(json.loads(vm_win_path.read_text(encoding="utf-8")))
+        except ValueError:
+            pass
+    guards_p = lane1_out / "render_guards.json"
+    if guards_p.is_file():
+        rec["render_guards"] = json.loads(guards_p.read_text(encoding="utf-8"))
+    dl_p = lane1_out / "weights_download.json"
+    if dl_p.is_file():
+        dl = json.loads(dl_p.read_text(encoding="utf-8"))
+        rec["weights_download"] = dl
+        rec["hf_token_used"] = bool(dl.get("token_used"))
+    if render_state is not None:
+        rec["render"] = render_state
+    if failed_rc is not None:
+        rec["failed_rc"] = failed_rc
+    write_json(vm_win_path, rec)
+    return rec
+
+
+def read_peak_vram_mib(
+    comfy_url: str,
+    *,
+    system_stats_fetcher: Any | None = None,
+    smi_runner: Callable[..., Any] | None = None,
+) -> float:
+    """Read peak/used CUDA VRAM in MiB after an image from ComfyUI `/system_stats` (and `nvidia-smi` when live)."""
+    try:
+        if system_stats_fetcher is not None:
+            stats = system_stats_fetcher(comfy_url)
+        else:
+            with urllib.request.urlopen(f"{comfy_url.rstrip('/')}/system_stats", timeout=10) as resp:
+                stats = json.loads(resp.read().decode("utf-8"))
+    except Exception:  # noqa: BLE001
+        stats = {}
+
+    devices = (stats or {}).get("devices") or []
+    cuda_readings_mib: list[float] = []
+    for dev in devices:
+        if not isinstance(dev, dict):
+            continue
+        dev_type = str(dev.get("type", "")).lower()
+        dev_name = str(dev.get("name", "")).lower()
+        if dev_type == "cuda" or "cuda" in dev_name:
+            for peak_key in ("vram_peak", "torch_vram_peak"):
+                if dev.get(peak_key) is not None:
+                    cuda_readings_mib.append(float(dev[peak_key]) / MIB)
+            for tot_k, free_k in (("vram_total", "vram_free"), ("torch_vram_total", "torch_vram_free")):
+                if dev.get(tot_k) is not None and dev.get(free_k) is not None:
+                    used = max(0.0, float(dev[tot_k]) - float(dev[free_k]))
+                    cuda_readings_mib.append(used / MIB)
+
+    if smi_runner is not None or (system_stats_fetcher is None and os.environ.get("CUDA_VISIBLE_DEVICES", "0") != ""):
+        runner = smi_runner or subprocess.run
+        try:
+            res = runner(
+                ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
+            )
+            if getattr(res, "returncode", 1) == 0:
+                for ln in (res.stdout or "").splitlines():
+                    ln = ln.strip()
+                    if ln:
+                        cuda_readings_mib.append(float(ln))
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
+
+    return round(max(cuda_readings_mib), 2) if cuda_readings_mib else 0.0
+
+
 def run_queue(
     *,
     jobs_path: Path,
@@ -752,13 +1340,14 @@ def run_queue(
     client: Any | None = None,
     image_downloader: Any | None = None,
     system_stats_fetcher: Any | None = None,
+    smi_runner: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
     assert_loopback_url(comfy_url)
     out_dir.mkdir(parents=True, exist_ok=True)
     renders_path.parent.mkdir(parents=True, exist_ok=True)
     current_json = renders_path.parent / "current.json"
 
-    # Query /system_stats to log device & prove CPU execution
+    # Query /system_stats to log device & prove CPU/CUDA execution
     if system_stats_fetcher is not None:
         sys_stats = system_stats_fetcher(comfy_url)
     else:
@@ -832,7 +1421,14 @@ def run_queue(
 
         verified_stamp = verify_png_provenance(out_path, stamp_meta)
         png_sha = sha256_file(out_path)
-        wall_ms = round((time.time() - t0) * 1000)
+        elapsed_s = max(0.0, time.time() - t0)
+        wall_s = round(elapsed_s, 3)
+        wall_ms = round(elapsed_s * 1000)
+        peak_vram_mib = read_peak_vram_mib(
+            comfy_url,
+            system_stats_fetcher=system_stats_fetcher,
+            smi_runner=smi_runner,
+        )
 
         row = {
             "job_id": job_id,
@@ -842,7 +1438,9 @@ def run_queue(
             "png_sha256": png_sha,
             "workflow_sha": job.get("workflow_sha"),
             "seed": job.get("seed"),
+            "wall_s": wall_s,
             "wall_ms": wall_ms,
+            "peak_vram_mib": peak_vram_mib,
             "window_id": window_id,
             "canon_sha": job["canon_sha"],
             "entry_id": job["entry_id"],
@@ -857,7 +1455,10 @@ def run_queue(
 
         completed_files.add(output_file)
         rendered_count += 1
-        print(f"RENDERED {job_id} -> {output_file} ({png_sha}, {wall_ms}ms, stamp_verified=True)", flush=True)
+        print(
+            f"RENDERED {job_id} -> {output_file} ({png_sha}, {wall_s}s, peak_vram_mib={peak_vram_mib}, stamp_verified=True)",
+            flush=True,
+        )
 
         current_json.write_text(
             json.dumps(
@@ -882,7 +1483,12 @@ def run_queue(
             killed_early = True
             break
 
-    if copy_back_dir and not killed_early and rendered_count > 0 and rendered_count % copy_back_every != 0:
+    if (
+        copy_back_dir
+        and not killed_early
+        and completed_files
+        and ((rendered_count > 0 and rendered_count % copy_back_every != 0) or not (copy_back_dir / "renders.jsonl").exists())
+    ):
         sync_copy_back(renders_path, current_json, out_dir, copy_back_dir, completed_files)
         copy_back_count += 1
 
@@ -914,12 +1520,90 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--staging-dir", type=Path, help="Optional weight staging directory")
     parser.add_argument("--comfy-url", default="http://127.0.0.1:8188", help="Loopback ComfyUI URL")
     parser.add_argument("--jobs", type=Path, help="Path to jobs.jsonl")
+    parser.add_argument("--jobs-sha256", default=None, help="Expected 64-hex sha256 of jobs.jsonl")
     parser.add_argument("--renders", type=Path, help="Path to renders.jsonl")
     parser.add_argument("--out-dir", type=Path, help="Directory for rendered PNG files")
     parser.add_argument("--copy-back-dir", type=Path, help="Optional periodic copy-back directory")
     parser.add_argument("--copy-back-every", type=int, default=2, help="Copy-back interval (number of renders)")
     parser.add_argument("--kill-after", type=int, default=None, help="Stop after K rendered jobs to test resume")
+    parser.add_argument("--validate-render-inputs", action="store_true", help="Rig-side validation of jobs and weights manifest")
+    parser.add_argument("--weights-manifest", type=Path, default=None, help="Weights manifest JSON for --render")
+    parser.add_argument("--allow-no-jobs", action="store_true", help="Allow validating manifest without jobs (CPU stub)")
+    parser.add_argument("--vm-guards", action="store_true", help="Run VM GPU smoke, disk and host-RAM guards before download")
+    parser.add_argument("--cpu-stub", action="store_true", help="CPU stub of --render: skip CUDA smoke")
+    parser.add_argument("--hf-home", type=Path, default=Path("/content/hf_home"), help="HF_HOME cache directory")
+    parser.add_argument("--models-dir", type=Path, default=Path("/content/ComfyUI/models"), help="ComfyUI models directory")
+    parser.add_argument("--lane1-out", type=Path, default=Path("/content/lane1_out"), help="Lane 1 output directory")
+    parser.add_argument("--disk-required-gib", type=float, default=50.0, help="Required free GiB before weights download")
+    parser.add_argument("--smoke-seconds", type=float, default=5.0, help="CUDA smoke matmul duration in seconds")
+    parser.add_argument("--ram-required-gib", default=None, help="Required MemAvailable GiB")
+    parser.add_argument("--meminfo", type=Path, default=Path("/proc/meminfo"), help="/proc/meminfo path")
+    parser.add_argument("--shm", type=Path, default=Path("/dev/shm"), help="/dev/shm path")
+    parser.add_argument("--guards-out", type=Path, default=Path("/content/lane1_out/render_guards.json"), help="Guards output JSON")
+    parser.add_argument("--download-weights", action="store_true", help="Download and sha256-verify weights manifest on VM")
+    parser.add_argument("--max-seconds", default=None, help="Max projected/hard download seconds")
+    parser.add_argument("--probe-seconds", type=float, default=60.0, help="Download probe window seconds")
+    parser.add_argument("--probe-bytes", type=int, default=2 * GIB, help="Download probe window bytes")
+    parser.add_argument("--poll-s", type=float, default=0.25, help="Download poll interval seconds")
+    parser.add_argument("--download-log", type=Path, default=Path("/content/lane1_out/weights_download.log"), help="Download log path")
+    parser.add_argument("--download-out", type=Path, default=Path("/content/lane1_out/weights_download.json"), help="Download record JSON")
+    parser.add_argument("--merge-render-facts", action="store_true", help="Merge render guards/download facts into vm_window.json")
+    parser.add_argument("--render-state", default=None, help="Render state label for vm_window.json")
+    parser.add_argument("--failed-rc", type=int, default=None, help="Failure exit code when bundling after failure")
     args = parser.parse_args(argv)
+
+    if args.validate_render_inputs:
+        if args.weights_manifest is None:
+            print(refuse_line("RENDER_MANIFEST_REQUIRED", "--render needs --weights-manifest <json>"), file=sys.stderr, flush=True)
+            return 1
+        try:
+            checked = run_validate_inputs(
+                manifest_path=args.weights_manifest,
+                jobs_path=args.jobs,
+                jobs_sha256=args.jobs_sha256,
+                allow_no_jobs=args.allow_no_jobs,
+            )
+        except Refusal as exc:
+            print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+            return 1
+        print("RENDER_INPUTS_OK " + json.dumps(checked), flush=True)
+        return 0
+
+    if args.vm_guards:
+        disk_req = float(os.environ.get("SDLAB_TEST_DISK_REQUIRED_GIB", str(args.disk_required_gib)))
+        return run_vm_guards(
+            hf_home=args.hf_home,
+            models_dir=args.models_dir,
+            lane1_out=args.lane1_out,
+            disk_required_gib=disk_req,
+            smoke_seconds=args.smoke_seconds,
+            ram_required_gib=args.ram_required_gib,
+            meminfo_path=args.meminfo,
+            shm_path=args.shm,
+            out_path=args.guards_out,
+            cpu_stub=args.cpu_stub,
+        )
+
+    if args.download_weights:
+        if args.weights_manifest is None:
+            print(refuse_line("RENDER_MANIFEST_REQUIRED", "--download-weights needs --weights-manifest <json>"), file=sys.stderr, flush=True)
+            return 1
+        return run_weights_download(
+            manifest_path=args.weights_manifest,
+            hf_home=args.hf_home,
+            models_dir=args.models_dir,
+            max_seconds_raw=args.max_seconds,
+            probe_seconds=args.probe_seconds,
+            probe_bytes=args.probe_bytes,
+            poll_s=args.poll_s,
+            log_path=args.download_log,
+            out_path=args.download_out,
+        )
+
+    if args.merge_render_facts:
+        merged = merge_render_facts(args.lane1_out, render_state=args.render_state, failed_rc=args.failed_rc)
+        print("WINDOW_JSON " + json.dumps(merged), flush=True)
+        return 0
 
     if args.cpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -934,6 +1618,14 @@ def main(argv: list[str] | None = None) -> int:
         staged = stage_weights(args.weight_manifest, args.staging_dir)
         print(f"WEIGHTS_STAGED count={len(staged)}", flush=True)
 
+    proc_root = args.proc_root
+    sys_py_bin = args.system_python_bin
+    if os.environ.get("FAKE_VM_SITE"):
+        if proc_root is None and os.environ.get("SDLAB_FAKE_PROC_ROOT"):
+            proc_root = Path(os.environ["SDLAB_FAKE_PROC_ROOT"])
+        if sys_py_bin == "/usr/bin/python3" and os.environ.get("SDLAB_FAKE_SYS_PYTHON_BIN"):
+            sys_py_bin = os.environ["SDLAB_FAKE_SYS_PYTHON_BIN"]
+
     if args.bootstrap and args.window_json:
         rec = write_window_json(
             args.window_json,
@@ -942,10 +1634,10 @@ def main(argv: list[str] | None = None) -> int:
             system_python=args.system_python,
             comfyui_commit=args.comfyui_commit,
             comfy_pid=args.comfy_pid,
-            proc_root=args.proc_root,
+            proc_root=proc_root,
             proc_net_tcp=args.proc_net_tcp,
             proc_net_tcp6=args.proc_net_tcp6,
-            system_python_bin=args.system_python_bin,
+            system_python_bin=sys_py_bin,
         )
         print(f"WINDOW_JSON {json.dumps(rec)}", flush=True)
 

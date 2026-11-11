@@ -572,6 +572,34 @@ run_uploaded_remote_dirs_block() {
   sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
   bash .remote_dirs_block.sh
 }
+fake_card="$(cat "${FAKE_COLAB_STATE_DIR:-..}/card.txt" 2>/dev/null || echo CPU)"
+mkdir -p .fake-vm-bin
+if [ "${fake_card}" = "CPU" ]; then
+  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-vm-bin/nvidia-smi
+else
+  cat > .fake-vm-bin/nvidia-smi << 'NVSMIEOF'
+#!/usr/bin/env bash
+case "$*" in
+  *-L*) echo "GPU 0: NVIDIA A100-SXM4-80GB (UUID: GPU-00000000-fake)" ;;
+  *memory.used*) echo "${FAKE_GPU_PEAK_VRAM_MIB:-14336}" ;;
+  *--query-gpu*) echo "580.82.07, NVIDIA A100-SXM4-80GB, 81920 MiB" ;;
+  *) echo "fake nvidia-smi" ;;
+esac
+NVSMIEOF
+fi
+chmod +x .fake-vm-bin/nvidia-smi
+printf '#!/usr/bin/env bash\\necho "uv 0.13.5"\\n' > .fake-vm-bin/uv
+chmod +x .fake-vm-bin/uv
+run_uploaded_lane1_mode_block() {
+  local uploaded_sh="$1"
+  if ! grep -q '^# >>> sdlab-lane1-mode$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-lane1-mode$' "${uploaded_sh}"; then
+    echo "REFUSED: LANE1_MODE_BLOCK_MISSING: ${uploaded_sh} has no sdlab-lane1-mode gate" >&2
+    exit 1
+  fi
+  sed -n '/^# >>> sdlab-lane1-mode$/,/^# <<< sdlab-lane1-mode$/p' "${uploaded_sh}" > .lane1_mode_block.sh
+  PATH="${PWD}/.fake-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane1_mode_block.sh; echo "LANE1_MODE=${LANE1_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+}
+run_uploaded_lane1_mode_block "remote_lane1_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane1_stub.sh.uploaded"
 [ -d lane1_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane1_out not made by the kit" >&2; exit 1; }
 : > lane1_out/setup.log
@@ -662,7 +690,303 @@ emit_vitals "setup" 'root        2216    2101 21 19:01 ?        00:00:02 /conten
 for mod_name in comfy_headless torch safetensors PIL yaml aiohttp; do
   echo "VENV_IMPORT ${mod_name} /content/venv-lane1/lib/python3.14/site-packages/${mod_name}/__init__.py" | tee -a lane1_out/setup.log
 done
+if [ "${LANE1_MODE:-stub}" != "stub" ]; then
+  echo "VENV_IMPORT huggingface_hub /content/venv-lane1/lib/python3.14/site-packages/huggingface_hub/__init__.py" | tee -a lane1_out/setup.log
+fi
 printf 'setup_complete\\n' >> lane1_out/setup.log
+"""
+        + r"""
+run_uploaded_render_block() {
+  local uploaded_sh="$1"
+  local blk
+  for blk in sdlab-hf-token sdlab-lane1-mode sdlab-lane1-render; do
+    if ! grep -q "^# >>> ${blk}$" "${uploaded_sh}" || ! grep -q "^# <<< ${blk}$" "${uploaded_sh}"; then
+      echo "REFUSED: RENDER_BLOCK_MISSING: ${uploaded_sh} has no ${blk} block" >&2
+      exit 1
+    fi
+  done
+  {
+    printf '%s\n' "${FAKE_VM_MEM_TOTAL_KB:-175000000}" "${FAKE_VM_MEM_AVAILABLE_KB:-170000000}"
+  } | awk 'NR==1{print "MemTotal:       " $1 " kB"} NR==2{print "MemFree:        " $1 " kB"; print "MemAvailable:   " $1 " kB"}' > .fake-vm-meminfo
+  mkdir -p .fake-vm-shm .fake-proc/net ComfyUI venv-lane1/bin
+  local host_py
+  host_py="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
+  local host_py_ver
+  host_py_ver="$("${host_py}" -c 'import sys; print(sys.version.split()[0])')"
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'export SDLAB_CALLER_BASHPID="${BASHPID:-$$}"'
+    echo 'exec "'"${host_py}"'" "$@"'
+  } > venv-lane1/bin/python
+  chmod +x venv-lane1/bin/python
+
+  cat > ComfyUI/main.py << 'COMFYEOF'
+import hashlib
+import http.server
+import json
+import os
+import signal
+import socket
+import socketserver
+import struct
+import sys
+import threading
+import time
+import urllib.parse
+import zlib
+from pathlib import Path
+
+if os.environ.get("FAKE_COMFY_FAIL") == "1":
+    sys.stderr.write("Simulated ComfyUI startup failure\n")
+    sys.exit(1)
+
+argv = sys.argv[1:]
+cpu_flag = "--cpu" in argv
+listen_host = "127.0.0.1"
+port = 8188
+for idx, tok in enumerate(argv):
+    if tok == "--listen" and idx + 1 < len(argv):
+        listen_host = argv[idx + 1]
+    elif tok == "--port" and idx + 1 < len(argv):
+        port = int(argv[idx + 1])
+
+state_dir = os.environ.get("FAKE_COLAB_STATE_DIR")
+started_info = {
+    "argv": argv,
+    "cpu": cpu_flag,
+    "listen": listen_host,
+    "port": port,
+    "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+}
+if state_dir:
+    Path(state_dir, "comfy_started.json").write_text(
+        json.dumps(started_info, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+proc_root = Path(".fake-proc")
+(proc_root / "net").mkdir(parents=True, exist_ok=True)
+inode = "424242"
+pids = {str(os.getpid())}
+caller_pid = os.environ.get("SDLAB_CALLER_BASHPID", "").strip()
+if caller_pid:
+    pids.add(caller_pid)
+for pid_str in pids:
+    fd_dir = proc_root / pid_str / "fd"
+    fd_dir.mkdir(parents=True, exist_ok=True)
+    (fd_dir / "3").write_text(f"socket:[{inode}]\n", encoding="utf-8")
+
+addr_int = struct.unpack("<I", socket.inet_aton(listen_host))[0]
+tcp_line = f"  0: {addr_int:08X}:{port:04X} 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 {inode}\n"
+(proc_root / "net" / "tcp").write_text(
+    "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n" + tcp_line,
+    encoding="utf-8",
+)
+(proc_root / "net" / "tcp6").write_text(
+    "  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n",
+    encoding="utf-8",
+)
+
+
+def _png_chunk(ctype: bytes, data: bytes) -> bytes:
+    crc = zlib.crc32(ctype + data) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + ctype + data + struct.pack(">I", crc)
+
+
+def _make_png(workflow: dict) -> bytes:
+    wf_json = json.dumps(workflow, sort_keys=True, separators=(",", ":"))
+    rgb = hashlib.sha256(wf_json.encode("utf-8")).digest()[:3]
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = _png_chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+    text_data = b"prompt\x00" + wf_json.encode("latin-1", errors="replace")
+    txt = _png_chunk(b"tEXt", text_data)
+    idat = _png_chunk(b"IDAT", zlib.compress(b"\x00" + rgb))
+    iend = _png_chunk(b"IEND", b"")
+    return sig + ihdr + txt + idat + iend
+
+
+STORE_LOCK = threading.Lock()
+HISTORY: dict[str, dict] = {}
+IMAGES: dict[str, bytes] = {}
+WORKFLOW_SUMMARIES: list[dict] = []
+SEQ = 0
+
+
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+class ComfyHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, fmt: str, *args: object) -> None:
+        return
+
+    def _send_json(self, obj: object, code: int = 200) -> None:
+        raw = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_GET(self) -> None:
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/system_stats":
+            if cpu_flag:
+                devs = [{"name": "cpu", "type": "cpu", "index": None, "vram_total": 0, "vram_free": 0}]
+            else:
+                peak_b = int(float(os.environ.get("FAKE_GPU_PEAK_VRAM_MIB", "14336")) * 1024 * 1024)
+                tot_b = 80 * 1024 * 1024 * 1024
+                devs = [
+                    {
+                        "name": "cuda:0 NVIDIA A100-SXM4-80GB : cudaMallocAsync",
+                        "type": "cuda",
+                        "index": 0,
+                        "vram_total": tot_b,
+                        "vram_free": tot_b - peak_b,
+                        "vram_peak": peak_b,
+                        "torch_vram_total": peak_b,
+                        "torch_vram_free": 0,
+                        "torch_vram_peak": peak_b,
+                    }
+                ]
+            self._send_json(
+                {
+                    "system": {"os": "posix", "comfyui_version": "0.3.14", "python_version": sys.version.split()[0]},
+                    "devices": devs,
+                }
+            )
+            return
+        if parsed.path.startswith("/history/"):
+            pid = urllib.parse.unquote(parsed.path[len("/history/") :]).strip("/")
+            with STORE_LOCK:
+                entry = HISTORY.get(pid)
+            self._send_json({pid: entry} if entry is not None else {})
+            return
+        if parsed.path == "/view":
+            qs = urllib.parse.parse_qs(parsed.query)
+            fname = (qs.get("filename") or [""])[0]
+            with STORE_LOCK:
+                img = IMAGES.get(fname)
+            if img is None:
+                self.send_response(404)
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(img)))
+            self.end_headers()
+            self.wfile.write(img)
+            return
+        self.send_response(404)
+        self.end_headers()
+
+    def do_POST(self) -> None:
+        global SEQ
+        if self.path != "/prompt":
+            self.send_response(404)
+            self.end_headers()
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        workflow = payload.get("prompt") or {}
+        png_bytes = _make_png(workflow)
+        class_types = sorted(
+            {str((node or {}).get("class_type", "")) for node in workflow.values() if isinstance(node, dict)}
+        )
+        with STORE_LOCK:
+            SEQ += 1
+            prompt_id = f"fake_prompt_{SEQ:04d}"
+            fname = f"{prompt_id}.png"
+            IMAGES[fname] = png_bytes
+            HISTORY[prompt_id] = {
+                "outputs": {"9": {"images": [{"filename": fname, "subfolder": "", "type": "output"}]}},
+                "status": {"completed": True},
+            }
+            WORKFLOW_SUMMARIES.append({"prompt_id": prompt_id, "class_types": class_types})
+            if state_dir:
+                Path(state_dir, "comfy_workflows.json").write_text(
+                    json.dumps(WORKFLOW_SUMMARIES, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+        self._send_json({"prompt_id": prompt_id, "number": SEQ})
+
+
+srv = ThreadedHTTPServer((listen_host, port), ComfyHandler)
+print(f"Starting server on http://{listen_host}:{port}", flush=True)
+if os.name == "nt":
+    devnull_fd = os.open(os.devnull, os.O_RDWR)
+    os.dup2(devnull_fd, 1)
+    os.dup2(devnull_fd, 2)
+    os.close(devnull_fd)
+
+signal.signal(signal.SIGTERM, lambda *_a: os._exit(0))
+signal.signal(signal.SIGINT, lambda *_a: os._exit(0))
+
+
+def _watch_done() -> None:
+    deadline = time.monotonic() + 60.0
+    vm_win = Path("lane1_out/vm_window.json")
+    bundle = Path("lane1_render_bundle.tar.gz")
+    while time.monotonic() < deadline:
+        if bundle.exists():
+            os._exit(0)
+        if vm_win.is_file():
+            try:
+                data = json.loads(vm_win.read_text(encoding="utf-8"))
+                if data.get("render") is not None or data.get("failed_rc") is not None:
+                    os._exit(0)
+            except Exception:
+                pass
+        time.sleep(0.05)
+    os._exit(0)
+
+
+threading.Thread(target=_watch_done, daemon=True).start()
+srv.serve_forever()
+COMFYEOF
+
+  (
+    while true; do
+      cur_ph="$(cat lane1_out/phase.txt 2>/dev/null || echo setup)"
+      if [ "${cur_ph}" = "run" ]; then
+        emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --listen 127.0.0.1"
+      else
+        emit_vitals "${cur_ph}" ""
+      fi
+      sleep "${vitals_interval}"
+    done
+  ) &
+  local render_vitals_pid="$!"
+
+  {
+    echo 'set -euo pipefail'
+    sed -n '/^# >>> sdlab-hf-token$/,/^# <<< sdlab-hf-token$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane1-mode$/,/^# <<< sdlab-lane1-mode$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane1-render$/,/^# <<< sdlab-lane1-render$/p' "${uploaded_sh}"
+  } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane1_stub.sh.renderblock
+
+  set +e
+  SDLAB_EXPECTED_PYTHON="${host_py_ver}" \
+  SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
+  SDLAB_FAKE_SYS_PYTHON_BIN="${host_py}" \
+  PATH="${PWD}/.fake-vm-bin:${PATH}" \
+  PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \
+    bash "${PWD}/remote_lane1_stub.sh.renderblock"
+  local render_rc=$?
+  set -e
+  kill "${render_vitals_pid}" 2>/dev/null || true
+  return "${render_rc}"
+}
+
+if [ "${LANE1_MODE:-stub}" != "stub" ]; then
+  run_uploaded_render_block "remote_lane1_stub.sh.uploaded"
+  exit $?
+fi
+if ! grep -Fq '/content/ComfyUI/main.py --cpu --listen 127.0.0.1' "remote_lane1_stub.sh.uploaded"; then
+  echo "REFUSED: STUB_CPU_FLAG_MISSING: stub mode must start ComfyUI with --cpu --listen 127.0.0.1" >&2
+  exit 1
+fi
 echo "run" > lane1_out/phase.txt
 emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
@@ -1613,13 +1937,14 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 env_vars[k] = v
 
-        # Build isolated kernel environment: strip rig-side PINNED_*, LANE3_* and SDLAB_* (except
-        # SDLAB_PYTHON) so the remote runner only sees what was passed via --env, and set
+        # Build isolated kernel environment: strip rig-side PINNED_*, LANE1_*, LANE3_* and SDLAB_*
+        # (except SDLAB_PYTHON) so the remote runner only sees what was passed via --env, and set
         # UV_SYSTEM_PYTHON=1 to match Colab.
         kernel_env = {
             k: v
             for k, v in os.environ.items()
             if not k.startswith("PINNED_")
+            and not k.startswith("LANE1_")
             and not k.startswith("LANE3_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
             and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN")
