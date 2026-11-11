@@ -547,3 +547,102 @@ def test_verify_input_shas_and_scrub_tokens_and_cli(tmp_path: Path) -> None:
         check=False,
     )
     assert proc.returncode == 0
+
+
+def test_torn_tail_vitals_block_in_run_phase_does_not_trip_setup_stall() -> None:
+    vitals_with_torn_tail = (
+        "=== VITALS 2026-11-11T04:14:30Z ===\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        "2216 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml\n"
+        'HARNESS: {"phase": "run"}\n'
+        "=== VITALS 2026-11-11T04:14:45Z ===\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        "2216 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml\n"
+        'HARNESS: {"phase": "run"}\n'
+        "=== VITALS 2026-11-11T04:15:00Z ===\n"
+    )
+    samples = lg.parse_vitals_log(vitals_with_torn_tail)
+    assert len(samples) == 2
+    assert [s["phase"] for s in samples] == ["run", "run"]
+
+    res = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=vitals_with_torn_tail,
+        idle_seconds=30.0,
+        setup_idle_seconds=870.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert res["tripped"] is False
+    assert res["code"] is None
+
+
+def test_complete_setup_blocks_with_unchanged_setup_bytes_still_trips_setup_stall() -> None:
+    complete_setup_vitals = (
+        "=== VITALS 2026-11-11T04:14:30Z ===\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        'HARNESS: {"phase": "setup"}\n'
+        "=== VITALS 2026-11-11T04:14:45Z ===\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        'HARNESS: {"phase": "setup"}\n'
+        "=== VITALS 2026-11-11T04:15:00Z ===\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        'HARNESS: {"phase": "setup"}\n'
+    )
+    res = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=complete_setup_vitals,
+        idle_seconds=30.0,
+        setup_idle_seconds=870.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert res["tripped"] is True
+    assert res["code"] == "SETUP_STALL_TRIPPED"
+
+
+def test_missing_harness_phase_refuses_vitals_phase_unreadable_never_setup() -> None:
+    missing_phase_complete = (
+        "=== VITALS 2026-11-11T04:15:00Z ===\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        "HARNESS: {}\n"
+    )
+    res_no_phase = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=missing_phase_complete,
+        idle_seconds=10.0,
+        setup_idle_seconds=870.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert res_no_phase["tripped"] is True
+    assert res_no_phase["code"] == "VITALS_PHASE_UNREADABLE"
+
+    two_torn_no_harness = (
+        "=== VITALS 2026-11-11T04:14:45Z ===\nSETUP_BYTES: 120\n"
+        "=== VITALS 2026-11-11T04:15:00Z ===\nSETUP_BYTES: 120\n"
+    )
+    res_two_torn = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=two_torn_no_harness,
+        idle_seconds=10.0,
+        setup_idle_seconds=870.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert res_two_torn["tripped"] is True
+    assert res_two_torn["code"] == "VITALS_PHASE_UNREADABLE"
+
+    # First block still being written (< 2 blocks, 0 complete): waits without assuming setup.
+    first_mid_write = "=== VITALS 2026-11-11T04:15:00Z ===\nSETUP_BYTES: 120\n"
+    res_waiting = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=first_mid_write,
+        idle_seconds=10.0,
+        setup_idle_seconds=870.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert res_waiting["tripped"] is False
+    assert res_waiting["code"] is None

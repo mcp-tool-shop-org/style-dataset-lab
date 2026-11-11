@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
 import os
 import shutil
 import stat
+import struct
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -790,3 +794,184 @@ def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: P
     assert "SDLAB_PREFLIGHT_FAST_COMPILE_MOCK" in res_live.stderr
     assert not (state_live / "calls.log").exists(), "a refused test hook must make no colab call"
     assert json.loads((out_live / "window.json").read_text(encoding="utf-8"))["status"] == "PREFLIGHT_TEST_HOOK_IN_LIVE_RUN"
+
+
+def _synth_safetensors_bytes(tag: bytes, *, truncate: bool = False) -> bytes:
+    data = tag * 32
+    hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}}).encode("utf-8")
+    blob = struct.pack("<Q", len(hdr)) + hdr + data
+    return blob[:-40] if truncate else blob
+
+
+def _write_synth_lane3_bundle(
+    bundle_path: Path,
+    *,
+    steps_target: int,
+    job_name: str = "rustline_style_v5",
+    train_log: str | None = None,
+    checkpoints: list[tuple[str, bytes, bool]] | None = None,
+    vm_train: str = "failed",
+) -> None:
+    members: list[tuple[str, bytes]] = []
+    rung_yaml = (
+        "job: extension\n"
+        "config:\n"
+        f"  name: {job_name}\n"
+        "  process:\n"
+        "  - type: sd_trainer\n"
+        "    train:\n"
+        f"      steps: {steps_target}\n"
+    ).encode("utf-8")
+    members.append(("./rung_job.yaml", rung_yaml))
+    if train_log is not None:
+        members.append(("./train.log", train_log.encode("utf-8")))
+    if checkpoints is not None:
+        manifest_rows: list[str] = []
+        for rel_path, payload, is_partial in checkpoints:
+            members.append((f"./rung_outputs/{rel_path}", payload))
+            manifest_rows.append(
+                json.dumps(
+                    {
+                        "path": rel_path,
+                        "bytes": len(payload),
+                        "sha256": hashlib.sha256(payload).hexdigest(),
+                        "copied_at": "2026-11-11T04:15:00Z",
+                        "partial": is_partial,
+                    }
+                )
+            )
+        members.append(("./rung_outputs/manifest.jsonl", ("\n".join(manifest_rows) + "\n").encode("utf-8")))
+    vm_win = json.dumps({"lane3_mode": "train", "train": vm_train}).encode("utf-8")
+    members.append(("./vm_window.json", vm_win))
+
+    with tarfile.open(bundle_path, "w:gz") as tf:
+        for name, data in members:
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+
+
+def _write_lane3_window_record(out_dir: Path, exit_code: int) -> tuple[dict, dict]:
+    window_sh = REPO_ROOT / "scripts" / "colab" / "colab_window.sh"
+    script = (
+        f'set -euo pipefail; source "{_to_posix(window_sh)}"; '
+        f'colab_write_window_and_outcome "{_to_posix(Path(sys.executable))}" "{_to_posix(out_dir)}" '
+        f"train sdlab-l3-r500 G4 2.00 5400 60 0.05 2026-11-11T03:45:00Z 2026-11-11T04:15:00Z {exit_code} '{{}}'"
+    )
+    res = subprocess.run(
+        [_find_bash(), "-c", script],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert res.returncode == 0, res.stderr
+    return (
+        json.loads((out_dir / "window.json").read_text(encoding="utf-8")),
+        json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8")),
+    )
+
+
+def test_lane3_window_stopped_after_full_steps_marks_train_completed_true_and_trained_false(tmp_path: Path) -> None:
+    out_dir = tmp_path / "out_r500_stopped"
+    out_dir.mkdir(parents=True)
+    (out_dir / "session_opened.txt").write_text("1\n", encoding="utf-8")
+    (out_dir / "rung_job.txt").write_text("500\n", encoding="utf-8")
+    (out_dir / "guards.log").write_text(
+        "REFUSED: SETUP_STALL_TRIPPED: No new setup.log output (SETUP_BYTES unchanged) in phase=setup for 870.0s\n",
+        encoding="utf-8",
+    )
+    ckpt_250 = _synth_safetensors_bytes(b"STEP250-")
+    ckpt_500 = _synth_safetensors_bytes(b"STEP500-")
+    _write_synth_lane3_bundle(
+        out_dir / "lane3_stub_bundle.tar.gz",
+        steps_target=500,
+        train_log=(
+            "Loading Qwen Image model\n"
+            "rustline_style_v5:  50%|#####     | 250/500 [12:30<12:30,  3.00s/it]\r"
+            "Saving at step 250\n"
+            "rustline_style_v5: 100%|##########| 500/500 [25:00<00:00,  3.00s/it]\n"
+            "Saving at step 500\n"
+        ),
+        checkpoints=[
+            ("rustline_style_v5/rustline_style_v5_000000250.safetensors", ckpt_250, False),
+            ("rustline_style_v5/rustline_style_v5_000000500.safetensors", ckpt_500, False),
+        ],
+        vm_train="failed",
+    )
+
+    win, outcome = _write_lane3_window_record(out_dir, exit_code=93)
+    for rec in (win, outcome):
+        assert rec["status"] == "SETUP_STALL_TRIPPED"
+        assert rec["trained"] is False
+        assert rec["train"] is None
+        assert rec["train_steps_done"] == 500
+        assert rec["train_steps_target"] == 500
+        assert rec["final_checkpoint_present"] is True
+        assert rec["final_checkpoint_path"] == "rung_outputs/rustline_style_v5/rustline_style_v5_000000500.safetensors"
+        assert rec["train_completed"] is True
+
+
+def test_lane3_partial_or_missing_bundle_marks_train_completed_false(tmp_path: Path) -> None:
+    # (a) Stopped mid-run at 250/500 with complete 250 checkpoint and partial 500 checkpoint.
+    out_mid = tmp_path / "out_mid_250"
+    out_mid.mkdir(parents=True)
+    (out_mid / "session_opened.txt").write_text("1\n", encoding="utf-8")
+    (out_mid / "guards.log").write_text("REFUSED: WALL_GUARD_TRIPPED: wall guard\n", encoding="utf-8")
+    _write_synth_lane3_bundle(
+        out_mid / "lane3_stub_bundle.tar.gz",
+        steps_target=500,
+        train_log="rustline_style_v5:  50%|#####     | 250/500 [12:30<12:30,  3.00s/it]\n",
+        checkpoints=[
+            ("rustline_style_v5/rustline_style_v5_000000250.safetensors", _synth_safetensors_bytes(b"S250-"), False),
+            (
+                "rustline_style_v5/rustline_style_v5_000000500.safetensors",
+                _synth_safetensors_bytes(b"S500-", truncate=True),
+                True,
+            ),
+        ],
+        vm_train="failed",
+    )
+    win_mid, out_draft_mid = _write_lane3_window_record(out_mid, exit_code=93)
+    for rec in (win_mid, out_draft_mid):
+        assert rec["trained"] is False
+        assert rec["train_steps_done"] == 250
+        assert rec["train_steps_target"] == 500
+        assert rec["final_checkpoint_present"] is False
+        assert rec["final_checkpoint_path"] is None
+        assert rec["train_completed"] is False
+    # (b) 500/500 logged, but the final checkpoint is partial: train_completed must still be False.
+    out_partial_final = tmp_path / "out_partial_500"
+    out_partial_final.mkdir(parents=True)
+    _write_synth_lane3_bundle(
+        out_partial_final / "lane3_stub_bundle.tar.gz",
+        steps_target=500,
+        train_log="rustline_style_v5: 100%|##########| 500/500 [25:00<00:00,  3.00s/it]\n",
+        checkpoints=[
+            (
+                "rustline_style_v5/rustline_style_v5_000000500.safetensors",
+                _synth_safetensors_bytes(b"S500-", truncate=True),
+                True,
+            ),
+        ],
+        vm_train="failed",
+    )
+    win_pf, out_draft_pf = _write_lane3_window_record(out_partial_final, exit_code=1)
+    for rec in (win_pf, out_draft_pf):
+        assert rec["train_steps_done"] == 500
+        assert rec["train_steps_target"] == 500
+        assert rec["final_checkpoint_present"] is False
+        assert rec["final_checkpoint_path"] is None
+        assert rec["train_completed"] is False
+    # (c) Missing bundle altogether: never true by default; progress fields stay None/False.
+    out_missing = tmp_path / "out_missing_bundle"
+    out_missing.mkdir(parents=True)
+    win_miss, out_draft_miss = _write_lane3_window_record(out_missing, exit_code=1)
+    for rec in (win_miss, out_draft_miss):
+        assert rec["trained"] is False
+        assert rec["train_steps_done"] is None
+        assert rec["train_steps_target"] is None
+        assert rec["final_checkpoint_present"] is False
+        assert rec["final_checkpoint_path"] is None
+        assert rec["train_completed"] is False

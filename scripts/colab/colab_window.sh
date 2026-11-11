@@ -2163,6 +2163,7 @@ REFUSAL_CODES = (
     "DEAD_HARNESS_TRIPPED",
     "STALL_GUARD_TRIPPED",
     "SETUP_STALL_TRIPPED",
+    "VITALS_PHASE_UNREADABLE",
     "GUARD_FAILED",
 )
 # A refusal code comes only from a line the kit itself emits, starting `REFUSED: <CODE>`, in the
@@ -2273,9 +2274,144 @@ if lane == "train":
     train_state = vm_train if vm_train in ("skipped_cpu_stub", "trained") else None
     rung_job = read_text_file(out_dir / "rung_job.txt")
     rung_job_sha256 = read_text_file(out_dir / "rung_job_sha256.txt")
+
+    bundle_sizes: dict[str, int] = {}
+    bundle_texts: dict[str, str] = {}
+    for tar_p in sorted(out_dir.glob("*.tar.gz")):
+        if not tarfile.is_tarfile(tar_p):
+            continue
+        try:
+            with tarfile.open(tar_p, "r:gz") as tf:
+                for member in tf.getmembers():
+                    if not member.isfile():
+                        continue
+                    rel = member.name.lstrip("/")
+                    while rel.startswith("./"):
+                        rel = rel[2:]
+                    bundle_sizes[rel] = member.size
+                    if rel in ("rung_job.yaml", "train.log", "rung_outputs/manifest.jsonl") and rel not in bundle_texts:
+                        ext = tf.extractfile(member)
+                        if ext is not None:
+                            bundle_texts[rel] = ext.read().decode("utf-8", errors="replace")
+        except Exception:
+            continue
+
+    rung_job_yaml_text = bundle_texts.get("rung_job.yaml")
+    train_log_text = bundle_texts.get("train.log")
+    manifest_jsonl_text = bundle_texts.get("rung_outputs/manifest.jsonl")
+
+    train_steps_target: int | None = None
+    job_name: str | None = None
+    if rung_job_yaml_text is not None:
+        m_steps = re.search(r"^\s*steps:\s*(\d+)\s*$", rung_job_yaml_text, re.M)
+        if m_steps:
+            train_steps_target = int(m_steps.group(1))
+        m_name = re.search(r"^\s{2}name:\s*(\S+)\s*$", rung_job_yaml_text, re.M) or re.search(
+            r"^\s*name:\s*(\S+)\s*$", rung_job_yaml_text, re.M
+        )
+        if m_name:
+            job_name = m_name.group(1).strip("\"'")
+
+    latest_manifest: dict[str, dict] = {}
+    if manifest_jsonl_text is not None:
+        for ln in manifest_jsonl_text.splitlines():
+            if not ln.strip():
+                continue
+            try:
+                rec = json.loads(ln)
+            except Exception:
+                continue
+            if isinstance(rec, dict) and isinstance(rec.get("path"), str):
+                latest_manifest[rec["path"]] = rec
+
+    complete_ckpts: list[str] = []
+    for rel_ckpt, rec in sorted(latest_manifest.items()):
+        if not rel_ckpt.endswith(".safetensors") or rec.get("partial"):
+            continue
+        rec_bytes = int(rec.get("bytes") or 0)
+        tar_rel = f"rung_outputs/{rel_ckpt}"
+        if rec_bytes > 0 and bundle_sizes.get(tar_rel) == rec_bytes:
+            complete_ckpts.append(rel_ckpt)
+
+    step_candidates: list[int] = []
+    for rel_ckpt in complete_ckpts:
+        ckpt_name = Path(rel_ckpt).name
+        m_ckpt = (
+            re.match(rf"^{re.escape(job_name)}_(\d+)\.safetensors$", ckpt_name)
+            if job_name
+            else re.search(r"_(\d{6,})\.safetensors$", ckpt_name)
+        )
+        if m_ckpt:
+            step_candidates.append(int(m_ckpt.group(1)))
+
+    if train_log_text is not None:
+        for frame in re.split(r"[\r\n]+", train_log_text):
+            if not frame:
+                continue
+            if job_name and train_steps_target is not None:
+                for m_bar in re.finditer(
+                    rf"(?:^|\b){re.escape(job_name)}:.*?\b(\d+)/{train_steps_target}(?!\d)",
+                    frame,
+                ):
+                    step_candidates.append(int(m_bar.group(1)))
+            if train_steps_target is not None:
+                for m_st in re.finditer(rf"\bsteps?\s+(\d+)/{train_steps_target}(?!\d)", frame, re.I):
+                    step_candidates.append(int(m_st.group(1)))
+            for m_sav in re.finditer(r"\bSaving at step\s+(\d+)\b", frame):
+                step_candidates.append(int(m_sav.group(1)))
+
+    train_steps_done: int | None
+    if step_candidates:
+        train_steps_done = max(step_candidates)
+    elif train_log_text is not None or manifest_jsonl_text is not None:
+        train_steps_done = 0
+    else:
+        train_steps_done = None
+
+    final_checkpoint_present = False
+    final_checkpoint_path: str | None = None
+    if train_steps_target is not None and train_steps_target > 0 and complete_ckpts:
+        matched_final: str | None = None
+        for rel_ckpt in complete_ckpts:
+            ckpt_name = Path(rel_ckpt).name
+            m_ckpt = (
+                re.match(rf"^{re.escape(job_name)}_(\d+)\.safetensors$", ckpt_name)
+                if job_name
+                else re.search(r"_(\d{6,})\.safetensors$", ckpt_name)
+            )
+            if m_ckpt and int(m_ckpt.group(1)) == train_steps_target:
+                matched_final = rel_ckpt
+                break
+        if matched_final is None and job_name:
+            numbered_suffix = f"_{train_steps_target:09d}.safetensors"
+            has_partial_final = any(
+                p.endswith(numbered_suffix) and bool(r.get("partial"))
+                for p, r in latest_manifest.items()
+            )
+            if not has_partial_final:
+                for rel_ckpt in complete_ckpts:
+                    if Path(rel_ckpt).name == f"{job_name}.safetensors":
+                        matched_final = rel_ckpt
+                        break
+        if matched_final is not None:
+            final_checkpoint_present = True
+            final_checkpoint_path = f"rung_outputs/{matched_final}"
+
+    train_completed = bool(
+        train_steps_target is not None
+        and train_steps_target > 0
+        and train_steps_done == train_steps_target
+        and final_checkpoint_present
+    )
+
     train_fields = {
         "train": train_state,
         "trained": bool(final_status == "ok" and train_state == "trained"),
+        "train_steps_done": train_steps_done,
+        "train_steps_target": train_steps_target,
+        "final_checkpoint_present": final_checkpoint_present,
+        "final_checkpoint_path": final_checkpoint_path,
+        "train_completed": train_completed,
         "rung_job": rung_job,
         "rung_job_sha256": rung_job_sha256,
     }
