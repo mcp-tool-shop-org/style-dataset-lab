@@ -101,12 +101,14 @@ class HfApi:
         _check_token(token)
         siblings = [_Sibling(name, size) for name, size in _files()]
         stream_override = os.environ.get("FAKE_HF_STREAM_BYTES")
+        slow_target = os.environ.get("FAKE_HF_SLOW_FILE", "")
         blobs_dir = os.environ.get("FAKE_HF_BLOBS_DIR")
         if blobs_dir and Path(blobs_dir).is_dir():
             for p in sorted(Path(blobs_dir).rglob("*")):
                 if p.is_file():
                     rel = p.relative_to(Path(blobs_dir)).as_posix()
-                    sz = int(stream_override) if stream_override else p.stat().st_size
+                    use_override = bool(stream_override) and (not slow_target or rel == slow_target or p.name == slow_target)
+                    sz = int(stream_override) if use_override else p.stat().st_size
                     siblings.append(_Sibling(rel, sz))
         return _Info(siblings)
 
@@ -124,10 +126,13 @@ def hf_hub_download(
         raise OSError("401 Client Error: Repository Not Found")
     if os.environ.get("FAKE_HF_429") == "1":
         print("HTTP Error 429 thrown while requesting GET https://huggingface.co/... Retrying in 1s [Retry 1/5].", flush=True)
-    stream_override = os.environ.get("FAKE_HF_STREAM_BYTES")
+    slow_target = os.environ.get("FAKE_HF_SLOW_FILE", "")
+    apply_slow = not slow_target or filename == slow_target or Path(filename).name == slow_target
+    stream_override = os.environ.get("FAKE_HF_STREAM_BYTES") if apply_slow else None
     payload = b"" if stream_override else _blob_payload(filename)
     size = int(stream_override) if stream_override else len(payload)
-    rate = float(os.environ.get("FAKE_HF_RATE_BPS", "1e15"))
+    rate = float(os.environ.get("FAKE_HF_RATE_BPS", "1e15")) if apply_slow else 1e15
+    probe_pause_s = float(os.environ.get("FAKE_HF_PROBE_PAUSE_S", "0")) if apply_slow else 0.0
     repo = Path(os.environ["HF_HOME"]) / "hub" / ("models--" + repo_id.replace("/", "--"))
     blobs = repo / "blobs"
     snap = repo / "snapshots" / str(revision)
@@ -137,6 +142,14 @@ def hf_hub_download(
     inc = blobs / f"file_{safe_name}.incomplete"
     written = 0
     with inc.open("wb") as fh:
+        if probe_pause_s > 0 and size > 64:
+            if stream_override:
+                fh.truncate(64)
+            else:
+                fh.write(payload[:64])
+                fh.flush()
+            written = 64
+            time.sleep(probe_pause_s)
         while written < size:
             step = max(int(rate * 0.05), 1)
             nxt = min(size, written + step)

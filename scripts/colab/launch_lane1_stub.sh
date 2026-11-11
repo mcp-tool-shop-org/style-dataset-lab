@@ -116,6 +116,11 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+if [ "${RENDER_REQUESTED}" = "1" ] && [ "${RENDER_CPU_STUB}" = "1" ]; then
+  echo "REFUSED: RENDER_OPTION_WITHOUT_RENDER: pass either --render or --render-cpu-stub, not both" >&2
+  exit 2
+fi
+
 colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2

@@ -31,32 +31,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-_SCRIPT_DIR = str(Path(__file__).resolve().parent)
-if _SCRIPT_DIR not in sys.path:
-    sys.path.insert(0, _SCRIPT_DIR)
-
-from lane3_rung import (  # noqa: E402
-    GIB,
-    REPO_ID_RE,
-    REVISION_RE,
-    Refusal,
-    classify_hub_error,
-    count_throttle_signals,
-    dir_bytes,
-    evaluate_probe,
-    mask_log_text,
-    measure_disk,
-    measure_host_ram,
-    measure_shm,
-    parse_positive_number,
-    query_driver,
-    refuse_line,
-    repo_cache_dir,
-    safetensors_complete,
-    sha256_file as hex_sha256_file,
-    write_json,
-)
-
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PY_VERSION_EXPECTED = "3.14.9"
 UV_PIN = "uv==0.13.5"
@@ -66,7 +40,24 @@ VALID_WEIGHT_DESTS = ("diffusion_models", "text_encoders", "vae", "loras")
 REAL_MODEL_TEMPLATES = {"qwen_txt2img_lora", "qwen_image"}
 FORBIDDEN_RENDER_TEMPLATES = {"stub_fixture_64"}
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+GIB = 1024**3
 MIB = 1024**2
+
+
+def _load_lane3_rung() -> Any:
+    """Import `lane3_rung` lazily inside `--render` / `--render-cpu-stub` paths; CPU stub windows do not upload it."""
+    script_dir = str(Path(__file__).resolve().parent)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    import lane3_rung  # noqa: PLC0415
+
+    return lane3_rung
+
+
+def __getattr__(name: str) -> Any:
+    if name == "Refusal":
+        return _load_lane3_rung().Refusal
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 @dataclass
@@ -775,31 +766,33 @@ def sync_copy_back(renders_path: Path, current_json: Path, out_dir: Path, copy_b
 
 def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
     """Validate a `--weights-manifest` JSON list: `{repo, revision, file, dest, sha256, licence_id}`."""
+    rung = _load_lane3_rung()
+    refusal_cls = rung.Refusal
     if not manifest_path.is_file():
-        raise Refusal("WEIGHTS_MANIFEST_INVALID", f"{manifest_path} does not exist")
+        raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"{manifest_path} does not exist")
     try:
         raw = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        raise Refusal("WEIGHTS_MANIFEST_INVALID", f"{manifest_path}: invalid JSON ({type(exc).__name__})") from None
+        raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"{manifest_path}: invalid JSON ({type(exc).__name__})") from None
     if not isinstance(raw, list) or not raw:
-        raise Refusal("WEIGHTS_MANIFEST_INVALID", f"{manifest_path} must be a non-empty JSON list")
+        raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"{manifest_path} must be a non-empty JSON list")
 
     entries: list[dict[str, Any]] = []
     for idx, item in enumerate(raw):
         if not isinstance(item, dict):
-            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: manifest row must be an object")
+            raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: manifest row must be an object")
         lic = item.get("licence_id")
         if not isinstance(lic, str) or not lic.strip():
-            raise Refusal("WEIGHTS_LICENCE_INVALID", f"row {idx}: missing licence_id")
+            raise refusal_cls("WEIGHTS_LICENCE_INVALID", f"row {idx}: missing licence_id")
         lic_clean = lic.strip()
         if lic_clean not in CLEARED_LICENCES:
-            raise Refusal("WEIGHTS_LICENCE_INVALID", f"row {idx}: licence_id {lic_clean!r} is not cleared")
+            raise refusal_cls("WEIGHTS_LICENCE_INVALID", f"row {idx}: licence_id {lic_clean!r} is not cleared")
         repo = item.get("repo")
-        if not isinstance(repo, str) or not REPO_ID_RE.match(repo.strip()):
-            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: {repo!r} is not a Hugging Face repo id")
+        if not isinstance(repo, str) or not rung.REPO_ID_RE.match(repo.strip()):
+            raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: {repo!r} is not a Hugging Face repo id")
         revision = item.get("revision")
-        if not isinstance(revision, str) or not REVISION_RE.match(revision.strip()):
-            raise Refusal("WEIGHTS_REVISION_INVALID", f"row {idx}: revision {revision!r} is not a 40-hex commit")
+        if not isinstance(revision, str) or not rung.REVISION_RE.match(revision.strip()):
+            raise refusal_cls("WEIGHTS_REVISION_INVALID", f"row {idx}: revision {revision!r} is not a 40-hex commit")
         rel_file = item.get("file")
         if (
             not isinstance(rel_file, str)
@@ -808,13 +801,13 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
             or rel_file.startswith("/")
             or any(part in ("", ".", "..") for part in rel_file.strip().split("/"))
         ):
-            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: invalid relative file {rel_file!r}")
+            raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: invalid relative file {rel_file!r}")
         dest = item.get("dest")
         if dest not in VALID_WEIGHT_DESTS:
-            raise Refusal("WEIGHTS_DEST_INVALID", f"row {idx}: dest {dest!r} must be one of {VALID_WEIGHT_DESTS}")
+            raise refusal_cls("WEIGHTS_DEST_INVALID", f"row {idx}: dest {dest!r} must be one of {VALID_WEIGHT_DESTS}")
         norm_sha = normalize_sha256(item.get("sha256"))
         if norm_sha is None:
-            raise Refusal("WEIGHTS_MANIFEST_INVALID", f"row {idx}: sha256 must be a 64-hex digest")
+            raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: sha256 must be a 64-hex digest")
         entries.append(
             {
                 "repo": repo.strip(),
@@ -831,19 +824,20 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
 
 def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> dict[str, Any]:
     """Check `jobs.jsonl` against `--jobs-sha256` and validate every row without logging prompt text."""
+    refusal_cls = _load_lane3_rung().Refusal
     exp_norm = normalize_sha256(expected_jobs_sha256)
     if exp_norm is None:
-        raise Refusal("RENDER_JOBS_SHA_REQUIRED", "--jobs-sha256 must be a 64-hex sha256")
+        raise refusal_cls("RENDER_JOBS_SHA_REQUIRED", "--jobs-sha256 must be a 64-hex sha256")
     if not jobs_path.is_file():
-        raise Refusal("JOBS_FILE_MISSING", f"{jobs_path} does not exist")
+        raise refusal_cls("JOBS_FILE_MISSING", f"{jobs_path} does not exist")
     exp_hex = exp_norm[7:]
-    actual_hex = hex_sha256_file(jobs_path)
+    actual_hex = sha256_file(jobs_path)[7:]
     if actual_hex != exp_hex:
-        raise Refusal("JOBS_SHA_MISMATCH", f"{jobs_path} sha256={actual_hex} expected={exp_hex}")
+        raise refusal_cls("JOBS_SHA_MISMATCH", f"{jobs_path} sha256={actual_hex} expected={exp_hex}")
 
     raw_lines = [ln for ln in jobs_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
     if not raw_lines:
-        raise Refusal("RENDER_JOB_INVALID", f"{jobs_path} contains no jobs")
+        raise refusal_cls("RENDER_JOB_INVALID", f"{jobs_path} contains no jobs")
 
     seen_ids: set[str] = set()
     first_job_id: str | None = None
@@ -851,12 +845,12 @@ def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> d
         try:
             row = json.loads(line)
         except ValueError:
-            raise Refusal("RENDER_JOB_INVALID", f"row {idx}: malformed JSON") from None
+            raise refusal_cls("RENDER_JOB_INVALID", f"row {idx}: malformed JSON") from None
         if not isinstance(row, dict):
-            raise Refusal("RENDER_JOB_INVALID", f"row {idx}: job row must be a JSON object")
+            raise refusal_cls("RENDER_JOB_INVALID", f"row {idx}: job row must be a JSON object")
         job_id = row.get("job_id")
         if not isinstance(job_id, str) or not JOB_ID_RE.match(job_id) or job_id in seen_ids:
-            raise Refusal("RENDER_JOB_INVALID", f"row {idx}: missing, unsafe or duplicate job_id")
+            raise refusal_cls("RENDER_JOB_INVALID", f"row {idx}: missing, unsafe or duplicate job_id")
         seen_ids.add(job_id)
         if first_job_id is None:
             first_job_id = job_id
@@ -868,20 +862,20 @@ def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> d
             or template_id.strip() in FORBIDDEN_RENDER_TEMPLATES
             or template_id.strip() not in REAL_MODEL_TEMPLATES
         ):
-            raise Refusal(
+            raise refusal_cls(
                 "JOB_TEMPLATE_INVALID",
                 f"job {job_id}: template_id {template_id!r} must be a real-model template (never stub_fixture_64)",
             )
         for req_str in ("run_id", "canon_sha", "entry_id", "entry_sha256"):
             val = row.get(req_str)
             if not isinstance(val, str) or not val.strip():
-                raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing {req_str}")
+                raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing {req_str}")
         prompt = row.get("prompt")
         if not isinstance(prompt, str) or not prompt.strip():
-            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing prompt")
+            raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing prompt")
         seed = row.get("seed")
         if not isinstance(seed, int) or isinstance(seed, bool):
-            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing or non-integer seed")
+            raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing or non-integer seed")
         width = row.get("width")
         height = row.get("height")
         if (
@@ -892,10 +886,10 @@ def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> d
             or isinstance(height, bool)
             or height <= 0
         ):
-            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive width/height")
+            raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive width/height")
         steps = row.get("steps")
         if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
-            raise Refusal("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive steps")
+            raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive steps")
 
     return {"jobs_sha256": actual_hex, "job_count": len(seen_ids), "first_job_id": first_job_id}
 
@@ -907,19 +901,20 @@ def run_validate_inputs(
     jobs_sha256: str | None = None,
     allow_no_jobs: bool = False,
 ) -> dict[str, Any]:
+    refusal_cls = _load_lane3_rung().Refusal
     entries = validate_weights_manifest(manifest_path)
     needs_token = any(e["hf_token_required"] for e in entries)
     if needs_token:
         tok = os.environ.get("HF_TOKEN_GGUF_READ", "")
         if not tok or any(ch.isspace() for ch in tok):
-            raise Refusal(
+            raise refusal_cls(
                 "HF_READ_TOKEN_MISSING",
                 "manifest marks hf_token_required=true; pass token via HF_TOKEN_GGUF_READ environment variable",
             )
     jobs_info: dict[str, Any] | None = None
     if not allow_no_jobs or jobs_path is not None:
         if jobs_path is None:
-            raise Refusal("RENDER_JOBS_REQUIRED", "--render needs --jobs <jobs.jsonl>")
+            raise refusal_cls("RENDER_JOBS_REQUIRED", "--render needs --jobs <jobs.jsonl>")
         jobs_info = validate_render_jobs(jobs_path, jobs_sha256)
     return {
         "manifest_entries": len(entries),
@@ -983,22 +978,24 @@ def run_vm_guards(
     out_path: Path,
     cpu_stub: bool = False,
     smoke_fn: Callable[..., dict[str, Any]] = lane1_gpu_smoke,
-    driver_fn: Callable[[], dict[str, Any]] = query_driver,
+    driver_fn: Callable[[], dict[str, Any]] | None = None,
     disk_usage_fn: Callable[[str], Any] = shutil.disk_usage,
 ) -> int:
+    rung = _load_lane3_rung()
+    active_driver_fn = driver_fn if driver_fn is not None else rung.query_driver
     rec: dict[str, Any] = {"cpu_stub": cpu_stub}
     refusals: list[tuple[str, str]] = []
 
     try:
-        ram_req = parse_positive_number(ram_required_gib, "HOST_RAM_THRESHOLD_MISSING", "LANE1_HOST_RAM_REQUIRED_GIB")
-    except Refusal as exc:
+        ram_req = rung.parse_positive_number(ram_required_gib, "HOST_RAM_THRESHOLD_MISSING", "LANE1_HOST_RAM_REQUIRED_GIB")
+    except rung.Refusal as exc:
         ram_req = None
         refusals.append((exc.code, exc.detail))
 
     if cpu_stub:
         rec["gpu"] = {"skipped_cpu_stub": True, "ok": True}
     else:
-        gpu: dict[str, Any] = dict(driver_fn())
+        gpu: dict[str, Any] = dict(active_driver_fn())
         try:
             gpu.update(smoke_fn(target_s=float(smoke_seconds)))
             gpu["ok"] = True
@@ -1008,7 +1005,7 @@ def run_vm_guards(
             refusals.append(("GPU_SMOKE_FAILED", gpu["error"]))
         rec["gpu"] = gpu
 
-    disk = measure_disk([hf_home, models_dir, lane1_out], float(disk_required_gib), disk_usage_fn)
+    disk = rung.measure_disk([hf_home, models_dir, lane1_out], float(disk_required_gib), disk_usage_fn)
     rec["disk"] = disk
     if not disk["ok"]:
         low = [fs for fs in disk["filesystems"] if fs["free_bytes"] < float(disk_required_gib) * GIB]
@@ -1020,7 +1017,7 @@ def run_vm_guards(
         )
 
     meminfo_text = meminfo_path.read_text(encoding="utf-8", errors="replace")
-    ram = measure_host_ram(meminfo_text, ram_req if ram_req is not None else 0.0)
+    ram = rung.measure_host_ram(meminfo_text, ram_req if ram_req is not None else 0.0)
     if ram_req is None:
         ram["required_available_gib"] = None
         ram["ok"] = False
@@ -1032,12 +1029,12 @@ def run_vm_guards(
             )
         )
     rec["host_ram"] = ram
-    rec["shm"] = measure_shm(shm_path, disk_usage_fn)
+    rec["shm"] = rung.measure_shm(shm_path, disk_usage_fn)
     rec["refusals"] = [code for code, _ in refusals]
-    write_json(out_path, rec)
+    rung.write_json(out_path, rec)
     print("RENDER_GUARDS " + json.dumps(rec), flush=True)
     for code, detail in refusals:
-        print(refuse_line(code, detail), file=sys.stderr, flush=True)
+        print(rung.refuse_line(code, detail), file=sys.stderr, flush=True)
     return 1 if refusals else 0
 
 
@@ -1054,18 +1051,18 @@ def expected_file_bytes(repo_id: str, revision: str, filename: str, token: str |
     from huggingface_hub import HfApi  # noqa: PLC0415
 
     info = HfApi().model_info(repo_id, revision=revision, files_metadata=True, token=token or False)
-    siblings = list(info.siblings or [])
-    for sib in siblings:
+    for sib in info.siblings or []:
         if getattr(sib, "rfilename", None) == filename:
             return int(sib.size or 0)
-    return sum(int(s.size or 0) for s in siblings)
+    raise FileNotFoundError(f"{filename} not found in {repo_id}@{revision}")
 
 
 def _fail_weights(out_path: Path, rec: dict[str, Any], code: str, detail: str) -> int:
+    rung = _load_lane3_rung()
     rec["refusal"] = code
-    write_json(out_path, rec)
+    rung.write_json(out_path, rec)
     print("WEIGHTS_DOWNLOAD " + json.dumps(rec), flush=True)
-    print(refuse_line(code, detail), file=sys.stderr, flush=True)
+    print(rung.refuse_line(code, detail), file=sys.stderr, flush=True)
     return 1
 
 
@@ -1085,6 +1082,7 @@ def run_weights_download(
     clock: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
+    rung = _load_lane3_rung()
     token = os.environ.get("HF_TOKEN_GGUF_READ") or None
     offline = os.environ.get("HF_HUB_OFFLINE") == "1"
     rec: dict[str, Any] = {
@@ -1093,9 +1091,9 @@ def run_weights_download(
         "files": [],
     }
     try:
-        max_seconds = parse_positive_number(max_seconds_raw, "DOWNLOAD_LIMIT_MISSING", "LANE1_DOWNLOAD_MAX_SECONDS")
+        max_seconds = rung.parse_positive_number(max_seconds_raw, "DOWNLOAD_LIMIT_MISSING", "LANE1_DOWNLOAD_MAX_SECONDS")
         entries = validate_weights_manifest(manifest_path)
-    except Refusal as exc:
+    except rung.Refusal as exc:
         return _fail_weights(out_path, rec, exc.code, exc.detail)
 
     rec["max_seconds"] = max_seconds
@@ -1120,17 +1118,19 @@ def run_weights_download(
         dest = entry["dest"]
         exp_sha = entry["sha256"]
 
-        cache = repo_cache_dir(hf_home, repo)
-        baseline = dir_bytes(cache)
+        cache = rung.repo_cache_dir(hf_home, repo)
+        snap_file = cache / "snapshots" / revision / filename
+        file_baseline = snap_file.stat().st_size if snap_file.is_file() else 0
+        cache_start_bytes = rung.dir_bytes(cache)
         if offline:
-            expected = baseline
+            expected = file_baseline
         else:
             try:
                 expected = int(expected_fn(repo, revision, filename, token))
             except Exception as exc:  # noqa: BLE001
-                code, detail = classify_hub_error(exc)
+                code, detail = rung.classify_hub_error(exc)
                 return _fail_weights(out_path, rec, code, f"model_info {repo}@{revision}: {detail}")
-        remaining = max(expected - baseline, 0)
+        remaining = max(expected - file_baseline, 0)
         spent = max(clock() - overall_start, 0.0)
         budget_s = max(max_seconds - spent, 0.01)
 
@@ -1158,9 +1158,9 @@ def run_weights_download(
                 while proc.poll() is None:
                     sleep(float(poll_s))
                     elapsed = clock() - file_start
-                    new_bytes = max(dir_bytes(cache) - baseline, 0)
+                    new_bytes = max(rung.dir_bytes(cache) - cache_start_bytes, 0)
                     if not offline and probe is None and (elapsed >= float(probe_seconds) or new_bytes >= int(probe_bytes)):
-                        probe = evaluate_probe(new_bytes, elapsed, remaining, budget_s)
+                        probe = rung.evaluate_probe(new_bytes, elapsed, remaining, budget_s)
                         print("WEIGHTS_DOWNLOAD_PROBE " + json.dumps(probe), flush=True)
                         if probe["too_slow"]:
                             proc.kill()
@@ -1173,13 +1173,13 @@ def run_weights_download(
         elapsed = clock() - file_start
         raw_log = item_log.read_text(encoding="utf-8", errors="replace")
         item_log.unlink(missing_ok=True)
-        scrubbed_log = mask_log_text(raw_log)
+        scrubbed_log = rung.mask_log_text(raw_log)
         if token is not None and token in scrubbed_log:
             scrubbed_log = scrubbed_log.replace(token, "[REDACTED]")
         with log_path.open("a", encoding="utf-8", newline="\n") as main_log:
             main_log.write(scrubbed_log)
         log_lines = raw_log.splitlines()
-        new_bytes = max(dir_bytes(cache) - baseline, 0)
+        new_bytes = max(rung.dir_bytes(cache) - cache_start_bytes, 0)
         downloaded_path = next((ln.split(" ", 1)[1].strip() for ln in log_lines if ln.startswith("FILE_PATH ")), None)
 
         file_rec: dict[str, Any] = {
@@ -1189,11 +1189,12 @@ def run_weights_download(
             "dest": dest,
             "licence_id": entry["licence_id"],
             "expected_bytes": expected,
+            "cached_bytes_at_start": file_baseline,
             "downloaded_bytes": new_bytes,
             "seconds": round(elapsed, 2),
             "probe": probe,
             "hard_limit_hit": hard_stop.is_set(),
-            **count_throttle_signals(log_lines),
+            **rung.count_throttle_signals(log_lines),
         }
         rec["files"].append(file_rec)
 
@@ -1213,7 +1214,7 @@ def run_weights_download(
                 f"{probe['projected_total_seconds']} s for {remaining} bytes > limit {budget_s:.1f} s",
             )
         if rc != 0 or not downloaded_path or not Path(downloaded_path).is_file():
-            tail = mask_log_text(" | ".join(log_lines[-3:]))
+            tail = rung.mask_log_text(" | ".join(log_lines[-3:]))
             if token is not None and token in tail:
                 tail = "[the download log tail is withheld: it held the read token]"
             return _fail_weights(out_path, rec, "MODEL_DOWNLOAD_FAILED", f"hf_hub_download {repo}:{filename} rc={rc}: {tail}")
@@ -1222,7 +1223,7 @@ def run_weights_download(
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / Path(filename).name
         shutil.copyfile(downloaded_path, target_path)
-        got_sha = hex_sha256_file(target_path)
+        got_sha = sha256_file(target_path)[7:]
         file_rec["staged_path"] = str(target_path)
         file_rec["sha256"] = got_sha
         if got_sha != exp_sha:
@@ -1234,7 +1235,7 @@ def run_weights_download(
                 f"{dest}/{target_path.name} sha256={got_sha} expected={exp_sha}",
             )
         if target_path.suffix == ".safetensors":
-            if not safetensors_complete(target_path):
+            if not rung.safetensors_complete(target_path):
                 target_path.unlink(missing_ok=True)
                 return _fail_weights(
                     out_path,
@@ -1244,7 +1245,7 @@ def run_weights_download(
                 )
             file_rec["safetensors_verified"] = True
 
-    write_json(out_path, rec)
+    rung.write_json(out_path, rec)
     print("WEIGHTS_DOWNLOAD " + json.dumps(rec), flush=True)
     return 0
 
@@ -1270,7 +1271,8 @@ def merge_render_facts(lane1_out: Path, *, render_state: str | None = None, fail
         rec["render"] = render_state
     if failed_rc is not None:
         rec["failed_rc"] = failed_rc
-    write_json(vm_win_path, rec)
+    vm_win_path.parent.mkdir(parents=True, exist_ok=True)
+    vm_win_path.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
     return rec
 
 
@@ -1553,8 +1555,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.validate_render_inputs:
+        rung = _load_lane3_rung()
         if args.weights_manifest is None:
-            print(refuse_line("RENDER_MANIFEST_REQUIRED", "--render needs --weights-manifest <json>"), file=sys.stderr, flush=True)
+            print(rung.refuse_line("RENDER_MANIFEST_REQUIRED", "--render needs --weights-manifest <json>"), file=sys.stderr, flush=True)
             return 1
         try:
             checked = run_validate_inputs(
@@ -1563,8 +1566,8 @@ def main(argv: list[str] | None = None) -> int:
                 jobs_sha256=args.jobs_sha256,
                 allow_no_jobs=args.allow_no_jobs,
             )
-        except Refusal as exc:
-            print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        except rung.Refusal as exc:
+            print(rung.refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
             return 1
         print("RENDER_INPUTS_OK " + json.dumps(checked), flush=True)
         return 0
@@ -1585,8 +1588,9 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     if args.download_weights:
+        rung = _load_lane3_rung()
         if args.weights_manifest is None:
-            print(refuse_line("RENDER_MANIFEST_REQUIRED", "--download-weights needs --weights-manifest <json>"), file=sys.stderr, flush=True)
+            print(rung.refuse_line("RENDER_MANIFEST_REQUIRED", "--download-weights needs --weights-manifest <json>"), file=sys.stderr, flush=True)
             return 1
         return run_weights_download(
             manifest_path=args.weights_manifest,

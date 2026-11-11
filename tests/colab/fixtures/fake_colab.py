@@ -696,27 +696,28 @@ fi
 printf 'setup_complete\\n' >> lane1_out/setup.log
 """
         + r"""
-run_uploaded_render_block() {
-  local uploaded_sh="$1"
-  local blk
-  for blk in sdlab-hf-token sdlab-lane1-mode sdlab-lane1-render; do
-    if ! grep -q "^# >>> ${blk}$" "${uploaded_sh}" || ! grep -q "^# <<< ${blk}$" "${uploaded_sh}"; then
-      echo "REFUSED: RENDER_BLOCK_MISSING: ${uploaded_sh} has no ${blk} block" >&2
-      exit 1
-    fi
-  done
+prepare_fake_lane1_vm_runtime() {
   {
     printf '%s\n' "${FAKE_VM_MEM_TOTAL_KB:-175000000}" "${FAKE_VM_MEM_AVAILABLE_KB:-170000000}"
   } | awk 'NR==1{print "MemTotal:       " $1 " kB"} NR==2{print "MemFree:        " $1 " kB"; print "MemAvailable:   " $1 " kB"}' > .fake-vm-meminfo
-  mkdir -p .fake-vm-shm .fake-proc/net ComfyUI venv-lane1/bin
-  local host_py
-  host_py="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
-  local host_py_ver
-  host_py_ver="$("${host_py}" -c 'import sys; print(sys.version.split()[0])')"
+  mkdir -p .fake-vm-shm .fake-proc/net .fake-site .fake-vm-bin ComfyUI venv-lane1/bin
+  FAKE_HOST_PY="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
+  FAKE_HOST_PY_VER="$("${FAKE_HOST_PY}" -c 'import sys; print(sys.version.split()[0])')"
+  FAKE_PY_PATH="$("${FAKE_HOST_PY}" -c 'import os, pathlib; print(os.pathsep.join([str(pathlib.Path(".fake-site").resolve()), os.environ["FAKE_VM_SITE"]]))')"
+  printf '#!/usr/bin/env bash\necho "Python 3.13.16"\n' > .fake-vm-bin/sys_python3
+  chmod +x .fake-vm-bin/sys_python3
+  cat > .fake-site/sitecustomize.py << 'SITEEOF'
+import os
+import sys
+
+_fake_ver = os.environ.get("SDLAB_FAKE_VENV_PYTHON_VER")
+if _fake_ver:
+    sys.version = _fake_ver + " (main, Oct 21 2026)"
+SITEEOF
   {
     echo '#!/usr/bin/env bash'
     echo 'export SDLAB_CALLER_BASHPID="${BASHPID:-$$}"'
-    echo 'exec "'"${host_py}"'" "$@"'
+    echo 'exec "'"${FAKE_HOST_PY}"'" "$@"'
   } > venv-lane1/bin/python
   chmod +x venv-lane1/bin/python
 
@@ -752,6 +753,7 @@ for idx, tok in enumerate(argv):
 
 state_dir = os.environ.get("FAKE_COLAB_STATE_DIR")
 started_info = {
+    "pid": os.getpid(),
     "argv": argv,
     "cpu": cpu_flag,
     "listen": listen_host,
@@ -776,8 +778,9 @@ for pid_str in pids:
     fd_dir.mkdir(parents=True, exist_ok=True)
     (fd_dir / "3").write_text(f"socket:[{inode}]\n", encoding="utf-8")
 
+reported_port = int(os.environ.get("SDLAB_FAKE_REPORTED_PORT") or port)
 addr_int = struct.unpack("<I", socket.inet_aton(listen_host))[0]
-tcp_line = f"  0: {addr_int:08X}:{port:04X} 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 {inode}\n"
+tcp_line = f"  0: {addr_int:08X}:{reported_port:04X} 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 {inode}\n"
 (proc_root / "net" / "tcp").write_text(
     "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n" + tcp_line,
     encoding="utf-8",
@@ -928,8 +931,9 @@ def _watch_done() -> None:
     deadline = time.monotonic() + 60.0
     vm_win = Path("lane1_out/vm_window.json")
     bundle = Path("lane1_render_bundle.tar.gz")
+    stub_bundle = Path("lane1_stub_bundle.tar.gz")
     while time.monotonic() < deadline:
-        if bundle.exists():
+        if bundle.exists() or stub_bundle.exists():
             os._exit(0)
         if vm_win.is_file():
             try:
@@ -938,13 +942,45 @@ def _watch_done() -> None:
                     os._exit(0)
             except Exception:
                 pass
-        time.sleep(0.05)
+        time.sleep(0.02)
     os._exit(0)
 
 
 threading.Thread(target=_watch_done, daemon=True).start()
 srv.serve_forever()
 COMFYEOF
+}
+
+stop_fake_comfy_if_running() {
+  "${FAKE_HOST_PY}" - << 'STOPEOF' 2>/dev/null || true
+import json
+import os
+import signal
+from pathlib import Path
+
+state_dir = os.environ.get("FAKE_COLAB_STATE_DIR")
+if state_dir:
+    p = Path(state_dir, "comfy_started.json")
+    if p.is_file():
+        pid = json.loads(p.read_text(encoding="utf-8")).get("pid")
+        if isinstance(pid, int):
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError:
+                pass
+STOPEOF
+}
+
+run_uploaded_render_block() {
+  local uploaded_sh="$1"
+  local blk
+  for blk in sdlab-hf-token sdlab-lane1-mode sdlab-lane1-render; do
+    if ! grep -q "^# >>> ${blk}$" "${uploaded_sh}" || ! grep -q "^# <<< ${blk}$" "${uploaded_sh}"; then
+      echo "REFUSED: RENDER_BLOCK_MISSING: ${uploaded_sh} has no ${blk} block" >&2
+      exit 1
+    fi
+  done
+  prepare_fake_lane1_vm_runtime
 
   (
     while true; do
@@ -967,34 +1003,87 @@ COMFYEOF
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane1_stub.sh.renderblock
 
   set +e
-  SDLAB_EXPECTED_PYTHON="${host_py_ver}" \
+  MSYS2_ENV_CONV_EXCL="PYTHONPATH" \
+  SDLAB_EXPECTED_PYTHON="${FAKE_HOST_PY_VER}" \
   SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
-  SDLAB_FAKE_SYS_PYTHON_BIN="${host_py}" \
+  SDLAB_FAKE_SYS_PYTHON_BIN="${PWD}/.fake-vm-bin/sys_python3" \
   PATH="${PWD}/.fake-vm-bin:${PATH}" \
-  PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \
+  PYTHONPATH="${FAKE_PY_PATH}" \
     bash "${PWD}/remote_lane1_stub.sh.renderblock"
   local render_rc=$?
   set -e
   kill "${render_vitals_pid}" 2>/dev/null || true
+  stop_fake_comfy_if_running
   return "${render_rc}"
+}
+
+run_uploaded_stub_block() {
+  local uploaded_sh="$1"
+  if ! grep -Fq '/content/ComfyUI/main.py --cpu --listen 127.0.0.1' "${uploaded_sh}"; then
+    echo "REFUSED: STUB_CPU_FLAG_MISSING: stub mode must start ComfyUI with --cpu --listen 127.0.0.1" >&2
+    exit 1
+  fi
+  prepare_fake_lane1_vm_runtime
+  local stub_port
+  stub_port="$("${FAKE_HOST_PY}" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
+  "${FAKE_HOST_PY}" - "${uploaded_sh}" "${stub_port}" << 'STUBBLKEOF'
+import sys
+from pathlib import Path
+
+src = Path(sys.argv[1]).read_text(encoding="utf-8")
+port = int(sys.argv[2])
+marker_start = 'if [ "${LANE1_MODE:-stub}" = "stub" ]; then\n'
+marker_end = "\nelse\n# >>> sdlab-lane1-render"
+if marker_start not in src or marker_end not in src:
+    sys.stderr.write("REFUSED: STUB_BLOCK_MISSING: uploaded script has no stub mode branch\n")
+    raise SystemExit(1)
+body = src.split(marker_start, 1)[1].split(marker_end, 1)[0]
+body = body.replace("    sleep 1\n", "    sleep 0.05\n")
+body = body.replace("--port 8188", f"--port {port}")
+body = body.replace("127.0.0.1:8188", f"127.0.0.1:{port}")
+body = body.replace("/content/lane1_render.py \\\n", f"/content/lane1_render.py --comfy-url http://127.0.0.1:{port} \\\n")
+Path(".stubblock.raw").write_text("set -euo pipefail\n" + body + "\n", encoding="utf-8", newline="\n")
+STUBBLKEOF
+  sed "s#/content#${PWD}#g" .stubblock.raw > remote_lane1_stub.sh.stubblock
+  rm -f .stubblock.raw
+
+  (
+    while true; do
+      cur_ph="$(cat lane1_out/phase.txt 2>/dev/null || echo run)"
+      emit_vitals "${cur_ph}" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      sleep "${vitals_interval}"
+    done
+  ) &
+  local stub_vitals_pid="$!"
+
+  set +e
+  MSYS2_ENV_CONV_EXCL="PYTHONPATH" \
+  SDLAB_FAKE_REPORTED_PORT="8188" \
+  SDLAB_FAKE_VENV_PYTHON_VER="3.14.9" \
+  SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
+  SDLAB_FAKE_SYS_PYTHON_BIN="${PWD}/.fake-vm-bin/sys_python3" \
+  PATH="${PWD}/.fake-vm-bin:${PATH}" \
+  PYTHONPATH="${FAKE_PY_PATH}" \
+    bash "${PWD}/remote_lane1_stub.sh.stubblock"
+  local stub_rc=$?
+  set -e
+  kill "${stub_vitals_pid}" 2>/dev/null || true
+  stop_fake_comfy_if_running
+  return "${stub_rc}"
 }
 
 if [ "${LANE1_MODE:-stub}" != "stub" ]; then
   run_uploaded_render_block "remote_lane1_stub.sh.uploaded"
   exit $?
 fi
-if ! grep -Fq '/content/ComfyUI/main.py --cpu --listen 127.0.0.1' "remote_lane1_stub.sh.uploaded"; then
-  echo "REFUSED: STUB_CPU_FLAG_MISSING: stub mode must start ComfyUI with --cpu --listen 127.0.0.1" >&2
-  exit 1
+run_uploaded_stub_block "remote_lane1_stub.sh.uploaded" || exit $?
+if [ -z "${FAKE_COLAB_STUB_FAULT:-}" ]; then
+  if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
+    "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+  fi
+  tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
 fi
-echo "run" > lane1_out/phase.txt
-emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
-echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
-echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
-if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
-  "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
-fi
-tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
+exit 0
 """
     )
     lane3_body = (

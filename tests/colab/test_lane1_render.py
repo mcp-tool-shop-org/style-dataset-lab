@@ -998,9 +998,10 @@ def test_run_weights_download_merge_facts_and_peak_vram(
         encoding="utf-8",
     )
 
-    # expected_file_bytes matches sibling by filename and falls back to sum
+    # expected_file_bytes matches sibling by filename and refuses missing filenames
     assert l1.expected_file_bytes("madebyollin/taesd", "6" * 40, "vae.safetensors") == len(good_st)
-    assert l1.expected_file_bytes("madebyollin/taesd", "6" * 40, "other.bin") > len(good_st)
+    with pytest.raises(FileNotFoundError):
+        l1.expected_file_bytes("madebyollin/taesd", "6" * 40, "other.bin")
 
     # Missing --weights-manifest on CLI
     assert l1.main(["--download-weights"]) == 1
@@ -1184,3 +1185,342 @@ def test_run_weights_download_merge_facts_and_peak_vram(
         system_stats_fetcher=lambda _u: {"devices": [{"type": "cpu", "name": "cpu", "vram_total": 0, "vram_free": 0}]},
     )
     assert vram_cpu == 0.0
+
+
+def test_lane1_cpu_stub_imports_and_runs_without_lane3_rung(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import http.server
+    import os
+    import shutil
+    import subprocess
+    import threading
+    import time as std_time
+    import types
+    import urllib.parse
+
+    with pytest.raises(AttributeError):
+        _ = l1._nonexistent_attr_for_pep562
+
+    isolated_dir = tmp_path / "stub_content"
+    isolated_dir.mkdir()
+    isolated_script = isolated_dir / "lane1_render.py"
+    shutil.copyfile(REPO_ROOT / "scripts" / "colab" / "lane1_render.py", isolated_script)
+    assert not (isolated_dir / "lane3_rung.py").exists()
+
+    stored_pngs: dict[str, bytes] = {}
+
+    class _StubComfyHandler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, fmt: str, *args: object) -> None:
+            return
+
+        def _send_json(self, obj: object) -> None:
+            raw = json.dumps(obj).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def do_GET(self) -> None:
+            parsed = urllib.parse.urlparse(self.path)
+            if parsed.path == "/system_stats":
+                self._send_json(
+                    {
+                        "system": {"os": "posix", "comfyui_version": "0.3.14"},
+                        "devices": [{"name": "cpu", "type": "cpu", "vram_total": 0, "vram_free": 0}],
+                    }
+                )
+                return
+            if parsed.path.startswith("/history/"):
+                pid = parsed.path.rsplit("/", 1)[-1]
+                self._send_json(
+                    {
+                        pid: {
+                            "outputs": {"3": {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "output"}]}},
+                            "status": {"completed": True},
+                        }
+                    }
+                )
+                return
+            if parsed.path == "/view":
+                fname = (urllib.parse.parse_qs(parsed.query).get("filename") or [""])[0]
+                png = stored_pngs[fname]
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(png)))
+                self.end_headers()
+                self.wfile.write(png)
+                return
+
+        def do_POST(self) -> None:
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            wf = payload.get("prompt") or {}
+            pid = "stub_prompt_001"
+            stored_pngs[f"{pid}.png"] = make_minimal_png_with_prompt(wf, seed_byte=9)
+            self._send_json({"prompt_id": pid, "number": 1})
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _StubComfyHandler)
+    srv_port = srv.server_address[1]
+    srv_thread = threading.Thread(target=srv.serve_forever, daemon=True)
+    srv_thread.start()
+    try:
+        stub_row = {
+            "job_id": "stub_01",
+            "run_id": "run_stub_01",
+            "template_id": "stub_fixture_64",
+            "seed": 101,
+            "width": 64,
+            "height": 64,
+            "canon_sha": "a881cb5ba656e0618080d2269498fda7f36ac93a",
+            "entry_id": "ships/brig",
+            "entry_sha256": "sha256:" + "1" * 64,
+            "workflow_sha": "sha256:" + "2" * 64,
+        }
+        jobs_file = isolated_dir / "jobs.jsonl"
+        jobs_file.write_text(json.dumps(stub_row) + "\n", encoding="utf-8", newline="\n")
+        renders_file = isolated_dir / "renders.jsonl"
+        png_dir = isolated_dir / "pngs"
+
+        fake_site = REPO_ROOT / "tests" / "colab" / "fixtures" / "fake_vm_site"
+        clean_env: dict[str, str] = {"PYTHONPATH": str(fake_site)}
+        for keep_key in ("PATH", "SystemRoot", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "HOME", "USERPROFILE"):
+            if keep_key in os.environ:
+                clean_env[keep_key] = os.environ[keep_key]
+
+        res = subprocess.run(
+            [
+                sys.executable,
+                str(isolated_script),
+                "--cpu",
+                "--comfy-url",
+                f"http://127.0.0.1:{srv_port}",
+                "--jobs",
+                str(jobs_file),
+                "--renders",
+                str(renders_file),
+                "--out-dir",
+                str(png_dir),
+            ],
+            cwd=str(isolated_dir),
+            env=clean_env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+        assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+        assert (png_dir / "stub_01.png").is_file()
+        rows = [json.loads(ln) for ln in renders_file.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        assert len(rows) == 1 and rows[0]["job_id"] == "stub_01" and rows[0]["status"] == "ok"
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+    # Controlled clock check for positive wall_s / wall_ms recording in run_queue
+    ticks = iter([100.0, 101.25])
+    monkeypatch.setattr(
+        l1,
+        "time",
+        types.SimpleNamespace(
+            time=lambda: next(ticks, 101.25),
+            strftime=std_time.strftime,
+            gmtime=std_time.gmtime,
+            sleep=std_time.sleep,
+            monotonic=std_time.monotonic,
+        ),
+    )
+    fake_client = FakeComfyClient()
+    timed_renders = tmp_path / "timed_renders.jsonl"
+    timed_out = tmp_path / "timed_pngs"
+    l1.run_queue(
+        jobs_path=jobs_file,
+        renders_path=timed_renders,
+        out_dir=timed_out,
+        comfy_url="http://127.0.0.1:8188",
+        client=fake_client,
+        image_downloader=fake_client.download_image,
+        system_stats_fetcher=lambda _u: {"devices": [{"type": "cpu", "name": "cpu", "vram_total": 0, "vram_free": 0}]},
+    )
+    timed_row = json.loads(timed_renders.read_text(encoding="utf-8").strip())
+    assert timed_row["wall_s"] == 1.25
+    assert timed_row["wall_ms"] == 1250
+
+
+def test_weights_download_probe_compares_single_file_baseline_in_same_repo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import hashlib
+    import os
+
+    fake_site = REPO_ROOT / "tests" / "colab" / "fixtures" / "fake_vm_site"
+    monkeypatch.syspath_prepend(str(fake_site))
+    monkeypatch.setenv(
+        "PYTHONPATH",
+        str(fake_site) + (os.pathsep + os.environ["PYTHONPATH"] if os.environ.get("PYTHONPATH") else ""),
+    )
+
+    blobs_dir = tmp_path / "blobs"
+    blobs_dir.mkdir()
+    vae_blob = _make_safetensors_blob(b"V" * 600)
+    (blobs_dir / "vae.safetensors").write_bytes(vae_blob)
+    vae_sha = hashlib.sha256(vae_blob).hexdigest()
+    monkeypatch.setenv("FAKE_HF_BLOBS_DIR", str(blobs_dir))
+
+    # 1. Earlier larger cached file in the same repo must NOT mask DOWNLOAD_TOO_SLOW on a smaller uncached file
+    rev = "7" * 40
+    hf_home = tmp_path / "hf_same_repo"
+    repo_cache = hf_home / "hub" / "models--Qwen--Qwen-Image"
+    (repo_cache / "blobs").mkdir(parents=True)
+    (repo_cache / "blobs" / "cached_encoder_blob").write_bytes(b"E" * 20_000)
+    assert len(vae_blob) < 20_000
+
+    same_repo_manifest = tmp_path / "same_repo_manifest.json"
+    same_repo_manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "Qwen/Qwen-Image",
+                    "revision": rev,
+                    "file": "vae.safetensors",
+                    "dest": "vae",
+                    "sha256": vae_sha,
+                    "licence_id": "Apache-2.0",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    now = [0.0]
+
+    class _SlowSecondFileProc:
+        def __init__(self, stdout_fh: Any) -> None:
+            self._stdout = stdout_fh
+            self._polls = 0
+            self.killed = False
+
+        def poll(self) -> int | None:
+            if self.killed:
+                return -9
+            self._polls += 1
+            if self._polls == 1:
+                return None
+            inc = repo_cache / "blobs" / "vae.incomplete"
+            inc.unlink(missing_ok=True)
+            snap_out = repo_cache / "snapshots" / rev / "vae.safetensors"
+            snap_out.parent.mkdir(parents=True, exist_ok=True)
+            snap_out.write_bytes(vae_blob)
+            self._stdout.write(f"FILE_PATH {snap_out}\n")
+            self._stdout.flush()
+            return 0
+
+        def kill(self) -> None:
+            self.killed = True
+
+        def wait(self) -> int:
+            return -9 if self.killed else 0
+
+    def _slow_sleep(_dt: float) -> None:
+        now[0] += 2.0
+        (repo_cache / "blobs" / "vae.incomplete").write_bytes(b"x" * 100)
+
+    out_slow = tmp_path / "dl_same_repo.json"
+    rc_slow = l1.run_weights_download(
+        manifest_path=same_repo_manifest,
+        hf_home=hf_home,
+        models_dir=tmp_path / "m_same_repo",
+        max_seconds_raw="10",
+        probe_seconds=1.0,
+        probe_bytes=50,
+        poll_s=0.01,
+        log_path=tmp_path / "dl_same_repo.log",
+        out_path=out_slow,
+        expected_fn=lambda *_a, **_kw: len(vae_blob),
+        popen=lambda _cmd, stdout, **_kw: _SlowSecondFileProc(stdout),
+        clock=lambda: now[0],
+        sleep=_slow_sleep,
+    )
+    assert rc_slow == 1
+    assert "REFUSED: DOWNLOAD_TOO_SLOW:" in capsys.readouterr().err
+    dl_rec = json.loads(out_slow.read_text(encoding="utf-8"))
+    assert dl_rec["refusal"] == "DOWNLOAD_TOO_SLOW"
+    assert dl_rec["files"][0]["cached_bytes_at_start"] == 0
+    assert dl_rec["files"][0]["downloaded_bytes"] == 100
+    assert dl_rec["files"][0]["probe"]["too_slow"] is True
+
+    # 2. Missing filename in repo metadata refuses MODEL_METADATA_FAILED before spawning download
+    missing_manifest = tmp_path / "missing_file_manifest.json"
+    missing_manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "Qwen/Qwen-Image",
+                    "revision": "7" * 40,
+                    "file": "absent.safetensors",
+                    "dest": "vae",
+                    "sha256": vae_sha,
+                    "licence_id": "Apache-2.0",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    popen_called = False
+
+    def _unexpected_popen(*_a: Any, **_kw: Any) -> Any:
+        nonlocal popen_called
+        popen_called = True
+        raise AssertionError("popen must not run when filename is absent from repo metadata")
+
+    rc_missing = l1.run_weights_download(
+        manifest_path=missing_manifest,
+        hf_home=tmp_path / "hf_missing",
+        models_dir=tmp_path / "m_missing",
+        max_seconds_raw="30",
+        log_path=tmp_path / "dl_missing.log",
+        out_path=tmp_path / "dl_missing.json",
+        popen=_unexpected_popen,
+    )
+    assert rc_missing == 1
+    assert popen_called is False
+    assert "REFUSED: MODEL_METADATA_FAILED:" in capsys.readouterr().err
+
+    # 3. Warm single-file cache in snapshots/<rev>/<file> under HF_HUB_OFFLINE=1 uses single-file size
+    warm_hf = tmp_path / "hf_warm"
+    warm_snap = warm_hf / "hub" / "models--Qwen--Qwen-Image" / "snapshots" / rev / "vae.safetensors"
+    warm_snap.parent.mkdir(parents=True)
+    warm_snap.write_bytes(vae_blob)
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+
+    class _WarmProc:
+        def __init__(self, stdout_fh: Any) -> None:
+            stdout_fh.write(f"FILE_PATH {warm_snap}\n")
+            stdout_fh.flush()
+
+        def poll(self) -> int:
+            return 0
+
+        def kill(self) -> None:
+            return
+
+        def wait(self) -> int:
+            return 0
+
+    out_warm = tmp_path / "dl_warm.json"
+    rc_warm = l1.run_weights_download(
+        manifest_path=same_repo_manifest,
+        hf_home=warm_hf,
+        models_dir=tmp_path / "m_warm",
+        max_seconds_raw="10",
+        log_path=tmp_path / "dl_warm.log",
+        out_path=out_warm,
+        popen=lambda _cmd, stdout, **_kw: _WarmProc(stdout),
+    )
+    assert rc_warm == 0
+    warm_rec = json.loads(out_warm.read_text(encoding="utf-8"))
+    assert warm_rec["offline"] is True
+    assert warm_rec["files"][0]["cached_bytes_at_start"] == len(vae_blob)
+    assert warm_rec["files"][0]["expected_bytes"] == len(vae_blob)

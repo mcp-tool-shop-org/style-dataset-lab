@@ -1125,10 +1125,10 @@ def _make_render_fixture(root: Path, *, hf_token_required: bool = False) -> dict
     env["FAKE_HF_BLOBS_DIR"] = str(blobs_dir)
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
     env["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
-    env["SDLAB_TEST_GPU_SMOKE_SECONDS"] = "0.05"
+    env["SDLAB_TEST_SMOKE_SECONDS"] = "0.05"
     env["SDLAB_TEST_DISK_REQUIRED_GIB"] = "0.001"
-    env["SDLAB_TEST_DOWNLOAD_PROBE_SECONDS"] = "0.1"
-    env["SDLAB_TEST_DOWNLOAD_PROBE_BYTES"] = "1024"
+    env["SDLAB_TEST_PROBE_SECONDS"] = "0.1"
+    env["SDLAB_TEST_PROBE_BYTES"] = "1024"
     env["SDLAB_TEST_COMFY_PORT"] = str(port)
 
     base_args = [
@@ -1443,7 +1443,8 @@ def test_lane1_render_runs_comfy_without_cpu_on_loopback_and_stub_keeps_cpu(tmp_
     for row in render_rows:
         assert row["status"] == "ok"
         assert row["stamp_verified"] is True
-        assert isinstance(row["wall_s"], (int, float)) and row["wall_s"] >= 0.0
+        assert isinstance(row["wall_s"], (int, float)) and 0.0 <= row["wall_s"] < 60.0
+        assert row["wall_ms"] == round(row["wall_s"] * 1000)
         assert isinstance(row["peak_vram_mib"], (int, float)) and row["peak_vram_mib"] == 14336.0
         assert (bundle_extract / "pngs" / row["output_file"]).is_file()
         assert (bundle_extract / "copy_back" / row["output_file"]).is_file()
@@ -1564,8 +1565,8 @@ def test_lane1_render_cpu_stub_route_and_committed_fixture_manifest(tmp_path: Pa
     env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
     env_ok["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
     env_ok["SDLAB_TEST_DISK_REQUIRED_GIB"] = "0.001"
-    env_ok["SDLAB_TEST_DOWNLOAD_PROBE_SECONDS"] = "0.1"
-    env_ok["SDLAB_TEST_DOWNLOAD_PROBE_BYTES"] = "512"
+    env_ok["SDLAB_TEST_PROBE_SECONDS"] = "0.1"
+    env_ok["SDLAB_TEST_PROBE_BYTES"] = "512"
     out_ok = tmp_path / "out_cpu_stub_ok"
     res_ok = _run_launcher(
         [
@@ -1585,6 +1586,7 @@ def test_lane1_render_cpu_stub_route_and_committed_fixture_manifest(tmp_path: Pa
     win_ok = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
     assert win_ok["status"] == "ok"
     assert win_ok["render"] == "skipped_cpu_stub"
+    assert win_ok["weights_download"]["probe_window"] == {"seconds": 0.1, "bytes": 512}
     assert win_ok["weights_download"]["files"][0]["safetensors_verified"] is True
     assert "lane1_render_bundle.tar.gz" in win_ok["downloaded_files"]
     assert "STOP -s sdlab-l1-render-cpustub" in (st_ok / "stops.log").read_text(encoding="utf-8")
@@ -1641,4 +1643,152 @@ def test_lane1_render_dry_on_gpu_card_prints_effective_trip(tmp_path: Path) -> N
     assert res_cpu.returncode != 0
     assert "REFUSED: RENDER_REQUIRES_GPU:" in res_cpu.stderr
     assert not (state_cpu / "calls.log").exists()
+
+
+def _override_worktree_input_shas(env: dict[str, str]) -> None:
+    colab_dir = REPO_ROOT / "scripts" / "colab"
+    pin_files = {
+        "EXPECTED_LANE1_LOCK_SHA": colab_dir / "locks" / "lane1.lock",
+        "EXPECTED_LANE1_RENDER_SHA": colab_dir / "lane1_render.py",
+        "EXPECTED_LANE3_RUNG_SHA": colab_dir / "lane3_rung.py",
+        "EXPECTED_INSTALL_CLASSIFIER_SHA": colab_dir / "classify_install_log.py",
+        "EXPECTED_LAUNCH_GUARDS_SHA": colab_dir / "launch_guards.py",
+        "EXPECTED_REMOTE_RUNNER_SHA": colab_dir / "remote_runner.py",
+        "EXPECTED_COLAB_WINDOW_SHA": colab_dir / "colab_window.sh",
+        "EXPECTED_LAUNCH_LANE1_STUB_SHA": colab_dir / "launch_lane1_stub.sh",
+    }
+    for key, path in pin_files.items():
+        env[key] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_lane1_render_and_render_cpu_stub_together_refused_before_any_colab_call(tmp_path: Path) -> None:
+    for label, cli_args in (
+        ("live_cpu", ["--render", "--render-cpu-stub", "--out-dir", _to_posix(tmp_path / "out_both_live")]),
+        ("dry_cpu", ["--render", "--render-cpu-stub", "--dry"]),
+        (
+            "dry_gpu",
+            ["--render", "--render-cpu-stub", "--card", "A100", "--shape", "high-mem", "--cap", "5.0", "--max-rate", "10.5", "--dry"],
+        ),
+    ):
+        _, state_dir, env = _make_fake_colab_env(tmp_path / f"both_{label}")
+        _override_worktree_input_shas(env)
+        res = _run_launcher(cli_args, env)
+        assert res.returncode != 0, f"{label} unexpectedly succeeded"
+        assert "REFUSED: RENDER_OPTION_WITHOUT_RENDER:" in res.stderr, f"{label} stderr: {res.stderr}"
+        assert not (state_dir / "calls.log").exists(), f"{label} made a colab call before refusing"
+    assert not (tmp_path / "out_both_live").exists()
+
+
+def test_lane1_render_launcher_arms_download_probe_from_test_env(tmp_path: Path) -> None:
+    # 1. _make_render_fixture sets the SDLAB_TEST_PROBE_* variables launch_lane1_stub.sh actually reads
+    fx = _make_render_fixture(tmp_path / "probe_arm")
+    env = dict(fx["env"])
+    _override_worktree_input_shas(env)
+    out_arm = tmp_path / "out_probe_arm"
+    res_arm = _run_launcher(
+        [
+            "--render-cpu-stub",
+            "--weights-manifest",
+            _to_posix(fx["manifest_path"]),
+            "--out-dir",
+            _to_posix(out_arm),
+            "--session",
+            "sdlab-l1-probe-arm",
+        ],
+        env,
+    )
+    assert res_arm.returncode == 0, f"STDOUT:\n{res_arm.stdout}\nSTDERR:\n{res_arm.stderr}"
+    win_arm = json.loads((out_arm / "window.json").read_text(encoding="utf-8"))
+    assert win_arm["weights_download"]["probe_window"] == {"seconds": 0.1, "bytes": 1024}
+
+    # 2. Armed probe trips DOWNLOAD_TOO_SLOW on a slow second file from the same repo even after a larger cached file
+    _, st_trip, env_trip = _make_fake_colab_env(tmp_path / "probe_trip")
+    _override_worktree_input_shas(env_trip)
+    blobs_trip = tmp_path / "blobs_trip"
+    blobs_trip.mkdir()
+    big_enc = _build_safetensors_bytes(b"E" * 8192)
+    small_vae = _build_safetensors_bytes(b"V" * 2048)
+    (blobs_trip / "big_encoder.safetensors").write_bytes(big_enc)
+    (blobs_trip / "small_vae.safetensors").write_bytes(small_vae)
+    two_file_manifest = tmp_path / "two_file_same_repo.json"
+    two_file_manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "Qwen/Qwen-Image",
+                    "revision": "8" * 40,
+                    "file": "big_encoder.safetensors",
+                    "dest": "text_encoders",
+                    "sha256": hashlib.sha256(big_enc).hexdigest(),
+                    "licence_id": "Apache-2.0",
+                },
+                {
+                    "repo": "Qwen/Qwen-Image",
+                    "revision": "8" * 40,
+                    "file": "small_vae.safetensors",
+                    "dest": "vae",
+                    "sha256": hashlib.sha256(small_vae).hexdigest(),
+                    "licence_id": "Apache-2.0",
+                },
+            ],
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    env_trip["FAKE_HF_BLOBS_DIR"] = str(blobs_trip)
+    env_trip["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_trip["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
+    env_trip["SDLAB_TEST_DISK_REQUIRED_GIB"] = "0.001"
+    env_trip["SDLAB_TEST_PROBE_SECONDS"] = "0.1"
+    env_trip["SDLAB_TEST_PROBE_BYTES"] = "32"
+    env_trip["FAKE_HF_SLOW_FILE"] = "small_vae.safetensors"
+    env_trip["FAKE_HF_PROBE_PAUSE_S"] = "0.4"
+    out_trip = tmp_path / "out_probe_trip"
+    res_trip = _run_launcher(
+        [
+            "--render-cpu-stub",
+            "--weights-manifest",
+            _to_posix(two_file_manifest),
+            "--download-max-seconds",
+            "5",
+            "--out-dir",
+            _to_posix(out_trip),
+            "--session",
+            "sdlab-l1-probe-trip",
+        ],
+        env_trip,
+    )
+    assert res_trip.returncode != 0
+    win_trip = json.loads((out_trip / "window.json").read_text(encoding="utf-8"))
+    assert win_trip["status"] == "DOWNLOAD_TOO_SLOW"
+    assert "STOP -s sdlab-l1-probe-trip" in (st_trip / "stops.log").read_text(encoding="utf-8")
+
+
+def test_fake_colab_stub_runs_real_lane1_render_without_lane3_rung(tmp_path: Path) -> None:
+    _, state_dir, env = _make_fake_colab_env(tmp_path / "real_stub")
+    _override_worktree_input_shas(env)
+    env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    out_dir = tmp_path / "out_real_stub"
+    res = _run_launcher(["--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-real-stub"], env)
+    assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+    assert (state_dir / "content" / "lane1_render.py").is_file()
+    assert not (state_dir / "content" / "lane3_rung.py").exists()
+
+    bundle_path = out_dir / "lane1_stub_bundle.tar.gz"
+    assert tarfile.is_tarfile(bundle_path), "stub mode must produce a real tar.gz bundle from lane1_render.py"
+    extract_dir = tmp_path / "extracted_stub_bundle"
+    extract_dir.mkdir()
+    with tarfile.open(bundle_path, "r:gz") as tf:
+        tf.extractall(extract_dir, filter="data")
+    renders_file = extract_dir / "renders.jsonl"
+    assert renders_file.is_file()
+    rows = [json.loads(ln) for ln in renders_file.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    assert [r["job_id"] for r in rows] == ["stub_01", "stub_02"]
+    for row in rows:
+        assert row["status"] == "ok"
+        assert row["stamp_verified"] is True
+        assert (extract_dir / "pngs" / row["output_file"]).is_file()
+        assert (extract_dir / "copy_back" / row["output_file"]).is_file()
 
