@@ -431,3 +431,71 @@ def test_header_not_at_column_zero_still_splits_and_no_block_merges_two_samples(
     # Lines after a sample's HARNESS: line never join that sample.
     trailing = a + "CGROUP_MEM_STAT: anon 1\nMEM: MemTotal:       1 kB\n"
     assert lg.host_ram_reading(trailing)["private_mb"] == 52492.8
+
+
+def test_host_ram_uses_larger_meminfo_source_when_cgroup_misses_trainer(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # cgroup memory.stat anon is ~323 MiB (338,731,008 bytes) while /proc/meminfo AnonPages is
+    # ~12.8 GB decimal / 12,514.6 MiB (12,814,908 kB) with ai-toolkit/run.py running under PROC:.
+    block = (
+        "=== VITALS 2026-11-11T04:14:45Z ===\n"
+        "CGROUP_MEM_CURRENT: 60000000000\n"
+        "CGROUP_MEM_MAX: 14680064000\n"
+        "CGROUP_MEM: oom_kill 0\n"
+        "CGROUP_MEM_STAT: anon 338731008\n"
+        "CGROUP_MEM_STAT: file 59000000000\n"
+        "CGROUP_MEM_STAT: shmem 0\n"
+        "MEM: MemTotal:       185477132 kB\n"
+        "MEM: MemAvailable:   160000000 kB\n"
+        "MEM: AnonPages:      12814908 kB\n"
+        "MEM: Shmem:          0 kB\n"
+        "SETUP_BYTES: 120\n"
+        "PROC:\n"
+        "root 2216 2101 99 04:10 ? 00:12:00 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml\n"
+        'HARNESS: {"phase": "run"}\n'
+    )
+    reading = lg.host_ram_reading(block)
+    assert reading is not None
+    assert reading["cgroup_private_mb"] == 323.0
+    assert reading["cgroup_anon_mb"] == 323.0
+    assert reading["cgroup_shmem_mb"] == 0.0
+    assert reading["meminfo_private_mb"] == 12514.6
+    assert reading["meminfo_anon_mb"] == 12514.6
+    assert reading["meminfo_shmem_mb"] == 0.0
+    assert reading["private_mb"] == 12514.6
+    assert reading["source"] == "meminfo:AnonPages+Shmem"
+
+    block_no_shmem = "".join(
+        ln for ln in block.splitlines(keepends=True) if not ln.startswith("MEM: Shmem:")
+    )
+    reading_no_shmem = lg.host_ram_reading(block_no_shmem)
+    assert reading_no_shmem is not None
+    assert reading_no_shmem["private_mb"] == 12514.6
+    assert reading_no_shmem["source"] == "meminfo:AnonPages"
+
+    # Ceiling 14,000 MiB (14,680,064,000 bytes): (323.0 + 2048) * 1.05 = 2489.6 <= 14000 would NOT trip,
+    # whereas (12514.6 + 2048) * 1.05 = 15290.7 > 14000 trips HOST_RAM_PROJECTION_EXCEEDED.
+    proj = lg.evaluate_host_ram_projection(
+        current_anon_mb=reading["private_mb"],
+        projected_delta_mb=2048.0,
+        mem_total_mb=reading["mem_total_mb"],
+        cgroup_max_mb=reading["cgroup_max_mb"],
+        mem_available_mb=reading["mem_available_mb"],
+        source=reading["source"],
+    )
+    assert proj["tripped"] is True
+    assert proj["code"] == "HOST_RAM_PROJECTION_EXCEEDED"
+    assert "meminfo:AnonPages+Shmem" in proj["why"]
+
+    vfile = tmp_path / "vitals_r500.log"
+    vfile.write_text(block, encoding="utf-8")
+    rc = lg.main(["--check-ram", "--ram-vitals-file", str(vfile), "--projected-delta-mb", "2048"])
+    rec = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert rec["tripped"] is True
+    assert rec["code"] == "HOST_RAM_PROJECTION_EXCEEDED"
+    assert rec["private_mb"] == 12514.6
+    assert rec["source"] == "meminfo:AnonPages+Shmem"
+    assert rec["cgroup_private_mb"] == 323.0
+    assert rec["meminfo_private_mb"] == 12514.6

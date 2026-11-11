@@ -683,9 +683,10 @@ def evaluate_cap_guard(
 
 
 def parse_vitals_log(vitals_text: str) -> list[dict[str, Any]]:
-    blocks = [b.strip() for b in re.split(r"^===\s*VITALS\s+", vitals_text, flags=re.M) if b.strip()]
     samples: list[dict[str, Any]] = []
-    for block in blocks:
+    for block in _vitals_blocks(vitals_text):
+        if not _HARNESS_LINE_RE.search(block):
+            continue
         lines = block.splitlines()
         header = lines[0] if lines else ""
         ts = header.split()[0] if header else ""
@@ -739,15 +740,23 @@ def evaluate_vitals_and_stall_guard(
     stall_s: float = 300.0,
     setup_stall_s: float = 600.0,
 ) -> dict[str, Any]:
+    raw_blocks = _vitals_blocks(vitals_text)
     samples = parse_vitals_log(vitals_text)
-    current_phase = "setup"
+    current_phase: str | None = None
     if samples:
         last = samples[-1]
-        if isinstance(last["phase"], str) and last["phase"].strip():
-            current_phase = last["phase"].strip()
+        raw_phase = last["phase"]
+        if not isinstance(raw_phase, str) or not raw_phase.strip():
+            return {
+                "tripped": True,
+                "code": "VITALS_PHASE_UNREADABLE",
+                "cgroup_oom": False,
+                "reason": "Newest complete vitals block has no HARNESS phase; refusing rather than assuming setup",
+                "samples_count": len(samples),
+            }
+        current_phase = raw_phase.strip()
         if (
-            isinstance(last["phase"], str)
-            and (last["phase"].startswith("run") or last["phase"].startswith("setup"))
+            (current_phase.startswith("run") or current_phase.startswith("setup"))
             and last["worker_proc_count"] == 0
             and last.get("oom_kill")
         ):
@@ -755,9 +764,17 @@ def evaluate_vitals_and_stall_guard(
                 "tripped": True,
                 "code": "DEAD_HARNESS_TRIPPED",
                 "cgroup_oom": True,
-                "reason": f"cgroup OOM kill detected in phase={last['phase']} with 0 active worker processes",
+                "reason": f"cgroup OOM kill detected in phase={current_phase} with 0 active worker processes",
                 "samples_count": len(samples),
             }
+    elif len(raw_blocks) >= 2:
+        return {
+            "tripped": True,
+            "code": "VITALS_PHASE_UNREADABLE",
+            "cgroup_oom": False,
+            "reason": f"{len(raw_blocks)} vitals blocks and none is complete (missing HARNESS: line); refusing rather than assuming setup",
+            "samples_count": 0,
+        }
     if len(samples) >= 2:
         last_two = samples[-2:]
         if all(
@@ -771,7 +788,7 @@ def evaluate_vitals_and_stall_guard(
                 "reason": "2 consecutive vitals samples in phase=run with 0 active worker processes",
                 "samples_count": len(samples),
             }
-    if current_phase.startswith("setup"):
+    if current_phase is not None and current_phase.startswith("setup"):
         eff_setup_idle = float(setup_idle_seconds if setup_idle_seconds is not None else idle_seconds)
         if eff_setup_idle >= float(setup_stall_s):
             return {
@@ -835,9 +852,11 @@ def _ram_from_block(block: str) -> dict[str, Any] | None:
     """The private-memory reading of ONE complete vitals sample, or None.
 
     Complete means the emitter reached its last line (HARNESS:) and the sample has MemTotal,
-    MemAvailable and a private-memory source: the full cgroup memory.stat triple (anon, shmem,
-    file), else /proc/meminfo AnonPages (+ Shmem). A sample cut mid-write anywhere is None, so a
-    torn tail never reads as 0 MB private or as a missing MemTotal."""
+    MemAvailable and at least one private-memory source: the full cgroup memory.stat triple (anon,
+    shmem, file) and/or /proc/meminfo AnonPages (+ Shmem). Both sources are recorded when present,
+    and the larger private reading is selected for projection and ceiling checks so a cgroup slice
+    that misses the trainer never under-reads private memory. A sample cut mid-write anywhere is
+    None, so a torn tail never reads as 0 MB private or as a missing MemTotal."""
     if not _HARNESS_LINE_RE.search(block):
         return None
     kb: dict[str, float] = {}
@@ -849,15 +868,37 @@ def _ram_from_block(block: str) -> dict[str, Any] | None:
         return None
     stat = {k: int(v) for k, v in _CGROUP_STAT_RE.findall(block)}
     if {"anon", "shmem", "file"} <= stat.keys():
-        anon_mb = round(stat["anon"] / 1048576.0, 1)
-        shmem_mb = round(stat["shmem"] / 1048576.0, 1)
-        source = "cgroup_memory.stat:anon+shmem"
-    elif "AnonPages" in kb:
-        anon_mb = kb["AnonPages"]
-        shmem_mb = kb.get("Shmem", 0.0)
-        source = "meminfo:AnonPages+Shmem" if "Shmem" in kb else "meminfo:AnonPages"
+        cgroup_anon_mb: float | None = round(stat["anon"] / 1048576.0, 1)
+        cgroup_shmem_mb: float | None = round(stat["shmem"] / 1048576.0, 1)
+        cgroup_private_mb: float | None = round(cgroup_anon_mb + cgroup_shmem_mb, 1)
     else:
+        cgroup_anon_mb = None
+        cgroup_shmem_mb = None
+        cgroup_private_mb = None
+    if "AnonPages" in kb:
+        meminfo_anon_mb: float | None = kb["AnonPages"]
+        meminfo_shmem_mb: float | None = kb.get("Shmem", 0.0)
+        meminfo_private_mb: float | None = round(meminfo_anon_mb + meminfo_shmem_mb, 1)
+        meminfo_source = "meminfo:AnonPages+Shmem" if "Shmem" in kb else "meminfo:AnonPages"
+    else:
+        meminfo_anon_mb = None
+        meminfo_shmem_mb = None
+        meminfo_private_mb = None
+        meminfo_source = None
+    if cgroup_private_mb is None and meminfo_private_mb is None:
         return None
+    if meminfo_private_mb is not None and (
+        cgroup_private_mb is None or meminfo_private_mb > cgroup_private_mb
+    ):
+        private_mb = meminfo_private_mb
+        anon_mb = meminfo_anon_mb
+        shmem_mb = meminfo_shmem_mb
+        source = meminfo_source
+    else:
+        private_mb = cgroup_private_mb
+        anon_mb = cgroup_anon_mb
+        shmem_mb = cgroup_shmem_mb
+        source = "cgroup_memory.stat:anon+shmem"
     cg_max_raw = _CGROUP_MAX_RE.findall(block)
     cg_max_mb = None
     if cg_max_raw and cg_max_raw[-1].isdigit():
@@ -865,10 +906,16 @@ def _ram_from_block(block: str) -> dict[str, Any] | None:
     cg_cur = _CGROUP_CUR_RE.findall(block)
     return {
         "timestamp": block.split()[0] if block.split() else "",
-        "private_mb": round(anon_mb + shmem_mb, 1),
+        "private_mb": private_mb,
         "anon_mb": anon_mb,
         "shmem_mb": shmem_mb,
         "source": source,
+        "cgroup_private_mb": cgroup_private_mb,
+        "cgroup_anon_mb": cgroup_anon_mb,
+        "cgroup_shmem_mb": cgroup_shmem_mb,
+        "meminfo_private_mb": meminfo_private_mb,
+        "meminfo_anon_mb": meminfo_anon_mb,
+        "meminfo_shmem_mb": meminfo_shmem_mb,
         "mem_total_mb": kb["MemTotal"],
         "mem_available_mb": kb["MemAvailable"],
         "cgroup_max_mb": cg_max_mb,
@@ -897,9 +944,9 @@ def _vitals_blocks(vitals_text: str) -> list[str]:
 def host_ram_reading(vitals_text: str) -> dict[str, Any] | None:
     """The newest COMPLETE vitals sample's private-memory reading (see _ram_from_block), or None.
 
-    Private memory is cgroup memory.stat anon + shmem, else /proc/meminfo AnonPages + Shmem, every
-    value from that one sample. cgroup memory.current is recorded for the record only and never
-    used. `blocks_back` is how many samples older than the newest it is."""
+    Private memory records both cgroup memory.stat anon + shmem and /proc/meminfo AnonPages + Shmem
+    from that one sample and selects the larger of the two. cgroup memory.current is recorded for
+    the record only and never used. `blocks_back` is how many samples older than the newest it is."""
     blocks = _vitals_blocks(vitals_text)
     for back, block in enumerate(reversed(blocks)):
         reading = _ram_from_block(block)
@@ -1232,8 +1279,18 @@ def main(argv: list[str] | None = None) -> int:
             mem_available_floor_mb=args.mem_available_floor_mb,
             source=r["source"],
         )
-        res.update({"state": "ok", "sample": r["timestamp"], "blocks_back": r["blocks_back"],
-                    "cgroup_current_mb_not_used": r["cgroup_current_mb_not_used"]})
+        res.update({
+            "state": "ok",
+            "sample": r["timestamp"],
+            "blocks_back": r["blocks_back"],
+            "cgroup_private_mb": r["cgroup_private_mb"],
+            "cgroup_anon_mb": r["cgroup_anon_mb"],
+            "cgroup_shmem_mb": r["cgroup_shmem_mb"],
+            "meminfo_private_mb": r["meminfo_private_mb"],
+            "meminfo_anon_mb": r["meminfo_anon_mb"],
+            "meminfo_shmem_mb": r["meminfo_shmem_mb"],
+            "cgroup_current_mb_not_used": r["cgroup_current_mb_not_used"],
+        })
         if res["tripped"]:
             res["refusal"] = {"code": res["code"], "why": res["why"]}
             print(json.dumps(res))
