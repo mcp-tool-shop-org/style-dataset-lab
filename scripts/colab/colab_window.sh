@@ -47,6 +47,7 @@ COLAB_STOP_TIMEOUT_S_DEFAULT=60
 COLAB_STOP_ATTEMPTS_DEFAULT=2
 COLAB_SESSIONS_TIMEOUT_S_DEFAULT=30
 
+COLAB_CALLER_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S:-}"
 export COLAB_KILL_GRACE_S="${COLAB_KILL_GRACE_S_DEFAULT}"
 export COLAB_OPEN_LOCK_TIMEOUT_S="${COLAB_OPEN_LOCK_TIMEOUT_S_DEFAULT}"
 export COLAB_NEW_TIMEOUT_S="${COLAB_NEW_TIMEOUT_S_DEFAULT}"
@@ -63,6 +64,29 @@ export COLAB_SESSIONS_TIMEOUT_S="${COLAB_SESSIONS_TIMEOUT_S_DEFAULT}"
 COLAB_CLEANUP_SIGNAL_COUNT=0
 COLAB_CLEANUP_SKIP_SALVAGE=0
 COLAB_SALVAGE_STEP_PID=""
+
+# colab_configure_download_timeout [cli_override]: resolve the `colab download` timeout from
+# `--download-timeout-s <s>` (precedence 1), `COLAB_DOWNLOAD_TIMEOUT_S` in the caller's environment
+# (precedence 2), or `COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT` (300 s, precedence 3). Refuses
+# DOWNLOAD_TIMEOUT_INVALID (exit 2) before `colab new` when non-positive or non-integer, and scales
+# both normal and post-failure salvage download bounds + SALVAGE_DEADLINE_S so cleanup_bound_s and
+# window.json record the exact setting used.
+colab_configure_download_timeout() {
+  local cli_val="${1:-}"
+  local chosen="${cli_val}"
+  if [ -z "${chosen}" ]; then
+    chosen="${COLAB_CALLER_DOWNLOAD_TIMEOUT_S:-${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}}"
+  fi
+  if ! [[ "${chosen}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "REFUSED: DOWNLOAD_TIMEOUT_INVALID: download timeout '${chosen}' must be a positive integer (seconds)" >&2
+    return 2
+  fi
+  export COLAB_DOWNLOAD_TIMEOUT_S="${chosen}"
+  export COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S="${chosen}"
+  export SALVAGE_DEADLINE_S=$(( (COLAB_SALVAGE_RESTART_TIMEOUT_S + COLAB_KILL_GRACE_S) \
+    + (COLAB_SALVAGE_EXEC_TIMEOUT_S + COLAB_KILL_GRACE_S) \
+    + (COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S + COLAB_KILL_GRACE_S) ))
+}
 
 # colab_apply_test_cleanup_overrides <test_mode>: in fake-colab test mode only, allow short per-step
 # timeouts and salvage deadline so tests can exercise hung children and `timeout -k` in seconds.
@@ -2130,7 +2154,21 @@ REFUSAL_CODES = (
     "MODEL_DOWNLOAD_FAILED",
     "DATASET_FILE_MISSING",
     "DATASET_SHA_MISMATCH",
+    "DATASET_MANIFEST_REQUIRED",
+    "DATASET_MANIFEST_SHA_REQUIRED",
+    "DATASET_MANIFEST_MISSING",
+    "DATASET_MANIFEST_SHA_MISMATCH",
+    "DATASET_MANIFEST_INVALID",
+    "DATASET_ARCHIVE_SHA_MISMATCH",
+    "JOB_REQUIRED",
+    "JOB_SHA_REQUIRED",
+    "JOB_CONFLICT",
+    "JOB_FILE_MISSING",
+    "JOB_SHA_MISMATCH",
     "JOB_TEMPLATE_INVALID",
+    "DOWNLOAD_TIMEOUT_INVALID",
+    "INPUT_FILE_MISSING",
+    "INPUT_SHA_MISMATCH",
     "HF_READ_TOKEN_MISSING",
     "RATE_UNREAD",
     "RATE_ABOVE_MAX",
@@ -2274,6 +2312,9 @@ if lane == "train":
     train_state = vm_train if vm_train in ("skipped_cpu_stub", "trained") else None
     rung_job = read_text_file(out_dir / "rung_job.txt")
     rung_job_sha256 = read_text_file(out_dir / "rung_job_sha256.txt")
+    job_sha256 = read_text_file(out_dir / "job_sha256.txt") or rung_job_sha256
+    dataset_manifest_sha256 = read_text_file(out_dir / "dataset_manifest_sha256.txt")
+    dataset_archive_sha256 = read_text_file(out_dir / "dataset_archive_sha256.txt")
 
     bundle_sizes: dict[str, int] = {}
     bundle_texts: dict[str, str] = {}
@@ -2414,6 +2455,9 @@ if lane == "train":
         "train_completed": train_completed,
         "rung_job": rung_job,
         "rung_job_sha256": rung_job_sha256,
+        "job_sha256": job_sha256,
+        "dataset_manifest_sha256": dataset_manifest_sha256,
+        "dataset_archive_sha256": dataset_archive_sha256,
     }
 
 kill_grace_s = int(os.environ.get("COLAB_KILL_GRACE_S", "10"))
@@ -2498,6 +2542,7 @@ window_payload = {
     "wall_s": wall_s,
     "grace_s": grace_s,
     "margin": margin,
+    "download_timeout_s": dl_timeout_s,
     "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
     "cleanup_bound_s": cleanup_bound_s,
     "stop_path": stop_path,

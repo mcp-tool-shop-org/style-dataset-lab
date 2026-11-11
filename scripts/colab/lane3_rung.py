@@ -15,9 +15,17 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
                 whichever comes first, the full download time is projected from the measured
                 rate and the download is stopped with DOWNLOAD_TOO_SLOW when the projection
                 exceeds the request's limit (DOWNLOAD_LIMIT_MISSING without one).
-  dataset       verify the fixture images against rung-dataset.json (sha256) and, on the VM,
-                place them with their captions (DATASET_FILE_MISSING, DATASET_SHA_MISMATCH).
-  render-job    fill the rung YAML's __LANE3_*__ placeholders (JOB_TEMPLATE_INVALID).
+  dataset       verify the dataset images against their manifest (sha256), optionally pack a
+                deterministic tar archive on the rig before `colab new`, and on the VM verify the
+                archive sha256 + every extracted image sha256 and place captions
+                (DATASET_MANIFEST_MISSING, DATASET_MANIFEST_SHA_MISMATCH, DATASET_MANIFEST_INVALID,
+                DATASET_ARCHIVE_SHA_MISMATCH, DATASET_FILE_MISSING, DATASET_SHA_MISMATCH).
+  check-job     rig side, before a window opens: verify the job YAML's sha256, pinned 40-hex base
+                model revision, and single active `__LANE3_*__` placeholders with no unpinned
+                `name_or_path` (JOB_FILE_MISSING, JOB_SHA_MISMATCH, TRAIN_MODEL_REVISION_REQUIRED,
+                JOB_TEMPLATE_INVALID).
+  render-job    verify (when --template-sha is given) and fill the job YAML's __LANE3_*__
+                placeholders (JOB_FILE_MISSING, JOB_SHA_MISMATCH, JOB_TEMPLATE_INVALID).
   copy-off      while ai-toolkit runs, copy each finished checkpoint and sample image into the
                 bundle directory and append a manifest line with its sha256.
   model-check   rig side, before a window opens: the model at the pinned revision answers the
@@ -39,6 +47,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import threading
 import time
 from collections.abc import Callable, Iterable
@@ -47,6 +56,8 @@ from typing import Any
 
 GIB = 1024**3
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
+HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
+SAFE_IMAGE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 REPO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$")
 PLACEHOLDERS = ("__LANE3_TRAINING_FOLDER__", "__LANE3_DATASET_DIR__", "__LANE3_MODEL_PATH__")
 COPY_OFF_SUFFIXES = (".safetensors", ".png", ".jpg", ".jpeg", ".webp")
@@ -572,52 +583,247 @@ def run_download(args: argparse.Namespace, *, expected_fn: Callable[..., int] = 
 # ---------------------------------------------------------------------------------------------
 
 
-def run_dataset(args: argparse.Namespace) -> int:
-    manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
-    src = Path(args.src)
-    dest = Path(args.dest) if args.dest else None
+def normalize_sha256(raw: str | None, code: str, label: str) -> str:
+    s = (raw or "").strip().lower()
+    if s.startswith("sha256:"):
+        s = s[7:]
+    if not HEX64_RE.match(s):
+        raise Refusal(code, f"{label}={raw!r} is not a 64-hex sha256")
+    return s
+
+
+def _validate_manifest_items(manifest_path: Path, manifest: Any) -> list[dict[str, Any]]:
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("items", []), list):
+        raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} must be a JSON object with an items list")
     items = manifest.get("items", [])
     if not items:
-        print(refuse_line("DATASET_FILE_MISSING", f"{args.manifest} lists no items"), file=sys.stderr, flush=True)
-        return 1
-    for item in items:
-        img = src / item["image"]
-        if not img.is_file():
-            print(refuse_line("DATASET_FILE_MISSING", str(img)), file=sys.stderr, flush=True)
-            return 1
-        got = sha256_file(img)
-        if got != item["sha256"]:
-            print(refuse_line("DATASET_SHA_MISMATCH", f"{img} sha256={got} expected={item['sha256']}"),
-                  file=sys.stderr, flush=True)
-            return 1
-    if dest is not None:
-        dest.mkdir(parents=True, exist_ok=True)
+        raise Refusal("DATASET_FILE_MISSING", f"{manifest_path} lists no items")
+    seen_names: set[str] = set()
+    seen_stems: set[str] = set()
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} item[{idx}] is not an object")
+        img_name = item.get("image")
+        sha_raw = item.get("sha256")
+        caption = item.get("caption")
+        if not isinstance(img_name, str) or not SAFE_IMAGE_NAME_RE.match(img_name):
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} item[{idx}].image={img_name!r} is not a plain filename")
+        suffix = Path(img_name).suffix.lower()
+        stem = Path(img_name).stem
+        if not suffix or suffix == ".txt":
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} item[{idx}].image={img_name!r} needs an image suffix")
+        if img_name in seen_names or stem in seen_stems:
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} duplicate image or caption stem {img_name!r}")
+        if not isinstance(sha_raw, str) or not HEX64_RE.match(sha_raw.lower()):
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} item[{idx}].sha256={sha_raw!r} is not 64-hex")
+        if not isinstance(caption, str):
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path} item[{idx}].caption must be a string")
+        seen_names.add(img_name)
+        seen_stems.add(stem)
+    return items
+
+
+def pack_dataset_archive(src: Path, items: list[dict[str, Any]], archive_path: Path) -> str:
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive_path, "w") as tf:
         for item in items:
-            shutil.move(str(src / item["image"]), str(dest / item["image"]))
-            stem = Path(item["image"]).stem
-            (dest / f"{stem}.txt").write_text(item["caption"].strip() + "\n", encoding="utf-8", newline="\n")
-    print(f"DATASET_OK items={len(items)} placed={'yes' if dest else 'no'}", flush=True)
+            img = src / item["image"]
+            info = tarfile.TarInfo(name=item["image"])
+            info.size = img.stat().st_size
+            info.mtime = 0
+            info.mode = 0o644
+            info.uid = 0
+            info.gid = 0
+            info.uname = ""
+            info.gname = ""
+            with img.open("rb") as fh:
+                tf.addfile(info, fh)
+    return sha256_file(archive_path)
+
+
+def unpack_and_verify_dataset_archive(
+    archive_path: Path, expected_archive_sha: str | None, items: list[dict[str, Any]], dest: Path
+) -> str:
+    if not archive_path.is_file():
+        raise Refusal("DATASET_FILE_MISSING", str(archive_path))
+    exp_sha = normalize_sha256(expected_archive_sha, "DATASET_ARCHIVE_SHA_MISMATCH", "archive_sha")
+    got_sha = sha256_file(archive_path)
+    if got_sha != exp_sha:
+        raise Refusal("DATASET_ARCHIVE_SHA_MISMATCH", f"{archive_path} sha256={got_sha} expected={exp_sha}")
+    expected_names = {it["image"] for it in items}
+    dest.mkdir(parents=True, exist_ok=True)
+    try:
+        with tarfile.open(archive_path, "r:") as tf:
+            members = tf.getmembers()
+            seen_members: set[str] = set()
+            for m in members:
+                if not m.isfile() or not SAFE_IMAGE_NAME_RE.match(m.name) or m.name not in expected_names or m.name in seen_members:
+                    raise Refusal("DATASET_ARCHIVE_SHA_MISMATCH", f"unexpected tar member {m.name!r} in {archive_path}")
+                seen_members.add(m.name)
+            missing = sorted(expected_names - seen_members)
+            if missing:
+                raise Refusal("DATASET_FILE_MISSING", f"{missing[0]} missing from {archive_path}")
+            for m in members:
+                src_fh = tf.extractfile(m)
+                if src_fh is None:
+                    raise Refusal("DATASET_FILE_MISSING", f"{m.name} unreadable in {archive_path}")
+                with src_fh, (dest / m.name).open("wb") as dst_fh:
+                    shutil.copyfileobj(src_fh, dst_fh)
+    except (tarfile.TarError, OSError) as exc:
+        raise Refusal("DATASET_ARCHIVE_SHA_MISMATCH", f"{archive_path}: {type(exc).__name__}: {exc}") from None
+    for item in items:
+        placed = dest / item["image"]
+        if not placed.is_file():
+            raise Refusal("DATASET_FILE_MISSING", str(placed))
+        got_item = sha256_file(placed)
+        if got_item != item["sha256"].lower():
+            raise Refusal("DATASET_SHA_MISMATCH", f"{placed} sha256={got_item} expected={item['sha256']}")
+        stem = Path(item["image"]).stem
+        (dest / f"{stem}.txt").write_text(item["caption"].strip() + "\n", encoding="utf-8", newline="\n")
+    return got_sha
+
+
+def run_dataset(args: argparse.Namespace) -> int:
+    manifest_path = Path(args.manifest)
+    manifest_sha = getattr(args, "manifest_sha", None)
+    src_raw = getattr(args, "src", None)
+    dest_raw = getattr(args, "dest", None)
+    pack_raw = getattr(args, "pack_archive", None)
+    sha_out_raw = getattr(args, "archive_sha_out", None)
+    archive_raw = getattr(args, "archive", None)
+    archive_sha = getattr(args, "archive_sha", None)
+    unlink_archive = bool(getattr(args, "unlink_archive", False))
+    try:
+        if not manifest_path.is_file():
+            raise Refusal("DATASET_MANIFEST_MISSING", str(manifest_path))
+        if manifest_sha is not None:
+            exp_msha = normalize_sha256(manifest_sha, "DATASET_MANIFEST_SHA_MISMATCH", "manifest_sha")
+            got_msha = sha256_file(manifest_path)
+            if got_msha != exp_msha:
+                raise Refusal("DATASET_MANIFEST_SHA_MISMATCH", f"{manifest_path} sha256={got_msha} expected={exp_msha}")
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            raise Refusal("DATASET_MANIFEST_INVALID", f"{manifest_path}: invalid JSON ({exc})") from None
+        items = _validate_manifest_items(manifest_path, manifest)
+
+        if archive_raw is not None:
+            if not dest_raw:
+                raise Refusal("DATASET_MANIFEST_INVALID", "--archive requires --dest")
+            arch_sha = unpack_and_verify_dataset_archive(Path(archive_raw), archive_sha, items, Path(dest_raw))
+            if unlink_archive:
+                Path(archive_raw).unlink(missing_ok=True)
+            print(f"DATASET_OK items={len(items)} placed=yes archive_sha256={arch_sha}", flush=True)
+            return 0
+
+        if not src_raw:
+            raise Refusal("DATASET_FILE_MISSING", "dataset needs --src or --archive")
+        src = Path(src_raw)
+        dest = Path(dest_raw) if dest_raw else None
+        for item in items:
+            img = src / item["image"]
+            if not img.is_file():
+                raise Refusal("DATASET_FILE_MISSING", str(img))
+            got = sha256_file(img)
+            if got != item["sha256"].lower():
+                raise Refusal("DATASET_SHA_MISMATCH", f"{img} sha256={got} expected={item['sha256']}")
+        arch_sha_out: str | None = None
+        if pack_raw is not None:
+            arch_sha_out = pack_dataset_archive(src, items, Path(pack_raw))
+            if sha_out_raw is not None:
+                sha_p = Path(sha_out_raw)
+                sha_p.parent.mkdir(parents=True, exist_ok=True)
+                sha_p.write_text(arch_sha_out + "\n", encoding="utf-8", newline="\n")
+        if dest is not None:
+            dest.mkdir(parents=True, exist_ok=True)
+            for item in items:
+                shutil.move(str(src / item["image"]), str(dest / item["image"]))
+                stem = Path(item["image"]).stem
+                (dest / f"{stem}.txt").write_text(item["caption"].strip() + "\n", encoding="utf-8", newline="\n")
+        extra = f" archive_sha256={arch_sha_out}" if arch_sha_out else ""
+        print(f"DATASET_OK items={len(items)} placed={'yes' if dest else 'no'}{extra}", flush=True)
+        return 0
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+
+
+def validate_job_template(template_path: Path, text: str, *, strict_bindings: bool = False) -> None:
+    active_lines = [ln for ln in text.splitlines() if not ln.lstrip().startswith("#")]
+    active_text = "\n".join(active_lines)
+    for key in PLACEHOLDERS:
+        if text.count(f'"{key}"') != 1:
+            raise Refusal("JOB_TEMPLATE_INVALID", f'{template_path} must hold "{key}" exactly once')
+        if active_text.count(f'"{key}"') != 1 or active_text.count(key) != 1:
+            raise Refusal("JOB_TEMPLATE_INVALID", f'{template_path} must hold "{key}" once as an active quoted value')
+    if strict_bindings:
+        expected_bindings = (
+            ("training_folder", "__LANE3_TRAINING_FOLDER__"),
+            ("folder_path", "__LANE3_DATASET_DIR__"),
+            ("name_or_path", "__LANE3_MODEL_PATH__"),
+        )
+        for field, placeholder in expected_bindings:
+            pat = rf'^\s*(?:-\s*)?{field}:\s*"{placeholder}"\s*(?:#.*)?$'
+            if len(re.findall(pat, active_text, re.M)) != 1:
+                raise Refusal("JOB_TEMPLATE_INVALID", f'{template_path} must bind {field}: "{placeholder}" once')
+        for m in re.finditer(r"^\s*(?:-\s*)?([A-Za-z0-9_]*name_or_path):\s*(.+?)\s*$", active_text, re.M):
+            key_name, raw_val = m.group(1), re.sub(r"\s+#.*$", "", m.group(2)).strip()
+            if key_name != "name_or_path" or raw_val != '"__LANE3_MODEL_PATH__"':
+                raise Refusal(
+                    "JOB_TEMPLATE_INVALID",
+                    f"{template_path} has unpinned model path {key_name}: {raw_val} (must use __LANE3_MODEL_PATH__)",
+                )
+
+
+def run_check_job(args: argparse.Namespace) -> int:
+    template_path = Path(args.template)
+    template_sha = getattr(args, "template_sha", None)
+    model_revision = getattr(args, "model_revision", None)
+    try:
+        if not template_path.is_file():
+            raise Refusal("JOB_FILE_MISSING", str(template_path))
+        got_sha = sha256_file(template_path)
+        if template_sha is not None:
+            exp_sha = normalize_sha256(template_sha, "JOB_SHA_MISMATCH", "job_sha")
+            if got_sha != exp_sha:
+                raise Refusal("JOB_SHA_MISMATCH", f"{template_path} sha256={got_sha} expected={exp_sha}")
+        if model_revision is not None and not REVISION_RE.match(model_revision or ""):
+            raise Refusal("TRAIN_MODEL_REVISION_REQUIRED", f"{model_revision!r} is not a 40-hex commit")
+        text = template_path.read_text(encoding="utf-8")
+        validate_job_template(template_path, text, strict_bindings=True)
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+    print(f"JOB_TEMPLATE_OK {template_path} sha256={got_sha}", flush=True)
     return 0
 
 
 def run_render_job(args: argparse.Namespace) -> int:
-    text = Path(args.template).read_text(encoding="utf-8")
-    values = {
-        "__LANE3_TRAINING_FOLDER__": args.training_folder,
-        "__LANE3_DATASET_DIR__": args.dataset_dir,
-        "__LANE3_MODEL_PATH__": args.model_path,
-    }
-    for key in PLACEHOLDERS:
-        if text.count(f'"{key}"') != 1:
-            print(refuse_line("JOB_TEMPLATE_INVALID", f"{args.template} must hold \"{key}\" exactly once"),
-                  file=sys.stderr, flush=True)
-            return 1
-        val = values[key] or ""
-        if not val or '"' in val or "\\" in val or "\n" in val:
-            print(refuse_line("JOB_TEMPLATE_INVALID", f"value for {key} is empty or not a plain path"),
-                  file=sys.stderr, flush=True)
-            return 1
-        text = text.replace(f'"{key}"', json.dumps(val))
+    template_path = Path(args.template)
+    template_sha = getattr(args, "template_sha", None)
+    try:
+        if not template_path.is_file():
+            raise Refusal("JOB_FILE_MISSING", str(template_path))
+        if template_sha is not None:
+            exp_sha = normalize_sha256(template_sha, "JOB_SHA_MISMATCH", "template_sha")
+            got_sha = sha256_file(template_path)
+            if got_sha != exp_sha:
+                raise Refusal("JOB_SHA_MISMATCH", f"{template_path} sha256={got_sha} expected={exp_sha}")
+        text = template_path.read_text(encoding="utf-8")
+        validate_job_template(template_path, text, strict_bindings=False)
+        values = {
+            "__LANE3_TRAINING_FOLDER__": args.training_folder,
+            "__LANE3_DATASET_DIR__": args.dataset_dir,
+            "__LANE3_MODEL_PATH__": args.model_path,
+        }
+        for key in PLACEHOLDERS:
+            val = values[key] or ""
+            if not val or '"' in val or "\\" in val or "\n" in val:
+                raise Refusal("JOB_TEMPLATE_INVALID", f"value for {key} is empty or not a plain path")
+            text = text.replace(f'"{key}"', json.dumps(val))
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
     Path(args.out).write_text(text, encoding="utf-8", newline="\n")
     print(f"JOB_RENDERED {args.out}", flush=True)
     return 0
@@ -878,11 +1084,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     ds = sub.add_parser("dataset")
     ds.add_argument("--manifest", required=True)
-    ds.add_argument("--src", required=True)
+    ds.add_argument("--manifest-sha", default=None)
+    ds.add_argument("--src", default=None)
     ds.add_argument("--dest", default=None, help="place images and captions here; omit to verify only")
+    ds.add_argument("--pack-archive", default=None, help="pack verified dataset images into one deterministic tar")
+    ds.add_argument("--archive-sha-out", default=None, help="write packed tar sha256 here")
+    ds.add_argument("--archive", default=None, help="verify tar sha256 + extract and re-verify every image on the VM")
+    ds.add_argument("--archive-sha", default=None, help="expected 64-hex sha256 of --archive")
+    ds.add_argument("--unlink-archive", action="store_true", help="remove --archive after extraction")
+
+    cj = sub.add_parser("check-job")
+    cj.add_argument("--template", required=True)
+    cj.add_argument("--template-sha", default=None)
+    cj.add_argument("--model-revision", default=None)
 
     r = sub.add_parser("render-job")
     r.add_argument("--template", required=True)
+    r.add_argument("--template-sha", default=None)
     r.add_argument("--out", required=True)
     r.add_argument("--training-folder", required=True)
     r.add_argument("--dataset-dir", required=True)
@@ -922,6 +1140,7 @@ def main(argv: list[str] | None = None) -> int:
         "guards": run_guards,
         "download": run_download,
         "dataset": run_dataset,
+        "check-job": run_check_job,
         "render-job": run_render_job,
         "copy-off": run_copy_off,
         "finish": run_finish,
