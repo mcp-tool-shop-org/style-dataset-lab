@@ -1766,29 +1766,77 @@ def test_lane1_render_launcher_arms_download_probe_from_test_env(tmp_path: Path)
     assert "STOP -s sdlab-l1-probe-trip" in (st_trip / "stops.log").read_text(encoding="utf-8")
 
 
+def _assert_stub_bundle_succeeded(out_dir: Path, res: subprocess.CompletedProcess[str], extract_dir: Path) -> None:
+    assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["status"] == "ok"
+    assert win["listening_sockets"] == ["127.0.0.1:8188"]
+    assert "lane1_stub_bundle.tar.gz" in win["downloaded_files"]
+    bundle_path = out_dir / "lane1_stub_bundle.tar.gz"
+    assert tarfile.is_tarfile(bundle_path), "stub mode must produce a real tar.gz bundle from lane1_render.py"
+    extract_dir.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(bundle_path, "r:gz") as tf:
+        tf.extractall(extract_dir, filter="data")
+    renders_file = extract_dir / "renders.jsonl"
+    assert renders_file.is_file()
+    rows = [json.loads(ln) for ln in renders_file.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    assert [r.get("job_id") for r in rows] == ["stub_01", "stub_02"]
+    for row in rows:
+        assert row.get("status") == "ok"
+        assert row.get("stamp_verified") is True
+        output_file = str(row.get("output_file") or "")
+        assert output_file and (extract_dir / "pngs" / output_file).is_file()
+        assert (extract_dir / "copy_back" / output_file).is_file()
+
+
 def test_fake_colab_stub_runs_real_lane1_render_without_lane3_rung(tmp_path: Path) -> None:
     _, state_dir, env = _make_fake_colab_env(tmp_path / "real_stub")
     _override_worktree_input_shas(env)
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
     out_dir = tmp_path / "out_real_stub"
     res = _run_launcher(["--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-real-stub"], env)
-    assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
     assert (state_dir / "content" / "lane1_render.py").is_file()
     assert not (state_dir / "content" / "lane3_rung.py").exists()
+    _assert_stub_bundle_succeeded(out_dir, res, tmp_path / "extracted_stub_bundle")
 
-    bundle_path = out_dir / "lane1_stub_bundle.tar.gz"
-    assert tarfile.is_tarfile(bundle_path), "stub mode must produce a real tar.gz bundle from lane1_render.py"
-    extract_dir = tmp_path / "extracted_stub_bundle"
-    extract_dir.mkdir()
-    with tarfile.open(bundle_path, "r:gz") as tf:
-        tf.extractall(extract_dir, filter="data")
-    renders_file = extract_dir / "renders.jsonl"
-    assert renders_file.is_file()
-    rows = [json.loads(ln) for ln in renders_file.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    assert [r["job_id"] for r in rows] == ["stub_01", "stub_02"]
-    for row in rows:
-        assert row["status"] == "ok"
-        assert row["stamp_verified"] is True
-        assert (extract_dir / "pngs" / row["output_file"]).is_file()
-        assert (extract_dir / "copy_back" / row["output_file"]).is_file()
+
+def test_lane1_stub_negative_control_goes_red_on_failing_or_missing_bundle(tmp_path: Path) -> None:
+    # 1. Missing bundle from fake CLI (`FAKE_COLAB_STUB_FAULT=missing_bundle`) fails the launcher and goes RED
+    _, st_miss, env_miss = _make_fake_colab_env(tmp_path / "stub_missing_bundle")
+    _override_worktree_input_shas(env_miss)
+    env_miss["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_miss["FAKE_COLAB_STUB_FAULT"] = "missing_bundle"
+    out_miss = tmp_path / "out_stub_missing_bundle"
+    res_miss = _run_launcher(["--out-dir", _to_posix(out_miss), "--session", "sdlab-l1-stub-miss"], env_miss)
+    assert res_miss.returncode != 0
+    win_miss = json.loads((out_miss / "window.json").read_text(encoding="utf-8"))
+    assert win_miss["status"] == "DOWNLOAD_FAILED"
+    assert "STOP -s sdlab-l1-stub-miss" in (st_miss / "stops.log").read_text(encoding="utf-8")
+    with pytest.raises(AssertionError):
+        _assert_stub_bundle_succeeded(out_miss, res_miss, tmp_path / "ext_miss")
+
+    # 2. Failing bundle from fake CLI (`FAKE_COLAB_STUB_FAULT=failing_bundle`) makes the stub bundle check go RED
+    _, st_failb, env_failb = _make_fake_colab_env(tmp_path / "stub_failing_bundle")
+    _override_worktree_input_shas(env_failb)
+    env_failb["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_failb["FAKE_COLAB_STUB_FAULT"] = "failing_bundle"
+    out_failb = tmp_path / "out_stub_failing_bundle"
+    res_failb = _run_launcher(["--out-dir", _to_posix(out_failb), "--session", "sdlab-l1-stub-failb"], env_failb)
+    assert "STOP -s sdlab-l1-stub-failb" in (st_failb / "stops.log").read_text(encoding="utf-8")
+    with pytest.raises(AssertionError):
+        _assert_stub_bundle_succeeded(out_failb, res_failb, tmp_path / "ext_failb")
+
+    # 3. Remote step non-zero exit (`FAKE_COLAB_STUB_FAULT=remote_fail`) fails the launcher and goes RED
+    _, st_rf, env_rf = _make_fake_colab_env(tmp_path / "stub_remote_fail")
+    _override_worktree_input_shas(env_rf)
+    env_rf["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_rf["FAKE_COLAB_STUB_FAULT"] = "remote_fail"
+    out_rf = tmp_path / "out_stub_remote_fail"
+    res_rf = _run_launcher(["--out-dir", _to_posix(out_rf), "--session", "sdlab-l1-stub-rf"], env_rf)
+    assert res_rf.returncode != 0
+    win_rf = json.loads((out_rf / "window.json").read_text(encoding="utf-8"))
+    assert win_rf["status"] != "ok"
+    assert "STOP -s sdlab-l1-stub-rf" in (st_rf / "stops.log").read_text(encoding="utf-8")
+    with pytest.raises(AssertionError):
+        _assert_stub_bundle_succeeded(out_rf, res_rf, tmp_path / "ext_rf")
 

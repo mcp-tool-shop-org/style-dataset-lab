@@ -1023,6 +1023,27 @@ run_uploaded_stub_block() {
     echo "REFUSED: STUB_CPU_FLAG_MISSING: stub mode must start ComfyUI with --cpu --listen 127.0.0.1" >&2
     exit 1
   fi
+  case "${FAKE_COLAB_STUB_FAULT:-}" in
+    missing_bundle)
+      echo "run" > lane1_out/phase.txt
+      emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      rm -f lane1_stub_bundle.tar.gz
+      return 0
+      ;;
+    failing_bundle)
+      echo "run" > lane1_out/phase.txt
+      emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      printf '{"job_id":"stub_01","status":"failed","error":"simulated_stub_render_failure"}\n' > lane1_out/renders.jsonl
+      tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
+      return 0
+      ;;
+    remote_fail)
+      echo "run" > lane1_out/phase.txt
+      emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      echo "REFUSED: STUB_REMOTE_FAILED: simulated stub remote step failure" >&2
+      return 1
+      ;;
+  esac
   prepare_fake_lane1_vm_runtime
   local stub_port
   stub_port="$("${FAKE_HOST_PY}" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
