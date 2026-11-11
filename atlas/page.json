@@ -76,29 +76,53 @@
   "changes": {
     "fileCounts": {
       "added": 0,
-      "changed": 8,
+      "changed": 21,
       "moved": 0,
-      "parts": 3,
+      "parts": 5,
       "removed": 0
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json is now written by projects/ai-eye-test/compositor/phase2_build.py.",
+        "subjects": [
+          "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",
+          "projects/ai-eye-test/compositor/phase2_build.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json is now written by projects/ai-eye-test/compositor/phase2_noshadow_build.py.",
+        "subjects": [
+          "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json",
+          "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json is now written by projects/ai-eye-test/compositor/phase2b_build.py.",
+        "subjects": [
+          "projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json",
+          "projects/ai-eye-test/compositor/phase2b_build.py"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-08; 8 files changed content.",
+        "sentence": "21 files changed content, across 5 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "62575ad784f540ace3e3c66385e94f19c764ba73",
-      "generatedAt": "2026-11-08T07:42:48.087Z"
+      "commit": "a21ca8598d88ab8cc40afc637c35d089fb608872",
+      "generatedAt": "2026-11-08T12:28:43.643Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [
     {
       "a": "tests/colab/fixtures/fake_colab.py",
       "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 13,
+      "either": 14,
       "partLabels": [
         "tests",
         "tests"
@@ -109,30 +133,16 @@
       ],
       "relation": "inside",
       "shared": 8
-    },
-    {
-      "a": "tests/colab/test_launch_lane1_stub.py",
-      "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 10,
-      "partLabels": [
-        "tests",
-        "tests"
-      ],
-      "parts": [
-        "tests",
-        "tests"
-      ],
-      "relation": "inside",
-      "shared": 5
     }
   ],
   "changesTogetherNote": [
+    "1 file changed together with its own test, as expected.",
     "Confidence is low: fewer than 25 source files reach 10 revisions in the window.",
-    "Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 2 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
-  "changesTogetherWithTests": 0,
-  "commit": "a21ca8598d88ab8cc40afc637c35d089fb608872",
-  "defaultBranch": "fix/colab-venv-python",
+  "changesTogetherWithTests": 1,
+  "commit": "b58b97351107c66f7a9892bd4c09426665215cfa",
+  "defaultBranch": "main",
   "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (59), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
@@ -387,7 +397,7 @@
       "to": "scripts"
     }
   ],
-  "engine": "1.24.0",
+  "engine": "1.26.0",
   "generated": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase1/",
@@ -396,19 +406,37 @@
       ]
     },
     {
-      "place": "projects/ai-eye-test/outputs/synthetic/phase2/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",
       "writers": [
         "projects/ai-eye-test/compositor/phase2_build.py"
       ]
     },
     {
-      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2/manifest.json",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json",
       "writers": [
         "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
       ]
     },
     {
-      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/manifest.json",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2b_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/manifest.json",
       "writers": [
         "projects/ai-eye-test/compositor/phase2b_build.py"
       ]
@@ -452,12 +480,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-08T12:28:43.643Z",
+  "generatedAt": "2026-11-11T22:47:46.714Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
-    "40 writes and 74 reads use paths built at run time and are not named here.",
+    "40 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "163 writes and 307 reads go to a path their caller passes, not to this repository.",
+    "163 writes and 310 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -744,22 +772,41 @@
     "lib": 98,
     "scripts": 30
   },
+  "testedCodeParts": 3,
   "unnamedWrites": 40,
   "unread": [
     {
-      "place": "projects/ai-eye-test/outputs/synthetic/phase2/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",
       "writers": [
         "projects/ai-eye-test/compositor/phase2_build.py"
       ]
     },
     {
-      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2/manifest.json",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json",
       "writers": [
         "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
       ]
     },
     {
-      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/",
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/manifest.json",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2_noshadow_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json",
+      "writers": [
+        "projects/ai-eye-test/compositor/phase2b_build.py"
+      ]
+    },
+    {
+      "place": "projects/ai-eye-test/outputs/synthetic/phase2b/manifest.json",
       "writers": [
         "projects/ai-eye-test/compositor/phase2b_build.py"
       ]
@@ -771,30 +818,28 @@
       ]
     },
     {
+      "mayRead": {
+        "by": [
+          "projects/ai-eye-test/compositor/phase2.py"
+        ],
+        "patterns": [
+          "*.png"
+        ]
+      },
       "place": "projects/salt-road/inputs/control-guides/",
       "writers": [
         "projects/salt-road/inputs/control-guides/blockouts.py"
       ]
-    },
-    {
-      "place": "projects/salt-road/inputs/prompts/curate-plan.json",
-      "writers": [
-        "projects/salt-road/inputs/prompts/ingest-styleset-records.mjs"
-      ]
-    },
-    {
-      "place": "projects/salt-road/outputs/style-set-v2-review.html",
-      "writers": [
-        "projects/salt-road/inputs/prompts/build-review-page.mjs"
-      ]
     }
   ],
   "unreadFiles": 0,
-  "unreadNote": [],
+  "unreadNote": [
+    "And 2 more places."
+  ],
   "untested": [],
   "untestedNote": [
     "bin is touched by tests only through a spawn: a test runs its files as a child process.",
     "2 test files run in no workflow: projects/ai-eye-test/compositor/test_compositor.py and projects/ai-eye-test/compositor/test_phase2.py."
   ],
-  "written": 10
+  "written": 13
 }

@@ -25,7 +25,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "621d32a860f65b98fbee7d2e0eecb02ff191097e7b120f32c3bc29945a9a5102",
+          "hash": "bd482d378ae146c558046c0b06afd9be728b47e044ca7e2e08eab6985c7e06df",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "d385959182335ccf565e846e7fb8cd8a27088c6e869e76ada207d79bcc5eb9ab",
+          "hash": "06518ca6eac91f7820009070eb570ac0bb8100fc051ef774004a0065f2d72174",
           "path": "CHANGELOG.md"
         },
         {
@@ -16137,23 +16137,23 @@
           "path": "LICENSE"
         },
         {
-          "hash": "454a44ee5cde4f4a937ddd5ca62fef44c2e25dcae587b23b609098505a631a6b",
+          "hash": "7b0d1d8dcc1ab92d34f42398a3f41ec866e0ffdda101f3d86e86e1738bcd6352",
           "path": "README.es.md"
         },
         {
-          "hash": "40debe94ba1a719cda9266f3ff22e3b615d3403c55e0389164e1a160d836f660",
+          "hash": "2b313878174287c4e6fe9c38315f1d10dc80122cf7867d621503e56f5c6ee549",
           "path": "README.fr.md"
         },
         {
-          "hash": "ce9e33e2a3f140c05968dd2651f461f4390895511113097f670888bce3c006f0",
+          "hash": "4cc96be8c8aec59b1259d043d3a6d3633b321774923b7946db65985effc3b7ed",
           "path": "README.hi.md"
         },
         {
-          "hash": "27a50404ee89c7ed39fddf38998842d5b04bae7ffba7b876edbdc80abcbf3b5f",
+          "hash": "a66cd4fad7a4788659639b6c2b4f5323b515fe74676f38cb7fe378136168daec",
           "path": "README.it.md"
         },
         {
-          "hash": "484817d819520307fa6a51bc12f4e5ae18a0817a878c36b4f947aeee579cb015",
+          "hash": "1e3aeea524dcce2648baa9d7cab89617e9ee9b0103c16c5f25d1c55f22a807e4",
           "path": "README.ja.md"
         },
         {
@@ -16161,11 +16161,11 @@
           "path": "README.md"
         },
         {
-          "hash": "fd191af46214ffacd302515e6289ee46cfdd3f2914ab560d14ecc801b9041c8c",
+          "hash": "5e131fa32424d6de75ca8f536c9ad92aeec7b6e63d5dba37cd67587600b14712",
           "path": "README.pt-BR.md"
         },
         {
-          "hash": "82544cd33f37b7332e88584bd6d51e72fe1fb259f7f45bfe303a486d6b23afea",
+          "hash": "3fd3244194fc57f1cd219cfbc831783dd638f490371d70ee883ff6454aa01491",
           "path": "README.zh.md"
         },
         {
@@ -16189,11 +16189,11 @@
           "path": "codecov.yml"
         },
         {
-          "hash": "1db74c1295fda3e3565fc77411e32f6b55dd347f47378ed53eb6cd9fe0018902",
+          "hash": "f57c9af5145220b4675442b701280cf3b3cceb18765df2aa2d232553c7fb3f50",
           "path": "package-lock.json"
         },
         {
-          "hash": "c9a93519aac4c2f21368310499dfd63630f175277524a3c731f50213f7827b13",
+          "hash": "a6a443eb30155aa533579809c540a831eba2e7388c3d2259596d9ea5a5e47713",
           "path": "package.json"
         }
       ],
@@ -16279,7 +16279,7 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 13,
+      "dynamicReads": 12,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
       "dynamicWrites": 18,
@@ -17252,7 +17252,7 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "93e0586e1e1f7cb0b2c3b871fc163b5cc6440da00163cbfb5e7661ddac586c88",
+          "hash": "8b9b30a3ff1f6ede99953cad066bcda680dbdd6a28d3c74b9d29fa05cf2d4afd",
           "path": "scripts/colab/README.md"
         },
         {
@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "6da6d2a5a1ea9050ec6d5ed57e8f45651b0f3da9f3767f7672d34819729942ac",
+          "hash": "893cb88d0d4ccfe1e821fa2d5cdb1a0f416b4a5557c0cd1823f7fd94fadb9ad7",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17897,32 +17897,32 @@
             {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 714
+              "line": 715
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 1057
+              "line": 1104
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 1202
+              "line": 1249
             },
             {
               "kind": "raise",
-              "line": 1306
+              "line": 1363
             }
           ],
-          "hash": "1504995de0307816e8d715600e725dffb8d5bee74cda22d512e6c44fa727aed2",
+          "hash": "4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "1c904cbf28f7b19159ed1b929e981930252e95c635891178d9dbee344742b417",
+          "hash": "c9ce0d55488dac129e254cfd5504852b9dc88ade418014ad59c4740792aef3a6",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "70bf6b60281876eb107f76e79cf9b9696f9fdcdd5500c97217d6ae28f51245c0",
+          "hash": "19da5a784f406d1b824bf38df57082c61b0185d121d3d80d9d518341858f847d",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19604,7 +19604,7 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 64,
+          "reads": 67,
           "where": [
             "caller"
           ],
@@ -19626,7 +19626,7 @@
           "writes": 0
         }
       ],
-      "outsideReads": 67,
+      "outsideReads": 70,
       "outsideWrites": 43,
       "role": "code",
       "testRunners": [
@@ -19706,7 +19706,7 @@
           "path": "site/src/content/docs/handbook/production-loop.md"
         },
         {
-          "hash": "e2d3da6c33c7dafbb00f09e980076062175c168947a665d8e163ac2895f52b21",
+          "hash": "43a41a273cc30149f439c24177ba28d15ae59d087e74e55449ba789be8aaa139",
           "path": "site/src/content/docs/handbook/reference.md"
         },
         {
@@ -20471,6 +20471,7 @@
             "test_complete_sample_without_a_private_memory_source_is_not_a_reading",
             "test_every_vitals_emitter_prints_only_listed_lines",
             "test_header_not_at_column_zero_still_splits_and_no_block_merges_two_samples",
+            "test_host_ram_uses_larger_meminfo_source_when_cgroup_misses_trainer",
             "test_kit_live_guard_trips_are_named_refusals",
             "test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log",
             "test_kit_replay_of_rung_g4a_does_not_trip_host_ram",
@@ -20487,7 +20488,7 @@
             "test_wall_cap_and_vitals_records_carry_a_refusal",
             "vitals_ends_torn"
           ],
-          "hash": "270a82d8189ddb206fc18d7afd6fdcb09a5a26082bd4114b7ff4e2efa3bde10b",
+          "hash": "79ff058cae7da223c754529702a43ce0853843adcd523536baa6d999af015c48",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -20665,7 +20666,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "508dac12475e390c1300ff62fcc644661d10fbdcbd6026f5631ad07c16ad18b6",
+          "hash": "a0337a98001ac8ad46bf3453a3380539e180c3d4027714368e0a4ad38bd51567",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -20756,15 +20757,18 @@
           "exports": [
             "test_between_item_fetch_copies_files_before_resetting_current_json",
             "test_cap_guard_trips_on_fixture_and_stays_quiet_just_under",
+            "test_complete_setup_blocks_with_unchanged_setup_bytes_still_trips_setup_stall",
             "test_dead_harness_on_cgroup_oom_fixture_trips_and_stays_quiet_just_under",
             "test_host_ram_projection_trips_and_stays_quiet_just_under",
+            "test_missing_harness_phase_refuses_vitals_phase_unreadable_never_setup",
             "test_parse_usage_text_anchored_regexes_and_rate_fallback",
             "test_setup_phase_zero_workers_does_not_trip_dead_harness_and_trips_setup_stall_or_oom",
+            "test_torn_tail_vitals_block_in_run_phase_does_not_trip_setup_stall",
             "test_verify_input_shas_and_scrub_tokens_and_cli",
             "test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under",
             "test_wall_guard_trips_on_fixture_and_stays_quiet_just_under"
           ],
-          "hash": "2485fba837f510d18f8e07267bbd3e2d62a965e5afc10a0eec4809cf61050c04",
+          "hash": "f5c0e1ee58ed961a09fe69c63852aa9de48a0996c5a6b3d0940a0e04dd62b011",
           "importsFiles": [
             "scripts/colab/launch_guards.py"
           ],
@@ -20814,12 +20818,14 @@
             "test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses",
             "test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call",
             "test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91",
+            "test_lane3_partial_or_missing_bundle_marks_train_completed_false",
             "test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_before_new",
             "test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate",
             "test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_lane3_uv_system_python_env_explicit_venv_python_and_gates",
             "test_lane3_venv_python_version_mismatch_refuses_with_venv_python_mismatch",
             "test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run",
+            "test_lane3_window_stopped_after_full_steps_marks_train_completed_true_and_trained_false",
             "test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_window_json",
             "test_real_colab_cli_guard_refuses_when_not_fake",
             "test_sha_refusal_before_opening_session",
@@ -20827,7 +20833,7 @@
             "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "4057ec6be333b8102837d0af4aa55bc38d760894f646966e3897b4c3b796963b",
+          "hash": "62ce84cecbfb26f5700eee54a112a84690c39505cb364375a340f394ca276e96",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22964,9 +22970,9 @@
       "to": "scripts"
     }
   ],
-  "engine": "1.24.0",
+  "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "a21ca8598d88ab8cc40afc637c35d089fb608872",
+    "commit": "b58b97351107c66f7a9892bd4c09426665215cfa",
     "tracked": 3309
   },
   "landings": [
@@ -23257,6 +23263,12 @@
       "writers": []
     },
     {
+      "mayReaders": [
+        {
+          "by": "projects/ai-eye-test/compositor/phase2.py",
+          "pattern": "*.png"
+        }
+      ],
       "readers": [
         {
           "by": "projects/ai-eye-test/compositor/phase1_smoke.py",
@@ -23274,7 +23286,7 @@
     },
     {
       "readers": [],
-      "target": "projects/ai-eye-test/outputs/synthetic/phase2",
+      "target": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",
       "writers": [
         {
           "by": "projects/ai-eye-test/compositor/phase2_build.py",
@@ -24350,7 +24362,7 @@
     },
     {
       "readers": [],
-      "target": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow",
+      "target": "projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json",
       "writers": [
         {
           "by": "projects/ai-eye-test/compositor/phase2_noshadow_build.py",
@@ -24546,7 +24558,7 @@
     },
     {
       "readers": [],
-      "target": "projects/ai-eye-test/outputs/synthetic/phase2b",
+      "target": "projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json",
       "writers": [
         {
           "by": "projects/ai-eye-test/compositor/phase2b_build.py",
@@ -25324,6 +25336,12 @@
       ]
     },
     {
+      "mayReaders": [
+        {
+          "by": "projects/ai-eye-test/compositor/phase2.py",
+          "pattern": "*.png"
+        }
+      ],
       "readers": [],
       "target": "projects/salt-road/inputs/control-guides",
       "writers": [

@@ -1,14 +1,17 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-08 from commit a21ca85 by Atlas 1.24.0.
+Mapped at 2026-11-11 from commit b58b973 by Atlas 1.26.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (59), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-08 (62575ad)
+## What changed since 2026-11-08 (a21ca85)
 
-Nothing structural changed since 2026-11-08; 8 files changed content.
+- projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json is now written by projects/ai-eye-test/compositor/phase2_build.py.
+- projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json is now written by projects/ai-eye-test/compositor/phase2_noshadow_build.py.
+- projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json is now written by projects/ai-eye-test/compositor/phase2b_build.py.
+- 21 files changed content, across 5 parts.
 
 ## What comes in
 
@@ -62,12 +65,13 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 8 of 13 commits, inside the tests part.
-- **tests/colab/test_launch_lane1_stub.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 5 of 10 commits, inside the tests part.
+- **tests/colab/fixtures/fake_colab.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 8 of 14 commits, inside the tests part.
+
+1 file changed together with its own test, as expected.
 
 Confidence is low: fewer than 25 source files reach 10 revisions in the window.
 
-Window: 180 days; a pair counts from 3 shared commits, since 1 source file reaches 10 revisions; the floor rises to 10 when 25 do.
+Window: 180 days; a pair counts from 3 shared commits, since 2 source files reach 10 revisions; the floor rises to 10 when 25 do.
 
 ## What no test touches
 
@@ -79,13 +83,16 @@ bin is touched by tests only through a spawn: a test runs its files as a child p
 
 ## Written but never read
 
-- **projects/ai-eye-test/outputs/synthetic/phase2/** is written by projects/ai-eye-test/compositor/phase2_build.py and read by nothing else in this repository.
-- **projects/ai-eye-test/outputs/synthetic/phase2_noshadow/** is written by projects/ai-eye-test/compositor/phase2_noshadow_build.py and read by nothing else in this repository.
-- **projects/ai-eye-test/outputs/synthetic/phase2b/** is written by projects/ai-eye-test/compositor/phase2b_build.py and read by nothing else in this repository.
+- **projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json** is written by projects/ai-eye-test/compositor/phase2_build.py and read by nothing else in this repository.
+- **projects/ai-eye-test/outputs/synthetic/phase2/manifest.json** is written by projects/ai-eye-test/compositor/phase2_build.py and read by nothing else in this repository.
+- **projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json** is written by projects/ai-eye-test/compositor/phase2_noshadow_build.py and read by nothing else in this repository.
+- **projects/ai-eye-test/outputs/synthetic/phase2_noshadow/manifest.json** is written by projects/ai-eye-test/compositor/phase2_noshadow_build.py and read by nothing else in this repository.
+- **projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json** is written by projects/ai-eye-test/compositor/phase2b_build.py and read by nothing else in this repository.
+- **projects/ai-eye-test/outputs/synthetic/phase2b/manifest.json** is written by projects/ai-eye-test/compositor/phase2b_build.py and read by nothing else in this repository.
 - **projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl** is written by projects/salt-road/inputs/prompts/wave-runner.py and read by nothing else in this repository.
-- **projects/salt-road/inputs/control-guides/** is written by projects/salt-road/inputs/control-guides/blockouts.py and read by nothing else in this repository.
-- **projects/salt-road/inputs/prompts/curate-plan.json** is written by projects/salt-road/inputs/prompts/ingest-styleset-records.mjs and read by nothing else in this repository.
-- **projects/salt-road/outputs/style-set-v2-review.html** is written by projects/salt-road/inputs/prompts/build-review-page.mjs and read by nothing else in this repository.
+- **projects/salt-road/inputs/control-guides/** is written by projects/salt-road/inputs/control-guides/blockouts.py and read by nothing else this map can name: projects/ai-eye-test/compositor/phase2.py reads `*.png` under a directory chosen at run time, which may include it.
+
+And 2 more places.
 
 ## Helpers that look duplicated
 
@@ -94,9 +101,12 @@ No two parts export a helper that looks alike.
 ## Generated, never hand-edited
 
 - **projects/ai-eye-test/outputs/synthetic/phase1/** is written by projects/ai-eye-test/compositor/compositor.py.
-- **projects/ai-eye-test/outputs/synthetic/phase2/** is written by projects/ai-eye-test/compositor/phase2_build.py.
-- **projects/ai-eye-test/outputs/synthetic/phase2_noshadow/** is written by projects/ai-eye-test/compositor/phase2_noshadow_build.py.
-- **projects/ai-eye-test/outputs/synthetic/phase2b/** is written by projects/ai-eye-test/compositor/phase2b_build.py.
+- **projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json** is written by projects/ai-eye-test/compositor/phase2_build.py.
+- **projects/ai-eye-test/outputs/synthetic/phase2/manifest.json** is written by projects/ai-eye-test/compositor/phase2_build.py.
+- **projects/ai-eye-test/outputs/synthetic/phase2_noshadow/apple_n*_s*.json** is written by projects/ai-eye-test/compositor/phase2_noshadow_build.py.
+- **projects/ai-eye-test/outputs/synthetic/phase2_noshadow/manifest.json** is written by projects/ai-eye-test/compositor/phase2_noshadow_build.py.
+- **projects/ai-eye-test/outputs/synthetic/phase2b/apple_n*_s*.json** is written by projects/ai-eye-test/compositor/phase2b_build.py.
+- **projects/ai-eye-test/outputs/synthetic/phase2b/manifest.json** is written by projects/ai-eye-test/compositor/phase2b_build.py.
 - **projects/salt-road/inbox/generated/set-v2-2026-07-30/receipts.jsonl** is written by projects/salt-road/inputs/prompts/wave-runner.py.
 - **projects/salt-road/inputs/control-guides/** is written by projects/salt-road/inputs/control-guides/blockouts.py.
 - **projects/salt-road/inputs/prompts/curate-plan.json** is written by projects/salt-road/inputs/prompts/ingest-styleset-records.mjs.
@@ -117,9 +127,9 @@ Read those in order to follow one pull request end to end.
 ## What this map cannot see
 
 - 5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.
-- 40 writes and 74 reads use paths built at run time and are not named here.
+- 40 writes and 73 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
-- 163 writes and 307 reads go to a path their caller passes, not to this repository.
+- 163 writes and 310 reads go to a path their caller passes, not to this repository.
 - 12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.
 - 7 reads go to the directory the command is run in, not to this repository.
 - 1 write and 2 reads go to a temporary directory, not to this repository.
