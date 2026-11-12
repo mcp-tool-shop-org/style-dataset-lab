@@ -2752,14 +2752,15 @@ def test_launch_guards_pre_exec_phase_unit_and_cli(capsys: pytest.CaptureFixture
 
 
 def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_path: Path) -> None:
-    # 1. Lane 1: escalate 2 s, in-flight bound 6 + 1 = 7 s, download succeeds in ~5 s.
+    # 1. Lane 1: escalate 2 s, in-flight bound 9 + 1 = 10 s, download succeeds in ~7 s (wall trips at 5 s,
+    # safely after ~2-3.5 s pre-download setup under --cov and with >3 s remaining past the 2 s escalate).
     lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
     _, state1, env1 = fc.make_fake_colab_env(tmp_path / "l1")
     env1.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
-        "FAKE_COLAB_DOWNLOAD_DELAY_S": "5.0",
+        "FAKE_COLAB_DOWNLOAD_DELAY_S": "7.0",
         "SDLAB_TEST_WALL_ESCALATE_S": "2",
-        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "9",
         "SDLAB_TEST_KILL_GRACE_S": "1",
         "SDLAB_TEST_STOP_TIMEOUT_S": "2",
     })
@@ -2769,9 +2770,9 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
             [
                 _bash(), fc._to_posix(lane1_sh),
                 "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-legit-dl",
-                "--wall-s", "5", "--grace-s", "2",
+                "--wall-s", "7", "--grace-s", "2",
             ],
-            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=25, check=False,
+            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
         )
         assert res1.returncode != 0
         assert not (out1 / "watcher_escalated.txt").exists()
@@ -2781,8 +2782,8 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
         assert win1["refusal_code"] == "WALL_GUARD_TRIPPED"
         assert win1["stop_path"] == "trap"
         assert win1["watcher_wait"] == "cleanup_seen"
-        assert win1["cleanup_stop_attempted_by_s"] == 7
-        assert win1["cleanup_bound_s"] == 13
+        assert win1["cleanup_stop_attempted_by_s"] == 10
+        assert win1["cleanup_bound_s"] == 16
         trip_ts1 = float((out1 / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
         stop_done_ts1 = json.loads((state1 / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
         assert stop_done_ts1 - trip_ts1 <= win1["cleanup_bound_s"], (stop_done_ts1 - trip_ts1, win1["cleanup_bound_s"])

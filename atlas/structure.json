@@ -21299,7 +21299,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "7dd88f12206f9d9ed092883c2902d474e13892c842528525e8dc2cacdb935476",
+          "hash": "a7c89ec927ecdcd3b30079fe3f12c0846266da63dbfa12db09262f846b252f2a",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -23634,7 +23634,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "19b3fe1f5ae0f881252b6212598eaf06d4acea93",
+    "commit": "ce6da8a40949c592f389dbe5cb395a6f6d1688b1",
     "tracked": 3312
   },
   "landings": [

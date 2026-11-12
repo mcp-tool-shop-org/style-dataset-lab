@@ -7993,9 +7993,9 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-12T22:36:14.883Z",
+  "generatedAt": "2026-11-12T23:08:02.035Z",
   "generatedFrom": {
-    "commit": "19b3fe1f5ae0f881252b6212598eaf06d4acea93"
+    "commit": "ce6da8a40949c592f389dbe5cb395a6f6d1688b1"
   },
   "pairs": [
     {
@@ -8485,7 +8485,7 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-12T17:35:28-05:00",
+    "headDate": "2026-11-12T17:36:18-05:00",
     "inScopeFiles": 3317,
     "pinnedStart": null,
     "priorFloor": "fallen",
@@ -8494,7 +8494,7 @@
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-16T22:35:28.000Z",
+    "since": "2026-05-16T22:36:18.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",
