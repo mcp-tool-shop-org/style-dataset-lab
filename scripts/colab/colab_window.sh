@@ -965,7 +965,8 @@ elif not rec.get("ok"):
     detail = str(rec.get("detail") or "VM reassembly failed").replace("\t", " ").replace("\n", " ")
     print(f"ERR\t{code}\t{detail}")
 else:
-    print(f"OK\tOK\t{rec.get(\"sha256\", \"\")}")
+    sh = rec.get("sha256", "")
+    print(f"OK\tOK\t{sh}")
 ' <<< "${reassemble_out}" | tr -d '\r'
   )
 
@@ -1266,12 +1267,12 @@ for ln in reversed(raw.splitlines()):
 if rec is None or not rec.get("exists"):
     print("DIRECT\t0\t0\t\t1\t\t")
 elif not rec.get("split"):
-    print(f"SINGLE\t0\t{int(rec[\"whole_bytes\"])}\t{rec[\"whole_sha256\"]}\t1\t\t")
+    wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
+    print(f"SINGLE\t0\t{wb}\t{ws}\t1\t\t")
 else:
-    print(
-        f"SPLIT\t1\t{int(rec[\"whole_bytes\"])}\t{rec[\"whole_sha256\"]}\t"
-        f"{int(rec[\"part_count\"])}\t{rec[\"manifest_remote\"]}\t{rec[\"prefix\"]}"
-    )
+    wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
+    pc = int(rec["part_count"]); mr = rec["manifest_remote"]; px = rec["prefix"]
+    print(f"SPLIT\t1\t{wb}\t{ws}\t{pc}\t{mr}\t{px}")
 ' <<< "${prep_out}" | tr -d '\r'
     )
   fi
@@ -1435,7 +1436,8 @@ parts = m.get("parts")
 if not isinstance(parts, list) or len(parts) != int(sys.argv[2]) or str(m.get("whole_sha256", "")).lower() != sys.argv[3].lower():
     raise SystemExit(1)
 for p in parts:
-    print(f"{int(p[\"index\"])}\t{p[\"remote_path\"]}\t{int(p[\"bytes\"])}\t{str(p[\"sha256\"]).lower()}")
+    ix = int(p["index"]); rp = p["remote_path"]; nb = int(p["bytes"]); ps = str(p["sha256"]).lower()
+    print(f"{ix}\t{rp}\t{nb}\t{ps}")
 ' "${man_local}" "${prep_part_count}" "${prep_whole_sha}" | tr -d '\r')"; then
     rm -rf "${tmp_dl_dir}"
     rm -f "${dst}"

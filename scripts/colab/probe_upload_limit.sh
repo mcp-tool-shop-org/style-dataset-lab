@@ -339,7 +339,7 @@ PYEOF
 
 # --- Direction 1: single-PUT `colab upload` sweep -------------------------------------------------
 mapfile -t UP_ROWS < <(
-  "${PY_BIN}" -c 'import json, sys; [print(f"{x[\"size_mb\"]}\t{x[\"bytes\"]}") for x in json.loads(sys.argv[1])["uploads"]]' "${PARSED_SIZES}" | tr -d '\r'
+  "${PY_BIN}" -c 'import json, sys; [print(x["size_mb"], x["bytes"], sep="\t") for x in json.loads(sys.argv[1])["uploads"]]' "${PARSED_SIZES}" | tr -d '\r'
 )
 
 for row in "${UP_ROWS[@]}"; do
@@ -391,7 +391,8 @@ for ln in reversed(raw.splitlines()):
     if ln.strip().startswith("SDLAB_PROBE_VM_JSON "):
         rec = json.loads(ln.strip()[len("SDLAB_PROBE_VM_JSON "):])
         break
-print(f"{int(rec.get(\"bytes\") or 0)}\t{rec.get(\"sha256\") or \"\"}")
+nb = int(rec.get("bytes") or 0); sh = rec.get("sha256") or ""
+print(f"{nb}\t{sh}")
 ' <<< "${v_out}" | tr -d '\r'
     )
   else
@@ -455,7 +456,7 @@ done
 
 # --- Direction 2: single-GET `colab download` sweep -----------------------------------------------
 mapfile -t DL_ROWS < <(
-  "${PY_BIN}" -c 'import json, sys; [print(f"{x[\"size_mb\"]}\t{x[\"bytes\"]}") for x in json.loads(sys.argv[1])["downloads"]]' "${PARSED_SIZES}" | tr -d '\r'
+  "${PY_BIN}" -c 'import json, sys; [print(x["size_mb"], x["bytes"], sep="\t") for x in json.loads(sys.argv[1])["downloads"]]' "${PARSED_SIZES}" | tr -d '\r'
 )
 
 for row in "${DL_ROWS[@]}"; do
