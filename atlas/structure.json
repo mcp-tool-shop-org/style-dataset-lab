@@ -17668,17 +17668,7 @@
             {
               "in": "safetensors_complete",
               "kind": "except",
-              "line": 156
-            },
-            {
-              "in": "parse_positive_number",
-              "kind": "raise",
-              "line": 202
-            },
-            {
-              "in": "parse_positive_number",
-              "kind": "except",
-              "line": 205
+              "line": 160
             },
             {
               "in": "parse_positive_number",
@@ -17687,58 +17677,63 @@
             },
             {
               "in": "parse_positive_number",
+              "kind": "except",
+              "line": 209
+            },
+            {
+              "in": "parse_positive_number",
               "kind": "raise",
-              "line": 208
+              "line": 210
+            },
+            {
+              "in": "parse_positive_number",
+              "kind": "raise",
+              "line": 212
             },
             {
               "in": "measure_shm",
               "kind": "except",
-              "line": 271
+              "line": 275
             },
             {
               "in": "query_driver",
               "kind": "except",
-              "line": 287
+              "line": 291
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 314
+              "line": 318
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 332
+              "line": 336
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 344
+              "line": 348
             },
             {
               "in": "run_guards",
               "kind": "except",
-              "line": 358
+              "line": 362
             },
             {
               "in": "run_guards",
               "kind": "except",
-              "line": 366
+              "line": 370
             },
             {
               "in": "dir_bytes",
               "kind": "except",
-              "line": 424
+              "line": 428
             },
             {
               "in": "redirect_request",
               "kind": "raise",
-              "line": 476
-            },
-            {
-              "in": "check_model_api",
-              "kind": "except",
-              "line": 483
+              "line": 480
             },
             {
               "in": "check_model_api",
@@ -17747,13 +17742,8 @@
             },
             {
               "in": "check_model_api",
-              "kind": "raise",
-              "line": 490
-            },
-            {
-              "in": "check_model_api",
-              "kind": "raise",
-              "line": 493
+              "kind": "except",
+              "line": 491
             },
             {
               "in": "check_model_api",
@@ -17762,13 +17752,8 @@
             },
             {
               "in": "check_model_api",
-              "kind": "except",
-              "line": 495
-            },
-            {
-              "in": "check_model_api",
               "kind": "raise",
-              "line": 496
+              "line": 497
             },
             {
               "in": "check_model_api",
@@ -17776,64 +17761,69 @@
               "line": 498
             },
             {
+              "in": "check_model_api",
+              "kind": "except",
+              "line": 499
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 500
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 502
+            },
+            {
               "in": "run_model_check",
               "kind": "except",
-              "line": 507
+              "line": 511
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 563
+              "line": 567
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 565
+              "line": 569
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 566
+              "line": 570
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 578
+              "line": 582
             },
             {
               "in": "normalize_sha256",
               "kind": "raise",
-              "line": 669
+              "line": 673
             },
             {
               "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 675
+              "line": 679
             },
             {
               "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 678
+              "line": 682
             },
             {
               "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 683
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 688
+              "line": 687
             },
             {
               "in": "_validate_manifest_items",
               "kind": "raise",
               "line": 692
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 694
             },
             {
               "in": "_validate_manifest_items",
@@ -17846,9 +17836,14 @@
               "line": 698
             },
             {
-              "in": "unpack_and_verify_dataset_archive",
+              "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 726
+              "line": 700
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 702
             },
             {
               "in": "unpack_and_verify_dataset_archive",
@@ -17858,7 +17853,7 @@
             {
               "in": "unpack_and_verify_dataset_archive",
               "kind": "raise",
-              "line": 739
+              "line": 734
             },
             {
               "in": "unpack_and_verify_dataset_archive",
@@ -17872,13 +17867,13 @@
             },
             {
               "in": "unpack_and_verify_dataset_archive",
-              "kind": "except",
-              "line": 750
+              "kind": "raise",
+              "line": 751
             },
             {
               "in": "unpack_and_verify_dataset_archive",
-              "kind": "raise",
-              "line": 751
+              "kind": "except",
+              "line": 754
             },
             {
               "in": "unpack_and_verify_dataset_archive",
@@ -17888,22 +17883,17 @@
             {
               "in": "unpack_and_verify_dataset_archive",
               "kind": "raise",
-              "line": 758
+              "line": 759
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 762
             },
             {
               "in": "run_dataset",
               "kind": "raise",
-              "line": 776
-            },
-            {
-              "in": "run_dataset",
-              "kind": "raise",
-              "line": 781
-            },
-            {
-              "in": "run_dataset",
-              "kind": "except",
-              "line": 784
+              "line": 780
             },
             {
               "in": "run_dataset",
@@ -17912,43 +17902,48 @@
             },
             {
               "in": "run_dataset",
-              "kind": "raise",
-              "line": 790
+              "kind": "except",
+              "line": 788
             },
             {
               "in": "run_dataset",
               "kind": "raise",
-              "line": 798
+              "line": 789
             },
             {
               "in": "run_dataset",
               "kind": "raise",
-              "line": 804
+              "line": 794
             },
             {
               "in": "run_dataset",
               "kind": "raise",
-              "line": 807
+              "line": 802
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 808
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 811
             },
             {
               "in": "run_dataset",
               "kind": "except",
-              "line": 824
+              "line": 828
             },
             {
               "in": "validate_job_template",
               "kind": "raise",
-              "line": 834
+              "line": 838
             },
             {
               "in": "validate_job_template",
               "kind": "raise",
-              "line": 836
-            },
-            {
-              "in": "validate_job_template",
-              "kind": "raise",
-              "line": 846
+              "line": 840
             },
             {
               "in": "validate_job_template",
@@ -17956,84 +17951,84 @@
               "line": 850
             },
             {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 854
+            },
+            {
               "in": "_parse_yaml_scalar",
               "kind": "except",
-              "line": 963
+              "line": 967
             },
             {
               "in": "parse_job_yaml",
               "kind": "raise",
-              "line": 996
+              "line": 1000
             },
             {
               "in": "parse_job_yaml",
               "kind": "raise",
-              "line": 1002
+              "line": 1006
             },
             {
               "in": "_parse_mapping",
               "kind": "raise",
-              "line": 1063
+              "line": 1067
             },
             {
               "in": "_parse_mapping",
               "kind": "raise",
-              "line": 1068
+              "line": 1072
             },
             {
               "in": "parse_job_yaml",
               "kind": "raise",
-              "line": 1106
+              "line": 1110
             },
             {
               "in": "parse_job_yaml",
               "kind": "raise",
-              "line": 1108
+              "line": 1112
             },
             {
               "in": "_require_allowed_repo",
               "kind": "raise",
-              "line": 1126
+              "line": 1130
             },
             {
               "in": "_refuse_if_runtime_config_hub_ref",
               "kind": "raise",
-              "line": 1180
+              "line": 1184
             },
             {
               "in": "_check_job_string_for_hub_refs",
               "kind": "raise",
-              "line": 1199
+              "line": 1203
             },
             {
               "in": "_check_job_string_for_hub_refs",
               "kind": "raise",
-              "line": 1215
+              "line": 1219
             },
             {
               "in": "_check_job_string_for_hub_refs",
               "kind": "raise",
-              "line": 1235
+              "line": 1239
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1259
+              "line": 1263
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1262
+              "line": 1266
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1269
-            },
-            {
-              "in": "validate_job_semantics",
-              "kind": "raise",
-              "line": 1272
+              "line": 1273
             },
             {
               "in": "validate_job_semantics",
@@ -18043,87 +18038,87 @@
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1279
+              "line": 1280
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1291
+              "line": 1283
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1302
+              "line": 1295
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1308
+              "line": 1306
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1314
+              "line": 1312
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1321
+              "line": 1318
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1335
+              "line": 1325
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1346
+              "line": 1339
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1354
+              "line": 1350
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1360
+              "line": 1358
             },
             {
               "in": "validate_job_semantics",
               "kind": "raise",
-              "line": 1366
+              "line": 1364
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1370
             },
             {
               "in": "run_check_job",
               "kind": "raise",
-              "line": 1412
+              "line": 1416
             },
             {
               "in": "run_check_job",
               "kind": "raise",
-              "line": 1417
+              "line": 1421
             },
             {
               "in": "run_check_job",
               "kind": "raise",
-              "line": 1419
+              "line": 1423
             },
             {
               "in": "run_check_job",
               "kind": "except",
-              "line": 1427
+              "line": 1431
             },
             {
               "in": "_parse_int_setting",
               "kind": "raise",
-              "line": 1436
-            },
-            {
-              "in": "_parse_int_setting",
-              "kind": "raise",
-              "line": 1439
+              "line": 1440
             },
             {
               "in": "_parse_int_setting",
@@ -18131,149 +18126,144 @@
               "line": 1443
             },
             {
-              "in": "_resolve_optimizer_size_provenance",
+              "in": "_parse_int_setting",
               "kind": "raise",
-              "line": 1468
+              "line": 1447
             },
             {
               "in": "_resolve_optimizer_size_provenance",
               "kind": "raise",
-              "line": 1476
+              "line": 1472
+            },
+            {
+              "in": "_resolve_optimizer_size_provenance",
+              "kind": "raise",
+              "line": 1480
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "raise",
-              "line": 1530
+              "line": 1534
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "except",
-              "line": 1571
+              "line": 1575
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "raise",
-              "line": 1582
+              "line": 1586
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "raise",
-              "line": 1602
+              "line": 1606
             },
             {
               "in": "run_dry_download_bounds",
               "kind": "raise",
-              "line": 1665
+              "line": 1669
             },
             {
               "in": "run_dry_download_bounds",
               "kind": "except",
-              "line": 1693
+              "line": 1697
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1706
+              "line": 1710
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1761
+              "line": 1765
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1784
+              "line": 1788
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1826
+              "line": 1830
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1945
+              "line": 1949
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 2021
+              "line": 2025
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 2026
+              "line": 2030
             },
             {
               "in": "run_plan_run",
               "kind": "except",
-              "line": 2032
+              "line": 2036
             },
             {
               "in": "run_render_job",
               "kind": "raise",
-              "line": 2050
+              "line": 2054
             },
             {
               "in": "run_render_job",
               "kind": "raise",
-              "line": 2055
+              "line": 2059
             },
             {
               "in": "run_render_job",
               "kind": "raise",
-              "line": 2066
+              "line": 2070
             },
             {
               "in": "run_render_job",
               "kind": "except",
-              "line": 2068
+              "line": 2072
             },
             {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 2150
+              "line": 2154
             },
             {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 2153
+              "line": 2157
             },
             {
               "in": "copy_off_once",
               "kind": "raise",
-              "line": 2155
+              "line": 2159
             },
             {
               "in": "load_done",
               "kind": "except",
-              "line": 2167
+              "line": 2171
             },
             {
               "in": "run_check_output_disk",
               "kind": "except",
-              "line": 2212
+              "line": 2216
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2272
+              "line": 2276
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2284
-            },
-            {
-              "in": "verify_bundle_against_manifest",
-              "kind": "raise",
-              "line": 2290
-            },
-            {
-              "in": "verify_bundle_against_manifest",
-              "kind": "except",
-              "line": 2293
+              "line": 2288
             },
             {
               "in": "verify_bundle_against_manifest",
@@ -18282,95 +18272,105 @@
             },
             {
               "in": "verify_bundle_against_manifest",
-              "kind": "raise",
+              "kind": "except",
               "line": 2297
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2307
+              "line": 2298
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2378
+              "line": 2301
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2311
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2382
             },
             {
               "in": "run_verify_bundle",
               "kind": "except",
-              "line": 2397
+              "line": 2401
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2423
+              "line": 2427
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2439
+              "line": 2443
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2442
+              "line": 2446
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2458
+              "line": 2462
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2461
+              "line": 2465
             },
             {
               "in": "run_repair_bundle",
               "kind": "except",
-              "line": 2501
+              "line": 2505
             },
             {
               "in": "pid_alive",
               "kind": "except",
-              "line": 2511
+              "line": 2515
             },
             {
               "in": "run_copy_off",
               "kind": "except",
-              "line": 2539
+              "line": 2543
             },
             {
               "in": "read_json",
               "kind": "except",
-              "line": 2548
+              "line": 2552
             },
             {
               "in": "run_checkpoint",
               "kind": "except",
-              "line": 2560
+              "line": 2564
             },
             {
               "in": "run_finish",
               "kind": "except",
-              "line": 2585
+              "line": 2589
             },
             {
               "in": "rung_pids",
               "kind": "except",
-              "line": 2651
+              "line": 2655
             },
             {
               "in": "run_bundle_now",
               "kind": "except",
-              "line": 2672
+              "line": 2676
             },
             {
               "kind": "raise",
-              "line": 2877
+              "line": 2881
             }
           ],
-          "hash": "639d0973b0bad380a1ee0ed502e39931fdc7882e6d64c3aea9d4f047f9dbe325",
+          "hash": "9cceb2446e68fbb184bea325a0d2ae14e2bf9435dc6eaee4d037e6251878bb99",
           "path": "scripts/colab/lane3_rung.py"
         },
         {
@@ -18484,7 +18484,7 @@
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "e7d714220c50216a8aa0b99cda22028c5517c12739be986f75a973f714a25344",
+          "hash": "0e20728524e4eef6c277b1cb83d6ff9f877d3b753108ddab207f7eeefe41c5ef",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -21299,7 +21299,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "adb99d551ef03be044c88a692be935d7597f8dbc024173b80868c62a69030298",
+          "hash": "7dd88f12206f9d9ed092883c2902d474e13892c842528525e8dc2cacdb935476",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -23634,7 +23634,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "075efde1c81056803d746855e363fdf8f4a06bcb",
+    "commit": "19b3fe1f5ae0f881252b6212598eaf06d4acea93",
     "tracked": 3312
   },
   "landings": [

@@ -151,10 +151,10 @@
       },
       "cohesion": 0,
       "cohesionDropped": false,
-      "confidence": "low",
+      "confidence": "full",
       "highWater": null,
       "name": "scripts",
-      "qualifyingSourceCommits": 28,
+      "qualifyingSourceCommits": 30,
       "rebaseline": null
     },
     {
@@ -204,7 +204,7 @@
       "confidence": "full",
       "highWater": null,
       "name": "tests",
-      "qualifyingSourceCommits": 38,
+      "qualifyingSourceCommits": 40,
       "rebaseline": null
     },
     {
@@ -303,8 +303,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 24,
-        "lines": 678,
+        "commits": 26,
+        "lines": 702,
         "path": "atlas/README.md"
       },
       {
@@ -313,18 +313,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 24,
-        "lines": 2236,
+        "commits": 26,
+        "lines": 2310,
         "path": "atlas/page.json"
       },
       {
-        "commits": 24,
-        "lines": 56853,
+        "commits": 26,
+        "lines": 57193,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 24,
-        "lines": 33980,
+        "commits": 26,
+        "lines": 34383,
         "path": "atlas/structure.json"
       },
       {
@@ -7128,8 +7128,8 @@
         "path": "scripts/colab/classify_install_log.py"
       },
       {
-        "commits": 17,
-        "lines": 5509,
+        "commits": 18,
+        "lines": 5558,
         "path": "scripts/colab/colab_window.sh"
       },
       {
@@ -7178,8 +7178,8 @@
         "path": "scripts/colab/lane3_bundle_now.py"
       },
       {
-        "commits": 4,
-        "lines": 3312,
+        "commits": 6,
+        "lines": 3325,
         "path": "scripts/colab/lane3_rung.py"
       },
       {
@@ -7188,13 +7188,13 @@
         "path": "scripts/colab/launch_guards.py"
       },
       {
-        "commits": 18,
-        "lines": 840,
+        "commits": 19,
+        "lines": 850,
         "path": "scripts/colab/launch_lane1_stub.sh"
       },
       {
-        "commits": 19,
-        "lines": 2735,
+        "commits": 21,
+        "lines": 2751,
         "path": "scripts/colab/launch_lane3_stub.sh"
       },
       {
@@ -7243,8 +7243,8 @@
         "path": "scripts/colab/preflight_resolve.sh"
       },
       {
-        "commits": 2,
-        "lines": 590,
+        "commits": 3,
+        "lines": 600,
         "path": "scripts/colab/probe_upload_limit.sh"
       },
       {
@@ -7663,8 +7663,8 @@
         "path": "tests/colab/test_lane1_render.py"
       },
       {
-        "commits": 9,
-        "lines": 5331,
+        "commits": 11,
+        "lines": 5441,
         "path": "tests/colab/test_lane3_gpu_rung.py"
       },
       {
@@ -7993,9 +7993,9 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-12T21:38:06.083Z",
+  "generatedAt": "2026-11-12T22:36:14.883Z",
   "generatedFrom": {
-    "commit": "075efde1c81056803d746855e363fdf8f4a06bcb"
+    "commit": "19b3fe1f5ae0f881252b6212598eaf06d4acea93"
   },
   "pairs": [
     {
@@ -8295,43 +8295,43 @@
     {
       "a": "atlas/README.md",
       "b": "atlas/page.json",
-      "either": 22,
-      "shared": 22,
+      "either": 24,
+      "shared": 24,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/statistics.json",
-      "either": 22,
-      "shared": 22,
+      "either": 24,
+      "shared": 24,
       "strength": 1
     },
     {
       "a": "atlas/README.md",
       "b": "atlas/structure.json",
-      "either": 22,
-      "shared": 22,
+      "either": 24,
+      "shared": 24,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/statistics.json",
-      "either": 22,
-      "shared": 22,
+      "either": 24,
+      "shared": 24,
       "strength": 1
     },
     {
       "a": "atlas/page.json",
       "b": "atlas/structure.json",
-      "either": 22,
-      "shared": 22,
+      "either": 24,
+      "shared": 24,
       "strength": 1
     },
     {
       "a": "atlas/statistics.json",
       "b": "atlas/structure.json",
-      "either": 22,
-      "shared": 22,
+      "either": 24,
+      "shared": 24,
       "strength": 1
     },
     {
@@ -8351,30 +8351,30 @@
     {
       "a": "scripts/colab/README.md",
       "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 9,
+      "either": 11,
       "shared": 6,
-      "strength": 0.666667
+      "strength": 0.545455
     },
     {
       "a": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md",
       "b": "scripts/colab/colab_window.sh",
-      "either": 19,
-      "shared": 13,
-      "strength": 0.684211
-    },
-    {
-      "a": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md",
-      "b": "scripts/colab/launch_lane1_stub.sh",
       "either": 20,
       "shared": 13,
       "strength": 0.65
     },
     {
       "a": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md",
+      "b": "scripts/colab/launch_lane1_stub.sh",
+      "either": 21,
+      "shared": 13,
+      "strength": 0.619048
+    },
+    {
+      "a": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md",
       "b": "scripts/colab/launch_lane3_stub.sh",
-      "either": 20,
+      "either": 22,
       "shared": 14,
-      "strength": 0.7
+      "strength": 0.636364
     },
     {
       "a": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md",
@@ -8384,53 +8384,53 @@
       "strength": 0.764706
     },
     {
-      "a": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md",
-      "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 16,
-      "shared": 8,
-      "strength": 0.5
-    },
-    {
       "a": "scripts/colab/colab_window.sh",
       "b": "scripts/colab/launch_guards.py",
-      "either": 17,
+      "either": 18,
       "shared": 10,
-      "strength": 0.588235
+      "strength": 0.555556
     },
     {
       "a": "scripts/colab/colab_window.sh",
       "b": "scripts/colab/launch_lane1_stub.sh",
-      "either": 18,
-      "shared": 17,
-      "strength": 0.944444
+      "either": 19,
+      "shared": 18,
+      "strength": 0.947368
     },
     {
       "a": "scripts/colab/colab_window.sh",
       "b": "scripts/colab/launch_lane3_stub.sh",
-      "either": 20,
-      "shared": 16,
-      "strength": 0.8
+      "either": 22,
+      "shared": 17,
+      "strength": 0.772727
     },
     {
       "a": "scripts/colab/colab_window.sh",
       "b": "tests/colab/fixtures/fake_colab.py",
-      "either": 19,
+      "either": 20,
       "shared": 13,
-      "strength": 0.684211
+      "strength": 0.65
     },
     {
       "a": "scripts/colab/colab_window.sh",
       "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 17,
-      "shared": 9,
-      "strength": 0.529412
+      "either": 19,
+      "shared": 10,
+      "strength": 0.526316
+    },
+    {
+      "a": "scripts/colab/lane3_rung.py",
+      "b": "tests/colab/test_lane3_gpu_rung.py",
+      "either": 11,
+      "shared": 6,
+      "strength": 0.545455
     },
     {
       "a": "scripts/colab/launch_guards.py",
       "b": "scripts/colab/launch_lane1_stub.sh",
-      "either": 18,
+      "either": 19,
       "shared": 10,
-      "strength": 0.555556
+      "strength": 0.526316
     },
     {
       "a": "scripts/colab/launch_guards.py",
@@ -8442,37 +8442,37 @@
     {
       "a": "scripts/colab/launch_lane1_stub.sh",
       "b": "scripts/colab/launch_lane3_stub.sh",
-      "either": 20,
-      "shared": 17,
-      "strength": 0.85
+      "either": 22,
+      "shared": 18,
+      "strength": 0.818182
     },
     {
       "a": "scripts/colab/launch_lane1_stub.sh",
       "b": "tests/colab/fixtures/fake_colab.py",
-      "either": 19,
+      "either": 20,
       "shared": 14,
-      "strength": 0.736842
+      "strength": 0.7
     },
     {
       "a": "scripts/colab/launch_lane1_stub.sh",
       "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 18,
-      "shared": 9,
+      "either": 20,
+      "shared": 10,
       "strength": 0.5
     },
     {
       "a": "scripts/colab/launch_lane3_stub.sh",
       "b": "tests/colab/fixtures/fake_colab.py",
-      "either": 19,
+      "either": 21,
       "shared": 15,
-      "strength": 0.789474
+      "strength": 0.714286
     },
     {
       "a": "scripts/colab/launch_lane3_stub.sh",
-      "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 19,
-      "shared": 10,
-      "strength": 0.526316
+      "b": "tests/colab/test_lane3_gpu_rung.py",
+      "either": 21,
+      "shared": 11,
+      "strength": 0.52381
     }
   ],
   "parameters": {
@@ -8485,16 +8485,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-12T16:29:25-05:00",
+    "headDate": "2026-11-12T17:35:28-05:00",
     "inScopeFiles": 3317,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 132,
+    "qualifyingCommits": 134,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-16T21:29:25.000Z",
+    "since": "2026-05-16T22:35:28.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",
@@ -8510,7 +8510,7 @@
     ],
     "sourceFileReach": 20,
     "sourceFileRise": 25,
-    "sourceFilesReachingStrongFloor": 3,
+    "sourceFilesReachingStrongFloor": 4,
     "strength": 0.5,
     "windowDays": 180
   },

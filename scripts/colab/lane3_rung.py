@@ -97,6 +97,10 @@ LANE3_MODEL_LICENCE_ALLOWLIST: dict[str, dict[str, str]] = {
         "spdx_id": "Apache-2.0",
         "url": "https://github.com/QwenLM/Qwen-Image/blob/main/LICENSE",
     },
+    "Qwen/Qwen-Image-2512": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2512",
+    },
     "Qwen/Qwen2.5-VL-7B-Instruct": {
         "spdx_id": "Apache-2.0",
         "url": "https://github.com/QwenLM/Qwen2.5-VL/blob/main/LICENSE",

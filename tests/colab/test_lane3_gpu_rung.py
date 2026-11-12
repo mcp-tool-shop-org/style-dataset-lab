@@ -4111,6 +4111,37 @@ def test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusa
     ]) == 0
     capsys.readouterr()
 
+    # Cleared Qwen/Qwen-Image-2512 base model (matching lib/model-licences.js /^qwen[_-]image/i) passes check-job;
+    # Qwen-Image-2.1 remains unlisted and refused.
+    rev_2512 = "25468b98e3276ca6700de15c6628e51b7de54a26"
+    good_2512 = tmp_path / "good_2512.yaml"
+    good_2512.write_text(
+        base_text.replace(
+            "      name_or_path: Qwen/Qwen-Image\n",
+            "      name_or_path: Qwen/Qwen-Image-2512\n",
+        )
+        + f'  base_model: "Qwen/Qwen-Image-2512@{rev_2512}"\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    good_2512_sha = hashlib.sha256(good_2512.read_bytes()).hexdigest()
+    plan_2512 = tmp_path / "plan_2512.json"
+    assert lr.main([
+        "check-job", "--template", str(good_2512), "--template-sha", good_2512_sha,
+        "--model-revision", rev_2512, "--model-repo", "Qwen/Qwen-Image-2512",
+        "--plan-out", str(plan_2512),
+    ]) == 0
+    assert "JOB_TEMPLATE_OK" in capsys.readouterr().out
+    assert any(
+        r.get("repo_id") == "Qwen/Qwen-Image-2512"
+        for r in json.loads(plan_2512.read_text(encoding="utf-8"))["pinned_hub_refs"]
+    )
+    assert lr.main([
+        "check-job", "--template", str(good_2512), "--template-sha", good_2512_sha,
+        "--model-revision", rev_2512, "--model-repo", "Qwen/Qwen-Image-2.1",
+    ]) == 1
+    assert "JOB_MODEL_LICENCE_NOT_ALLOWED" in capsys.readouterr().err
+
 
 def test_wall_allowance_from_job_steps_and_step_time_refusals(tmp_path: Path) -> None:
     ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "wall_ds", n=3)
