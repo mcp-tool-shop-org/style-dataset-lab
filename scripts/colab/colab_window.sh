@@ -13,7 +13,9 @@
 #   COLAB_SALVAGE_EXEC_TIMEOUT_S_DEFAULT=330    (330 s + 10 s -k = 340 s over bundle-now `--timeout 300`)
 #   COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT=300 (5 min + 10 s -k = 310 s per salvage download part)
 #   COLAB_SALVAGE_DOWNLOAD_PARTS_DEFAULT=1      (projected keep-all bundle parts; N >= 1)
-#   SALVAGE_DEADLINE_S=190+340+N*310            (840 s for N=1; 1150 s for N=2 rung jobs;
+#   SALVAGE_DEADLINE_S=190+340+D*310            (D download steps: N for N=1; 2 + 2N for N>1, because a split salvage also
+#                                                fetches the VM's split manifest and each of those steps may retry once on
+#                                                5xx: 840 s for N=1; 2390 s for N=2; 3630 s for N=4;
 #                                                past it, cleanup skips remaining salvage and runs `colab stop`)
 #   COLAB_UPLOAD_REASSEMBLE_MB_S_DEFAULT=25     (VM reassembly exec bound = max(upload_timeout, ceil(bytes/(rate*1e6))+30),
 #                                                or explicit COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S)
@@ -22,12 +24,14 @@
 #   COLAB_SESSIONS_TIMEOUT_S_DEFAULT=30         (30 s + 10 s -k = 40 s on `colab sessions`)
 # Worst-case time measured from the guard trip to `colab stop` attempted (`cleanup_stop_attempted_by_s`)
 # and total cleanup bound from the trip through `colab stop` completion (`cleanup_bound_s`):
-#   in_flight_bound_s = max(COLAB_DOWNLOAD_TIMEOUT_S, COLAB_UPLOAD_TIMEOUT_S, COLAB_SESSIONS_TIMEOUT_S) + COLAB_KILL_GRACE_S
-#                     = 300 + 10 = 310 s
+#   in_flight_bound_s = max(COLAB_DOWNLOAD_TIMEOUT_S, COLAB_UPLOAD_TIMEOUT_S, COLAB_SESSIONS_TIMEOUT_S,
+#                           VM download-prepare exec = min(COLAB_DOWNLOAD_TIMEOUT_S, 180 s),
+#                           VM upload-reassembly exec = COLAB_REASSEMBLE_BOUND_S) + COLAB_KILL_GRACE_S
+#                     = 300 + 10 = 310 s unless an upload can chunk and its reassembly bound is longer
 #   first_wait_s      = max(COLAB_WALL_ESCALATE_S, COLAB_IN_FLIGHT_BOUND_S) = max(30, 310) = 310 s from trip
 #   second_wait_s     = cleanup_stop_attempted_by_s = in_flight_bound_s + salvage_bound_s, measured from trip
-#   Lane 3 (train):  cleanup_stop_attempted_by_s = 310 + (190 + 340 + N * 310) (1150 s for N=1; 1460 s for N=2),
-#                    cleanup_bound_s = cleanup_stop_attempted_by_s + 140 (1290 s for N=1; 1600 s for N=2)
+#   Lane 3 (train):  cleanup_stop_attempted_by_s = 310 + (190 + 340 + D * 310) (1150 s for N=1; 2700 s for N=2),
+#                    cleanup_bound_s = cleanup_stop_attempted_by_s + 140 (1290 s for N=1; 2840 s for N=2)
 #   Lane 1 (render): cleanup_stop_attempted_by_s = 310 + 0 = 310 s,
 #                    cleanup_bound_s = 310 + 0 + 140 = 450 s
 # Cap guard cleanup reserve (reserves cleanup_bound_s before the trip so total spend stays <= cap):
@@ -114,6 +118,47 @@ COLAB_CLEANUP_SIGNAL_COUNT=0
 COLAB_CLEANUP_SKIP_SALVAGE=0
 COLAB_SALVAGE_STEP_PID=""
 
+# colab_salvage_steps_sum_s: the worst-case wall of one post-failure salvage, from the environment:
+# restart-kernel + bundle-now exec + every download step. A single-part bundle is one GET. A
+# multi-part bundle also fetches the VM's split manifest and every part, and each of those steps may
+# be retried once on HTTP 5xx (`_colab_download_transfer`), so it counts 2 + 2 * parts download steps.
+colab_salvage_steps_sum_s() {
+  local grace="${COLAB_KILL_GRACE_S:-10}"
+  local restart_s="${COLAB_SALVAGE_RESTART_TIMEOUT_S:-180}"
+  local exec_s="${COLAB_SALVAGE_EXEC_TIMEOUT_S:-330}"
+  local dl_s="${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300}"
+  local parts="${COLAB_SALVAGE_DOWNLOAD_PARTS:-1}"
+  local dl_steps="${parts}"
+  if [ "${parts}" -gt 1 ]; then
+    dl_steps=$(( 2 + 2 * parts ))
+  fi
+  echo $(( (restart_s + grace) + (exec_s + grace) + dl_steps * (dl_s + grace) ))
+}
+
+# colab_reassemble_bound_s: the longest VM-side chunked-upload reassembly `colab exec`, in seconds, from the
+# environment: 0 when no upload can chunk (COLAB_UPLOAD_MAX_BYTES known and within COLAB_UPLOAD_CHUNK_BYTES);
+# the explicit COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S when set; otherwise the size-and-rate bound
+# max(upload timeout, ceil(max_bytes / (mb_s * 1e6)) + 30) that `colab_upload_checked` applies.
+colab_reassemble_bound_s() {
+  local max_bytes="${COLAB_UPLOAD_MAX_BYTES:-}"
+  local chunk="${COLAB_UPLOAD_CHUNK_BYTES:-${COLAB_UPLOAD_CHUNK_BYTES_DEFAULT:-33554432}}"
+  local up_s="${COLAB_UPLOAD_TIMEOUT_S:-120}"
+  if [[ "${max_bytes}" =~ ^[0-9]+$ ]] && [ "${max_bytes}" -le "${chunk}" ]; then
+    echo 0
+    return 0
+  fi
+  if [ -n "${COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S:-}" ]; then
+    echo "${COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S}"
+    return 0
+  fi
+  if [[ "${max_bytes}" =~ ^[0-9]+$ ]]; then
+    awk -v b="${max_bytes}" -v r="${COLAB_UPLOAD_REASSEMBLE_MB_S:-${COLAB_UPLOAD_REASSEMBLE_MB_S_DEFAULT:-25}}" -v u="${up_s}" \
+      'BEGIN { x = b / (r * 1000000.0); t = (x == int(x)) ? x : int(x) + 1; t = t + 30; if (t < u) t = u; printf "%d\n", t }'
+    return 0
+  fi
+  echo 0
+}
+
 # colab_configure_download_timeout [cli_override] [forced_source] [part_count]: resolve the
 # `colab download` timeout from `--download-timeout-s <s>` (precedence 1), `COLAB_DOWNLOAD_TIMEOUT_S`
 # in the caller's environment (precedence 2), or `COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT` (300 s,
@@ -151,9 +196,7 @@ colab_configure_download_timeout() {
   export COLAB_DOWNLOAD_TIMEOUT_SOURCE="${src}"
   export COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S="${chosen}"
   export COLAB_SALVAGE_DOWNLOAD_PARTS="${part_count}"
-  export SALVAGE_DEADLINE_S=$(( (COLAB_SALVAGE_RESTART_TIMEOUT_S + COLAB_KILL_GRACE_S) \
-    + (COLAB_SALVAGE_EXEC_TIMEOUT_S + COLAB_KILL_GRACE_S) \
-    + COLAB_SALVAGE_DOWNLOAD_PARTS * (COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S + COLAB_KILL_GRACE_S) ))
+  export SALVAGE_DEADLINE_S="$(colab_salvage_steps_sum_s)"
 }
 
 # colab_configure_upload_timeout [cli_override]: resolve the `colab upload` timeout from
@@ -335,10 +378,8 @@ colab_apply_test_cleanup_overrides() {
   if [ -n "${SDLAB_TEST_SESSIONS_TIMEOUT_S:-}" ]; then
     export COLAB_SESSIONS_TIMEOUT_S="${SDLAB_TEST_SESSIONS_TIMEOUT_S}"
   fi
-  local salvage_parts="${COLAB_SALVAGE_DOWNLOAD_PARTS:-1}"
-  local step_sum=$(( (COLAB_SALVAGE_RESTART_TIMEOUT_S + COLAB_KILL_GRACE_S) \
-    + (COLAB_SALVAGE_EXEC_TIMEOUT_S + COLAB_KILL_GRACE_S) \
-    + salvage_parts * (COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S + COLAB_KILL_GRACE_S) ))
+  local step_sum
+  step_sum="$(colab_salvage_steps_sum_s)"
   if [ -n "${SDLAB_TEST_SALVAGE_DEADLINE_S:-}" ]; then
     export SALVAGE_DEADLINE_S="${SDLAB_TEST_SALVAGE_DEADLINE_S}"
   else
@@ -357,21 +398,26 @@ colab_compute_cleanup_bounds() {
   local dl_timeout_s="${COLAB_DOWNLOAD_TIMEOUT_S:-300}"
   local up_timeout_s="${COLAB_UPLOAD_TIMEOUT_S:-120}"
   local sess_timeout_s="${COLAB_SESSIONS_TIMEOUT_S:-30}"
+  # The longest single bounded step that can be in flight when a guard trips: a download or upload
+  # step, a sessions poll, the VM download-prepare exec (min(download timeout, 180 s)), or the VM
+  # upload-reassembly exec (explicit timeout, or size-and-rate over the largest upload).
+  local prep_exec_s="${dl_timeout_s}"
+  [ "${prep_exec_s}" -gt 180 ] && prep_exec_s=180
+  local reassemble_s=0
+  reassemble_s="$(colab_reassemble_bound_s)"
   local in_flight_step_s="${dl_timeout_s}"
-  if [ "${up_timeout_s}" -gt "${in_flight_step_s}" ]; then
-    in_flight_step_s="${up_timeout_s}"
-  fi
-  if [ "${sess_timeout_s}" -gt "${in_flight_step_s}" ]; then
-    in_flight_step_s="${sess_timeout_s}"
-  fi
+  local cand_s
+  for cand_s in "${up_timeout_s}" "${sess_timeout_s}" "${prep_exec_s}" "${reassemble_s}"; do
+    if [ "${cand_s}" -gt "${in_flight_step_s}" ]; then
+      in_flight_step_s="${cand_s}"
+    fi
+  done
   local in_flight_bound_s=$(( in_flight_step_s + kill_grace_s ))
   local salvage_restart_s="${COLAB_SALVAGE_RESTART_TIMEOUT_S:-180}"
   local salvage_exec_s="${COLAB_SALVAGE_EXEC_TIMEOUT_S:-330}"
   local salvage_download_s="${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300}"
-  local salvage_parts="${COLAB_SALVAGE_DOWNLOAD_PARTS:-1}"
-  local salvage_steps_sum=$(( (salvage_restart_s + kill_grace_s) \
-    + (salvage_exec_s + kill_grace_s) \
-    + salvage_parts * (salvage_download_s + kill_grace_s) ))
+  local salvage_steps_sum
+  salvage_steps_sum="$(colab_salvage_steps_sum_s)"
   local salvage_deadline_s="${SALVAGE_DEADLINE_S:-${salvage_steps_sum}}"
   local stop_timeout_s="${COLAB_STOP_TIMEOUT_S:-60}"
   local stop_attempts="${COLAB_STOP_ATTEMPTS:-2}"
@@ -386,6 +432,8 @@ colab_compute_cleanup_bounds() {
   local cleanup_stop_attempted_by_s=$(( in_flight_bound_s + salvage_bound_s ))
   export COLAB_LANE="${lane}"
   export COLAB_IN_FLIGHT_BOUND_S="${in_flight_bound_s}"
+  export COLAB_REASSEMBLE_BOUND_S="${reassemble_s}"
+  export COLAB_PREP_EXEC_BOUND_S="${prep_exec_s}"
   export COLAB_CLEANUP_STOP_ATTEMPTED_BY_S="${cleanup_stop_attempted_by_s}"
   export COLAB_CLEANUP_BOUND_S=$(( cleanup_stop_attempted_by_s + stop_bound_s ))
 }
@@ -1170,6 +1218,52 @@ if sys.argv[2]:
 ' "${receipt_json}" "${jsonl_path}" "${payload}"
 }
 
+# _colab_keep_arrived_parts <py_bin> <tmp_dl_dir> <out_dir> <receipt_file> <mode> <dst>: a chunked
+# download failed after some parts had arrived and verified. Never delete verified bytes: move every
+# arrived part (and the VM's split manifest) from the temp directory into
+# `<out_dir>/salvage_partial/<mode>_<name>[_n]/` with `arrived_parts_receipt.json`, then remove the
+# temp directory. A part that failed its own check is not kept (it was never verified).
+_colab_keep_arrived_parts() {
+  "$1" - "$2" "$3" "$4" "$5" "$6" << 'PYEOF'
+import json, pathlib, shutil, sys
+
+tmp_dir = pathlib.Path(sys.argv[1])
+out_dir = pathlib.Path(sys.argv[2])
+receipt_p = pathlib.Path(sys.argv[3])
+mode = sys.argv[4]
+dst_name = pathlib.Path(sys.argv[5]).name
+kept = []
+try:
+    rec = json.loads(receipt_p.read_text(encoding="utf-8")) if receipt_p.is_file() else {}
+except ValueError:
+    rec = {}
+arrived = [int(i) for i in (rec.get("arrived_parts") or [])]
+if arrived and tmp_dir.is_dir() and tmp_dir.name.startswith(".sdlab_dl_tmp_") and tmp_dir.parent == out_dir:
+    base = out_dir / "salvage_partial"
+    base.mkdir(parents=True, exist_ok=True)
+    dest = base / f"{mode}_{dst_name}"
+    n = 1
+    while dest.exists():
+        n += 1
+        dest = base / f"{mode}_{dst_name}_{n}"
+    dest.mkdir()
+    for idx in arrived:
+        src = tmp_dir / f"part.{idx:04d}"
+        if src.is_file():
+            shutil.move(str(src), str(dest / src.name))
+            kept.append(src.name)
+    man = tmp_dir / "manifest.json"
+    if man.is_file():
+        shutil.move(str(man), str(dest / "vm_split_manifest.json"))
+        kept.append("vm_split_manifest.json")
+    rec["kept_files"] = kept
+    rec["kept_dir"] = dest.as_posix()
+    (dest / "arrived_parts_receipt.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
+if tmp_dir.is_dir() and tmp_dir.name.startswith(".sdlab_dl_tmp_") and tmp_dir.parent == out_dir:
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+PYEOF
+}
+
 # _colab_download_transfer <mode: normal|salvage|refetch> <session> <remote> <local> <out_dir> [arg6] [arg7]:
 # Shared implementation for `colab_download_checked` (normal), `colab_salvage_bundle_after_failure`
 # (salvage), and `colab_refetch_missing_bundle_files` (refetch). Splits files >
@@ -1188,8 +1282,10 @@ _colab_download_transfer() {
   local salvage_start="${6:-0}"
   local salvage_deadline="${7:-0}"
   local refetch_timeout_cap=""
+  local refetch_expected_sha=""
   if [ "${mode}" = "refetch" ]; then
     refetch_timeout_cap="${6:-}"
+    refetch_expected_sha="${7:-}"
     salvage_start="0"
     salvage_deadline="0"
   fi
@@ -1391,6 +1487,24 @@ else:
       [ "${prep_whole_sha}" = "-" ] && prep_whole_sha=""
       [ "${prep_manifest_remote}" = "-" ] && prep_manifest_remote=""
       [ "${prep_prefix}" = "-" ] && prep_prefix=""
+      if [ "${mode}" = "refetch" ]; then
+        # The VM's own copy is the source of truth for this fetch. A file that is missing on the VM, or
+        # whose sha256 there differs from the training-folder manifest, cannot be repaired by fetching it
+        # again: report it (return 3 / 4) without a transfer.
+        if [ "${prep_state}" = "DIRECT" ]; then
+          echo "BUNDLE_REFETCH_VM_SOURCE_MISSING src=${src}" >> "${out_dir}/guards.log"
+          rm -rf "${tmp_dl_dir}"
+          rm -f "${dst}"
+          return 3
+        fi
+        if { [ "${prep_state}" = "SINGLE" ] || [ "${prep_state}" = "SPLIT" ]; } && [ -n "${refetch_expected_sha}" ] \
+          && [ "${prep_whole_sha}" != "${refetch_expected_sha}" ]; then
+          echo "BUNDLE_REFETCH_VM_SOURCE_SHA_MISMATCH src=${src} vm_sha256=${prep_whole_sha} expected_sha256=${refetch_expected_sha}" >> "${out_dir}/guards.log"
+          rm -rf "${tmp_dl_dir}"
+          rm -f "${dst}"
+          return 4
+        fi
+      fi
     fi
   fi
 
@@ -1663,10 +1777,10 @@ with pathlib.Path(sys.argv[5]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
 ' "${receipt_file}" "${total_retries}" "${p_idx}" "${p_http}" "${receipt_jsonl}" | tr -d '\r'
       )
-      rm -rf "${tmp_dl_dir}"
+      _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}"
       rm -f "${dst}"
       if [ "${mode}" = "normal" ]; then
-        colab_refuse_logged "${out_dir}" DOWNLOAD_PART_FAILED "${src} -> ${dst} part ${p_num}/${prep_part_count}: colab download rc=${p_rc} http=${p_http} attempts=${p_attempts} arrived_parts=[${arrived_csv}] (CLI output in colab.log)"
+        colab_refuse_logged "${out_dir}" DOWNLOAD_PART_FAILED "${src} -> ${dst} part ${p_num}/${prep_part_count}: colab download rc=${p_rc} http=${p_http} attempts=${p_attempts} arrived_parts=[${arrived_csv}] (CLI output in colab.log; verified parts kept in ${out_dir}/salvage_partial)"
       fi
       return 1
     fi
@@ -1700,7 +1814,8 @@ p.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
 with pathlib.Path(sys.argv[4]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
 ' "${receipt_file}" "${total_retries}" "${p_idx}" "${receipt_jsonl}"
-      rm -rf "${tmp_dl_dir}"
+      rm -f "${tmp_dl_dir}/part.$(printf '%04d' "${p_idx}")"
+      _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}"
       rm -f "${dst}"
       if [ "${mode}" = "normal" ]; then
         colab_refuse_logged "${out_dir}" DOWNLOAD_SHA_MISMATCH "${src} -> ${dst} part ${p_num}/${prep_part_count}: local sha256=${got_p_sha} (bytes=${got_p_bytes}) != VM manifest sha256=${p_exp_sha} (bytes=${p_exp_bytes})"
@@ -1763,7 +1878,6 @@ else:
   )
 
   if [ "${reassemble_ok}" != "OK" ]; then
-    rm -rf "${tmp_dl_dir}"
     rm -f "${dst}"
     "${py_bin}" -c '
 import json, pathlib, sys
@@ -1778,6 +1892,7 @@ p.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
 with pathlib.Path(sys.argv[3]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
 ' "${receipt_file}" "${reassembled_sha}" "${receipt_jsonl}"
+    _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}"
     if [ "${mode}" = "normal" ]; then
       colab_refuse_logged "${out_dir}" DOWNLOAD_SHA_MISMATCH "${src} -> ${dst}: reassembled sha256=${reassembled_sha} != VM manifest sha256=${prep_whole_sha}:${prep_whole_bytes}"
     fi
@@ -1815,11 +1930,17 @@ colab_download_checked() {
   _colab_download_transfer "normal" "${session}" "${src}" "${dst}" "${out_dir}"
 }
 
-# colab_refetch_missing_bundle_files <py_bin> <rung_py> <session> <bundle_tar> <manifest_check_json> <out_dir> <wall_start_epoch> <wall_limit_s>:
-# When initial `verify-bundle` fails on the success path, re-fetch each missing or mismatched file
-# directly from `/content/lane3_train/<rel>` on the still-live VM (at most 1 bounded retry per file
-# within the remaining wall reserve before `wall_limit_s`), verify bytes + sha256 against the VM's
-# `training_folder_manifest.json`, and splice recovered files into `<bundle_tar>` via `repair-bundle`.
+# colab_refetch_missing_bundle_files <py_bin> <rung_py> <session> <bundle_tar> <manifest_check_json> <out_dir> <wall_start_epoch> <wall_limit_s> [pass_no] [pass_deadline_epoch] [only_list_file]:
+# When initial `verify-bundle` fails on the success path, fetch each missing or mismatched file
+# directly from `/content/lane3_train/<rel>` on the still-live VM (one bounded attempt per file per
+# pass, within the remaining wall reserve before `wall_limit_s` and, on pass 2, before
+# <pass_deadline_epoch>), verify bytes + sha256 against the VM's `training_folder_manifest.json`, and
+# stage each verified file under `<out_dir>/recovered_train_outputs/<rel>`. A file whose VM source is
+# itself bad (missing on the VM, or a different sha256 on the VM) is recorded as `vm_source_missing` or
+# `vm_source_sha_mismatch` and is never retried: another fetch could only return the same bytes.
+# This function does not repair the bundle: the repair runs on the rig after `colab stop`
+# (`colab_repair_recovered_bundle`). Every pass appends to `.bundle_refetch_entries.jsonl` and rewrites
+# `bundle_refetch.json` from it (the last entry for a path wins).
 colab_refetch_missing_bundle_files() {
   local py_bin="$1"
   local rung_py="$2"
@@ -1829,25 +1950,40 @@ colab_refetch_missing_bundle_files() {
   local out_dir="$6"
   local wall_start_epoch="$7"
   local wall_limit_s="$8"
+  local pass_no="${9:-1}"
+  local pass_deadline_epoch="${10:-0}"
+  local only_list_file="${11:-}"
 
   local kill_grace="${COLAB_KILL_GRACE_S:-10}"
   local refetch_tmp="${out_dir}/.sdlab_refetch_tmp"
   local recovered_root="${out_dir}/recovered_train_outputs"
-  rm -rf "${refetch_tmp}" "${out_dir}/.recovered_files.txt"
-  mkdir -p "${refetch_tmp}" "${recovered_root}"
-  : > "${out_dir}/.recovered_files.txt"
+  local entries_all="${out_dir}/.bundle_refetch_entries.jsonl"
+  mkdir -p "${recovered_root}"
+  if [ "${pass_no}" = "1" ]; then
+    rm -f "${out_dir}/.recovered_files.txt" "${entries_all}"
+    : > "${out_dir}/.recovered_files.txt"
+    : > "${entries_all}"
+  fi
+  rm -rf "${refetch_tmp}"
+  mkdir -p "${refetch_tmp}"
 
   local rows=""
-  rows="$("${py_bin}" - "${manifest_check_json}" << 'PYEOF' | tr -d '\r'
+  rows="$("${py_bin}" - "${manifest_check_json}" "${only_list_file}" << 'PYEOF' | tr -d '\r'
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1])
 if not p.is_file():
     raise SystemExit(0)
+only = None
+if sys.argv[2]:
+    op = pathlib.Path(sys.argv[2])
+    only = {ln.strip() for ln in op.read_text(encoding="utf-8").splitlines() if ln.strip()} if op.is_file() else set()
 data = json.loads(p.read_text(encoding="utf-8"))
 bad = data.get("bad_entries") or []
 for item in bad:
     rel = str(item.get("path") or "").strip()
     if not rel or ".." in pathlib.PurePosixPath(rel).parts:
+        continue
+    if only is not None and rel not in only:
         continue
     exp_b = int(item.get("expected_bytes") if item.get("expected_bytes") is not None else (item.get("bytes") or 0))
     exp_sha = str(item.get("expected_sha256") or item.get("sha256") or "").lower() or "-"
@@ -1857,20 +1993,22 @@ PYEOF
   )" || rows=""
 
   if [ -z "${rows}" ]; then
-    "${py_bin}" -c '
+    if [ "${pass_no}" = "1" ]; then
+      "${py_bin}" -c '
 import json, pathlib, sys
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
-    "attempted_files": [], "recovered_files": [], "still_bad_files": [],
-    "repaired_bundle": False, "entries": [],
+    "attempted_files": [], "recovered_files": [], "still_bad_files": [], "source_bad_files": [],
+    "repaired_bundle": False, "repair_status": "nothing_to_repair", "entries": [],
 }, indent=2) + "\n", encoding="utf-8", newline="\n")
 ' "${out_dir}/bundle_refetch.json"
+    fi
     rm -rf "${refetch_tmp}"
     return 1
   fi
 
   local file_list_csv=""
   file_list_csv="$("${py_bin}" -c 'import sys; print(",".join(ln.split("\t")[0] for ln in sys.stdin.read().splitlines() if ln.strip()))' <<< "${rows}" | tr -d '\r')"
-  echo "BUNDLE_REFETCH_START session=${session} files=[${file_list_csv}]" | tee -a "${out_dir}/guards.log" >&2
+  echo "BUNDLE_REFETCH_START session=${session} pass=${pass_no} files=[${file_list_csv}]" | tee -a "${out_dir}/guards.log" >&2
 
   local entries_jsonl="${refetch_tmp}/entries.jsonl"
   : > "${entries_jsonl}"
@@ -1886,28 +2024,38 @@ import math, sys, time
 start_e = float(sys.argv[1])
 limit_s = float(sys.argv[2])
 grace_k = int(sys.argv[3])
-rem = math.floor((start_e + limit_s) - time.time()) - grace_k
+deadline_e = float(sys.argv[4])
+now = time.time()
+rem = math.floor((start_e + limit_s) - now) - grace_k
+if deadline_e > 0:
+    rem = min(rem, math.floor(deadline_e - now) - grace_k)
 print(rem)
-' "${wall_start_epoch}" "${wall_limit_s}" "${kill_grace}" | tr -d '\r')"
+' "${wall_start_epoch}" "${wall_limit_s}" "${kill_grace}" "${pass_deadline_epoch}" | tr -d '\r')"
 
     if [ "${rem_wall_s}" -le 0 ]; then
-      echo "BUNDLE_REFETCH_SKIPPED_WALL_RESERVE rel=${b_rel} rem_wall_s=${rem_wall_s}" | tee -a "${out_dir}/guards.log" >&2
+      echo "BUNDLE_REFETCH_SKIPPED_WALL_RESERVE rel=${b_rel} pass=${pass_no} rem_wall_s=${rem_wall_s}" | tee -a "${out_dir}/guards.log" >&2
       "${py_bin}" -c '
 import json, pathlib, sys
-rec = {"path": sys.argv[2], "initial_reason": sys.argv[3], "attempted": False, "recovered": False, "status": "skipped_wall_reserve", "rem_wall_s": int(sys.argv[4])}
+rec = {"path": sys.argv[2], "initial_reason": sys.argv[3], "pass": int(sys.argv[5]), "attempted": False, "recovered": False, "status": "skipped_wall_reserve", "rem_wall_s": int(sys.argv[4]), "source_bad": False}
 with pathlib.Path(sys.argv[1]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
-' "${entries_jsonl}" "${b_rel}" "${b_reason}" "${rem_wall_s}"
+' "${entries_jsonl}" "${b_rel}" "${b_reason}" "${rem_wall_s}" "${pass_no}"
       idx=$((idx + 1))
       continue
     fi
 
     local cand_local="${refetch_tmp}/cand_${idx}.bin"
     local dl_rc=0
-    _colab_download_transfer "refetch" "${session}" "/content/lane3_train/${b_rel}" "${cand_local}" "${out_dir}" "${rem_wall_s}" || dl_rc=$?
+    _colab_download_transfer "refetch" "${session}" "/content/lane3_train/${b_rel}" "${cand_local}" "${out_dir}" "${rem_wall_s}" "${b_exp_sha}" || dl_rc=$?
 
-    local verify_state="" got_b="0" got_s=""
-    if [ "${dl_rc}" -eq 0 ] && [ -f "${cand_local}" ]; then
+    local verify_state="" got_b="0" got_s="" source_bad="False"
+    if [ "${dl_rc}" -eq 3 ]; then
+      verify_state="VM_SOURCE_MISSING"
+      source_bad="True"
+    elif [ "${dl_rc}" -eq 4 ]; then
+      verify_state="VM_SOURCE_SHA_MISMATCH"
+      source_bad="True"
+    elif [ "${dl_rc}" -eq 0 ] && [ -f "${cand_local}" ]; then
       read -r verify_state got_b got_s < <(
         "${py_bin}" -c '
 import hashlib, pathlib, sys
@@ -1935,80 +2083,84 @@ print(f"{st}\t{sz}\t{gs}")
       mv -f "${cand_local}" "${dest_rec}"
       printf '%s\n' "${b_rel}" >> "${out_dir}/.recovered_files.txt"
       recovered_count=$((recovered_count + 1))
-      echo "BUNDLE_REFETCH_FILE_OK rel=${b_rel} bytes=${got_b} sha256=${got_s}" | tee -a "${out_dir}/guards.log" >&2
+      echo "BUNDLE_REFETCH_FILE_OK rel=${b_rel} pass=${pass_no} bytes=${got_b} sha256=${got_s}" | tee -a "${out_dir}/guards.log" >&2
       "${py_bin}" -c '
 import json, pathlib, sys
-rec = {"path": sys.argv[2], "initial_reason": sys.argv[3], "attempted": True, "recovered": True, "status": "recovered", "bytes": int(sys.argv[4]), "sha256": sys.argv[5]}
+rec = {"path": sys.argv[2], "initial_reason": sys.argv[3], "pass": int(sys.argv[6]), "attempted": True, "recovered": True, "status": "recovered", "bytes": int(sys.argv[4]), "sha256": sys.argv[5], "source_bad": False}
 with pathlib.Path(sys.argv[1]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
-' "${entries_jsonl}" "${b_rel}" "${b_reason}" "${got_b}" "${got_s}"
+' "${entries_jsonl}" "${b_rel}" "${b_reason}" "${got_b}" "${got_s}" "${pass_no}"
     else
       rm -f "${cand_local}"
-      echo "BUNDLE_REFETCH_FILE_FAILED rel=${b_rel} state=${verify_state} dl_rc=${dl_rc}" | tee -a "${out_dir}/guards.log" >&2
+      echo "BUNDLE_REFETCH_FILE_FAILED rel=${b_rel} pass=${pass_no} state=${verify_state} dl_rc=${dl_rc} source_bad=${source_bad}" | tee -a "${out_dir}/guards.log" >&2
       "${py_bin}" -c '
 import json, pathlib, sys
-rec = {"path": sys.argv[2], "initial_reason": sys.argv[3], "attempted": True, "recovered": False, "status": sys.argv[4].lower(), "dl_rc": int(sys.argv[5])}
+rec = {"path": sys.argv[2], "initial_reason": sys.argv[3], "pass": int(sys.argv[6]), "attempted": True, "recovered": False, "status": sys.argv[4].lower(), "dl_rc": int(sys.argv[5]), "source_bad": sys.argv[7] == "True"}
 with pathlib.Path(sys.argv[1]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
-' "${entries_jsonl}" "${b_rel}" "${b_reason}" "${verify_state}" "${dl_rc}"
+' "${entries_jsonl}" "${b_rel}" "${b_reason}" "${verify_state}" "${dl_rc}" "${pass_no}" "${source_bad}"
     fi
     idx=$((idx + 1))
   done <<< "${rows}"
 
-  local repaired_bundle="0"
-  if [ "${recovered_count}" -gt 0 ] && [ -s "${out_dir}/.recovered_files.txt" ]; then
-    local repair_args=(--stage-dir "${recovered_root}")
-    while IFS= read -r spec_line; do
-      [ -z "${spec_line}" ] && continue
-      repair_args+=(--rel-file "${spec_line}")
-    done < "${out_dir}/.recovered_files.txt"
-    local repair_out=""
-    if repair_out="$("${py_bin}" "${rung_py}" repair-bundle --bundle-tar "${bundle_tar}" "${repair_args[@]}" 2>&1)"; then
-      repaired_bundle="1"
-      printf '%s\n' "${repair_out}" >> "${out_dir}/guards.log"
-    else
-      printf '%s\n' "${repair_out}" | tee -a "${out_dir}/guards.log" >&2
-    fi
-  fi
-
-  "${py_bin}" - "${entries_jsonl}" "${repaired_bundle}" "${out_dir}/bundle_refetch.json" << 'PYEOF'
-import json, pathlib, sys
-entries_p = pathlib.Path(sys.argv[1])
-repaired = sys.argv[2] == "1"
-out_p = pathlib.Path(sys.argv[3])
-entries = [json.loads(ln) for ln in entries_p.read_text(encoding="utf-8").splitlines() if ln.strip()]
-payload = {
-    "attempted_files": [e["path"] for e in entries if e.get("attempted")],
-    "recovered_files": [e["path"] for e in entries if e.get("recovered")],
-    "still_bad_files": [e["path"] for e in entries if not e.get("recovered")],
-    "repaired_bundle": repaired,
-    "entries": entries,
-}
-out_p.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
-PYEOF
+  cat "${entries_jsonl}" >> "${entries_all}"
+  _colab_write_bundle_refetch_json "${py_bin}" "${entries_all}" "${out_dir}/bundle_refetch.json" "pending_after_stop"
   rm -rf "${refetch_tmp}"
   return 0
 }
 
-# colab_hold_session_for_salvage_bound <py_bin> <guards_py> <session> <out_dir> <wall_s> <grace_s> <cap> <margin>:
-# When `verify-bundle` still fails after the per-file VM refetch, hold the VM session open for the
-# salvage path's bound (`min(salvage_steps_sum_s, SALVAGE_DEADLINE_S)`, capped by remaining cap
-# budget before `stop_bound_s`) so `/content/lane3_train` is not wiped immediately on exit, and
-# announce start + completion loudly to both `guards.log` and `stderr` (never silently).
-colab_hold_session_for_salvage_bound() {
+# _colab_write_bundle_refetch_json <py_bin> <entries_jsonl> <out_json> <repair_status>: rewrite
+# bundle_refetch.json from the accumulated entries (last entry per path wins). repaired_bundle is true
+# only once `repair_status` is "repaired".
+_colab_write_bundle_refetch_json() {
+  "$1" - "$2" "$3" "$4" << 'PYEOF'
+import json, pathlib, sys
+entries_p = pathlib.Path(sys.argv[1])
+out_p = pathlib.Path(sys.argv[2])
+repair_status = sys.argv[3]
+all_entries = [json.loads(ln) for ln in entries_p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+latest = {}
+for e in all_entries:
+    latest[e["path"]] = e
+entries = list(latest.values())
+payload = {
+    "attempted_files": [e["path"] for e in entries if e.get("attempted")],
+    "recovered_files": [e["path"] for e in entries if e.get("recovered")],
+    "still_bad_files": [e["path"] for e in entries if not e.get("recovered")],
+    "source_bad_files": [e["path"] for e in entries if e.get("source_bad")],
+    "repaired_bundle": repair_status == "repaired",
+    "repair_status": repair_status,
+    "passes": sorted({int(e.get("pass", 1)) for e in all_entries}),
+    "entries": all_entries,
+}
+out_p.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
+PYEOF
+}
+
+# colab_refetch_followup_pass <py_bin> <guards_py> <rung_py> <session> <bundle_tar> <manifest_check_json> <out_dir> <wall_start_epoch> <wall_limit_s> <cap> <margin>:
+# Replaces the old blind session hold. After the first per-file refetch, files whose VM source is bad
+# (missing, or a different sha256 on the VM) are not retried and nothing waits for them: the session
+# goes straight to the stop. Files that failed for any other reason (a transfer failure, a mismatch
+# after the transfer) get ONE more bounded refetch pass while the VM is still up, bounded by the
+# salvage bound and the cap left after the stop reserve. It never sleeps. session_hold.json records
+# what ran (status skipped_source_bad | skipped_nothing_to_retry | skipped_no_cap_budget | followup_refetch).
+colab_refetch_followup_pass() {
   local py_bin="$1"
   local guards_py="$2"
-  local session="$3"
-  local out_dir="$4"
-  local wall_s="$5"
-  local grace_s="$6"
-  local cap="$7"
-  local margin="$8"
+  local rung_py="$3"
+  local session="$4"
+  local bundle_tar="$5"
+  local manifest_check_json="$6"
+  local out_dir="$7"
+  local wall_start_epoch="$8"
+  local wall_limit_s="$9"
+  local cap="${10}"
+  local margin="${11}"
 
   printf '1\n' > "${out_dir}/cleanup_started.txt"
 
-  local hold_info=""
-  hold_info="$("${py_bin}" - "${guards_py}" "${out_dir}" "${cap}" "${margin}" << 'PYEOF' | tr -d '\r'
+  local plan=""
+  plan="$("${py_bin}" - "${guards_py}" "${out_dir}" "${cap}" "${margin}" << 'PYEOF' | tr -d '\r'
 import importlib.util, json, math, os, pathlib, sys, time
 
 guards_py = pathlib.Path(sys.argv[1])
@@ -2025,10 +2177,11 @@ salvage_restart_s = int(os.environ.get("COLAB_SALVAGE_RESTART_TIMEOUT_S", "180")
 salvage_exec_s = int(os.environ.get("COLAB_SALVAGE_EXEC_TIMEOUT_S", "330"))
 salvage_download_s = int(os.environ.get("COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S", "300"))
 salvage_parts = int(os.environ.get("COLAB_SALVAGE_DOWNLOAD_PARTS", "1"))
+salvage_dl_steps = salvage_parts if salvage_parts <= 1 else 2 + 2 * salvage_parts
 salvage_steps_sum = (
     (salvage_restart_s + kill_grace_s)
     + (salvage_exec_s + kill_grace_s)
-    + salvage_parts * (salvage_download_s + kill_grace_s)
+    + salvage_dl_steps * (salvage_download_s + kill_grace_s)
 )
 salvage_deadline_s = int(os.environ.get("SALVAGE_DEADLINE_S", str(salvage_steps_sum)))
 salvage_bound_s = min(salvage_steps_sum, salvage_deadline_s)
@@ -2037,7 +2190,7 @@ stop_timeout_s = int(os.environ.get("COLAB_STOP_TIMEOUT_S", "60"))
 stop_attempts = int(os.environ.get("COLAB_STOP_ATTEMPTS", "2"))
 stop_bound_s = stop_attempts * (stop_timeout_s + kill_grace_s)
 
-def _read_float(p: pathlib.Path) -> float | None:
+def _read_float(p: pathlib.Path):
     try:
         return float(p.read_text(encoding="utf-8").strip()) if p.is_file() else None
     except Exception:
@@ -2053,21 +2206,28 @@ except Exception:
     state = {}
 proj = lg.gpu_projection_rate(state, max_rate)
 priced_rate = float(proj) if proj is not None and float(proj) > 0.0 else float(max_rate)
-
 start_bal = _read_float(out_dir / "start_balance.txt")
 cur_bal = _read_float(out_dir / "end_balance.txt")
 measured_drop = max(0.0, start_bal - cur_bal) if (start_bal is not None and cur_bal is not None) else 0.0
-projected_spent = (elapsed_s / 3600.0) * priced_rate
-spent_now = max(measured_drop, projected_spent)
+spent_now = max(measured_drop, (elapsed_s / 3600.0) * priced_rate)
 stop_reserve = (stop_bound_s / 3600.0) * priced_rate
 avail_units = max(0.0, cap - margin - spent_now - stop_reserve)
 rem_cap_s = math.floor((avail_units / priced_rate) * 3600.0) if priced_rate > 0.0 else salvage_bound_s
+pass_budget_s = max(0, min(salvage_bound_s, rem_cap_s))
 
-hold_s = max(0, min(salvage_bound_s, rem_cap_s))
+entries_p = out_dir / ".bundle_refetch_entries.jsonl"
+latest = {}
+if entries_p.is_file():
+    for ln in entries_p.read_text(encoding="utf-8").splitlines():
+        if ln.strip():
+            e = json.loads(ln)
+            latest[e["path"]] = e
+unresolved = [e for e in latest.values() if not e.get("recovered")]
+source_bad = [e["path"] for e in unresolved if e.get("source_bad")]
+retry = [e["path"] for e in unresolved if not e.get("source_bad") and e.get("status") != "skipped_wall_reserve"]
 
-missing_files = []
-mismatched_files = []
 mc_path = out_dir / "bundle_manifest_check.json"
+missing_files, mismatched_files = [], []
 if mc_path.is_file():
     try:
         mc = json.loads(mc_path.read_text(encoding="utf-8"))
@@ -2076,58 +2236,138 @@ if mc_path.is_file():
     except Exception:
         pass
 
-init_payload = {
-    "session": os.environ.get("SESSION", ""),
-    "status": "holding",
-    "hold_bound_s": salvage_bound_s,
-    "planned_hold_s": hold_s,
-    "held_s": 0.0,
-    "missing_files": missing_files,
-    "mismatched_files": mismatched_files,
+if not unresolved:
+    status = "skipped_nothing_to_retry"
+elif not retry:
+    status = "skipped_source_bad" if source_bad else "skipped_nothing_to_retry"
+elif pass_budget_s <= 0:
+    status = "skipped_no_cap_budget"
+else:
+    status = "followup_refetch"
+
+if unresolved:
+    (out_dir / "session_hold.json").write_text(json.dumps({
+        "session": os.environ.get("SESSION", ""),
+        "status": status,
+        "hold_bound_s": salvage_bound_s,
+        "planned_hold_s": pass_budget_s if status == "followup_refetch" else 0,
+        "held_s": 0.0,
+        "slept": False,
+        "retry_files": retry,
+        "source_bad_files": source_bad,
+        "missing_files": missing_files,
+        "mismatched_files": mismatched_files,
+    }, indent=2) + "\n", encoding="utf-8", newline="\n")
+(out_dir / ".followup_retry_files.txt").write_text("".join(f"{r}\n" for r in retry), encoding="utf-8", newline="\n")
+print(f"{status}\t{pass_budget_s}\t{salvage_bound_s}\t{','.join(source_bad) or 'none'}\t{','.join(retry) or 'none'}")
+PYEOF
+  )" || plan="skipped_nothing_to_retry	0	0	none	none"
+
+  local f_status="" f_budget="0" f_bound="0" f_source_bad="none" f_retry="none"
+  IFS=$'\t' read -r f_status f_budget f_bound f_source_bad f_retry <<< "${plan}"
+
+  if [ "${f_status}" != "followup_refetch" ]; then
+    echo "BUNDLE_REFETCH_FOLLOWUP_SKIPPED session=${session} reason=${f_status} source_bad_files=[${f_source_bad}] retry_files=[${f_retry}]" | tee -a "${out_dir}/guards.log" >&2
+    return 0
+  fi
+
+  echo "BUNDLE_REFETCH_FOLLOWUP_START session=${session} budget_s=${f_budget} salvage_bound_s=${f_bound} retry_files=[${f_retry}] source_bad_files=[${f_source_bad}]" | tee -a "${out_dir}/guards.log" >&2
+  local t0 t1 deadline_epoch
+  t0="$(date -u +%s)"
+  deadline_epoch=$(( t0 + f_budget ))
+  colab_refetch_missing_bundle_files "${py_bin}" "${rung_py}" "${session}" "${bundle_tar}" "${manifest_check_json}" \
+    "${out_dir}" "${wall_start_epoch}" "${wall_limit_s}" 2 "${deadline_epoch}" "${out_dir}/.followup_retry_files.txt" || true
+  t1="$(date -u +%s)"
+  "${py_bin}" -c '
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+rec = json.loads(p.read_text(encoding="utf-8"))
+rec.update({"held_s": float(sys.argv[2]), "completed": True})
+p.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
+' "${out_dir}/session_hold.json" "$(( t1 - t0 ))"
+  echo "BUNDLE_REFETCH_FOLLOWUP_DONE session=${session} elapsed_s=$(( t1 - t0 )) budget_s=${f_budget}" | tee -a "${out_dir}/guards.log" >&2
 }
-(out_dir / "session_hold.json").write_text(json.dumps(init_payload, indent=2) + "\n", encoding="utf-8", newline="\n")
-miss_csv = ",".join(missing_files) if missing_files else "none"
-mis_csv = ",".join(mismatched_files) if mismatched_files else "none"
-print(f"{hold_s}\t{salvage_bound_s}\t{miss_csv}\t{mis_csv}")
+
+# colab_print_unresolved_download_cmds <py_bin> <session> <out_dir>: before `colab stop`, print one
+# ready-to-run `colab download -s <session> <vm path> <rig path>` line per file that is still unresolved
+# (to guards.log, stderr and unresolved_downloads.txt), so the operator has the command to hand.
+colab_print_unresolved_download_cmds() {
+  local py_bin="$1"
+  local session="$2"
+  local out_dir="$3"
+  local lines=""
+  lines="$("${py_bin}" - "${session}" "${out_dir}" << 'PYEOF' | tr -d '\r'
+import json, pathlib, shlex, sys
+session = sys.argv[1]
+out_dir = pathlib.Path(sys.argv[2])
+entries_p = out_dir / ".bundle_refetch_entries.jsonl"
+latest = {}
+if entries_p.is_file():
+    for ln in entries_p.read_text(encoding="utf-8").splitlines():
+        if ln.strip():
+            e = json.loads(ln)
+            latest[e["path"]] = e
+for rel, e in latest.items():
+    if e.get("recovered"):
+        continue
+    vm_path = "/content/lane3_train/" + rel
+    rig_path = (out_dir / "recovered_train_outputs" / rel).as_posix()
+    cmd = "colab download -s " + shlex.quote(session) + " " + shlex.quote(vm_path) + " " + shlex.quote(rig_path)
+    print(f"BUNDLE_UNRESOLVED_FILE rel={rel} status={e.get('status')} run: {cmd}")
 PYEOF
-  )" || hold_info="0	0	none	none"
+  )" || lines=""
+  : > "${out_dir}/unresolved_downloads.txt"
+  if [ -n "${lines}" ]; then
+    printf '%s\n' "${lines}" | tee -a "${out_dir}/guards.log" "${out_dir}/unresolved_downloads.txt" >&2
+  fi
+}
 
-  local hold_s="0" salvage_bound_s="0" miss_csv="none" mis_csv="none"
-  IFS=$'\t' read -r hold_s salvage_bound_s miss_csv mis_csv <<< "${hold_info}"
+# colab_stop_session_early <py_bin> <session> <out_dir>: stop the billed session as soon as every
+# transfer is done, before any rig-side work (bundle repair, re-verification). Writes the same
+# stop_path / stop_reached markers the EXIT trap writes and a `stopped_early.txt` marker so the trap
+# does not stop the session a second time.
+colab_stop_session_early() {
+  local py_bin="$1"
+  local session="$2"
+  local out_dir="$3"
+  printf '1\n' > "${out_dir}/cleanup_started.txt"
+  printf 'trap\n' > "${out_dir}/stop_path.txt"
+  printf '1\n' > "${out_dir}/stop_reached.txt"
+  echo "STOP_EARLY_BEFORE_RIG_REPAIR session=${session}" | tee -a "${out_dir}/guards.log" >&2
+  colab_stop_and_log_closing "${py_bin}" "${session}" "${out_dir}"
+  printf '1\n' > "${out_dir}/stopped_early.txt"
+}
 
-  echo "MANIFEST_MISMATCH_SESSION_HOLD_START session=${session} hold_s=${hold_s} salvage_bound_s=${salvage_bound_s} missing_files=[${miss_csv}] mismatched_files=[${mis_csv}]" | tee -a "${out_dir}/guards.log" >&2
-
-  local held_s="0.0"
-  held_s="$("${py_bin}" - "${hold_s}" "${out_dir}/session_hold.json" "${session}" << 'PYEOF' | tr -d '\r'
-import json, pathlib, signal, sys, time
-
-hold_s = max(0, int(sys.argv[1]))
-hold_path = pathlib.Path(sys.argv[2])
-session = sys.argv[3]
-signal.signal(signal.SIGTERM, signal.SIG_IGN)
-t0 = time.monotonic()
-deadline = t0 + hold_s
-while True:
-    rem = deadline - time.monotonic()
-    if rem <= 0.0:
-        break
-    time.sleep(min(0.25, rem))
-held = round(time.monotonic() - t0, 3)
-try:
-    rec = json.loads(hold_path.read_text(encoding="utf-8"))
-except Exception:
-    rec = {}
-rec.update({
-    "session": session,
-    "status": "completed",
-    "held_s": held,
-})
-hold_path.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
-print(f"{held:.3f}")
-PYEOF
-  )" || held_s="0.0"
-
-  echo "MANIFEST_MISMATCH_SESSION_HOLD_DONE session=${session} held_s=${held_s} salvage_bound_s=${salvage_bound_s} missing_files=[${miss_csv}] mismatched_files=[${mis_csv}]" | tee -a "${out_dir}/guards.log" >&2
+# colab_repair_recovered_bundle <py_bin> <rung_py> <bundle_tar> <out_dir>: after the session has
+# stopped, splice the SHA-verified refetched files into the bundle (`repair-bundle`) and record the
+# outcome in bundle_refetch.json. Returns 0 when nothing needed repairing or the repair succeeded.
+colab_repair_recovered_bundle() {
+  local py_bin="$1"
+  local rung_py="$2"
+  local bundle_tar="$3"
+  local out_dir="$4"
+  local entries_all="${out_dir}/.bundle_refetch_entries.jsonl"
+  local recovered_root="${out_dir}/recovered_train_outputs"
+  [ -f "${entries_all}" ] || return 0
+  if [ ! -s "${out_dir}/.recovered_files.txt" ]; then
+    _colab_write_bundle_refetch_json "${py_bin}" "${entries_all}" "${out_dir}/bundle_refetch.json" "nothing_recovered"
+    return 0
+  fi
+  local repair_args=(--stage-dir "${recovered_root}")
+  while IFS= read -r spec_line; do
+    [ -z "${spec_line}" ] && continue
+    repair_args+=(--rel-file "${spec_line}")
+  done < "${out_dir}/.recovered_files.txt"
+  local repair_out="" repair_rc=0
+  repair_out="$("${py_bin}" "${rung_py}" repair-bundle --bundle-tar "${bundle_tar}" "${repair_args[@]}" 2>&1)" || repair_rc=$?
+  if [ "${repair_rc}" -eq 0 ]; then
+    printf '%s\n' "${repair_out}" >> "${out_dir}/guards.log"
+    _colab_write_bundle_refetch_json "${py_bin}" "${entries_all}" "${out_dir}/bundle_refetch.json" "repaired"
+  else
+    printf '%s\n' "${repair_out}" | tee -a "${out_dir}/guards.log" >&2
+    _colab_write_bundle_refetch_json "${py_bin}" "${entries_all}" "${out_dir}/bundle_refetch.json" "repair_failed"
+  fi
+  return "${repair_rc}"
 }
 
 colab_guard_fake_cli_if_test() {
@@ -3863,6 +4103,7 @@ REFUSAL_CODES = (
     "TRAIN_STEP_TIME_REQUIRED",
     "TRAIN_WALL_TOO_SHORT",
     "TRAIN_OUTPUT_PROJECTION_REQUIRED",
+    "OPTIMIZER_SIZE_SOURCE_REQUIRED",
     "TRAIN_OUTPUT_DISK_LOW",
     "COPY_OFF_FAILED",
     "BUNDLE_DISK_LOW",
@@ -4152,6 +4393,14 @@ if lane == "train":
             bundle_refetch = json.loads((out_dir / "bundle_refetch.json").read_text(encoding="utf-8"))
         except ValueError:
             bundle_refetch = None
+    salvage_partial = []
+    sp_dir = out_dir / "salvage_partial"
+    if sp_dir.is_dir():
+        salvage_partial = sorted(d.name for d in sp_dir.iterdir() if d.is_dir())
+    unresolved_downloads = []
+    ud_p = out_dir / "unresolved_downloads.txt"
+    if ud_p.is_file():
+        unresolved_downloads = [ln for ln in ud_p.read_text(encoding="utf-8").splitlines() if ln.strip()]
     session_hold = None
     if (out_dir / "session_hold.json").is_file():
         try:
@@ -4180,6 +4429,9 @@ if lane == "train":
         "training_output_manifest_check": bundle_manifest_check,
         "bundle_refetch": bundle_refetch,
         "session_hold": session_hold,
+        "salvage_partial_dirs": salvage_partial,
+        "unresolved_download_commands": unresolved_downloads,
+        "stopped_before_rig_repair": (out_dir / "stopped_early.txt").is_file(),
     }
 
 kill_grace_s = int(os.environ.get("COLAB_KILL_GRACE_S", "10"))
@@ -4229,15 +4481,18 @@ if (out_dir / "salvage_bundle_download.json").is_file():
 
 effective_bundle_download = bundle_download if bundle_download is not None else salvage_bundle_download
 sess_timeout_s = int(os.environ.get("COLAB_SESSIONS_TIMEOUT_S", "30"))
-in_flight_bound_s = max(dl_timeout_s, up_timeout_s, sess_timeout_s) + kill_grace_s
+prep_exec_s = min(dl_timeout_s, 180)
+reassemble_bound_s = int(os.environ.get("COLAB_REASSEMBLE_BOUND_S", "0") or "0")
+in_flight_bound_s = max(dl_timeout_s, up_timeout_s, sess_timeout_s, prep_exec_s, reassemble_bound_s) + kill_grace_s
 salvage_restart_s = int(os.environ.get("COLAB_SALVAGE_RESTART_TIMEOUT_S", "180"))
 salvage_exec_s = int(os.environ.get("COLAB_SALVAGE_EXEC_TIMEOUT_S", "330"))
 salvage_download_s = int(os.environ.get("COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S", "300"))
 salvage_parts = int(os.environ.get("COLAB_SALVAGE_DOWNLOAD_PARTS", "1"))
+salvage_download_steps = salvage_parts if salvage_parts <= 1 else 2 + 2 * salvage_parts
 salvage_steps_sum_s = (
     (salvage_restart_s + kill_grace_s)
     + (salvage_exec_s + kill_grace_s)
-    + salvage_parts * (salvage_download_s + kill_grace_s)
+    + salvage_download_steps * (salvage_download_s + kill_grace_s)
 )
 salvage_deadline_s = int(os.environ.get("SALVAGE_DEADLINE_S", str(salvage_steps_sum_s)))
 stop_timeout_s = int(os.environ.get("COLAB_STOP_TIMEOUT_S", "60"))

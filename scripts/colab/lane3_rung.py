@@ -37,7 +37,7 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
                 download split overhead (DOWNLOAD_TIMEOUT_INVALID, DOWNLOAD_TIMEOUT_REQUIRED,
                 DOWNLOAD_TIMEOUT_TOO_SHORT, UPLOAD_TIMEOUT_INVALID, UPLOAD_TIMEOUT_TOO_SHORT,
                 TRAIN_STEP_TIME_REQUIRED, TRAIN_WALL_TOO_SHORT, TRAIN_OUTPUT_PROJECTION_REQUIRED,
-                TRAIN_OUTPUT_DISK_LOW).
+                OPTIMIZER_SIZE_SOURCE_REQUIRED, TRAIN_OUTPUT_DISK_LOW).
   render-job    verify (when --template-sha is given) and fill the job YAML's __LANE3_*__
                 placeholders (JOB_FILE_MISSING, JOB_SHA_MISMATCH, JOB_TEMPLATE_INVALID).
   copy-off      while ai-toolkit runs (and on final sweep), copy every file in the training folder
@@ -1386,6 +1386,7 @@ def validate_job_semantics(
                         "seconds_per_step",
                         "checkpoint_size_bytes",
                         "optimizer_size_bytes",
+                        "optimizer_size_source",
                         "samples_and_logs_bytes",
                         "auxiliary_keep_all_bytes",
                         "download_floor_mb_s",
@@ -1449,6 +1450,33 @@ def _pick_setting(cli_val: Any, meta: dict[str, Any], meta_key: str) -> tuple[An
     if meta_key in meta and meta[meta_key] is not None and str(meta[meta_key]).strip() != "":
         return meta[meta_key], "job_meta"
     return None, None
+
+
+OPTIMIZER_SIZE_SOURCE_RE = re.compile(r"^(measured|estimate):\s*\S")
+
+
+def _resolve_optimizer_size_provenance(
+    cli_val: Any, meta: dict[str, Any], is_real_job: bool
+) -> tuple[str | None, str | None]:
+    """The `--job` path must say where its optimizer_size_bytes came from: `measured: <where>` or
+    `estimate: <how>` (flag --optimizer-size-source or meta.optimizer_size_source). The built-in rung
+    templates (--rung-job) keep their fixed estimate and need no statement."""
+    raw, origin = _pick_setting(cli_val, meta, "optimizer_size_source")
+    if raw is None:
+        if is_real_job:
+            raise Refusal(
+                "OPTIMIZER_SIZE_SOURCE_REQUIRED",
+                "a --job must state optimizer_size_source together with optimizer_size_bytes "
+                "(meta.optimizer_size_source or --optimizer-size-source): 'measured: <where>' or 'estimate: <how>'",
+            )
+        return None, None
+    text = str(raw).strip()
+    if not OPTIMIZER_SIZE_SOURCE_RE.match(text):
+        raise Refusal(
+            "OPTIMIZER_SIZE_SOURCE_REQUIRED",
+            f"optimizer_size_source={text!r} must read 'measured: <where>' or 'estimate: <how>'",
+        )
+    return text, origin
 
 
 def _resolve_download_timeout_basis(
@@ -1771,6 +1799,9 @@ def run_plan_run(args: argparse.Namespace) -> int:
         opt_size_b = _parse_int_setting(
             raw_opt_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "optimizer_size_bytes"
         )
+        opt_provenance, _opt_prov_origin = _resolve_optimizer_size_provenance(
+            getattr(args, "optimizer_size_source", None), meta, is_real_job
+        )
         samp_size_b = (
             _parse_int_setting(
                 raw_samp_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "samples_and_logs_bytes", allow_zero=True
@@ -1837,6 +1868,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
             "checkpoints_bytes": checkpoints_total_b,
             "optimizer_size_bytes": opt_size_b,
             "optimizer_size_source": opt_src,
+            "optimizer_size_provenance": opt_provenance,
             "optimizer_state_bytes": opt_size_b,
             "samples_and_logs_bytes": samp_size_b,
             "samples_and_logs_source": samp_b_src if raw_samp_b is not None else "default_zero",
@@ -1856,6 +1888,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
             "checkpoint_size_source": out_ckpt_src,
             "optimizer_size_bytes": opt_size_b,
             "optimizer_size_source": opt_src,
+            "optimizer_size_provenance": opt_provenance,
             "samples_and_logs_bytes": samp_size_b,
             "samples_and_logs_source": samp_b_src if raw_samp_b is not None else "default_zero",
             "auxiliary_keep_all_bytes": aux_size_b,
@@ -1884,6 +1917,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
             "checkpoint_size_source": out_ckpt_src,
             "optimizer_size_bytes": opt_size_b,
             "optimizer_size_source": opt_src,
+            "optimizer_size_provenance": opt_provenance,
             "samples_and_logs_bytes": samp_size_b,
             "samples_and_logs_source": samp_b_src if raw_samp_b is not None else "default_zero",
             "auxiliary_keep_all_bytes": aux_size_b,
@@ -2710,6 +2744,7 @@ def build_parser() -> argparse.ArgumentParser:
     pr = sub.add_parser("plan-run")
     pr.add_argument("--job-plan", required=True)
     pr.add_argument("--is-real-job", default="0")
+    pr.add_argument("--optimizer-size-source", default=None)
     pr.add_argument("--explicit-download-timeout-s", default="")
     pr.add_argument("--download-timeout-source", default="default")
     pr.add_argument("--default-download-timeout-s", default="300")

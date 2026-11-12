@@ -52,13 +52,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="fdc56bf1f74d4d4c1f63647f3b5961d6793fd83ed45ecbc898136b01a24a5a0d"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="655a060eb23c71f49869005b5d2d02b38cd2d4bdb57ff2810f36723cb8b3c81b"
-PINNED_LANE3_RUNG_SHA="2840503988a9aee7c38d3d3fef3961f75b4bf1b41ee61703ef7675fd8084c7fb"
+PINNED_COLAB_WINDOW_SHA="564f2bafcaf1a904114c69cf401bf74803e4536d073c9692720c75a84b23a6c9"
+PINNED_LANE3_RUNG_SHA="8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad"
 PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="cafb21356ef5ad762f9ee8c88ea6b161d8dda9151cb97067f99c7d6848c078c5"
+PINNED_SELF_SHA="1a29b5f1947c376154385171306799ae7cdc7ddf51cdb24c7622ffb256897808"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -671,6 +671,7 @@ UPLOAD_FLOOR_MB_S_ARG=""
 SECONDS_PER_STEP_ARG=""
 CHECKPOINT_SIZE_BYTES_ARG=""
 OPTIMIZER_SIZE_BYTES_ARG=""
+OPTIMIZER_SIZE_SOURCE_ARG=""
 SAMPLES_AND_LOGS_BYTES_ARG=""
 AUXILIARY_KEEP_ALL_BYTES_ARG=""
 OUTPUT_OVERHEAD_FACTOR_ARG=""
@@ -706,6 +707,7 @@ while [ "$#" -gt 0 ]; do
     --seconds-per-step) SESSION_ARGS+=("$1"); SECONDS_PER_STEP_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --checkpoint-size-bytes) SESSION_ARGS+=("$1"); CHECKPOINT_SIZE_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --optimizer-size-bytes) SESSION_ARGS+=("$1"); OPTIMIZER_SIZE_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --optimizer-size-source) SESSION_ARGS+=("$1"); OPTIMIZER_SIZE_SOURCE_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --samples-and-logs-bytes) SESSION_ARGS+=("$1"); SAMPLES_AND_LOGS_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --auxiliary-keep-all-bytes) SESSION_ARGS+=("$1"); AUXILIARY_KEEP_ALL_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --output-overhead-factor) SESSION_ARGS+=("$1"); OUTPUT_OVERHEAD_FACTOR_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -729,7 +731,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}${DOWNLOAD_FLOOR_MB_S_ARG}${UPLOAD_FLOOR_MB_S_ARG}${SECONDS_PER_STEP_ARG}${CHECKPOINT_SIZE_BYTES_ARG}${OPTIMIZER_SIZE_BYTES_ARG}${SAMPLES_AND_LOGS_BYTES_ARG}${AUXILIARY_KEEP_ALL_BYTES_ARG}${OUTPUT_OVERHEAD_FACTOR_ARG}${EXPECTED_MODEL_BYTES_ARG}${VM_DISK_BUDGET_GIB_ARG}" ]; then
+if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}${DOWNLOAD_FLOOR_MB_S_ARG}${UPLOAD_FLOOR_MB_S_ARG}${SECONDS_PER_STEP_ARG}${CHECKPOINT_SIZE_BYTES_ARG}${OPTIMIZER_SIZE_BYTES_ARG}${OPTIMIZER_SIZE_SOURCE_ARG}${SAMPLES_AND_LOGS_BYTES_ARG}${AUXILIARY_KEEP_ALL_BYTES_ARG}${OUTPUT_OVERHEAD_FACTOR_ARG}${EXPECTED_MODEL_BYTES_ARG}${VM_DISK_BUDGET_GIB_ARG}" ]; then
   echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir, --rung-job, --job, --job-sha, --dataset-manifest, --dataset-manifest-sha and the training projection flags need --train" >&2
   exit 2
 fi
@@ -768,6 +770,46 @@ lane3_translate_wsl_path() {
     fi
   fi
   printf '%s' "${raw}"
+}
+
+# lane3_upload_max_bytes <local-wheels-json> <wheel-dir> <dataset-archive-or-dir> [other files...]: the size in
+# bytes of the largest file this window uploads (a directory counts as the sum of its files, an upper bound of
+# the dataset tar), so the cap gate can price the VM-side chunked-upload reassembly exec (COLAB_UPLOAD_MAX_BYTES).
+lane3_upload_max_bytes() {
+  "${PY_BIN}" -c '
+import json, os, sys
+wheels_json, wheel_dir, dataset = sys.argv[1:4]
+sizes = [0]
+
+def add_file(path):
+    try:
+        sizes.append(os.path.getsize(path))
+    except OSError:
+        pass
+
+try:
+    with open(wheels_json, encoding="utf-8") as fh:
+        for w in json.load(fh).get("wheels", []):
+            if wheel_dir:
+                add_file(os.path.join(wheel_dir, w["filename"]))
+except (OSError, ValueError, KeyError, TypeError):
+    pass
+if dataset and os.path.isdir(dataset):
+    total = 0
+    for root, _dirs, files in os.walk(dataset):
+        for name in files:
+            try:
+                total += os.path.getsize(os.path.join(root, name))
+            except OSError:
+                pass
+    sizes.append(total)
+elif dataset:
+    add_file(dataset)
+for extra in sys.argv[4:]:
+    if extra:
+        add_file(extra)
+print(max(sizes))
+' "$@" | tr -d '\r'
 }
 
 colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
@@ -829,6 +871,12 @@ if [ "${DRY_RUN}" = "1" ]; then
     fi
   fi
   colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
+  DRY_UPLOAD_DATASET=""
+  if [ "${TRAIN_REQUESTED}" = "1" ] && [ -n "${DATASET_DIR}" ]; then
+    DRY_UPLOAD_DATASET="$(lane3_translate_wsl_path "${DATASET_DIR}")"
+  fi
+  COLAB_UPLOAD_MAX_BYTES="$(lane3_upload_max_bytes "${SCRIPT_DIR}/locks/lane3-local-wheels.json" "$(lane3_translate_wsl_path "${WHEEL_DIR}")" "${DRY_UPLOAD_DATASET}" "${SCRIPT_DIR}/lane3_rung.py" "${SCRIPT_DIR}/launch_guards.py")"
+  export COLAB_UPLOAD_MAX_BYTES
   colab_dry_cap_budget "${PY_BIN}" "${GUARDS_PY}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
   exit $?
 fi
@@ -1143,7 +1191,8 @@ cleanup_on_exit() {
   fi
   printf 'trap\n' > "${OUT_DIR}/stop_path.txt"
   printf '1\n' > "${OUT_DIR}/stop_reached.txt"
-  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; }; then
+  if [ "${SESSION_OPENED}" -eq 1 ] && { [ -f "${OUT_DIR}/session_open_started.txt" ] || [ -f "${OUT_DIR}/session_opened.txt" ]; } \
+    && [ ! -f "${OUT_DIR}/stopped_early.txt" ]; then
     colab_stop_and_log_closing "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
   fi
   if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
@@ -1244,6 +1293,7 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   [ -n "${SECONDS_PER_STEP_ARG}" ] && PLAN_ARGS+=(--seconds-per-step "${SECONDS_PER_STEP_ARG}")
   [ -n "${CHECKPOINT_SIZE_BYTES_ARG}" ] && PLAN_ARGS+=(--checkpoint-size-bytes "${CHECKPOINT_SIZE_BYTES_ARG}")
   [ -n "${OPTIMIZER_SIZE_BYTES_ARG}" ] && PLAN_ARGS+=(--optimizer-size-bytes "${OPTIMIZER_SIZE_BYTES_ARG}")
+  [ -n "${OPTIMIZER_SIZE_SOURCE_ARG}" ] && PLAN_ARGS+=(--optimizer-size-source "${OPTIMIZER_SIZE_SOURCE_ARG}")
   [ -n "${SAMPLES_AND_LOGS_BYTES_ARG}" ] && PLAN_ARGS+=(--samples-and-logs-bytes "${SAMPLES_AND_LOGS_BYTES_ARG}")
   [ -n "${AUXILIARY_KEEP_ALL_BYTES_ARG}" ] && PLAN_ARGS+=(--auxiliary-keep-all-bytes "${AUXILIARY_KEEP_ALL_BYTES_ARG}")
   [ -n "${OUTPUT_OVERHEAD_FACTOR_ARG}" ] && PLAN_ARGS+=(--output-overhead-factor "${OUTPUT_OVERHEAD_FACTOR_ARG}")
@@ -1283,6 +1333,8 @@ fi
 
 # Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
 # or when the cap leaves less runtime than --min-runtime-s (using the resolved download/upload bounds).
+COLAB_UPLOAD_MAX_BYTES="$(lane3_upload_max_bytes "${LOCAL_WHEELS_JSON}" "${WHEEL_DIR}" "${DATASET_ARCHIVE:-}" "${RUNG_PY}" "${GUARDS_PY}" "${LOCK_FILE}" "${CLASSIFIER_PY}")"
+export COLAB_UPLOAD_MAX_BYTES
 colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
 
 # Free pre-flight resolve, git pin check, and local wheel sha verification before any colab CLI call.
@@ -1393,10 +1445,21 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   VERIFY_BUNDLE_OUT=""
   if ! VERIFY_BUNDLE_OUT="$("${PY_BIN}" "${RUNG_PY}" verify-bundle --bundle-tar "${OUT_DIR}/lane3_stub_bundle.tar.gz" --out "${OUT_DIR}/bundle_manifest_check.json" 2>&1)"; then
     echo "BUNDLE_VERIFY_INITIAL_MISMATCH session=${SESSION} detail=$(printf '%s' "${VERIFY_BUNDLE_OUT}" | tr '\r\n' ' ')" | tee -a "${OUT_DIR}/guards.log" >&2
+    # While the VM is up: fetch each bad file once (files whose VM source is itself bad are not
+    # retried), then at most one more bounded pass for files that failed for another reason. Nothing
+    # sleeps. Print a ready-to-run `colab download` line per unresolved file, then stop the session
+    # BEFORE any rig-side work (bundle repair, re-verification), which does not need the VM.
     colab_refetch_missing_bundle_files \
       "${PY_BIN}" "${RUNG_PY}" "${SESSION}" \
       "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}/bundle_manifest_check.json" \
-      "${OUT_DIR}" "${WALL_WATCHER_START_EPOCH}" "${WALL_LIMIT_S}" || true
+      "${OUT_DIR}" "${WALL_WATCHER_START_EPOCH}" "${WALL_LIMIT_S}" 1 || true
+    colab_refetch_followup_pass \
+      "${PY_BIN}" "${GUARDS_PY}" "${RUNG_PY}" "${SESSION}" \
+      "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}/bundle_manifest_check.json" \
+      "${OUT_DIR}" "${WALL_WATCHER_START_EPOCH}" "${WALL_LIMIT_S}" "${CAP}" "${MARGIN}" || true
+    colab_print_unresolved_download_cmds "${PY_BIN}" "${SESSION}" "${OUT_DIR}" || true
+    colab_stop_session_early "${PY_BIN}" "${SESSION}" "${OUT_DIR}"
+    colab_repair_recovered_bundle "${PY_BIN}" "${RUNG_PY}" "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}" || true
     REVERIFY_ARGS=(--bundle-tar "${OUT_DIR}/lane3_stub_bundle.tar.gz" --out "${OUT_DIR}/bundle_manifest_check.json")
     if [ -s "${OUT_DIR}/.recovered_files.txt" ]; then
       while IFS= read -r rec_spec; do
@@ -1407,9 +1470,6 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     VERIFY_BUNDLE_OUT=""
     if ! VERIFY_BUNDLE_OUT="$("${PY_BIN}" "${RUNG_PY}" verify-bundle "${REVERIFY_ARGS[@]}" 2>&1)"; then
       printf '%s\n' "${VERIFY_BUNDLE_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
-      colab_hold_session_for_salvage_bound \
-        "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${OUT_DIR}" \
-        "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}"
       exit 1
     fi
     echo "BUNDLE_REFETCH_RECOVERED session=${SESSION}" | tee -a "${OUT_DIR}/guards.log" >&2
