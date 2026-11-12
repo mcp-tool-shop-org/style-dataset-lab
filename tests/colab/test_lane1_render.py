@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 import json
+import os
 import struct
 import zlib
 from pathlib import Path
@@ -16,6 +18,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "colab"))
 
 import lane1_render as l1  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _restore_process_env() -> Iterator[None]:
+    """Ensure `HF_HUB_OFFLINE=1` set by `run_weights_download` never leaks into subsequent tests."""
+    saved = os.environ.copy()
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
 
 
 def make_minimal_png_with_prompt(prompt_graph: dict[str, Any], seed_byte: int = 1) -> bytes:
@@ -111,6 +124,7 @@ def test_stamp_write_and_read_back_and_validation(tmp_path: Path) -> None:
     stamp = {
         "owner": "mcp-tool-shop",
         "licence": "CC-BY-4.0",
+        "credit": "mcp-tool-shop",
         "canon_sha": "a881cb5ba656e0618080d2269498fda7f36ac93a",
         "entry_id": "ships/brig",
         "entry_sha256": "sha256:" + "11" * 32,
@@ -125,11 +139,15 @@ def test_stamp_write_and_read_back_and_validation(tmp_path: Path) -> None:
     read_back = l1.verify_png_provenance(png_path, stamp)
     assert read_back["owner"] == "mcp-tool-shop"
     assert read_back["licence"] == "CC-BY-4.0"
+    assert read_back["credit"] == "mcp-tool-shop"
     assert read_back["entry_id"] == "ships/brig"
     assert read_back["window_id"] == "win_lane1_stub_01"
 
     with pytest.raises(ValueError, match="PNG_STAMP_MISMATCH"):
         l1.verify_png_provenance(png_path, {**stamp, "owner": "wrong-owner"})
+
+    with pytest.raises(ValueError, match="PNG_STAMP_MISMATCH"):
+        l1.verify_png_provenance(png_path, {**stamp, "credit": "wrong-credit"})
 
     with pytest.raises(ValueError, match="PNG_STAMP_MISSING"):
         l1.stamp_png_provenance(raw_png, {"owner": "mcp-tool-shop"})
@@ -759,6 +777,8 @@ def test_validate_weights_manifest_and_render_jobs_refusals(
         "canon_sha": "a" * 40,
         "entry_id": "ships/brig",
         "entry_sha256": "sha256:" + "1" * 64,
+        "licence": "CC-BY-4.0",
+        "credit": "mcp-tool-shop",
     }
     good_jobs = tmp_path / "good_jobs.jsonl"
     good_jobs.write_text(json.dumps(valid_job) + "\n", encoding="utf-8")
@@ -789,6 +809,11 @@ def test_validate_weights_manifest_and_render_jobs_refusals(
         ("dupid.jsonl", (json.dumps(valid_job) + "\n") * 2, "RENDER_JOB_INVALID"),
         ("stubtpl.jsonl", json.dumps({**valid_job, "template_id": "stub_fixture_64"}) + "\n", "JOB_TEMPLATE_INVALID"),
         ("norun.jsonl", json.dumps({**valid_job, "run_id": ""}) + "\n", "RENDER_JOB_INVALID"),
+        ("badcanon.jsonl", json.dumps({**valid_job, "canon_sha": "shortsha"}) + "\n", "RENDER_JOB_INVALID"),
+        ("badentrysha.jsonl", json.dumps({**valid_job, "entry_sha256": "not-a-sha"}) + "\n", "RENDER_JOB_INVALID"),
+        ("badlic.jsonl", json.dumps({**valid_job, "licence": "MIT"}) + "\n", "RENDER_JOB_INVALID"),
+        ("nocredit.jsonl", json.dumps({k: v for k, v in valid_job.items() if k != "credit"}) + "\n", "RENDER_JOB_INVALID"),
+        ("badcredit.jsonl", json.dumps({**valid_job, "credit": "wrong-credit"}) + "\n", "RENDER_JOB_INVALID"),
         ("noprompt.jsonl", json.dumps({**valid_job, "prompt": "   "}) + "\n", "RENDER_JOB_INVALID"),
         ("boolseed.jsonl", json.dumps({**valid_job, "seed": True}) + "\n", "RENDER_JOB_INVALID"),
         ("badsize.jsonl", json.dumps({**valid_job, "width": 0}) + "\n", "RENDER_JOB_INVALID"),
@@ -973,6 +998,8 @@ def test_run_weights_download_merge_facts_and_peak_vram(
         "PYTHONPATH",
         str(fake_site) + (os.pathsep + os.environ["PYTHONPATH"] if os.environ.get("PYTHONPATH") else ""),
     )
+    for k in ("HF_HOME", "HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN", "HF_HUB_OFFLINE", "FAKE_HF_EXPECT_TOKEN"):
+        monkeypatch.delenv(k, raising=False)
 
     blobs_dir = tmp_path / "blobs"
     blobs_dir.mkdir()
@@ -1119,7 +1146,7 @@ def test_run_weights_download_merge_facts_and_peak_vram(
     assert not (tmp_path / "m_trunc" / "vae" / "trunc.safetensors").exists()
 
     # Happy authenticated download + log token scrubbing + merge_render_facts
-    secret_tok = "hf_unitDownloadSecretToken9988776655"
+    secret_tok = "hf_unitDownloadSecret998877"
     monkeypatch.setenv("HF_TOKEN_GGUF_READ", secret_tok)
     monkeypatch.setenv("FAKE_HF_EXPECT_TOKEN", secret_tok)
     lane1_out = tmp_path / "lane1_out_ok"
@@ -1320,7 +1347,7 @@ def test_lane1_cpu_stub_imports_and_runs_without_lane3_rung(
         srv.server_close()
 
     # Controlled clock check for positive wall_s / wall_ms recording in run_queue
-    ticks = iter([100.0, 101.25])
+    ticks = iter([99.0, 100.0, 101.25])
     monkeypatch.setattr(
         l1,
         "time",
@@ -1361,6 +1388,8 @@ def test_weights_download_probe_compares_single_file_baseline_in_same_repo(
         "PYTHONPATH",
         str(fake_site) + (os.pathsep + os.environ["PYTHONPATH"] if os.environ.get("PYTHONPATH") else ""),
     )
+    for k in ("HF_HOME", "HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN", "HF_HUB_OFFLINE", "FAKE_HF_EXPECT_TOKEN"):
+        monkeypatch.delenv(k, raising=False)
 
     blobs_dir = tmp_path / "blobs"
     blobs_dir.mkdir()
@@ -1524,3 +1553,347 @@ def test_weights_download_probe_compares_single_file_baseline_in_same_repo(
     assert warm_rec["offline"] is True
     assert warm_rec["files"][0]["cached_bytes_at_start"] == len(vae_blob)
     assert warm_rec["files"][0]["expected_bytes"] == len(vae_blob)
+
+
+def test_example_qwen_2512_manifest_and_strict_apache_mit_allowlist_and_model_exclusions(tmp_path: Path) -> None:
+    example_path = REPO_ROOT / "scripts" / "colab" / "lane1" / "weights-manifest-qwen-image-2512.example.json"
+    assert example_path.is_file()
+    example_rows = json.loads(example_path.read_text(encoding="utf-8"))
+    assert isinstance(example_rows, list) and len(example_rows) == 3
+    assert [r["file"] for r in example_rows] == [
+        "split_files/diffusion_models/qwen_image_2512_fp8_e4m3fn.safetensors",
+        "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "split_files/vae/qwen_image_vae.safetensors",
+    ]
+    for row in example_rows:
+        assert row["repo"] == l1.PINNED_COMFY_REPACK_REPO == "Comfy-Org/Qwen-Image"
+        assert row["revision"] == l1.PINNED_COMFY_REPACK_REVISION == "1f12b17be14c89b026c51a91d67c32f84bb047bc"
+        assert row["licence_id"] == "Apache-2.0"
+        assert row["licence_url"].startswith("https://huggingface.co/Comfy-Org/Qwen-Image/blob/1f12b17be14c89b026c51a91d67c32f84bb047bc/README.md")
+        assert row["upstream_licence_url"].startswith("https://")
+        if row["dest"] in ("diffusion_models", "vae"):
+            assert row["upstream_base_repo"] == l1.PINNED_BASE_MODEL_REPO == "Qwen/Qwen-Image-2512"
+            assert row["upstream_base_revision"] == l1.PINNED_BASE_MODEL_REVISION == "25468b98e3276ca6700de15c6628e51b7de54a26"
+        assert str(row["sha256"]).startswith("<REPLACE_WITH_64_HEX_SHA256_")
+
+    # Raw example manifest refuses until placeholder shas are replaced with real 64-hex digests
+    with pytest.raises(l1.Refusal) as exc_placeholder:
+        l1.validate_weights_manifest(example_path)
+    assert exc_placeholder.value.code == "WEIGHTS_MANIFEST_INVALID"
+
+    filled_path = tmp_path / "filled_manifest.json"
+    filled_rows = [{**r, "sha256": f"{idx + 1}" * 64} for idx, r in enumerate(example_rows)]
+    filled_path.write_text(json.dumps(filled_rows, indent=2), encoding="utf-8")
+    validated = l1.validate_weights_manifest(filled_path)
+    assert len(validated) == 3
+    assert {v["spdx_id"] for v in validated} == {"Apache-2.0"}
+
+    # Allow-list contains strictly Apache-2.0 and MIT ids only; every other licence is refused by name
+    assert set(l1.CLEARED_LICENCES.values()) == {"Apache-2.0", "MIT"}
+    for accepted_lic in ("Apache-2.0", "apache-2.0", "MIT", "mit"):
+        p_ok = tmp_path / f"lic_ok_{accepted_lic}.json"
+        p_ok.write_text(json.dumps([{**filled_rows[0], "licence_id": accepted_lic}]), encoding="utf-8")
+        assert l1.validate_weights_manifest(p_ok)[0]["spdx_id"] in {"Apache-2.0", "MIT"}
+
+    for rejected_lic in ("CC-BY-4.0", "CC-BY-NC-4.0", "BSD-3-Clause", "GPL-3.0", "qwen-research", "other"):
+        p_bad = tmp_path / f"lic_bad_{rejected_lic}.json"
+        p_bad.write_text(json.dumps([{**filled_rows[0], "licence_id": rejected_lic}]), encoding="utf-8")
+        with pytest.raises(l1.Refusal) as exc_lic:
+            l1.validate_weights_manifest(p_bad)
+        assert exc_lic.value.code == "WEIGHTS_LICENCE_INVALID"
+        assert rejected_lic in exc_lic.value.detail
+
+    # Excluded non-commercial Qwen-Image 2.1, Turbo, 2steps, Lightning, and distill/non_official weights refused
+    excluded_targets = [
+        {"repo": "Qwen/Qwen-Image-2.1", "file": "model.safetensors"},
+        {"repo": "Comfy-Org/Qwen-Image", "file": "split_files/diffusion_models/qwen_image_2.1_fp8.safetensors"},
+        {"repo": "Qwen/Qwen-Image-Turbo", "file": "turbo.safetensors"},
+        {"repo": "Comfy-Org/Qwen-Image", "file": "non_official/diffusion_models/qwen_image_2steps.safetensors"},
+        {"repo": "lightx2v/Qwen-Image-Lightning", "file": "lightning.safetensors"},
+    ]
+    for idx, patch in enumerate(excluded_targets):
+        p_ex = tmp_path / f"excluded_{idx}.json"
+        p_ex.write_text(json.dumps([{**filled_rows[0], **patch}]), encoding="utf-8")
+        with pytest.raises(l1.Refusal) as exc_mod:
+            l1.validate_weights_manifest(p_ex)
+        assert exc_mod.value.code == "WEIGHTS_MODEL_EXCLUDED"
+
+
+def test_background_removal_refuses_rmbg_and_non_birefnet_but_allows_birefnet_mit(tmp_path: Path) -> None:
+    default_graph = l1.build_qwen_lora_graph({"prompt": "synthetic study", "seed": 1})
+    assert default_graph["37"]["inputs"]["unet_name"] == "qwen_image_2512_fp8_e4m3fn.safetensors"
+    l1.check_background_removal_allowed(default_graph, {"job_id": "j1"})
+
+    # RMBG-2.0 / BRIA refused in weights manifest, job model_pins, and workflow graph
+    rmbg_manifest = tmp_path / "rmbg_manifest.json"
+    rmbg_manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "briaai/RMBG-2.0",
+                    "revision": "a" * 40,
+                    "file": "model.safetensors",
+                    "dest": "diffusion_models",
+                    "sha256": "b" * 64,
+                    "licence_id": "MIT",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(l1.Refusal) as exc_mf:
+        l1.validate_weights_manifest(rmbg_manifest)
+    assert exc_mf.value.code == "BG_REMOVAL_FORBIDDEN"
+
+    for bad_node in (
+        {"class_type": "BRIA_RMBG_Zho", "inputs": {"model": "RMBG-2.0"}},
+        {"class_type": "ImageRemoveBackground+", "inputs": {"method": "rembg"}},
+        {"class_type": "InspyrenetRembg", "inputs": {}},
+        {"class_type": "BiRefNet_Node", "inputs": {"fallback": "RMBG-2.0"}},
+    ):
+        wf = {**default_graph, "99": bad_node}
+        with pytest.raises(l1.Refusal) as exc_wf:
+            l1.check_background_removal_allowed(wf, {"job_id": "j_bad"})
+        assert exc_wf.value.code == "BG_REMOVAL_FORBIDDEN"
+
+    with pytest.raises(l1.Refusal) as exc_pin:
+        l1.check_background_removal_allowed(default_graph, {"job_id": "j_pin", "bg_removal": "RMBG-2.0"})
+    assert exc_pin.value.code == "BG_REMOVAL_FORBIDDEN"
+
+    # Explicit BiRefNet (MIT) node is allowed when RMBG is absent
+    birefnet_wf = l1.build_qwen_lora_graph({"job_id": "j_birefnet", "prompt": "synthetic study", "bg_removal": "BiRefNet"})
+    assert birefnet_wf["90"]["class_type"] == "BiRefNetRemoveBackground"
+    l1.check_background_removal_allowed(birefnet_wf, {"job_id": "j_birefnet", "bg_removal": "BiRefNet"})
+
+
+def test_local_disk_staging_refuses_mounts_and_drive_paths(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    local_hf = tmp_path / "local_hf"
+    local_models = tmp_path / "local_models"
+    mounts_ok = tmp_path / "mounts_ok"
+    mounts_ok.write_text(f"/dev/sda1 {tmp_path.resolve().as_posix()} ext4 rw,relatime 0 0\n", encoding="utf-8")
+
+    for target_p in (local_hf, local_models):
+        ok_rec = l1.verify_local_disk_staging(target_p, mounts_path=mounts_ok)
+        assert ok_rec["fstype"] == "ext4"
+        assert ok_rec["local_disk"] is True
+
+    # Google Drive mount path (/content/drive/...) is refused immediately
+    with pytest.raises(l1.Refusal) as exc_drive:
+        l1.verify_local_disk_staging(Path("/content/drive/MyDrive/weights"), mounts_path=mounts_ok)
+    assert exc_drive.value.code == "WEIGHTS_MOUNT_FORBIDDEN"
+
+    # FUSE / NFS / CIFS mounts are refused when staging weights
+    for bad_fs in ("fuse.drive", "gcsfuse", "nfs4", "cifs", "9p"):
+        mounts_bad = tmp_path / f"mounts_{bad_fs}"
+        mounts_bad.write_text(
+            f"remote:{bad_fs} {local_models.resolve().as_posix()} {bad_fs} rw 0 0\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(l1.Refusal) as exc_fs:
+            l1.verify_local_disk_staging(local_models, mounts_path=mounts_bad)
+        assert exc_fs.value.code == "WEIGHTS_MOUNT_FORBIDDEN"
+
+    # run_vm_guards records and refuses WEIGHTS_MOUNT_FORBIDDEN when models_dir sits on FUSE
+    meminfo = tmp_path / "meminfo"
+    meminfo.write_text("MemTotal:       33554432 kB\nMemAvailable:   25165824 kB\n", encoding="utf-8")
+    shm = tmp_path / "shm"
+    shm.mkdir()
+    mounts_fuse = tmp_path / "mounts_fuse"
+    mounts_fuse.write_text(f"drive {local_models.resolve().as_posix()} fuse.drive rw 0 0\n", encoding="utf-8")
+    guards_out = tmp_path / "guards_mount_bad.json"
+    rc_guards = l1.run_vm_guards(
+        hf_home=local_hf,
+        models_dir=local_models,
+        lane1_out=tmp_path / "out",
+        disk_required_gib=0.001,
+        smoke_seconds=0.01,
+        ram_required_gib="1",
+        meminfo_path=meminfo,
+        shm_path=shm,
+        out_path=guards_out,
+        cpu_stub=True,
+        mounts_path=mounts_fuse,
+    )
+    assert rc_guards == 1
+    assert "REFUSED: WEIGHTS_MOUNT_FORBIDDEN:" in capsys.readouterr().err
+
+
+def test_colab_runtime_cuda_probe_hf_429_retry_and_render_heartbeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import hashlib
+    import os
+
+    # 1. Colab runtime version + /usr/local/cuda* probe
+    release_file = tmp_path / "colab-release"
+    release_file.write_text('COLAB_RELEASE_TAG="release-colab-20261112_RC01"\n', encoding="utf-8")
+    usr_local = tmp_path / "usr_local"
+    cuda_126 = usr_local / "cuda-12.6"
+    cuda_130 = usr_local / "cuda-13.0"
+    cuda_126.mkdir(parents=True)
+    cuda_130.mkdir(parents=True)
+    (cuda_126 / "version.json").write_text('{"cuda":{"version":"12.6.3"}}', encoding="utf-8")
+    (cuda_130 / "version.txt").write_text("CUDA Version 13.0.1\n", encoding="utf-8")
+    rt_info = l1.probe_colab_runtime_and_cuda(release_path=release_file, cuda_parent=usr_local)
+    assert rt_info["colab_runtime_version"] == "release-colab-20261112_RC01"
+    assert [c["name"] for c in rt_info["cuda_paths"]] == ["cuda-12.6", "cuda-13.0"]
+    assert [c["path"] for c in rt_info["cuda_paths"]] == [cuda_126.as_posix(), cuda_130.as_posix()]
+    assert rt_info["cuda_paths"][0]["cuda_version"] == "12.6.3"
+    assert rt_info["cuda_paths"][1]["cuda_version"] == "CUDA Version 13.0.1"
+
+    # 2. HF 429 retry with bounded backoff in run_weights_download + HF_HUB_OFFLINE=1 once staged
+    fake_site = REPO_ROOT / "tests" / "colab" / "fixtures" / "fake_vm_site"
+    monkeypatch.syspath_prepend(str(fake_site))
+    for k in ("HF_HOME", "HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN", "HF_HUB_OFFLINE", "FAKE_HF_EXPECT_TOKEN"):
+        monkeypatch.delenv(k, raising=False)
+
+    blob = _make_safetensors_blob(b"Z" * 256)
+    blob_sha = hashlib.sha256(blob).hexdigest()
+    blobs_dir = tmp_path / "blobs"
+    blobs_dir.mkdir()
+    (blobs_dir / "vae.safetensors").write_bytes(blob)
+    monkeypatch.setenv("FAKE_HF_BLOBS_DIR", str(blobs_dir))
+    monkeypatch.setenv("FAKE_HF_INFO_429_COUNT", "1")
+
+    manifest_p = tmp_path / "m429.json"
+    manifest_p.write_text(
+        json.dumps(
+            [
+                {
+                    "repo": "Comfy-Org/Qwen-Image",
+                    "revision": "1f12b17be14c89b026c51a91d67c32f84bb047bc",
+                    "file": "vae.safetensors",
+                    "dest": "vae",
+                    "sha256": blob_sha,
+                    "licence_id": "Apache-2.0",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    dl_calls = 0
+    staged_src = tmp_path / "downloaded_vae.safetensors"
+    staged_src.write_bytes(blob)
+
+    class _Retry429Proc:
+        def __init__(self, stdout_fh: Any, fail_429: bool) -> None:
+            self._rc = 1 if fail_429 else 0
+            if fail_429:
+                stdout_fh.write("HfHubHTTPError: 429 Client Error: Too Many Requests\n")
+            else:
+                stdout_fh.write(f"FILE_PATH {staged_src}\n")
+            stdout_fh.flush()
+
+        def poll(self) -> int:
+            return self._rc
+
+        def kill(self) -> None:
+            return
+
+        def wait(self) -> int:
+            return self._rc
+
+    def _popen_retry(_cmd: list[str], stdout: Any, **_kw: Any) -> _Retry429Proc:
+        nonlocal dl_calls
+        dl_calls += 1
+        return _Retry429Proc(stdout, fail_429=(dl_calls <= 2))
+
+    sleeps: list[float] = []
+    out_ok = tmp_path / "dl_429_ok.json"
+    rc_ok = l1.run_weights_download(
+        manifest_path=manifest_p,
+        hf_home=tmp_path / "hf_429_ok",
+        models_dir=tmp_path / "models_429_ok",
+        max_seconds_raw="30",
+        backoff_base_s=0.5,
+        log_path=tmp_path / "dl_429_ok.log",
+        out_path=out_ok,
+        popen=_popen_retry,
+        sleep=lambda s: sleeps.append(s),
+    )
+    assert rc_ok == 0
+    assert dl_calls == 3
+    assert os.environ.get("HF_HUB_OFFLINE") == "1"
+    rec_ok = json.loads(out_ok.read_text(encoding="utf-8"))
+    assert rec_ok["http_429_retries"] == 3  # 1 metadata 429 + 2 file-download 429s
+    assert rec_ok["hf_hub_offline_after_stage"] is True
+    assert sleeps == [0.5, 0.5, 1.0]
+
+    # Exhausting max_seconds during persistent 429s refuses DOWNLOAD_TOO_SLOW inside the bound
+    os.environ.pop("HF_HUB_OFFLINE", None)
+    monkeypatch.setenv("FAKE_HF_INFO_429_COUNT", "0")
+    out_exhaust = tmp_path / "dl_429_exhaust.json"
+    clock_vals = iter([0.0, 0.1, 0.2, 0.9, 1.5])
+    rc_exhaust = l1.run_weights_download(
+        manifest_path=manifest_p,
+        hf_home=tmp_path / "hf_429_ex",
+        models_dir=tmp_path / "models_429_ex",
+        max_seconds_raw="1",
+        backoff_base_s=2.0,
+        log_path=tmp_path / "dl_429_ex.log",
+        out_path=out_exhaust,
+        popen=lambda _cmd, stdout, **_kw: _Retry429Proc(stdout, fail_429=True),
+        clock=lambda: next(clock_vals, 2.0),
+        sleep=lambda _s: None,
+    )
+    assert rc_exhaust == 1
+    assert "REFUSED: DOWNLOAD_TOO_SLOW:" in capsys.readouterr().err
+
+    # 3. Heartbeat advances strictly on rendered images (not skipped jobs) and detects stale runs
+    hb_path = tmp_path / "hb" / "render_heartbeat.json"
+    hb0 = l1.write_render_heartbeat(
+        hb_path,
+        window_id="win_hb",
+        state="running",
+        total_jobs=3,
+        skipped_jobs=0,
+        images_rendered=0,
+        heartbeat_seq=0,
+        started_at_epoch=100.0,
+        last_image_at_epoch=None,
+        last_job_id=None,
+    )
+    assert l1.evaluate_render_heartbeat(hb0, max_idle_s=30.0, now_epoch=125.0)["ok"] is True
+    stale0 = l1.evaluate_render_heartbeat(hb0, max_idle_s=30.0, now_epoch=135.0)
+    assert stale0["ok"] is False and stale0["tripped"] is True and stale0["code"] == "RENDER_HEARTBEAT_STALE"
+
+    hb1 = l1.write_render_heartbeat(
+        hb_path,
+        window_id="win_hb",
+        state="running",
+        total_jobs=3,
+        skipped_jobs=1,
+        images_rendered=1,
+        heartbeat_seq=1,
+        started_at_epoch=100.0,
+        last_image_at_epoch=130.0,
+        last_job_id="job_01",
+    )
+    assert l1.evaluate_render_heartbeat(hb1, max_idle_s=30.0, now_epoch=155.0)["ok"] is True
+    assert l1.evaluate_render_heartbeat(hb1, max_idle_s=30.0, now_epoch=165.0)["ok"] is False
+    done_hb = {**hb1, "state": "completed"}
+    assert l1.evaluate_render_heartbeat(done_hb, max_idle_s=1.0, now_epoch=9999.0)["ok"] is True
+
+    # 4. PNG provenance stamp requires both licence=CC-BY-4.0 and credit=mcp-tool-shop on write and read-back
+    raw_png = make_minimal_png_with_prompt({"1": {"class_type": "EmptyImage"}}, seed_byte=7)
+    base_stamp = {
+        "owner": "mcp-tool-shop",
+        "licence": "CC-BY-4.0",
+        "credit": "mcp-tool-shop",
+        "canon_sha": "a" * 40,
+        "entry_id": "tools/compass_01",
+        "entry_sha256": "sha256:" + "b" * 64,
+        "run_id": "run_01",
+        "workflow_sha": "sha256:" + "c" * 64,
+        "window_id": "win_01",
+    }
+    stamped = l1.stamp_png_provenance(raw_png, base_stamp)
+    verified_stamp = l1.verify_png_provenance(stamped, base_stamp)
+    assert verified_stamp["licence"] == "CC-BY-4.0"
+    assert verified_stamp["credit"] == "mcp-tool-shop"
+    with pytest.raises(ValueError, match="PNG_STAMP_MISSING"):
+        l1.stamp_png_provenance(raw_png, {k: v for k, v in base_stamp.items() if k != "credit"})
+    stripped_credit_png = l1.write_png_text_chunks(stamped, {"sdlab:credit": None})
+    with pytest.raises(ValueError, match="PNG_STAMP_MISSING"):
+        l1.verify_png_provenance(stripped_credit_png, base_stamp)

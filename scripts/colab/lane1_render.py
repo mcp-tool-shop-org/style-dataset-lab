@@ -35,13 +35,83 @@ PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PY_VERSION_EXPECTED = "3.14.9"
 UV_PIN = "uv==0.13.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
-CLEARED_LICENCES = {"Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "CC-BY-4.0"}
+# Base model pin: Qwen-Image-2512 (Apache-2.0; rnd licences registry `qwen-image-2512-card`,
+# https://huggingface.co/Qwen/Qwen-Image-2512/blob/25468b98e3276ca6700de15c6628e51b7de54a26/README.md#L2)
+# and Comfy-Org single-file repack `Comfy-Org/Qwen-Image` (Apache-2.0,
+# https://huggingface.co/Comfy-Org/Qwen-Image/blob/1f12b17be14c89b026c51a91d67c32f84bb047bc/README.md#L2).
+PINNED_BASE_MODEL_REPO = "Qwen/Qwen-Image-2512"
+PINNED_BASE_MODEL_REVISION = "25468b98e3276ca6700de15c6628e51b7de54a26"
+PINNED_COMFY_REPACK_REPO = "Comfy-Org/Qwen-Image"
+PINNED_COMFY_REPACK_REVISION = "1f12b17be14c89b026c51a91d67c32f84bb047bc"
+DEFAULT_QWEN_UNET_FILE = "qwen_image_2512_fp8_e4m3fn.safetensors"
+DEFAULT_QWEN_CLIP_FILE = "qwen_2.5_vl_7b_fp8_scaled.safetensors"
+DEFAULT_QWEN_VAE_FILE = "qwen_image_vae.safetensors"
+# Strictly Apache-2.0 or MIT licence ids ONLY. Any other licence id is refused by name.
+CLEARED_LICENCES: dict[str, str] = {
+    "Apache-2.0": "Apache-2.0",
+    "apache-2.0": "Apache-2.0",
+    "MIT": "MIT",
+    "mit": "MIT",
+    "qwen-image-2512-card": "Apache-2.0",
+    "qwen-image-licence": "Apache-2.0",
+    "comfy-org-qwen-image-repack": "Apache-2.0",
+    "taesd-madebyollin": "MIT",
+    "birefnet-mit": "MIT",
+}
+# Never Qwen-Image 2.1 (`qwen-research`), Turbo/2-step/Lightning, or non-official distill weights.
+FORBIDDEN_WEIGHT_MODEL_RE = re.compile(
+    r"(?:qwen[_-]?image[_-]?2[._]1(?![0-9])|turbo|(?:^|[^0-9])2[_-]?steps(?![A-Za-z0-9])|lightning|non_official/|qwen[_-]?image[_-]?distill)",
+    re.IGNORECASE,
+)
+# Background removal: RMBG-2.0 / BRIA is CC-BY-NC-4.0 (never). Only BiRefNet (MIT) is permitted.
+FORBIDDEN_RMBG_RE = re.compile(r"(?:(?:^|[^A-Za-z0-9])rmbg(?![A-Za-z0-9])|rmbg[_-]?2|(?:^|[^A-Za-z0-9])bria(?:ai)?(?![A-Za-z0-9]))", re.IGNORECASE)
+BG_REMOVAL_HINT_RE = re.compile(
+    r"(?:rmbg|bria|birefnet|rembg|inspyrenet|u2net|ben2|remove[_-]?background|bg[_-]?remov|background[_-]?remov|transparent[_-]?background)",
+    re.IGNORECASE,
+)
+BIREFNET_RE = re.compile(r"birefnet", re.IGNORECASE)
+FORBIDDEN_MOUNT_FSTYPES = frozenset(
+    {
+        "fuse",
+        "fuse.drive",
+        "fuse.gcsfuse",
+        "gcsfuse",
+        "fuse.sshfs",
+        "sshfs",
+        "fuse.rclone",
+        "rclone",
+        "davfs",
+        "davfs2",
+        "nfs",
+        "nfs4",
+        "cifs",
+        "smb3",
+        "smbfs",
+        "9p",
+        "ceph",
+        "glusterfs",
+        "lustre",
+    }
+)
+HF_429_RE = re.compile(r"(?:\b429\b|too\s+many\s+requests|rate\s*limit)", re.IGNORECASE)
+HEX40_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+PICTURE_LICENCE_REQUIRED = "CC-BY-4.0"
+PICTURE_CREDIT_REQUIRED = "mcp-tool-shop"
 VALID_WEIGHT_DESTS = ("diffusion_models", "text_encoders", "vae", "loras")
 REAL_MODEL_TEMPLATES = {"qwen_txt2img_lora", "qwen_image"}
 FORBIDDEN_RENDER_TEMPLATES = {"stub_fixture_64"}
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 GIB = 1024**3
 MIB = 1024**2
+
+
+class _LocalRefusal(Exception):
+    """Fallback refusal used only when `lane3_rung.py` is absent (e.g. CPU stub mode)."""
+
+    def __init__(self, code: str, detail: str) -> None:
+        super().__init__(f"{code}: {detail}")
+        self.code = code
+        self.detail = detail
 
 
 def _load_lane3_rung() -> Any:
@@ -54,9 +124,16 @@ def _load_lane3_rung() -> Any:
     return lane3_rung
 
 
+def _refusal_cls() -> type[Exception]:
+    try:
+        return _load_lane3_rung().Refusal
+    except ModuleNotFoundError:
+        return _LocalRefusal
+
+
 def __getattr__(name: str) -> Any:
     if name == "Refusal":
-        return _load_lane3_rung().Refusal
+        return _refusal_cls()
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -118,6 +195,7 @@ except ImportError:
 STAMP_KEYS = {
     "owner": "sdlab:owner",
     "licence": "sdlab:licence",
+    "credit": "sdlab:credit",
     "canon_sha": "sdlab:canon_sha",
     "entry_id": "sdlab:entry_id",
     "entry_sha256": "sdlab:entry_sha256",
@@ -125,7 +203,7 @@ STAMP_KEYS = {
     "workflow_sha": "sdlab:workflow_sha",
     "window_id": "sdlab:window_id",
 }
-REQUIRED_STAMP_FIELDS = ("owner", "licence", "canon_sha", "entry_id", "entry_sha256", "run_id")
+REQUIRED_STAMP_FIELDS = ("owner", "licence", "credit", "canon_sha", "entry_id", "entry_sha256", "run_id")
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -510,12 +588,106 @@ def verify_png_provenance(png_source: Path | bytes, expected: dict[str, Any]) ->
     return parsed
 
 
+def _iter_strings(obj: Any) -> list[str]:
+    found: list[str] = []
+    if isinstance(obj, str):
+        found.append(obj)
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(k, str):
+                found.append(k)
+            found.extend(_iter_strings(v))
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            found.extend(_iter_strings(item))
+    return found
+
+
+def check_background_removal_allowed(
+    workflow: dict[str, Any] | None = None,
+    job: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Refuse any background-removal step unless it is explicitly BiRefNet (MIT).
+
+    RMBG-2.0 (`briaai/RMBG-2.0`) is CC-BY-NC-4.0 and is NEVER permitted anywhere in Lane 1.
+    Returns a normalized BiRefNet spec dict when BiRefNet is requested on `job`, else `None`.
+    """
+    refusal_cls = _refusal_cls()
+    birefnet_spec: dict[str, Any] | None = None
+
+    if isinstance(job, dict):
+        for bg_key in ("background_removal", "bg_removal", "remove_background"):
+            raw_bg = job.get(bg_key)
+            if raw_bg is None or raw_bg is False or (isinstance(raw_bg, str) and raw_bg.strip().lower() in ("", "none")):
+                continue
+            if isinstance(raw_bg, str):
+                s_val = raw_bg.strip()
+                if FORBIDDEN_RMBG_RE.search(s_val) or not BIREFNET_RE.search(s_val):
+                    raise refusal_cls(
+                        "BG_REMOVAL_FORBIDDEN",
+                        f"{bg_key}={s_val!r} is barred; background removal must stay out of the graph unless BiRefNet (MIT) — RMBG-2.0 is CC-BY-NC-4.0 (never)",
+                    )
+                birefnet_spec = {"model_name": s_val, "licence_id": "MIT"}
+            elif isinstance(raw_bg, dict):
+                model_str = str(raw_bg.get("model") or raw_bg.get("model_name") or raw_bg.get("name") or "").strip()
+                lic_str = str(raw_bg.get("licence_id") or "MIT").strip()
+                if FORBIDDEN_RMBG_RE.search(model_str) or not BIREFNET_RE.search(model_str):
+                    raise refusal_cls(
+                        "BG_REMOVAL_FORBIDDEN",
+                        f"{bg_key} model {model_str!r} is barred; only BiRefNet (MIT) is permitted — RMBG-2.0 is CC-BY-NC-4.0 (never)",
+                    )
+                if CLEARED_LICENCES.get(lic_str) != "MIT":
+                    raise refusal_cls(
+                        "BG_REMOVAL_FORBIDDEN",
+                        f"{bg_key} BiRefNet licence_id {lic_str!r} must be MIT",
+                    )
+                birefnet_spec = {"model_name": model_str, "licence_id": "MIT"}
+            else:
+                raise refusal_cls("BG_REMOVAL_FORBIDDEN", f"{bg_key}={raw_bg!r} must be omitted or BiRefNet (MIT)")
+
+        pins_strs = _iter_strings(job.get("model_pins"))
+        for p_str in pins_strs:
+            if FORBIDDEN_RMBG_RE.search(p_str):
+                raise refusal_cls(
+                    "BG_REMOVAL_FORBIDDEN",
+                    f"model_pins references {p_str!r}; RMBG-2.0 / BRIA is CC-BY-NC-4.0 and never allowed",
+                )
+
+    if isinstance(workflow, dict):
+        for node_id, node in workflow.items():
+            if not isinstance(node, dict):
+                continue
+            ctype = str(node.get("class_type") or "")
+            inputs = node.get("inputs") if isinstance(node.get("inputs"), dict) else {}
+            input_values = [v for v in _iter_strings(inputs) if v not in inputs]
+            combined = " ".join([ctype, *input_values])
+            if FORBIDDEN_RMBG_RE.search(combined):
+                raise refusal_cls(
+                    "BG_REMOVAL_FORBIDDEN",
+                    f"node {node_id} ({ctype}) uses RMBG/BRIA ({combined!r}); RMBG-2.0 is CC-BY-NC-4.0 and never allowed",
+                )
+            if BG_REMOVAL_HINT_RE.search(ctype) and not BIREFNET_RE.search(combined):
+                raise refusal_cls(
+                    "BG_REMOVAL_FORBIDDEN",
+                    f"node {node_id} ({ctype}) performs non-BiRefNet background removal; only BiRefNet (MIT) is allowed",
+                )
+
+    return birefnet_spec
+
+
 def build_qwen_lora_graph(job: dict[str, Any]) -> dict[str, Any]:
-    """Build the Qwen-Image LoRA-aware API graph (G3: LoraLoaderModelOnly chain 40.. between 37 and 66)."""
+    """Build the Qwen-Image-2512 LoRA-aware API graph (G3: LoraLoaderModelOnly chain 40.. between 37 and 66)."""
+    birefnet_spec = check_background_removal_allowed(None, job)
     pins = job.get("model_pins") or {}
-    unet = (pins.get("base") or {}).get("name") or "qwen_image_fp8_e4m3fn.safetensors"
-    clip = (pins.get("text_encoder") or {}).get("name") or "qwen_2.5_vl_7b_fp8_scaled.safetensors"
-    vae = (pins.get("vae") or {}).get("name") or "qwen_image_vae.safetensors"
+    unet = (pins.get("base") or pins.get("unet") or {}).get("name") or DEFAULT_QWEN_UNET_FILE
+    clip = (pins.get("text_encoder") or pins.get("clip") or {}).get("name") or DEFAULT_QWEN_CLIP_FILE
+    vae = (pins.get("vae") or {}).get("name") or DEFAULT_QWEN_VAE_FILE
+    for candidate in (unet, clip, vae):
+        if FORBIDDEN_WEIGHT_MODEL_RE.search(str(candidate)):
+            raise _refusal_cls()(
+                "WEIGHTS_MODEL_EXCLUDED",
+                f"model file {candidate!r} is barred (Qwen-Image 2.1, Turbo and distill weights are non-commercial/excluded)",
+            )
     loras = job.get("loras") or pins.get("loras") or []
 
     nodes: dict[str, Any] = {
@@ -523,7 +695,7 @@ def build_qwen_lora_graph(job: dict[str, Any]) -> dict[str, Any]:
         "38": {"class_type": "CLIPLoader", "inputs": {"clip_name": clip, "type": "qwen_image"}},
         "39": {"class_type": "VAELoader", "inputs": {"vae_name": vae}},
         "6": {"class_type": "CLIPTextEncode", "inputs": {"text": job.get("prompt", ""), "clip": ["38", 0]}},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"text": job.get("negative", ""), "clip": ["38", 0]}},
+        "7": {"class_type": "CLIPTextEncode", "inputs": {"text": job.get("negative", job.get("negative_prompt", "")), "clip": ["38", 0]}},
     }
     model_out = ["37", 0]
     for idx, lora in enumerate(loras):
@@ -539,6 +711,7 @@ def build_qwen_lora_graph(job: dict[str, Any]) -> dict[str, Any]:
         }
         model_out = [lid, 0]
 
+    image_out = ["8", 0]
     nodes.update(
         {
             "66": {"class_type": "ModelSamplingAuraFlow", "inputs": {"shift": float(job.get("shift", 3.1)), "model": model_out}},
@@ -562,12 +735,19 @@ def build_qwen_lora_graph(job: dict[str, Any]) -> dict[str, Any]:
                 },
             },
             "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["39", 0]}},
-            "9": {
-                "class_type": "SaveImage",
-                "inputs": {"filename_prefix": f"sdl_{job.get('job_id', 'job')}", "images": ["8", 0]},
-            },
         }
     )
+    if birefnet_spec is not None:
+        nodes["90"] = {
+            "class_type": "BiRefNetRemoveBackground",
+            "inputs": {"image": image_out, "model_name": birefnet_spec["model_name"]},
+        }
+        image_out = ["90", 0]
+    nodes["9"] = {
+        "class_type": "SaveImage",
+        "inputs": {"filename_prefix": f"sdl_{job.get('job_id', 'job')}", "images": image_out},
+    }
+    check_background_removal_allowed(nodes, job)
     return nodes
 
 
@@ -599,7 +779,11 @@ def stage_weights(manifest_path: Path, staging_dir: Path | None = None) -> list[
         if not name or not exp_sha:
             raise ValueError(f"LANE1_WEIGHT_SHA_MISSING: invalid name or sha256 in {item!r}")
         if lic not in CLEARED_LICENCES or not item.get("licence_url") or not item.get("date_read"):
-            raise ValueError(f"LANE1_WEIGHT_LICENCE_INVALID: {name} has uncleared licence {lic!r}")
+            raise ValueError(
+                f"LANE1_WEIGHT_LICENCE_INVALID: {name} has uncleared licence {lic!r} (only Apache-2.0 or MIT allowed)"
+            )
+        if FORBIDDEN_WEIGHT_MODEL_RE.search(str(name)) or FORBIDDEN_RMBG_RE.search(str(name)):
+            raise ValueError(f"LANE1_WEIGHT_LICENCE_INVALID: {name} is an excluded model")
         local_path = Path(item["local_path"]) if item.get("local_path") else (staging_dir / name if staging_dir else None)
         verified = False
         if local_path is not None:
@@ -611,6 +795,79 @@ def stage_weights(manifest_path: Path, staging_dir: Path | None = None) -> list[
             verified = True
         staged.append({**item, "sha256": exp_sha, "verified": verified})
     return staged
+
+
+def probe_colab_runtime_and_cuda(
+    *,
+    env: dict[str, str] | None = None,
+    release_path: Path | None = None,
+    cuda_parent: Path | None = None,
+) -> dict[str, Any]:
+    """Record the Colab runtime version string and the `/usr/local/cuda*` directory listing."""
+    active_env = os.environ if env is None else env
+    rel_file = release_path or Path(active_env.get("SDLAB_COLAB_RELEASE_FILE", "/etc/colab-release"))
+    parent_dir = cuda_parent or Path(active_env.get("SDLAB_CUDA_PARENT_DIR", "/usr/local"))
+
+    runtime_version = "unknown"
+    if rel_file.is_file():
+        raw_rel = rel_file.read_text(encoding="utf-8", errors="replace").strip()
+        if raw_rel:
+            kv: dict[str, str] = {}
+            for ln in raw_rel.splitlines():
+                if "=" in ln:
+                    k, v = ln.split("=", 1)
+                    kv[k.strip()] = v.strip().strip("\"'")
+            runtime_version = (
+                kv.get("COLAB_RELEASE_TAG")
+                or kv.get("RELEASE_TAG")
+                or kv.get("VERSION")
+                or raw_rel.splitlines()[0].strip()
+            )
+    if runtime_version == "unknown":
+        for env_key in ("COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION", "COLAB_RUNTIME_VERSION"):
+            val = (active_env.get(env_key) or "").strip()
+            if val:
+                runtime_version = val
+                break
+
+    cuda_entries: list[dict[str, Any]] = []
+    if parent_dir.is_dir():
+        for entry in sorted(parent_dir.glob("cuda*"), key=lambda p: p.name):
+            is_link = entry.is_symlink()
+            target_str: str | None = None
+            if is_link:
+                try:
+                    target_str = os.readlink(entry)
+                except OSError:
+                    target_str = None
+            cuda_ver: str | None = None
+            ver_json = entry / "version.json"
+            ver_txt = entry / "version.txt"
+            if ver_json.is_file():
+                try:
+                    vj = json.loads(ver_json.read_text(encoding="utf-8"))
+                    cuda_ver = str(((vj.get("cuda") or {}).get("version")) or vj.get("version") or "") or None
+                except (OSError, ValueError):
+                    cuda_ver = None
+            elif ver_txt.is_file():
+                try:
+                    cuda_ver = ver_txt.read_text(encoding="utf-8", errors="replace").splitlines()[0].strip() or None
+                except OSError:
+                    cuda_ver = None
+            cuda_entries.append(
+                {
+                    "name": entry.name,
+                    "path": entry.as_posix(),
+                    "is_symlink": is_link,
+                    "target": target_str,
+                    "cuda_version": cuda_ver,
+                }
+            )
+
+    return {
+        "colab_runtime_version": runtime_version,
+        "cuda_paths": cuda_entries,
+    }
 
 
 def write_window_json(
@@ -633,6 +890,8 @@ def write_window_json(
     ss_runner: Any | None = None,
     system_python_bin: str | Path = "/usr/bin/python3",
     system_python_runner: Any | None = None,
+    colab_release_path: Path | None = None,
+    cuda_parent: Path | None = None,
 ) -> dict[str, Any]:
     host, port = assert_loopback_url(comfy_url)
     py_ver = sys.version.split()[0]
@@ -671,6 +930,7 @@ def write_window_json(
         proc_root=proc_root,
         allow_host_proc=allow_host_proc,
     )
+    rt_cuda = probe_colab_runtime_and_cuda(release_path=colab_release_path, cuda_parent=cuda_parent)
 
     record = {
         "window_id": window_id,
@@ -680,6 +940,9 @@ def write_window_json(
             "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
             "platform": sys.platform,
         },
+        "colab_runtime_version": rt_cuda["colab_runtime_version"],
+        "cuda_paths": rt_cuda["cuda_paths"],
+        "hf_hub_offline": os.environ.get("HF_HUB_OFFLINE") == "1",
         "system_python": measured_sys_py,
         "python": py_ver,
         "python_sha256": py_sha,
@@ -740,6 +1003,7 @@ def load_completed(renders_path: Path, out_dir: Path) -> dict[str, dict[str, Any
                         {
                             "owner": row.get("owner"),
                             "licence": row.get("licence"),
+                            "credit": row.get("credit"),
                             "canon_sha": row.get("canon_sha"),
                             "entry_id": row.get("entry_id"),
                             "entry_sha256": row.get("entry_sha256"),
@@ -786,10 +1050,14 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
             raise refusal_cls("WEIGHTS_LICENCE_INVALID", f"row {idx}: missing licence_id")
         lic_clean = lic.strip()
         if lic_clean not in CLEARED_LICENCES:
-            raise refusal_cls("WEIGHTS_LICENCE_INVALID", f"row {idx}: licence_id {lic_clean!r} is not cleared")
+            raise refusal_cls(
+                "WEIGHTS_LICENCE_INVALID",
+                f"row {idx}: licence_id {lic_clean!r} is not allowed (only Apache-2.0 or MIT ids are cleared)",
+            )
         repo = item.get("repo")
         if not isinstance(repo, str) or not rung.REPO_ID_RE.match(repo.strip()):
             raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: {repo!r} is not a Hugging Face repo id")
+        repo_clean = repo.strip()
         revision = item.get("revision")
         if not isinstance(revision, str) or not rung.REVISION_RE.match(revision.strip()):
             raise refusal_cls("WEIGHTS_REVISION_INVALID", f"row {idx}: revision {revision!r} is not a 40-hex commit")
@@ -802,6 +1070,18 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
             or any(part in ("", ".", "..") for part in rel_file.strip().split("/"))
         ):
             raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: invalid relative file {rel_file!r}")
+        rel_clean = rel_file.strip()
+        for target_str in (repo_clean, rel_clean):
+            if FORBIDDEN_RMBG_RE.search(target_str):
+                raise refusal_cls(
+                    "BG_REMOVAL_FORBIDDEN",
+                    f"row {idx}: {target_str!r} is barred; RMBG-2.0 / BRIA is CC-BY-NC-4.0 and never allowed (only BiRefNet MIT)",
+                )
+            if FORBIDDEN_WEIGHT_MODEL_RE.search(target_str):
+                raise refusal_cls(
+                    "WEIGHTS_MODEL_EXCLUDED",
+                    f"row {idx}: {target_str!r} is barred (Qwen-Image 2.1, Turbo and distill weights are non-commercial/excluded)",
+                )
         dest = item.get("dest")
         if dest not in VALID_WEIGHT_DESTS:
             raise refusal_cls("WEIGHTS_DEST_INVALID", f"row {idx}: dest {dest!r} must be one of {VALID_WEIGHT_DESTS}")
@@ -810,12 +1090,13 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
             raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: sha256 must be a 64-hex digest")
         entries.append(
             {
-                "repo": repo.strip(),
+                "repo": repo_clean,
                 "revision": revision.strip(),
-                "file": rel_file.strip(),
+                "file": rel_clean,
                 "dest": dest,
                 "sha256": norm_sha[7:],
                 "licence_id": lic_clean,
+                "spdx_id": CLEARED_LICENCES[lic_clean],
                 "hf_token_required": bool(item.get("hf_token_required", False)),
             }
         )
@@ -870,6 +1151,23 @@ def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> d
             val = row.get(req_str)
             if not isinstance(val, str) or not val.strip():
                 raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing {req_str}")
+        canon_sha_val = str(row["canon_sha"]).strip()
+        if not HEX40_COMMIT_RE.match(canon_sha_val):
+            raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: canon_sha must be a 40-hex git commit")
+        if normalize_sha256(str(row["entry_sha256"])) is None:
+            raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: entry_sha256 must be a 64-hex sha256")
+        lic_val = row.get("licence")
+        if lic_val != PICTURE_LICENCE_REQUIRED:
+            raise refusal_cls(
+                "RENDER_JOB_INVALID",
+                f"job {job_id}: licence {lic_val!r} must be {PICTURE_LICENCE_REQUIRED!r} (portlight-bounty picture terms)",
+            )
+        credit_val = row.get("credit")
+        if credit_val != PICTURE_CREDIT_REQUIRED:
+            raise refusal_cls(
+                "RENDER_JOB_INVALID",
+                f"job {job_id}: credit {credit_val!r} must be {PICTURE_CREDIT_REQUIRED!r} (portlight-bounty picture terms)",
+            )
         prompt = row.get("prompt")
         if not isinstance(prompt, str) or not prompt.strip():
             raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing prompt")
@@ -890,6 +1188,10 @@ def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> d
         steps = row.get("steps")
         if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
             raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive steps")
+
+        check_background_removal_allowed(row.get("workflow"), row)
+        if not row.get("workflow"):
+            build_qwen_lora_graph({**row, "prompt": "<redacted>"})
 
     return {"jobs_sha256": actual_hex, "job_count": len(seen_ids), "first_job_id": first_job_id}
 
@@ -920,6 +1222,55 @@ def run_validate_inputs(
         "manifest_entries": len(entries),
         "hf_token_required": needs_token,
         "jobs": jobs_info,
+    }
+
+
+def _unescape_mount_field(raw: str) -> str:
+    return raw.replace("\\040", " ").replace("\\011", "\t").replace("\\012", "\n").replace("\\134", "\\")
+
+
+def verify_local_disk_staging(path: Path, *, mounts_path: Path | None = None) -> dict[str, Any]:
+    """Verify `path` is on local VM disk rather than a FUSE / Drive / network mount (never mmap over a mount)."""
+    refusal_cls = _refusal_cls()
+    active_mounts = mounts_path or Path(os.environ.get("SDLAB_PROC_MOUNTS", "/proc/mounts"))
+    raw_posix = path.as_posix()
+    resolved_posix = path.resolve().as_posix()
+
+    for check_p in (raw_posix, resolved_posix):
+        if check_p == "/content/drive" or check_p.startswith("/content/drive/"):
+            raise refusal_cls(
+                "WEIGHTS_MOUNT_FORBIDDEN",
+                f"{path} points into /content/drive; stage weights on local disk, never mmap over a Drive/FUSE mount",
+            )
+
+    best_mp = ""
+    best_fstype = "local"
+    if active_mounts.is_file():
+        for ln in active_mounts.read_text(encoding="utf-8", errors="replace").splitlines():
+            parts = ln.split()
+            if len(parts) < 3:
+                continue
+            mp = _unescape_mount_field(parts[1]).rstrip("/") or "/"
+            fstype = parts[2].lower()
+            for candidate in (resolved_posix, raw_posix):
+                cand_norm = candidate.rstrip("/") or "/"
+                if mp == "/" or cand_norm == mp or cand_norm.startswith(mp + "/"):
+                    if len(mp) >= len(best_mp):
+                        best_mp = mp
+                        best_fstype = fstype
+
+    if best_fstype in FORBIDDEN_MOUNT_FSTYPES or best_fstype.startswith("fuse."):
+        raise refusal_cls(
+            "WEIGHTS_MOUNT_FORBIDDEN",
+            f"{path} resides on mount {best_mp!r} (fstype={best_fstype!r}); stage weights on local disk, never mmap over a mount",
+        )
+
+    return {
+        "path": raw_posix,
+        "resolved": resolved_posix,
+        "mountpoint": best_mp or "/",
+        "fstype": best_fstype,
+        "local_disk": True,
     }
 
 
@@ -980,11 +1331,22 @@ def run_vm_guards(
     smoke_fn: Callable[..., dict[str, Any]] = lane1_gpu_smoke,
     driver_fn: Callable[[], dict[str, Any]] | None = None,
     disk_usage_fn: Callable[[str], Any] = shutil.disk_usage,
+    mounts_path: Path | None = None,
 ) -> int:
     rung = _load_lane3_rung()
     active_driver_fn = driver_fn if driver_fn is not None else rung.query_driver
     rec: dict[str, Any] = {"cpu_stub": cpu_stub}
     refusals: list[tuple[str, str]] = []
+
+    local_mounts: list[dict[str, Any]] = []
+    for stage_p in (hf_home, models_dir):
+        try:
+            local_mounts.append(verify_local_disk_staging(stage_p, mounts_path=mounts_path))
+        except Exception as exc:  # noqa: BLE001
+            code = getattr(exc, "code", "WEIGHTS_MOUNT_FORBIDDEN")
+            detail = getattr(exc, "detail", str(exc))
+            refusals.append((code, detail))
+    rec["local_disk_staging"] = local_mounts
 
     try:
         ram_req = rung.parse_positive_number(ram_required_gib, "HOST_RAM_THRESHOLD_MISSING", "LANE1_HOST_RAM_REQUIRED_GIB")
@@ -1057,6 +1419,15 @@ def expected_file_bytes(repo_id: str, revision: str, filename: str, token: str |
     raise FileNotFoundError(f"{filename} not found in {repo_id}@{revision}")
 
 
+def _is_hf_429(exc_or_text: BaseException | str) -> bool:
+    if isinstance(exc_or_text, BaseException):
+        resp = getattr(exc_or_text, "response", None)
+        if getattr(resp, "status_code", None) == 429:
+            return True
+        return bool(HF_429_RE.search(str(exc_or_text)))
+    return bool(HF_429_RE.search(str(exc_or_text)))
+
+
 def _fail_weights(out_path: Path, rec: dict[str, Any], code: str, detail: str) -> int:
     rung = _load_lane3_rung()
     rec["refusal"] = code
@@ -1075,6 +1446,9 @@ def run_weights_download(
     probe_seconds: float = 60.0,
     probe_bytes: int = 2 * GIB,
     poll_s: float = 0.25,
+    backoff_base_s: float | None = None,
+    max_429_retries: int = 6,
+    mounts_path: Path | None = None,
     log_path: Path,
     out_path: Path,
     expected_fn: Callable[..., int] = expected_file_bytes,
@@ -1085,16 +1459,29 @@ def run_weights_download(
     rung = _load_lane3_rung()
     token = os.environ.get("HF_TOKEN_GGUF_READ") or None
     offline = os.environ.get("HF_HUB_OFFLINE") == "1"
+    eff_backoff_base = (
+        float(backoff_base_s)
+        if backoff_base_s is not None
+        else float(os.environ.get("SDLAB_HF_429_BACKOFF_BASE_S", "1.0"))
+    )
     rec: dict[str, Any] = {
         "token_used": "HF_TOKEN_GGUF_READ" in os.environ,
         "offline": offline,
+        "http_429_retries": 0,
+        "http_429_backoff_seconds": 0.0,
         "files": [],
     }
     try:
         max_seconds = rung.parse_positive_number(max_seconds_raw, "DOWNLOAD_LIMIT_MISSING", "LANE1_DOWNLOAD_MAX_SECONDS")
         entries = validate_weights_manifest(manifest_path)
-    except rung.Refusal as exc:
-        return _fail_weights(out_path, rec, exc.code, exc.detail)
+        rec["local_disk_staging"] = {
+            "hf_home": verify_local_disk_staging(hf_home, mounts_path=mounts_path),
+            "models_dir": verify_local_disk_staging(models_dir, mounts_path=mounts_path),
+        }
+    except Exception as exc:  # noqa: BLE001
+        if hasattr(exc, "code") and hasattr(exc, "detail"):
+            return _fail_weights(out_path, rec, exc.code, exc.detail)
+        raise
 
     rec["max_seconds"] = max_seconds
     rec["probe_window"] = {"seconds": float(probe_seconds), "bytes": int(probe_bytes)}
@@ -1121,66 +1508,140 @@ def run_weights_download(
         cache = rung.repo_cache_dir(hf_home, repo)
         snap_file = cache / "snapshots" / revision / filename
         file_baseline = snap_file.stat().st_size if snap_file.is_file() else 0
-        cache_start_bytes = rung.dir_bytes(cache)
+        file_429_retries = 0
+        file_429_backoff_s = 0.0
+
         if offline:
             expected = file_baseline
         else:
-            try:
-                expected = int(expected_fn(repo, revision, filename, token))
-            except Exception as exc:  # noqa: BLE001
-                code, detail = rung.classify_hub_error(exc)
-                return _fail_weights(out_path, rec, code, f"model_info {repo}@{revision}: {detail}")
-        remaining = max(expected - file_baseline, 0)
-        spent = max(clock() - overall_start, 0.0)
-        budget_s = max(max_seconds - spent, 0.01)
+            info_attempt = 0
+            while True:
+                try:
+                    expected = int(expected_fn(repo, revision, filename, token))
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    if _is_hf_429(exc):
+                        rem_bound = float(max_seconds) - max(clock() - overall_start, 0.0)
+                        if info_attempt < max_429_retries and rem_bound > 0.0:
+                            delay = min(eff_backoff_base * (2**info_attempt), rem_bound)
+                            sleep(delay)
+                            info_attempt += 1
+                            file_429_retries += 1
+                            file_429_backoff_s += delay
+                            rec["http_429_retries"] = int(rec["http_429_retries"]) + 1
+                            rec["http_429_backoff_seconds"] = round(float(rec["http_429_backoff_seconds"]) + delay, 4)
+                            continue
+                        return _fail_weights(
+                            out_path,
+                            rec,
+                            "DOWNLOAD_TOO_SLOW",
+                            f"HTTP 429 rate-limit backoff on model_info {repo}@{revision} exhausted download bound ({max_seconds}s)",
+                        )
+                    code, detail = rung.classify_hub_error(exc)
+                    return _fail_weights(out_path, rec, code, f"model_info {repo}@{revision}: {detail}")
 
-        file_start = clock()
-        hard_stop = threading.Event()
-        item_log = log_path.parent / f".dl_{len(rec['files'])}.log"
-        with item_log.open("w", encoding="utf-8", newline="\n") as log_fh:
-            proc = popen(
-                [sys.executable, "-c", FILE_DOWNLOAD_CHILD, repo, filename, revision],
-                stdout=log_fh,
-                stderr=subprocess.STDOUT,
-                env=env,
-            )
+        dl_attempt = 0
+        while True:
+            cache_start_bytes = rung.dir_bytes(cache)
+            cur_snap_bytes = snap_file.stat().st_size if snap_file.is_file() else file_baseline
+            remaining = max(expected - cur_snap_bytes, 0)
+            spent = max(clock() - overall_start, 0.0)
+            if spent >= float(max_seconds):
+                return _fail_weights(
+                    out_path,
+                    rec,
+                    "DOWNLOAD_TOO_SLOW",
+                    f"download bound ({max_seconds}s) exhausted before staging {repo}:{filename}",
+                )
+            budget_s = max(float(max_seconds) - spent, 0.01)
 
-            def _hard_limit(p: Any = proc, hs: threading.Event = hard_stop) -> None:
-                if p.poll() is None:
-                    hs.set()
-                    p.kill()
+            file_start = clock()
+            hard_stop = threading.Event()
+            item_log = log_path.parent / f".dl_{len(rec['files'])}_{dl_attempt}.log"
+            with item_log.open("w", encoding="utf-8", newline="\n") as log_fh:
+                proc = popen(
+                    [sys.executable, "-c", FILE_DOWNLOAD_CHILD, repo, filename, revision],
+                    stdout=log_fh,
+                    stderr=subprocess.STDOUT,
+                    env=env,
+                )
 
-            timer = threading.Timer(budget_s, _hard_limit)
-            timer.daemon = True
-            timer.start()
-            probe: dict[str, Any] | None = None
-            try:
-                while proc.poll() is None:
-                    sleep(float(poll_s))
-                    elapsed = clock() - file_start
-                    new_bytes = max(rung.dir_bytes(cache) - cache_start_bytes, 0)
-                    if not offline and probe is None and (elapsed >= float(probe_seconds) or new_bytes >= int(probe_bytes)):
-                        probe = rung.evaluate_probe(new_bytes, elapsed, remaining, budget_s)
-                        print("WEIGHTS_DOWNLOAD_PROBE " + json.dumps(probe), flush=True)
-                        if probe["too_slow"]:
-                            proc.kill()
-                            proc.wait()
-                            break
-                rc = proc.wait()
-            finally:
-                timer.cancel()
+                def _hard_limit(p: Any = proc, hs: threading.Event = hard_stop) -> None:
+                    if p.poll() is None:
+                        hs.set()
+                        p.kill()
 
-        elapsed = clock() - file_start
-        raw_log = item_log.read_text(encoding="utf-8", errors="replace")
-        item_log.unlink(missing_ok=True)
-        scrubbed_log = rung.mask_log_text(raw_log)
-        if token is not None and token in scrubbed_log:
-            scrubbed_log = scrubbed_log.replace(token, "[REDACTED]")
-        with log_path.open("a", encoding="utf-8", newline="\n") as main_log:
-            main_log.write(scrubbed_log)
-        log_lines = raw_log.splitlines()
-        new_bytes = max(rung.dir_bytes(cache) - cache_start_bytes, 0)
-        downloaded_path = next((ln.split(" ", 1)[1].strip() for ln in log_lines if ln.startswith("FILE_PATH ")), None)
+                timer = threading.Timer(budget_s, _hard_limit)
+                timer.daemon = True
+                timer.start()
+                probe: dict[str, Any] | None = None
+                try:
+                    while proc.poll() is None:
+                        sleep(float(poll_s))
+                        elapsed = clock() - file_start
+                        new_bytes = max(rung.dir_bytes(cache) - cache_start_bytes, 0)
+                        if not offline and probe is None and (elapsed >= float(probe_seconds) or new_bytes >= int(probe_bytes)):
+                            probe = rung.evaluate_probe(new_bytes, elapsed, remaining, budget_s)
+                            print("WEIGHTS_DOWNLOAD_PROBE " + json.dumps(probe), flush=True)
+                            if probe["too_slow"]:
+                                proc.kill()
+                                proc.wait()
+                                break
+                    rc = proc.wait()
+                finally:
+                    timer.cancel()
+
+            elapsed = clock() - file_start
+            raw_log = item_log.read_text(encoding="utf-8", errors="replace")
+            item_log.unlink(missing_ok=True)
+            scrubbed_log = rung.mask_log_text(raw_log)
+            if token is not None and token in scrubbed_log:
+                scrubbed_log = scrubbed_log.replace(token, "[REDACTED]")
+            with log_path.open("a", encoding="utf-8", newline="\n") as main_log:
+                main_log.write(scrubbed_log)
+            log_lines = raw_log.splitlines()
+            new_bytes = max(rung.dir_bytes(cache) - cache_start_bytes, 0)
+            downloaded_path = next((ln.split(" ", 1)[1].strip() for ln in log_lines if ln.startswith("FILE_PATH ")), None)
+
+            if (
+                rc != 0
+                and not hard_stop.is_set()
+                and _is_hf_429(raw_log)
+            ):
+                rem_bound = float(max_seconds) - max(clock() - overall_start, 0.0)
+                if dl_attempt < max_429_retries and rem_bound > 0.0:
+                    delay = min(eff_backoff_base * (2**dl_attempt), rem_bound)
+                    sleep(delay)
+                    dl_attempt += 1
+                    file_429_retries += 1
+                    file_429_backoff_s += delay
+                    rec["http_429_retries"] = int(rec["http_429_retries"]) + 1
+                    rec["http_429_backoff_seconds"] = round(float(rec["http_429_backoff_seconds"]) + delay, 4)
+                    continue
+                file_rec_429 = {
+                    "repo": repo,
+                    "revision": revision,
+                    "file": filename,
+                    "dest": dest,
+                    "licence_id": entry["licence_id"],
+                    "expected_bytes": expected,
+                    "cached_bytes_at_start": file_baseline,
+                    "downloaded_bytes": new_bytes,
+                    "seconds": round(elapsed, 2),
+                    "probe": probe,
+                    "hard_limit_hit": False,
+                    "http_429_retries": file_429_retries,
+                    "http_429_backoff_seconds": round(file_429_backoff_s, 4),
+                    **rung.count_throttle_signals(log_lines),
+                }
+                rec["files"].append(file_rec_429)
+                return _fail_weights(
+                    out_path,
+                    rec,
+                    "DOWNLOAD_TOO_SLOW",
+                    f"HTTP 429 rate-limit backoff on {repo}:{filename} exhausted download bound ({max_seconds}s)",
+                )
+            break
 
         file_rec: dict[str, Any] = {
             "repo": repo,
@@ -1194,6 +1655,8 @@ def run_weights_download(
             "seconds": round(elapsed, 2),
             "probe": probe,
             "hard_limit_hit": hard_stop.is_set(),
+            "http_429_retries": file_429_retries,
+            "http_429_backoff_seconds": round(file_429_backoff_s, 4),
             **rung.count_throttle_signals(log_lines),
         }
         rec["files"].append(file_rec)
@@ -1222,9 +1685,15 @@ def run_weights_download(
         target_dir = models_dir / dest
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / Path(filename).name
+        if target_path.is_symlink():
+            target_path.unlink()
         shutil.copyfile(downloaded_path, target_path)
+        if target_path.is_symlink():
+            target_path.unlink(missing_ok=True)
+            return _fail_weights(out_path, rec, "WEIGHTS_MOUNT_FORBIDDEN", f"{target_path} must be a regular local file, not a symlink")
         got_sha = sha256_file(target_path)[7:]
         file_rec["staged_path"] = str(target_path)
+        file_rec["staged_on_local_disk"] = True
         file_rec["sha256"] = got_sha
         if got_sha != exp_sha:
             target_path.unlink(missing_ok=True)
@@ -1245,13 +1714,15 @@ def run_weights_download(
                 )
             file_rec["safetensors_verified"] = True
 
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    rec["hf_hub_offline_after_stage"] = True
     rung.write_json(out_path, rec)
     print("WEIGHTS_DOWNLOAD " + json.dumps(rec), flush=True)
     return 0
 
 
 def merge_render_facts(lane1_out: Path, *, render_state: str | None = None, failed_rc: int | None = None) -> dict[str, Any]:
-    """Merge `render_guards.json` and `weights_download.json` into `vm_window.json`."""
+    """Merge `render_guards.json`, `weights_download.json` and `render_heartbeat.json` into `vm_window.json`."""
     vm_win_path = lane1_out / "vm_window.json"
     rec: dict[str, Any] = {}
     if vm_win_path.is_file():
@@ -1259,6 +1730,10 @@ def merge_render_facts(lane1_out: Path, *, render_state: str | None = None, fail
             rec.update(json.loads(vm_win_path.read_text(encoding="utf-8")))
         except ValueError:
             pass
+    if "colab_runtime_version" not in rec or "cuda_paths" not in rec:
+        rt_cuda = probe_colab_runtime_and_cuda()
+        rec.setdefault("colab_runtime_version", rt_cuda["colab_runtime_version"])
+        rec.setdefault("cuda_paths", rt_cuda["cuda_paths"])
     guards_p = lane1_out / "render_guards.json"
     if guards_p.is_file():
         rec["render_guards"] = json.loads(guards_p.read_text(encoding="utf-8"))
@@ -1267,6 +1742,13 @@ def merge_render_facts(lane1_out: Path, *, render_state: str | None = None, fail
         dl = json.loads(dl_p.read_text(encoding="utf-8"))
         rec["weights_download"] = dl
         rec["hf_token_used"] = bool(dl.get("token_used"))
+        if dl.get("hf_hub_offline_after_stage"):
+            rec["hf_hub_offline"] = True
+    hb_p = lane1_out / "render_heartbeat.json"
+    if hb_p.is_file():
+        rec["render_heartbeat"] = json.loads(hb_p.read_text(encoding="utf-8"))
+    if "hf_hub_offline" not in rec:
+        rec["hf_hub_offline"] = os.environ.get("HF_HUB_OFFLINE") == "1"
     if render_state is not None:
         rec["render"] = render_state
     if failed_rc is not None:
@@ -1274,6 +1756,60 @@ def merge_render_facts(lane1_out: Path, *, render_state: str | None = None, fail
     vm_win_path.parent.mkdir(parents=True, exist_ok=True)
     vm_win_path.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
     return rec
+
+
+def write_render_heartbeat(
+    heartbeat_path: Path,
+    *,
+    window_id: str,
+    state: str,
+    total_jobs: int,
+    skipped_jobs: int,
+    images_rendered: int,
+    heartbeat_seq: int,
+    started_at_epoch: float,
+    last_image_at_epoch: float | None,
+    last_job_id: str | None,
+) -> dict[str, Any]:
+    """Write `render_heartbeat.json` whose sequence/timestamp advances ONLY when an image is rendered."""
+    rec = {
+        "window_id": window_id,
+        "state": state,
+        "total_jobs": int(total_jobs),
+        "skipped_jobs": int(skipped_jobs),
+        "images_rendered": int(images_rendered),
+        "heartbeat_seq": int(heartbeat_seq),
+        "started_at_epoch": round(float(started_at_epoch), 6),
+        "last_image_at_epoch": round(float(last_image_at_epoch), 6) if last_image_at_epoch is not None else None,
+        "last_job_id": last_job_id,
+    }
+    heartbeat_path.parent.mkdir(parents=True, exist_ok=True)
+    heartbeat_path.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return rec
+
+
+def evaluate_render_heartbeat(
+    heartbeat: dict[str, Any],
+    *,
+    now_epoch: float,
+    max_idle_s: float,
+) -> dict[str, Any]:
+    """Evaluate an image-tied `render_heartbeat.json` record against `max_idle_s`."""
+    anchor = heartbeat.get("last_image_at_epoch")
+    if anchor is None:
+        anchor = heartbeat.get("started_at_epoch") or 0.0
+    idle_s = round(max(0.0, float(now_epoch) - float(anchor)), 3)
+    state = str(heartbeat.get("state") or "running")
+    stale = state == "running" and idle_s > float(max_idle_s)
+    return {
+        "ok": not stale,
+        "tripped": stale,
+        "code": "RENDER_HEARTBEAT_STALE" if stale else None,
+        "idle_seconds": idle_s,
+        "max_idle_seconds": float(max_idle_s),
+        "images_rendered": int(heartbeat.get("images_rendered") or 0),
+        "heartbeat_seq": int(heartbeat.get("heartbeat_seq") or 0),
+    }
 
 
 def read_peak_vram_mib(
@@ -1335,7 +1871,7 @@ def run_queue(
     renders_path: Path,
     out_dir: Path,
     comfy_url: str,
-    window_id: str,
+    window_id: str = "win_default",
     copy_back_dir: Path | None = None,
     copy_back_every: int = 5,
     kill_after: int | None = None,
@@ -1348,6 +1884,7 @@ def run_queue(
     out_dir.mkdir(parents=True, exist_ok=True)
     renders_path.parent.mkdir(parents=True, exist_ok=True)
     current_json = renders_path.parent / "current.json"
+    heartbeat_path = renders_path.parent / "render_heartbeat.json"
 
     # Query /system_stats to log device & prove CPU/CUDA execution
     if system_stats_fetcher is not None:
@@ -1365,14 +1902,43 @@ def run_queue(
 
     skipped_count = 0
     rendered_count = 0
+    heartbeat_seq = 0
     copy_back_count = 0
     killed_early = False
+    started_at_epoch = time.time()
+    last_image_at_epoch: float | None = None
+    last_rendered_job_id: str | None = None
+
+    write_render_heartbeat(
+        heartbeat_path,
+        window_id=window_id,
+        state="running",
+        total_jobs=len(jobs),
+        skipped_jobs=0,
+        images_rendered=0,
+        heartbeat_seq=0,
+        started_at_epoch=started_at_epoch,
+        last_image_at_epoch=None,
+        last_job_id=None,
+    )
 
     for job in jobs:
         job_id = job["job_id"]
         if job_id in completed:
             print(f"SKIP {job_id} (already in renders.jsonl with verified PNG stamp and sha256)", flush=True)
             skipped_count += 1
+            write_render_heartbeat(
+                heartbeat_path,
+                window_id=window_id,
+                state="running",
+                total_jobs=len(jobs),
+                skipped_jobs=skipped_count,
+                images_rendered=rendered_count,
+                heartbeat_seq=heartbeat_seq,
+                started_at_epoch=started_at_epoch,
+                last_image_at_epoch=last_image_at_epoch,
+                last_job_id=last_rendered_job_id,
+            )
             continue
 
         t0 = time.time()
@@ -1382,10 +1948,12 @@ def run_queue(
                 workflow = build_stub_fixture_graph(job)
             else:
                 workflow = build_qwen_lora_graph(job)
+        check_background_removal_allowed(workflow, job)
 
         stamp_meta = {
             "owner": job.get("owner", "mcp-tool-shop"),
-            "licence": job.get("licence", "CC-BY-4.0"),
+            "licence": job.get("licence", PICTURE_LICENCE_REQUIRED),
+            "credit": job.get("credit", PICTURE_CREDIT_REQUIRED),
             "canon_sha": job["canon_sha"],
             "entry_id": job["entry_id"],
             "entry_sha256": job["entry_sha256"],
@@ -1423,7 +1991,8 @@ def run_queue(
 
         verified_stamp = verify_png_provenance(out_path, stamp_meta)
         png_sha = sha256_file(out_path)
-        elapsed_s = max(0.0, time.time() - t0)
+        now_done = time.time()
+        elapsed_s = max(0.0, now_done - t0)
         wall_s = round(elapsed_s, 3)
         wall_ms = round(elapsed_s * 1000)
         peak_vram_mib = read_peak_vram_mib(
@@ -1449,6 +2018,7 @@ def run_queue(
             "entry_sha256": job["entry_sha256"],
             "owner": verified_stamp["owner"],
             "licence": verified_stamp["licence"],
+            "credit": verified_stamp["credit"],
             "model_pins": job.get("model_pins"),
             "stamp_verified": True,
         }
@@ -1457,10 +2027,26 @@ def run_queue(
 
         completed_files.add(output_file)
         rendered_count += 1
+        heartbeat_seq += 1
+        last_image_at_epoch = now_done
+        last_rendered_job_id = job_id
+        hb_rec = write_render_heartbeat(
+            heartbeat_path,
+            window_id=window_id,
+            state="running",
+            total_jobs=len(jobs),
+            skipped_jobs=skipped_count,
+            images_rendered=rendered_count,
+            heartbeat_seq=heartbeat_seq,
+            started_at_epoch=started_at_epoch,
+            last_image_at_epoch=last_image_at_epoch,
+            last_job_id=last_rendered_job_id,
+        )
         print(
             f"RENDERED {job_id} -> {output_file} ({png_sha}, {wall_s}s, peak_vram_mib={peak_vram_mib}, stamp_verified=True)",
             flush=True,
         )
+        print(f"RENDER_HEARTBEAT {json.dumps(hb_rec)}", flush=True)
 
         current_json.write_text(
             json.dumps(
@@ -1485,6 +2071,19 @@ def run_queue(
             killed_early = True
             break
 
+    write_render_heartbeat(
+        heartbeat_path,
+        window_id=window_id,
+        state="killed_early" if killed_early else "completed",
+        total_jobs=len(jobs),
+        skipped_jobs=skipped_count,
+        images_rendered=rendered_count,
+        heartbeat_seq=heartbeat_seq,
+        started_at_epoch=started_at_epoch,
+        last_image_at_epoch=last_image_at_epoch,
+        last_job_id=last_rendered_job_id,
+    )
+
     if (
         copy_back_dir
         and not killed_early
@@ -1500,6 +2099,7 @@ def run_queue(
         "skipped": skipped_count,
         "copy_backs": copy_back_count,
         "killed_early": killed_early,
+        "heartbeat_seq": heartbeat_seq,
     }
     print(f"SUMMARY {json.dumps(summary)}", flush=True)
     return summary

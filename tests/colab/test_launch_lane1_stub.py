@@ -1107,6 +1107,8 @@ def _make_render_fixture(root: Path, *, hf_token_required: bool = False) -> dict
             "canon_sha": "a881cb5ba656e0618080d2269498fda7f36ac93a",
             "entry_id": f"ships/brig_{idx}",
             "entry_sha256": "sha256:" + (f"{idx}" * 64)[:64],
+            "licence": "CC-BY-4.0",
+            "credit": "mcp-tool-shop",
             "workflow_sha": "sha256:" + "d" * 64,
             "model_pins": model_pins,
         }
@@ -1397,7 +1399,7 @@ def test_lane1_render_weights_sha_mismatch_on_vm_stops_before_comfy_starts(tmp_p
 
 def test_lane1_render_runs_comfy_without_cpu_on_loopback_and_stub_keeps_cpu(tmp_path: Path) -> None:
     # 1. --render starts ComfyUI without --cpu on 127.0.0.1, runs bootstrap kill + resume, stamps PNGs, records wall_s & peak_vram_mib
-    secret_tok = "hf_secretLane1RenderReadTok9876543210abcd"
+    secret_tok = "hf_secretLane1ReadTok987654"
     fx = _make_render_fixture(tmp_path / "render_ok", hf_token_required=True)
     env = fx["env"]
     env["HF_TOKEN_GGUF_READ"] = secret_tok
@@ -1483,8 +1485,8 @@ def test_lane1_render_planned_colab_calls_in_order_and_stop(tmp_path: Path) -> N
     ]
     assert calls[0] == "CALL usage"
     assert calls[1] == f"CALL new --gpu A100 --high-mem -s {session}"
-    assert calls[2] == "CALL usage"
-    assert calls[3] == "CALL sessions"
+    assert calls[2] == "CALL sessions"
+    assert calls[3] == "CALL usage"
 
     upload_targets = [ln.split()[-1] for ln in calls if ln.startswith(f"CALL upload -s {session} ")]
     assert upload_targets == [
@@ -1605,7 +1607,7 @@ def test_lane1_stub_path_unchanged(tmp_path: Path) -> None:
     assert '"template_id":"stub_fixture_64"' in remote_sh
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["status"] == "ok"
-    assert win["listening_sockets"] == ["127.0.0.1:8188"]
+    assert win.get("listening_sockets") == ["127.0.0.1:8188"]
     assert "lane1_stub_bundle.tar.gz" in win["downloaded_files"]
     assert "STOP -s sdlab-l1-stub-unchanged" in (state_dir / "stops.log").read_text(encoding="utf-8")
 
@@ -1770,7 +1772,7 @@ def _assert_stub_bundle_succeeded(out_dir: Path, res: subprocess.CompletedProces
     assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["status"] == "ok"
-    assert win["listening_sockets"] == ["127.0.0.1:8188"]
+    assert win.get("listening_sockets") == ["127.0.0.1:8188"]
     assert "lane1_stub_bundle.tar.gz" in win["downloaded_files"]
     bundle_path = out_dir / "lane1_stub_bundle.tar.gz"
     assert tarfile.is_tarfile(bundle_path), "stub mode must produce a real tar.gz bundle from lane1_render.py"
@@ -1840,3 +1842,197 @@ def test_lane1_stub_negative_control_goes_red_on_failing_or_missing_bundle(tmp_p
     with pytest.raises(AssertionError):
         _assert_stub_bundle_succeeded(out_rf, res_rf, tmp_path / "ext_rf")
 
+
+def test_render_end_to_end_records_runtime_cuda_hf_429_offline_heartbeat_and_cc_by_credit(tmp_path: Path) -> None:
+    import lane1_jobs_from_canon as ljc
+    import lane1_render as l1
+
+    fx = _make_render_fixture(tmp_path / "fx_seed18")
+    _override_worktree_input_shas(fx["env"])
+
+    # Build jobs.jsonl via lane1_jobs_from_canon.py from a synthetic MIT git canon repo
+    canon_repo = tmp_path / "synth_canon"
+    (canon_repo / "canon" / "props").mkdir(parents=True)
+    for idx in (1, 2, 3):
+        (canon_repo / "canon" / "props" / f"item_{idx:02d}.md").write_text(
+            f'---\ntitle: Item {idx}\nprompt: "synthetic clean ink object {idx}"\n---\n# Item {idx}\n',
+            encoding="utf-8",
+        )
+    git_env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "Synthetic Test",
+        "GIT_AUTHOR_EMAIL": "synthetic@example.invalid",
+        "GIT_COMMITTER_NAME": "Synthetic Test",
+        "GIT_COMMITTER_EMAIL": "synthetic@example.invalid",
+    }
+    subprocess.run(["git", "init"], cwd=str(canon_repo), env=git_env, check=True, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=str(canon_repo), env=git_env, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "synthetic canon"],
+        cwd=str(canon_repo),
+        env=git_env,
+        check=True,
+        capture_output=True,
+    )
+    canon_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(canon_repo),
+        env=git_env,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    built_jobs = tmp_path / "canon_built_jobs.jsonl"
+    built = ljc.build_jobs_from_canon(
+        canon_dir=canon_repo / "canon",
+        canon_commit=canon_sha,
+        entry_ids=["props/item_01", "props/item_02", "props/item_03"],
+        out_path=built_jobs,
+        run_id="run_seed18_01",
+        unet_name="qwen_image_fp8.safetensors",
+        clip_name="qwen_2.5_vl_7b.safetensors",
+        vae_name="qwen_image_vae.safetensors",
+        loras=[{"name": "style_r1.safetensors", "weight": 0.8}],
+    )
+
+    fx["env"]["FAKE_HF_INFO_429_COUNT"] = "1"
+    fx["env"]["FAKE_HF_429_FAIL_COUNT"] = "2"
+    fx["env"]["FAKE_HF_429_BACKOFF_BASE_S"] = "0.01"
+
+    args = _replace_arg(fx["base_args"], "--jobs", _to_posix(built_jobs))
+    args = _replace_arg(args, "--jobs-sha256", built["jobs_sha256"])
+    out_dir = tmp_path / "out_seed18"
+    res = _run_launcher([*args, "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-seed18"], fx["env"], timeout=60)
+    assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["status"] == "ok"
+    assert win["colab_runtime_version"] == "release-colab-20261110_RC00"
+    assert any(str(c.get("name", "")).startswith("cuda") for c in win["cuda_paths"])
+    assert win["weights_download"]["http_429_retries"] == 3
+    assert win["weights_download"]["hf_hub_offline_after_stage"] is True
+    assert win["render_heartbeat"]["state"] == "completed"
+    assert win["render_heartbeat"]["images_rendered"] == 2
+    assert win["render_heartbeat"]["skipped_jobs"] == 1
+    assert win["session_open_status"]["classification"] == "opened"
+    assert win["session_open_status"]["http_status"] == 200
+
+    comfy_started = json.loads((fx["state_dir"] / "comfy_started.json").read_text(encoding="utf-8"))
+    assert comfy_started["hf_hub_offline"] == "1"
+
+    ext_dir = tmp_path / "extracted_seed18"
+    ext_dir.mkdir()
+    with tarfile.open(out_dir / "lane1_render_bundle.tar.gz", "r:gz") as tf:
+        tf.extractall(ext_dir, filter="data")
+
+    render_rows = [json.loads(ln) for ln in (ext_dir / "renders.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
+    assert len(render_rows) == 3
+    for r in render_rows:
+        assert r["licence"] == "CC-BY-4.0"
+        assert r["credit"] == "mcp-tool-shop"
+        assert r["canon_sha"] == canon_sha
+        png_p = ext_dir / "pngs" / r["output_file"]
+        stamp = l1.read_png_text_chunks(png_p.read_bytes())
+        assert stamp["sdlab:licence"] == "CC-BY-4.0"
+        assert stamp["sdlab:credit"] == "mcp-tool-shop"
+        assert stamp["sdlab:canon_sha"] == canon_sha
+
+
+def test_session_open_412_account_cap_never_retries_and_503_pool_empty_is_distinct(tmp_path: Path) -> None:
+    # 1. HTTP 412 -> SESSION_OPEN_412_ACCOUNT_CAP, classification=account_cap, retry_policy=never_retry, 1 attempt
+    _, st_412, env_412 = _make_fake_colab_env(tmp_path / "open_412")
+    _override_worktree_input_shas(env_412)
+    env_412["FAKE_COLAB_NEW_HTTP_STATUS"] = "412"
+    out_412 = tmp_path / "out_412"
+    res_412 = _run_launcher(["--out-dir", _to_posix(out_412), "--session", "sdlab-l1-412"], env_412)
+    assert res_412.returncode != 0
+    assert (st_412 / "new_attempts.txt").read_text(encoding="utf-8").strip() == "1"
+    assert not (st_412 / "stops.log").exists()
+    win_412 = json.loads((out_412 / "window.json").read_text(encoding="utf-8"))
+    outc_412 = json.loads((out_412 / "outcome.draft.json").read_text(encoding="utf-8"))
+    assert win_412["status"] == "SESSION_OPEN_412_ACCOUNT_CAP"
+    assert win_412["refusal_code"] == "SESSION_OPEN_412_ACCOUNT_CAP"
+    assert win_412["phase"] == "pre_open"
+    assert win_412["session_open_status"] == {
+        "http_status": 412,
+        "classification": "account_cap",
+        "retry_policy": "never_retry",
+        "attempts": 1,
+        "rc": 1,
+    }
+    assert outc_412["refusal_code"] == "SESSION_OPEN_412_ACCOUNT_CAP"
+    assert outc_412["session_open_status"]["retry_policy"] == "never_retry"
+
+    # 2. HTTP 503 -> SESSION_OPEN_503_POOL_EMPTY, classification=pool_empty, retry_policy=retry_later, 1 attempt
+    _, st_503, env_503 = _make_fake_colab_env(tmp_path / "open_503")
+    _override_worktree_input_shas(env_503)
+    env_503["FAKE_COLAB_NEW_HTTP_STATUS"] = "503"
+    out_503 = tmp_path / "out_503"
+    res_503 = _run_launcher(["--out-dir", _to_posix(out_503), "--session", "sdlab-l1-503"], env_503)
+    assert res_503.returncode != 0
+    assert (st_503 / "new_attempts.txt").read_text(encoding="utf-8").strip() == "1"
+    assert not (st_503 / "stops.log").exists()
+    win_503 = json.loads((out_503 / "window.json").read_text(encoding="utf-8"))
+    outc_503 = json.loads((out_503 / "outcome.draft.json").read_text(encoding="utf-8"))
+    assert win_503["status"] == "SESSION_OPEN_503_POOL_EMPTY"
+    assert win_503["refusal_code"] == "SESSION_OPEN_503_POOL_EMPTY"
+    assert win_503["phase"] == "pre_open"
+    assert win_503["session_open_status"] == {
+        "http_status": 503,
+        "classification": "pool_empty",
+        "retry_policy": "retry_later",
+        "attempts": 1,
+        "rc": 1,
+    }
+    assert outc_503["refusal_code"] == "SESSION_OPEN_503_POOL_EMPTY"
+    assert outc_503["session_open_status"]["retry_policy"] == "retry_later"
+
+    # 3. Generic HTTP 500 -> SESSION_OPEN_FAILED
+    _, st_500, env_500 = _make_fake_colab_env(tmp_path / "open_500")
+    _override_worktree_input_shas(env_500)
+    env_500["FAKE_COLAB_NEW_HTTP_STATUS"] = "500"
+    out_500 = tmp_path / "out_500"
+    res_500 = _run_launcher(["--out-dir", _to_posix(out_500), "--session", "sdlab-l1-500"], env_500)
+    assert res_500.returncode != 0
+    win_500 = json.loads((out_500 / "window.json").read_text(encoding="utf-8"))
+    assert win_500["status"] == "SESSION_OPEN_FAILED"
+    assert win_500["session_open_status"]["classification"] == "open_failed"
+    assert "STOP -s sdlab-l1-500" in (st_500 / "stops.log").read_text(encoding="utf-8")
+
+
+def test_render_vm_refuses_staging_weights_over_fuse_mount_and_rmbg_before_open(tmp_path: Path) -> None:
+    # 1. Pre-open refusal when a job asks for RMBG-2.0 background removal (zero colab calls)
+    fx_rmbg = _make_render_fixture(tmp_path / "fx_rmbg")
+    _override_worktree_input_shas(fx_rmbg["env"])
+    bad_job = {
+        **fx_rmbg["jobs_rows"][0],
+        "workflow": {
+            "1": {"class_type": "BRIA_RMBG_Zho", "inputs": {"model": "RMBG-2.0"}},
+        },
+    }
+    rmbg_jobs = tmp_path / "rmbg_jobs.jsonl"
+    rmbg_jobs.write_text(json.dumps(bad_job) + "\n", encoding="utf-8", newline="\n")
+    rmbg_sha = hashlib.sha256(rmbg_jobs.read_bytes()).hexdigest()
+    args_rmbg = _replace_arg(fx_rmbg["base_args"], "--jobs", _to_posix(rmbg_jobs))
+    args_rmbg = _replace_arg(args_rmbg, "--jobs-sha256", rmbg_sha)
+    out_rmbg = tmp_path / "out_rmbg"
+    res_rmbg = _run_launcher([*args_rmbg, "--out-dir", _to_posix(out_rmbg), "--session", "sdlab-l1-rmbg"], fx_rmbg["env"])
+    assert res_rmbg.returncode != 0
+    assert not (fx_rmbg["state_dir"] / "calls.log").exists()
+    win_rmbg = json.loads((out_rmbg / "window.json").read_text(encoding="utf-8"))
+    assert win_rmbg["status"] == "BG_REMOVAL_FORBIDDEN"
+
+    # 2. VM-side refusal when ComfyUI/models sits on a FUSE mount (never mmap weights over a mount)
+    fx_mnt = _make_render_fixture(tmp_path / "fx_mount")
+    _override_worktree_input_shas(fx_mnt["env"])
+    fx_mnt["env"]["FAKE_VM_MOUNTS_LINE"] = "drive __CONTENT__/ComfyUI/models fuse.drive rw 0 0"
+    out_mnt = tmp_path / "out_mount"
+    res_mnt = _run_launcher(
+        [*fx_mnt["base_args"], "--out-dir", _to_posix(out_mnt), "--session", "sdlab-l1-mount"],
+        fx_mnt["env"],
+    )
+    assert res_mnt.returncode != 0
+    win_mnt = json.loads((out_mnt / "window.json").read_text(encoding="utf-8"))
+    assert win_mnt["status"] == "WEIGHTS_MOUNT_FORBIDDEN"
+    assert "STOP -s sdlab-l1-mount" in (fx_mnt["state_dir"] / "stops.log").read_text(encoding="utf-8")

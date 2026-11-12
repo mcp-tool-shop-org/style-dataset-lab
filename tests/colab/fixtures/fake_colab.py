@@ -220,7 +220,7 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
         "#!/usr/bin/env bash\n"
         "#SDLAB_FAKE_COLAB_CLI=1\n"
         "set -euo pipefail\n"
-        f"exec '{py_posix}' '{fake_py_posix}' \"$@\"\n",
+        f"exec '{py_posix}' -S '{fake_py_posix}' \"$@\"\n",
         encoding="utf-8",
         newline="\n",
     )
@@ -230,6 +230,7 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
     _write_fake_remote_scripts(content_dir)
 
     env = os.environ.copy()
+    env.pop("CUDA_VISIBLE_DEVICES", None)
     git_bash_bin = Path("C:/Program Files/Git/bin")
     git_usr_bin = Path("C:/Program Files/Git/usr/bin")
     extra_bins = [f"{_to_posix(bin_dir)}", str(bin_dir)]
@@ -700,10 +701,20 @@ prepare_fake_lane1_vm_runtime() {
   {
     printf '%s\n' "${FAKE_VM_MEM_TOTAL_KB:-175000000}" "${FAKE_VM_MEM_AVAILABLE_KB:-170000000}"
   } | awk 'NR==1{print "MemTotal:       " $1 " kB"} NR==2{print "MemFree:        " $1 " kB"; print "MemAvailable:   " $1 " kB"}' > .fake-vm-meminfo
-  mkdir -p .fake-vm-shm .fake-proc/net .fake-site .fake-vm-bin ComfyUI venv-lane1/bin
+  mkdir -p .fake-vm-shm .fake-proc/net .fake-site .fake-vm-bin .fake-usr-local/cuda-12.6 .fake-usr-local/cuda-13.0 ComfyUI venv-lane1/bin
+  printf 'COLAB_RELEASE_TAG=%s\n' "${FAKE_COLAB_RUNTIME_VERSION:-release-colab-20261110_RC00}" > .fake-colab-release
+  printf '{"cuda":{"version":"12.6.3"}}\n' > .fake-usr-local/cuda-12.6/version.json
+  printf '{"cuda":{"version":"13.0.0"}}\n' > .fake-usr-local/cuda-13.0/version.json
+  ln -sfn cuda-12.6 .fake-usr-local/cuda 2>/dev/null || mkdir -p .fake-usr-local/cuda
+  if [ -n "${FAKE_VM_MOUNTS_LINE:-}" ]; then
+    printf '%s\n' "${FAKE_VM_MOUNTS_LINE//__CONTENT__/${PWD}}" > .fake-vm-mounts
+  else
+    printf 'overlay / overlay rw,relatime 0 0\n' > .fake-vm-mounts
+  fi
   FAKE_HOST_PY="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
-  FAKE_HOST_PY_VER="$("${FAKE_HOST_PY}" -c 'import sys; print(sys.version.split()[0])')"
-  FAKE_PY_PATH="$("${FAKE_HOST_PY}" -c 'import os, pathlib; print(os.pathsep.join([str(pathlib.Path(".fake-site").resolve()), os.environ["FAKE_VM_SITE"]]))')"
+  IFS=$'\t' read -r FAKE_HOST_PY_VER FAKE_PY_PATH < <(
+    "${FAKE_HOST_PY}" -S -c 'import os, pathlib, sys; print(sys.version.split()[0] + "\t" + os.pathsep.join([str(pathlib.Path(".fake-site").resolve()), os.environ["FAKE_VM_SITE"]]))'
+  )
   printf '#!/usr/bin/env bash\necho "Python 3.13.16"\n' > .fake-vm-bin/sys_python3
   chmod +x .fake-vm-bin/sys_python3
   cat > .fake-site/sitecustomize.py << 'SITEEOF'
@@ -717,6 +728,7 @@ SITEEOF
   {
     echo '#!/usr/bin/env bash'
     echo 'export SDLAB_CALLER_BASHPID="${BASHPID:-$$}"'
+    echo 'case "${1:-}" in */ComfyUI/main.py) exec "'"${FAKE_HOST_PY}"'" -S "$@" ;; esac'
     echo 'exec "'"${FAKE_HOST_PY}"'" "$@"'
   } > venv-lane1/bin/python
   chmod +x venv-lane1/bin/python
@@ -759,6 +771,7 @@ started_info = {
     "listen": listen_host,
     "port": port,
     "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+    "hf_hub_offline": os.environ.get("HF_HUB_OFFLINE"),
 }
 if state_dir:
     Path(state_dir, "comfy_started.json").write_text(
@@ -952,7 +965,7 @@ COMFYEOF
 }
 
 stop_fake_comfy_if_running() {
-  "${FAKE_HOST_PY}" - << 'STOPEOF' 2>/dev/null || true
+  "${FAKE_HOST_PY}" -S - << 'STOPEOF' 2>/dev/null || true
 import json
 import os
 import signal
@@ -1007,6 +1020,10 @@ run_uploaded_render_block() {
   SDLAB_EXPECTED_PYTHON="${FAKE_HOST_PY_VER}" \
   SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
   SDLAB_FAKE_SYS_PYTHON_BIN="${PWD}/.fake-vm-bin/sys_python3" \
+  SDLAB_COLAB_RELEASE_FILE="${PWD}/.fake-colab-release" \
+  SDLAB_CUDA_PARENT_DIR="${PWD}/.fake-usr-local" \
+  SDLAB_PROC_MOUNTS="${PWD}/.fake-vm-mounts" \
+  SDLAB_HF_429_BACKOFF_BASE_S="${FAKE_HF_429_BACKOFF_BASE_S:-0.02}" \
   PATH="${PWD}/.fake-vm-bin:${PATH}" \
   PYTHONPATH="${FAKE_PY_PATH}" \
     bash "${PWD}/remote_lane1_stub.sh.renderblock"
@@ -1033,6 +1050,7 @@ run_uploaded_stub_block() {
     failing_bundle)
       echo "run" > lane1_out/phase.txt
       emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "'"${PINNED_COMFYUI_COMMIT}"'", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
       printf '{"job_id":"stub_01","status":"failed","error":"simulated_stub_render_failure"}\n' > lane1_out/renders.jsonl
       tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
       return 0
@@ -1045,28 +1063,29 @@ run_uploaded_stub_block() {
       ;;
   esac
   prepare_fake_lane1_vm_runtime
-  local stub_port
-  stub_port="$("${FAKE_HOST_PY}" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
-  "${FAKE_HOST_PY}" - "${uploaded_sh}" "${stub_port}" << 'STUBBLKEOF'
+  "${FAKE_HOST_PY}" -S - "${uploaded_sh}" "${PWD}" << 'STUBBLKEOF'
+import socket
 import sys
 from pathlib import Path
 
 src = Path(sys.argv[1]).read_text(encoding="utf-8")
-port = int(sys.argv[2])
+pwd_str = sys.argv[2]
+with socket.socket() as s:
+    s.bind(("127.0.0.1", 0))
+    port = int(s.getsockname()[1])
 marker_start = 'if [ "${LANE1_MODE:-stub}" = "stub" ]; then\n'
 marker_end = "\nelse\n# >>> sdlab-lane1-render"
 if marker_start not in src or marker_end not in src:
     sys.stderr.write("REFUSED: STUB_BLOCK_MISSING: uploaded script has no stub mode branch\n")
     raise SystemExit(1)
 body = src.split(marker_start, 1)[1].split(marker_end, 1)[0]
-body = body.replace("    sleep 1\n", "    sleep 0.05\n")
+body = body.replace("    sleep 1\n", "    sleep 0.02\n")
 body = body.replace("--port 8188", f"--port {port}")
 body = body.replace("127.0.0.1:8188", f"127.0.0.1:{port}")
-body = body.replace("/content/lane1_render.py \\\n", f"/content/lane1_render.py --comfy-url http://127.0.0.1:{port} \\\n")
-Path(".stubblock.raw").write_text("set -euo pipefail\n" + body + "\n", encoding="utf-8", newline="\n")
+body = body.replace("/content/lane1_render.py ", f"/content/lane1_render.py --comfy-url http://127.0.0.1:{port} ")
+body = body.replace("/content", pwd_str)
+Path("remote_lane1_stub.sh.stubblock").write_text("set -euo pipefail\n" + body + "\n", encoding="utf-8", newline="\n")
 STUBBLKEOF
-  sed "s#/content#${PWD}#g" .stubblock.raw > remote_lane1_stub.sh.stubblock
-  rm -f .stubblock.raw
 
   (
     while true; do
@@ -1083,6 +1102,9 @@ STUBBLKEOF
   SDLAB_FAKE_VENV_PYTHON_VER="3.14.9" \
   SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
   SDLAB_FAKE_SYS_PYTHON_BIN="${PWD}/.fake-vm-bin/sys_python3" \
+  SDLAB_COLAB_RELEASE_FILE="${PWD}/.fake-colab-release" \
+  SDLAB_CUDA_PARENT_DIR="${PWD}/.fake-usr-local" \
+  SDLAB_PROC_MOUNTS="${PWD}/.fake-vm-mounts" \
   PATH="${PWD}/.fake-vm-bin:${PATH}" \
   PYTHONPATH="${FAKE_PY_PATH}" \
     bash "${PWD}/remote_lane1_stub.sh.stubblock"
@@ -1773,6 +1795,24 @@ def main(argv: list[str] | None = None) -> int:
             held = res.returncode != 0
         with (state_dir / "lock.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
+        new_cnt_f = state_dir / "new_attempts.txt"
+        new_cnt = int(new_cnt_f.read_text(encoding="utf-8").strip()) if new_cnt_f.is_file() else 0
+        new_cnt += 1
+        new_cnt_f.write_text(f"{new_cnt}\n", encoding="utf-8", newline="\n")
+        forced_new_http = os.environ.get("FAKE_COLAB_NEW_HTTP_STATUS", "").strip()
+        if forced_new_http == "412":
+            sys.stderr.write(
+                "[colab] Failed to create session: 412 Client Error: Precondition Failed (account assignment cap reached)\n"
+            )
+            return 1
+        if forced_new_http == "503":
+            sys.stderr.write(
+                "[colab] Failed to create session: 503 Server Error: Service Unavailable (GPU pool empty)\n"
+            )
+            return 1
+        if forced_new_http == "500":
+            sys.stderr.write("[colab] Failed to create session: 500 Server Error: Internal Server Error\n")
+            return 1
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
         (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
         gpu = _get_opt("--gpu")
@@ -2057,7 +2097,7 @@ def main(argv: list[str] | None = None) -> int:
             and not k.startswith("LANE1_")
             and not k.startswith("LANE3_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
-            and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN")
+            and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN", "CUDA_VISIBLE_DEVICES")
         }
         kernel_env.setdefault("UV_SYSTEM_PYTHON", "1")
         # The fake GPU VM's stand-ins for the lane's torch, bitsandbytes and huggingface_hub.

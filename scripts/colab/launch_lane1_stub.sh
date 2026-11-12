@@ -33,13 +33,13 @@ PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
-PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
-PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
+PINNED_LANE1_RENDER_SHA="d5c4ec12d14f82fe16dcb02a6e942db0ede680c25c97f06564b134a339df2bc7"
+PINNED_LANE3_RUNG_SHA="a5bfab71fdcce4688f3b75a6f688ed9479ae696e48736eda23af5ce3116e889c"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
 PINNED_REMOTE_RUNNER_SHA="393929ed704ccbacaee2b590010e348a5d635cbdd70361209d3e0103d1fba6eb"
-PINNED_COLAB_WINDOW_SHA="db761fb414da915c8835bad8ef1544992e39aa5b3d636a1d81d17d231f26e974"
-PINNED_SELF_SHA="2138d73dc803e5ad463fbec5189bbb477c3a96bde23384c4f9eef97bee7454c5"
+PINNED_COLAB_WINDOW_SHA="6dd4f2289c357d22efe2cacd8de107d982ccf756e7391c5e9e888663a8847f16"
+PINNED_SELF_SHA="96c8da0b9714780cdbc26156f926140463ebe23dd92ec912484832db5e87d21b"
 
 LANE1_DISK_REQUIRED_GIB="50"
 LANE1_CPU_STUB_DISK_REQUIRED_GIB="5"
@@ -756,8 +756,8 @@ if [ "\${LANE1_MODE:-stub}" = "stub" ]; then
   done
 
   cat > /content/lane1_out/jobs.jsonl << 'JOBSEOF'
-{"job_id":"stub_01","run_id":"run_stub_01","template_id":"stub_fixture_64","seed":101,"width":64,"height":64,"canon_sha":"a881cb5ba656e0618080d2269498fda7f36ac93a","entry_id":"ships/brig","entry_sha256":"sha256:1111111111111111111111111111111111111111111111111111111111111111","workflow_sha":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
-{"job_id":"stub_02","run_id":"run_stub_01","template_id":"stub_fixture_64","seed":102,"width":64,"height":64,"canon_sha":"a881cb5ba656e0618080d2269498fda7f36ac93a","entry_id":"ships/brig","entry_sha256":"sha256:1111111111111111111111111111111111111111111111111111111111111111","workflow_sha":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+{"job_id":"stub_01","run_id":"run_stub_01","template_id":"stub_fixture_64","seed":101,"width":64,"height":64,"canon_sha":"a881cb5ba656e0618080d2269498fda7f36ac93a","entry_id":"ships/brig","entry_sha256":"sha256:1111111111111111111111111111111111111111111111111111111111111111","licence":"CC-BY-4.0","credit":"mcp-tool-shop","workflow_sha":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+{"job_id":"stub_02","run_id":"run_stub_01","template_id":"stub_fixture_64","seed":102,"width":64,"height":64,"canon_sha":"a881cb5ba656e0618080d2269498fda7f36ac93a","entry_id":"ships/brig","entry_sha256":"sha256:1111111111111111111111111111111111111111111111111111111111111111","licence":"CC-BY-4.0","credit":"mcp-tool-shop","workflow_sha":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
 JOBSEOF
 
   set +e
@@ -797,9 +797,13 @@ JOBSEOF
   fi
 
   kill "\${COMFY_PID}" 2>/dev/null || true
+  SCRUB_ARGS=()
   while IFS= read -r -d '' f; do
-    /content/venv-lane1/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+    SCRUB_ARGS+=(--scrub-file "\${f}")
   done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)
+  if [ "\${#SCRUB_ARGS[@]}" -gt 0 ]; then
+    /content/venv-lane1/bin/python /content/launch_guards.py "\${SCRUB_ARGS[@]}" </dev/null || true
+  fi
   tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
 else
 # >>> sdlab-lane1-render
@@ -819,9 +823,13 @@ lane1_render_on_exit() {
   if [ "\${rc}" -ne 0 ] && [ ! -f /content/lane1_render_bundle.tar.gz ]; then
     /content/venv-lane1/bin/python /content/lane1_render.py \
       --merge-render-facts --lane1-out /content/lane1_out --failed-rc "\${rc}" || true
+    local scrub_args=()
     while IFS= read -r -d '' f; do
-      /content/venv-lane1/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+      scrub_args+=(--scrub-file "\${f}")
     done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
+    if [ "\${#scrub_args[@]}" -gt 0 ]; then
+      /content/venv-lane1/bin/python /content/launch_guards.py "\${scrub_args[@]}" </dev/null || true
+    fi
     tar -czf /content/lane1_render_bundle.tar.gz -C /content/lane1_out . || true
     echo "RENDER_BUNDLE_AFTER_FAILURE rc=\${rc} /content/lane1_render_bundle.tar.gz"
   fi
@@ -866,6 +874,7 @@ else
   lane1_download_weights 2>&1 | tee -a /content/lane1_out/setup.log
 fi
 LANE1_HF_READ_TOKEN=""
+export HF_HUB_OFFLINE=1
 
 if [ "\${LANE1_MODE}" = "render_cpu_stub" ]; then
   /content/venv-lane1/bin/python - "\${PINNED_COMFYUI_COMMIT}" /content/lane1_out/vm_window.json << 'CPUSTUBEOF'
@@ -979,9 +988,13 @@ else
     --merge-render-facts --lane1-out /content/lane1_out --render-state rendered
 fi
 
+RENDER_SCRUB_ARGS=()
 while IFS= read -r -d '' f; do
-  /content/venv-lane1/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
+  RENDER_SCRUB_ARGS+=(--scrub-file "\${f}")
 done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
+if [ "\${#RENDER_SCRUB_ARGS[@]}" -gt 0 ]; then
+  /content/venv-lane1/bin/python /content/launch_guards.py "\${RENDER_SCRUB_ARGS[@]}" </dev/null || true
+fi
 tar -czf /content/lane1_render_bundle.tar.gz -C /content/lane1_out .
 # <<< sdlab-lane1-render
 fi

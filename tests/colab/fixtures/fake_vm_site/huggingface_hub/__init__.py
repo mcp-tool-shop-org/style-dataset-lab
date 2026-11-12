@@ -98,6 +98,18 @@ class HfApi:
             raise RevisionNotFoundError(f"404 Client Error: Revision Not Found for url: .../revision/{revision}", 404)
         if err == "net":
             raise ConnectionError("Max retries exceeded (Connection refused)")
+        info_429_max = int(os.environ.get("FAKE_HF_INFO_429_COUNT", "0") or "0")
+        if info_429_max > 0:
+            state_root = os.environ.get("FAKE_HF_BLOBS_DIR") or os.environ.get("HF_HOME")
+            if state_root:
+                hf_root = Path(state_root)
+                hf_root.mkdir(parents=True, exist_ok=True)
+                cnt_p = hf_root / ".fake_info_429_count.txt"
+                seen = int(cnt_p.read_text(encoding="utf-8").strip()) if cnt_p.is_file() else 0
+                seen += 1
+                cnt_p.write_text(f"{seen}\n", encoding="utf-8")
+                if seen <= info_429_max:
+                    raise HfHubHTTPError("429 Client Error: Too Many Requests", 429)
         _check_token(token)
         siblings = [_Sibling(name, size) for name, size in _files()]
         stream_override = os.environ.get("FAKE_HF_STREAM_BYTES")
@@ -124,6 +136,16 @@ def hf_hub_download(
         print(f"Authenticated file download with token {token}", flush=True)
     if os.environ.get("FAKE_HF_FAIL") == "1":
         raise OSError("401 Client Error: Repository Not Found")
+    dl_429_max = int(os.environ.get("FAKE_HF_429_FAIL_COUNT", "0") or "0")
+    if dl_429_max > 0:
+        hf_root = Path(os.environ.get("HF_HOME", "."))
+        hf_root.mkdir(parents=True, exist_ok=True)
+        cnt_p = hf_root / ".fake_dl_429_count.txt"
+        seen = int(cnt_p.read_text(encoding="utf-8").strip()) if cnt_p.is_file() else 0
+        seen += 1
+        cnt_p.write_text(f"{seen}\n", encoding="utf-8")
+        if seen <= dl_429_max:
+            raise HfHubHTTPError("429 Client Error: Too Many Requests", 429)
     if os.environ.get("FAKE_HF_429") == "1":
         print("HTTP Error 429 thrown while requesting GET https://huggingface.co/... Retrying in 1s [Retry 1/5].", flush=True)
     slow_target = os.environ.get("FAKE_HF_SLOW_FILE", "")
@@ -183,6 +205,16 @@ def snapshot_download(repo_id: str, revision: str | None = None, token: object =
         print(f"Authenticated download with token {token}", flush=True)
     if os.environ.get("FAKE_HF_FAIL") == "1":
         raise OSError("401 Client Error: Repository Not Found")
+    dl_429_max = int(os.environ.get("FAKE_HF_429_FAIL_COUNT", "0") or "0")
+    if dl_429_max > 0:
+        hf_root = Path(os.environ.get("HF_HOME", "."))
+        hf_root.mkdir(parents=True, exist_ok=True)
+        cnt_p = hf_root / ".fake_dl_429_count.txt"
+        seen = int(cnt_p.read_text(encoding="utf-8").strip()) if cnt_p.is_file() else 0
+        seen += 1
+        cnt_p.write_text(f"{seen}\n", encoding="utf-8")
+        if seen <= dl_429_max:
+            raise HfHubHTTPError("429 Client Error: Too Many Requests", 429)
     if os.environ.get("FAKE_HF_429") == "1":
         print("HTTP Error 429 thrown while requesting GET https://huggingface.co/... Retrying in 1s [Retry 1/5].", flush=True)
     rate = float(os.environ.get("FAKE_HF_RATE_BPS", "1e15"))
