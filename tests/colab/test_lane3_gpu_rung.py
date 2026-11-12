@@ -4496,6 +4496,18 @@ def test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches(
         "--download-floor-mb-s", "10.0",
     ]) == 0
 
+    # `dry-download-bounds` resolves timeout, source, and keep-all part_count (and refuses missing file / missing real-job timeout)
+    capsys.readouterr()
+    assert lr.main([
+        "dry-download-bounds",
+        "--job-yaml", str(COLAB_DIR / "lane3" / "rung-qwen-image.yaml"),
+        "--is-real-job", "0",
+    ]) == 0
+    assert capsys.readouterr().out.strip() == "300\tdefault\t2"
+    assert lr.main(["dry-download-bounds", "--job-yaml", str(tmp_path / "missing_dry.yaml")]) == 2
+    assert lr.main(["dry-download-bounds", "--job-yaml", str(base_p), "--is-real-job", "1"]) == 2
+    capsys.readouterr()
+
     # Rung mode (`--is-real-job 0`) uses fixed 1800 s train allowance (60 + 900 + 1800 = 2760 s)
     capsys.readouterr()
     assert lr.main([
@@ -4701,7 +4713,7 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
     tmp_path: Path,
 ) -> None:
     # 1. Rig cap-budget gate reserves projected 4-part salvage before `colab new`:
-    # With chunk_bytes = 200,000 and 2*200,000 ckpts + 400,000 opt = 800,000 B -> 4 parts.
+    # With chunk_bytes = 200,000 and 1*400,000 ckpt + 400,000 opt = 800,000 B -> 4 parts.
     # Default timeouts with N=4 give cleanup_bound_s = 310 + (190 + 340 + 4 * 310) + 140 = 2220 s
     # -> reserve = (2220 / 3600) * 9.5 = 5.858333 units, so cap 3.60 (which passed N=1 at df9a1b3b)
     # refuses CAP_TOO_SMALL_FOR_CLEANUP before opening any session.
@@ -4709,7 +4721,7 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
     env_cap["SDLAB_TEST_DOWNLOAD_CHUNK_BYTES"] = "200000"
     res_cap, out_cap = _launch(
         tmp_path / "n3_cap", env_cap, src_cap,
-        "--checkpoint-size-bytes", "200000",
+        "--checkpoint-size-bytes", "400000",
         "--optimizer-size-bytes", "400000",
         "--samples-and-logs-bytes", "0",
         "--cap", "3.60", "--margin", "0.01",
@@ -4741,7 +4753,7 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
     try:
         res_sal, out_sal = _launch(
             tmp_path / "n3_salvage", env_sal, src_sal,
-            "--checkpoint-size-bytes", "200000",
+            "--checkpoint-size-bytes", "400000",
             "--optimizer-size-bytes", "400000",
             "--samples-and-logs-bytes", "0",
             "--download-max-seconds", "5",
@@ -4771,8 +4783,8 @@ def test_n4_split_copy_overhead_counted_in_output_disk_projection(tmp_path: Path
     job_p, job_sha = _write_synthetic_job(tmp_path / "n4_job", steps=40)
     state_dir, env = _real_run_env(tmp_path / "n4_run")
     # 140 MiB ckpt + 140 MiB opt + 20 MiB samples = 300 MiB = 314,572,800 B > 256 MiB chunk size.
-    # Under df9a1b3b's 2.5x factor: 2.5 * 300 MiB = 750 MiB = 786,432,000 B <= 0.90 GiB (966,367,641 B).
-    # With +1.0 split_copy_overhead (3.5x): 3.5 * 300 MiB = 1050 MiB = 1,101,004,800 B > 0.90 GiB -> refuses TRAIN_OUTPUT_DISK_LOW.
+    # Under df9a1b3b's 3.0x factor: 3.0 * 300 MiB = 900 MiB = 943,718,400 B <= 1.05 GiB (1,127,428,915 B).
+    # With +1.0 split_copy_overhead (4.0x): 4.0 * 300 MiB = 1200 MiB = 1,258,291,200 B > 1.05 GiB -> refuses TRAIN_OUTPUT_DISK_LOW.
     res, out_dir = _launch_real(
         tmp_path / "n4_run", env, ds_dir,
         "--job", fc._to_posix(job_p), "--job-sha", job_sha,
@@ -4780,17 +4792,17 @@ def test_n4_split_copy_overhead_counted_in_output_disk_projection(tmp_path: Path
         "--checkpoint-size-bytes", str(140 * 1024 * 1024),
         "--optimizer-size-bytes", str(140 * 1024 * 1024),
         "--samples-and-logs-bytes", str(20 * 1024 * 1024),
-        "--vm-disk-budget-gib", "0.90",
+        "--vm-disk-budget-gib", "1.05",
     )
     assert res.returncode == 2 and "REFUSED: TRAIN_OUTPUT_DISK_LOW:" in res.stderr
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["refusal_code"] == "TRAIN_OUTPUT_DISK_LOW"
     odp = win["output_disk_projection"]
     assert odp["chunked_download_split_required"] is True
-    assert odp["base_copy_tar_overhead"] == 2.5
+    assert odp["base_copy_tar_overhead"] == 3.0
     assert odp["split_copy_overhead"] == 1.0
-    assert odp["copy_tar_overhead"] == 3.5
-    assert odp["projected_output_bytes"] == 1_101_004_800
+    assert odp["copy_tar_overhead"] == 4.0
+    assert odp["projected_output_bytes"] == 1_258_291_200
     assert not (state_dir / "calls.log").exists()
 
 

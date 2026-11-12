@@ -64,12 +64,27 @@ COLAB_CALLER_UPLOAD_REASSEMBLE_MB_S="${COLAB_UPLOAD_REASSEMBLE_MB_S:-}"
 export COLAB_KILL_GRACE_S="${COLAB_KILL_GRACE_S_DEFAULT}"
 export COLAB_OPEN_LOCK_TIMEOUT_S="${COLAB_OPEN_LOCK_TIMEOUT_S_DEFAULT}"
 export COLAB_NEW_TIMEOUT_S="${COLAB_NEW_TIMEOUT_S_DEFAULT}"
-export COLAB_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S_DEFAULT}"
-export COLAB_UPLOAD_TIMEOUT_SOURCE="default"
-export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S=""
-export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_SOURCE="size_and_rate"
-export COLAB_UPLOAD_REASSEMBLE_MB_S="${COLAB_UPLOAD_REASSEMBLE_MB_S_DEFAULT}"
-export COLAB_UPLOAD_REASSEMBLE_MB_S_SOURCE="default"
+if [[ "${COLAB_CALLER_UPLOAD_TIMEOUT_S}" =~ ^[1-9][0-9]*$ ]]; then
+  export COLAB_UPLOAD_TIMEOUT_S="${COLAB_CALLER_UPLOAD_TIMEOUT_S}"
+  export COLAB_UPLOAD_TIMEOUT_SOURCE="env"
+else
+  export COLAB_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S_DEFAULT}"
+  export COLAB_UPLOAD_TIMEOUT_SOURCE="default"
+fi
+if [[ "${COLAB_CALLER_UPLOAD_REASSEMBLE_TIMEOUT_S}" =~ ^[1-9][0-9]*$ ]]; then
+  export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S="${COLAB_CALLER_UPLOAD_REASSEMBLE_TIMEOUT_S}"
+  export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_SOURCE="env"
+else
+  export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S=""
+  export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_SOURCE="size_and_rate"
+fi
+if [[ "${COLAB_CALLER_UPLOAD_REASSEMBLE_MB_S}" =~ ^[0-9]+(\.[0-9]+)?$ ]] && ! [[ "${COLAB_CALLER_UPLOAD_REASSEMBLE_MB_S}" =~ ^0+(\.0+)?$ ]]; then
+  export COLAB_UPLOAD_REASSEMBLE_MB_S="${COLAB_CALLER_UPLOAD_REASSEMBLE_MB_S}"
+  export COLAB_UPLOAD_REASSEMBLE_MB_S_SOURCE="env"
+else
+  export COLAB_UPLOAD_REASSEMBLE_MB_S="${COLAB_UPLOAD_REASSEMBLE_MB_S_DEFAULT}"
+  export COLAB_UPLOAD_REASSEMBLE_MB_S_SOURCE="default"
+fi
 export COLAB_WALL_ESCALATE_S="${COLAB_WALL_ESCALATE_S_DEFAULT}"
 export COLAB_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
 export COLAB_DOWNLOAD_TIMEOUT_SOURCE="default"
@@ -1127,9 +1142,9 @@ block = src[i : j + len(end_marker)]
 epilogue = (
     "\n\nif __name__ == \"__main__\":\n"
     "    prepare_single_content_download(\n"
-    "        os.environ[\"SDLAB_CONTENT\"],\n"
-    "        os.environ[\"SDLAB_DL_REL\"],\n"
-    "        int(os.environ[\"SDLAB_DL_CHUNK_BYTES\"]),\n"
+    "        _dl_os.environ[\"SDLAB_CONTENT\"],\n"
+    "        _dl_os.environ[\"SDLAB_DL_REL\"],\n"
+    "        int(_dl_os.environ[\"SDLAB_DL_CHUNK_BYTES\"]),\n"
     "    )\n"
 )
 pathlib.Path(sys.argv[2]).write_text(block + epilogue, encoding="utf-8", newline="\n")
@@ -1348,14 +1363,11 @@ for ln in reversed(raw.splitlines()):
         except ValueError:
             pass
 if rec is None:
-    if prep_rc != 0:
-        low = raw.lower()
-        if "enospc" in low or "no space left on device" in low:
-            print(f"SPLIT_ERR\t0\t0\t\t1\tDOWNLOAD_SPLIT_DISK_LOW\tVM download prepare exited rc={prep_rc} with ENOSPC")
-        else:
-            print(f"PREP_ERR\t0\t0\t\t1\tDOWNLOAD_FAILED\tVM download prepare failed rc={prep_rc} without SDLAB_DOWNLOAD_PREPARE_JSON")
+    low = raw.lower()
+    if "enospc" in low or "no space left on device" in low:
+        print(f"SPLIT_ERR\t0\t0\t\t1\tDOWNLOAD_SPLIT_DISK_LOW\tVM download prepare exited rc={prep_rc} with ENOSPC")
     else:
-        print("DIRECT\t0\t0\t\t1\t\t")
+        print(f"PREP_ERR\t0\t0\t\t1\tDOWNLOAD_FAILED\tVM download prepare failed rc={prep_rc} without SDLAB_DOWNLOAD_PREPARE_JSON")
 elif not rec.get("exists"):
     print("DIRECT\t0\t0\t\t1\t\t")
 elif rec.get("split_failed"):

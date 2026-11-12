@@ -1387,6 +1387,7 @@ def validate_job_semantics(
                         "checkpoint_size_bytes",
                         "optimizer_size_bytes",
                         "samples_and_logs_bytes",
+                        "auxiliary_keep_all_bytes",
                         "download_floor_mb_s",
                         "upload_floor_mb_s",
                         "copy_tar_overhead",
@@ -1450,6 +1451,221 @@ def _pick_setting(cli_val: Any, meta: dict[str, Any], meta_key: str) -> tuple[An
     return None, None
 
 
+def _resolve_download_timeout_basis(
+    *,
+    steps: int,
+    save_every: int,
+    meta: dict[str, Any],
+    is_real_job: bool,
+    download_chunk_bytes_raw: Any,
+    explicit_download_timeout_raw: Any,
+    download_timeout_source_raw: Any,
+    default_download_timeout_raw: Any,
+    download_floor_mb_s_arg: Any,
+    checkpoint_size_bytes_arg: Any,
+    optimizer_size_bytes_arg: Any,
+    samples_and_logs_bytes_arg: Any,
+    auxiliary_keep_all_bytes_arg: Any,
+    plan_sink: dict[str, Any] | None = None,
+) -> tuple[int, int, int, int | None, dict[str, Any], Any, str | None, Any, str | None]:
+    ckpt_count = math.ceil(steps / save_every) if (steps > 0 and save_every > 0) else 1
+    download_chunk_bytes = (
+        _parse_int_setting(download_chunk_bytes_raw, "DOWNLOAD_CHUNK_BYTES_INVALID", "download_chunk_bytes")
+        if download_chunk_bytes_raw is not None and str(download_chunk_bytes_raw).strip() != ""
+        else DEFAULT_DOWNLOAD_CHUNK_BYTES
+    )
+    explicit_raw = (explicit_download_timeout_raw or "").strip()
+    dl_src = (download_timeout_source_raw or "default").strip()
+    explicit_dl_s: int | None = None
+    if explicit_raw:
+        explicit_dl_s = _parse_int_setting(explicit_raw, "DOWNLOAD_TIMEOUT_INVALID", "download_timeout_s")
+
+    raw_dl_floor, dl_floor_src = _pick_setting(download_floor_mb_s_arg, meta, "download_floor_mb_s")
+    raw_ckpt_b, ckpt_b_src = _pick_setting(checkpoint_size_bytes_arg, meta, "checkpoint_size_bytes")
+    raw_opt_dl_b, opt_dl_src = _pick_setting(optimizer_size_bytes_arg, meta, "optimizer_size_bytes")
+    raw_samp_b, samp_b_src = _pick_setting(samples_and_logs_bytes_arg, meta, "samples_and_logs_bytes")
+    raw_aux_b, aux_b_src = _pick_setting(auxiliary_keep_all_bytes_arg, meta, "auxiliary_keep_all_bytes")
+
+    dl_floor_val: float | None = None
+    projected_dl_s: int | None = None
+    expected_bundle_bytes: int | None = None
+    download_part_count = 1
+    max_download_part_bytes: int | None = None
+    dl_ckpt_b: int | None = None
+    dl_opt_b: int | None = None
+    dl_samp_b: int | None = None
+    dl_aux_b = 0
+    if raw_dl_floor is not None:
+        dl_floor_val = parse_positive_number(str(raw_dl_floor), "DOWNLOAD_TIMEOUT_INVALID", "download_floor_mb_s")
+        if raw_ckpt_b is None or raw_opt_dl_b is None or raw_samp_b is None:
+            raise Refusal(
+                "DOWNLOAD_TIMEOUT_REQUIRED",
+                "projecting bundle download timeout requires checkpoint_size_bytes, "
+                "optimizer_size_bytes, and samples_and_logs_bytes",
+            )
+        dl_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+        dl_opt_b = _parse_int_setting(raw_opt_dl_b, "DOWNLOAD_TIMEOUT_INVALID", "optimizer_size_bytes")
+        dl_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+        dl_aux_b = (
+            _parse_int_setting(raw_aux_b, "DOWNLOAD_TIMEOUT_INVALID", "auxiliary_keep_all_bytes", allow_zero=True)
+            if raw_aux_b is not None
+            else 0
+        )
+        expected_bundle_bytes = ckpt_count * dl_ckpt_b + dl_opt_b + dl_samp_b + dl_aux_b
+        download_part_count = (
+            max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes)) if expected_bundle_bytes > 0 else 1
+        )
+        max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
+        projected_dl_s = max(1, math.ceil(max_download_part_bytes / (dl_floor_val * 1_000_000.0)))
+    elif raw_ckpt_b is not None and raw_opt_dl_b is not None:
+        try:
+            cand_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+            cand_opt_b = _parse_int_setting(raw_opt_dl_b, "DOWNLOAD_TIMEOUT_INVALID", "optimizer_size_bytes")
+            cand_samp_b = (
+                _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+                if raw_samp_b is not None
+                else 0
+            )
+            cand_aux_b = (
+                _parse_int_setting(raw_aux_b, "DOWNLOAD_TIMEOUT_INVALID", "auxiliary_keep_all_bytes", allow_zero=True)
+                if raw_aux_b is not None
+                else 0
+            )
+            dl_ckpt_b = cand_ckpt_b
+            dl_opt_b = cand_opt_b
+            dl_samp_b = cand_samp_b if raw_samp_b is not None else None
+            dl_aux_b = cand_aux_b
+            expected_bundle_bytes = ckpt_count * cand_ckpt_b + cand_opt_b + cand_samp_b + cand_aux_b
+            if expected_bundle_bytes > 0:
+                download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes))
+                max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
+        except Refusal:
+            pass
+
+    if is_real_job and explicit_dl_s is None and projected_dl_s is None:
+        if plan_sink is not None:
+            plan_sink["download_timeout_basis"] = {
+                "mode": "missing_on_real_job",
+                "is_real_job": True,
+                "steps": steps,
+                "save_every": save_every,
+            }
+        raise Refusal(
+            "DOWNLOAD_TIMEOUT_REQUIRED",
+            "--job must not use the 300 s default download timeout; pass --download-timeout-s <s> "
+            "or project it with checkpoint_size_bytes, optimizer_size_bytes, samples_and_logs_bytes "
+            "and --download-floor-mb-s <MB/s>",
+        )
+
+    if explicit_dl_s is not None and projected_dl_s is not None and explicit_dl_s < projected_dl_s:
+        if plan_sink is not None:
+            plan_sink["download_timeout_basis"] = {
+                "mode": "explicit_below_projected",
+                "source": dl_src,
+                "explicit_seconds": explicit_dl_s,
+                "projected_seconds": projected_dl_s,
+                "expected_bundle_bytes": expected_bundle_bytes,
+                "download_chunk_bytes": download_chunk_bytes,
+                "part_count": download_part_count,
+                "max_part_bytes": max_download_part_bytes,
+                "throughput_floor_mb_s": dl_floor_val,
+            }
+        raise Refusal(
+            "DOWNLOAD_TIMEOUT_TOO_SHORT",
+            f"--download-timeout-s {explicit_dl_s} s < projected per-part {projected_dl_s} s "
+            f"({max_download_part_bytes} bytes/part at {dl_floor_val} MB/s)",
+        )
+
+    if explicit_dl_s is not None:
+        chosen_dl_s = explicit_dl_s
+        dl_mode = "explicit"
+        dl_basis_source = dl_src if dl_src in ("cli", "env") else "cli"
+    elif projected_dl_s is not None:
+        chosen_dl_s = projected_dl_s
+        dl_mode = "projected"
+        dl_basis_source = dl_floor_src or "projection"
+    else:
+        chosen_dl_s = _parse_int_setting(
+            default_download_timeout_raw, "DOWNLOAD_TIMEOUT_INVALID", "default_download_timeout_s"
+        )
+        dl_mode = "rung_default"
+        dl_basis_source = "default"
+
+    basis = {
+        "mode": dl_mode,
+        "source": dl_basis_source,
+        "is_real_job": is_real_job,
+        "chosen_seconds": chosen_dl_s,
+        "salvage_download_timeout_seconds": chosen_dl_s,
+        "download_chunk_bytes": download_chunk_bytes,
+        "part_count": download_part_count,
+        "max_part_bytes": max_download_part_bytes,
+        "steps": steps,
+        "save_every": save_every,
+        "checkpoint_count": ckpt_count,
+        "checkpoint_size_bytes": dl_ckpt_b,
+        "checkpoint_size_source": ckpt_b_src if dl_ckpt_b is not None else None,
+        "optimizer_size_bytes": dl_opt_b,
+        "optimizer_size_source": opt_dl_src if dl_opt_b is not None else None,
+        "samples_and_logs_bytes": dl_samp_b,
+        "samples_and_logs_source": samp_b_src if dl_samp_b is not None else None,
+        "auxiliary_keep_all_bytes": dl_aux_b,
+        "auxiliary_keep_all_source": aux_b_src if raw_aux_b is not None else "default_zero",
+        "expected_bundle_bytes": expected_bundle_bytes,
+        "throughput_floor_mb_s": dl_floor_val,
+        "projected_seconds": projected_dl_s,
+    }
+    return (
+        chosen_dl_s,
+        download_chunk_bytes,
+        download_part_count,
+        max_download_part_bytes,
+        basis,
+        raw_samp_b,
+        samp_b_src,
+        raw_aux_b,
+        aux_b_src,
+    )
+
+
+def run_dry_download_bounds(args: argparse.Namespace) -> int:
+    """Resolve download_timeout_s, source, and projected salvage part_count for `launch_lane3_stub.sh --dry`."""
+    try:
+        job_p = Path(args.job_yaml)
+        if not job_p.is_file():
+            raise Refusal("JOB_TEMPLATE_INVALID", f"missing job file {job_p}")
+        doc = parse_job_yaml(job_p.read_text(encoding="utf-8"))
+        cfg = doc.get("config") if isinstance(doc.get("config"), dict) else {}
+        procs = cfg.get("process") if isinstance(cfg.get("process"), list) else []
+        proc = procs[0] if procs and isinstance(procs[0], dict) else {}
+        train_cfg = proc.get("train") if isinstance(proc.get("train"), dict) else {}
+        save_cfg = proc.get("save") if isinstance(proc.get("save"), dict) else {}
+        steps = int(train_cfg.get("steps") or 0)
+        save_every = int(save_cfg.get("save_every") or 0)
+        meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
+        chosen_dl_s, _, part_count, _, basis, _, _, _, _ = _resolve_download_timeout_basis(
+            steps=steps,
+            save_every=save_every,
+            meta=meta,
+            is_real_job=str(args.is_real_job).strip() == "1",
+            download_chunk_bytes_raw=args.download_chunk_bytes,
+            explicit_download_timeout_raw=args.explicit_download_timeout_s,
+            download_timeout_source_raw=args.download_timeout_source,
+            default_download_timeout_raw=args.default_download_timeout_s,
+            download_floor_mb_s_arg=args.download_floor_mb_s,
+            checkpoint_size_bytes_arg=args.checkpoint_size_bytes,
+            optimizer_size_bytes_arg=args.optimizer_size_bytes,
+            samples_and_logs_bytes_arg=args.samples_and_logs_bytes,
+            auxiliary_keep_all_bytes_arg=args.auxiliary_keep_all_bytes,
+        )
+        src_out = "projected" if basis["mode"] == "projected" else str(basis["source"])
+        print(f"{chosen_dl_s}\t{src_out}\t{int(part_count)}", flush=True)
+        return 0
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 2
+
+
 def run_plan_run(args: argparse.Namespace) -> int:
     """Rig-side pre-open planner for Parts 1, 2, 4, and 5: resolves download/upload timeouts,
     wall allowance from steps * seconds_per_step, and projected VM output disk fit."""
@@ -1466,151 +1682,36 @@ def run_plan_run(args: argparse.Namespace) -> int:
         is_real_job = str(args.is_real_job).strip() == "1"
 
         # 1. Bundle download timeout (Part 1; per-part under COLAB_DOWNLOAD_CHUNK_BYTES in Addendum 1 Part 2b)
-        download_chunk_bytes = (
-            _parse_int_setting(args.download_chunk_bytes, "DOWNLOAD_CHUNK_BYTES_INVALID", "download_chunk_bytes")
-            if getattr(args, "download_chunk_bytes", None) is not None and str(args.download_chunk_bytes).strip() != ""
-            else DEFAULT_DOWNLOAD_CHUNK_BYTES
+        (
+            chosen_dl_s,
+            download_chunk_bytes,
+            download_part_count,
+            max_download_part_bytes,
+            dl_basis,
+            raw_samp_b,
+            samp_b_src,
+            raw_aux_b,
+            aux_b_src,
+        ) = _resolve_download_timeout_basis(
+            steps=steps,
+            save_every=save_every,
+            meta=meta,
+            is_real_job=is_real_job,
+            download_chunk_bytes_raw=getattr(args, "download_chunk_bytes", None),
+            explicit_download_timeout_raw=args.explicit_download_timeout_s,
+            download_timeout_source_raw=args.download_timeout_source,
+            default_download_timeout_raw=args.default_download_timeout_s,
+            download_floor_mb_s_arg=args.download_floor_mb_s,
+            checkpoint_size_bytes_arg=args.checkpoint_size_bytes,
+            optimizer_size_bytes_arg=args.optimizer_size_bytes,
+            samples_and_logs_bytes_arg=args.samples_and_logs_bytes,
+            auxiliary_keep_all_bytes_arg=getattr(args, "auxiliary_keep_all_bytes", None),
+            plan_sink=plan,
         )
-        explicit_raw = (args.explicit_download_timeout_s or "").strip()
-        dl_src = (args.download_timeout_source or "default").strip()
-        explicit_dl_s: int | None = None
-        if explicit_raw:
-            explicit_dl_s = _parse_int_setting(explicit_raw, "DOWNLOAD_TIMEOUT_INVALID", "download_timeout_s")
-
-        raw_dl_floor, dl_floor_src = _pick_setting(args.download_floor_mb_s, meta, "download_floor_mb_s")
-        raw_ckpt_b, ckpt_b_src = _pick_setting(args.checkpoint_size_bytes, meta, "checkpoint_size_bytes")
-        raw_opt_dl_b, opt_dl_src = _pick_setting(args.optimizer_size_bytes, meta, "optimizer_size_bytes")
-        raw_samp_b, samp_b_src = _pick_setting(args.samples_and_logs_bytes, meta, "samples_and_logs_bytes")
-        raw_aux_b, aux_b_src = _pick_setting(
-            getattr(args, "auxiliary_keep_all_bytes", None), meta, "auxiliary_keep_all_bytes"
-        )
-
-        dl_floor_val: float | None = None
-        projected_dl_s: int | None = None
-        expected_bundle_bytes: int | None = None
-        download_part_count = 1
-        max_download_part_bytes: int | None = None
-        dl_ckpt_b: int | None = None
-        dl_opt_b: int | None = None
-        dl_samp_b: int | None = None
-        dl_aux_b = 0
-        if raw_dl_floor is not None:
-            dl_floor_val = parse_positive_number(str(raw_dl_floor), "DOWNLOAD_TIMEOUT_INVALID", "download_floor_mb_s")
-            if raw_ckpt_b is None or raw_opt_dl_b is None or raw_samp_b is None:
-                raise Refusal(
-                    "DOWNLOAD_TIMEOUT_REQUIRED",
-                    "projecting bundle download timeout requires checkpoint_size_bytes, "
-                    "optimizer_size_bytes, and samples_and_logs_bytes",
-                )
-            dl_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
-            dl_opt_b = _parse_int_setting(raw_opt_dl_b, "DOWNLOAD_TIMEOUT_INVALID", "optimizer_size_bytes")
-            dl_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
-            dl_aux_b = (
-                _parse_int_setting(raw_aux_b, "DOWNLOAD_TIMEOUT_INVALID", "auxiliary_keep_all_bytes", allow_zero=True)
-                if raw_aux_b is not None
-                else 0
-            )
-            expected_bundle_bytes = ckpt_count * dl_ckpt_b + dl_opt_b + dl_samp_b + dl_aux_b
-            download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes)) if expected_bundle_bytes > 0 else 1
-            max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
-            projected_dl_s = max(1, math.ceil(max_download_part_bytes / (dl_floor_val * 1_000_000.0)))
-        elif raw_ckpt_b is not None and raw_opt_dl_b is not None:
-            try:
-                cand_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
-                cand_opt_b = _parse_int_setting(raw_opt_dl_b, "DOWNLOAD_TIMEOUT_INVALID", "optimizer_size_bytes")
-                cand_samp_b = (
-                    _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
-                    if raw_samp_b is not None
-                    else 0
-                )
-                cand_aux_b = (
-                    _parse_int_setting(raw_aux_b, "DOWNLOAD_TIMEOUT_INVALID", "auxiliary_keep_all_bytes", allow_zero=True)
-                    if raw_aux_b is not None
-                    else 0
-                )
-                dl_ckpt_b = cand_ckpt_b
-                dl_opt_b = cand_opt_b
-                dl_samp_b = cand_samp_b if raw_samp_b is not None else None
-                dl_aux_b = cand_aux_b
-                expected_bundle_bytes = ckpt_count * cand_ckpt_b + cand_opt_b + cand_samp_b + cand_aux_b
-                if expected_bundle_bytes > 0:
-                    download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes))
-                    max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
-            except Refusal:
-                pass
-
-        if is_real_job and explicit_dl_s is None and projected_dl_s is None:
-            plan["download_timeout_basis"] = {
-                "mode": "missing_on_real_job",
-                "is_real_job": True,
-                "steps": steps,
-                "save_every": save_every,
-            }
-            raise Refusal(
-                "DOWNLOAD_TIMEOUT_REQUIRED",
-                "--job must not use the 300 s default download timeout; pass --download-timeout-s <s> "
-                "or project it with checkpoint_size_bytes, optimizer_size_bytes, samples_and_logs_bytes "
-                "and --download-floor-mb-s <MB/s>",
-            )
-
-        if explicit_dl_s is not None and projected_dl_s is not None and explicit_dl_s < projected_dl_s:
-            plan["download_timeout_basis"] = {
-                "mode": "explicit_below_projected",
-                "source": dl_src,
-                "explicit_seconds": explicit_dl_s,
-                "projected_seconds": projected_dl_s,
-                "expected_bundle_bytes": expected_bundle_bytes,
-                "download_chunk_bytes": download_chunk_bytes,
-                "part_count": download_part_count,
-                "max_part_bytes": max_download_part_bytes,
-                "throughput_floor_mb_s": dl_floor_val,
-            }
-            raise Refusal(
-                "DOWNLOAD_TIMEOUT_TOO_SHORT",
-                f"--download-timeout-s {explicit_dl_s} s < projected per-part {projected_dl_s} s "
-                f"({max_download_part_bytes} bytes/part at {dl_floor_val} MB/s)",
-            )
-
-        if explicit_dl_s is not None:
-            chosen_dl_s = explicit_dl_s
-            dl_mode = "explicit"
-            dl_basis_source = dl_src if dl_src in ("cli", "env") else "cli"
-        elif projected_dl_s is not None:
-            chosen_dl_s = projected_dl_s
-            dl_mode = "projected"
-            dl_basis_source = dl_floor_src or "projection"
-        else:
-            chosen_dl_s = _parse_int_setting(args.default_download_timeout_s, "DOWNLOAD_TIMEOUT_INVALID", "default_download_timeout_s")
-            dl_mode = "rung_default"
-            dl_basis_source = "default"
-
         plan["download_timeout_s"] = chosen_dl_s
         plan["salvage_download_timeout_s"] = chosen_dl_s
         plan["download_chunk_bytes"] = download_chunk_bytes
-        plan["download_timeout_basis"] = {
-            "mode": dl_mode,
-            "source": dl_basis_source,
-            "is_real_job": is_real_job,
-            "chosen_seconds": chosen_dl_s,
-            "salvage_download_timeout_seconds": chosen_dl_s,
-            "download_chunk_bytes": download_chunk_bytes,
-            "part_count": download_part_count,
-            "max_part_bytes": max_download_part_bytes,
-            "steps": steps,
-            "save_every": save_every,
-            "checkpoint_count": ckpt_count,
-            "checkpoint_size_bytes": dl_ckpt_b,
-            "checkpoint_size_source": ckpt_b_src if dl_ckpt_b is not None else None,
-            "optimizer_size_bytes": dl_opt_b,
-            "optimizer_size_source": opt_dl_src if dl_opt_b is not None else None,
-            "samples_and_logs_bytes": dl_samp_b,
-            "samples_and_logs_source": samp_b_src if dl_samp_b is not None else None,
-            "auxiliary_keep_all_bytes": dl_aux_b,
-            "auxiliary_keep_all_source": aux_b_src if raw_aux_b is not None else "default_zero",
-            "expected_bundle_bytes": expected_bundle_bytes,
-            "throughput_floor_mb_s": dl_floor_val,
-            "projected_seconds": projected_dl_s,
-        }
+        plan["download_timeout_basis"] = dl_basis
 
         # 2. Dataset archive upload timeout (Part 2; per-part under COLAB_UPLOAD_CHUNK_BYTES in Addendum 1 Part 2)
         upload_timeout_s = _parse_int_setting(args.upload_timeout_s, "UPLOAD_TIMEOUT_INVALID", "upload_timeout_s")
@@ -2689,6 +2790,19 @@ def build_parser() -> argparse.ArgumentParser:
     bn.add_argument("--rc", required=True, type=int)
     bn.add_argument("--settle-s", default=2.0, type=float)
 
+    ddb = sub.add_parser("dry-download-bounds")
+    ddb.add_argument("--job-yaml", required=True)
+    ddb.add_argument("--is-real-job", default="0")
+    ddb.add_argument("--explicit-download-timeout-s", default="")
+    ddb.add_argument("--download-timeout-source", default="default")
+    ddb.add_argument("--default-download-timeout-s", default="300")
+    ddb.add_argument("--download-chunk-bytes", default=None)
+    ddb.add_argument("--download-floor-mb-s", default=None)
+    ddb.add_argument("--checkpoint-size-bytes", default=None)
+    ddb.add_argument("--optimizer-size-bytes", default=None)
+    ddb.add_argument("--samples-and-logs-bytes", default=None)
+    ddb.add_argument("--auxiliary-keep-all-bytes", default=None)
+
     f = sub.add_parser("finish")
     f.add_argument("--lane3-out", required=True)
     f.add_argument("--failed-rc", default=None, type=int)
@@ -2703,6 +2817,7 @@ def main(argv: list[str] | None = None) -> int:
         "dataset": run_dataset,
         "check-job": run_check_job,
         "plan-run": run_plan_run,
+        "dry-download-bounds": run_dry_download_bounds,
         "render-job": run_render_job,
         "copy-off": run_copy_off,
         "check-output-disk": run_check_output_disk,

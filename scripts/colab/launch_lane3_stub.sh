@@ -52,13 +52,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="fdc56bf1f74d4d4c1f63647f3b5961d6793fd83ed45ecbc898136b01a24a5a0d"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="74b86d8414832fff79469935d905f33cdb43fb73155e96d0750c9546b4757726"
-PINNED_LANE3_RUNG_SHA="466abbbf6469a07bbfde2e2865051757c84df9c3bfac43af86be32d7aa06b44a"
+PINNED_COLAB_WINDOW_SHA="de71121f9f58cb73bedbe2d4e69bd82eba73c353e527fe362a375b2bcab9dd85"
+PINNED_LANE3_RUNG_SHA="2840503988a9aee7c38d3d3fef3961f75b4bf1b41ee61703ef7675fd8084c7fb"
 PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="8e13e5a3340dfabf889e547c8d3af7717ce8753be6e17f57cc116ed2a9e240e6"
+PINNED_SELF_SHA="c21b7e3b87b967087d70b0bbf06e7fc4cb96c96102633fa68bc2e284e31b80b3"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -807,56 +807,21 @@ if [ "${DRY_RUN}" = "1" ]; then
       if [ "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" != "default" ]; then
         DRY_EXPLICIT_DL="${COLAB_DOWNLOAD_TIMEOUT_S}"
       fi
+      DRY_PLAN_ARGS=(
+        --job-yaml "${DRY_ACTIVE_JOB}"
+        --is-real-job "${DRY_IS_REAL}"
+        --explicit-download-timeout-s "${DRY_EXPLICIT_DL}"
+        --download-timeout-source "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}"
+        --default-download-timeout-s "${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+        --download-chunk-bytes "${DRY_EFF_DL_CHUNK}"
+      )
+      [ -n "${DOWNLOAD_FLOOR_MB_S_ARG}" ] && DRY_PLAN_ARGS+=(--download-floor-mb-s "${DOWNLOAD_FLOOR_MB_S_ARG}")
+      [ -n "${CHECKPOINT_SIZE_BYTES_ARG}" ] && DRY_PLAN_ARGS+=(--checkpoint-size-bytes "${CHECKPOINT_SIZE_BYTES_ARG}")
+      [ -n "${OPTIMIZER_SIZE_BYTES_ARG}" ] && DRY_PLAN_ARGS+=(--optimizer-size-bytes "${OPTIMIZER_SIZE_BYTES_ARG}")
+      [ -n "${SAMPLES_AND_LOGS_BYTES_ARG}" ] && DRY_PLAN_ARGS+=(--samples-and-logs-bytes "${SAMPLES_AND_LOGS_BYTES_ARG}")
+      [ -n "${AUXILIARY_KEEP_ALL_BYTES_ARG}" ] && DRY_PLAN_ARGS+=(--auxiliary-keep-all-bytes "${AUXILIARY_KEEP_ALL_BYTES_ARG}")
       DRY_DL_RES=""
-      if ! DRY_DL_RES="$("${PY_BIN}" - "${SCRIPT_DIR}/lane3_rung.py" "${DRY_ACTIVE_JOB}" "${DRY_IS_REAL}" "${DRY_EXPLICIT_DL}" "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" "${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}" "${DRY_EFF_DL_CHUNK}" "${DOWNLOAD_FLOOR_MB_S_ARG}" "${CHECKPOINT_SIZE_BYTES_ARG}" "${OPTIMIZER_SIZE_BYTES_ARG}" "${SAMPLES_AND_LOGS_BYTES_ARG}" "${AUXILIARY_KEEP_ALL_BYTES_ARG}" << 'PYEOF' | tr -d '\r'
-import importlib.util, math, pathlib, sys
-rung_py = pathlib.Path(sys.argv[1])
-job_p = pathlib.Path(sys.argv[2])
-is_real = sys.argv[3] == "1"
-exp_dl_raw, dl_src, def_dl_raw, dl_chunk_raw, floor_raw, ckpt_raw, opt_raw, samp_raw, aux_raw = sys.argv[4:13]
-spec = importlib.util.spec_from_file_location("lane3_rung", rung_py)
-lr = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(lr)
-try:
-    doc = lr._load_yaml_doc(job_p)
-    proc = ((doc.get("config") or {}).get("process") or [{}])[0]
-    steps = int((proc.get("train") or {}).get("steps") or 0)
-    save_every = int((proc.get("save") or {}).get("save_every") or 0)
-    ckpt_count = len({*range(save_every, steps + 1, save_every), steps}) if (steps > 0 and save_every > 0) else 1
-    meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
-    def _pick_pos(cli_v, meta_v, name):
-        if cli_v != "":
-            return lr._positive_int(cli_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
-        if meta_v is not None:
-            return lr._positive_int(meta_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
-        return None
-    def _pick_nonneg(cli_v, meta_v, name):
-        if cli_v != "":
-            return lr._non_negative_int(cli_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
-        if meta_v is not None:
-            return lr._non_negative_int(meta_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
-        return 0
-    ckpt_sz = _pick_pos(ckpt_raw, meta.get("checkpoint_size_bytes"), "--checkpoint-size-bytes")
-    opt_sz = _pick_pos(opt_raw, meta.get("optimizer_size_bytes"), "--optimizer-size-bytes")
-    samp_sz = _pick_nonneg(samp_raw, meta.get("samples_and_logs_bytes"), "--samples-and-logs-bytes")
-    aux_sz = _pick_nonneg(aux_raw, meta.get("auxiliary_keep_all_bytes"), "--auxiliary-keep-all-bytes")
-    floor_v = float(floor_raw) if floor_raw != "" else (float(meta["download_floor_mb_s"]) if meta.get("download_floor_mb_s") is not None else None)
-    exp_dl = int(exp_dl_raw) if exp_dl_raw != "" else None
-    dl_s, basis = lr.resolve_download_timeout(
-        is_real_job=is_real, explicit_timeout_s=exp_dl, explicit_source=dl_src,
-        default_timeout_s=int(def_dl_raw), floor_mb_s=floor_v, expected_checkpoint_count=ckpt_count,
-        checkpoint_size_bytes=ckpt_sz, optimizer_size_bytes=opt_sz,
-        samples_and_logs_bytes=samp_sz, auxiliary_keep_all_bytes=aux_sz,
-        download_chunk_bytes=int(dl_chunk_raw),
-    )
-    src_out = "projected" if basis["mode"] == "projected" else str(basis["source"])
-    parts_out = int(basis.get("part_count") or 1)
-    print(f"{dl_s}\t{src_out}\t{parts_out}")
-except lr.Refusal as ref:
-    sys.stderr.write(ref.line() + "\n")
-    raise SystemExit(2)
-PYEOF
-      )"; then
+      if ! DRY_DL_RES="$("${PY_BIN}" "${SCRIPT_DIR}/lane3_rung.py" dry-download-bounds "${DRY_PLAN_ARGS[@]}" | tr -d '\r')"; then
         exit 2
       fi
       IFS=$'\t' read -r DRY_DL_S DRY_DL_SRC DRY_DL_PARTS <<< "${DRY_DL_RES}"

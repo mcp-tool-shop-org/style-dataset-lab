@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COLAB_DIR = REPO_ROOT / "scripts" / "colab"
 WINDOW_SH = COLAB_DIR / "colab_window.sh"
@@ -696,6 +698,8 @@ def test_n4_big_archive_upload_reassembly_scales_with_size_and_rate_where_old_bo
     out_ok.mkdir()
     res_ok = _window_fn(
         env_ok,
+        f'export COLAB_KILL_GRACE_S=1 && '
+        f'colab_configure_upload_timeout "" && '
         f'colab_configure_upload_reassemble_timeout "" "0.1" && '
         f'colab_upload_checked s1 "{_p(src_archive)}" /content/big_dataset.tar "{_p(out_ok)}"',
     )
@@ -722,6 +726,8 @@ def test_n4_big_archive_upload_reassembly_scales_with_size_and_rate_where_old_bo
     out_to.mkdir()
     res_to = _window_fn(
         env_to,
+        f'export COLAB_KILL_GRACE_S=1 && '
+        f'colab_configure_upload_timeout "" && '
         f'colab_configure_upload_reassemble_timeout "1" "" && '
         f'colab_upload_checked s1 "{_p(src_archive)}" /content/big_dataset.tar "{_p(out_to)}"',
     )
@@ -732,7 +738,7 @@ def test_n4_big_archive_upload_reassembly_scales_with_size_and_rate_where_old_bo
 
 
 def test_n4_download_split_out_of_disk_refuses_named_code_without_single_get_fallthrough(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """N4 bullet 2: running out of disk during VM download split refuses `DOWNLOAD_SPLIT_DISK_LOW`
     cleanly without crashing into a single `colab download` GET (which happened at df9a1b3b
@@ -771,11 +777,11 @@ def test_n4_download_split_out_of_disk_refuses_named_code_without_single_get_fal
     (content_b / "lane3_stub_bundle.tar.gz").write_bytes(big_blob)
     out_b = tmp_path / "split_mid_enospc" / "out"
     out_b.mkdir()
-    recs_b = rr.prepare_content_downloads(
-        content_b,
-        32_768,
-        env={"FAKE_VM_SITE": "1", "FAKE_VM_DL_SPLIT_ENOSPC_ON_PART": "1"},
-    )
+    monkeypatch.setenv("FAKE_VM_SITE", "1")
+    monkeypatch.setenv("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART", "1")
+    recs_b = rr.prepare_content_downloads(content_b, 32_768)
+    monkeypatch.delenv("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART", raising=False)
+    monkeypatch.delenv("FAKE_VM_SITE", raising=False)
     assert len(recs_b) == 1 and recs_b[0]["split_failed"] is True
     assert recs_b[0]["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
     assert [p.name for p in content_b.iterdir() if p.name.startswith(".sdlab_dl_")] == []
@@ -807,14 +813,18 @@ def test_n5_download_prep_has_single_source_in_launch_guards_without_copy_drift(
     win_src = (COLAB_DIR / "colab_window.sh").read_text(encoding="utf-8")
 
     assert "# >>> sdlab-download-prep" in guards_src and "# <<< sdlab-download-prep" in guards_src
-    # Neither `remote_runner.py`, `lane3_bundle_now.py`, nor `colab_window.sh` carries its own `.part.%04d` writer.
+    # Neither `remote_runner.py` nor `lane3_bundle_now.py` carries its own `.part.%04d` writer or manifest writer,
+    # and `colab_window.sh` carries zero `.sdlab_dl_` download-split or `SDLAB_DOWNLOAD_PREPARE_JSON` emitter code
+    # (its single `.part.{idx:04d}` occurrence is rig-side upload splitting `.sdlab_up_`).
     for other_name, other_src in (
         ("remote_runner.py", rr_src),
         ("lane3_bundle_now.py", bn_src),
-        ("colab_window.sh", win_src),
     ):
         assert ".part.{idx:04d}" not in other_src, f"{other_name} still duplicates download split code"
         assert "manifest_payload = {" not in other_src, f"{other_name} still duplicates manifest writer"
+    assert 'f".sdlab_dl_{' not in win_src, "colab_window.sh still duplicates download split prefix writer"
+    assert 'print("SDLAB_DOWNLOAD_PREPARE_JSON "' not in win_src, "colab_window.sh still duplicates download prep emitter"
+    assert win_src.count(".part.{idx:04d}") == 1, "colab_window.sh must only have rig-side upload part writer"
 
     # Verify `_colab_write_download_prepare_py` emits the exact `launch_guards.py` block and runs without `__file__`.
     _, _, env = fc.make_fake_colab_env(tmp_path / "prep_emit")
@@ -826,6 +836,7 @@ def test_n5_download_prep_has_single_source_in_launch_guards_without_copy_drift(
     end_m = "# <<< sdlab-download-prep"
     expected_block = guards_src[guards_src.index(start_m) : guards_src.index(end_m) + len(end_m)]
     assert emitted_text.startswith(expected_block)
+    assert "__file__" not in emitted_text
     assert lg.prepare_content_downloads is not None
 
 
