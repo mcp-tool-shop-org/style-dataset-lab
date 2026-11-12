@@ -1543,60 +1543,8 @@ def run_plan_run(args: argparse.Namespace) -> int:
                 f"at {up_floor_val} MB/s needs {projected_upload_s:.2f} s > upload timeout {upload_timeout_s} s",
             )
 
-        # 3. Job-derived wall allowance (Part 4)
-        raw_sps, sps_src = _pick_setting(args.seconds_per_step, meta, "seconds_per_step")
-        seconds_per_step = parse_positive_number(
-            str(raw_sps) if raw_sps is not None else None, "TRAIN_STEP_TIME_REQUIRED", "seconds_per_step"
-        )
-        computed_train_s = max(1, math.ceil(steps * seconds_per_step))
-        download_max_s = _parse_int_setting(args.download_max_seconds, "DOWNLOAD_LIMIT_MISSING", "download_max_seconds")
-        setup_allowance_s = _parse_int_setting(args.setup_allowance_s, "TRAIN_WALL_TOO_SHORT", "setup_allowance_s")
-        wall_s = _parse_int_setting(args.wall_s, "TRAIN_WALL_TOO_SHORT", "wall_s")
-        grace_s = _parse_int_setting(args.grace_s, "TRAIN_WALL_TOO_SHORT", "grace_s", allow_zero=True)
-
-        test_train_raw = (args.test_train_allowance_s or "").strip()
-        test_fetch_raw = (args.test_fetch_allowance_s or "").strip()
-        if test_train_raw:
-            train_allowance_s = _parse_int_setting(test_train_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_TRAIN_ALLOWANCE_S")
-            fetch_allowance_s = (
-                _parse_int_setting(test_fetch_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_FETCH_ALLOWANCE_S", allow_zero=True)
-                if test_fetch_raw
-                else 0
-            )
-            wall_mode = "test_override"
-        else:
-            train_allowance_s = computed_train_s
-            fetch_allowance_s = download_part_count * chosen_dl_s
-            wall_mode = "job_step_time"
-
-        required_wall_s = download_max_s + setup_allowance_s + train_allowance_s + fetch_allowance_s
-        effective_wall_s = wall_s - grace_s
-        wall_ok = effective_wall_s >= required_wall_s
-        plan["wall_allowance"] = {
-            "mode": wall_mode,
-            "steps": steps,
-            "seconds_per_step": seconds_per_step,
-            "seconds_per_step_source": sps_src,
-            "computed_train_seconds": computed_train_s,
-            "download_max_seconds": download_max_s,
-            "setup_allowance_s": setup_allowance_s,
-            "train_allowance_s": train_allowance_s,
-            "fetch_allowance_s": fetch_allowance_s,
-            "required_wall_s": required_wall_s,
-            "wall_s": wall_s,
-            "grace_s": grace_s,
-            "effective_wall_s": effective_wall_s,
-            "ok": wall_ok,
-        }
-        if not wall_ok:
-            raise Refusal(
-                "TRAIN_WALL_TOO_SHORT",
-                f"--wall-s {wall_s} minus grace {grace_s} must cover {required_wall_s} s "
-                f"(download limit {download_max_s} + setup {setup_allowance_s} + "
-                f"train {train_allowance_s} [{steps} steps * {seconds_per_step} s/step] + fetch {fetch_allowance_s})",
-            )
-
-        # 4. Output disk projection (Part 5)
+        # 3. Output disk projection (Part 5; checked before wall allowance so a job that cannot
+        # physically fit on the VM disk refuses TRAIN_OUTPUT_DISK_LOW regardless of --wall-s)
         raw_out_ckpt_b, out_ckpt_src = _pick_setting(args.checkpoint_size_bytes, meta, "checkpoint_size_bytes")
         raw_opt_b, opt_src = _pick_setting(args.optimizer_size_bytes, meta, "optimizer_size_bytes")
         raw_overhead, overhead_src = _pick_setting(args.output_overhead_factor, meta, "copy_tar_overhead")
@@ -1657,6 +1605,85 @@ def run_plan_run(args: argparse.Namespace) -> int:
                 f"(({ckpt_count} * {ckpt_size_b} + {opt_size_b}) * {overhead}) "
                 f"cannot fit within {avail_for_output_bytes} bytes "
                 f"(VM disk guard {vm_budget_gib} GiB minus model {expected_model_b} bytes)",
+            )
+
+        # 4. Wall allowance (`--rung-job` keeps its fixed rung allowance; `--job` derives from steps * seconds_per_step)
+        download_max_s = _parse_int_setting(args.download_max_seconds, "DOWNLOAD_LIMIT_MISSING", "download_max_seconds")
+        setup_allowance_s = _parse_int_setting(args.setup_allowance_s, "TRAIN_WALL_TOO_SHORT", "setup_allowance_s")
+        wall_s = _parse_int_setting(args.wall_s, "TRAIN_WALL_TOO_SHORT", "wall_s")
+        grace_s = _parse_int_setting(args.grace_s, "TRAIN_WALL_TOO_SHORT", "grace_s", allow_zero=True)
+
+        test_train_raw = (args.test_train_allowance_s or "").strip()
+        test_fetch_raw = (args.test_fetch_allowance_s or "").strip()
+        raw_sps, sps_src = _pick_setting(args.seconds_per_step, meta, "seconds_per_step")
+        seconds_per_step: float | None = None
+        computed_train_s: int | None = None
+
+        if not is_real_job:
+            if raw_sps is not None:
+                seconds_per_step = parse_positive_number(str(raw_sps), "TRAIN_STEP_TIME_REQUIRED", "seconds_per_step")
+                computed_train_s = max(1, math.ceil(steps * seconds_per_step))
+            rung_train_raw = (getattr(args, "rung_train_allowance_s", "") or "").strip() or "1800"
+            train_allowance_s = _parse_int_setting(
+                test_train_raw or rung_train_raw, "TRAIN_WALL_TOO_SHORT", "train_allowance_s"
+            )
+            fetch_allowance_s = (
+                _parse_int_setting(test_fetch_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_FETCH_ALLOWANCE_S", allow_zero=True)
+                if test_fetch_raw
+                else 0
+            )
+            wall_mode = "test_override" if test_train_raw else "rung_fixed"
+        else:
+            seconds_per_step = parse_positive_number(
+                str(raw_sps) if raw_sps is not None else None, "TRAIN_STEP_TIME_REQUIRED", "seconds_per_step"
+            )
+            computed_train_s = max(1, math.ceil(steps * seconds_per_step))
+            if test_train_raw:
+                train_allowance_s = _parse_int_setting(test_train_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_TRAIN_ALLOWANCE_S")
+                fetch_allowance_s = (
+                    _parse_int_setting(test_fetch_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_FETCH_ALLOWANCE_S", allow_zero=True)
+                    if test_fetch_raw
+                    else 0
+                )
+                wall_mode = "test_override"
+            else:
+                train_allowance_s = computed_train_s
+                fetch_allowance_s = download_part_count * chosen_dl_s
+                wall_mode = "job_step_time"
+
+        required_wall_s = download_max_s + setup_allowance_s + train_allowance_s + fetch_allowance_s
+        effective_wall_s = wall_s - grace_s
+        wall_ok = effective_wall_s >= required_wall_s
+        plan["wall_allowance"] = {
+            "mode": wall_mode,
+            "is_real_job": is_real_job,
+            "steps": steps,
+            "seconds_per_step": seconds_per_step,
+            "seconds_per_step_source": sps_src,
+            "computed_train_seconds": computed_train_s,
+            "download_max_seconds": download_max_s,
+            "setup_allowance_s": setup_allowance_s,
+            "train_allowance_s": train_allowance_s,
+            "fetch_allowance_s": fetch_allowance_s,
+            "required_wall_s": required_wall_s,
+            "total_required_seconds": required_wall_s,
+            "wall_s": wall_s,
+            "grace_s": grace_s,
+            "effective_wall_s": effective_wall_s,
+            "ok": wall_ok,
+        }
+        if not wall_ok:
+            if not is_real_job:
+                raise Refusal(
+                    "TRAIN_WALL_TOO_SHORT",
+                    f"--wall-s {wall_s} minus grace {grace_s} must cover {required_wall_s} s "
+                    f"(download limit {download_max_s} + install {setup_allowance_s} + train {train_allowance_s})",
+                )
+            raise Refusal(
+                "TRAIN_WALL_TOO_SHORT",
+                f"--wall-s {wall_s} minus grace {grace_s} must cover {required_wall_s} s "
+                f"(download limit {download_max_s} + setup {setup_allowance_s} + "
+                f"train {train_allowance_s} [{steps} steps * {seconds_per_step} s/step] + fetch {fetch_allowance_s})",
             )
     except Refusal as exc:
         plan["refusal"] = {"code": exc.code, "why": exc.detail}
@@ -1776,6 +1803,9 @@ def copy_off_once(watch: Path, bundle: Path, manifest: Path, state: dict[str, An
             else:
                 done[rel] = (dest_bytes, dest_sha)
                 done_mtime[rel] = sig
+        except FileNotFoundError as exc:
+            print(f"COPY_OFF_SKIPPED {fp.name}: {type(exc).__name__}: {exc}", flush=True)
+            continue
         except OSError as exc:
             if final:
                 raise Refusal("COPY_OFF_FAILED", f"{fp}: {type(exc).__name__}: {exc}") from None
@@ -2233,6 +2263,7 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--seconds-per-step", default=None)
     pr.add_argument("--download-max-seconds", required=True)
     pr.add_argument("--setup-allowance-s", required=True)
+    pr.add_argument("--rung-train-allowance-s", default="1800")
     pr.add_argument("--wall-s", required=True)
     pr.add_argument("--grace-s", required=True)
     pr.add_argument("--test-train-allowance-s", default="")

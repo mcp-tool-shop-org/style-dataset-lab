@@ -1022,7 +1022,7 @@ chunk_bytes = int(os.environ["SDLAB_DL_CHUNK_BYTES"])
 vm_file = root / rel
 
 if not vm_file.is_file():
-    print("SDLAB_DOWNLOAD_PREPARE_JSON " + json.dumps({"exists": False}), flush=True)
+    print("SDLAB_DOWNLOAD_PREPARE_JSON " + json.dumps({"rel": rel, "exists": False, "chunk_bytes": chunk_bytes}), flush=True)
     raise SystemExit(0)
 
 size = vm_file.stat().st_size
@@ -1034,6 +1034,7 @@ if size <= chunk_bytes:
     print(
         "SDLAB_DOWNLOAD_PREPARE_JSON "
         + json.dumps({
+            "rel": rel,
             "exists": True,
             "split": False,
             "whole_bytes": size,
@@ -1103,6 +1104,7 @@ manifest_payload = {
 print(
     "SDLAB_DOWNLOAD_PREPARE_JSON "
     + json.dumps({
+        "rel": rel,
         "exists": True,
         "split": True,
         "prefix": prefix,
@@ -1232,27 +1234,81 @@ _colab_download_transfer() {
 
   if [[ "${src}" == /content/* ]] && [ -n "${src#/content/}" ]; then
     local rel_src="${src#/content/}"
-    _colab_write_download_prepare_py "${tmp_dl_dir}/prepare_download.py"
-    local prep_rc=0
-    local prep_t="${base_timeout}"
-    [ "${prep_t}" -gt 180 ] && prep_t=180
-    _dl_step_run "${prep_t}" "${tmp_dl_dir}/prep.out" colab exec -s "${session}" -f "${tmp_dl_dir}/prepare_download.py" \
-      --timeout "${prep_t}" --env "SDLAB_CONTENT=/content" --env "SDLAB_DL_REL=${rel_src}" \
-      --env "SDLAB_DL_CHUNK_BYTES=${chunk_bytes}" || prep_rc=$?
-    local prep_out=""
-    prep_out="$(cat "${tmp_dl_dir}/prep.out" 2>/dev/null || true)"
-    [ -n "${prep_out}" ] && printf '%s\n' "${prep_out}" >> "${out_dir}/colab.log"
-    if colab_rc_is_timeout "${prep_rc}"; then
-      echo "SALVAGE_STEP_TIMEOUT download timeout_s=${prep_t} kill_grace_s=${kill_grace} rc=${prep_rc}" >> "${out_dir}/guards.log"
-      rm -rf "${tmp_dl_dir}"
-      rm -f "${dst}"
-      if [ "${mode}" = "normal" ]; then
-        colab_refuse_logged "${out_dir}" DOWNLOAD_FAILED "${src} -> ${dst}: VM download prepare timed out rc=${prep_rc} (CLI output in colab.log)"
-      fi
-      return "${prep_rc}"
+    local prior_log="${out_dir}/vitals.log"
+    if [ "${mode}" = "salvage" ]; then
+      prior_log="${out_dir}/bundle_now.log"
     fi
-    IFS=$'\t' read -r prep_state prep_split prep_whole_bytes prep_whole_sha prep_part_count prep_manifest_remote prep_prefix < <(
-      "${py_bin}" -c '
+    local need_prep_exec="1"
+    if [ -f "${prior_log}" ]; then
+      IFS=$'\t' read -r prep_state prep_split prep_whole_bytes prep_whole_sha prep_part_count prep_manifest_remote prep_prefix < <(
+        "${py_bin}" -c '
+import json, pathlib, sys
+raw = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+want_rel = sys.argv[2]
+want_chunk = int(sys.argv[3])
+done_marker = f"SDLAB_DOWNLOAD_PREPARE_DONE chunk_bytes={want_chunk}"
+rec = None
+saw_done = False
+for ln in reversed(raw.splitlines()):
+    s = ln.strip()
+    if s == done_marker:
+        saw_done = True
+    elif s.startswith("SDLAB_DOWNLOAD_PREPARE_JSON "):
+        try:
+            cand = json.loads(s[len("SDLAB_DOWNLOAD_PREPARE_JSON "):])
+        except ValueError:
+            continue
+        if cand.get("rel") == want_rel and int(cand.get("chunk_bytes", -1)) == want_chunk:
+            rec = cand
+            break
+if rec is not None:
+    if not rec.get("exists"):
+        print("DIRECT\t0\t0\t\t1\t\t")
+    elif not rec.get("split"):
+        wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
+        print(f"SINGLE\t0\t{wb}\t{ws}\t1\t\t")
+    else:
+        wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
+        pc = int(rec["part_count"]); mr = rec["manifest_remote"]; px = rec["prefix"]
+        print(f"SPLIT\t1\t{wb}\t{ws}\t{pc}\t{mr}\t{px}")
+elif saw_done:
+    print("DIRECT\t0\t0\t\t1\t\t")
+else:
+    print("NEED_PREP\t0\t0\t\t1\t\t")
+' "${prior_log}" "${rel_src}" "${chunk_bytes}" | tr -d '\r'
+      )
+      if [ "${prep_state}" != "NEED_PREP" ]; then
+        need_prep_exec="0"
+      elif [ "${mode}" = "salvage" ]; then
+        prep_state="DIRECT"
+        need_prep_exec="0"
+      else
+        prep_state="DIRECT"
+      fi
+    fi
+
+    if [ "${need_prep_exec}" = "1" ]; then
+      _colab_write_download_prepare_py "${tmp_dl_dir}/prepare_download.py"
+      local prep_rc=0
+      local prep_t="${base_timeout}"
+      [ "${prep_t}" -gt 180 ] && prep_t=180
+      _dl_step_run "${prep_t}" "${tmp_dl_dir}/prep.out" colab exec -s "${session}" -f "${tmp_dl_dir}/prepare_download.py" \
+        --timeout "${prep_t}" --env "SDLAB_CONTENT=/content" --env "SDLAB_DL_REL=${rel_src}" \
+        --env "SDLAB_DL_CHUNK_BYTES=${chunk_bytes}" || prep_rc=$?
+      local prep_out=""
+      prep_out="$(cat "${tmp_dl_dir}/prep.out" 2>/dev/null || true)"
+      [ -n "${prep_out}" ] && printf '%s\n' "${prep_out}" >> "${out_dir}/colab.log"
+      if colab_rc_is_timeout "${prep_rc}"; then
+        echo "SALVAGE_STEP_TIMEOUT download timeout_s=${prep_t} kill_grace_s=${kill_grace} rc=${prep_rc}" >> "${out_dir}/guards.log"
+        rm -rf "${tmp_dl_dir}"
+        rm -f "${dst}"
+        if [ "${mode}" = "normal" ]; then
+          colab_refuse_logged "${out_dir}" DOWNLOAD_FAILED "${src} -> ${dst}: VM download prepare timed out rc=${prep_rc} (CLI output in colab.log)"
+        fi
+        return "${prep_rc}"
+      fi
+      IFS=$'\t' read -r prep_state prep_split prep_whole_bytes prep_whole_sha prep_part_count prep_manifest_remote prep_prefix < <(
+        "${py_bin}" -c '
 import json, sys
 raw = sys.stdin.read()
 rec = None
@@ -1274,7 +1330,8 @@ else:
     pc = int(rec["part_count"]); mr = rec["manifest_remote"]; px = rec["prefix"]
     print(f"SPLIT\t1\t{wb}\t{ws}\t{pc}\t{mr}\t{px}")
 ' <<< "${prep_out}" | tr -d '\r'
-    )
+      )
+    fi
   fi
 
   # Single-GET path (`prep_state == DIRECT` when missing/non-/content, or `SINGLE` when <= chunk_bytes).
@@ -2086,7 +2143,12 @@ colab_run_exec_with_live_guards() {
   local grace_int="${grace_s%.*}"
   local exec_timeout="$(( wall_int + grace_int + 60 ))"
 
-  local exec_args=("-s" "${session}" "-f" "${runner_py}" "--timeout" "${exec_timeout}")
+  local dl_chunk_env="${COLAB_DOWNLOAD_CHUNK_BYTES:-${COLAB_DOWNLOAD_CHUNK_BYTES_DEFAULT}}"
+  local exec_args=(
+    "-s" "${session}" "-f" "${runner_py}" "--timeout" "${exec_timeout}"
+    "--env" "SDLAB_CONTENT=/content"
+    "--env" "SDLAB_DL_CHUNK_BYTES=${dl_chunk_env}"
+  )
   for kv in "${env_pairs[@]}"; do
     exec_args+=("--env" "${kv}")
   done
@@ -2237,8 +2299,10 @@ colab_salvage_bundle_after_failure() {
     step_t="${exec_t}"
     [ "${remaining_s}" -lt "${step_t}" ] && step_t="${remaining_s}"
     local exec_rc=0
+    local dl_chunk_salvage="${COLAB_DOWNLOAD_CHUNK_BYTES:-${COLAB_DOWNLOAD_CHUNK_BYTES_DEFAULT}}"
     colab_run_bounded_salvage_step "${step_t}" "${kill_grace}" colab exec -s "${session}" -f "${bundle_now_py}" --timeout 300 \
-      --env "SDLAB_CONTENT=/content" --env "SDLAB_BUNDLE_RC=${failed_rc}" >> "${out_dir}/bundle_now.log" 2>&1 || exec_rc=$?
+      --env "SDLAB_CONTENT=/content" --env "SDLAB_BUNDLE_RC=${failed_rc}" \
+      --env "SDLAB_DL_CHUNK_BYTES=${dl_chunk_salvage}" >> "${out_dir}/bundle_now.log" 2>&1 || exec_rc=$?
     if colab_rc_is_timeout "${exec_rc}"; then
       echo "SALVAGE_STEP_TIMEOUT bundle-now timeout_s=${step_t} kill_grace_s=${kill_grace} rc=${exec_rc}" >> "${out_dir}/guards.log"
     fi

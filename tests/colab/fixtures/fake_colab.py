@@ -667,7 +667,10 @@ echo "run" > lane1_out/phase.txt
 emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
 echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
-printf 'FAKE_TAR_BYTES' > lane1_stub_bundle.tar.gz
+if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
+  "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+fi
+tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
 """
     )
     lane3_body = (

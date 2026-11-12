@@ -756,7 +756,7 @@ def test_read_token_reaches_only_the_download_and_appears_in_no_file(tmp_path: P
 def test_kit_refuses_a_wall_that_cannot_cover_the_rung(tmp_path: Path) -> None:
     state_dir, env, src = _rung_env(tmp_path)
     res, _ = _launch(tmp_path, env, src, "--wall-s", "1200")
-    assert res.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s 1200 minus grace 60 must cover 1320 s" in res.stderr
+    assert res.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s 1200 minus grace 60 must cover 2760 s" in res.stderr
     assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
 
 
@@ -1057,7 +1057,7 @@ def test_truncated_checkpoint_is_partial_and_does_not_count(tmp_path: Path) -> N
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["refusal_code"] == "TRAIN_CHECKPOINT_MISSING" and win["trained"] is False
     manifest = [json.loads(x) for x in _bundle(out_dir)["rung_outputs/manifest.jsonl"].decode().splitlines()]
-    cks = [m for m in manifest if m["path"].endswith(".safetensors")]
+    cks = [m for m in manifest if m["path"].endswith(".safetensors") and not lr._is_underscore_subpath(m["path"])]
     assert cks and all(m["partial"] is True for m in cks)
 
 
@@ -3316,6 +3316,7 @@ def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
 
 
 def _write_synthetic_job(root: Path, *, name: str = "synthetic_style_v1", steps: int = 40) -> tuple[Path, str]:
+    root.mkdir(parents=True, exist_ok=True)
     job_path = root / f"{name}.yaml"
     body = (
         "# Synthetic generic LoRA training job for kit tests\n"
@@ -4078,7 +4079,7 @@ def test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusa
         win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
         assert win["refusal_code"] == expected_code, (label, win)
         for sub in substrs:
-            assert sub in (win["refusal_why"] or ""), (label, sub, win["refusal_why"])
+            assert sub in (win["why"] or ""), (label, sub, win["why"])
         assert not (case_state / "calls.log").exists(), label
 
     # Positive check: pinned allowed ref + trigger_word with cache_text_embeddings: false passes check-job.
@@ -4241,7 +4242,7 @@ def test_bundle_manifest_mismatch_when_file_dropped_or_size_changed(tmp_path: Pa
     assert win_drop["trained"] is False
     assert win_drop["training_output_manifest_check"]["ok"] is False
     assert "missing training output in bundle: rung_outputs/rustline_style_v5/optimizer.pt" in (
-        win_drop["refusal_why"] or ""
+        win_drop["why"] or ""
     )
 
     # 2. Fake alters loss.log size in rung_outputs before tarring -> rig fails with TRAIN_OUTPUT_MANIFEST_MISMATCH.
@@ -4253,7 +4254,300 @@ def test_bundle_manifest_mismatch_when_file_dropped_or_size_changed(tmp_path: Pa
     assert win_sz["refusal_code"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
     assert win_sz["trained"] is False
     assert win_sz["training_output_manifest_check"]["ok"] is False
-    assert "size mismatch for rung_outputs/rustline_style_v5/loss.log" in (win_sz["refusal_why"] or "")
+    assert "size mismatch for rung_outputs/rustline_style_v5/loss.log" in (win_sz["why"] or "")
+
+
+def test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 1. YAML subset parser branches + check-job semantic refusals & --plan-out
+    parsed_yaml = lr.parse_job_yaml(
+        "job: extension # comment\n"
+        "'quoted_key': 'it''s fine'\n"
+        'escaped: "line \\"q\\""\n'
+        "empty_val:\n"
+        "null_val: ~\n"
+        "bools: [true, false, 12, -3.5e2, []]\n"
+        "inline_map: {a: 1, b: 'two'}\n"
+        "empty_map: {}\n"
+        "multiline_val: first part\n"
+        "  second part\n"
+        "seq:\n"
+        "  -\n"
+        "  - multi item\n"
+        "    continued\n"
+        "  - k1:\n"
+        "      nested: ok\n"
+        "    k2: 9\n"
+    )
+    assert parsed_yaml["quoted_key"] == "it's fine"
+    assert parsed_yaml["inline_map"] == {"a": 1, "b": "two"}
+    assert parsed_yaml["empty_map"] == {}
+    assert parsed_yaml["multiline_val"] == "first part second part"
+    assert parsed_yaml["seq"][0] is None
+    assert parsed_yaml["seq"][1] == "multi item continued"
+    assert parsed_yaml["seq"][2] == {"k1": {"nested": "ok"}, "k2": 9}
+
+    for bad_yaml in (
+        "# only comment\n",
+        "\tjob: extension\n",
+        "a: 1\n  b: 2\n",
+        "not_a_kv_line\n",
+        "- item1\n- item2\n",
+    ):
+        with pytest.raises(lr.Refusal) as y_exc:
+            lr.parse_job_yaml(bad_yaml)
+        assert y_exc.value.code == "JOB_TEMPLATE_INVALID"
+
+    base_p, base_sha = _write_synthetic_job(tmp_path / "ip_job", steps=40)
+    base_txt = base_p.read_text(encoding="utf-8")
+    plan_out_p = tmp_path / "ip_job" / "job_plan.json"
+    assert lr.main([
+        "check-job",
+        "--template", str(base_p),
+        "--template-sha", base_sha,
+        "--model-revision", REVISION,
+        "--model-repo", "Qwen/Qwen-Image",
+        "--plan-out", str(plan_out_p),
+    ]) == 0
+    assert json.loads(plan_out_p.read_text(encoding="utf-8"))["steps"] == 40
+
+    assert lr.main(["check-job", "--template", str(tmp_path / "no_job.yaml")]) == 1
+    assert lr.main(["check-job", "--template", str(base_p), "--template-sha", "0" * 64]) == 1
+    assert lr.main(["check-job", "--template", str(base_p), "--model-revision", "not40hex"]) == 1
+    assert lr.main(["check-job", "--template", str(base_p), "--model-repo", "untrusted/model"]) == 1
+
+    def _check_mutated(label: str, mutated_txt: str, expected_code: str) -> None:
+        assert mutated_txt != base_txt, label
+        capsys.readouterr()
+        p = tmp_path / "ip_job" / f"{label}.yaml"
+        p.write_text(mutated_txt, encoding="utf-8", newline="\n")
+        rc = lr.main(["check-job", "--template", str(p), "--model-revision", REVISION])
+        err = capsys.readouterr().err
+        assert rc == 1 and f"REFUSED: {expected_code}:" in err, (label, err)
+
+    _check_mutated(
+        "unpinned_url",
+        base_txt + "  note: https://huggingface.co/Qwen/Qwen-Image/resolve/main/model.safetensors\n",
+        "JOB_UNPINNED_HUB_REF",
+    )
+    _check_mutated(
+        "unpinned_pipe",
+        base_txt + f"  loras: Qwen/Qwen-Image@{REVISION}|Qwen/Qwen-Image\n",
+        "JOB_UNPINNED_HUB_REF",
+    )
+    _check_mutated(
+        "unpinned_spec",
+        base_txt + "  extra_repo: Qwen/Qwen-Image\n",
+        "JOB_UNPINNED_HUB_REF",
+    )
+    _check_mutated(
+        "bad_licence_url",
+        base_txt + f"  note: https://huggingface.co/other-org/bad-model/resolve/{REVISION}/w.safetensors\n",
+        "JOB_MODEL_LICENCE_NOT_ALLOWED",
+    )
+    _check_mutated(
+        "save_disabled",
+        base_txt.replace("      dtype: float16\n", "      dtype: float16\n      disable_saving: true\n"),
+        "JOB_SAVE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "save_gt_steps",
+        base_txt.replace("      save_every: 40\n", "      save_every: 80\n"),
+        "JOB_SAVE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "sample_disabled",
+        base_txt.replace("      sample_every: 40\n", "      sample_every: 40\n      disable_sampling: true\n"),
+        "JOB_SAMPLE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "sample_gt_steps",
+        base_txt.replace("      sample_every: 40\n", "      sample_every: 80\n"),
+        "JOB_SAMPLE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "sample_bad_steps",
+        base_txt.replace("      sample_steps: 20\n", "      sample_steps: 0\n"),
+        "JOB_SAMPLE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "trigger_cached",
+        base_txt.replace("    device: cuda:0\n", '    device: cuda:0\n    trigger_word: "tok"\n'),
+        "JOB_TRIGGER_WITH_CACHED_EMBEDDINGS",
+    )
+    _check_mutated(
+        "dropout_missing",
+        base_txt.replace("      caption_dropout_rate: 0.05\n", ""),
+        "JOB_CAPTION_DROPOUT_INVALID",
+    )
+    _check_mutated(
+        "dropout_range",
+        base_txt.replace("      caption_dropout_rate: 0.05\n", "      caption_dropout_rate: 1.5\n"),
+        "JOB_CAPTION_DROPOUT_INVALID",
+    )
+    _check_mutated(
+        "dropout_src_missing",
+        base_txt.replace(
+            "  caption_dropout_source: ostris/ai-toolkit@beb94824 config/examples/train_lora_qwen_image_24gb.yaml:34\n",
+            "",
+        ),
+        "JOB_CAPTION_DROPOUT_INVALID",
+    )
+
+    # Positive hub URL + pipe check with cleared repo & 40-hex revision
+    pinned_urls_p = tmp_path / "ip_job" / "pinned_urls.yaml"
+    pinned_urls_p.write_text(
+        base_txt
+        + f"  ref_url: https://huggingface.co/Qwen/Qwen-Image/resolve/{REVISION}/transformer/config.json\n"
+        + f"  ref_pipe: Qwen/Qwen-Image@{REVISION}|Qwen/Qwen2.5-VL-7B-Instruct@{REVISION}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    assert lr.main(["check-job", "--template", str(pinned_urls_p), "--model-revision", REVISION]) == 0
+
+    # 2. `plan-run` branches (missing download timeout, explicit < projected, rung wall vs real wall, disk refusals)
+    arch_p = tmp_path / "ip_ds.tar"
+    arch_p.write_bytes(b"x" * 4096)
+    base_plan_args = [
+        "plan-run",
+        "--job-plan", str(plan_out_p),
+        "--upload-timeout-s", "120",
+        "--dataset-archive", str(arch_p),
+        "--download-max-seconds", "60",
+        "--setup-allowance-s", "900",
+        "--wall-s", "3600",
+        "--grace-s", "60",
+        "--out", str(tmp_path / "ip_run_plan.json"),
+    ]
+    # Real job with no explicit download timeout and no floor -> DOWNLOAD_TIMEOUT_REQUIRED
+    capsys.readouterr()
+    assert lr.main([*base_plan_args, "--is-real-job", "1"]) == 1
+    assert "DOWNLOAD_TIMEOUT_REQUIRED" in capsys.readouterr().err
+
+    # Explicit download timeout below projected -> DOWNLOAD_TIMEOUT_TOO_SHORT
+    assert lr.main([
+        *base_plan_args,
+        "--is-real-job", "1",
+        "--explicit-download-timeout-s", "1",
+        "--download-timeout-source", "cli",
+        "--download-floor-mb-s", "1.0",
+    ]) == 1
+    assert "DOWNLOAD_TIMEOUT_TOO_SHORT" in capsys.readouterr().err
+
+    # Explicit download timeout >= projected -> ok
+    assert lr.main([
+        *base_plan_args,
+        "--is-real-job", "1",
+        "--explicit-download-timeout-s", "600",
+        "--download-timeout-source", "cli",
+        "--download-floor-mb-s", "10.0",
+    ]) == 0
+
+    # Rung mode (`--is-real-job 0`) uses fixed 1800 s train allowance (60 + 900 + 1800 = 2760 s)
+    capsys.readouterr()
+    assert lr.main([
+        "plan-run",
+        "--job-plan", str(plan_out_p),
+        "--is-real-job", "0",
+        "--upload-timeout-s", "120",
+        "--dataset-archive", str(arch_p),
+        "--download-max-seconds", "60",
+        "--setup-allowance-s", "900",
+        "--wall-s", "1200",
+        "--grace-s", "60",
+    ]) == 1
+    assert "must cover 2760 s" in capsys.readouterr().err
+
+    # Invalid overhead < 1.0 -> TRAIN_OUTPUT_PROJECTION_REQUIRED; overflowing disk -> TRAIN_OUTPUT_DISK_LOW
+    assert lr.main([
+        *base_plan_args, "--is-real-job", "0", "--output-overhead-factor", "0.5"
+    ]) == 1
+    assert "TRAIN_OUTPUT_PROJECTION_REQUIRED" in capsys.readouterr().err
+
+    assert lr.main([
+        *base_plan_args, "--is-real-job", "0", "--checkpoint-size-bytes", str(40 * GIB)
+    ]) == 1
+    assert "TRAIN_OUTPUT_DISK_LOW" in capsys.readouterr().err
+
+    # 3. `dataset` archive pack & unpack + error branches in-process
+    ds_src, ds_man, ds_man_sha = _write_synthetic_dataset(tmp_path / "ip_ds", n=2)
+    packed_tar = tmp_path / "ip_ds" / "packed.tar"
+    packed_sha_f = tmp_path / "ip_ds" / "packed.sha256"
+    assert lr.main([
+        "dataset",
+        "--manifest", str(ds_man),
+        "--manifest-sha", ds_man_sha,
+        "--src", str(ds_src),
+        "--pack-archive", str(packed_tar),
+        "--archive-sha-out", str(packed_sha_f),
+    ]) == 0
+    packed_sha = packed_sha_f.read_text(encoding="utf-8").strip()
+    unpack_dst = tmp_path / "ip_ds" / "unpacked"
+    assert lr.main([
+        "dataset",
+        "--manifest", str(ds_man),
+        "--manifest-sha", ds_man_sha,
+        "--archive", str(packed_tar),
+        "--archive-sha", packed_sha,
+        "--dest", str(unpack_dst),
+        "--unlink-archive",
+    ]) == 0
+    assert not packed_tar.exists()
+    assert (unpack_dst / "studio_plate_00.png").is_file() and (unpack_dst / "studio_plate_00.txt").is_file()
+    assert lr.main(["dataset", "--manifest", str(ds_man), "--archive", str(tmp_path / "missing.tar"), "--dest", str(unpack_dst)]) == 1
+
+    # 4. `write-train-manifest`, `check-output-disk`, `check-bundle-disk`, and `verify-bundle` branches in-process
+    tf_dir = tmp_path / "ip_train_folder"
+    (tf_dir / "sub").mkdir(parents=True)
+    (tf_dir / "sub" / "loss.log").write_bytes(b"step=1 loss=0.4\n")
+    tf_man_out = tmp_path / "ip_bundle_dir" / "training_folder_manifest.json"
+    assert lr.main(["write-train-manifest", "--watch", str(tf_dir), "--out", str(tf_man_out)]) == 0
+
+    cod_out = tmp_path / "cod.json"
+    assert lr.main([
+        "check-output-disk",
+        "--training-folder", str(tmp_path / "nonexistent_child" / "train"),
+        "--projected-bytes", "1024",
+        "--out", str(cod_out),
+    ]) == 0
+    assert lr.main([
+        "check-output-disk",
+        "--training-folder", str(tf_dir),
+        "--projected-bytes", "not-an-int",
+        "--out", str(cod_out),
+    ]) == 1
+    assert lr.run_check_output_disk(
+        lr.argparse.Namespace(training_folder=str(tf_dir), projected_bytes="5000", out=str(cod_out)),
+        usage_fn=lambda _p: type("U", (), {"free": 100})(),
+    ) == 1
+
+    cbd_out = tmp_path / "cbd.json"
+    bundle_dir = tmp_path / "ip_bundle_dir"
+    (bundle_dir / "rung_outputs" / "sub").mkdir(parents=True)
+    (bundle_dir / "rung_outputs" / "sub" / "loss.log").write_bytes(b"step=1 loss=0.4\n")
+    assert lr.main(["check-bundle-disk", "--bundle-dir", str(bundle_dir), "--out", str(cbd_out)]) == 0
+    assert lr.run_check_bundle_disk(
+        lr.argparse.Namespace(bundle_dir=str(bundle_dir), out=str(cbd_out)),
+        usage_fn=lambda _p: type("U", (), {"free": 1})(),
+    ) == 1
+
+    good_bundle_tar = tmp_path / "good_bundle.tar.gz"
+    with tarfile.open(good_bundle_tar, "w:gz") as tf:
+        tf.add(str(bundle_dir), arcname=".")
+    vb_ok_json = tmp_path / "vb_ok.json"
+    assert lr.main(["verify-bundle", "--bundle-tar", str(good_bundle_tar), "--out", str(vb_ok_json)]) == 0
+    assert json.loads(vb_ok_json.read_text(encoding="utf-8")) == {"ok": True, "checked_files": 1, "total_bytes": 16}
+
+    # Corrupted content with identical byte count -> sha256 mismatch in verify-bundle
+    (bundle_dir / "rung_outputs" / "sub" / "loss.log").write_bytes(b"step=1 loss=9.9\n")
+    sha_bad_tar = tmp_path / "sha_bad_bundle.tar.gz"
+    with tarfile.open(sha_bad_tar, "w:gz") as tf:
+        tf.add(str(bundle_dir), arcname=".")
+    capsys.readouterr()
+    assert lr.main(["verify-bundle", "--bundle-tar", str(sha_bad_tar)]) == 1
+    assert "sha256 mismatch" in capsys.readouterr().err
+
 
 
 

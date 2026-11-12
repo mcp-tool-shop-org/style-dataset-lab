@@ -32,7 +32,9 @@ sys.path.insert(0, str(FIXTURES))
 sys.path.insert(0, str(COLAB_DIR))
 
 import fake_colab as fc  # noqa: E402
+import lane3_bundle_now as lbn  # noqa: E402
 import lane3_rung as lr  # noqa: E402
+import remote_runner as rr  # noqa: E402
 
 
 def _bash() -> str:
@@ -366,6 +368,7 @@ def test_salvage_path_uses_chunked_download_above_chunk_size(tmp_path: Path) -> 
     (lane3_out / "rung_outputs").mkdir(parents=True)
     (lane3_out / "rung_outputs" / "ckpt_blob.bin").write_bytes(os.urandom(160_000))
     shutil.copyfile(COLAB_DIR / "launch_guards.py", state / "content" / "launch_guards.py")
+    shutil.copyfile(COLAB_DIR / "lane3_rung.py", state / "content" / "lane3_rung.py")
 
     out_dir = tmp_path / "out_salvage_chunk"
     out_dir.mkdir()
@@ -552,3 +555,101 @@ def test_probe_upload_limit_sweeps_both_directions_stops_at_first_500_and_stops_
     assert win["status"] == "ok"
     assert win["card"] == "CPU-high-mem"
     _assert_no_tokens(out_dir)
+
+
+def test_in_process_remote_download_prep_salvage_and_single_download_sha_guards(tmp_path: Path) -> None:
+    # 1. Direct in-process coverage of `remote_runner.prepare_content_downloads` & `run_remote_script`
+    assert rr.prepare_content_downloads(tmp_path / "missing_dir", 1024) == []
+    content_rr = tmp_path / "rr_content"
+    content_rr.mkdir()
+    assert rr.prepare_content_downloads(content_rr, 0) == []
+
+    small_bytes = b"small-bundle-payload"
+    big_bytes = os.urandom(70_000)
+    (content_rr / "a_small.tar.gz").write_bytes(small_bytes)
+    (content_rr / "b_big.tar.gz").write_bytes(big_bytes)
+    (content_rr / ".sdlab_dl_b_big.tar.gz.part.0099").write_bytes(b"stale")
+    (content_rr / "notes.txt").write_text("ignored", encoding="utf-8")
+
+    recs = rr.prepare_content_downloads(content_rr, 32_768)
+    assert [r["rel"] for r in recs] == ["a_small.tar.gz", "b_big.tar.gz"]
+    assert recs[0]["split"] is False and recs[0]["whole_sha256"] == hashlib.sha256(small_bytes).hexdigest()
+    assert recs[1]["split"] is True and recs[1]["part_count"] == 3
+    assert recs[1]["whole_sha256"] == hashlib.sha256(big_bytes).hexdigest()
+    assert not (content_rr / ".sdlab_dl_b_big.tar.gz.part.0099").exists()
+    man_rr = json.loads((content_rr / ".sdlab_dl_b_big.tar.gz.manifest.json").read_text(encoding="utf-8"))
+    assert man_rr["part_count"] == 3 and man_rr["whole_bytes"] == 70_000
+
+    echo_sh = tmp_path / "rr_ok.sh"
+    echo_sh.write_text("#!/usr/bin/env bash\necho RR_OK\n", encoding="utf-8", newline="\n")
+    rc_rr = rr.run_remote_script(
+        _p(echo_sh),
+        env={**os.environ, "SDLAB_CONTENT": str(content_rr), "SDLAB_DL_CHUNK_BYTES": "32768"},
+    )
+    assert rc_rr == 0
+
+    # 2. Direct in-process coverage of `lane3_bundle_now.bundle_now` (missing env, unsplit, and split)
+    assert lbn.bundle_now({}) == 2
+    lbn._prepare_salvage_downloads(str(tmp_path / "no_dir"), 1024)
+
+    content_bn = tmp_path / "bn_content"
+    (content_bn / "lane3_out").mkdir(parents=True)
+    (content_bn / "lane3_train").mkdir(parents=True)
+    (content_bn / "lane3_train" / "step_1.txt").write_text("saved", encoding="utf-8")
+    shutil.copyfile(COLAB_DIR / "lane3_rung.py", content_bn / "lane3_rung.py")
+    shutil.copyfile(COLAB_DIR / "launch_guards.py", content_bn / "launch_guards.py")
+
+    assert lbn.bundle_now({
+        **os.environ,
+        "SDLAB_CONTENT": str(content_bn),
+        "SDLAB_BUNDLE_RC": "91",
+        "SDLAB_DL_CHUNK_BYTES": "1048576",
+    }) == 0
+    assert (content_bn / "lane3_stub_bundle.tar.gz").is_file()
+
+    # Now enlarge `lane3_train` and re-run `bundle_now` with small chunk size so `_prepare_salvage_downloads` splits it.
+    (content_bn / "lane3_stub_bundle.tar.gz").unlink()
+    (content_bn / ".sdlab_dl_lane3_stub_bundle.tar.gz.part.0099").write_bytes(b"stale")
+    (content_bn / "lane3_train" / "blob.bin").write_bytes(os.urandom(90_000))
+    assert lbn.bundle_now({
+        **os.environ,
+        "SDLAB_CONTENT": str(content_bn),
+        "SDLAB_BUNDLE_RC": "91",
+        "SDLAB_DL_CHUNK_BYTES": "32768",
+    }) == 0
+    assert not (content_bn / ".sdlab_dl_lane3_stub_bundle.tar.gz.part.0099").exists()
+    man_bn = json.loads(
+        (content_bn / ".sdlab_dl_lane3_stub_bundle.tar.gz.manifest.json").read_text(encoding="utf-8")
+    )
+    assert man_bn["part_count"] >= 3
+
+    # 3. Single-file download corruption -> DOWNLOAD_SHA_MISMATCH, and chunked manifest 1x HTTP 500 retry -> ok.
+    _, state_s, env_s = fc.make_fake_colab_env(tmp_path / "single_corrupt")
+    env_s["COLAB_DOWNLOAD_CHUNK_BYTES"] = "262144"
+    env_s["FAKE_COLAB_CORRUPT_DOWNLOAD_FOR"] = "small_b.tar.gz"
+    (state_s / "content" / "small_b.tar.gz").write_bytes(b"unsplit-bundle-data")
+    out_s = tmp_path / "single_corrupt" / "out"
+    out_s.mkdir()
+    res_s = _window_fn(
+        env_s,
+        f'colab_download_checked s1 /content/small_b.tar.gz "{_p(out_s / "small_b.tar.gz")}" "{_p(out_s)}"',
+    )
+    assert res_s.returncode != 0 and "REFUSED: DOWNLOAD_SHA_MISMATCH:" in res_s.stderr
+    assert not (out_s / "small_b.tar.gz").exists()
+
+    _, state_m, env_m = fc.make_fake_colab_env(tmp_path / "man_retry")
+    env_m["COLAB_DOWNLOAD_CHUNK_BYTES"] = "32768"
+    env_m["FAKE_COLAB_DOWNLOAD_HTTP_500_ONCE_FOR"] = ".manifest.json"
+    m_payload = os.urandom(80_000)
+    (state_m / "content" / "m_bundle.tar.gz").write_bytes(m_payload)
+    out_m = tmp_path / "man_retry" / "out"
+    out_m.mkdir()
+    res_m = _window_fn(
+        env_m,
+        f'colab_download_checked s1 /content/m_bundle.tar.gz "{_p(out_m / "m_bundle.tar.gz")}" "{_p(out_m)}"',
+    )
+    assert res_m.returncode == 0, res_m.stderr
+    assert hashlib.sha256((out_m / "m_bundle.tar.gz").read_bytes()).hexdigest() == hashlib.sha256(m_payload).hexdigest()
+    bd_m = json.loads((out_m / "bundle_download.json").read_text(encoding="utf-8"))
+    assert bd_m["retries"] == 1 and bd_m["verified"] is True
+
