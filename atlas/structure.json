@@ -16282,7 +16282,7 @@
       "dynamicReads": 12,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 18,
+      "dynamicWrites": 21,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -17252,11 +17252,11 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "8b9b30a3ff1f6ede99953cad066bcda680dbdd6a28d3c74b9d29fa05cf2d4afd",
+          "hash": "b7ab63248172a7f0add1cd5ac5012e364e94a94bc060d98a590edb9760bcd5fa",
           "path": "scripts/colab/README.md"
         },
         {
-          "hash": "b466250df006438e33312707ce2b9cf781a4d9a39e14c5a3a097e211a827dc25",
+          "hash": "e683108836655b0a76527c80866cb504004cc8604157770a5a74ebe399c4f18b",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "893cb88d0d4ccfe1e821fa2d5cdb1a0f416b4a5557c0cd1823f7fd94fadb9ad7",
+          "hash": "244f2f542a292408b165faa4c4b77935d4f6532bd97a7575694b2efa92a35b4f",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17623,6 +17623,8 @@
             "measure_disk",
             "measure_host_ram",
             "measure_shm",
+            "normalize_sha256",
+            "pack_dataset_archive",
             "parse_meminfo",
             "parse_positive_number",
             "pid_alive",
@@ -17631,6 +17633,7 @@
             "refuse_line",
             "repo_cache_dir",
             "run_bundle_now",
+            "run_check_job",
             "run_checkpoint",
             "run_copy_off",
             "run_dataset",
@@ -17642,190 +17645,387 @@
             "rung_pids",
             "safetensors_complete",
             "sha256_file",
+            "unpack_and_verify_dataset_archive",
+            "validate_job_template",
             "write_json"
           ],
           "failurePaths": [
             {
               "in": "safetensors_complete",
               "kind": "except",
-              "line": 80
+              "line": 91
             },
             {
               "in": "parse_positive_number",
               "kind": "raise",
-              "line": 113
+              "line": 124
             },
             {
               "in": "parse_positive_number",
               "kind": "except",
-              "line": 116
+              "line": 127
             },
             {
               "in": "parse_positive_number",
               "kind": "raise",
-              "line": 117
+              "line": 128
             },
             {
               "in": "parse_positive_number",
               "kind": "raise",
-              "line": 119
+              "line": 130
             },
             {
               "in": "measure_shm",
               "kind": "except",
-              "line": 182
+              "line": 193
             },
             {
               "in": "query_driver",
               "kind": "except",
-              "line": 198
+              "line": 209
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 225
+              "line": 236
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 243
+              "line": 254
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 255
+              "line": 266
             },
             {
               "in": "run_guards",
               "kind": "except",
-              "line": 269
+              "line": 280
             },
             {
               "in": "run_guards",
               "kind": "except",
-              "line": 277
+              "line": 288
             },
             {
               "in": "dir_bytes",
               "kind": "except",
-              "line": 335
+              "line": 346
             },
             {
               "in": "redirect_request",
               "kind": "raise",
-              "line": 387
-            },
-            {
-              "in": "check_model_api",
-              "kind": "except",
-              "line": 394
-            },
-            {
-              "in": "check_model_api",
-              "kind": "except",
               "line": 398
             },
             {
               "in": "check_model_api",
-              "kind": "raise",
-              "line": 401
-            },
-            {
-              "in": "check_model_api",
-              "kind": "raise",
-              "line": 404
-            },
-            {
-              "in": "check_model_api",
-              "kind": "raise",
+              "kind": "except",
               "line": 405
             },
             {
               "in": "check_model_api",
               "kind": "except",
-              "line": 406
-            },
-            {
-              "in": "check_model_api",
-              "kind": "raise",
-              "line": 407
-            },
-            {
-              "in": "check_model_api",
-              "kind": "raise",
               "line": 409
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 412
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 415
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 416
+            },
+            {
+              "in": "check_model_api",
+              "kind": "except",
+              "line": 417
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 418
+            },
+            {
+              "in": "check_model_api",
+              "kind": "raise",
+              "line": 420
             },
             {
               "in": "run_model_check",
               "kind": "except",
-              "line": 418
+              "line": 429
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 474
+              "line": 485
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 476
+              "line": 487
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 477
+              "line": 488
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 489
+              "line": 500
+            },
+            {
+              "in": "normalize_sha256",
+              "kind": "raise",
+              "line": 591
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 597
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 600
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 605
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 610
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 614
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 616
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 618
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 620
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 648
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 652
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 661
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 665
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 669
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "except",
+              "line": 672
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 673
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 677
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 680
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 698
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 703
+            },
+            {
+              "in": "run_dataset",
+              "kind": "except",
+              "line": 706
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 707
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 712
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 720
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 726
+            },
+            {
+              "in": "run_dataset",
+              "kind": "raise",
+              "line": 729
+            },
+            {
+              "in": "run_dataset",
+              "kind": "except",
+              "line": 746
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 756
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 758
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 768
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 772
+            },
+            {
+              "in": "run_check_job",
+              "kind": "raise",
+              "line": 784
+            },
+            {
+              "in": "run_check_job",
+              "kind": "raise",
+              "line": 789
+            },
+            {
+              "in": "run_check_job",
+              "kind": "raise",
+              "line": 791
+            },
+            {
+              "in": "run_check_job",
+              "kind": "except",
+              "line": 794
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 806
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 811
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 822
+            },
+            {
+              "in": "run_render_job",
+              "kind": "except",
+              "line": 824
             },
             {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 668
+              "line": 874
             },
             {
               "in": "load_done",
               "kind": "except",
-              "line": 680
+              "line": 886
             },
             {
               "in": "pid_alive",
               "kind": "except",
-              "line": 690
+              "line": 896
             },
             {
               "in": "read_json",
               "kind": "except",
-              "line": 723
+              "line": 929
             },
             {
               "in": "run_checkpoint",
               "kind": "except",
-              "line": 735
+              "line": 941
             },
             {
               "in": "run_finish",
               "kind": "except",
-              "line": 754
+              "line": 960
             },
             {
               "in": "rung_pids",
               "kind": "except",
-              "line": 800
+              "line": 1006
             },
             {
               "in": "run_bundle_now",
               "kind": "except",
-              "line": 821
+              "line": 1027
             },
             {
               "kind": "raise",
-              "line": 936
+              "line": 1155
             }
           ],
-          "hash": "47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b",
+          "hash": "36708898cb9ae18e99b9b10ae7a3619e620055ec3c1c3bb4342dd9d7e9d4db49",
           "path": "scripts/colab/lane3_rung.py"
         },
         {
@@ -17918,11 +18118,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "c9ce0d55488dac129e254cfd5504852b9dc88ade418014ad59c4740792aef3a6",
+          "hash": "5389477eb7c9f2fc2e0df16136b5010835878ed2b99570ed033869ce656119fe",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "19da5a784f406d1b824bf38df57082c61b0185d121d3d80d9d518341858f847d",
+          "hash": "5b6249d3d730db3a2905a04ebf52c6be72fcc6765303a89a3d80280f1d523049",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19604,11 +19804,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 67,
+          "reads": 68,
           "where": [
             "caller"
           ],
-          "writes": 31
+          "writes": 30
         },
         {
           "reads": 2,
@@ -19626,8 +19826,8 @@
           "writes": 0
         }
       ],
-      "outsideReads": 70,
-      "outsideWrites": 43,
+      "outsideReads": 71,
+      "outsideWrites": 42,
       "role": "code",
       "testRunners": [
         "node --test",
@@ -20363,7 +20563,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "52d41a3f1497da39f37189850d99ef22e4342f193777cbb1e14d4d3b5c5c6f0d",
+          "hash": "845510de88f04793bd2cbd6d57406ebfd4d0205cccd330f0ca76e39c6d00bb52",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -20574,6 +20774,7 @@
             "test_copy_off_copies_settled_files_once_with_sha",
             "test_copy_off_survives_a_vanished_file_and_the_final_sweep_catches_up",
             "test_cpu_rate_selection_is_unchanged",
+            "test_dataset_archive_pack_unpack_and_vm_integrity_refusals",
             "test_dataset_verify_place_and_refusals",
             "test_disk_measures_each_filesystem_once_from_the_nearest_existing_ancestor",
             "test_download_failure_and_bad_request_values",
@@ -20583,6 +20784,7 @@
             "test_download_hard_limit_kills_a_stalled_download",
             "test_download_offline_reads_only_the_cache",
             "test_download_records_token_used_from_the_variable",
+            "test_download_timeout_setting_flag_env_and_window_json",
             "test_download_too_slow_is_stopped_after_the_probe",
             "test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05",
             "test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls",
@@ -20621,6 +20823,9 @@
             "test_query_driver_reads_nvidia_smi_or_records_why_not",
             "test_rate_waits_for_stability_and_prices_at_the_max",
             "test_read_token_reaches_only_the_download_and_appears_in_no_file",
+            "test_real_run_end_to_end_job_and_dataset_manifest_with_batched_archive",
+            "test_real_run_job_check_unit_and_placeholder_guards",
+            "test_real_run_pre_open_refusals_before_colab_new",
             "test_remote_runner_scrubs_relayed_lines",
             "test_render_job_fills_the_committed_rung_yaml",
             "test_repo_cache_dir_and_dir_bytes",
@@ -20633,6 +20838,7 @@
             "test_rung_500_stopped_by_wall_guard_keeps_step_250_and_marks_step_500_partial",
             "test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop",
             "test_rung_mid_run_failure_downloads_what_was_copied_off",
+            "test_rung_path_uploads_single_batched_archive_and_vm_checks_archive_sha",
             "test_rung_refusals_stop_before_training_and_still_bundle",
             "test_rung_shape_mismatch_refuses_after_open_and_stops",
             "test_rung_success_trains_copies_off_and_records_the_guards",
@@ -20666,7 +20872,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "a0337a98001ac8ad46bf3453a3380539e180c3d4027714368e0a4ad38bd51567",
+          "hash": "c14491ca13734a13f46242a1ecd5eee50ae2ae1c4d3fc34696f1f9a455b5dffb",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -22972,7 +23178,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "b58b97351107c66f7a9892bd4c09426665215cfa",
+    "commit": "fc64dbeada4edc2de016c0eea58ef4e552aad3f1",
     "tracked": 3309
   },
   "landings": [

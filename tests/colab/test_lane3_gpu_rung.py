@@ -3278,3 +3278,458 @@ def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
     assert "worst_case_total_spend: 8.3 (= max(cap_path 8.3, launcher_death_path 8.25) = cap 8.3)" in out_l1, out_l1
     assert "assumptions: cap_path assumes " in out_l1 and "launcher_death_path assumes " in out_l1, out_l1
 
+
+# --- real-run job, dataset manifest, batched archive, and download timeout ---------------------
+
+
+def _write_synthetic_job(root: Path, *, name: str = "synthetic_style_v1", steps: int = 40) -> tuple[Path, str]:
+    job_path = root / f"{name}.yaml"
+    body = (
+        "# Synthetic generic LoRA training job for kit tests\n"
+        "job: extension\n"
+        "config:\n"
+        f"  name: {name}\n"
+        "  process:\n"
+        "  - type: sd_trainer\n"
+        '    training_folder: "__LANE3_TRAINING_FOLDER__"\n'
+        "    device: cuda:0\n"
+        "    network:\n"
+        "      type: lora\n"
+        "      linear: 16\n"
+        "      linear_alpha: 16\n"
+        "    save:\n"
+        "      dtype: float16\n"
+        f"      save_every: {steps}\n"
+        "      max_step_saves_to_keep: 4\n"
+        "    datasets:\n"
+        '    - folder_path: "__LANE3_DATASET_DIR__"\n'
+        "      caption_ext: txt\n"
+        "      num_workers: 0\n"
+        "      resolution:\n"
+        "      - 512\n"
+        "      - 768\n"
+        "      - 1024\n"
+        "    train:\n"
+        "      batch_size: 1\n"
+        "      cache_text_embeddings: true\n"
+        f"      steps: {steps}\n"
+        "      skip_first_sample: true\n"
+        "      optimizer: adamw8bit\n"
+        "      lr: 0.0001\n"
+        "      dtype: bf16\n"
+        "    model:\n"
+        '      name_or_path: "__LANE3_MODEL_PATH__"\n'
+        "      arch: qwen_image\n"
+        "      quantize: false\n"
+        "      quantize_te: false\n"
+        "      low_vram: false\n"
+        "    sample:\n"
+        "      sampler: flowmatch\n"
+        f"      sample_every: {steps}\n"
+        "      width: 1024\n"
+        "      height: 1024\n"
+        "      prompts:\n"
+        "      - synthetic studio still life, ceramic bowl on linen cloth\n"
+        "      neg: ''\n"
+        "      seed: 42\n"
+        "      guidance_scale: 3\n"
+        "      sample_steps: 20\n"
+    )
+    job_path.write_text(body, encoding="utf-8", newline="\n")
+    return job_path, hashlib.sha256(job_path.read_bytes()).hexdigest()
+
+
+def _write_synthetic_dataset(root: Path, n: int = 4) -> tuple[Path, Path, str]:
+    ds_dir = root / "real_dataset_src"
+    ds_dir.mkdir(parents=True, exist_ok=True)
+    items = []
+    for idx in range(n):
+        fname = f"studio_plate_{idx:02d}.png"
+        payload = _png(100 + idx)
+        (ds_dir / fname).write_bytes(payload)
+        items.append({
+            "image": fname,
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "caption": f"synthetic studio plate {idx}, neutral daylight study",
+        })
+    manifest = root / "real-dataset-manifest.json"
+    manifest.write_text(
+        json.dumps({"schema_version": "1.0", "items": items}, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return ds_dir, manifest, hashlib.sha256(manifest.read_bytes()).hexdigest()
+
+
+def _real_run_env(tmp_path: Path) -> tuple[Path, dict[str, str]]:
+    state_dir, env, _ = _rung_env(tmp_path)
+    # Real-run path uses --dataset-manifest directly and keeps committed rung pins intact.
+    env.pop("SDLAB_TEST_RUNG_DATASET_MANIFEST", None)
+    env.pop("EXPECTED_RUNG_DATASET_SHA", None)
+    return state_dir, env
+
+
+def _launch_real(
+    tmp_path: Path, env: dict[str, str], ds_dir: Path, *extra: str, out: str = "out_real", timeout_s: int = 240
+) -> tuple[subprocess.CompletedProcess[str], Path]:
+    out_dir = tmp_path / out
+    args = [
+        _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--shape", "high-mem",
+        "--session", "sdlab-l3-real-run", "--out-dir", fc._to_posix(out_dir),
+        "--dataset-dir", fc._to_posix(ds_dir), "--model", "Qwen/Qwen-Image",
+        "--model-revision", REVISION, "--host-ram-required-gib", "96.5",
+        "--download-max-seconds", "60", "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5",
+        *extra,
+    ]
+    res = subprocess.run(
+        args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout_s, check=False
+    )
+    return res, out_dir
+
+
+def test_real_run_job_check_unit_and_placeholder_guards(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    job_path, job_sha = _write_synthetic_job(tmp_path)
+    assert lr.main([
+        "check-job", "--template", str(job_path), "--template-sha", job_sha, "--model-revision", REVISION
+    ]) == 0
+    assert "JOB_TEMPLATE_OK" in capsys.readouterr().out
+
+    # Missing file
+    assert lr.main([
+        "check-job", "--template", str(tmp_path / "missing.yaml"), "--template-sha", job_sha,
+        "--model-revision", REVISION,
+    ]) == 1
+    assert "REFUSED: JOB_FILE_MISSING:" in capsys.readouterr().err
+
+    # Sha mismatch & malformed sha
+    assert lr.main([
+        "check-job", "--template", str(job_path), "--template-sha", "0" * 64, "--model-revision", REVISION
+    ]) == 1
+    assert "REFUSED: JOB_SHA_MISMATCH:" in capsys.readouterr().err
+    assert lr.main([
+        "check-job", "--template", str(job_path), "--template-sha", "not-a-sha", "--model-revision", REVISION
+    ]) == 1
+    assert "REFUSED: JOB_SHA_MISMATCH:" in capsys.readouterr().err
+
+    # Unpinned model revision (branch name instead of 40-hex commit)
+    assert lr.main([
+        "check-job", "--template", str(job_path), "--template-sha", f"sha256:{job_sha}", "--model-revision", "main"
+    ]) == 1
+    assert "REFUSED: TRAIN_MODEL_REVISION_REQUIRED:" in capsys.readouterr().err
+
+    # Placeholder missing, commented out, duplicated, or extra unpinned name_or_path
+    base_text = job_path.read_text(encoding="utf-8")
+    for idx, bad_text in enumerate([
+        base_text.replace('"__LANE3_MODEL_PATH__"', '"Qwen/Qwen-Image"'),
+        base_text.replace('    model:\n      name_or_path: "__LANE3_MODEL_PATH__"',
+                          '    # name_or_path: "__LANE3_MODEL_PATH__"'),
+        base_text + '\n# extra: "__LANE3_DATASET_DIR__"\n',
+        base_text.replace('      arch: qwen_image', '      arch: qwen_image\n      te_name_or_path: "Qwen/Unpinned"'),
+        base_text.replace('training_folder: "__LANE3_TRAINING_FOLDER__"',
+                          'other_folder: "__LANE3_TRAINING_FOLDER__"'),
+    ]):
+        bad_p = tmp_path / f"bad_{idx}.yaml"
+        bad_p.write_text(bad_text, encoding="utf-8", newline="\n")
+        bad_sha = hashlib.sha256(bad_p.read_bytes()).hexdigest()
+        assert lr.main([
+            "check-job", "--template", str(bad_p), "--template-sha", bad_sha, "--model-revision", REVISION
+        ]) == 1
+        assert "REFUSED: JOB_TEMPLATE_INVALID:" in capsys.readouterr().err
+
+    # render-job --template-sha guard on VM
+    rendered = tmp_path / "rendered.yaml"
+    assert lr.main([
+        "render-job", "--template", str(job_path), "--template-sha", "f" * 64, "--out", str(rendered),
+        "--training-folder", "/content/lane3_train", "--dataset-dir", "/content/lane3_dataset",
+        "--model-path", f"/content/hf_home/snapshots/{REVISION}",
+    ]) == 1
+    assert "REFUSED: JOB_SHA_MISMATCH:" in capsys.readouterr().err
+    assert lr.main([
+        "render-job", "--template", str(job_path), "--template-sha", job_sha, "--out", str(rendered),
+        "--training-folder", "/content/lane3_train", "--dataset-dir", "/content/lane3_dataset",
+        "--model-path", f"/content/hf_home/snapshots/{REVISION}",
+    ]) == 0
+    capsys.readouterr()
+
+
+def test_dataset_archive_pack_unpack_and_vm_integrity_refusals(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_dir, manifest, m_sha = _write_synthetic_dataset(tmp_path, n=3)
+    archive_p = tmp_path / "packed" / "lane3_dataset.tar"
+    sha_out_p = tmp_path / "packed" / "dataset_archive_sha256.txt"
+
+    # Rig-side verify + deterministic tar pack
+    assert lr.main([
+        "dataset", "--manifest", str(manifest), "--manifest-sha", m_sha,
+        "--src", str(ds_dir), "--pack-archive", str(archive_p), "--archive-sha-out", str(sha_out_p),
+    ]) == 0
+    out_line = capsys.readouterr().out
+    arch_sha = sha_out_p.read_text(encoding="utf-8").strip()
+    assert len(arch_sha) == 64 and arch_sha == hashlib.sha256(archive_p.read_bytes()).hexdigest()
+    assert f"archive_sha256={arch_sha}" in out_line
+
+    # Missing manifest and manifest sha mismatch
+    assert lr.main(["dataset", "--manifest", str(tmp_path / "nope.json"), "--src", str(ds_dir)]) == 1
+    assert "REFUSED: DATASET_MANIFEST_MISSING:" in capsys.readouterr().err
+    assert lr.main(["dataset", "--manifest", str(manifest), "--manifest-sha", "a" * 64, "--src", str(ds_dir)]) == 1
+    assert "REFUSED: DATASET_MANIFEST_SHA_MISMATCH:" in capsys.readouterr().err
+
+    # Malformed manifests (invalid JSON, traversal name, .txt image, duplicate stem, bad sha)
+    for idx, payload in enumerate([
+        "{not-json",
+        json.dumps({"items": [{"image": "../escape.png", "sha256": "b" * 64, "caption": "x"}]}),
+        json.dumps({"items": [{"image": "note.txt", "sha256": "b" * 64, "caption": "x"}]}),
+        json.dumps({"items": [
+            {"image": "dup.png", "sha256": "b" * 64, "caption": "x"},
+            {"image": "dup.jpg", "sha256": "c" * 64, "caption": "y"},
+        ]}),
+        json.dumps({"items": [{"image": "ok.png", "sha256": "short", "caption": "x"}]}),
+    ]):
+        bad_m = tmp_path / f"bad_manifest_{idx}.json"
+        bad_m.write_text(payload, encoding="utf-8")
+        assert lr.main(["dataset", "--manifest", str(bad_m), "--src", str(ds_dir)]) == 1
+        assert "REFUSED: DATASET_MANIFEST_INVALID:" in capsys.readouterr().err
+
+    # VM-side archive sha mismatch
+    corrupt_tar = tmp_path / "corrupt.tar"
+    corrupt_tar.write_bytes(archive_p.read_bytes() + b"tamper")
+    assert lr.main([
+        "dataset", "--manifest", str(manifest), "--manifest-sha", m_sha,
+        "--archive", str(corrupt_tar), "--archive-sha", arch_sha, "--dest", str(tmp_path / "vm_bad1"),
+    ]) == 1
+    assert "REFUSED: DATASET_ARCHIVE_SHA_MISMATCH:" in capsys.readouterr().err
+
+    # VM-side per-item sha mismatch even when outer archive sha matches --archive-sha
+    tampered_src = tmp_path / "tampered_src"
+    shutil.copytree(ds_dir, tampered_src)
+    (tampered_src / "studio_plate_01.png").write_bytes(b"\x89PNG\r\n\x1a\ncorrupted-plate")
+    tampered_tar = tmp_path / "tampered_item.tar"
+    items_raw = json.loads(manifest.read_text(encoding="utf-8"))["items"]
+    tampered_tar_sha = lr.pack_dataset_archive(tampered_src, items_raw, tampered_tar)
+    assert lr.main([
+        "dataset", "--manifest", str(manifest), "--manifest-sha", m_sha,
+        "--archive", str(tampered_tar), "--archive-sha", tampered_tar_sha, "--dest", str(tmp_path / "vm_bad2"),
+    ]) == 1
+    assert "REFUSED: DATASET_SHA_MISMATCH:" in capsys.readouterr().err
+
+    # VM-side archive missing an expected item
+    partial_tar = tmp_path / "partial_item.tar"
+    partial_tar_sha = lr.pack_dataset_archive(ds_dir, items_raw[:2], partial_tar)
+    assert lr.main([
+        "dataset", "--manifest", str(manifest), "--manifest-sha", m_sha,
+        "--archive", str(partial_tar), "--archive-sha", partial_tar_sha, "--dest", str(tmp_path / "vm_bad3"),
+    ]) == 1
+    assert "REFUSED: DATASET_FILE_MISSING:" in capsys.readouterr().err
+
+    # VM-side clean unpack + per-item sha verify + caption write + --unlink-archive
+    vm_dest = tmp_path / "vm_placed"
+    assert lr.main([
+        "dataset", "--manifest", str(manifest), "--manifest-sha", m_sha,
+        "--archive", str(archive_p), "--archive-sha", arch_sha, "--dest", str(vm_dest), "--unlink-archive",
+    ]) == 0
+    assert not archive_p.exists()
+    for idx in range(3):
+        assert (vm_dest / f"studio_plate_{idx:02d}.png").read_bytes() == _png(100 + idx)
+        assert (vm_dest / f"studio_plate_{idx:02d}.txt").read_text(encoding="utf-8") == (
+            f"synthetic studio plate {idx}, neutral daylight study\n"
+        )
+    capsys.readouterr()
+
+
+def test_real_run_end_to_end_job_and_dataset_manifest_with_batched_archive(tmp_path: Path) -> None:
+    state_dir, env = _real_run_env(tmp_path)
+    job_path, job_sha = _write_synthetic_job(tmp_path, name="synthetic_style_v1", steps=40)
+    ds_dir, manifest, m_sha = _write_synthetic_dataset(tmp_path, n=4)
+
+    res, out_dir = _launch_real(
+        tmp_path, env, ds_dir,
+        "--job", fc._to_posix(job_path),
+        "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(manifest),
+        "--dataset-manifest-sha", m_sha,
+    )
+    assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+
+    # Single batched archive upload; zero per-image uploads; local staging tar removed.
+    uploads = (state_dir / "uploads.log").read_text(encoding="utf-8").splitlines()
+    tar_uploads = [ln for ln in uploads if "/content/lane3_dataset.tar" in ln]
+    img_uploads = [ln for ln in uploads if "studio_plate_" in ln]
+    assert len(tar_uploads) == 1 and tar_uploads[0].startswith("UPLOAD_OK "), uploads
+    assert img_uploads == [], img_uploads
+    assert not (out_dir / ".lane3_dataset.tar").exists()
+
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    outcome = json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8"))
+    assert win["status"] == "ok" and win["trained"] is True and win["train_completed"] is True
+    assert win["train_steps_target"] == 40 and win["train_steps_done"] == 40
+    assert win["rung_job"] is None and win["rung_job_sha256"] is None
+    assert win["job_sha256"] == job_sha and outcome["job_sha256"] == job_sha
+    assert win["dataset_manifest_sha256"] == m_sha and outcome["dataset_manifest_sha256"] == m_sha
+    assert len(win["dataset_archive_sha256"]) == 64
+    assert win["dataset_archive_sha256"] == outcome["dataset_archive_sha256"]
+    assert win["download_timeout_s"] == 300
+    assert job_sha in win["input_shas"].values() and m_sha in win["input_shas"].values()
+    assert win["rung_outputs"]["checkpoints"] == [
+        "synthetic_style_v1/synthetic_style_v1.safetensors",
+        "synthetic_style_v1/synthetic_style_v1_000000040.safetensors",
+    ]
+    _assert_token_nowhere(out_dir)
+
+
+def test_real_run_pre_open_refusals_before_colab_new(tmp_path: Path) -> None:
+    state_dir, env = _real_run_env(tmp_path)
+    job_path, job_sha = _write_synthetic_job(tmp_path)
+    ds_dir, manifest, m_sha = _write_synthetic_dataset(tmp_path, n=3)
+    jp = fc._to_posix(job_path)
+    mp = fc._to_posix(manifest)
+
+    cli_cases: list[tuple[str, list[str], str]] = [
+        ("conflict_job", ["--rung-job", "20", "--job", jp, "--job-sha", job_sha], "JOB_CONFLICT"),
+        ("conflict_ds", ["--rung-job", "20", "--dataset-manifest", mp], "JOB_CONFLICT"),
+        ("no_job_sha", ["--job", jp, "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha], "JOB_SHA_REQUIRED"),
+        ("no_job", ["--job-sha", job_sha, "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha], "JOB_REQUIRED"),
+        ("no_ds_man", ["--job", jp, "--job-sha", job_sha], "DATASET_MANIFEST_REQUIRED"),
+        ("no_ds_sha", ["--job", jp, "--job-sha", job_sha, "--dataset-manifest", mp], "DATASET_MANIFEST_SHA_REQUIRED"),
+    ]
+    for label, extra_args, expected_code in cli_cases:
+        res, _ = _launch_real(tmp_path, env, ds_dir, *extra_args, out=f"out_{label}")
+        assert res.returncode == 2 and f"REFUSED: {expected_code}:" in res.stderr, (label, res.stderr)
+        assert not (state_dir / "calls.log").exists()
+
+    # --job without --train is refused before any colab call
+    res_notrain = subprocess.run(
+        [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(tmp_path / "out_notrain_job"), "--job", jp],
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+    )
+    assert res_notrain.returncode == 2 and "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN:" in res_notrain.stderr
+
+    # Pre-open file / sha / placeholder / dataset refusals (after input-sha verification, before colab new)
+    bad_job = tmp_path / "unpinned_job.yaml"
+    bad_job.write_text(
+        job_path.read_text(encoding="utf-8").replace('"__LANE3_MODEL_PATH__"', '"Qwen/Qwen-Image"'),
+        encoding="utf-8",
+        newline="\n",
+    )
+    bad_job_sha = hashlib.sha256(bad_job.read_bytes()).hexdigest()
+
+    guard_cases: list[tuple[str, list[str], str]] = [
+        ("job_missing", ["--job", fc._to_posix(tmp_path / "gone.yaml"), "--job-sha", job_sha,
+                         "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha], "JOB_FILE_MISSING"),
+        ("job_sha_bad", ["--job", jp, "--job-sha", "0" * 64,
+                         "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha], "JOB_SHA_MISMATCH"),
+        ("job_unpinned", ["--job", fc._to_posix(bad_job), "--job-sha", bad_job_sha,
+                          "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha], "JOB_TEMPLATE_INVALID"),
+        ("ds_missing", ["--job", jp, "--job-sha", job_sha,
+                        "--dataset-manifest", fc._to_posix(tmp_path / "gone.json"), "--dataset-manifest-sha", m_sha],
+         "DATASET_MANIFEST_MISSING"),
+        ("ds_sha_bad", ["--job", jp, "--job-sha", job_sha,
+                        "--dataset-manifest", mp, "--dataset-manifest-sha", "1" * 64],
+         "DATASET_MANIFEST_SHA_MISMATCH"),
+    ]
+    for label, extra_args, expected_code in guard_cases:
+        res, out_dir = _launch_real(tmp_path, env, ds_dir, *extra_args, out=f"out_{label}")
+        assert res.returncode != 0, label
+        win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+        assert win["refusal_code"] == expected_code, (label, win)
+        assert not (state_dir / "calls.log").exists()
+
+    # Per-item missing file & per-item sha mismatch on real-run dataset before colab new
+    ds_missing_dir = tmp_path / "ds_missing_item"
+    shutil.copytree(ds_dir, ds_missing_dir)
+    (ds_missing_dir / "studio_plate_02.png").unlink()
+    res_miss, out_miss = _launch_real(
+        tmp_path, env, ds_missing_dir,
+        "--job", jp, "--job-sha", job_sha, "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha,
+        out="out_item_missing",
+    )
+    assert res_miss.returncode != 0
+    assert json.loads((out_miss / "window.json").read_text(encoding="utf-8"))["refusal_code"] == "DATASET_FILE_MISSING"
+    assert not (state_dir / "calls.log").exists()
+
+    ds_corrupt_dir = tmp_path / "ds_corrupt_item"
+    shutil.copytree(ds_dir, ds_corrupt_dir)
+    (ds_corrupt_dir / "studio_plate_00.png").write_bytes(b"tampered")
+    res_corr, out_corr = _launch_real(
+        tmp_path, env, ds_corrupt_dir,
+        "--job", jp, "--job-sha", job_sha, "--dataset-manifest", mp, "--dataset-manifest-sha", m_sha,
+        out="out_item_corrupt",
+    )
+    assert res_corr.returncode != 0
+    assert json.loads((out_corr / "window.json").read_text(encoding="utf-8"))["refusal_code"] == "DATASET_SHA_MISMATCH"
+    assert not (state_dir / "calls.log").exists()
+
+
+def test_rung_path_uploads_single_batched_archive_and_vm_checks_archive_sha(tmp_path: Path) -> None:
+    state_ok, env_ok, src_ok = _rung_env(tmp_path / "rung_ok")
+    res_ok, out_ok = _launch(tmp_path / "rung_ok", env_ok, src_ok)
+    assert res_ok.returncode == 0, res_ok.stderr
+    uploads_ok = (state_ok / "uploads.log").read_text(encoding="utf-8").splitlines()
+    assert sum(1 for ln in uploads_ok if "/content/lane3_dataset.tar" in ln) == 1
+    assert not any("plate_0" in ln for ln in uploads_ok), uploads_ok
+    win_ok = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
+    assert win_ok["rung_job"] == "20" and len(win_ok["dataset_archive_sha256"]) == 64
+
+    # Corrupting /content/lane3_dataset.tar on the VM refuses DATASET_ARCHIVE_SHA_MISMATCH before training.
+    _, env_bad, src_bad = _rung_env(tmp_path / "rung_corrupt")
+    env_bad["FAKE_COLAB_CORRUPT_DATASET_ARCHIVE"] = "1"
+    res_bad, out_bad = _launch(tmp_path / "rung_corrupt", env_bad, src_bad)
+    assert res_bad.returncode != 0
+    win_bad = json.loads((out_bad / "window.json").read_text(encoding="utf-8"))
+    assert win_bad["refusal_code"] == "DATASET_ARCHIVE_SHA_MISMATCH" and win_bad["trained"] is False
+
+
+def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> None:
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+    state_inv, env_inv, src_inv = _rung_env(tmp_path / "inv")
+
+    # Invalid values via CLI or env refuse DOWNLOAD_TIMEOUT_INVALID before any colab call
+    res_inv_cli, _ = _launch(tmp_path / "inv", env_inv, src_inv, "--download-timeout-s", "0", out="out_inv1")
+    assert res_inv_cli.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_INVALID:" in res_inv_cli.stderr
+    env_bad = {**env_inv, "COLAB_DOWNLOAD_TIMEOUT_S": "abc"}
+    res_inv_env = subprocess.run(
+        [_bash(), fc._to_posix(lane1_sh), "--dry"],
+        env=env_bad, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert res_inv_env.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_INVALID:" in res_inv_env.stderr
+    assert not (state_inv / "calls.log").exists()
+
+    # Env setting (480 s) and CLI override (600 s) scale cleanup_bound_s in --dry across Lane 3 and Lane 1
+    env_480 = {**env_inv, "COLAB_DOWNLOAD_TIMEOUT_S": "480"}
+    dry_l3_env, _ = _launch(
+        tmp_path / "inv", env_480, src_inv,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--dry",
+    )
+    assert dry_l3_env.returncode == 0
+    assert json.loads(dry_l3_env.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1650
+
+    dry_l3_cli, _ = _launch(
+        tmp_path / "inv", env_480, src_inv,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05",
+        "--download-timeout-s", "600", "--dry",
+    )
+    assert dry_l3_cli.returncode == 0
+    assert json.loads(dry_l3_cli.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1890
+
+    dry_l1_cli = subprocess.run(
+        [
+            _bash(), fc._to_posix(lane1_sh), "--card", "G4", "--shape", "standard",
+            "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--download-timeout-s", "600", "--dry",
+        ],
+        env=env_inv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert dry_l1_cli.returncode == 0
+    assert json.loads(dry_l1_cli.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 750
+
+    # End-to-end window.json records the configured download_timeout_s and scaled cleanup bounds
+    _, env_run, src_run = _rung_env(tmp_path / "run600")
+    res_run, out_run = _launch(
+        tmp_path / "run600", env_run, src_run, "--cap", "7", "--download-timeout-s", "600",
+    )
+    assert res_run.returncode == 0, res_run.stderr
+    win_run = json.loads((out_run / "window.json").read_text(encoding="utf-8"))
+    assert win_run["download_timeout_s"] == 600
+    assert win_run["cleanup_stop_attempted_by_s"] == 1750
+    assert win_run["cleanup_bound_s"] == 1890
+
+

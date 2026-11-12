@@ -783,18 +783,18 @@ if steps == 500:
     (out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
     print("Done", flush=True)
     sys.exit(0)
-(out / f"{name}_000000020.safetensors").write_bytes(st(b"FAKE-LORA-STEP-20"))
+(out / f"{name}_{steps:09d}.safetensors").write_bytes(st(f"FAKE-LORA-STEP-{steps}".encode()))
 time.sleep(0.3)
 if os.environ.get("FAKE_VM_TRAIN") == "fail_after_save":
     print("torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB", flush=True)
     time.sleep(0.3)
     sys.exit(1)
 if os.environ.get("FAKE_VM_TRAIN") == "hang_after_save":
-    (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    (out / "samples" / f"1762400000000__{steps:09d}_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
     time.sleep(600)
 time.sleep(float(os.environ.get("FAKE_VM_TRAIN_SLEEP_S", "0")))
 if os.environ.get("FAKE_VM_TRAIN") != "no_sample":
-    (out / "samples" / "1762400000000__000000020_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
+    (out / "samples" / f"1762400000000__{steps:09d}_0.jpg").write_bytes(b"\\xff\\xd8FAKEJPEG" * 32)
 (out / f"{name}.safetensors").write_bytes(st(b"FAKE-LORA-FINAL"))
 print("Done", flush=True)
 RUNPYEOF
@@ -1381,6 +1381,8 @@ def main(argv: list[str] | None = None) -> int:
                 fh.write(f"UPLOAD_FAILED_{status} {' '.join(args)}\n")
             return 1
         shutil.copyfile(src_path, dst_path)
+        if rel == "lane3_dataset.tar" and os.environ.get("FAKE_COLAB_CORRUPT_DATASET_ARCHIVE") == "1":
+            dst_path.write_bytes(b"corrupted-dataset-tar-on-vm")
         # Keep the uploaded script at `<name>.uploaded` and install the fake stub runner at `<name>`
         # unless `FAKE_COLAB_RUN_UPLOADED_SCRIPT=1` is requested.
         if rel in ("remote_lane1_stub.sh", "remote_lane3_stub.sh") and os.environ.get("FAKE_COLAB_RUN_UPLOADED_SCRIPT") != "1":

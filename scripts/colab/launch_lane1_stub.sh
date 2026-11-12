@@ -36,8 +36,8 @@ PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="893cb88d0d4ccfe1e821fa2d5cdb1a0f416b4a5557c0cd1823f7fd94fadb9ad7"
-PINNED_SELF_SHA="9a256e1f7125095ac3d11a237a35f3223ba6cc323c8bb2aef0280833e9920276"
+PINNED_COLAB_WINDOW_SHA="244f2f542a292408b165faa4c4b77935d4f6532bd97a7575694b2efa92a35b4f"
+PINNED_SELF_SHA="b7414745584c1eeddd3e78d6314a55f706f62b70473454daa58ecd51693e9f98"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -54,6 +54,7 @@ MARGIN="${MARGIN:-0.01}"
 MAX_RATE=""
 SHAPE=""
 MIN_RUNTIME_S=""
+DOWNLOAD_TIMEOUT_S_ARG=""
 DRY_RUN=0
 
 while [ "$#" -gt 0 ]; do
@@ -68,6 +69,7 @@ while [ "$#" -gt 0 ]; do
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --min-runtime-s) MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --download-timeout-s) DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dry) DRY_RUN=1; shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
@@ -75,6 +77,8 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+
+colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
 
 if [ "${DRY_RUN}" = "1" ]; then
   DRY_TEST_MODE=0

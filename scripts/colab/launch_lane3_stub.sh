@@ -5,11 +5,13 @@
 # uv venv + wheel-only install from hash-locked lane3.lock and pre-built local wheels in
 # lane3-local-wheels.json + pinned ostris/ai-toolkit + the import gate. Without --train it stops
 # there: TRAIN_SKIPPED and train=skipped_cpu_stub in window.json (never a trained result). With
-# --train (a GPU card, --rung-job 20|500, --model, --model-revision, --host-ram-required-gib,
-# --download-max-seconds and --dataset-dir, each a named refusal when missing) the remote script's
-# LANE3_MODE=train runs the rung: GPU smoke / disk / host-RAM guards before the model download, the
-# download with its DOWNLOAD_TOO_SLOW probe, the fixture dataset, the selected committed rung YAML
-# (lane3/rung-qwen-image.yaml for 20 or lane3/rung-qwen-image-500.yaml for 500, uploaded as
+# --train (a GPU card, either --rung-job 20|500 or --job <path> --job-sha <sha> with
+# --dataset-manifest <path> --dataset-manifest-sha <sha>, plus --model, --model-revision,
+# --host-ram-required-gib, --download-max-seconds and --dataset-dir, each a named refusal when
+# missing) the remote script's LANE3_MODE=train runs the training window: GPU smoke / disk /
+# host-RAM guards before the model download, the download with its DOWNLOAD_TOO_SLOW probe, the
+# batched dataset tar (/content/lane3_dataset.tar, packed and sha-recorded before `colab new` and
+# verified by archive sha + per-item sha on the VM), the active job YAML (uploaded as
 # /content/rung-qwen-image.yaml)
 # and ai-toolkit's run.py, copying each checkpoint and sample into the bundle as it is saved; the
 # bundle is downloaded at the end and, after a failure, whatever it holds. Enforces live
@@ -20,10 +22,10 @@
 #   open-lock wait: timeout -k 10 180 (190 s)
 #   colab new: timeout -k 10 180 (190 s)
 #   colab upload: timeout -k 10 120 (130 s)
-#   colab download: timeout -k 10 300 (310 s)
+#   colab download: timeout -k 10 ${COLAB_DOWNLOAD_TIMEOUT_S:-300} (default 300 s -> 310 s; --download-timeout-s / COLAB_DOWNLOAD_TIMEOUT_S)
 #   restart-kernel: timeout -k 10 180 (190 s)
 #   bundle-now exec (--timeout 300): timeout -k 10 330 (340 s)
-#   salvage download: timeout -k 10 300 (310 s)
+#   salvage download: timeout -k 10 ${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300} (default 300 s -> 310 s)
 #   SALVAGE_DEADLINE_S=840 (past 840 s, remaining salvage steps are skipped -> colab stop)
 #   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
 #   wall watcher escalation: 30 s after TERM -> watcher runs `colab stop` itself (stop_path: trap | watcher)
@@ -50,13 +52,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="893cb88d0d4ccfe1e821fa2d5cdb1a0f416b4a5557c0cd1823f7fd94fadb9ad7"
-PINNED_LANE3_RUNG_SHA="47462c632c86dff2979d479503f9651bf37d4560713136ebc0c8c91b51e4275b"
+PINNED_COLAB_WINDOW_SHA="244f2f542a292408b165faa4c4b77935d4f6532bd97a7575694b2efa92a35b4f"
+PINNED_LANE3_RUNG_SHA="36708898cb9ae18e99b9b10ae7a3619e620055ec3c1c3bb4342dd9d7e9d4db49"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
 PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="e96b04641fa26a6036aab13d5bcb8992622a5da5d9fcd680b253200075df9353"
+PINNED_SELF_SHA="1bf1eeac9f07c69d341641cfbee1d8f5fc19725510b1c184cc69acf08f22f42e"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -428,11 +430,22 @@ fi
 LANE3_HF_READ_TOKEN=""
 LANE3_MODEL_PATH="\$("\${LANE3_PY}" -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["snapshot_path"])' /content/lane3_out/model_download.json)"
 
-"\${LANE3_PY}" /content/lane3_rung.py dataset --manifest /content/rung-dataset.json --src /content \
-  --dest "\${LANE3_DATASET_DIR}" 2>&1 | tee -a /content/lane3_out/setup.log
-"\${LANE3_PY}" /content/lane3_rung.py render-job --template /content/rung-qwen-image.yaml \
-  --out /content/lane3_out/rung_job.yaml --training-folder "\${LANE3_TRAINING_FOLDER}" \
-  --dataset-dir "\${LANE3_DATASET_DIR}" --model-path "\${LANE3_MODEL_PATH}" 2>&1 | tee -a /content/lane3_out/setup.log
+LANE3_DS_ARGS=(--manifest /content/rung-dataset.json --dest "\${LANE3_DATASET_DIR}")
+if [ -n "\${LANE3_DATASET_MANIFEST_SHA256:-}" ]; then
+  LANE3_DS_ARGS+=(--manifest-sha "\${LANE3_DATASET_MANIFEST_SHA256}")
+fi
+if [ -n "\${LANE3_DATASET_ARCHIVE_SHA256:-}" ] || [ -f /content/lane3_dataset.tar ]; then
+  LANE3_DS_ARGS+=(--archive /content/lane3_dataset.tar --archive-sha "\${LANE3_DATASET_ARCHIVE_SHA256:-}" --unlink-archive)
+else
+  LANE3_DS_ARGS+=(--src /content)
+fi
+"\${LANE3_PY}" /content/lane3_rung.py dataset "\${LANE3_DS_ARGS[@]}" 2>&1 | tee -a /content/lane3_out/setup.log
+LANE3_RENDER_ARGS=(--template /content/rung-qwen-image.yaml --out /content/lane3_out/rung_job.yaml
+  --training-folder "\${LANE3_TRAINING_FOLDER}" --dataset-dir "\${LANE3_DATASET_DIR}" --model-path "\${LANE3_MODEL_PATH}")
+if [ -n "\${LANE3_JOB_SHA256:-}" ]; then
+  LANE3_RENDER_ARGS+=(--template-sha "\${LANE3_JOB_SHA256}")
+fi
+"\${LANE3_PY}" /content/lane3_rung.py render-job "\${LANE3_RENDER_ARGS[@]}" 2>&1 | tee -a /content/lane3_out/setup.log
 
 echo "run" > /content/lane3_out/phase.txt
 # >>> sdlab-train-step
@@ -544,6 +557,15 @@ lane3_remote_env() {
       "LANE3_GPU_SMOKE_SECONDS=${LANE3_GPU_SMOKE_SECONDS}" \
       "LANE3_DOWNLOAD_PROBE_SECONDS=${LANE3_DOWNLOAD_PROBE_SECONDS}" \
       "LANE3_DOWNLOAD_PROBE_BYTES=${LANE3_DOWNLOAD_PROBE_BYTES}"
+    if [ -n "${ACTIVE_JOB_SHA:-}" ]; then
+      printf '%s\n' "LANE3_JOB_SHA256=${ACTIVE_JOB_SHA}"
+    fi
+    if [ -n "${ACTIVE_DATASET_SHA:-}" ]; then
+      printf '%s\n' "LANE3_DATASET_MANIFEST_SHA256=${ACTIVE_DATASET_SHA}"
+    fi
+    if [ -n "${DATASET_ARCHIVE_SHA:-}" ]; then
+      printf '%s\n' "LANE3_DATASET_ARCHIVE_SHA256=${DATASET_ARCHIVE_SHA}"
+    fi
   fi
 }
 
@@ -607,7 +629,12 @@ TRAIN_MAX_RATE=""
 SHAPE=""
 DATASET_DIR=""
 RUNG_JOB=""
+JOB_YAML=""
+JOB_SHA=""
+DATASET_MANIFEST=""
+DATASET_MANIFEST_SHA=""
 MIN_RUNTIME_S=""
+DOWNLOAD_TIMEOUT_S_ARG=""
 DRY_RUN=0
 SESSION_ARGS=()
 
@@ -626,6 +653,7 @@ while [ "$#" -gt 0 ]; do
     --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SESSION_ARGS+=("$1"); SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --min-runtime-s) SESSION_ARGS+=("$1"); MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --download-timeout-s) SESSION_ARGS+=("$1"); DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dry) SESSION_ARGS+=("$1"); DRY_RUN=1; shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -633,6 +661,10 @@ while [ "$#" -gt 0 ]; do
     --download-max-seconds) TRAIN_DOWNLOAD_MAX_SECONDS="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dataset-dir) SESSION_ARGS+=("$1"); DATASET_DIR="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --rung-job) SESSION_ARGS+=("$1"); RUNG_JOB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --job) SESSION_ARGS+=("$1"); JOB_YAML="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --job-sha) SESSION_ARGS+=("$1"); JOB_SHA="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --dataset-manifest) SESSION_ARGS+=("$1"); DATASET_MANIFEST="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --dataset-manifest-sha) SESSION_ARGS+=("$1"); DATASET_MANIFEST_SHA="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -640,8 +672,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}" ]; then
-  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir and --rung-job need --train" >&2
+if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}" ]; then
+  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir, --rung-job, --job, --job-sha, --dataset-manifest and --dataset-manifest-sha need --train" >&2
   exit 2
 fi
 
@@ -667,6 +699,8 @@ if [ "${EMIT_REQUESTED}" = "1" ]; then
   echo "REMOTE_SCRIPT_EMITTED ${EMIT_REMOTE_SCRIPT} env=${EMIT_REMOTE_SCRIPT}.env"
   exit 0
 fi
+
+colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
 
 if [ "${DRY_RUN}" = "1" ]; then
   DRY_TEST_MODE=0
@@ -724,16 +758,48 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     exit 2
   fi
   if [ -z "${DATASET_DIR}" ]; then
-    echo "REFUSED: TRAIN_DATASET_REQUIRED: --train needs --dataset-dir <dir> holding the images listed in scripts/colab/lane3/rung-dataset.json" >&2
+    echo "REFUSED: TRAIN_DATASET_REQUIRED: --train needs --dataset-dir <dir> holding the images listed in the dataset manifest" >&2
     exit 2
   fi
-  case "${RUNG_JOB}" in
-    20 | 500) ;;
-    *)
-      echo "REFUSED: RUNG_JOB_REQUIRED: --train needs --rung-job 20|500 (no default)" >&2
+  NORM_JOB_SHA=""
+  NORM_DATASET_MANIFEST_SHA=""
+  if [ -n "${RUNG_JOB}" ]; then
+    if [ -n "${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}" ]; then
+      echo "REFUSED: JOB_CONFLICT: --rung-job cannot be combined with --job, --job-sha, --dataset-manifest or --dataset-manifest-sha" >&2
       exit 2
-      ;;
-  esac
+    fi
+    case "${RUNG_JOB}" in
+      20 | 500) ;;
+      *)
+        echo "REFUSED: RUNG_JOB_REQUIRED: --train needs --rung-job 20|500 (no default)" >&2
+        exit 2
+        ;;
+    esac
+  elif [ -z "${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}" ]; then
+    echo "REFUSED: RUNG_JOB_REQUIRED: --train needs --rung-job 20|500 or --job <path> --job-sha <64-hex>" >&2
+    exit 2
+  else
+    if [ -z "${JOB_YAML}" ]; then
+      echo "REFUSED: JOB_REQUIRED: real-run path needs --job <path>" >&2
+      exit 2
+    fi
+    NORM_JOB_SHA="${JOB_SHA#sha256:}"
+    NORM_JOB_SHA="${NORM_JOB_SHA,,}"
+    if ! [[ "${NORM_JOB_SHA}" =~ ^[0-9a-f]{64}$ ]]; then
+      echo "REFUSED: JOB_SHA_REQUIRED: --job needs --job-sha <64-hex sha256>" >&2
+      exit 2
+    fi
+    if [ -z "${DATASET_MANIFEST}" ]; then
+      echo "REFUSED: DATASET_MANIFEST_REQUIRED: --job needs --dataset-manifest <path>" >&2
+      exit 2
+    fi
+    NORM_DATASET_MANIFEST_SHA="${DATASET_MANIFEST_SHA#sha256:}"
+    NORM_DATASET_MANIFEST_SHA="${NORM_DATASET_MANIFEST_SHA,,}"
+    if ! [[ "${NORM_DATASET_MANIFEST_SHA}" =~ ^[0-9a-f]{64}$ ]]; then
+      echo "REFUSED: DATASET_MANIFEST_SHA_REQUIRED: --dataset-manifest needs --dataset-manifest-sha <64-hex sha256>" >&2
+      exit 2
+    fi
+  fi
 fi
 
 # The pre-built wheels live outside the repository; there is no default location.
@@ -867,16 +933,33 @@ SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${BUNDLE_NOW_PY}=${EXP_BUNDLE_NOW_SHA}" \
   "${SELF_SH}=${EXP_SELF_SHA}")"
 
-SELECTED_RUNG_YAML="${RUNG_YAML}"
+ACTIVE_JOB_YAML="${RUNG_YAML}"
+ACTIVE_JOB_SHA=""
+ACTIVE_DATASET_JSON="${RUNG_DATASET_JSON}"
+ACTIVE_DATASET_SHA=""
+DATASET_ARCHIVE="${OUT_DIR}/.lane3_dataset.tar"
+DATASET_ARCHIVE_SHA=""
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
-  if [ "${RUNG_JOB}" = "500" ]; then
-    SELECTED_RUNG_YAML="${RUNG500_YAML}"
-    printf '%s\n' "${EXP_RUNG500_YAML_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+  if [ -n "${RUNG_JOB}" ]; then
+    if [ "${RUNG_JOB}" = "500" ]; then
+      ACTIVE_JOB_YAML="${RUNG500_YAML}"
+      ACTIVE_JOB_SHA="${EXP_RUNG500_YAML_SHA}"
+    else
+      ACTIVE_JOB_YAML="${RUNG_YAML}"
+      ACTIVE_JOB_SHA="${EXP_RUNG_YAML_SHA}"
+    fi
+    ACTIVE_DATASET_JSON="${RUNG_DATASET_JSON}"
+    ACTIVE_DATASET_SHA="${EXP_RUNG_DATASET_SHA}"
+    printf '%s\n' "${ACTIVE_JOB_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+    printf '%s\n' "${RUNG_JOB}" > "${OUT_DIR}/rung_job.txt"
   else
-    SELECTED_RUNG_YAML="${RUNG_YAML}"
-    printf '%s\n' "${EXP_RUNG_YAML_SHA}" > "${OUT_DIR}/rung_job_sha256.txt"
+    ACTIVE_JOB_YAML="${JOB_YAML}"
+    ACTIVE_JOB_SHA="${NORM_JOB_SHA}"
+    ACTIVE_DATASET_JSON="${DATASET_MANIFEST}"
+    ACTIVE_DATASET_SHA="${NORM_DATASET_MANIFEST_SHA}"
   fi
-  printf '%s\n' "${RUNG_JOB}" > "${OUT_DIR}/rung_job.txt"
+  printf '%s\n' "${ACTIVE_JOB_SHA}" > "${OUT_DIR}/job_sha256.txt"
+  printf '%s\n' "${ACTIVE_DATASET_SHA}" > "${OUT_DIR}/dataset_manifest_sha256.txt"
 fi
 
 OPENED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -889,8 +972,8 @@ TOKEN_DIR=""
 
 # lane3_download_bundle_after_failure <rc>: after a failed or stopped exec, run bounded salvage via
 # colab_salvage_bundle_after_failure (`colab restart-kernel` under `timeout -k 10 180`, bundle-now
-# `colab exec --timeout 300` under `timeout -k 10 330`, and `colab download` under `timeout -k 10 300`,
-# all under `SALVAGE_DEADLINE_S=840`). Every exec on a session runs on its one stored kernel and
+# `colab exec --timeout 300` under `timeout -k 10 330`, and `colab download` under `timeout -k 10 ${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S}`,
+# all under `SALVAGE_DEADLINE_S`). Every exec on a session runs on its one stored kernel and
 # Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed exec's
 # cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
 # Processes the cell spawned may outlive the restart, so bundle-now kills the rung's processes by
@@ -916,6 +999,7 @@ cleanup_on_exit() {
   if [ -n "${TOKEN_DIR}" ]; then
     rm -rf "${TOKEN_DIR}" || true
   fi
+  rm -f "${DATASET_ARCHIVE:-}" || true
   if [ "${rc}" -ne 0 ] && [ "${TRAIN_REQUESTED}" = "1" ] && [ "${EXEC_IN_FLIGHT}" = "1" ] \
     && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
     lane3_download_bundle_after_failure "${rc}" || true
@@ -966,12 +1050,24 @@ colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 # or when the cap leaves less runtime than --min-runtime-s.
 colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
 
-if [[ "${WHEEL_DIR}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
-  DRIVE_LOWER="${BASH_REMATCH[1],,}"
-  REST_PATH="${BASH_REMATCH[2]}"
-  if [[ ! -d "${WHEEL_DIR}" ]] && [[ -d "/mnt/${DRIVE_LOWER}/${REST_PATH}" ]]; then
-    WHEEL_DIR="/mnt/${DRIVE_LOWER}/${REST_PATH}"
+lane3_translate_wsl_path() {
+  local raw="$1"
+  if [[ "${raw}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
+    local drive_lower="${BASH_REMATCH[1],,}"
+    local rest_path="${BASH_REMATCH[2]}"
+    if [[ ! -e "${raw}" ]] && [[ -e "/mnt/${drive_lower}/${rest_path}" ]]; then
+      printf '%s' "/mnt/${drive_lower}/${rest_path}"
+      return 0
+    fi
   fi
+  printf '%s' "${raw}"
+}
+
+WHEEL_DIR="$(lane3_translate_wsl_path "${WHEEL_DIR}")"
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  DATASET_DIR="$(lane3_translate_wsl_path "${DATASET_DIR}")"
+  ACTIVE_JOB_YAML="$(lane3_translate_wsl_path "${ACTIVE_JOB_YAML}")"
+  ACTIVE_DATASET_JSON="$(lane3_translate_wsl_path "${ACTIVE_DATASET_JSON}")"
 fi
 
 # Free pre-flight resolve, git pin check, and local wheel sha verification before any colab CLI call.
@@ -984,15 +1080,43 @@ if ! PREFLIGHT_OUT="$(bash "${SCRIPT_DIR}/preflight_resolve.sh" lane3 --wheel-di
 fi
 printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
-# Train mode: the fixture dataset is checked against its manifest (sha256 of every image) before
-# any colab call; DATASET_FILE_MISSING / DATASET_SHA_MISMATCH.
+# Train mode: before any colab call, verify the job YAML's sha256, pinned base-model revision and
+# active __LANE3_*__ placeholders (JOB_FILE_MISSING / JOB_SHA_MISMATCH / JOB_TEMPLATE_INVALID), and
+# verify the dataset manifest + every image sha256 while packing one deterministic tar archive
+# (${DATASET_ARCHIVE}, sha256 recorded in ${OUT_DIR}/dataset_archive_sha256.txt).
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  JOB_CHECK_OUT=""
+  if ! JOB_CHECK_OUT="$("${PY_BIN}" "${RUNG_PY}" check-job --template "${ACTIVE_JOB_YAML}" --template-sha "${ACTIVE_JOB_SHA}" --model-revision "${TRAIN_MODEL_REVISION}" 2>&1)"; then
+    printf '%s\n' "${JOB_CHECK_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+    exit 1
+  fi
+  printf '%s\n' "${JOB_CHECK_OUT}" >> "${OUT_DIR}/guards.log"
+
   DATASET_OUT=""
-  if ! DATASET_OUT="$("${PY_BIN}" "${RUNG_PY}" dataset --manifest "${RUNG_DATASET_JSON}" --src "${DATASET_DIR}" 2>&1)"; then
+  if ! DATASET_OUT="$("${PY_BIN}" "${RUNG_PY}" dataset --manifest "${ACTIVE_DATASET_JSON}" --manifest-sha "${ACTIVE_DATASET_SHA}" --src "${DATASET_DIR}" --pack-archive "${DATASET_ARCHIVE}" --archive-sha-out "${OUT_DIR}/dataset_archive_sha256.txt" 2>&1)"; then
     printf '%s\n' "${DATASET_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
     exit 1
   fi
   printf '%s\n' "${DATASET_OUT}" >> "${OUT_DIR}/guards.log"
+  DATASET_ARCHIVE_SHA="$(tr -d '\r\n' < "${OUT_DIR}/dataset_archive_sha256.txt")"
+
+  if [ -z "${RUNG_JOB}" ]; then
+    SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
+      "${LOCK_FILE}=${EXP_OVERRIDE_SHA}" \
+      "${LOCAL_WHEELS_JSON}=${EXP_LOCAL_WHEELS_SHA}" \
+      "${CLASSIFIER_PY}=${EXP_CLASSIFIER_SHA}" \
+      "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
+      "${RUNNER_PY}=${EXP_RUNNER_SHA}" \
+      "${WINDOW_SH}=${EXP_WINDOW_SHA}" \
+      "${RUNG_PY}=${EXP_RUNG_SHA}" \
+      "${RUNG_YAML}=${EXP_RUNG_YAML_SHA}" \
+      "${RUNG500_YAML}=${EXP_RUNG500_YAML_SHA}" \
+      "${RUNG_DATASET_JSON}=${EXP_RUNG_DATASET_SHA}" \
+      "${BUNDLE_NOW_PY}=${EXP_BUNDLE_NOW_SHA}" \
+      "${SELF_SH}=${EXP_SELF_SHA}" \
+      "${ACTIVE_JOB_YAML}=${ACTIVE_JOB_SHA}" \
+      "${ACTIVE_DATASET_JSON}=${ACTIVE_DATASET_SHA}")"
+  fi
 fi
 
 # Train mode: the model at the pinned revision must answer the request's read token before any
@@ -1063,16 +1187,14 @@ colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OU
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
   colab_upload_checked "${SESSION}" "${RUNG_PY}" /content/lane3_rung.py "${OUT_DIR}"
-  colab_upload_checked "${SESSION}" "${SELECTED_RUNG_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
-  colab_upload_checked "${SESSION}" "${RUNG_DATASET_JSON}" /content/rung-dataset.json "${OUT_DIR}"
+  colab_upload_checked "${SESSION}" "${ACTIVE_JOB_YAML}" /content/rung-qwen-image.yaml "${OUT_DIR}"
+  colab_upload_checked "${SESSION}" "${ACTIVE_DATASET_JSON}" /content/rung-dataset.json "${OUT_DIR}"
   # The read token staged before the window opened; the VM reads and shreds it first thing.
   colab_upload_checked "${SESSION}" "${TOKEN_DIR}/lane3_hf_read_token" /content/lane3_hf_read_token "${OUT_DIR}"
   rm -rf "${TOKEN_DIR}"
   TOKEN_DIR=""
-  while IFS= read -r image_fname; do
-    [ -z "${image_fname}" ] && continue
-    colab_upload_checked "${SESSION}" "${DATASET_DIR}/${image_fname}" "/content/${image_fname}" "${OUT_DIR}"
-  done < <("${PY_BIN}" -c 'import json, sys; print("\n".join(i["image"] for i in json.load(open(sys.argv[1], encoding="utf-8"))["items"]))' "${RUNG_DATASET_JSON}")
+  colab_upload_checked "${SESSION}" "${DATASET_ARCHIVE}" /content/lane3_dataset.tar "${OUT_DIR}"
+  rm -f "${DATASET_ARCHIVE}"
 fi
 colab_upload_checked "${SESSION}" "${REMOTE_RUNNER}" /content/remote_lane3_stub.sh "${OUT_DIR}"
 

@@ -16,11 +16,11 @@ Every `colab` CLI call and lock wait from session open through cleanup is wrappe
 | Session open (`colab new`) | `COLAB_NEW_TIMEOUT_S_DEFAULT` | `180` | `10` | `190` | `NEW_TIMEOUT` / `REFUSED: SESSION_OPEN_FAILED` |
 | File upload (`colab upload`) | `COLAB_UPLOAD_TIMEOUT_S_DEFAULT` | `120` | `10` | `130` | `UPLOAD_TIMEOUT` / `REFUSED: UPLOAD_FAILED` |
 | Post-open / closing `colab sessions` | `COLAB_SESSIONS_TIMEOUT_S_DEFAULT` | `30` | `10` | `40` | `SESSIONS_TIMEOUT` / `REFUSED: SHAPE_MISMATCH` |
-| Bundle download (`colab download`) | `COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT` | `300` | `10` | `310` | `SALVAGE_STEP_TIMEOUT download` / `REFUSED: DOWNLOAD_FAILED` |
+| Bundle download (`colab download`) | `COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT` (`--download-timeout-s` / `COLAB_DOWNLOAD_TIMEOUT_S`) | `300` | `10` | `310` | `SALVAGE_STEP_TIMEOUT download` / `REFUSED: DOWNLOAD_FAILED` (`DOWNLOAD_TIMEOUT_INVALID`) |
 | Salvage `colab restart-kernel` (Lane 3) | `COLAB_SALVAGE_RESTART_TIMEOUT_S_DEFAULT` | `180` | `10` | `190` | `SALVAGE_STEP_TIMEOUT restart-kernel` |
 | Salvage `lane3_bundle_now.py` `colab exec` (Lane 3) | `COLAB_SALVAGE_EXEC_TIMEOUT_S_DEFAULT` | `330` (over `--timeout 300`) | `10` | `340` | `SALVAGE_STEP_TIMEOUT bundle-now` |
-| Salvage `colab download` (Lane 3) | `COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT` | `300` | `10` | `310` | `SALVAGE_STEP_TIMEOUT download` |
-| Total salvage deadline (Lane 3) | `SALVAGE_DEADLINE_S` | `840` | — | `840` | `SALVAGE_DEADLINE_EXCEEDED <step>` |
+| Salvage `colab download` (Lane 3) | `COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT` (scales with `--download-timeout-s` / `COLAB_DOWNLOAD_TIMEOUT_S`) | `300` | `10` | `310` | `SALVAGE_STEP_TIMEOUT download` |
+| Total salvage deadline (Lane 3) | `SALVAGE_DEADLINE_S` (`190 + 340 + (download_timeout_s + 10)`) | `840` | — | `840` | `SALVAGE_DEADLINE_EXCEEDED <step>` |
 | Session close (`colab stop`, 2 attempts) | `COLAB_STOP_TIMEOUT_S_DEFAULT` (`60`), `COLAB_STOP_ATTEMPTS_DEFAULT` (`2`) | `60` x 2 | `10` x 2 | `140` | `STOP_TIMEOUT`, `STOP_RETRY` |
 | Wall watcher first wait (`max(COLAB_WALL_ESCALATE_S, COLAB_IN_FLIGHT_BOUND_S)`) | `COLAB_WALL_ESCALATE_S_DEFAULT` (`30`), `COLAB_IN_FLIGHT_BOUND_S` (`310`) | `max(30, 310)` | — | `310` | `WALL_WATCHER_ESCALATED` (`stop_path: "watcher"`, `watcher_wait: "escalated_no_cleanup"`) |
 
@@ -28,7 +28,7 @@ Every `colab` CLI call and lock wait from session open through cleanup is wrappe
 
 Because a wall or signal trip can arrive while a synchronous foreground step (`colab download`, `colab upload`, or `colab sessions`) is already in flight, the worst-case time from the trip to `colab stop` includes the longest bounded foreground step after session open:
 
-- **`in_flight_bound_s`** = `max(COLAB_DOWNLOAD_TIMEOUT_S, COLAB_UPLOAD_TIMEOUT_S, COLAB_SESSIONS_TIMEOUT_S) + COLAB_KILL_GRACE_S` = `300 + 10 = 310` s.
+- **`in_flight_bound_s`** = `max(COLAB_DOWNLOAD_TIMEOUT_S, COLAB_UPLOAD_TIMEOUT_S, COLAB_SESSIONS_TIMEOUT_S) + COLAB_KILL_GRACE_S` = `300 + 10 = 310` s at the default `300` s download timeout (`--download-timeout-s <int>` or `COLAB_DOWNLOAD_TIMEOUT_S=<int>`, recorded as `download_timeout_s` in `window.json`; non-positive or non-integer values refuse `DOWNLOAD_TIMEOUT_INVALID` before `colab new`).
 - **Lane 1 (`render`, no post-failure salvage step):**
   - `cleanup_stop_attempted_by_s` = `310 + 0 = 310` s
   - `cleanup_bound_s` = `310 + 2 * (60 + 10) = 450` s
@@ -66,6 +66,13 @@ When the independent wall watcher (`colab_run_wall_watcher`) trips at `wall_s - 
 
 - On Lane 3, `EXEC_IN_FLIGHT=1` remains armed through the normal post-exec `colab_download_checked`. If the normal post-exec download fails or times out, any partial local file is removed and `cleanup_on_exit` still runs `lane3_download_bundle_after_failure` (`colab restart-kernel` -> `lane3_bundle_now.py` -> `colab download`) to recover the bundle before `colab stop`.
 - During salvage, each step runs via `colab_run_bounded_salvage_step` (backgrounded child subshell + `wait` loop). A single `SIGTERM`/`SIGINT` to the launcher is logged (`CLEANUP_SIGNAL count=1 action=continue_bounded_cleanup`) without aborting salvage; a second `SIGTERM`/`SIGINT` (`count >= 2`) immediately kills the in-flight salvage child (`SALVAGE_ABORTED_BY_SIGNAL`), sets `COLAB_CLEANUP_SKIP_SALVAGE=1`, skips any remaining salvage steps, and proceeds straight to `colab stop`.
+
+### Lane 3 Rung vs Real-Run Inputs and Batched Dataset Archive
+
+Under `--train`, `launch_lane3_stub.sh` supports two mutually exclusive job/dataset paths (`JOB_CONFLICT` if mixed; `RUNG_JOB_REQUIRED` if neither is passed):
+- **Rung path (`--rung-job 20|500`):** binds the committed rung YAMLs (`PINNED_RUNG_YAML_SHA`, `PINNED_RUNG500_YAML_SHA`) and fixture manifest (`scripts/colab/lane3/rung-dataset.json`, `PINNED_RUNG_DATASET_SHA`), recording `rung_job`, `rung_job_sha256`, `job_sha256`, `dataset_manifest_sha256`, and `dataset_archive_sha256` in `window.json` and `outcome.draft.json`.
+- **Real-run path (`--job <path> --job-sha <64-hex> --dataset-manifest <path> --dataset-manifest-sha <64-hex>`):** verifies `--job` against `--job-sha` (`JOB_REQUIRED`, `JOB_SHA_REQUIRED`, `JOB_FILE_MISSING`, `JOB_SHA_MISMATCH`), checks the 40-hex `--model-revision` (`TRAIN_MODEL_REVISION_REQUIRED`) and single active `__LANE3_TRAINING_FOLDER__`, `__LANE3_DATASET_DIR__`, and `__LANE3_MODEL_PATH__` placeholders with no unpinned `name_or_path` (`JOB_TEMPLATE_INVALID` via `lane3_rung.py check-job`), and verifies `--dataset-manifest` against `--dataset-manifest-sha` plus every listed image's existence and sha256 (`DATASET_MANIFEST_REQUIRED`, `DATASET_MANIFEST_SHA_REQUIRED`, `DATASET_MANIFEST_MISSING`, `DATASET_MANIFEST_SHA_MISMATCH`, `DATASET_MANIFEST_INVALID`, `DATASET_FILE_MISSING`, `DATASET_SHA_MISMATCH`) — all before `colab new`. Records `rung_job: null`, `rung_job_sha256: null`, `job_sha256`, `dataset_manifest_sha256`, and `dataset_archive_sha256`.
+- **Batched dataset upload (both paths):** before `colab new`, `lane3_rung.py dataset --pack-archive` packs the verified images into one deterministic tar (`dataset_archive_sha256.txt`), uploaded in a single `colab upload` to `/content/lane3_dataset.tar`; on the VM, `lane3_rung.py dataset --archive /content/lane3_dataset.tar --archive-sha ...` verifies the archive sha256 (`DATASET_ARCHIVE_SHA_MISMATCH`) and re-hashes every extracted image against the manifest (`DATASET_SHA_MISMATCH`) before training.
 
 ---
 
