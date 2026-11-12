@@ -51,14 +51,14 @@ PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
-PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="244f2f542a292408b165faa4c4b77935d4f6532bd97a7575694b2efa92a35b4f"
-PINNED_LANE3_RUNG_SHA="36708898cb9ae18e99b9b10ae7a3619e620055ec3c1c3bb4342dd9d7e9d4db49"
-PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
-PINNED_RUNG_YAML_SHA="f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533"
-PINNED_RUNG500_YAML_SHA="36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d"
+PINNED_REMOTE_RUNNER_SHA="393929ed704ccbacaee2b590010e348a5d635cbdd70361209d3e0103d1fba6eb"
+PINNED_COLAB_WINDOW_SHA="db761fb414da915c8835bad8ef1544992e39aa5b3d636a1d81d17d231f26e974"
+PINNED_LANE3_RUNG_SHA="a5bfab71fdcce4688f3b75a6f688ed9479ae696e48736eda23af5ce3116e889c"
+PINNED_BUNDLE_NOW_SHA="0475356f7aceca25a83d406c1e83dfd0ff912fe1056dac3c93c38f7e22cab8bf"
+PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
+PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="1bf1eeac9f07c69d341641cfbee1d8f5fc19725510b1c184cc69acf08f22f42e"
+PINNED_SELF_SHA="a99d7c56aec9c3912190596c5be82cc24fce00a1804e99fea18047246cbaa37f"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -394,6 +394,12 @@ lane3_train_on_exit() {
   trap - EXIT
   kill "\${VITALS_PID:-}" 2>/dev/null || true
   if [ "\${rc}" -ne 0 ] && [ ! -f /content/lane3_stub_bundle.tar.gz ]; then
+    if [ -d "\${LANE3_TRAINING_FOLDER}" ] && [ ! -f /content/lane3_out/training_folder_manifest.json ]; then
+      "\${LANE3_PY}" /content/lane3_rung.py write-train-manifest --watch "\${LANE3_TRAINING_FOLDER}" \
+        --out /content/lane3_out/training_folder_manifest.json || true
+      "\${LANE3_PY}" /content/lane3_rung.py copy-off --final-only --watch "\${LANE3_TRAINING_FOLDER}" \
+        --bundle /content/lane3_out/rung_outputs --manifest /content/lane3_out/rung_outputs/manifest.jsonl || true
+    fi
     "\${LANE3_PY}" /content/lane3_rung.py finish --lane3-out /content/lane3_out --failed-rc "\${rc}" || true
     while IFS= read -r -d '' f; do
       "\${LANE3_PY}" /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
@@ -446,6 +452,10 @@ if [ -n "\${LANE3_JOB_SHA256:-}" ]; then
   LANE3_RENDER_ARGS+=(--template-sha "\${LANE3_JOB_SHA256}")
 fi
 "\${LANE3_PY}" /content/lane3_rung.py render-job "\${LANE3_RENDER_ARGS[@]}" 2>&1 | tee -a /content/lane3_out/setup.log
+if [ -n "\${LANE3_PROJECTED_OUTPUT_BYTES:-}" ]; then
+  "\${LANE3_PY}" /content/lane3_rung.py check-output-disk --training-folder "\${LANE3_TRAINING_FOLDER}" \
+    --projected-bytes "\${LANE3_PROJECTED_OUTPUT_BYTES}" --out /content/lane3_out/output_disk_check.json 2>&1 | tee -a /content/lane3_out/setup.log
+fi
 
 echo "run" > /content/lane3_out/phase.txt
 # >>> sdlab-train-step
@@ -460,15 +470,24 @@ COPY_PID=\$!
 wait "\${TRAIN_PID}"
 TRAIN_RC=\$?
 wait "\${COPY_PID}"
+# Record the complete manifest of the training folder before the final sweep so the rig can verify
+# every file (path, bytes, sha256) arrived in the downloaded bundle.
+"\${LANE3_PY}" /content/lane3_rung.py write-train-manifest --watch "\${LANE3_TRAINING_FOLDER}" \
+  --out /content/lane3_out/training_folder_manifest.json 2>&1 | tee -a /content/lane3_out/setup.log
+WL_MANIFEST_RC=\$?
 # A final sweep of the training folder, in its own process: a copy-off watcher that died mid-run
 # leaves nothing behind.
 "\${LANE3_PY}" /content/lane3_rung.py copy-off --final-only --watch "\${LANE3_TRAINING_FOLDER}" \
   --bundle /content/lane3_out/rung_outputs --manifest /content/lane3_out/rung_outputs/manifest.jsonl
+FINAL_COPY_RC=\$?
 set -e
 if [ "\${TRAIN_RC}" -ne 0 ]; then
   echo "--- last 40 lines of train.log ---"
   tail -n 40 /content/lane3_out/train.log || true
   echo "REFUSED: TRAIN_FAILED: ai-toolkit run.py exited \${TRAIN_RC}; see lane3_out/train.log" >&2
+  exit 1
+fi
+if [ "\${WL_MANIFEST_RC}" -ne 0 ] || [ "\${FINAL_COPY_RC}" -ne 0 ]; then
   exit 1
 fi
 # <<< sdlab-train-step
@@ -482,7 +501,7 @@ fi
     exit 1
   fi
   CHECKPOINT_PATH="\${FOUND_CKPT}"
-  if ! grep -Eq '"path": "[^"]+\.(png|jpg|jpeg|webp)"' /content/lane3_out/rung_outputs/manifest.jsonl; then
+  if ! grep -Eq '"path": "([^"_][^"/]*/)*[^"/]+\.(png|jpg|jpeg|webp)"' /content/lane3_out/rung_outputs/manifest.jsonl; then
     echo "REFUSED: TRAIN_SAMPLE_MISSING: no sample image was copied off to lane3_out/rung_outputs" >&2
     exit 1
   fi
@@ -526,6 +545,10 @@ Path("/content/lane3_out/vm_window.json").write_text(json.dumps(rec, indent=2) +
 print("WINDOW_JSON " + json.dumps(rec), flush=True)
 WINPYEOF
 
+if [ "\${LANE3_MODE:-install}" = "train" ]; then
+  /content/venv-lane3/bin/python /content/lane3_rung.py check-bundle-disk \
+    --bundle-dir /content/lane3_out --out /content/lane3_out/bundle_disk_check.json 2>&1 | tee -a /content/lane3_out/setup.log
+fi
 while IFS= read -r -d '' f; do
   /content/venv-lane3/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
@@ -566,6 +589,9 @@ lane3_remote_env() {
     if [ -n "${DATASET_ARCHIVE_SHA:-}" ]; then
       printf '%s\n' "LANE3_DATASET_ARCHIVE_SHA256=${DATASET_ARCHIVE_SHA}"
     fi
+    if [ -n "${PROJECTED_OUTPUT_BYTES:-}" ]; then
+      printf '%s\n' "LANE3_PROJECTED_OUTPUT_BYTES=${PROJECTED_OUTPUT_BYTES}"
+    fi
   fi
 }
 
@@ -598,13 +624,13 @@ lane3_check_train_request() {
 # training folder's filesystems before the ~58 GB download, and the download probe window: the
 # first 60 s or 2 GiB of new bytes, whichever comes first; and the GPU smoke matmul's ~5 s.
 LANE3_DISK_REQUIRED_GIB="75"
+LANE3_VM_DISK_BUDGET_GIB="75"
 LANE3_GPU_SMOKE_SECONDS="5"
 LANE3_DOWNLOAD_PROBE_SECONDS="60"
 LANE3_DOWNLOAD_PROBE_BYTES="2147483648"
-# The rung's wall must cover, after the grace: the download limit the request sets, the install
-# (uv, CPython, the 158-pin lock, ai-toolkit; 900 s allowed) and the training work (model load,
-# latent and text-embedding caching, 20 steps, one save, one six-image 1024^2 grid at 25 steps with
-# true CFG; 1800 s allowed, against the consult's 12-19 min estimate for the whole rung).
+# The window's wall must cover, after the grace: the download limit the request sets, the setup
+# (uv, CPython, the 158-pin lock, ai-toolkit; 900 s allowed), and either the fixed 1800 s rung
+# allowance (`--rung-job`) or `steps * seconds_per_step + fetch` (`--job`).
 LANE3_INSTALL_ALLOWANCE_S="900"
 LANE3_TRAIN_ALLOWANCE_S="1800"
 
@@ -635,6 +661,19 @@ DATASET_MANIFEST=""
 DATASET_MANIFEST_SHA=""
 MIN_RUNTIME_S=""
 DOWNLOAD_TIMEOUT_S_ARG=""
+UPLOAD_TIMEOUT_S_ARG=""
+UPLOAD_CHUNK_BYTES_ARG=""
+DOWNLOAD_CHUNK_BYTES_ARG=""
+DOWNLOAD_FLOOR_MB_S_ARG=""
+UPLOAD_FLOOR_MB_S_ARG=""
+SECONDS_PER_STEP_ARG=""
+CHECKPOINT_SIZE_BYTES_ARG=""
+OPTIMIZER_SIZE_BYTES_ARG=""
+SAMPLES_AND_LOGS_BYTES_ARG=""
+OUTPUT_OVERHEAD_FACTOR_ARG=""
+EXPECTED_MODEL_BYTES_ARG=""
+VM_DISK_BUDGET_GIB_ARG=""
+PROJECTED_OUTPUT_BYTES=""
 DRY_RUN=0
 SESSION_ARGS=()
 
@@ -654,6 +693,18 @@ while [ "$#" -gt 0 ]; do
     --shape) SESSION_ARGS+=("$1"); SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --min-runtime-s) SESSION_ARGS+=("$1"); MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-timeout-s) SESSION_ARGS+=("$1"); DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-timeout-s) SESSION_ARGS+=("$1"); UPLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-chunk-bytes) SESSION_ARGS+=("$1"); UPLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --download-chunk-bytes) SESSION_ARGS+=("$1"); DOWNLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --download-floor-mb-s) SESSION_ARGS+=("$1"); DOWNLOAD_FLOOR_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-floor-mb-s) SESSION_ARGS+=("$1"); UPLOAD_FLOOR_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --seconds-per-step) SESSION_ARGS+=("$1"); SECONDS_PER_STEP_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --checkpoint-size-bytes) SESSION_ARGS+=("$1"); CHECKPOINT_SIZE_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --optimizer-size-bytes) SESSION_ARGS+=("$1"); OPTIMIZER_SIZE_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --samples-and-logs-bytes) SESSION_ARGS+=("$1"); SAMPLES_AND_LOGS_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --output-overhead-factor) SESSION_ARGS+=("$1"); OUTPUT_OVERHEAD_FACTOR_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --expected-model-bytes) SESSION_ARGS+=("$1"); EXPECTED_MODEL_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --vm-disk-budget-gib) SESSION_ARGS+=("$1"); VM_DISK_BUDGET_GIB_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dry) SESSION_ARGS+=("$1"); DRY_RUN=1; shift ;;
     --model) TRAIN_MODEL="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --model-revision) TRAIN_MODEL_REVISION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -672,8 +723,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}" ]; then
-  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir, --rung-job, --job, --job-sha, --dataset-manifest and --dataset-manifest-sha need --train" >&2
+if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}${DOWNLOAD_FLOOR_MB_S_ARG}${UPLOAD_FLOOR_MB_S_ARG}${SECONDS_PER_STEP_ARG}${CHECKPOINT_SIZE_BYTES_ARG}${OPTIMIZER_SIZE_BYTES_ARG}${SAMPLES_AND_LOGS_BYTES_ARG}${OUTPUT_OVERHEAD_FACTOR_ARG}${EXPECTED_MODEL_BYTES_ARG}${VM_DISK_BUDGET_GIB_ARG}" ]; then
+  echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir, --rung-job, --job, --job-sha, --dataset-manifest, --dataset-manifest-sha and the training projection flags need --train" >&2
   exit 2
 fi
 
@@ -701,8 +752,15 @@ if [ "${EMIT_REQUESTED}" = "1" ]; then
 fi
 
 colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
+colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
+colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
+colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
 
 if [ "${DRY_RUN}" = "1" ]; then
+  if [ -n "${JOB_YAML}" ] && [ "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" = "default" ] && [ -z "${DOWNLOAD_FLOOR_MB_S_ARG}" ]; then
+    echo "REFUSED: DOWNLOAD_TIMEOUT_REQUIRED: --job must not use the 300 s default download timeout; pass --download-timeout-s <s> or --download-floor-mb-s <MB/s>" >&2
+    exit 2
+  fi
   DRY_TEST_MODE=0
   if colab_fake_test_mode_active; then
     DRY_TEST_MODE=1
@@ -739,18 +797,8 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     echo "REFUSED: TRAIN_CAP_REQUIRED: --train needs an explicit --cap (the CPU stub's default does not apply)" >&2
     exit 2
   fi
-  if colab_fake_test_mode_active; then
-    if [ -n "${SDLAB_TEST_INSTALL_ALLOWANCE_S:-}" ]; then
-      LANE3_INSTALL_ALLOWANCE_S="${SDLAB_TEST_INSTALL_ALLOWANCE_S}"
-    fi
-    if [ -n "${SDLAB_TEST_TRAIN_ALLOWANCE_S:-}" ]; then
-      LANE3_TRAIN_ALLOWANCE_S="${SDLAB_TEST_TRAIN_ALLOWANCE_S}"
-    fi
-  fi
-  TRAIN_NEED_S="$(( TRAIN_DOWNLOAD_MAX_SECONDS + LANE3_INSTALL_ALLOWANCE_S + LANE3_TRAIN_ALLOWANCE_S ))"
-  if ! [[ "${WALL_S}" =~ ^[0-9]+$ ]] || ! [[ "${GRACE_S}" =~ ^[0-9]+$ ]] \
-    || [ "$(( WALL_S - GRACE_S ))" -lt "${TRAIN_NEED_S}" ]; then
-    echo "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s ${WALL_S} minus grace ${GRACE_S} must cover ${TRAIN_NEED_S} s (download limit ${TRAIN_DOWNLOAD_MAX_SECONDS} + install ${LANE3_INSTALL_ALLOWANCE_S} + train ${LANE3_TRAIN_ALLOWANCE_S})" >&2
+  if ! [[ "${WALL_S}" =~ ^[0-9]+$ ]] || ! [[ "${GRACE_S}" =~ ^[0-9]+$ ]] || [ "$(( WALL_S - GRACE_S ))" -le 0 ]; then
+    echo "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s ${WALL_S} minus grace ${GRACE_S} must be a positive integer number of seconds" >&2
     exit 2
   fi
   if ! [[ "${TRAIN_MAX_RATE}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${TRAIN_MAX_RATE}" =~ ^0+(\.0+)?$ ]]; then
@@ -856,6 +904,19 @@ fi
 if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_GPU_SMOKE_SECONDS:-}" ]; then
   LANE3_GPU_SMOKE_SECONDS="${SDLAB_TEST_GPU_SMOKE_SECONDS}"
 fi
+if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_INSTALL_ALLOWANCE_S:-}" ]; then
+  LANE3_INSTALL_ALLOWANCE_S="${SDLAB_TEST_INSTALL_ALLOWANCE_S}"
+fi
+if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_VM_DISK_BUDGET_GIB:-}" ]; then
+  LANE3_VM_DISK_BUDGET_GIB="${SDLAB_TEST_VM_DISK_BUDGET_GIB}"
+fi
+TEST_TRAIN_ALLOWANCE_S=""
+TEST_FETCH_ALLOWANCE_S=""
+if [ "${TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_TRAIN_ALLOWANCE_S:-}" ]; then
+  LANE3_TRAIN_ALLOWANCE_S="${SDLAB_TEST_TRAIN_ALLOWANCE_S}"
+  TEST_TRAIN_ALLOWANCE_S="${SDLAB_TEST_TRAIN_ALLOWANCE_S}"
+  TEST_FETCH_ALLOWANCE_S="${SDLAB_TEST_FETCH_ALLOWANCE_S:-}"
+fi
 
 PIN_OVERRIDE_VARS=(
   EXPECTED_OVERRIDE_SHA
@@ -874,10 +935,12 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_RUNG_DATASET_MANIFEST
   SDLAB_TEST_DOWNLOAD_PROBE_SECONDS
   SDLAB_TEST_DISK_REQUIRED_GIB
+  SDLAB_TEST_VM_DISK_BUDGET_GIB
   SDLAB_TEST_GPU_SMOKE_SECONDS
   SDLAB_TEST_RATE_READ_INTERVAL_S
   SDLAB_TEST_INSTALL_ALLOWANCE_S
   SDLAB_TEST_TRAIN_ALLOWANCE_S
+  SDLAB_TEST_FETCH_ALLOWANCE_S
   SDLAB_TEST_KILL_GRACE_S
   SDLAB_TEST_DOWNLOAD_TIMEOUT_S
   SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S
@@ -888,6 +951,8 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
   SDLAB_TEST_NEW_TIMEOUT_S
   SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_CHUNK_BYTES
+  SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
@@ -1004,6 +1069,11 @@ cleanup_on_exit() {
     && [ ! -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ]; then
     lane3_download_bundle_after_failure "${rc}" || true
   fi
+  if [ "${TRAIN_REQUESTED}" = "1" ] && [ -s "${OUT_DIR}/lane3_stub_bundle.tar.gz" ] \
+    && [ ! -f "${OUT_DIR}/bundle_manifest_check.json" ]; then
+    "${PY_BIN}" "${RUNG_PY}" verify-bundle --bundle-tar "${OUT_DIR}/lane3_stub_bundle.tar.gz" \
+      --out "${OUT_DIR}/bundle_manifest_check.json" >/dev/null 2>&1 || true
+  fi
   if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
     sleep 3600
     exit 137
@@ -1046,9 +1116,6 @@ colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}
 # A GPU card names its machine shape (--shape standard|high-mem, no default: SHAPE_REQUIRED); a CPU
 # stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
 colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
-# Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
-# or when the cap leaves less runtime than --min-runtime-s.
-colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
 
 lane3_translate_wsl_path() {
   local raw="$1"
@@ -1070,35 +1137,79 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   ACTIVE_DATASET_JSON="$(lane3_translate_wsl_path "${ACTIVE_DATASET_JSON}")"
 fi
 
-# Free pre-flight resolve, git pin check, and local wheel sha verification before any colab CLI call.
-# The pre-flight honours its SDLAB_PREFLIGHT_* test hooks only under the fake colab CLI
-# and refuses them in a live run (PREFLIGHT_TEST_HOOK_IN_LIVE_RUN).
-PREFLIGHT_OUT=""
-if ! PREFLIGHT_OUT="$(bash "${SCRIPT_DIR}/preflight_resolve.sh" lane3 --wheel-dir "${WHEEL_DIR}" 2>&1)"; then
-  printf '%s\n' "${PREFLIGHT_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
-  exit 1
-fi
-printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
-
-# Train mode: before any colab call, verify the job YAML's sha256, pinned base-model revision and
-# active __LANE3_*__ placeholders (JOB_FILE_MISSING / JOB_SHA_MISMATCH / JOB_TEMPLATE_INVALID), and
-# verify the dataset manifest + every image sha256 while packing one deterministic tar archive
-# (${DATASET_ARCHIVE}, sha256 recorded in ${OUT_DIR}/dataset_archive_sha256.txt).
+# Train mode: before any colab call and before preflight_resolve.sh, verify the job YAML's sha256,
+# pinned hub references + licence allow-list, save/sample cadences, trigger/cache_text_embeddings
+# compatibility and explicit caption dropout (`check-job`); verify the dataset manifest + every
+# image sha256 while packing one deterministic tar archive (`dataset`); and resolve the bundle
+# download timeout, upload timeout check, job-derived wall allowance and output disk projection
+# (`plan-run`).
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
   JOB_CHECK_OUT=""
-  if ! JOB_CHECK_OUT="$("${PY_BIN}" "${RUNG_PY}" check-job --template "${ACTIVE_JOB_YAML}" --template-sha "${ACTIVE_JOB_SHA}" --model-revision "${TRAIN_MODEL_REVISION}" 2>&1)"; then
+  if ! JOB_CHECK_OUT="$("${PY_BIN}" "${RUNG_PY}" check-job --template "${ACTIVE_JOB_YAML}" --template-sha "${ACTIVE_JOB_SHA}" --model-revision "${TRAIN_MODEL_REVISION}" --model-repo "${TRAIN_MODEL}" --plan-out "${OUT_DIR}/job_plan.json" 2>&1)"; then
     printf '%s\n' "${JOB_CHECK_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
-    exit 1
+    exit 2
   fi
   printf '%s\n' "${JOB_CHECK_OUT}" >> "${OUT_DIR}/guards.log"
 
   DATASET_OUT=""
   if ! DATASET_OUT="$("${PY_BIN}" "${RUNG_PY}" dataset --manifest "${ACTIVE_DATASET_JSON}" --manifest-sha "${ACTIVE_DATASET_SHA}" --src "${DATASET_DIR}" --pack-archive "${DATASET_ARCHIVE}" --archive-sha-out "${OUT_DIR}/dataset_archive_sha256.txt" 2>&1)"; then
     printf '%s\n' "${DATASET_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
-    exit 1
+    exit 2
   fi
   printf '%s\n' "${DATASET_OUT}" >> "${OUT_DIR}/guards.log"
   DATASET_ARCHIVE_SHA="$(tr -d '\r\n' < "${OUT_DIR}/dataset_archive_sha256.txt")"
+
+  IS_REAL_JOB="0"
+  if [ -z "${RUNG_JOB}" ]; then
+    IS_REAL_JOB="1"
+  fi
+  EXPLICIT_DL_TIMEOUT=""
+  if [ "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" != "default" ]; then
+    EXPLICIT_DL_TIMEOUT="${COLAB_DOWNLOAD_TIMEOUT_S}"
+  fi
+  EFFECTIVE_VM_BUDGET_GIB="${VM_DISK_BUDGET_GIB_ARG:-${LANE3_VM_DISK_BUDGET_GIB}}"
+  PLAN_ARGS=(
+    --job-plan "${OUT_DIR}/job_plan.json"
+    --is-real-job "${IS_REAL_JOB}"
+    --explicit-download-timeout-s "${EXPLICIT_DL_TIMEOUT}"
+    --download-timeout-source "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}"
+    --default-download-timeout-s "${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+    --download-chunk-bytes "${COLAB_DOWNLOAD_CHUNK_BYTES}"
+    --upload-timeout-s "${COLAB_UPLOAD_TIMEOUT_S}"
+    --upload-timeout-source "${COLAB_UPLOAD_TIMEOUT_SOURCE}"
+    --upload-chunk-bytes "${COLAB_UPLOAD_CHUNK_BYTES}"
+    --dataset-archive "${DATASET_ARCHIVE}"
+    --download-max-seconds "${TRAIN_DOWNLOAD_MAX_SECONDS}"
+    --setup-allowance-s "${LANE3_INSTALL_ALLOWANCE_S}"
+    --rung-train-allowance-s "${LANE3_TRAIN_ALLOWANCE_S}"
+    --wall-s "${WALL_S}"
+    --grace-s "${GRACE_S}"
+    --test-train-allowance-s "${TEST_TRAIN_ALLOWANCE_S}"
+    --test-fetch-allowance-s "${TEST_FETCH_ALLOWANCE_S}"
+    --vm-disk-budget-gib "${EFFECTIVE_VM_BUDGET_GIB}"
+    --out "${OUT_DIR}/run_plan.json"
+  )
+  [ -n "${DOWNLOAD_FLOOR_MB_S_ARG}" ] && PLAN_ARGS+=(--download-floor-mb-s "${DOWNLOAD_FLOOR_MB_S_ARG}")
+  [ -n "${UPLOAD_FLOOR_MB_S_ARG}" ] && PLAN_ARGS+=(--upload-floor-mb-s "${UPLOAD_FLOOR_MB_S_ARG}")
+  [ -n "${SECONDS_PER_STEP_ARG}" ] && PLAN_ARGS+=(--seconds-per-step "${SECONDS_PER_STEP_ARG}")
+  [ -n "${CHECKPOINT_SIZE_BYTES_ARG}" ] && PLAN_ARGS+=(--checkpoint-size-bytes "${CHECKPOINT_SIZE_BYTES_ARG}")
+  [ -n "${OPTIMIZER_SIZE_BYTES_ARG}" ] && PLAN_ARGS+=(--optimizer-size-bytes "${OPTIMIZER_SIZE_BYTES_ARG}")
+  [ -n "${SAMPLES_AND_LOGS_BYTES_ARG}" ] && PLAN_ARGS+=(--samples-and-logs-bytes "${SAMPLES_AND_LOGS_BYTES_ARG}")
+  [ -n "${OUTPUT_OVERHEAD_FACTOR_ARG}" ] && PLAN_ARGS+=(--output-overhead-factor "${OUTPUT_OVERHEAD_FACTOR_ARG}")
+  [ -n "${EXPECTED_MODEL_BYTES_ARG}" ] && PLAN_ARGS+=(--expected-model-bytes "${EXPECTED_MODEL_BYTES_ARG}")
+
+  PLAN_OUT=""
+  if ! PLAN_OUT="$("${PY_BIN}" "${RUNG_PY}" plan-run "${PLAN_ARGS[@]}" 2>&1)"; then
+    printf '%s\n' "${PLAN_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+    exit 2
+  fi
+  printf '%s\n' "${PLAN_OUT}" >> "${OUT_DIR}/guards.log"
+
+  read -r RESOLVED_DL_S RESOLVED_DL_SRC PROJECTED_OUTPUT_BYTES < <(
+    "${PY_BIN}" -c 'import json, sys; p = json.load(open(sys.argv[1], encoding="utf-8")); b = p["download_timeout_basis"]; print(p["download_timeout_s"], ("projected" if b["mode"] == "projected" else b["source"]), p["output_disk_projection"]["projected_output_bytes"])' "${OUT_DIR}/run_plan.json" | tr -d '\r'
+  )
+  colab_configure_download_timeout "${RESOLVED_DL_S}" "${RESOLVED_DL_SRC}" || exit 2
+  colab_apply_test_cleanup_overrides "${TEST_MODE}"
 
   if [ -z "${RUNG_JOB}" ]; then
     SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
@@ -1118,6 +1229,20 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
       "${ACTIVE_DATASET_JSON}=${ACTIVE_DATASET_SHA}")"
   fi
 fi
+
+# Refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
+# or when the cap leaves less runtime than --min-runtime-s (using the resolved download/upload bounds).
+colab_cap_budget_gate "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
+
+# Free pre-flight resolve, git pin check, and local wheel sha verification before any colab CLI call.
+# The pre-flight honours its SDLAB_PREFLIGHT_* test hooks only under the fake colab CLI
+# and refuses them in a live run (PREFLIGHT_TEST_HOOK_IN_LIVE_RUN).
+PREFLIGHT_OUT=""
+if ! PREFLIGHT_OUT="$(bash "${SCRIPT_DIR}/preflight_resolve.sh" lane3 --wheel-dir "${WHEEL_DIR}" 2>&1)"; then
+  printf '%s\n' "${PREFLIGHT_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+  exit 1
+fi
+printf '%s\n' "${PREFLIGHT_OUT}" >> "${OUT_DIR}/guards.log"
 
 # Train mode: the model at the pinned revision must answer the request's read token before any
 # spend (MODEL_AUTH_FAILED, MODEL_REVISION_NOT_FOUND, MODEL_METADATA_FAILED). The token reaches the
@@ -1212,4 +1337,12 @@ colab_run_exec_with_live_guards \
 # normal download still triggers post-failure salvage in cleanup_on_exit).
 colab_download_checked "${SESSION}" /content/lane3_stub_bundle.tar.gz "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}"
 EXEC_IN_FLIGHT=0
+if [ "${TRAIN_REQUESTED}" = "1" ]; then
+  VERIFY_BUNDLE_OUT=""
+  if ! VERIFY_BUNDLE_OUT="$("${PY_BIN}" "${RUNG_PY}" verify-bundle --bundle-tar "${OUT_DIR}/lane3_stub_bundle.tar.gz" --out "${OUT_DIR}/bundle_manifest_check.json" 2>&1)"; then
+    printf '%s\n' "${VERIFY_BUNDLE_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+    exit 1
+  fi
+  printf '%s\n' "${VERIFY_BUNDLE_OUT}" >> "${OUT_DIR}/guards.log"
+fi
 colab_scrub_all_logs "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}"

@@ -21,13 +21,31 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
                 (DATASET_MANIFEST_MISSING, DATASET_MANIFEST_SHA_MISMATCH, DATASET_MANIFEST_INVALID,
                 DATASET_ARCHIVE_SHA_MISMATCH, DATASET_FILE_MISSING, DATASET_SHA_MISMATCH).
   check-job     rig side, before a window opens: verify the job YAML's sha256, pinned 40-hex base
-                model revision, and single active `__LANE3_*__` placeholders with no unpinned
-                `name_or_path` (JOB_FILE_MISSING, JOB_SHA_MISMATCH, TRAIN_MODEL_REVISION_REQUIRED,
-                JOB_TEMPLATE_INVALID).
+                model revision, active `__LANE3_*__` placeholders, pinned 40-hex + cleared-licence
+                hub references across all string values, save/sample cadences, trigger_word vs
+                cache_text_embeddings compatibility, and explicit caption_dropout_rate + source
+                (JOB_FILE_MISSING, JOB_SHA_MISMATCH, TRAIN_MODEL_REVISION_REQUIRED,
+                JOB_TEMPLATE_INVALID, JOB_UNPINNED_HUB_REF, JOB_MODEL_LICENCE_NOT_ALLOWED,
+                JOB_SAVE_CADENCE_INVALID, JOB_SAMPLE_CADENCE_INVALID,
+                JOB_TRIGGER_WITH_CACHED_EMBEDDINGS, JOB_CAPTION_DROPOUT_INVALID).
+  plan-run      rig side, before a window opens: resolve and verify bundle download timeout,
+                dataset archive upload timeout, job-derived wall allowance, and projected VM
+                output disk budget (DOWNLOAD_TIMEOUT_INVALID, DOWNLOAD_TIMEOUT_REQUIRED,
+                DOWNLOAD_TIMEOUT_TOO_SHORT, UPLOAD_TIMEOUT_INVALID, UPLOAD_TIMEOUT_TOO_SHORT,
+                TRAIN_STEP_TIME_REQUIRED, TRAIN_WALL_TOO_SHORT, TRAIN_OUTPUT_PROJECTION_REQUIRED,
+                TRAIN_OUTPUT_DISK_LOW).
   render-job    verify (when --template-sha is given) and fill the job YAML's __LANE3_*__
                 placeholders (JOB_FILE_MISSING, JOB_SHA_MISMATCH, JOB_TEMPLATE_INVALID).
-  copy-off      while ai-toolkit runs, copy each finished checkpoint and sample image into the
-                bundle directory and append a manifest line with its sha256.
+  copy-off      while ai-toolkit runs (and on final sweep), copy every file in the training folder
+                (checkpoints, optimizer state, resolved config, loss/other logs, samples, and `_*`
+                subdirectories) into the bundle directory and append a manifest line with its sha256.
+  check-output-disk   VM side, before run.py: verify projected training output fits free disk.
+  write-train-manifest VM side, after run.py and before final copy-off: record relative path,
+                bytes, and sha256 of every file in the training folder.
+  check-bundle-disk   VM side, before tar: verify lane3_out total bytes fit free disk.
+  verify-bundle rig side, after colab download: verify every file in training_folder_manifest.json
+                arrived in rung_outputs/ with matching byte count and sha256
+                (TRAIN_OUTPUT_MANIFEST_MISMATCH).
   model-check   rig side, before a window opens: the model at the pinned revision answers the
                 request's read token (MODEL_AUTH_FAILED, MODEL_REVISION_NOT_FOUND,
                 MODEL_METADATA_FAILED; the same names for the VM's metadata call).
@@ -42,6 +60,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -60,7 +79,47 @@ HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 SAFE_IMAGE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 REPO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$")
 PLACEHOLDERS = ("__LANE3_TRAINING_FOLDER__", "__LANE3_DATASET_DIR__", "__LANE3_MODEL_PATH__")
-COPY_OFF_SUFFIXES = (".safetensors", ".png", ".jpg", ".jpeg", ".webp")
+SAMPLE_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
+DEFAULT_UPLOAD_FLOOR_MB_S = 1.0
+DEFAULT_UPLOAD_CHUNK_BYTES = 33_554_432
+DEFAULT_DOWNLOAD_CHUNK_BYTES = 268_435_456
+DEFAULT_OUTPUT_COPY_TAR_OVERHEAD = 3.0
+DEFAULT_VM_DISK_BUDGET_GIB = 75.0
+# Cleared SPDX model and LoRA repositories matching lib/model-licences.js (G4, §5.2-§5.3).
+LANE3_MODEL_LICENCE_ALLOWLIST: dict[str, dict[str, str]] = {
+    "Qwen/Qwen-Image": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://github.com/QwenLM/Qwen-Image/blob/main/LICENSE",
+    },
+    "Qwen/Qwen2.5-VL-7B-Instruct": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://github.com/QwenLM/Qwen2.5-VL/blob/main/LICENSE",
+    },
+    "Qwen/Qwen2.5-VL-32B-Instruct": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://github.com/QwenLM/Qwen2.5-VL/blob/main/LICENSE",
+    },
+    "Qwen/Qwen3-VL-30B-A3B-Instruct": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct/blob/main/LICENSE",
+    },
+    "black-forest-labs/FLUX.2-klein-4B": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
+    },
+    "black-forest-labs/FLUX.2-klein-base-4B": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
+    },
+    "mcp-tool-shop/portlight-ships-anatomy": {
+        "spdx_id": "MIT",
+        "url": "https://huggingface.co/mcp-tool-shop/portlight-ships-anatomy-lora",
+    },
+    "mcp-tool-shop/portlight-ships-anatomy-lora": {
+        "spdx_id": "MIT",
+        "url": "https://huggingface.co/mcp-tool-shop/portlight-ships-anatomy-lora",
+    },
+}
 HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
 BEARER_RE = re.compile(r"(?i)\bBearer\s+\S+")
 
@@ -775,10 +834,496 @@ def validate_job_template(template_path: Path, text: str, *, strict_bindings: bo
                 )
 
 
+HUB_URL_RE = re.compile(r"(?:https?://|hf://)\S+|huggingface\.co/\S+", re.I)
+PINNED_HF_RESOLVE_URL_RE = re.compile(
+    r"^https?://huggingface\.co/([A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*)"
+    r"/(?:resolve|blob|tree)/([0-9a-f]{40})(?:/[^\s]*)?$",
+    re.I,
+)
+PINNED_HF_AT_URL_RE = re.compile(
+    r"^(?:https?://huggingface\.co/|hf://)([A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*)"
+    r"@([0-9a-f]{40})(?:/[^\s]*)?$",
+    re.I,
+)
+PINNED_HUB_SPEC_RE = re.compile(
+    r"^([A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*)@([0-9a-f]{40})(?:/[^\s]*)?$"
+)
+
+
+def _strip_yaml_comment(raw: str) -> str:
+    in_single = False
+    in_double = False
+    idx = 0
+    while idx < len(raw):
+        ch = raw[idx]
+        if ch == "'" and not in_double:
+            if in_single and idx + 1 < len(raw) and raw[idx + 1] == "'":
+                idx += 2
+                continue
+            in_single = not in_single
+        elif ch == '"' and not in_single:
+            if in_double and idx > 0 and raw[idx - 1] == "\\":
+                idx += 1
+                continue
+            in_double = not in_double
+        elif ch == "#" and not in_single and not in_double and (idx == 0 or raw[idx - 1].isspace()):
+            return raw[:idx].rstrip()
+        idx += 1
+    return raw.rstrip()
+
+
+def _split_top_level_commas(inner: str) -> list[str]:
+    parts: list[str] = []
+    cur: list[str] = []
+    in_single = False
+    in_double = False
+    depth = 0
+    idx = 0
+    while idx < len(inner):
+        ch = inner[idx]
+        if ch == "'" and not in_double:
+            if in_single and idx + 1 < len(inner) and inner[idx + 1] == "'":
+                cur.append("''")
+                idx += 2
+                continue
+            in_single = not in_single
+        elif ch == '"' and not in_single:
+            if not (in_double and idx > 0 and inner[idx - 1] == "\\"):
+                in_double = not in_double
+        elif not in_single and not in_double:
+            if ch in "[{":
+                depth += 1
+            elif ch in "]}" and depth > 0:
+                depth -= 1
+            elif ch == "," and depth == 0:
+                parts.append("".join(cur).strip())
+                cur = []
+                idx += 1
+                continue
+        cur.append(ch)
+        idx += 1
+    tail = "".join(cur).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def _split_yaml_kv(line: str) -> tuple[str, str] | None:
+    stripped = _strip_yaml_comment(line)
+    in_single = False
+    in_double = False
+    for idx, ch in enumerate(stripped):
+        if ch == "'" and not in_double:
+            in_single = not in_single
+        elif ch == '"' and not in_single:
+            if idx == 0 or stripped[idx - 1] != "\\":
+                in_double = not in_double
+        elif ch == ":" and not in_single and not in_double:
+            if idx + 1 == len(stripped) or stripped[idx + 1].isspace():
+                raw_key = stripped[:idx].strip()
+                val_rest = stripped[idx + 1 :].strip()
+                if len(raw_key) >= 2 and raw_key[0] == raw_key[-1] and raw_key[0] in ("'", '"'):
+                    raw_key = raw_key[1:-1]
+                if re.match(r"^[A-Za-z0-9_.-]+$", raw_key):
+                    return raw_key, val_rest
+                return None
+    return None
+
+
+def _parse_yaml_scalar(raw: str) -> Any:
+    s = _strip_yaml_comment(raw).strip()
+    if s == "" or s in ("null", "Null", "NULL", "~"):
+        return None
+    if s in ("true", "True", "TRUE"):
+        return True
+    if s in ("false", "False", "FALSE"):
+        return False
+    if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
+        try:
+            return json.loads(s)
+        except ValueError:
+            return s[1:-1]
+    if len(s) >= 2 and s[0] == "'" and s[-1] == "'":
+        return s[1:-1].replace("''", "'")
+    if s.startswith("[") and s.endswith("]"):
+        inner = s[1:-1].strip()
+        return [_parse_yaml_scalar(item) for item in _split_top_level_commas(inner)] if inner else []
+    if s.startswith("{") and s.endswith("}"):
+        inner = s[1:-1].strip()
+        if not inner:
+            return {}
+        out: dict[str, Any] = {}
+        for item in _split_top_level_commas(inner):
+            kv = _split_yaml_kv(item)
+            if kv is not None:
+                out[kv[0]] = _parse_yaml_scalar(kv[1])
+        return out
+    if re.match(r"^[+-]?\d+$", s):
+        return int(s)
+    if re.match(r"^[+-]?(?:\d+\.\d*|\.\d+|\d+[eE][+-]?\d+|\d+\.\d*[eE][+-]?\d+)$", s):
+        val = float(s)
+        if math.isfinite(val):
+            return val
+    return s
+
+
+def parse_job_yaml(text: str, template_path: Path = Path("<job.yaml>")) -> dict[str, Any]:
+    """Stdlib indentation-aware YAML subset parser for ai-toolkit job configs (no PyYAML required)."""
+    lines: list[tuple[int, str, int]] = []
+    for lno, raw in enumerate(text.splitlines(), start=1):
+        clean = raw.rstrip("\r")
+        stripped = clean.lstrip(" \t")
+        if "\t" in clean[: len(clean) - len(stripped)]:
+            raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}:{lno}: tabs are not valid YAML indentation")
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(clean) - len(stripped)
+        lines.append((indent, stripped, lno))
+    if not lines:
+        raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: YAML document is empty")
+
+    def _parse_sequence(idx: int, seq_indent: int) -> tuple[list[Any], int]:
+        items: list[Any] = []
+        while idx < len(lines):
+            ind, content, _lno = lines[idx]
+            if ind != seq_indent or not (content == "-" or content.startswith("- ")):
+                break
+            rest = content[1:].lstrip(" ")
+            idx += 1
+            if rest == "":
+                if idx < len(lines) and lines[idx][0] > seq_indent:
+                    child, idx = _parse_node(idx)
+                    items.append(child)
+                else:
+                    items.append(None)
+                continue
+            kv = _split_yaml_kv(rest)
+            if kv is not None:
+                k, v_rest = kv
+                item_dict: dict[str, Any] = {}
+                first_key_indent = seq_indent + 2
+                if v_rest != "":
+                    item_dict[k] = _parse_yaml_scalar(v_rest)
+                elif idx < len(lines) and (
+                    lines[idx][0] > first_key_indent
+                    or (
+                        lines[idx][0] == first_key_indent
+                        and (lines[idx][1] == "-" or lines[idx][1].startswith("- "))
+                    )
+                ):
+                    child, idx = _parse_node(idx)
+                    item_dict[k] = child
+                else:
+                    item_dict[k] = None
+                if idx < len(lines) and lines[idx][0] > seq_indent and not (
+                    lines[idx][1] == "-" or lines[idx][1].startswith("- ")
+                ):
+                    more, idx = _parse_mapping(idx, lines[idx][0])
+                    item_dict.update(more)
+                items.append(item_dict)
+                continue
+            parts = [_strip_yaml_comment(rest).strip()]
+            if not parts[0].startswith(('"', "'", "[", "{")):
+                while idx < len(lines) and lines[idx][0] > seq_indent:
+                    cont = _strip_yaml_comment(lines[idx][1]).strip()
+                    if cont:
+                        parts.append(cont)
+                    idx += 1
+                items.append(_parse_yaml_scalar(" ".join(p for p in parts if p)))
+            else:
+                items.append(_parse_yaml_scalar(parts[0]))
+        return items, idx
+
+    def _parse_mapping(idx: int, map_indent: int) -> tuple[dict[str, Any], int]:
+        out: dict[str, Any] = {}
+        while idx < len(lines):
+            ind, content, lno = lines[idx]
+            if ind < map_indent:
+                break
+            if ind > map_indent:
+                raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}:{lno}: unexpected indentation ({ind} > {map_indent})")
+            if content == "-" or content.startswith("- "):
+                break
+            kv = _split_yaml_kv(content)
+            if kv is None:
+                raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}:{lno}: invalid YAML mapping line {content!r}")
+            k, v_rest = kv
+            idx += 1
+            if v_rest != "":
+                if not v_rest.startswith(('"', "'", "[", "{")):
+                    parts = [_strip_yaml_comment(v_rest).strip()]
+                    while (
+                        idx < len(lines)
+                        and lines[idx][0] > map_indent
+                        and _split_yaml_kv(lines[idx][1]) is None
+                        and not (lines[idx][1] == "-" or lines[idx][1].startswith("- "))
+                    ):
+                        cont = _strip_yaml_comment(lines[idx][1]).strip()
+                        if cont:
+                            parts.append(cont)
+                        idx += 1
+                    out[k] = _parse_yaml_scalar(" ".join(p for p in parts if p))
+                else:
+                    out[k] = _parse_yaml_scalar(v_rest)
+            elif idx < len(lines) and (
+                lines[idx][0] > map_indent
+                or (lines[idx][0] == map_indent and (lines[idx][1] == "-" or lines[idx][1].startswith("- ")))
+            ):
+                child, idx = _parse_node(idx)
+                out[k] = child
+            else:
+                out[k] = None
+        return out, idx
+
+    def _parse_node(idx: int) -> tuple[Any, int]:
+        ind, content, _lno = lines[idx]
+        if content == "-" or content.startswith("- "):
+            return _parse_sequence(idx, ind)
+        return _parse_mapping(idx, ind)
+
+    root, next_idx = _parse_node(0)
+    if next_idx < len(lines):
+        _ind, content, lno = lines[next_idx]
+        raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}:{lno}: trailing unparsed YAML content {content!r}")
+    if not isinstance(root, dict):
+        raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: top-level YAML value must be a mapping")
+    return root
+
+
+def _iter_yaml_strings(node: Any, prefix: str = "") -> Iterable[tuple[str, str]]:
+    if isinstance(node, dict):
+        for k, v in node.items():
+            sub = f"{prefix}.{k}" if prefix else str(k)
+            yield from _iter_yaml_strings(v, sub)
+    elif isinstance(node, list):
+        for idx, item in enumerate(node):
+            yield from _iter_yaml_strings(item, f"{prefix}[{idx}]")
+    elif isinstance(node, str):
+        yield prefix, node
+
+
+def _require_allowed_repo(repo_id: str, context: str) -> None:
+    if repo_id not in LANE3_MODEL_LICENCE_ALLOWLIST:
+        raise Refusal(
+            "JOB_MODEL_LICENCE_NOT_ALLOWED",
+            f"{context}: {repo_id!r} is not on the kit's cleared model licence allow-list "
+            f"(allowed: {', '.join(sorted(LANE3_MODEL_LICENCE_ALLOWLIST))})",
+        )
+
+
+def _check_job_string_for_hub_refs(
+    template_path: Path, key_path: str, val: str, pinned_refs: list[dict[str, str]]
+) -> None:
+    s = val.strip()
+    if not s or s in PLACEHOLDERS:
+        return
+    url_matches = list(HUB_URL_RE.finditer(s))
+    if url_matches:
+        for um in url_matches:
+            u = um.group(0).rstrip(".,;)")
+            m_res = PINNED_HF_RESOLVE_URL_RE.match(u) or PINNED_HF_AT_URL_RE.match(u)
+            if m_res is None:
+                raise Refusal(
+                    "JOB_UNPINNED_HUB_REF",
+                    f"{template_path} {key_path}={val!r} contains URL {u!r} not pinned to a 40-hex revision",
+                )
+            repo_id, rev = m_res.group(1), m_res.group(2).lower()
+            _require_allowed_repo(repo_id, f"{template_path} {key_path}={val!r}")
+            pinned_refs.append({"path": key_path, "repo_id": repo_id, "revision": rev})
+        return
+
+    if "|" in s:
+        pipe_parts = [p.strip() for p in s.split("|") if "/" in p]
+        if pipe_parts:
+            for part in pipe_parts:
+                m_pipe = PINNED_HUB_SPEC_RE.match(part)
+                if m_pipe is None:
+                    raise Refusal(
+                        "JOB_UNPINNED_HUB_REF",
+                        f"{template_path} {key_path}={val!r} has unpinned hub reference '{part}' (must pin to @<40-hex>)",
+                    )
+                repo_id, rev = m_pipe.group(1), m_pipe.group(2).lower()
+                _require_allowed_repo(repo_id, f"{template_path} {key_path}={val!r}")
+                pinned_refs.append({"path": key_path, "repo_id": repo_id, "revision": rev})
+            return
+
+    if not any(ch.isspace() for ch in s) and "/" in s:
+        if s.startswith(("/", "./", "../")) or re.match(r"^[A-Za-z]:[\\/]", s):
+            return
+        m_hub = PINNED_HUB_SPEC_RE.match(s)
+        if m_hub is None:
+            raise Refusal(
+                "JOB_UNPINNED_HUB_REF",
+                f"{template_path} {key_path}={val!r} is a hub-style reference not pinned to @<40-hex>",
+            )
+        repo_id, rev = m_hub.group(1), m_hub.group(2).lower()
+        _require_allowed_repo(repo_id, f"{template_path} {key_path}={val!r}")
+        pinned_refs.append({"path": key_path, "repo_id": repo_id, "revision": rev})
+
+
+def validate_job_semantics(
+    template_path: Path, parsed: dict[str, Any], *, model_repo: str | None = None
+) -> dict[str, Any]:
+    """Verify hub references + licence allow-list across all job string values, save/sample cadences,
+    trigger_word vs cache_text_embeddings compatibility, and explicit caption_dropout_rate + source."""
+    if model_repo is not None and model_repo.strip():
+        _require_allowed_repo(model_repo.strip(), "--model")
+
+    pinned_refs: list[dict[str, str]] = []
+    for key_path, str_val in _iter_yaml_strings(parsed):
+        _check_job_string_for_hub_refs(template_path, key_path, str_val, pinned_refs)
+
+    cfg = parsed.get("config")
+    if not isinstance(cfg, dict):
+        raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: missing top-level config mapping")
+    procs = cfg.get("process")
+    if not isinstance(procs, list) or not procs or not all(isinstance(p, dict) for p in procs):
+        raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: config.process must be a non-empty list of mappings")
+    meta = parsed.get("meta") if isinstance(parsed.get("meta"), dict) else {}
+
+    primary_summary: dict[str, Any] | None = None
+    for p_idx, proc in enumerate(procs):
+        train = proc.get("train")
+        if not isinstance(train, dict):
+            raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: config.process[{p_idx}].train must be a mapping")
+        steps = train.get("steps")
+        if isinstance(steps, bool) or not isinstance(steps, int) or steps < 1:
+            raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: train.steps={steps!r} must be a positive integer")
+
+        save = proc.get("save")
+        if not isinstance(save, dict) or save.get("disable_saving") is True:
+            raise Refusal("JOB_SAVE_CADENCE_INVALID", f"{template_path}: save block is missing or saving is disabled")
+        save_every = save.get("save_every")
+        if isinstance(save_every, bool) or not isinstance(save_every, int) or save_every < 1 or save_every > steps:
+            raise Refusal(
+                "JOB_SAVE_CADENCE_INVALID",
+                f"{template_path}: save.save_every={save_every!r} must be an integer in 1..{steps} (train.steps={steps})",
+            )
+
+        sample = proc.get("sample")
+        if (
+            train.get("disable_sampling") is True
+            or not isinstance(sample, dict)
+            or sample.get("disable_sampling") is True
+            or sample.get("enabled") is False
+        ):
+            raise Refusal(
+                "JOB_SAMPLE_CADENCE_INVALID",
+                f"{template_path}: sampling is off or sample block is missing (the VM refuses TRAIN_SAMPLE_MISSING after training)",
+            )
+        sample_every = sample.get("sample_every")
+        if (
+            isinstance(sample_every, bool)
+            or not isinstance(sample_every, int)
+            or sample_every < 1
+            or sample_every > steps
+        ):
+            raise Refusal(
+                "JOB_SAMPLE_CADENCE_INVALID",
+                f"{template_path}: sample.sample_every={sample_every!r} must be an integer in 1..{steps} (train.steps={steps})",
+            )
+        prompts = sample.get("prompts")
+        if not isinstance(prompts, list) or not prompts or not all(isinstance(pr, str) and pr.strip() for pr in prompts):
+            raise Refusal(
+                "JOB_SAMPLE_CADENCE_INVALID",
+                f"{template_path}: sample.prompts must be a non-empty list of non-empty strings",
+            )
+        sample_steps = sample.get("sample_steps")
+        if sample_steps is not None and (isinstance(sample_steps, bool) or not isinstance(sample_steps, int) or sample_steps < 1):
+            raise Refusal(
+                "JOB_SAMPLE_CADENCE_INVALID",
+                f"{template_path}: sample.sample_steps={sample_steps!r} must be a positive integer",
+            )
+
+        datasets = proc.get("datasets")
+        if not isinstance(datasets, list) or not datasets or not all(isinstance(d, dict) for d in datasets):
+            raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}: config.process[{p_idx}].datasets must be a non-empty list")
+
+        cache_te = bool(
+            train.get("cache_text_embeddings") is True
+            or proc.get("cache_text_embeddings") is True
+            or any(d.get("cache_text_embeddings") is True for d in datasets)
+        )
+        trigger_candidates = [
+            proc.get("trigger_word"),
+            train.get("trigger_word"),
+            *(d.get("trigger_word") for d in datasets),
+        ]
+        active_triggers = [str(t).strip() for t in trigger_candidates if t is not None and str(t).strip()]
+        if cache_te and active_triggers:
+            raise Refusal(
+                "JOB_TRIGGER_WITH_CACHED_EMBEDDINGS",
+                f"{template_path}: trigger_word={active_triggers[0]!r} cannot be set with cache_text_embeddings: true "
+                "(ostris/ai-toolkit@beb94824 config/examples/train_lora_qwen_image_24gb.yaml:15: "
+                "'Trigger words will not work when caching text embeddings')",
+            )
+
+        meta_dropout_src = meta.get("caption_dropout_source")
+        dropout_records: list[dict[str, Any]] = []
+        for ds_idx, ds in enumerate(datasets):
+            if "caption_dropout_rate" not in ds or ds["caption_dropout_rate"] is None:
+                raise Refusal(
+                    "JOB_CAPTION_DROPOUT_INVALID",
+                    f"{template_path}: datasets[{ds_idx}].caption_dropout_rate must be explicit "
+                    "(ostris/ai-toolkit@beb94824 toolkit/config_modules.py:968 defaults to 0.0 while "
+                    "config/examples/train_lora_qwen_image_24gb.yaml:34 uses 0.05)",
+                )
+            raw_cdr = ds["caption_dropout_rate"]
+            if isinstance(raw_cdr, bool) or not isinstance(raw_cdr, (int, float)) or not math.isfinite(float(raw_cdr)):
+                raise Refusal(
+                    "JOB_CAPTION_DROPOUT_INVALID",
+                    f"{template_path}: datasets[{ds_idx}].caption_dropout_rate={raw_cdr!r} must be a number in [0.0, 1.0]",
+                )
+            cdr = float(raw_cdr)
+            if cdr < 0.0 or cdr > 1.0:
+                raise Refusal(
+                    "JOB_CAPTION_DROPOUT_INVALID",
+                    f"{template_path}: datasets[{ds_idx}].caption_dropout_rate={cdr} must be in [0.0, 1.0]",
+                )
+            src_note = ds.get("caption_dropout_source") if ds.get("caption_dropout_source") is not None else meta_dropout_src
+            if not isinstance(src_note, str) or not src_note.strip():
+                raise Refusal(
+                    "JOB_CAPTION_DROPOUT_INVALID",
+                    f"{template_path}: caption_dropout_source is required alongside caption_dropout_rate={cdr} "
+                    "to name where the value came from (ostris/ai-toolkit@beb94824 toolkit/config_modules.py:968 "
+                    "default 0.0 vs config/examples/train_lora_qwen_image_24gb.yaml:34 0.05)",
+                )
+            dropout_records.append({"dataset_index": ds_idx, "rate": cdr, "source": src_note.strip()})
+
+        if primary_summary is None:
+            primary_summary = {
+                "job_name": cfg.get("name"),
+                "steps": steps,
+                "save_every": save_every,
+                "sample_every": sample_every,
+                "caption_dropout": dropout_records,
+                "pinned_hub_refs": pinned_refs,
+                "meta": {
+                    k: meta.get(k)
+                    for k in (
+                        "caption_dropout_source",
+                        "seconds_per_step",
+                        "checkpoint_size_bytes",
+                        "optimizer_size_bytes",
+                        "samples_and_logs_bytes",
+                        "download_floor_mb_s",
+                        "upload_floor_mb_s",
+                        "copy_tar_overhead",
+                        "expected_model_bytes",
+                    )
+                    if k in meta
+                },
+            }
+    assert primary_summary is not None
+    return primary_summary
+
+
 def run_check_job(args: argparse.Namespace) -> int:
     template_path = Path(args.template)
     template_sha = getattr(args, "template_sha", None)
     model_revision = getattr(args, "model_revision", None)
+    model_repo = getattr(args, "model_repo", None)
+    plan_out = getattr(args, "plan_out", None)
     try:
         if not template_path.is_file():
             raise Refusal("JOB_FILE_MISSING", str(template_path))
@@ -791,10 +1336,365 @@ def run_check_job(args: argparse.Namespace) -> int:
             raise Refusal("TRAIN_MODEL_REVISION_REQUIRED", f"{model_revision!r} is not a 40-hex commit")
         text = template_path.read_text(encoding="utf-8")
         validate_job_template(template_path, text, strict_bindings=True)
+        parsed = parse_job_yaml(text, template_path)
+        summary = validate_job_semantics(template_path, parsed, model_repo=model_repo)
+        summary["template_sha256"] = got_sha
+        if plan_out:
+            write_json(Path(plan_out), summary)
     except Refusal as exc:
         print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
         return 1
     print(f"JOB_TEMPLATE_OK {template_path} sha256={got_sha}", flush=True)
+    return 0
+
+
+def _parse_int_setting(raw: Any, code: str, name: str, *, allow_zero: bool = False) -> int:
+    if raw is None or str(raw).strip() == "":
+        raise Refusal(code, f"{name} is required (there is no default)")
+    s = str(raw).strip()
+    if isinstance(raw, bool) or not re.match(r"^[+-]?\d+$", s):
+        raise Refusal(code, f"{name}={raw!r} must be an integer")
+    val = int(s)
+    if (allow_zero and val < 0) or (not allow_zero and val <= 0):
+        bound = "non-negative" if allow_zero else "positive"
+        raise Refusal(code, f"{name}={raw!r} must be a {bound} integer")
+    return val
+
+
+def _pick_setting(cli_val: Any, meta: dict[str, Any], meta_key: str) -> tuple[Any, str | None]:
+    if cli_val is not None and str(cli_val).strip() != "":
+        return cli_val, "cli"
+    if meta_key in meta and meta[meta_key] is not None and str(meta[meta_key]).strip() != "":
+        return meta[meta_key], "job_meta"
+    return None, None
+
+
+def run_plan_run(args: argparse.Namespace) -> int:
+    """Rig-side pre-open planner for Parts 1, 2, 4, and 5: resolves download/upload timeouts,
+    wall allowance from steps * seconds_per_step, and projected VM output disk fit."""
+    out_path = Path(args.out) if getattr(args, "out", None) else None
+    plan: dict[str, Any] = {}
+    try:
+        job_plan = read_json(Path(args.job_plan))
+        if not isinstance(job_plan, dict):
+            raise Refusal("JOB_TEMPLATE_INVALID", f"unreadable job plan {args.job_plan}")
+        steps = int(job_plan["steps"])
+        save_every = int(job_plan["save_every"])
+        meta = job_plan.get("meta") if isinstance(job_plan.get("meta"), dict) else {}
+        ckpt_count = math.ceil(steps / save_every)
+        is_real_job = str(args.is_real_job).strip() == "1"
+
+        # 1. Bundle download timeout (Part 1; per-part under COLAB_DOWNLOAD_CHUNK_BYTES in Addendum 1 Part 2b)
+        download_chunk_bytes = (
+            _parse_int_setting(args.download_chunk_bytes, "DOWNLOAD_CHUNK_BYTES_INVALID", "download_chunk_bytes")
+            if getattr(args, "download_chunk_bytes", None) is not None and str(args.download_chunk_bytes).strip() != ""
+            else DEFAULT_DOWNLOAD_CHUNK_BYTES
+        )
+        explicit_raw = (args.explicit_download_timeout_s or "").strip()
+        dl_src = (args.download_timeout_source or "default").strip()
+        explicit_dl_s: int | None = None
+        if explicit_raw:
+            explicit_dl_s = _parse_int_setting(explicit_raw, "DOWNLOAD_TIMEOUT_INVALID", "download_timeout_s")
+
+        raw_dl_floor, dl_floor_src = _pick_setting(args.download_floor_mb_s, meta, "download_floor_mb_s")
+        raw_ckpt_b, ckpt_b_src = _pick_setting(args.checkpoint_size_bytes, meta, "checkpoint_size_bytes")
+        raw_samp_b, samp_b_src = _pick_setting(args.samples_and_logs_bytes, meta, "samples_and_logs_bytes")
+
+        dl_floor_val: float | None = None
+        projected_dl_s: int | None = None
+        expected_bundle_bytes: int | None = None
+        download_part_count = 1
+        max_download_part_bytes: int | None = None
+        dl_ckpt_b: int | None = None
+        dl_samp_b: int | None = None
+        if raw_dl_floor is not None:
+            dl_floor_val = parse_positive_number(str(raw_dl_floor), "DOWNLOAD_TIMEOUT_INVALID", "download_floor_mb_s")
+            if raw_ckpt_b is None or raw_samp_b is None:
+                raise Refusal(
+                    "DOWNLOAD_TIMEOUT_REQUIRED",
+                    "projecting bundle download timeout requires checkpoint_size_bytes and samples_and_logs_bytes",
+                )
+            dl_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+            dl_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+            expected_bundle_bytes = ckpt_count * dl_ckpt_b + dl_samp_b
+            download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes)) if expected_bundle_bytes > 0 else 1
+            max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
+            projected_dl_s = max(1, math.ceil(max_download_part_bytes / (dl_floor_val * 1_000_000.0)))
+        elif raw_ckpt_b is not None and raw_samp_b is not None:
+            try:
+                cand_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+                cand_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+                cand_bundle_b = ckpt_count * cand_ckpt_b + cand_samp_b
+                if cand_bundle_b > 0:
+                    download_part_count = max(1, math.ceil(cand_bundle_b / download_chunk_bytes))
+            except Refusal:
+                pass
+
+        if is_real_job and explicit_dl_s is None and projected_dl_s is None:
+            plan["download_timeout_basis"] = {
+                "mode": "missing_on_real_job",
+                "is_real_job": True,
+                "steps": steps,
+                "save_every": save_every,
+            }
+            raise Refusal(
+                "DOWNLOAD_TIMEOUT_REQUIRED",
+                "--job must not use the 300 s default download timeout; pass --download-timeout-s <s> "
+                "or project it with checkpoint_size_bytes, samples_and_logs_bytes and --download-floor-mb-s <MB/s>",
+            )
+
+        if explicit_dl_s is not None and projected_dl_s is not None and explicit_dl_s < projected_dl_s:
+            plan["download_timeout_basis"] = {
+                "mode": "explicit_below_projected",
+                "source": dl_src,
+                "explicit_seconds": explicit_dl_s,
+                "projected_seconds": projected_dl_s,
+                "expected_bundle_bytes": expected_bundle_bytes,
+                "download_chunk_bytes": download_chunk_bytes,
+                "part_count": download_part_count,
+                "max_part_bytes": max_download_part_bytes,
+                "throughput_floor_mb_s": dl_floor_val,
+            }
+            raise Refusal(
+                "DOWNLOAD_TIMEOUT_TOO_SHORT",
+                f"--download-timeout-s {explicit_dl_s} s < projected per-part {projected_dl_s} s "
+                f"({max_download_part_bytes} bytes/part at {dl_floor_val} MB/s)",
+            )
+
+        if explicit_dl_s is not None:
+            chosen_dl_s = explicit_dl_s
+            dl_mode = "explicit"
+            dl_basis_source = dl_src if dl_src in ("cli", "env") else "cli"
+        elif projected_dl_s is not None:
+            chosen_dl_s = projected_dl_s
+            dl_mode = "projected"
+            dl_basis_source = dl_floor_src or "projection"
+        else:
+            chosen_dl_s = _parse_int_setting(args.default_download_timeout_s, "DOWNLOAD_TIMEOUT_INVALID", "default_download_timeout_s")
+            dl_mode = "rung_default"
+            dl_basis_source = "default"
+
+        plan["download_timeout_s"] = chosen_dl_s
+        plan["salvage_download_timeout_s"] = chosen_dl_s
+        plan["download_chunk_bytes"] = download_chunk_bytes
+        plan["download_timeout_basis"] = {
+            "mode": dl_mode,
+            "source": dl_basis_source,
+            "is_real_job": is_real_job,
+            "chosen_seconds": chosen_dl_s,
+            "salvage_download_timeout_seconds": chosen_dl_s,
+            "download_chunk_bytes": download_chunk_bytes,
+            "part_count": download_part_count,
+            "max_part_bytes": max_download_part_bytes,
+            "steps": steps,
+            "save_every": save_every,
+            "checkpoint_count": ckpt_count,
+            "checkpoint_size_bytes": dl_ckpt_b,
+            "checkpoint_size_source": ckpt_b_src if dl_ckpt_b is not None else None,
+            "samples_and_logs_bytes": dl_samp_b,
+            "samples_and_logs_source": samp_b_src if dl_samp_b is not None else None,
+            "expected_bundle_bytes": expected_bundle_bytes,
+            "throughput_floor_mb_s": dl_floor_val,
+            "projected_seconds": projected_dl_s,
+        }
+
+        # 2. Dataset archive upload timeout (Part 2; per-part under COLAB_UPLOAD_CHUNK_BYTES in Addendum 1 Part 2)
+        upload_timeout_s = _parse_int_setting(args.upload_timeout_s, "UPLOAD_TIMEOUT_INVALID", "upload_timeout_s")
+        upload_chunk_bytes = (
+            _parse_int_setting(args.upload_chunk_bytes, "UPLOAD_CHUNK_BYTES_INVALID", "upload_chunk_bytes")
+            if getattr(args, "upload_chunk_bytes", None) is not None and str(args.upload_chunk_bytes).strip() != ""
+            else DEFAULT_UPLOAD_CHUNK_BYTES
+        )
+        raw_up_floor, up_floor_src = _pick_setting(args.upload_floor_mb_s, meta, "upload_floor_mb_s")
+        if raw_up_floor is None:
+            up_floor_val = DEFAULT_UPLOAD_FLOOR_MB_S
+            up_floor_src = "default"
+        else:
+            up_floor_val = parse_positive_number(str(raw_up_floor), "UPLOAD_TIMEOUT_INVALID", "upload_floor_mb_s")
+
+        archive_p = Path(args.dataset_archive)
+        if not archive_p.is_file():
+            raise Refusal("DATASET_FILE_MISSING", str(archive_p))
+        archive_bytes = archive_p.stat().st_size
+        upload_part_count = max(1, math.ceil(archive_bytes / upload_chunk_bytes)) if archive_bytes > 0 else 1
+        max_upload_part_bytes = min(archive_bytes, upload_chunk_bytes)
+        projected_upload_s = max_upload_part_bytes / (up_floor_val * 1_000_000.0)
+        projected_total_upload_s = archive_bytes / (up_floor_val * 1_000_000.0)
+        upload_ok = projected_upload_s <= float(upload_timeout_s)
+        plan["upload_timeout_s"] = upload_timeout_s
+        plan["upload_chunk_bytes"] = upload_chunk_bytes
+        plan["upload_timeout_check"] = {
+            "upload_timeout_s": upload_timeout_s,
+            "source": (args.upload_timeout_source or "default").strip(),
+            "upload_chunk_bytes": upload_chunk_bytes,
+            "part_count": upload_part_count,
+            "max_part_bytes": max_upload_part_bytes,
+            "dataset_archive_bytes": archive_bytes,
+            "throughput_floor_mb_s": up_floor_val,
+            "floor_source": up_floor_src,
+            "projected_upload_seconds": round(projected_upload_s, 4),
+            "projected_total_upload_seconds": round(projected_total_upload_s, 4),
+            "ok": upload_ok,
+        }
+        if not upload_ok:
+            raise Refusal(
+                "UPLOAD_TIMEOUT_TOO_SHORT",
+                f"dataset archive part ({max_upload_part_bytes} bytes of {archive_bytes} total) "
+                f"at {up_floor_val} MB/s needs {projected_upload_s:.2f} s > upload timeout {upload_timeout_s} s",
+            )
+
+        # 3. Output disk projection (Part 5; checked before wall allowance so a job that cannot
+        # physically fit on the VM disk refuses TRAIN_OUTPUT_DISK_LOW regardless of --wall-s)
+        raw_out_ckpt_b, out_ckpt_src = _pick_setting(args.checkpoint_size_bytes, meta, "checkpoint_size_bytes")
+        raw_opt_b, opt_src = _pick_setting(args.optimizer_size_bytes, meta, "optimizer_size_bytes")
+        raw_overhead, overhead_src = _pick_setting(args.output_overhead_factor, meta, "copy_tar_overhead")
+        raw_model_b, model_b_src = _pick_setting(args.expected_model_bytes, meta, "expected_model_bytes")
+
+        ckpt_size_b = _parse_int_setting(
+            raw_out_ckpt_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "checkpoint_size_bytes"
+        )
+        opt_size_b = _parse_int_setting(
+            raw_opt_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "optimizer_size_bytes", allow_zero=True
+        )
+        if raw_overhead is None:
+            overhead = DEFAULT_OUTPUT_COPY_TAR_OVERHEAD
+            overhead_src = "default"
+        else:
+            overhead = parse_positive_number(str(raw_overhead), "TRAIN_OUTPUT_PROJECTION_REQUIRED", "copy_tar_overhead")
+            if overhead < 1.0:
+                raise Refusal("TRAIN_OUTPUT_PROJECTION_REQUIRED", f"copy_tar_overhead={overhead} must be >= 1.0")
+        expected_model_b = (
+            _parse_int_setting(raw_model_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "expected_model_bytes", allow_zero=True)
+            if raw_model_b is not None
+            else 0
+        )
+        vm_budget_gib = (
+            parse_positive_number(str(args.vm_disk_budget_gib), "TRAIN_OUTPUT_PROJECTION_REQUIRED", "vm_disk_budget_gib")
+            if args.vm_disk_budget_gib is not None and str(args.vm_disk_budget_gib).strip() != ""
+            else DEFAULT_VM_DISK_BUDGET_GIB
+        )
+
+        raw_output_bytes = ckpt_count * ckpt_size_b + opt_size_b
+        projected_output_bytes = math.ceil(raw_output_bytes * overhead)
+        vm_budget_bytes = int(vm_budget_gib * GIB)
+        avail_for_output_bytes = vm_budget_bytes - expected_model_b
+        disk_ok = projected_output_bytes <= avail_for_output_bytes
+        plan["output_disk_projection"] = {
+            "steps": steps,
+            "save_every": save_every,
+            "checkpoint_count": ckpt_count,
+            "checkpoint_size_bytes": ckpt_size_b,
+            "checkpoint_size_source": out_ckpt_src,
+            "optimizer_size_bytes": opt_size_b,
+            "optimizer_size_source": opt_src,
+            "raw_output_bytes": raw_output_bytes,
+            "copy_tar_overhead": overhead,
+            "overhead_source": overhead_src,
+            "projected_output_bytes": projected_output_bytes,
+            "expected_model_bytes": expected_model_b,
+            "expected_model_source": model_b_src if raw_model_b is not None else "none",
+            "vm_disk_budget_gib": vm_budget_gib,
+            "vm_disk_budget_bytes": vm_budget_bytes,
+            "available_for_output_bytes": avail_for_output_bytes,
+            "ok": disk_ok,
+        }
+        if not disk_ok:
+            raise Refusal(
+                "TRAIN_OUTPUT_DISK_LOW",
+                f"projected output {projected_output_bytes} bytes "
+                f"(({ckpt_count} * {ckpt_size_b} + {opt_size_b}) * {overhead}) "
+                f"cannot fit within {avail_for_output_bytes} bytes "
+                f"(VM disk guard {vm_budget_gib} GiB minus model {expected_model_b} bytes)",
+            )
+
+        # 4. Wall allowance (`--rung-job` keeps its fixed rung allowance; `--job` derives from steps * seconds_per_step)
+        download_max_s = _parse_int_setting(args.download_max_seconds, "DOWNLOAD_LIMIT_MISSING", "download_max_seconds")
+        setup_allowance_s = _parse_int_setting(args.setup_allowance_s, "TRAIN_WALL_TOO_SHORT", "setup_allowance_s")
+        wall_s = _parse_int_setting(args.wall_s, "TRAIN_WALL_TOO_SHORT", "wall_s")
+        grace_s = _parse_int_setting(args.grace_s, "TRAIN_WALL_TOO_SHORT", "grace_s", allow_zero=True)
+
+        test_train_raw = (args.test_train_allowance_s or "").strip()
+        test_fetch_raw = (args.test_fetch_allowance_s or "").strip()
+        raw_sps, sps_src = _pick_setting(args.seconds_per_step, meta, "seconds_per_step")
+        seconds_per_step: float | None = None
+        computed_train_s: int | None = None
+
+        if not is_real_job:
+            if raw_sps is not None:
+                seconds_per_step = parse_positive_number(str(raw_sps), "TRAIN_STEP_TIME_REQUIRED", "seconds_per_step")
+                computed_train_s = max(1, math.ceil(steps * seconds_per_step))
+            rung_train_raw = (getattr(args, "rung_train_allowance_s", "") or "").strip() or "1800"
+            train_allowance_s = _parse_int_setting(
+                test_train_raw or rung_train_raw, "TRAIN_WALL_TOO_SHORT", "train_allowance_s"
+            )
+            fetch_allowance_s = (
+                _parse_int_setting(test_fetch_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_FETCH_ALLOWANCE_S", allow_zero=True)
+                if test_fetch_raw
+                else 0
+            )
+            wall_mode = "test_override" if test_train_raw else "rung_fixed"
+        else:
+            seconds_per_step = parse_positive_number(
+                str(raw_sps) if raw_sps is not None else None, "TRAIN_STEP_TIME_REQUIRED", "seconds_per_step"
+            )
+            computed_train_s = max(1, math.ceil(steps * seconds_per_step))
+            if test_train_raw:
+                train_allowance_s = _parse_int_setting(test_train_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_TRAIN_ALLOWANCE_S")
+                fetch_allowance_s = (
+                    _parse_int_setting(test_fetch_raw, "TRAIN_WALL_TOO_SHORT", "SDLAB_TEST_FETCH_ALLOWANCE_S", allow_zero=True)
+                    if test_fetch_raw
+                    else 0
+                )
+                wall_mode = "test_override"
+            else:
+                train_allowance_s = computed_train_s
+                fetch_allowance_s = download_part_count * chosen_dl_s
+                wall_mode = "job_step_time"
+
+        required_wall_s = download_max_s + setup_allowance_s + train_allowance_s + fetch_allowance_s
+        effective_wall_s = wall_s - grace_s
+        wall_ok = effective_wall_s >= required_wall_s
+        plan["wall_allowance"] = {
+            "mode": wall_mode,
+            "is_real_job": is_real_job,
+            "steps": steps,
+            "seconds_per_step": seconds_per_step,
+            "seconds_per_step_source": sps_src,
+            "computed_train_seconds": computed_train_s,
+            "download_max_seconds": download_max_s,
+            "setup_allowance_s": setup_allowance_s,
+            "train_allowance_s": train_allowance_s,
+            "fetch_allowance_s": fetch_allowance_s,
+            "required_wall_s": required_wall_s,
+            "total_required_seconds": required_wall_s,
+            "wall_s": wall_s,
+            "grace_s": grace_s,
+            "effective_wall_s": effective_wall_s,
+            "ok": wall_ok,
+        }
+        if not wall_ok:
+            if not is_real_job:
+                raise Refusal(
+                    "TRAIN_WALL_TOO_SHORT",
+                    f"--wall-s {wall_s} minus grace {grace_s} must cover {required_wall_s} s "
+                    f"(download limit {download_max_s} + install {setup_allowance_s} + train {train_allowance_s})",
+                )
+            raise Refusal(
+                "TRAIN_WALL_TOO_SHORT",
+                f"--wall-s {wall_s} minus grace {grace_s} must cover {required_wall_s} s "
+                f"(download limit {download_max_s} + setup {setup_allowance_s} + "
+                f"train {train_allowance_s} [{steps} steps * {seconds_per_step} s/step] + fetch {fetch_allowance_s})",
+            )
+    except Refusal as exc:
+        plan["refusal"] = {"code": exc.code, "why": exc.detail}
+        if out_path is not None:
+            write_json(out_path, plan)
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+
+    if out_path is not None:
+        write_json(out_path, plan)
+    print("RUN_PLAN_OK " + json.dumps(plan), flush=True)
     return 0
 
 
@@ -830,37 +1730,68 @@ def run_render_job(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------------------------
-# copy-off and finish
+# copy-off, training-folder manifest, disk checks, and finish
 # ---------------------------------------------------------------------------------------------
 
 
+def _is_underscore_subpath(rel: str) -> bool:
+    return any(part.startswith("_") for part in Path(rel).parts[:-1])
+
+
 def copy_off_once(watch: Path, bundle: Path, manifest: Path, state: dict[str, Any], *, final: bool = False) -> int:
-    """Copy each output file whose size held still since the last pass (or every file, on the final
-    pass) into bundle/<relative path>, once, appending a manifest line with its sha256. A file that
-    vanishes or cannot be read is logged (COPY_OFF_SKIPPED) and retried next pass, never fatal."""
-    pending: dict[str, int] = state.setdefault("pending", {})
-    done: set[str] = state.setdefault("done", set())
+    """Copy every regular file in `watch` whose `(size, mtime_ns)` held still since the last pass
+    (or every new/modified file on `final=True`) into `bundle/<relative path>`, appending a manifest
+    line with its sha256. Nothing is filtered out by suffix or `_*` directory."""
+    pending: dict[str, tuple[int, int]] = state.setdefault("pending", {})
+    raw_done = state.setdefault("done", {})
+    if isinstance(raw_done, set):
+        done: dict[str, tuple[int, str]] = {p: (-1, "") for p in raw_done}
+        state["done"] = done
+    else:
+        done = raw_done
+    done_mtime: dict[str, tuple[int, int]] = state.setdefault("done_mtime", {})
     copied = 0
     if not watch.is_dir():
         return 0
     for fp in sorted(watch.rglob("*")):
         try:
-            if not fp.is_file() or fp.suffix.lower() not in COPY_OFF_SUFFIXES:
+            if fp.is_symlink() or not fp.is_file():
                 continue
             rel = fp.relative_to(watch).as_posix()
-            if rel in done or any(part.startswith("_") for part in Path(rel).parts[:-1]):
-                continue
-            size = fp.stat().st_size
-            if not final and pending.get(rel) != size:
-                pending[rel] = size
-                continue
+            st_info = fp.stat()
+            size = st_info.st_size
+            sig = (size, st_info.st_mtime_ns)
+            prev = done.get(rel)
+            if not final:
+                if prev is not None and (prev[0] == -1 or (prev[0] == size and done_mtime.get(rel, sig) == sig)):
+                    continue
+                if pending.get(rel) != sig:
+                    pending[rel] = sig
+                    continue
+            else:
+                src_sha = sha256_file(fp)
+                dest_existing = bundle / rel
+                if (
+                    prev is not None
+                    and prev == (size, src_sha)
+                    and dest_existing.is_file()
+                    and dest_existing.stat().st_size == size
+                ):
+                    continue
             dest = bundle / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(fp, dest)
-            line = {"path": rel, "bytes": dest.stat().st_size, "sha256": sha256_file(dest),
-                    "copied_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            dest_bytes = dest.stat().st_size
+            dest_sha = sha256_file(dest)
+            line: dict[str, Any] = {
+                "path": rel,
+                "bytes": dest_bytes,
+                "sha256": dest_sha,
+                "copied_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
             if rel.endswith(".safetensors"):
                 line["partial"] = not safetensors_complete(dest)
+            manifest.parent.mkdir(parents=True, exist_ok=True)
             with manifest.open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(json.dumps(line) + "\n")
             print("COPY_OFF " + json.dumps(line), flush=True)
@@ -868,26 +1799,211 @@ def copy_off_once(watch: Path, bundle: Path, manifest: Path, state: dict[str, An
             if line.get("partial"):
                 # Still being written: copy it again on a later pass (and the final sweep) until
                 # it is complete; the newest manifest line for a path is the one that counts.
-                pending[rel] = -1
+                pending[rel] = (-1, -1)
             else:
-                done.add(rel)
+                done[rel] = (dest_bytes, dest_sha)
+                done_mtime[rel] = sig
+        except FileNotFoundError as exc:
+            print(f"COPY_OFF_SKIPPED {fp.name}: {type(exc).__name__}: {exc}", flush=True)
+            continue
         except OSError as exc:
+            if final:
+                raise Refusal("COPY_OFF_FAILED", f"{fp}: {type(exc).__name__}: {exc}") from None
             print(f"COPY_OFF_SKIPPED {fp.name}: {type(exc).__name__}: {exc}", flush=True)
             continue
     return copied
 
 
-def load_done(manifest: Path) -> set[str]:
-    done: set[str] = set()
+def load_done(manifest: Path) -> dict[str, tuple[int, str]]:
+    done: dict[str, tuple[int, str]] = {}
     if manifest.exists():
         for ln in manifest.read_text(encoding="utf-8").splitlines():
             try:
                 rec = json.loads(ln)
             except ValueError:
                 continue
-            if isinstance(rec, dict) and "path" in rec and not rec.get("partial"):
-                done.add(rec["path"])
+            if isinstance(rec, dict) and isinstance(rec.get("path"), str):
+                if rec.get("partial"):
+                    done.pop(rec["path"], None)
+                elif "bytes" in rec and "sha256" in rec:
+                    done[rec["path"]] = (int(rec["bytes"]), str(rec["sha256"]).lower())
     return done
+
+
+def build_training_folder_manifest(watch: Path) -> dict[str, Any]:
+    files: list[dict[str, Any]] = []
+    if watch.is_dir():
+        for fp in sorted(watch.rglob("*")):
+            if fp.is_symlink() or not fp.is_file():
+                continue
+            rel = fp.relative_to(watch).as_posix()
+            size = fp.stat().st_size
+            files.append({"path": rel, "bytes": size, "sha256": sha256_file(fp)})
+    total_bytes = sum(int(f["bytes"]) for f in files)
+    return {"files": files, "file_count": len(files), "total_bytes": total_bytes}
+
+
+def run_write_train_manifest(args: argparse.Namespace) -> int:
+    rec = build_training_folder_manifest(Path(args.watch))
+    write_json(Path(args.out), rec)
+    print(f"TRAIN_FOLDER_MANIFEST files={rec['file_count']} total_bytes={rec['total_bytes']}", flush=True)
+    return 0
+
+
+def _vm_free_bytes(target: Path, fake_env_var: str, usage_fn: Callable[[str], Any] = shutil.disk_usage) -> int:
+    if os.environ.get("FAKE_VM_SITE") and os.environ.get(fake_env_var, "").strip():
+        return int(os.environ[fake_env_var].strip())
+    probe = Path(target)
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    return int(usage_fn(str(probe)).free)
+
+
+def run_check_output_disk(
+    args: argparse.Namespace, *, usage_fn: Callable[[str], Any] = shutil.disk_usage
+) -> int:
+    out_path = Path(args.out)
+    try:
+        projected = _parse_int_setting(args.projected_bytes, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "projected_bytes")
+    except Refusal as exc:
+        write_json(out_path, {"ok": False, "refusal": exc.code})
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+    free_b = _vm_free_bytes(Path(args.training_folder), "FAKE_VM_FREE_DISK_BYTES", usage_fn)
+    ok = free_b >= projected
+    rec = {
+        "training_folder": str(args.training_folder),
+        "projected_output_bytes": projected,
+        "free_bytes": free_b,
+        "ok": ok,
+    }
+    write_json(out_path, rec)
+    print("OUTPUT_DISK_CHECK " + json.dumps(rec), flush=True)
+    if not ok:
+        print(
+            refuse_line(
+                "TRAIN_OUTPUT_DISK_LOW",
+                f"projected output {projected} bytes exceeds free disk {free_b} bytes on {args.training_folder}",
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+        return 1
+    return 0
+
+
+def run_check_bundle_disk(
+    args: argparse.Namespace, *, usage_fn: Callable[[str], Any] = shutil.disk_usage
+) -> int:
+    bundle_dir = Path(args.bundle_dir)
+    out_path = Path(args.out)
+    total_b = dir_bytes(bundle_dir)
+    free_b = _vm_free_bytes(bundle_dir.parent, "FAKE_VM_BUNDLE_FREE_DISK_BYTES", usage_fn)
+    ok = free_b >= total_b
+    rec = {
+        "bundle_dir": str(bundle_dir),
+        "bundle_dir_bytes": total_b,
+        "free_bytes": free_b,
+        "ok": ok,
+    }
+    write_json(out_path, rec)
+    print("BUNDLE_DISK_CHECK " + json.dumps(rec), flush=True)
+    if not ok:
+        print(
+            refuse_line(
+                "BUNDLE_DISK_LOW",
+                f"lane3_out holds {total_b} bytes before tarring, exceeding free disk {free_b} bytes",
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+        return 1
+    return 0
+
+
+def verify_bundle_against_manifest(bundle_tar: Path) -> dict[str, Any]:
+    if not bundle_tar.is_file() or not tarfile.is_tarfile(bundle_tar):
+        raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"downloaded bundle {bundle_tar} is missing or not a tar archive")
+    member_map: dict[str, tarfile.TarInfo] = {}
+    with tarfile.open(bundle_tar, "r:gz") as tf:
+        for m in tf.getmembers():
+            if not m.isfile():
+                continue
+            rel = m.name.lstrip("/")
+            while rel.startswith("./"):
+                rel = rel[2:]
+            member_map[rel] = m
+        tf_man_info = member_map.get("training_folder_manifest.json")
+        if tf_man_info is None:
+            raise Refusal(
+                "TRAIN_OUTPUT_MANIFEST_MISMATCH",
+                f"training_folder_manifest.json is missing from {bundle_tar.name}",
+            )
+        ext_man = tf.extractfile(tf_man_info)
+        if ext_man is None:
+            raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", "training_folder_manifest.json is unreadable in bundle")
+        try:
+            manifest = json.loads(ext_man.read().decode("utf-8"))
+        except ValueError as exc:
+            raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"invalid training_folder_manifest.json: {exc}") from None
+        files = manifest.get("files") if isinstance(manifest, dict) else None
+        if not isinstance(files, list):
+            raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", "training_folder_manifest.json has no files list")
+
+        checked = 0
+        total_bytes = 0
+        for entry in files:
+            if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
+                raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"malformed manifest entry {entry!r}")
+            rel_path = entry["path"]
+            exp_bytes = int(entry.get("bytes", -1))
+            exp_sha = str(entry.get("sha256", "")).lower()
+            tar_rel = f"rung_outputs/{rel_path}"
+            m_info = member_map.get(tar_rel)
+            if m_info is None:
+                raise Refusal(
+                    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
+                    f"missing training output in bundle: {tar_rel} (expected {exp_bytes} bytes, sha256={exp_sha})",
+                )
+            fh = tf.extractfile(m_info)
+            if fh is None:
+                raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"unreadable bundle member {tar_rel}")
+            h = hashlib.sha256()
+            got_bytes = 0
+            with fh:
+                for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    got_bytes += len(chunk)
+                    h.update(chunk)
+            got_sha = h.hexdigest()
+            if got_bytes != exp_bytes:
+                raise Refusal(
+                    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
+                    f"size mismatch for {tar_rel}: got {got_bytes} bytes, expected {exp_bytes} bytes",
+                )
+            if got_sha != exp_sha:
+                raise Refusal(
+                    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
+                    f"sha256 mismatch for {tar_rel}: got {got_sha}, expected {exp_sha}",
+                )
+            checked += 1
+            total_bytes += got_bytes
+    return {"ok": True, "checked_files": checked, "total_bytes": total_bytes}
+
+
+def run_verify_bundle(args: argparse.Namespace) -> int:
+    out_path = Path(args.out) if getattr(args, "out", None) else None
+    try:
+        rec = verify_bundle_against_manifest(Path(args.bundle_tar))
+    except Refusal as exc:
+        fail_rec = {"ok": False, "refusal_code": exc.code, "why": exc.detail}
+        if out_path is not None:
+            write_json(out_path, fail_rec)
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+    if out_path is not None:
+        write_json(out_path, rec)
+    print("BUNDLE_MANIFEST_OK " + json.dumps(rec), flush=True)
+    return 0
 
 
 def pid_alive(pid: int) -> bool:
@@ -902,7 +2018,7 @@ def run_copy_off(args: argparse.Namespace, *, alive: Callable[[int], bool] = pid
                  sleep: Callable[[float], None] = time.sleep) -> int:
     watch, bundle, manifest = Path(args.watch), Path(args.bundle), Path(args.manifest)
     bundle.mkdir(parents=True, exist_ok=True)
-    # Files a previous copy-off already took (a crashed watcher, the final sweep) are not copied twice.
+    # Files a previous copy-off already took with identical size + sha256 are not copied twice.
     state: dict[str, Any] = {"done": load_done(manifest)}
     final_only = bool(getattr(args, "final_only", False))
     if not final_only and int(args.pid) <= 0:
@@ -919,7 +2035,11 @@ def run_copy_off(args: argparse.Namespace, *, alive: Callable[[int], bool] = pid
                     last_log = size
                     print(f"RUNG_PROGRESS train_log_bytes={size}", flush=True)
             sleep(float(args.interval))
-    copy_off_once(watch, bundle, manifest, state, final=True)
+    try:
+        copy_off_once(watch, bundle, manifest, state, final=True)
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
     return 0
 
 
@@ -941,8 +2061,14 @@ def run_checkpoint(args: argparse.Namespace) -> int:
             except ValueError:
                 continue
             latest[m.get("path", "")] = m  # the newest line for a path counts
-    good = [p for p, m in latest.items()
-            if p.endswith(".safetensors") and not m.get("partial") and m.get("bytes", 0) > 0]
+    good = [
+        p
+        for p, m in latest.items()
+        if p.endswith(".safetensors")
+        and not _is_underscore_subpath(p)
+        and not m.get("partial")
+        and m.get("bytes", 0) > 0
+    ]
     if not good:
         return 1
     print(str(Path(args.bundle) / sorted(good)[-1]), flush=True)
@@ -961,18 +2087,38 @@ def run_finish(args: argparse.Namespace) -> int:
                 continue
             latest[rec["path"]] = rec  # a re-copied file: its newest line counts
     manifest_lines = list(latest.values())
+    checkpoints = [
+        m["path"]
+        for m in manifest_lines
+        if m["path"].endswith(".safetensors") and not _is_underscore_subpath(m["path"]) and not m.get("partial")
+    ]
+    partial_checkpoints = [
+        m["path"]
+        for m in manifest_lines
+        if m["path"].endswith(".safetensors") and not _is_underscore_subpath(m["path"]) and m.get("partial")
+    ]
+    samples = [
+        m["path"]
+        for m in manifest_lines
+        if Path(m["path"]).suffix.lower() in SAMPLE_IMAGE_SUFFIXES and not _is_underscore_subpath(m["path"])
+    ]
+    classified = set(checkpoints) | set(partial_checkpoints) | set(samples)
+    other_files = [m["path"] for m in manifest_lines if m["path"] not in classified]
+    tf_man_p = out / "training_folder_manifest.json"
     download = read_json(out / "model_download.json")
     facts = {
         "hf_token_used": bool(download.get("token_used")) if isinstance(download, dict) else False,
         "train_guards": read_json(out / "train_guards.json"),
         "model_download": download,
+        "output_disk_check": read_json(out / "output_disk_check.json"),
         "rung_outputs": {
             "manifest": "rung_outputs/manifest.jsonl" if mp.exists() else None,
-            "checkpoints": [m["path"] for m in manifest_lines
-                            if m["path"].endswith(".safetensors") and not m.get("partial")],
-            "partial_checkpoints": [m["path"] for m in manifest_lines
-                                    if m["path"].endswith(".safetensors") and m.get("partial")],
-            "samples": [m["path"] for m in manifest_lines if not m["path"].endswith(".safetensors")],
+            "training_folder_manifest": "training_folder_manifest.json" if tf_man_p.is_file() else None,
+            "checkpoints": checkpoints,
+            "partial_checkpoints": partial_checkpoints,
+            "samples": samples,
+            "other_files": other_files,
+            "all_files": [m["path"] for m in manifest_lines],
         },
     }
     write_json(out / "train_facts.json", facts)
@@ -1033,10 +2179,13 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
         print(f"BUNDLE_NOW: no {out} on this VM; nothing to bundle", flush=True)
         return 1
     time.sleep(float(args.settle_s))
+    train_dir = root / "lane3_train"
+    if train_dir.is_dir():
+        write_json(out / "training_folder_manifest.json", build_training_folder_manifest(train_dir))
     rung_dir = out / "rung_outputs"
     rung_dir.mkdir(parents=True, exist_ok=True)
     manifest = rung_dir / "manifest.jsonl"
-    copy_off_once(root / "lane3_train", rung_dir, manifest, {"done": load_done(manifest)}, final=True)
+    copy_off_once(train_dir, rung_dir, manifest, {"done": load_done(manifest)}, final=True)
     run_finish(argparse.Namespace(lane3_out=str(out), failed_rc=int(args.rc)))
     guards = root / "launch_guards.py"
     for f in out.rglob("*"):
@@ -1044,8 +2193,6 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
             subprocess.run([sys.executable, str(guards), "--scrub-file", str(f)], check=False,
                            stdin=subprocess.DEVNULL)
     bundle.unlink(missing_ok=True)
-    import tarfile  # noqa: PLC0415
-
     with tarfile.open(bundle, "w:gz") as tf:
         tf.add(str(out), arcname=".")
     print(f"BUNDLE_NOW: killed {len(pids)} rung process(es) and bundled {bundle}", flush=True)
@@ -1097,6 +2244,37 @@ def build_parser() -> argparse.ArgumentParser:
     cj.add_argument("--template", required=True)
     cj.add_argument("--template-sha", default=None)
     cj.add_argument("--model-revision", default=None)
+    cj.add_argument("--model-repo", default=None)
+    cj.add_argument("--plan-out", default=None)
+
+    pr = sub.add_parser("plan-run")
+    pr.add_argument("--job-plan", required=True)
+    pr.add_argument("--is-real-job", default="0")
+    pr.add_argument("--explicit-download-timeout-s", default="")
+    pr.add_argument("--download-timeout-source", default="default")
+    pr.add_argument("--default-download-timeout-s", default="300")
+    pr.add_argument("--download-floor-mb-s", default=None)
+    pr.add_argument("--download-chunk-bytes", default=None)
+    pr.add_argument("--upload-timeout-s", required=True)
+    pr.add_argument("--upload-timeout-source", default="default")
+    pr.add_argument("--upload-floor-mb-s", default=None)
+    pr.add_argument("--upload-chunk-bytes", default=None)
+    pr.add_argument("--dataset-archive", required=True)
+    pr.add_argument("--seconds-per-step", default=None)
+    pr.add_argument("--download-max-seconds", required=True)
+    pr.add_argument("--setup-allowance-s", required=True)
+    pr.add_argument("--rung-train-allowance-s", default="1800")
+    pr.add_argument("--wall-s", required=True)
+    pr.add_argument("--grace-s", required=True)
+    pr.add_argument("--test-train-allowance-s", default="")
+    pr.add_argument("--test-fetch-allowance-s", default="")
+    pr.add_argument("--checkpoint-size-bytes", default=None)
+    pr.add_argument("--optimizer-size-bytes", default=None)
+    pr.add_argument("--samples-and-logs-bytes", default=None)
+    pr.add_argument("--output-overhead-factor", default=None)
+    pr.add_argument("--expected-model-bytes", default=None)
+    pr.add_argument("--vm-disk-budget-gib", default=None)
+    pr.add_argument("--out", default=None)
 
     r = sub.add_parser("render-job")
     r.add_argument("--template", required=True)
@@ -1114,6 +2292,23 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--final-only", action="store_true", help="one final sweep, no watching")
     c.add_argument("--train-log", default=None)
     c.add_argument("--interval", default=10.0, type=float)
+
+    cod = sub.add_parser("check-output-disk")
+    cod.add_argument("--training-folder", required=True)
+    cod.add_argument("--projected-bytes", required=True)
+    cod.add_argument("--out", required=True)
+
+    wtm = sub.add_parser("write-train-manifest")
+    wtm.add_argument("--watch", required=True)
+    wtm.add_argument("--out", required=True)
+
+    cbd = sub.add_parser("check-bundle-disk")
+    cbd.add_argument("--bundle-dir", required=True)
+    cbd.add_argument("--out", required=True)
+
+    vb = sub.add_parser("verify-bundle")
+    vb.add_argument("--bundle-tar", required=True)
+    vb.add_argument("--out", default=None)
 
     mc = sub.add_parser("model-check")
     mc.add_argument("--repo", required=True)
@@ -1141,8 +2336,13 @@ def main(argv: list[str] | None = None) -> int:
         "download": run_download,
         "dataset": run_dataset,
         "check-job": run_check_job,
+        "plan-run": run_plan_run,
         "render-job": run_render_job,
         "copy-off": run_copy_off,
+        "check-output-disk": run_check_output_disk,
+        "write-train-manifest": run_write_train_manifest,
+        "check-bundle-disk": run_check_bundle_disk,
+        "verify-bundle": run_verify_bundle,
         "finish": run_finish,
         "model-check": run_model_check,
         "bundle-now": run_bundle_now,

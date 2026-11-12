@@ -389,20 +389,30 @@ def test_copy_off_copies_settled_files_once_with_sha(tmp_path: Path) -> None:
     state: dict = {}
     ck = watch / "job_000000020.safetensors"
     ck.write_bytes(_st(b"A" * 10))
-    (watch / "_latent_cache" / "x.safetensors").write_bytes(b"L")
+    (watch / "_latent_cache" / "x.safetensors").write_bytes(_st(b"L"))
     (watch / "notes.yaml").write_text("x", encoding="utf-8")
     assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # first sight: size not yet settled
     ck.write_bytes(_st(b"A" * 20))
-    assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # still growing
-    assert lr.copy_off_once(watch, bundle, manifest, state) == 1
+    # _latent_cache/x.safetensors and notes.yaml settled; ck is still growing.
+    assert lr.copy_off_once(watch, bundle, manifest, state) == 2
+    assert lr.copy_off_once(watch, bundle, manifest, state) == 1  # ck settled
     assert lr.copy_off_once(watch, bundle, manifest, state) == 0  # once only
     (watch / "samples" / "s.jpg").write_bytes(b"J")
-    assert lr.copy_off_once(watch, bundle, manifest, state, final=True) == 1
+    (watch / "notes.yaml").write_text("updated", encoding="utf-8")
+    assert lr.copy_off_once(watch, bundle, manifest, state, final=True) == 2
     lines = [json.loads(x) for x in manifest.read_text(encoding="utf-8").splitlines()]
-    assert [x["path"] for x in lines] == ["job_000000020.safetensors", "samples/s.jpg"]
-    assert lines[0]["sha256"] == hashlib.sha256(_st(b"A" * 20)).hexdigest() and lines[0]["bytes"] == len(_st(b"A" * 20))
-    assert lines[0]["partial"] is False
-    assert not (bundle / "_latent_cache").exists()
+    assert [x["path"] for x in lines] == [
+        "_latent_cache/x.safetensors",
+        "notes.yaml",
+        "job_000000020.safetensors",
+        "notes.yaml",
+        "samples/s.jpg",
+    ]
+    ck_line = next(x for x in lines if x["path"] == "job_000000020.safetensors")
+    assert ck_line["sha256"] == hashlib.sha256(_st(b"A" * 20)).hexdigest() and ck_line["bytes"] == len(_st(b"A" * 20))
+    assert ck_line["partial"] is False
+    assert (bundle / "_latent_cache" / "x.safetensors").read_bytes() == _st(b"L")
+    assert (bundle / "notes.yaml").read_text(encoding="utf-8") == "updated"
     assert lr.copy_off_once(tmp_path / "missing", bundle, manifest, {}) == 0
 
 
@@ -602,11 +612,34 @@ def test_rung_success_trains_copies_off_and_records_the_guards(tmp_path: Path) -
     assert win["rung_outputs"]["checkpoints"] == ["rustline_style_v5/rustline_style_v5.safetensors",
                                                   "rustline_style_v5/rustline_style_v5_000000020.safetensors"]
     assert win["rung_outputs"]["samples"] == ["rustline_style_v5/samples/1762400000000__000000020_0.jpg"]
+    assert win["rung_outputs"]["other_files"] == [
+        "rustline_style_v5/_latent_cache/latents_000.safetensors",
+        "rustline_style_v5/config.yaml",
+        "rustline_style_v5/loss.log",
+        "rustline_style_v5/optimizer.pt",
+    ]
+    assert win["training_output_manifest_check"]["ok"] is True
     assert win["checkpoint_path"].endswith("rung_outputs/rustline_style_v5/rustline_style_v5_000000020.safetensors")
     members = _bundle(out_dir)
     manifest = [json.loads(x) for x in members["rung_outputs/manifest.jsonl"].decode().splitlines()]
     for line in manifest:
         assert hashlib.sha256(members["rung_outputs/" + line["path"]]).hexdigest() == line["sha256"]
+    tf_manifest = json.loads(members["training_folder_manifest.json"].decode())
+    tf_by_path = {entry["path"]: entry for entry in tf_manifest["files"]}
+    for required_rel in (
+        "rustline_style_v5/optimizer.pt",
+        "rustline_style_v5/config.yaml",
+        "rustline_style_v5/loss.log",
+        "rustline_style_v5/_latent_cache/latents_000.safetensors",
+        "rustline_style_v5/rustline_style_v5.safetensors",
+        "rustline_style_v5/rustline_style_v5_000000020.safetensors",
+        "rustline_style_v5/samples/1762400000000__000000020_0.jpg",
+    ):
+        assert required_rel in tf_by_path, required_rel
+    for rel_path, entry in tf_by_path.items():
+        blob = members["rung_outputs/" + rel_path]
+        assert len(blob) == entry["bytes"]
+        assert hashlib.sha256(blob).hexdigest() == entry["sha256"]
     job = members["rung_job.yaml"].decode()
     assert f'snapshots/{REVISION}"' in job and "steps: 20" in job
     vitals = (out_dir / "vitals.log").read_text(encoding="utf-8")
@@ -724,7 +757,7 @@ def test_kit_refuses_a_wall_that_cannot_cover_the_rung(tmp_path: Path) -> None:
     state_dir, env, src = _rung_env(tmp_path)
     res, _ = _launch(tmp_path, env, src, "--wall-s", "1200")
     assert res.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT: --wall-s 1200 minus grace 60 must cover 2760 s" in res.stderr
-    assert not (state_dir / "card.txt").exists()
+    assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
 
 
 def test_rung_without_a_sample_image_is_refused(tmp_path: Path) -> None:
@@ -1024,7 +1057,7 @@ def test_truncated_checkpoint_is_partial_and_does_not_count(tmp_path: Path) -> N
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["refusal_code"] == "TRAIN_CHECKPOINT_MISSING" and win["trained"] is False
     manifest = [json.loads(x) for x in _bundle(out_dir)["rung_outputs/manifest.jsonl"].decode().splitlines()]
-    cks = [m for m in manifest if m["path"].endswith(".safetensors")]
+    cks = [m for m in manifest if m["path"].endswith(".safetensors") and not lr._is_underscore_subpath(m["path"])]
     assert cks and all(m["partial"] is True for m in cks)
 
 
@@ -3283,6 +3316,7 @@ def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
 
 
 def _write_synthetic_job(root: Path, *, name: str = "synthetic_style_v1", steps: int = 40) -> tuple[Path, str]:
+    root.mkdir(parents=True, exist_ok=True)
     job_path = root / f"{name}.yaml"
     body = (
         "# Synthetic generic LoRA training job for kit tests\n"
@@ -3304,6 +3338,7 @@ def _write_synthetic_job(root: Path, *, name: str = "synthetic_style_v1", steps:
         "    datasets:\n"
         '    - folder_path: "__LANE3_DATASET_DIR__"\n'
         "      caption_ext: txt\n"
+        "      caption_dropout_rate: 0.05\n"
         "      num_workers: 0\n"
         "      resolution:\n"
         "      - 512\n"
@@ -3334,6 +3369,12 @@ def _write_synthetic_job(root: Path, *, name: str = "synthetic_style_v1", steps:
         "      seed: 42\n"
         "      guidance_scale: 3\n"
         "      sample_steps: 20\n"
+        "meta:\n"
+        "  caption_dropout_source: ostris/ai-toolkit@beb94824 config/examples/train_lora_qwen_image_24gb.yaml:34\n"
+        "  seconds_per_step: 3.0\n"
+        "  checkpoint_size_bytes: 104857600\n"
+        "  optimizer_size_bytes: 104857600\n"
+        "  samples_and_logs_bytes: 16777216\n"
     )
     job_path.write_text(body, encoding="utf-8", newline="\n")
     return job_path, hashlib.sha256(job_path.read_bytes()).hexdigest()
@@ -3370,16 +3411,30 @@ def _real_run_env(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
 
 def _launch_real(
-    tmp_path: Path, env: dict[str, str], ds_dir: Path, *extra: str, out: str = "out_real", timeout_s: int = 240
+    tmp_path: Path,
+    env: dict[str, str],
+    ds_dir: Path,
+    *extra: str,
+    out: str = "out_real",
+    timeout_s: int = 240,
+    omit_download_timeout: bool = False,
 ) -> tuple[subprocess.CompletedProcess[str], Path]:
     out_dir = tmp_path / out
+    extra_list = list(extra)
+    if (
+        not omit_download_timeout
+        and "--download-timeout-s" not in extra_list
+        and "--download-floor-mb-s" not in extra_list
+        and "COLAB_DOWNLOAD_TIMEOUT_S" not in env
+    ):
+        extra_list += ["--download-timeout-s", "420"]
     args = [
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--shape", "high-mem",
         "--session", "sdlab-l3-real-run", "--out-dir", fc._to_posix(out_dir),
         "--dataset-dir", fc._to_posix(ds_dir), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5",
         "--download-max-seconds", "60", "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5",
-        *extra,
+        *extra_list,
     ]
     res = subprocess.run(
         args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout_s, check=False
@@ -3568,12 +3623,37 @@ def test_real_run_end_to_end_job_and_dataset_manifest_with_batched_archive(tmp_p
     assert win["dataset_manifest_sha256"] == m_sha and outcome["dataset_manifest_sha256"] == m_sha
     assert len(win["dataset_archive_sha256"]) == 64
     assert win["dataset_archive_sha256"] == outcome["dataset_archive_sha256"]
-    assert win["download_timeout_s"] == 300
+    assert win["download_timeout_s"] == 420 and win["salvage_download_timeout_s"] == 420
+    assert win["download_timeout_source"] == "cli" and win["download_timeout_basis"]["mode"] == "explicit"
+    assert win["upload_timeout_s"] == 120 and win["upload_timeout_check"]["ok"] is True
+    assert win["wall_allowance"]["steps"] == 40 and win["wall_allowance"]["computed_train_seconds"] == 120
+    assert win["output_disk_projection"]["ok"] is True
+    assert win["training_output_manifest_check"]["ok"] is True
     assert job_sha in win["input_shas"].values() and m_sha in win["input_shas"].values()
     assert win["rung_outputs"]["checkpoints"] == [
         "synthetic_style_v1/synthetic_style_v1.safetensors",
         "synthetic_style_v1/synthetic_style_v1_000000040.safetensors",
     ]
+    assert win["rung_outputs"]["other_files"] == [
+        "synthetic_style_v1/_latent_cache/latents_000.safetensors",
+        "synthetic_style_v1/config.yaml",
+        "synthetic_style_v1/loss.log",
+        "synthetic_style_v1/optimizer.pt",
+    ]
+    members = _bundle(out_dir)
+    tf_manifest = json.loads(members["training_folder_manifest.json"].decode())
+    tf_by_path = {entry["path"]: entry for entry in tf_manifest["files"]}
+    for required_rel in (
+        "synthetic_style_v1/optimizer.pt",
+        "synthetic_style_v1/config.yaml",
+        "synthetic_style_v1/loss.log",
+        "synthetic_style_v1/_latent_cache/latents_000.safetensors",
+    ):
+        assert required_rel in tf_by_path, required_rel
+    for rel_path, entry in tf_by_path.items():
+        blob = members["rung_outputs/" + rel_path]
+        assert len(blob) == entry["bytes"]
+        assert hashlib.sha256(blob).hexdigest() == entry["sha256"]
     _assert_token_nowhere(out_dir)
 
 
@@ -3731,5 +3811,744 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
     assert win_run["download_timeout_s"] == 600
     assert win_run["cleanup_stop_attempted_by_s"] == 1750
     assert win_run["cleanup_bound_s"] == 1890
+
+
+# --- real-run fix1: paid-run rig guards and full training-output retention ---------------------
+
+
+def test_real_job_download_timeout_required_and_projected_basis(tmp_path: Path) -> None:
+    # 1. --job with neither --download-timeout-s nor --download-floor-mb-s refuses on the rig.
+    state_miss, env_miss = _real_run_env(tmp_path / "dl_miss")
+    job_p, job_sha = _write_synthetic_job(tmp_path / "dl_miss", steps=40)
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "dl_miss", n=3)
+    res_miss, out_miss = _launch_real(
+        tmp_path / "dl_miss", env_miss, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        omit_download_timeout=True,
+    )
+    assert res_miss.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_REQUIRED:" in res_miss.stderr
+    win_miss = json.loads((out_miss / "window.json").read_text(encoding="utf-8"))
+    assert win_miss["refusal_code"] == "DOWNLOAD_TIMEOUT_REQUIRED"
+    assert win_miss["download_timeout_basis"]["mode"] == "missing_on_real_job"
+    assert not (state_miss / "calls.log").exists()
+
+    # 2. Explicit --download-timeout-s shorter than projected floor time refuses on the rig.
+    state_short, env_short = _real_run_env(tmp_path / "dl_short")
+    res_short, out_short = _launch_real(
+        tmp_path / "dl_short", env_short, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        "--download-timeout-s", "30", "--download-floor-mb-s", "1.0",
+    )
+    assert res_short.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_TOO_SHORT:" in res_short.stderr
+    win_short = json.loads((out_short / "window.json").read_text(encoding="utf-8"))
+    assert win_short["refusal_code"] == "DOWNLOAD_TIMEOUT_TOO_SHORT"
+    assert win_short["download_timeout_basis"]["projected_seconds"] == 122
+    assert not (state_short / "calls.log").exists()
+
+    # 3. Invalid --download-floor-mb-s refuses DOWNLOAD_TIMEOUT_INVALID on the rig.
+    state_badf, env_badf = _real_run_env(tmp_path / "dl_badf")
+    res_badf, _ = _launch_real(
+        tmp_path / "dl_badf", env_badf, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        "--download-floor-mb-s", "0",
+        omit_download_timeout=True,
+    )
+    assert res_badf.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_INVALID:" in res_badf.stderr
+    assert not (state_badf / "calls.log").exists()
+
+    # 4. Projected --download-floor-mb-s (0.25 MB/s -> 487 s) sets both bundle and salvage timeouts.
+    _, env_proj = _real_run_env(tmp_path / "dl_proj")
+    res_proj, out_proj = _launch_real(
+        tmp_path / "dl_proj", env_proj, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        "--download-floor-mb-s", "0.25",
+        omit_download_timeout=True,
+    )
+    assert res_proj.returncode == 0, res_proj.stderr
+    win_proj = json.loads((out_proj / "window.json").read_text(encoding="utf-8"))
+    assert win_proj["download_timeout_s"] == 487 and win_proj["salvage_download_timeout_s"] == 487
+    assert win_proj["download_timeout_source"] == "projected"
+    assert win_proj["download_timeout_basis"]["mode"] == "projected"
+    assert win_proj["download_timeout_basis"]["chosen_seconds"] == 487
+    assert win_proj["cleanup_bound_s"] == 1664
+
+
+def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -> None:
+    lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
+
+    # 1. Invalid CLI / env values refuse UPLOAD_TIMEOUT_INVALID before any colab call.
+    state_inv, env_inv = _real_run_env(tmp_path / "up_inv")
+    job_p, job_sha = _write_synthetic_job(tmp_path / "up_inv", steps=40)
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "up_inv", n=3)
+    res_cli, _ = _launch_real(
+        tmp_path / "up_inv", env_inv, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        "--upload-timeout-s", "0",
+    )
+    assert res_cli.returncode == 2 and "REFUSED: UPLOAD_TIMEOUT_INVALID:" in res_cli.stderr
+    res_env = subprocess.run(
+        [_bash(), fc._to_posix(lane1_sh), "--dry"],
+        env={**env_inv, "COLAB_UPLOAD_TIMEOUT_S": "not_an_int"},
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert res_env.returncode == 2 and "REFUSED: UPLOAD_TIMEOUT_INVALID:" in res_env.stderr
+    assert not (state_inv / "calls.log").exists()
+
+    # 2. Dataset archive bytes / throughput floor > upload_timeout_s refuses UPLOAD_TIMEOUT_TOO_SHORT on the rig.
+    state_short, env_short = _real_run_env(tmp_path / "up_short")
+    res_short, out_short = _launch_real(
+        tmp_path / "up_short", env_short, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        "--upload-timeout-s", "1", "--upload-floor-mb-s", "0.000001",
+    )
+    assert res_short.returncode == 2 and "REFUSED: UPLOAD_TIMEOUT_TOO_SHORT:" in res_short.stderr
+    win_short = json.loads((out_short / "window.json").read_text(encoding="utf-8"))
+    assert win_short["refusal_code"] == "UPLOAD_TIMEOUT_TOO_SHORT"
+    assert win_short["upload_timeout_check"]["ok"] is False
+    assert not (state_short / "calls.log").exists()
+
+    # 3. --upload-timeout-s scales in_flight_bound_s in --dry on both Lane 1 and Lane 3 without opening a session.
+    state_dry, env_dry, src_dry = _rung_env(tmp_path / "up_dry")
+    dry_l1 = subprocess.run(
+        [
+            _bash(), fc._to_posix(lane1_sh), "--card", "G4", "--shape", "standard",
+            "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05",
+            "--download-timeout-s", "300", "--upload-timeout-s", "500", "--dry",
+        ],
+        env=env_dry, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert dry_l1.returncode == 0
+    assert json.loads(dry_l1.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 650
+
+    dry_l3, _ = _launch(
+        tmp_path / "up_dry", env_dry, src_dry,
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05",
+        "--download-timeout-s", "300", "--upload-timeout-s", "500", "--dry",
+    )
+    assert dry_l3.returncode == 0
+    assert json.loads(dry_l3.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1490
+    assert not (state_dry / "calls.log").exists()
+
+
+def test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusals(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    base_job_p, _ = _write_synthetic_job(tmp_path / "base", steps=40)
+    base_text = base_job_p.read_text(encoding="utf-8")
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "base", n=3)
+    mp = fc._to_posix(man_p)
+
+    rig_cases: list[tuple[str, str, list[str], str, tuple[str, ...]]] = [
+        (
+            "qtype_pipe",
+            base_text.replace(
+                "      quantize: false\n",
+                '      quantize: true\n      qtype: "uint3|ostris/accuracy_recovery_adapters"\n',
+            ),
+            [],
+            "JOB_UNPINNED_HUB_REF",
+            ("ostris/accuracy_recovery_adapters",),
+        ),
+        (
+            "qtype_leading_pipe",
+            base_text.replace(
+                "      quantize: false\n",
+                '      quantize: true\n      qtype: "|ostris/accuracy_recovery_adapters"\n',
+            ),
+            [],
+            "JOB_UNPINNED_HUB_REF",
+            ("ostris/accuracy_recovery_adapters",),
+        ),
+        (
+            "assistant_lora",
+            base_text.replace(
+                "      low_vram: false\n",
+                '      low_vram: false\n      assistant_lora_path: "ostris/adapter_repo"\n',
+            ),
+            [],
+            "JOB_UNPINNED_HUB_REF",
+            ("assistant_lora_path",),
+        ),
+        (
+            "vae_url",
+            base_text.replace(
+                "      low_vram: false\n",
+                '      low_vram: false\n      vae_path: "https://huggingface.co/Qwen/Qwen-Image/resolve/main/vae.safetensors"\n',
+            ),
+            [],
+            "JOB_UNPINNED_HUB_REF",
+            ("vae_path",),
+        ),
+        (
+            "unlisted_pinned_in_job",
+            base_text.replace(
+                "      quantize: false\n",
+                f'      quantize: true\n      qtype: "uint3|unlisted/synthetic_repo@{REVISION}"\n',
+            ),
+            [],
+            "JOB_MODEL_LICENCE_NOT_ALLOWED",
+            ("unlisted/synthetic_repo",),
+        ),
+        (
+            "unlisted_cli_model",
+            base_text,
+            ["--model", "unlisted/synthetic_repo"],
+            "JOB_MODEL_LICENCE_NOT_ALLOWED",
+            ("unlisted/synthetic_repo",),
+        ),
+        (
+            "save_every_missing",
+            base_text.replace("      save_every: 40\n", ""),
+            [],
+            "JOB_SAVE_CADENCE_INVALID",
+            ("save_every",),
+        ),
+        (
+            "save_every_gt_steps",
+            base_text.replace("      save_every: 40\n", "      save_every: 80\n"),
+            [],
+            "JOB_SAVE_CADENCE_INVALID",
+            ("1..40",),
+        ),
+        (
+            "sample_every_missing",
+            base_text.replace("      sample_every: 40\n", ""),
+            [],
+            "JOB_SAMPLE_CADENCE_INVALID",
+            ("sample_every",),
+        ),
+        (
+            "sample_every_gt_steps",
+            base_text.replace("      sample_every: 40\n", "      sample_every: 80\n"),
+            [],
+            "JOB_SAMPLE_CADENCE_INVALID",
+            ("1..40",),
+        ),
+        (
+            "sampling_off",
+            base_text.replace("      skip_first_sample: true\n", "      skip_first_sample: true\n      disable_sampling: true\n"),
+            [],
+            "JOB_SAMPLE_CADENCE_INVALID",
+            ("TRAIN_SAMPLE_MISSING",),
+        ),
+        (
+            "trigger_and_cached_te",
+            base_text.replace('    device: cuda:0\n', '    device: cuda:0\n    trigger_word: "synstyle"\n'),
+            [],
+            "JOB_TRIGGER_WITH_CACHED_EMBEDDINGS",
+            ("beb94824", "config/examples/train_lora_qwen_image_24gb.yaml:15"),
+        ),
+        (
+            "caption_dropout_missing",
+            base_text.replace("      caption_dropout_rate: 0.05\n", ""),
+            [],
+            "JOB_CAPTION_DROPOUT_INVALID",
+            ("toolkit/config_modules.py:968", "config/examples/train_lora_qwen_image_24gb.yaml:34"),
+        ),
+        (
+            "caption_dropout_source_missing",
+            base_text.replace(
+                "  caption_dropout_source: ostris/ai-toolkit@beb94824 config/examples/train_lora_qwen_image_24gb.yaml:34\n",
+                "",
+            ),
+            [],
+            "JOB_CAPTION_DROPOUT_INVALID",
+            ("caption_dropout_source",),
+        ),
+    ]
+
+    for label, job_body, extra_cli, expected_code, substrs in rig_cases:
+        case_root = tmp_path / f"cj_{label}"
+        case_state, case_env = _real_run_env(case_root)
+        cand_p = case_root / "job.yaml"
+        cand_p.write_text(job_body, encoding="utf-8", newline="\n")
+        cand_sha = hashlib.sha256(cand_p.read_bytes()).hexdigest()
+        res, out_dir = _launch_real(
+            case_root, case_env, ds_dir,
+            "--job", fc._to_posix(cand_p), "--job-sha", cand_sha,
+            "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+            *extra_cli,
+        )
+        assert res.returncode == 2 and f"REFUSED: {expected_code}:" in res.stderr, (label, res.stderr)
+        win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+        assert win["refusal_code"] == expected_code, (label, win)
+        for sub in substrs:
+            assert sub in (win["why"] or ""), (label, sub, win["why"])
+        assert not (case_state / "calls.log").exists(), label
+
+    # Positive check: pinned allowed ref + trigger_word with cache_text_embeddings: false passes check-job.
+    good_pinned = tmp_path / "good_pinned.yaml"
+    good_pinned.write_text(
+        base_text.replace(
+            "      cache_text_embeddings: true\n",
+            "      cache_text_embeddings: false\n",
+        ).replace(
+            "    device: cuda:0\n",
+            '    device: cuda:0\n    trigger_word: "synstyle"\n',
+        ).replace(
+            "      low_vram: false\n",
+            f'      low_vram: false\n      vae_path: "Qwen/Qwen-Image@{REVISION}"\n',
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    good_sha = hashlib.sha256(good_pinned.read_bytes()).hexdigest()
+    assert lr.main([
+        "check-job", "--template", str(good_pinned), "--template-sha", good_sha,
+        "--model-revision", REVISION, "--model-repo", "Qwen/Qwen-Image",
+    ]) == 0
+    capsys.readouterr()
+
+
+def test_wall_allowance_from_job_steps_and_step_time_refusals(tmp_path: Path) -> None:
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "wall_ds", n=3)
+    mp = fc._to_posix(man_p)
+
+    # 1. Missing seconds_per_step (neither in job meta nor CLI) refuses TRAIN_STEP_TIME_REQUIRED on the rig.
+    state_miss, env_miss = _real_run_env(tmp_path / "step_miss")
+    base_p, _ = _write_synthetic_job(tmp_path / "step_miss", steps=40)
+    no_sps = tmp_path / "step_miss" / "no_sps.yaml"
+    no_sps.write_text(
+        base_p.read_text(encoding="utf-8").replace("  seconds_per_step: 3.0\n", ""),
+        encoding="utf-8",
+        newline="\n",
+    )
+    no_sps_sha = hashlib.sha256(no_sps.read_bytes()).hexdigest()
+    res_miss, out_miss = _launch_real(
+        tmp_path / "step_miss", env_miss, ds_dir,
+        "--job", fc._to_posix(no_sps), "--job-sha", no_sps_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+    )
+    assert res_miss.returncode == 2 and "REFUSED: TRAIN_STEP_TIME_REQUIRED:" in res_miss.stderr
+    win_miss = json.loads((out_miss / "window.json").read_text(encoding="utf-8"))
+    assert win_miss["refusal_code"] == "TRAIN_STEP_TIME_REQUIRED"
+    assert not (state_miss / "calls.log").exists()
+
+    # 2. Job steps * seconds_per_step + download + setup + fetch exceeding wall - grace refuses TRAIN_WALL_TOO_SHORT.
+    state_short, env_short = _real_run_env(tmp_path / "wall_short")
+    long_p, long_sha = _write_synthetic_job(tmp_path / "wall_short", steps=400)
+    res_short, out_short = _launch_real(
+        tmp_path / "wall_short", env_short, ds_dir,
+        "--job", fc._to_posix(long_p), "--job-sha", long_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+        "--seconds-per-step", "5.0",
+    )
+    assert res_short.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT:" in res_short.stderr
+    win_short = json.loads((out_short / "window.json").read_text(encoding="utf-8"))
+    assert win_short["refusal_code"] == "TRAIN_WALL_TOO_SHORT"
+    assert win_short["wall_allowance"]["computed_train_seconds"] == 2000
+    assert win_short["wall_allowance"]["total_required_seconds"] == 3380
+    assert not (state_short / "calls.log").exists()
+
+
+def test_output_disk_projection_and_vm_disk_guards(tmp_path: Path) -> None:
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "disk_ds", n=3)
+    mp = fc._to_posix(man_p)
+
+    # 1. Missing checkpoint_size_bytes / optimizer_size_bytes refuses TRAIN_OUTPUT_PROJECTION_REQUIRED on the rig.
+    state_miss, env_miss = _real_run_env(tmp_path / "proj_miss")
+    base_p, _ = _write_synthetic_job(tmp_path / "proj_miss", steps=40)
+    no_proj = tmp_path / "proj_miss" / "no_proj.yaml"
+    no_proj.write_text(
+        base_p.read_text(encoding="utf-8").replace("  checkpoint_size_bytes: 104857600\n", ""),
+        encoding="utf-8",
+        newline="\n",
+    )
+    no_proj_sha = hashlib.sha256(no_proj.read_bytes()).hexdigest()
+    res_miss, out_miss = _launch_real(
+        tmp_path / "proj_miss", env_miss, ds_dir,
+        "--job", fc._to_posix(no_proj), "--job-sha", no_proj_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+    )
+    assert res_miss.returncode == 2 and "REFUSED: TRAIN_OUTPUT_PROJECTION_REQUIRED:" in res_miss.stderr
+    assert json.loads((out_miss / "window.json").read_text(encoding="utf-8"))["refusal_code"] == (
+        "TRAIN_OUTPUT_PROJECTION_REQUIRED"
+    )
+    assert not (state_miss / "calls.log").exists()
+
+    # 2. Projected output exceeding the 75 GiB VM disk budget refuses TRAIN_OUTPUT_DISK_LOW on the rig.
+    state_low, env_low = _real_run_env(tmp_path / "proj_low")
+    many_saves = tmp_path / "proj_low" / "many_saves.yaml"
+    many_saves.write_text(
+        base_p.read_text(encoding="utf-8").replace("      save_every: 40\n", "      save_every: 10\n"),
+        encoding="utf-8",
+        newline="\n",
+    )
+    many_saves_sha = hashlib.sha256(many_saves.read_bytes()).hexdigest()
+    res_low, out_low = _launch_real(
+        tmp_path / "proj_low", env_low, ds_dir,
+        "--job", fc._to_posix(many_saves), "--job-sha", many_saves_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+        "--checkpoint-size-bytes", str(10 * GIB),
+    )
+    assert res_low.returncode == 2 and "REFUSED: TRAIN_OUTPUT_DISK_LOW:" in res_low.stderr
+    win_low = json.loads((out_low / "window.json").read_text(encoding="utf-8"))
+    assert win_low["refusal_code"] == "TRAIN_OUTPUT_DISK_LOW"
+    assert win_low["output_disk_projection"]["ok"] is False
+    assert not (state_low / "calls.log").exists()
+
+    # 3. VM-side check-output-disk before training and check-bundle-disk before tarring refuse by name.
+    _, env_vm_out, src_vm_out = _rung_env(tmp_path / "vm_out_low")
+    env_vm_out["FAKE_VM_FREE_DISK_BYTES"] = "1024"
+    res_vm_out, out_vm_out = _launch(tmp_path / "vm_out_low", env_vm_out, src_vm_out)
+    assert res_vm_out.returncode != 0
+    win_vm_out = json.loads((out_vm_out / "window.json").read_text(encoding="utf-8"))
+    assert win_vm_out["refusal_code"] == "TRAIN_OUTPUT_DISK_LOW" and win_vm_out["trained"] is False
+
+    _, env_vm_bun, src_vm_bun = _rung_env(tmp_path / "vm_bun_low")
+    env_vm_bun["FAKE_VM_BUNDLE_FREE_DISK_BYTES"] = "16"
+    res_vm_bun, out_vm_bun = _launch(tmp_path / "vm_bun_low", env_vm_bun, src_vm_bun)
+    assert res_vm_bun.returncode != 0
+    win_vm_bun = json.loads((out_vm_bun / "window.json").read_text(encoding="utf-8"))
+    assert win_vm_bun["refusal_code"] == "BUNDLE_DISK_LOW" and win_vm_bun["trained"] is False
+
+    # 4. Unit checks for verify-bundle edge cases and final copy-off failure.
+    assert lr.main(["verify-bundle", "--bundle-tar", str(tmp_path / "missing_bundle.tar.gz")]) == 1
+    no_man_tar = tmp_path / "no_man.tar.gz"
+    sample_f = tmp_path / "plain.txt"
+    sample_f.write_text("hi", encoding="utf-8")
+    with tarfile.open(no_man_tar, "w:gz") as tf:
+        tf.add(str(sample_f), arcname="plain.txt")
+    assert lr.main(["verify-bundle", "--bundle-tar", str(no_man_tar), "--out", str(tmp_path / "vb_fail.json")]) == 1
+    assert json.loads((tmp_path / "vb_fail.json").read_text(encoding="utf-8"))["refusal_code"] == (
+        "TRAIN_OUTPUT_MANIFEST_MISMATCH"
+    )
+    watch_err = tmp_path / "watch_err"
+    watch_err.mkdir()
+    (watch_err / "opt.pt").write_bytes(b"opt")
+    blocked_bundle = tmp_path / "blocked_bundle"
+    blocked_bundle.mkdir()
+    (blocked_bundle / "opt.pt").mkdir()  # directory blocks file copy on final=True -> COPY_OFF_FAILED
+    with pytest.raises(lr.Refusal) as exc_info:
+        lr.copy_off_once(watch_err, blocked_bundle, blocked_bundle / "m.jsonl", {}, final=True)
+    assert exc_info.value.code == "COPY_OFF_FAILED"
+
+
+def test_bundle_manifest_mismatch_when_file_dropped_or_size_changed(tmp_path: Path) -> None:
+    # 1. Fake drops optimizer.pt from rung_outputs before tarring -> rig fails with TRAIN_OUTPUT_MANIFEST_MISMATCH.
+    _, env_drop, src_drop = _rung_env(tmp_path / "drop_file")
+    env_drop["FAKE_VM_DROP_OUTPUT_FILE"] = "rustline_style_v5/optimizer.pt"
+    res_drop, out_drop = _launch(tmp_path / "drop_file", env_drop, src_drop)
+    assert res_drop.returncode != 0
+    win_drop = json.loads((out_drop / "window.json").read_text(encoding="utf-8"))
+    assert win_drop["status"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
+    assert win_drop["refusal_code"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
+    assert win_drop["trained"] is False
+    assert win_drop["training_output_manifest_check"]["ok"] is False
+    assert "missing training output in bundle: rung_outputs/rustline_style_v5/optimizer.pt" in (
+        win_drop["why"] or ""
+    )
+
+    # 2. Fake alters loss.log size in rung_outputs before tarring -> rig fails with TRAIN_OUTPUT_MANIFEST_MISMATCH.
+    _, env_sz, src_sz = _rung_env(tmp_path / "size_mismatch")
+    env_sz["FAKE_VM_CORRUPT_OUTPUT_FILE"] = "rustline_style_v5/loss.log"
+    res_sz, out_sz = _launch(tmp_path / "size_mismatch", env_sz, src_sz)
+    assert res_sz.returncode != 0
+    win_sz = json.loads((out_sz / "window.json").read_text(encoding="utf-8"))
+    assert win_sz["refusal_code"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
+    assert win_sz["trained"] is False
+    assert win_sz["training_output_manifest_check"]["ok"] is False
+    assert "size mismatch for rung_outputs/rustline_style_v5/loss.log" in (win_sz["why"] or "")
+
+
+def test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 1. YAML subset parser branches + check-job semantic refusals & --plan-out
+    parsed_yaml = lr.parse_job_yaml(
+        "job: extension # comment\n"
+        "'quoted_key': 'it''s fine'\n"
+        'escaped: "line \\"q\\""\n'
+        "empty_val:\n"
+        "null_val: ~\n"
+        "bools: [true, false, 12, -3.5e2, []]\n"
+        "inline_map: {a: 1, b: 'two'}\n"
+        "empty_map: {}\n"
+        "multiline_val: first part\n"
+        "  second part\n"
+        "seq:\n"
+        "  -\n"
+        "  - multi item\n"
+        "    continued\n"
+        "  - k1:\n"
+        "      nested: ok\n"
+        "    k2: 9\n"
+    )
+    assert parsed_yaml["quoted_key"] == "it's fine"
+    assert parsed_yaml["inline_map"] == {"a": 1, "b": "two"}
+    assert parsed_yaml["empty_map"] == {}
+    assert parsed_yaml["multiline_val"] == "first part second part"
+    assert parsed_yaml["seq"][0] is None
+    assert parsed_yaml["seq"][1] == "multi item continued"
+    assert parsed_yaml["seq"][2] == {"k1": {"nested": "ok"}, "k2": 9}
+
+    for bad_yaml in (
+        "# only comment\n",
+        "\tjob: extension\n",
+        "  \tjob: extension\n",
+        "a: 1\n  b: 2\n",
+        "not_a_kv_line\n",
+        "- item1\n- item2\n",
+    ):
+        with pytest.raises(lr.Refusal) as y_exc:
+            lr.parse_job_yaml(bad_yaml)
+        assert y_exc.value.code == "JOB_TEMPLATE_INVALID"
+
+    base_p, base_sha = _write_synthetic_job(tmp_path / "ip_job", steps=40)
+    base_txt = base_p.read_text(encoding="utf-8")
+    plan_out_p = tmp_path / "ip_job" / "job_plan.json"
+    assert lr.main([
+        "check-job",
+        "--template", str(base_p),
+        "--template-sha", base_sha,
+        "--model-revision", REVISION,
+        "--model-repo", "Qwen/Qwen-Image",
+        "--plan-out", str(plan_out_p),
+    ]) == 0
+    assert json.loads(plan_out_p.read_text(encoding="utf-8"))["steps"] == 40
+
+    assert lr.main(["check-job", "--template", str(tmp_path / "no_job.yaml")]) == 1
+    assert lr.main(["check-job", "--template", str(base_p), "--template-sha", "0" * 64]) == 1
+    assert lr.main(["check-job", "--template", str(base_p), "--model-revision", "not40hex"]) == 1
+    assert lr.main(["check-job", "--template", str(base_p), "--model-repo", "untrusted/model"]) == 1
+
+    def _check_mutated(label: str, mutated_txt: str, expected_code: str) -> None:
+        assert mutated_txt != base_txt, label
+        capsys.readouterr()
+        p = tmp_path / "ip_job" / f"{label}.yaml"
+        p.write_text(mutated_txt, encoding="utf-8", newline="\n")
+        rc = lr.main(["check-job", "--template", str(p), "--model-revision", REVISION])
+        err = capsys.readouterr().err
+        assert rc == 1 and f"REFUSED: {expected_code}:" in err, (label, err)
+
+    _check_mutated(
+        "unpinned_url",
+        base_txt + "  note: https://huggingface.co/Qwen/Qwen-Image/resolve/main/model.safetensors\n",
+        "JOB_UNPINNED_HUB_REF",
+    )
+    _check_mutated(
+        "unpinned_pipe",
+        base_txt + f"  loras: Qwen/Qwen-Image@{REVISION}|Qwen/Qwen-Image\n",
+        "JOB_UNPINNED_HUB_REF",
+    )
+    _check_mutated(
+        "unpinned_spec",
+        base_txt + "  extra_repo: Qwen/Qwen-Image\n",
+        "JOB_UNPINNED_HUB_REF",
+    )
+    _check_mutated(
+        "bad_licence_url",
+        base_txt + f"  note: https://huggingface.co/other-org/bad-model/resolve/{REVISION}/w.safetensors\n",
+        "JOB_MODEL_LICENCE_NOT_ALLOWED",
+    )
+    _check_mutated(
+        "save_disabled",
+        base_txt.replace("      dtype: float16\n", "      dtype: float16\n      disable_saving: true\n"),
+        "JOB_SAVE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "save_gt_steps",
+        base_txt.replace("      save_every: 40\n", "      save_every: 80\n"),
+        "JOB_SAVE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "sample_disabled",
+        base_txt.replace("      sample_every: 40\n", "      sample_every: 40\n      disable_sampling: true\n"),
+        "JOB_SAMPLE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "sample_gt_steps",
+        base_txt.replace("      sample_every: 40\n", "      sample_every: 80\n"),
+        "JOB_SAMPLE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "sample_bad_steps",
+        base_txt.replace("      sample_steps: 20\n", "      sample_steps: 0\n"),
+        "JOB_SAMPLE_CADENCE_INVALID",
+    )
+    _check_mutated(
+        "trigger_cached",
+        base_txt.replace("    device: cuda:0\n", '    device: cuda:0\n    trigger_word: "tok"\n'),
+        "JOB_TRIGGER_WITH_CACHED_EMBEDDINGS",
+    )
+    _check_mutated(
+        "dropout_missing",
+        base_txt.replace("      caption_dropout_rate: 0.05\n", ""),
+        "JOB_CAPTION_DROPOUT_INVALID",
+    )
+    _check_mutated(
+        "dropout_range",
+        base_txt.replace("      caption_dropout_rate: 0.05\n", "      caption_dropout_rate: 1.5\n"),
+        "JOB_CAPTION_DROPOUT_INVALID",
+    )
+    _check_mutated(
+        "dropout_src_missing",
+        base_txt.replace(
+            "  caption_dropout_source: ostris/ai-toolkit@beb94824 config/examples/train_lora_qwen_image_24gb.yaml:34\n",
+            "",
+        ),
+        "JOB_CAPTION_DROPOUT_INVALID",
+    )
+
+    # Positive hub URL + pipe check with cleared repo & 40-hex revision
+    pinned_urls_p = tmp_path / "ip_job" / "pinned_urls.yaml"
+    pinned_urls_p.write_text(
+        base_txt
+        + f"  ref_url: https://huggingface.co/Qwen/Qwen-Image/resolve/{REVISION}/transformer/config.json\n"
+        + f"  ref_pipe: Qwen/Qwen-Image@{REVISION}|Qwen/Qwen2.5-VL-7B-Instruct@{REVISION}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    assert lr.main(["check-job", "--template", str(pinned_urls_p), "--model-revision", REVISION]) == 0
+
+    # 2. `plan-run` branches (missing download timeout, explicit < projected, rung wall vs real wall, disk refusals)
+    arch_p = tmp_path / "ip_ds.tar"
+    arch_p.write_bytes(b"x" * 4096)
+    base_plan_args = [
+        "plan-run",
+        "--job-plan", str(plan_out_p),
+        "--upload-timeout-s", "120",
+        "--dataset-archive", str(arch_p),
+        "--download-max-seconds", "60",
+        "--setup-allowance-s", "900",
+        "--wall-s", "3600",
+        "--grace-s", "60",
+        "--out", str(tmp_path / "ip_run_plan.json"),
+    ]
+    # Real job with no explicit download timeout and no floor -> DOWNLOAD_TIMEOUT_REQUIRED
+    capsys.readouterr()
+    assert lr.main([*base_plan_args, "--is-real-job", "1"]) == 1
+    assert "DOWNLOAD_TIMEOUT_REQUIRED" in capsys.readouterr().err
+
+    # Explicit download timeout below projected -> DOWNLOAD_TIMEOUT_TOO_SHORT
+    assert lr.main([
+        *base_plan_args,
+        "--is-real-job", "1",
+        "--explicit-download-timeout-s", "1",
+        "--download-timeout-source", "cli",
+        "--download-floor-mb-s", "1.0",
+    ]) == 1
+    assert "DOWNLOAD_TIMEOUT_TOO_SHORT" in capsys.readouterr().err
+
+    # Explicit download timeout >= projected -> ok
+    assert lr.main([
+        *base_plan_args,
+        "--is-real-job", "1",
+        "--explicit-download-timeout-s", "600",
+        "--download-timeout-source", "cli",
+        "--download-floor-mb-s", "10.0",
+    ]) == 0
+
+    # Rung mode (`--is-real-job 0`) uses fixed 1800 s train allowance (60 + 900 + 1800 = 2760 s)
+    capsys.readouterr()
+    assert lr.main([
+        "plan-run",
+        "--job-plan", str(plan_out_p),
+        "--is-real-job", "0",
+        "--upload-timeout-s", "120",
+        "--dataset-archive", str(arch_p),
+        "--download-max-seconds", "60",
+        "--setup-allowance-s", "900",
+        "--wall-s", "1200",
+        "--grace-s", "60",
+    ]) == 1
+    assert "must cover 2760 s" in capsys.readouterr().err
+
+    # Invalid overhead < 1.0 -> TRAIN_OUTPUT_PROJECTION_REQUIRED; overflowing disk -> TRAIN_OUTPUT_DISK_LOW
+    assert lr.main([
+        *base_plan_args, "--is-real-job", "0", "--output-overhead-factor", "0.5"
+    ]) == 1
+    assert "TRAIN_OUTPUT_PROJECTION_REQUIRED" in capsys.readouterr().err
+
+    assert lr.main([
+        *base_plan_args, "--is-real-job", "0", "--checkpoint-size-bytes", str(40 * GIB)
+    ]) == 1
+    assert "TRAIN_OUTPUT_DISK_LOW" in capsys.readouterr().err
+
+    # 3. `dataset` archive pack & unpack + error branches in-process
+    ds_src, ds_man, ds_man_sha = _write_synthetic_dataset(tmp_path / "ip_ds", n=2)
+    packed_tar = tmp_path / "ip_ds" / "packed.tar"
+    packed_sha_f = tmp_path / "ip_ds" / "packed.sha256"
+    assert lr.main([
+        "dataset",
+        "--manifest", str(ds_man),
+        "--manifest-sha", ds_man_sha,
+        "--src", str(ds_src),
+        "--pack-archive", str(packed_tar),
+        "--archive-sha-out", str(packed_sha_f),
+    ]) == 0
+    packed_sha = packed_sha_f.read_text(encoding="utf-8").strip()
+    unpack_dst = tmp_path / "ip_ds" / "unpacked"
+    assert lr.main([
+        "dataset",
+        "--manifest", str(ds_man),
+        "--manifest-sha", ds_man_sha,
+        "--archive", str(packed_tar),
+        "--archive-sha", packed_sha,
+        "--dest", str(unpack_dst),
+        "--unlink-archive",
+    ]) == 0
+    assert not packed_tar.exists()
+    assert (unpack_dst / "studio_plate_00.png").is_file() and (unpack_dst / "studio_plate_00.txt").is_file()
+    assert lr.main(["dataset", "--manifest", str(ds_man), "--archive", str(tmp_path / "missing.tar"), "--dest", str(unpack_dst)]) == 1
+
+    # 4. `write-train-manifest`, `check-output-disk`, `check-bundle-disk`, and `verify-bundle` branches in-process
+    tf_dir = tmp_path / "ip_train_folder"
+    (tf_dir / "sub").mkdir(parents=True)
+    (tf_dir / "sub" / "loss.log").write_bytes(b"step=1 loss=0.4\n")
+    tf_man_out = tmp_path / "ip_bundle_dir" / "training_folder_manifest.json"
+    assert lr.main(["write-train-manifest", "--watch", str(tf_dir), "--out", str(tf_man_out)]) == 0
+
+    cod_out = tmp_path / "cod.json"
+    assert lr.main([
+        "check-output-disk",
+        "--training-folder", str(tmp_path / "nonexistent_child" / "train"),
+        "--projected-bytes", "1024",
+        "--out", str(cod_out),
+    ]) == 0
+    assert lr.main([
+        "check-output-disk",
+        "--training-folder", str(tf_dir),
+        "--projected-bytes", "not-an-int",
+        "--out", str(cod_out),
+    ]) == 1
+    assert lr.run_check_output_disk(
+        lr.argparse.Namespace(training_folder=str(tf_dir), projected_bytes="5000", out=str(cod_out)),
+        usage_fn=lambda _p: type("U", (), {"free": 100})(),
+    ) == 1
+
+    cbd_out = tmp_path / "cbd.json"
+    bundle_dir = tmp_path / "ip_bundle_dir"
+    (bundle_dir / "rung_outputs" / "sub").mkdir(parents=True)
+    (bundle_dir / "rung_outputs" / "sub" / "loss.log").write_bytes(b"step=1 loss=0.4\n")
+    assert lr.main(["check-bundle-disk", "--bundle-dir", str(bundle_dir), "--out", str(cbd_out)]) == 0
+    assert lr.run_check_bundle_disk(
+        lr.argparse.Namespace(bundle_dir=str(bundle_dir), out=str(cbd_out)),
+        usage_fn=lambda _p: type("U", (), {"free": 1})(),
+    ) == 1
+
+    good_bundle_tar = tmp_path / "good_bundle.tar.gz"
+    with tarfile.open(good_bundle_tar, "w:gz") as tf:
+        tf.add(str(bundle_dir), arcname=".")
+    vb_ok_json = tmp_path / "vb_ok.json"
+    assert lr.main(["verify-bundle", "--bundle-tar", str(good_bundle_tar), "--out", str(vb_ok_json)]) == 0
+    assert json.loads(vb_ok_json.read_text(encoding="utf-8")) == {"ok": True, "checked_files": 1, "total_bytes": 16}
+
+    # Corrupted content with identical byte count -> sha256 mismatch in verify-bundle
+    (bundle_dir / "rung_outputs" / "sub" / "loss.log").write_bytes(b"step=1 loss=9.9\n")
+    sha_bad_tar = tmp_path / "sha_bad_bundle.tar.gz"
+    with tarfile.open(sha_bad_tar, "w:gz") as tf:
+        tf.add(str(bundle_dir), arcname=".")
+    capsys.readouterr()
+    assert lr.main(["verify-bundle", "--bundle-tar", str(sha_bad_tar)]) == 1
+    assert "sha256 mismatch" in capsys.readouterr().err
+
+
 
 

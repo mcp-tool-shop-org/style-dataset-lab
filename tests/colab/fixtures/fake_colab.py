@@ -667,7 +667,10 @@ echo "run" > lane1_out/phase.txt
 emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
 echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
-printf 'FAKE_TAR_BYTES' > lane1_stub_bundle.tar.gz
+if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
+  "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+fi
+tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
 """
     )
     lane3_body = (
@@ -757,12 +760,19 @@ out = Path(tf) / name
 (out / "samples").mkdir(parents=True, exist_ok=True)
 print("Loading Qwen Image model", flush=True)
 import json, struct
-def st(tag, truncate=False):
-    # A real safetensors layout: 8-byte header length, JSON header, data; truncate cuts the tail.
+def st_always(tag):
     data = tag * 64
     hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}}).encode()
-    blob = struct.pack("<Q", len(hdr)) + hdr + data
+    return struct.pack("<Q", len(hdr)) + hdr + data
+def st(tag, truncate=False):
+    # A real safetensors layout: 8-byte header length, JSON header, data; truncate cuts the tail.
+    blob = st_always(tag)
     return blob[:-100] if (truncate or os.environ.get("FAKE_VM_TRAIN") == "truncated_save") else blob
+(out / "config.yaml").write_text(job, encoding="utf-8")
+(out / "optimizer.pt").write_bytes(b"FAKE-OPTIMIZER-STATE-" + name.encode() + b"\\n" * 16)
+(out / "loss.log").write_text(f"step=1 loss=0.4200\\nstep={steps} loss=0.1800\\n", encoding="utf-8")
+(out / "_latent_cache").mkdir(parents=True, exist_ok=True)
+(out / "_latent_cache" / "latents_000.safetensors").write_bytes(st_always(b"FAKE-LATENT-CACHE"))
 time.sleep(0.3)
 if os.environ.get("FAKE_VM_TRAIN") == "hang_after_step_250":
     assert (steps, save_every, sample_every) == (500, 250, 250), (steps, save_every, sample_every)
@@ -809,6 +819,14 @@ RUNPYEOF
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
   PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
     bash "${PWD}/remote_lane3_stub.sh.trainblock"
+  if [ -n "${FAKE_VM_DROP_OUTPUT_FILE:-}" ]; then
+    rm -f "${PWD}/lane3_out/rung_outputs/${FAKE_VM_DROP_OUTPUT_FILE}"
+    tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
+  fi
+  if [ -n "${FAKE_VM_CORRUPT_OUTPUT_FILE:-}" ]; then
+    printf 'x' >> "${PWD}/lane3_out/rung_outputs/${FAKE_VM_CORRUPT_OUTPUT_FILE}"
+    tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
+  fi
 }
 run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
@@ -1007,6 +1025,9 @@ for mod_name in sentencepiece torch torchaudio safetensors yaml oyaml PIL diffus
   echo "VENV_IMPORT ${mod_name} /content/venv-lane3/lib/python3.12/site-packages/${mod_name}/__init__.py" | tee -a lane3_out/setup.log
 done
 printf 'setup_complete\\n' >> lane3_out/setup.log
+if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
+  "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane3_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+fi
 if [ "${LANE3_MODE:-install}" = "train" ]; then
   run_uploaded_train_and_window_blocks "remote_lane3_stub.sh.uploaded"
   exit 0
@@ -1368,8 +1389,22 @@ def main(argv: list[str] | None = None) -> int:
         # One contents-API PUT, as the real CLI does: no parent directory is ever created, and a PUT
         # into one that does not exist fails on the server (HTTP 500), exit 1.
         # FAKE_COLAB_UPLOAD_HTTP_500_FOR=<substring>: the same server error for a matching remote path.
+        # FAKE_COLAB_UPLOAD_HTTP_500_ONCE_FOR=<substring>: HTTP 500 on attempt 1, succeeds on attempt 2.
+        # FAKE_COLAB_UPLOAD_MAX_BYTES=<int>: HTTP 500 when the uploaded file exceeds <int> bytes.
         forced_500 = os.environ.get("FAKE_COLAB_UPLOAD_HTTP_500_FOR", "")
-        if not dst_path.parent.is_dir() or (forced_500 and forced_500 in remote_dst):
+        forced_500_once = os.environ.get("FAKE_COLAB_UPLOAD_HTTP_500_ONCE_FOR", "")
+        max_up_bytes_raw = os.environ.get("FAKE_COLAB_UPLOAD_MAX_BYTES", "").strip()
+        over_max_up = bool(max_up_bytes_raw and src_path.stat().st_size > int(max_up_bytes_raw))
+        hit_once_500 = False
+        if forced_500_once and forced_500_once in remote_dst:
+            once_f = state_dir / "upload_500_once.json"
+            seen = json.loads(once_f.read_text(encoding="utf-8")) if once_f.is_file() else {}
+            prev_n = int(seen.get(remote_dst, 0))
+            seen[remote_dst] = prev_n + 1
+            once_f.write_text(json.dumps(seen) + "\n", encoding="utf-8", newline="\n")
+            if prev_n == 0:
+                hit_once_500 = True
+        if not dst_path.parent.is_dir() or (forced_500 and forced_500 in remote_dst) or hit_once_500 or over_max_up:
             status = api["upload_missing_parent_http_status"]
             print(
                 api["upload_failed_prefix"]
@@ -1381,6 +1416,14 @@ def main(argv: list[str] | None = None) -> int:
                 fh.write(f"UPLOAD_FAILED_{status} {' '.join(args)}\n")
             return 1
         shutil.copyfile(src_path, dst_path)
+        corrupt_part_for = os.environ.get("FAKE_COLAB_CORRUPT_UPLOAD_PART_FOR", "")
+        if corrupt_part_for and corrupt_part_for in remote_dst:
+            raw_b = bytearray(dst_path.read_bytes())
+            if raw_b:
+                raw_b[0] ^= 0xFF
+            else:
+                raw_b.extend(b"corrupt")
+            dst_path.write_bytes(bytes(raw_b))
         if rel == "lane3_dataset.tar" and os.environ.get("FAKE_COLAB_CORRUPT_DATASET_ARCHIVE") == "1":
             dst_path.write_bytes(b"corrupted-dataset-tar-on-vm")
         # Keep the uploaded script at `<name>.uploaded` and install the fake stub runner at `<name>`
@@ -1430,11 +1473,40 @@ def main(argv: list[str] | None = None) -> int:
         if not vm_src.is_file():
             print(api["download_failed_prefix"] + api["download_missing_remote_error"].format(remote=positionals[0]))
             return 1
+        forced_dl_500 = os.environ.get("FAKE_COLAB_DOWNLOAD_HTTP_500_FOR", "")
+        forced_dl_500_once = os.environ.get("FAKE_COLAB_DOWNLOAD_HTTP_500_ONCE_FOR", "")
+        max_dl_bytes_raw = os.environ.get("FAKE_COLAB_DOWNLOAD_MAX_BYTES", "").strip()
+        over_max_dl = bool(max_dl_bytes_raw and vm_src.stat().st_size > int(max_dl_bytes_raw))
+        hit_dl_once = False
+        if forced_dl_500_once and forced_dl_500_once in remote_src:
+            dl_once_f = state_dir / "download_500_once.json"
+            seen_dl = json.loads(dl_once_f.read_text(encoding="utf-8")) if dl_once_f.is_file() else {}
+            prev_dl = int(seen_dl.get(remote_src, 0))
+            seen_dl[remote_src] = prev_dl + 1
+            dl_once_f.write_text(json.dumps(seen_dl) + "\n", encoding="utf-8", newline="\n")
+            if prev_dl == 0:
+                hit_dl_once = True
+        if (forced_dl_500 and forced_dl_500 in remote_src) or hit_dl_once or over_max_dl:
+            print(
+                api["download_failed_prefix"]
+                + "500 Server Error: Internal Server Error for url: "
+                + f"https://colab.fake.invalid/api/contents/{remote_src.strip('/')}"
+                + f"?authuser=0&colab-runtime-proxy-token={FAKE_CONTENTS_TOKEN}"
+            )
+            return 1
         # The real CLI writes with a plain open(): no local directory is created.
         if not dst_path.parent.is_dir():
             print(api["download_failed_prefix"] + f"[Errno 2] No such file or directory: '{local_dst}'")
             return 1
         shutil.copyfile(vm_src, dst_path)
+        corrupt_dl_for = os.environ.get("FAKE_COLAB_CORRUPT_DOWNLOAD_FOR", "")
+        if corrupt_dl_for and corrupt_dl_for in remote_src:
+            raw_dl = bytearray(dst_path.read_bytes())
+            if raw_dl:
+                raw_dl[0] ^= 0xFF
+            else:
+                raw_dl.extend(b"corrupt")
+            dst_path.write_bytes(bytes(raw_dl))
         print(api["download_ok_line"].format(remote=positionals[0], local=local_dst))
         return 0
 
@@ -1502,6 +1574,16 @@ def main(argv: list[str] | None = None) -> int:
         if not py_path.is_file() or py_path.suffix != ".py":
             sys.stderr.write(f"colab exec -f must be an existing .py file: {py_file}\n")
             return 2
+        # If a remote stub script arrived via chunked upload + VM reassembly (rather than single-PUT
+        # upload), preserve it at `<name>.uploaded` and install `.fake_<name>` before remote_runner.py runs.
+        if py_path.name == "remote_runner.py" and os.environ.get("FAKE_COLAB_RUN_UPLOADED_SCRIPT") != "1":
+            for stub_rel in ("remote_lane1_stub.sh", "remote_lane3_stub.sh"):
+                stub_dst = content_dir / stub_rel
+                stub_up = content_dir / f"{stub_rel}.uploaded"
+                fake_stub = content_dir / f".fake_{stub_rel}"
+                if stub_dst.is_file() and not stub_up.is_file() and fake_stub.is_file():
+                    shutil.copyfile(stub_dst, stub_up)
+                    shutil.copyfile(fake_stub, stub_dst)
         timeout_raw = _get_opt("--timeout")
         try:
             timeout_s = float(timeout_raw) if timeout_raw is not None else 30.0
