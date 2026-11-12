@@ -52,13 +52,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
 PINNED_REMOTE_RUNNER_SHA="7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896"
-PINNED_COLAB_WINDOW_SHA="9ad292ffc2e1def0083dcb355683aa396d40a7c09295c248262b10952dd165e7"
-PINNED_LANE3_RUNG_SHA="9d72d94c1f4b7b3f02b6c53e63bd6291bfa65aad68d88709a703641db2f754b9"
+PINNED_COLAB_WINDOW_SHA="c70d419c11add9d651e50dc4493adf848629736c3174f87c4aed9c735d6ef49a"
+PINNED_LANE3_RUNG_SHA="e193831a06584242cd119e8bfe2edd8e3a9fdc1c0e8399333f9ecd413e93e64b"
 PINNED_BUNDLE_NOW_SHA="06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="b3c81a9e1ebaf0a2b5d9d0908105d09b8ec9e9c881852900ccaced88cc881456"
+PINNED_SELF_SHA="ee08aa6cec2e554524349580d18a43b883c5c03f24455e079af173a656ad0fd3"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -661,6 +661,8 @@ DATASET_MANIFEST_SHA=""
 MIN_RUNTIME_S=""
 DOWNLOAD_TIMEOUT_S_ARG=""
 UPLOAD_TIMEOUT_S_ARG=""
+UPLOAD_CHUNK_BYTES_ARG=""
+DOWNLOAD_CHUNK_BYTES_ARG=""
 DOWNLOAD_FLOOR_MB_S_ARG=""
 UPLOAD_FLOOR_MB_S_ARG=""
 SECONDS_PER_STEP_ARG=""
@@ -691,6 +693,8 @@ while [ "$#" -gt 0 ]; do
     --min-runtime-s) SESSION_ARGS+=("$1"); MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-timeout-s) SESSION_ARGS+=("$1"); DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-timeout-s) SESSION_ARGS+=("$1"); UPLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-chunk-bytes) SESSION_ARGS+=("$1"); UPLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --download-chunk-bytes) SESSION_ARGS+=("$1"); DOWNLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-floor-mb-s) SESSION_ARGS+=("$1"); DOWNLOAD_FLOOR_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-floor-mb-s) SESSION_ARGS+=("$1"); UPLOAD_FLOOR_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --seconds-per-step) SESSION_ARGS+=("$1"); SECONDS_PER_STEP_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -748,6 +752,8 @@ fi
 
 colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
+colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
+colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
 
 if [ "${DRY_RUN}" = "1" ]; then
   if [ -n "${JOB_YAML}" ] && [ "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" = "default" ] && [ -z "${DOWNLOAD_FLOOR_MB_S_ARG}" ]; then
@@ -943,6 +949,8 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
   SDLAB_TEST_NEW_TIMEOUT_S
   SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_CHUNK_BYTES
+  SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
@@ -1164,8 +1172,10 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
     --explicit-download-timeout-s "${EXPLICIT_DL_TIMEOUT}"
     --download-timeout-source "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}"
     --default-download-timeout-s "${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+    --download-chunk-bytes "${COLAB_DOWNLOAD_CHUNK_BYTES}"
     --upload-timeout-s "${COLAB_UPLOAD_TIMEOUT_S}"
     --upload-timeout-source "${COLAB_UPLOAD_TIMEOUT_SOURCE}"
+    --upload-chunk-bytes "${COLAB_UPLOAD_CHUNK_BYTES}"
     --dataset-archive "${DATASET_ARCHIVE}"
     --download-max-seconds "${TRAIN_DOWNLOAD_MAX_SECONDS}"
     --setup-allowance-s "${LANE3_INSTALL_ALLOWANCE_S}"

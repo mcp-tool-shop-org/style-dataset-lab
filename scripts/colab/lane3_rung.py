@@ -81,6 +81,8 @@ REPO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*
 PLACEHOLDERS = ("__LANE3_TRAINING_FOLDER__", "__LANE3_DATASET_DIR__", "__LANE3_MODEL_PATH__")
 SAMPLE_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
 DEFAULT_UPLOAD_FLOOR_MB_S = 1.0
+DEFAULT_UPLOAD_CHUNK_BYTES = 33_554_432
+DEFAULT_DOWNLOAD_CHUNK_BYTES = 268_435_456
 DEFAULT_OUTPUT_COPY_TAR_OVERHEAD = 3.0
 DEFAULT_VM_DISK_BUDGET_GIB = 75.0
 # Cleared SPDX model and LoRA repositories matching lib/model-licences.js (G4, §5.2-§5.3).
@@ -1382,7 +1384,12 @@ def run_plan_run(args: argparse.Namespace) -> int:
         ckpt_count = math.ceil(steps / save_every)
         is_real_job = str(args.is_real_job).strip() == "1"
 
-        # 1. Bundle download timeout (Part 1)
+        # 1. Bundle download timeout (Part 1; per-part under COLAB_DOWNLOAD_CHUNK_BYTES in Addendum 1 Part 2b)
+        download_chunk_bytes = (
+            _parse_int_setting(args.download_chunk_bytes, "DOWNLOAD_CHUNK_BYTES_INVALID", "download_chunk_bytes")
+            if getattr(args, "download_chunk_bytes", None) is not None and str(args.download_chunk_bytes).strip() != ""
+            else DEFAULT_DOWNLOAD_CHUNK_BYTES
+        )
         explicit_raw = (args.explicit_download_timeout_s or "").strip()
         dl_src = (args.download_timeout_source or "default").strip()
         explicit_dl_s: int | None = None
@@ -1396,6 +1403,8 @@ def run_plan_run(args: argparse.Namespace) -> int:
         dl_floor_val: float | None = None
         projected_dl_s: int | None = None
         expected_bundle_bytes: int | None = None
+        download_part_count = 1
+        max_download_part_bytes: int | None = None
         dl_ckpt_b: int | None = None
         dl_samp_b: int | None = None
         if raw_dl_floor is not None:
@@ -1408,7 +1417,18 @@ def run_plan_run(args: argparse.Namespace) -> int:
             dl_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
             dl_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
             expected_bundle_bytes = ckpt_count * dl_ckpt_b + dl_samp_b
-            projected_dl_s = max(1, math.ceil(expected_bundle_bytes / (dl_floor_val * 1_000_000.0)))
+            download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes)) if expected_bundle_bytes > 0 else 1
+            max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
+            projected_dl_s = max(1, math.ceil(max_download_part_bytes / (dl_floor_val * 1_000_000.0)))
+        elif raw_ckpt_b is not None and raw_samp_b is not None:
+            try:
+                cand_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+                cand_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+                cand_bundle_b = ckpt_count * cand_ckpt_b + cand_samp_b
+                if cand_bundle_b > 0:
+                    download_part_count = max(1, math.ceil(cand_bundle_b / download_chunk_bytes))
+            except Refusal:
+                pass
 
         if is_real_job and explicit_dl_s is None and projected_dl_s is None:
             plan["download_timeout_basis"] = {
@@ -1430,12 +1450,15 @@ def run_plan_run(args: argparse.Namespace) -> int:
                 "explicit_seconds": explicit_dl_s,
                 "projected_seconds": projected_dl_s,
                 "expected_bundle_bytes": expected_bundle_bytes,
+                "download_chunk_bytes": download_chunk_bytes,
+                "part_count": download_part_count,
+                "max_part_bytes": max_download_part_bytes,
                 "throughput_floor_mb_s": dl_floor_val,
             }
             raise Refusal(
                 "DOWNLOAD_TIMEOUT_TOO_SHORT",
-                f"--download-timeout-s {explicit_dl_s} s < projected {projected_dl_s} s "
-                f"({expected_bundle_bytes} bytes at {dl_floor_val} MB/s)",
+                f"--download-timeout-s {explicit_dl_s} s < projected per-part {projected_dl_s} s "
+                f"({max_download_part_bytes} bytes/part at {dl_floor_val} MB/s)",
             )
 
         if explicit_dl_s is not None:
@@ -1453,12 +1476,16 @@ def run_plan_run(args: argparse.Namespace) -> int:
 
         plan["download_timeout_s"] = chosen_dl_s
         plan["salvage_download_timeout_s"] = chosen_dl_s
+        plan["download_chunk_bytes"] = download_chunk_bytes
         plan["download_timeout_basis"] = {
             "mode": dl_mode,
             "source": dl_basis_source,
             "is_real_job": is_real_job,
             "chosen_seconds": chosen_dl_s,
             "salvage_download_timeout_seconds": chosen_dl_s,
+            "download_chunk_bytes": download_chunk_bytes,
+            "part_count": download_part_count,
+            "max_part_bytes": max_download_part_bytes,
             "steps": steps,
             "save_every": save_every,
             "checkpoint_count": ckpt_count,
@@ -1471,8 +1498,13 @@ def run_plan_run(args: argparse.Namespace) -> int:
             "projected_seconds": projected_dl_s,
         }
 
-        # 2. Dataset archive upload timeout (Part 2)
+        # 2. Dataset archive upload timeout (Part 2; per-part under COLAB_UPLOAD_CHUNK_BYTES in Addendum 1 Part 2)
         upload_timeout_s = _parse_int_setting(args.upload_timeout_s, "UPLOAD_TIMEOUT_INVALID", "upload_timeout_s")
+        upload_chunk_bytes = (
+            _parse_int_setting(args.upload_chunk_bytes, "UPLOAD_CHUNK_BYTES_INVALID", "upload_chunk_bytes")
+            if getattr(args, "upload_chunk_bytes", None) is not None and str(args.upload_chunk_bytes).strip() != ""
+            else DEFAULT_UPLOAD_CHUNK_BYTES
+        )
         raw_up_floor, up_floor_src = _pick_setting(args.upload_floor_mb_s, meta, "upload_floor_mb_s")
         if raw_up_floor is None:
             up_floor_val = DEFAULT_UPLOAD_FLOOR_MB_S
@@ -1484,23 +1516,31 @@ def run_plan_run(args: argparse.Namespace) -> int:
         if not archive_p.is_file():
             raise Refusal("DATASET_FILE_MISSING", str(archive_p))
         archive_bytes = archive_p.stat().st_size
-        projected_upload_s = archive_bytes / (up_floor_val * 1_000_000.0)
+        upload_part_count = max(1, math.ceil(archive_bytes / upload_chunk_bytes)) if archive_bytes > 0 else 1
+        max_upload_part_bytes = min(archive_bytes, upload_chunk_bytes)
+        projected_upload_s = max_upload_part_bytes / (up_floor_val * 1_000_000.0)
+        projected_total_upload_s = archive_bytes / (up_floor_val * 1_000_000.0)
         upload_ok = projected_upload_s <= float(upload_timeout_s)
         plan["upload_timeout_s"] = upload_timeout_s
+        plan["upload_chunk_bytes"] = upload_chunk_bytes
         plan["upload_timeout_check"] = {
             "upload_timeout_s": upload_timeout_s,
             "source": (args.upload_timeout_source or "default").strip(),
+            "upload_chunk_bytes": upload_chunk_bytes,
+            "part_count": upload_part_count,
+            "max_part_bytes": max_upload_part_bytes,
             "dataset_archive_bytes": archive_bytes,
             "throughput_floor_mb_s": up_floor_val,
             "floor_source": up_floor_src,
             "projected_upload_seconds": round(projected_upload_s, 4),
+            "projected_total_upload_seconds": round(projected_total_upload_s, 4),
             "ok": upload_ok,
         }
         if not upload_ok:
             raise Refusal(
                 "UPLOAD_TIMEOUT_TOO_SHORT",
-                f"dataset archive ({archive_bytes} bytes) at {up_floor_val} MB/s needs "
-                f"{projected_upload_s:.2f} s > upload timeout {upload_timeout_s} s",
+                f"dataset archive part ({max_upload_part_bytes} bytes of {archive_bytes} total) "
+                f"at {up_floor_val} MB/s needs {projected_upload_s:.2f} s > upload timeout {upload_timeout_s} s",
             )
 
         # 3. Job-derived wall allowance (Part 4)
@@ -1526,7 +1566,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
             wall_mode = "test_override"
         else:
             train_allowance_s = computed_train_s
-            fetch_allowance_s = chosen_dl_s
+            fetch_allowance_s = download_part_count * chosen_dl_s
             wall_mode = "job_step_time"
 
         required_wall_s = download_max_s + setup_allowance_s + train_allowance_s + fetch_allowance_s
@@ -2184,9 +2224,11 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--download-timeout-source", default="default")
     pr.add_argument("--default-download-timeout-s", default="300")
     pr.add_argument("--download-floor-mb-s", default=None)
+    pr.add_argument("--download-chunk-bytes", default=None)
     pr.add_argument("--upload-timeout-s", required=True)
     pr.add_argument("--upload-timeout-source", default="default")
     pr.add_argument("--upload-floor-mb-s", default=None)
+    pr.add_argument("--upload-chunk-bytes", default=None)
     pr.add_argument("--dataset-archive", required=True)
     pr.add_argument("--seconds-per-step", default=None)
     pr.add_argument("--download-max-seconds", required=True)
