@@ -14,8 +14,10 @@ Provides:
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -1128,6 +1130,245 @@ def run_between_item_fetch(
     if next_item is not None:
         current_json.write_text(json.dumps(next_item, indent=2) + "\n", encoding="utf-8")
     return {"copied_files": copied, "previous_item": previous_item}
+
+
+# >>> sdlab-download-prep
+import errno as _dl_errno  # noqa: E402
+import hashlib as _dl_hashlib  # noqa: E402
+import json as _dl_json  # noqa: E402
+import os as _dl_os  # noqa: E402
+import re as _dl_re  # noqa: E402
+import shutil as _dl_shutil  # noqa: E402
+from pathlib import Path as _DlPath  # noqa: E402
+from typing import Any as _DlAny  # noqa: E402
+
+
+def _dl_split_free_bytes(root: _DlPath, free_bytes_override: int | None = None) -> int:
+    if free_bytes_override is not None:
+        return int(free_bytes_override)
+    if _dl_os.environ.get("FAKE_VM_SITE") and _dl_os.environ.get("FAKE_VM_DL_SPLIT_FREE_BYTES", "").strip():
+        return int(_dl_os.environ["FAKE_VM_DL_SPLIT_FREE_BYTES"].strip())
+    probe = _DlPath(root)
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    return int(_dl_shutil.disk_usage(str(probe)).free)
+
+
+def _unlink_dl_prefix_files(root: _DlPath, prefix: str) -> None:
+    if not root.is_dir():
+        return
+    for fp in root.iterdir():
+        if fp.name.startswith(prefix + ".") and fp.is_file():
+            try:
+                fp.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def _dl_safe_prefix(rel: str) -> str:
+    cleaned = _dl_re.sub(r"[^A-Za-z0-9._-]", "_", rel)
+    if len(cleaned) <= 48:
+        safe_name = cleaned
+    else:
+        digest = _dl_hashlib.sha256(rel.encode("utf-8")).hexdigest()[:8]
+        safe_name = f"{cleaned[:39]}_{digest}"
+    return f".sdlab_dl_{safe_name}"
+
+
+def prepare_single_content_download(
+    content_root: str | _DlPath,
+    rel: str,
+    chunk_bytes: int,
+    *,
+    free_bytes_override: int | None = None,
+    emit: bool = True,
+) -> dict[str, _DlAny]:
+    """Prepare one `/content/<rel>` file for verified rig download.
+
+    Single canonical implementation shared by `remote_runner.py`, `lane3_bundle_now.py`, and
+    `colab_window.sh` (`_colab_write_download_prepare_py`). When `size > chunk_bytes`, verifies free
+    disk before splitting and catches `OSError` (`ENOSPC`) during part/manifest writes, unlinking
+    partial `.sdlab_dl_*` files and returning `split_failed: True` (`DOWNLOAD_SPLIT_DISK_LOW`) so a
+    disk-full split never crashes or falls through to an unchunked single GET.
+    """
+    root = _DlPath(content_root)
+    vm_file = root / rel
+    if not vm_file.is_file():
+        rec: dict[str, _DlAny] = {"rel": rel, "exists": False, "chunk_bytes": int(chunk_bytes)}
+        if emit:
+            print("SDLAB_DOWNLOAD_PREPARE_JSON " + _dl_json.dumps(rec), flush=True)
+        return rec
+
+    size = vm_file.stat().st_size
+    if size <= chunk_bytes:
+        h = _dl_hashlib.sha256()
+        with vm_file.open("rb") as fh:
+            for blk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(blk)
+        rec = {
+            "rel": rel,
+            "exists": True,
+            "split": False,
+            "whole_bytes": size,
+            "whole_sha256": h.hexdigest(),
+            "chunk_bytes": int(chunk_bytes),
+            "part_count": 1,
+        }
+        if emit:
+            print("SDLAB_DOWNLOAD_PREPARE_JSON " + _dl_json.dumps(rec), flush=True)
+        return rec
+
+    prefix = _dl_safe_prefix(rel)
+    _unlink_dl_prefix_files(root, prefix)
+
+    free_b = _dl_split_free_bytes(root, free_bytes_override)
+    headroom = 16 * 1024 * 1024
+    if free_b < size + headroom:
+        why = (
+            f"/content/{rel} ({size} bytes > chunk_bytes={chunk_bytes}) needs {size} free bytes plus "
+            f"{headroom} bytes of headroom on {root} for the VM split copy, but only {free_b} bytes are free"
+        )
+        rec = {
+            "rel": rel,
+            "exists": True,
+            "split": True,
+            "split_failed": True,
+            "error_code": "DOWNLOAD_SPLIT_DISK_LOW",
+            "why": why,
+            "whole_bytes": size,
+            "free_bytes": free_b,
+            "chunk_bytes": int(chunk_bytes),
+        }
+        if emit:
+            print("SDLAB_DOWNLOAD_PREPARE_JSON " + _dl_json.dumps(rec), flush=True)
+        return rec
+
+    whole_h = _dl_hashlib.sha256()
+    parts: list[dict[str, _DlAny]] = []
+    idx = 0
+    inject_enospc_raw = (
+        _dl_os.environ.get("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART", "").strip()
+        if _dl_os.environ.get("FAKE_VM_SITE")
+        else ""
+    )
+    inject_enospc_part = int(inject_enospc_raw) if inject_enospc_raw.isdigit() else -1
+    try:
+        with vm_file.open("rb") as fh:
+            while True:
+                remaining = int(chunk_bytes)
+                part_name = f"{prefix}.part.{idx:04d}"
+                part_path = root / part_name
+                part_h = _dl_hashlib.sha256()
+                part_b = 0
+                first_blk = fh.read(min(1 << 20, remaining))
+                if not first_blk:
+                    break
+                if idx == inject_enospc_part:
+                    raise OSError(_dl_errno.ENOSPC, "No space left on device")
+                with part_path.open("wb") as pfh:
+                    pfh.write(first_blk)
+                    part_h.update(first_blk)
+                    whole_h.update(first_blk)
+                    part_b += len(first_blk)
+                    remaining -= len(first_blk)
+                    while remaining > 0:
+                        blk = fh.read(min(1 << 20, remaining))
+                        if not blk:
+                            break
+                        pfh.write(blk)
+                        part_h.update(blk)
+                        whole_h.update(blk)
+                        part_b += len(blk)
+                        remaining -= len(blk)
+                parts.append({
+                    "index": idx,
+                    "remote_path": f"/content/{part_name}",
+                    "bytes": part_b,
+                    "sha256": part_h.hexdigest(),
+                })
+                idx += 1
+
+        whole_sha = whole_h.hexdigest()
+        manifest_name = f"{prefix}.manifest.json"
+        manifest_payload = {
+            "remote": f"/content/{rel}",
+            "prefix": prefix,
+            "split": True,
+            "whole_bytes": size,
+            "whole_sha256": whole_sha,
+            "chunk_bytes": int(chunk_bytes),
+            "part_count": len(parts),
+            "parts": parts,
+        }
+        (root / manifest_name).write_text(
+            _dl_json.dumps(manifest_payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
+    except OSError as exc:
+        _unlink_dl_prefix_files(root, prefix)
+        free_after = _dl_split_free_bytes(root, free_bytes_override)
+        why = (
+            f"splitting /content/{rel} ({size} bytes) into {chunk_bytes}-byte parts failed at part {idx} "
+            f"({exc}; free_bytes={free_after})"
+        )
+        rec = {
+            "rel": rel,
+            "exists": True,
+            "split": True,
+            "split_failed": True,
+            "error_code": "DOWNLOAD_SPLIT_DISK_LOW",
+            "why": why,
+            "whole_bytes": size,
+            "free_bytes": free_after,
+            "chunk_bytes": int(chunk_bytes),
+        }
+        if emit:
+            print("SDLAB_DOWNLOAD_PREPARE_JSON " + _dl_json.dumps(rec), flush=True)
+        return rec
+
+    rec = {
+        "rel": rel,
+        "exists": True,
+        "split": True,
+        "prefix": prefix,
+        "manifest_remote": f"/content/{manifest_name}",
+        "whole_bytes": size,
+        "whole_sha256": whole_sha,
+        "chunk_bytes": int(chunk_bytes),
+        "part_count": len(parts),
+    }
+    if emit:
+        print("SDLAB_DOWNLOAD_PREPARE_JSON " + _dl_json.dumps(rec), flush=True)
+    return rec
+
+
+def prepare_content_downloads(
+    content_root: str | _DlPath,
+    chunk_bytes: int,
+    *,
+    free_bytes_override: int | None = None,
+    emit: bool = True,
+) -> list[dict[str, _DlAny]]:
+    """Record whole-file sha256 (and split into `chunk_bytes` parts + manifest when larger) for any
+    `*.tar.gz` bundle in `content_root` inside the single remote `colab exec` cell."""
+    root = _DlPath(content_root)
+    records: list[dict[str, _DlAny]] = []
+    if not root.is_dir() or chunk_bytes <= 0:
+        return records
+    for vm_file in sorted(root.iterdir()):
+        if not vm_file.is_file() or vm_file.name.startswith(".sdlab_") or not vm_file.name.endswith(".tar.gz"):
+            continue
+        rec = prepare_single_content_download(
+            root,
+            vm_file.name,
+            int(chunk_bytes),
+            free_bytes_override=free_bytes_override,
+            emit=emit,
+        )
+        records.append(rec)
+    if emit:
+        print(f"SDLAB_DOWNLOAD_PREPARE_DONE chunk_bytes={chunk_bytes}", flush=True)
+    return records
+# <<< sdlab-download-prep
 
 
 def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any] | None:

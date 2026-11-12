@@ -15,9 +15,9 @@
 # each step, and always stops its session on exit.
 set -euo pipefail
 
-PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
-PINNED_COLAB_WINDOW_SHA="6dd4f2289c357d22efe2cacd8de107d982ccf756e7391c5e9e888663a8847f16"
-PINNED_SELF_SHA="771f3d4a21dcabfb95d2d0647fbcd9cff64a85d7c47e7f1c4a311aa34a89192f"
+PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
+PINNED_COLAB_WINDOW_SHA="028e3e52c5c595edc74f20639d9114c18b2916619894753a34efb77c8d2b9eec"
+PINNED_SELF_SHA="564f0135fb622e05dd377aee27eb886d3136a932afff36144aa375fa9aab5ea8"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/probe_upload_limit.sh"
@@ -35,6 +35,8 @@ MIN_RUNTIME_S=""
 UPLOAD_SIZES_MB="16,32,64,96,128,160,200"
 DOWNLOAD_SIZES_MB="256,512,768,1024,1536,2048"
 UPLOAD_TIMEOUT_S_ARG=""
+UPLOAD_REASSEMBLE_TIMEOUT_S_ARG=""
+UPLOAD_REASSEMBLE_MB_S_ARG=""
 DOWNLOAD_TIMEOUT_S_ARG=""
 DRY_RUN=0
 
@@ -51,6 +53,8 @@ while [ "$#" -gt 0 ]; do
     --upload-sizes-mb) UPLOAD_SIZES_MB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-sizes-mb) DOWNLOAD_SIZES_MB="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-timeout-s) UPLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-reassemble-timeout-s) UPLOAD_REASSEMBLE_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-reassemble-mb-s) UPLOAD_REASSEMBLE_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-timeout-s) DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dry) DRY_RUN=1; shift ;;
     *)
@@ -76,6 +80,7 @@ if [ -z "${UPLOAD_TIMEOUT_S_ARG}" ] && [ -z "${COLAB_CALLER_UPLOAD_TIMEOUT_S:-}"
 else
   colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
 fi
+colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 
 PY_BIN="$(colab_resolve_python)"
 GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
@@ -148,6 +153,8 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_KILL_GRACE_S
   SDLAB_TEST_DOWNLOAD_TIMEOUT_S
   SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_REASSEMBLE_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_REASSEMBLE_MB_S
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_STOP_TIMEOUT_S

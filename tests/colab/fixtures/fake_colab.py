@@ -1229,6 +1229,9 @@ def st(tag, truncate=False):
 (out / "loss.log").write_text(f"step=1 loss=0.4200\\nstep={steps} loss=0.1800\\n", encoding="utf-8")
 (out / "_latent_cache").mkdir(parents=True, exist_ok=True)
 (out / "_latent_cache" / "latents_000.safetensors").write_bytes(st_always(b"FAKE-LATENT-CACHE"))
+if os.environ.get("FAKE_VM_EXTRA_BLOB_BYTES"):
+    import random as _rnd
+    (out / "optimizer_extra.bin").write_bytes(_rnd.Random(42).randbytes(int(os.environ["FAKE_VM_EXTRA_BLOB_BYTES"])))
 time.sleep(0.3)
 if os.environ.get("FAKE_VM_TRAIN") == "hang_after_step_250":
     assert (steps, save_every, sample_every) == (500, 250, 250), (steps, save_every, sample_every)
@@ -1276,11 +1279,36 @@ RUNPYEOF
   PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
     bash "${PWD}/remote_lane3_stub.sh.trainblock"
   if [ -n "${FAKE_VM_DROP_OUTPUT_FILE:-}" ]; then
-    rm -f "${PWD}/lane3_out/rung_outputs/${FAKE_VM_DROP_OUTPUT_FILE}"
+    IFS=',' read -ra _drop_rels <<< "${FAKE_VM_DROP_OUTPUT_FILE}"
+    for _drel in "${_drop_rels[@]}"; do
+      [ -z "${_drel}" ] && continue
+      rm -f "${PWD}/lane3_out/rung_outputs/${_drel}"
+    done
     tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
   fi
   if [ -n "${FAKE_VM_CORRUPT_OUTPUT_FILE:-}" ]; then
-    printf 'x' >> "${PWD}/lane3_out/rung_outputs/${FAKE_VM_CORRUPT_OUTPUT_FILE}"
+    IFS=',' read -ra _cor_rels <<< "${FAKE_VM_CORRUPT_OUTPUT_FILE}"
+    for _crel in "${_cor_rels[@]}"; do
+      [ -z "${_crel}" ] && continue
+      printf 'x' >> "${PWD}/lane3_out/rung_outputs/${_crel}"
+    done
+    tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
+  fi
+  if [ -n "${FAKE_VM_DROP_TRAIN_SOURCE_FILE:-}" ]; then
+    IFS=',' read -ra _sdrop_rels <<< "${FAKE_VM_DROP_TRAIN_SOURCE_FILE}"
+    for _sdrel in "${_sdrop_rels[@]}"; do
+      [ -z "${_sdrel}" ] && continue
+      rm -f "${PWD}/lane3_out/rung_outputs/${_sdrel}" "${PWD}/lane3_train/${_sdrel}"
+    done
+    tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
+  fi
+  if [ -n "${FAKE_VM_CORRUPT_TRAIN_SOURCE_FILE:-}" ]; then
+    IFS=',' read -ra _scor_rels <<< "${FAKE_VM_CORRUPT_TRAIN_SOURCE_FILE}"
+    for _screl in "${_scor_rels[@]}"; do
+      [ -z "${_screl}" ] && continue
+      printf 'x' >> "${PWD}/lane3_out/rung_outputs/${_screl}"
+      printf 'x' >> "${PWD}/lane3_train/${_screl}"
+    done
     tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
   fi
 }
@@ -1934,9 +1962,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") in ("1", "ignore_term"):
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_DOWNLOAD_HANG") == "ignore_term")
-        if os.environ.get("FAKE_COLAB_DOWNLOAD_DELAY_S"):
-            time.sleep(float(os.environ["FAKE_COLAB_DOWNLOAD_DELAY_S"]))
         remote_src, local_dst = _normalize_remote_content_path(positionals[0]), positionals[1]
+        dl_delay_for = os.environ.get("FAKE_COLAB_DOWNLOAD_DELAY_FOR", "")
+        if os.environ.get("FAKE_COLAB_DOWNLOAD_DELAY_S") and (not dl_delay_for or dl_delay_for in remote_src):
+            time.sleep(float(os.environ["FAKE_COLAB_DOWNLOAD_DELAY_S"]))
         if not remote_src.startswith("/content/"):
             sys.stderr.write(f"Remote path must be under /content/: {remote_src}\n")
             return 1
@@ -1997,6 +2026,10 @@ def main(argv: list[str] | None = None) -> int:
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") == "ignore_term")
         if os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") in ("1", "ignore_term"):
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") == "ignore_term")
+        fail_first = os.environ.get("FAKE_COLAB_STOP_FAIL_FIRST", "").strip()
+        if fail_first.isdigit() and stop_cnt <= int(fail_first):
+            sys.stderr.write("colab stop failed (injected)\n")
+            return 1
         if os.environ.get("FAKE_COLAB_STOP_DELAY_S"):
             time.sleep(float(os.environ["FAKE_COLAB_STOP_DELAY_S"]))
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:
@@ -2109,9 +2142,16 @@ def main(argv: list[str] | None = None) -> int:
 
         # Execute the local .py file's source in a simulated IPython kernel cell:
         # cwd is the fake /content directory, __file__ is undefined, and --env values are applied.
+        reassemble_sleep_code = ""
+        if py_path.name == "reassemble_upload.py" and os.environ.get("FAKE_VM_UPLOAD_REASSEMBLE_SLEEP_S"):
+            sleep_for = os.environ.get("FAKE_VM_UPLOAD_REASSEMBLE_SLEEP_FOR", "")
+            man_val = env_vars.get("SDLAB_UP_MANIFEST", "")
+            if not sleep_for or sleep_for in man_val:
+                reassemble_sleep_code = f"import time as _t; _t.sleep({float(os.environ['FAKE_VM_UPLOAD_REASSEMBLE_SLEEP_S'])!r})\n"
         kernel_code = (
             "import os, pathlib, sys\n"
-            "sys.argv = ['colab_kernel_launcher.py']\n"
+            + reassemble_sleep_code
+            + "sys.argv = ['colab_kernel_launcher.py']\n"
             f"src = pathlib.Path({str(py_path.resolve())!r}).read_text(encoding='utf-8')\n"
             "ns = {'__name__': '__main__'}\n"
             "assert '__file__' not in ns\n"

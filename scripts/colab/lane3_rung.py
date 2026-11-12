@@ -22,18 +22,22 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
                 DATASET_ARCHIVE_SHA_MISMATCH, DATASET_FILE_MISSING, DATASET_SHA_MISMATCH).
   check-job     rig side, before a window opens: verify the job YAML's sha256, pinned 40-hex base
                 model revision, active `__LANE3_*__` placeholders, pinned 40-hex + cleared-licence
-                hub references across all string values, save/sample cadences, trigger_word vs
-                cache_text_embeddings compatibility, and explicit caption_dropout_rate + source
+                hub references across metadata string values, refusal of runtime `config.*` hub refs
+                ai-toolkit@beb94824 cannot parse (`qtype`, `assistant_lora_path`, `vae_path`, etc.),
+                save/sample cadences, trigger_word vs cache_text_embeddings compatibility, and
+                explicit caption_dropout_rate + source
                 (JOB_FILE_MISSING, JOB_SHA_MISMATCH, TRAIN_MODEL_REVISION_REQUIRED,
                 JOB_TEMPLATE_INVALID, JOB_UNPINNED_HUB_REF, JOB_MODEL_LICENCE_NOT_ALLOWED,
-                JOB_SAVE_CADENCE_INVALID, JOB_SAMPLE_CADENCE_INVALID,
+                JOB_UNSUPPORTED_HUB_REF, JOB_SAVE_CADENCE_INVALID, JOB_SAMPLE_CADENCE_INVALID,
                 JOB_TRIGGER_WITH_CACHED_EMBEDDINGS, JOB_CAPTION_DROPOUT_INVALID).
-  plan-run      rig side, before a window opens: resolve and verify bundle download timeout,
-                dataset archive upload timeout, job-derived wall allowance, and projected VM
-                output disk budget (DOWNLOAD_TIMEOUT_INVALID, DOWNLOAD_TIMEOUT_REQUIRED,
+  plan-run      rig side, before a window opens: resolve and verify keep-all bundle projection
+                (checkpoints + optimizer state + samples/logs/config + auxiliary keep-all files),
+                bundle download timeout + salvage part count, dataset archive upload timeout,
+                job-derived wall allowance, and projected VM output disk budget including chunked
+                download split overhead (DOWNLOAD_TIMEOUT_INVALID, DOWNLOAD_TIMEOUT_REQUIRED,
                 DOWNLOAD_TIMEOUT_TOO_SHORT, UPLOAD_TIMEOUT_INVALID, UPLOAD_TIMEOUT_TOO_SHORT,
                 TRAIN_STEP_TIME_REQUIRED, TRAIN_WALL_TOO_SHORT, TRAIN_OUTPUT_PROJECTION_REQUIRED,
-                TRAIN_OUTPUT_DISK_LOW).
+                OPTIMIZER_SIZE_SOURCE_REQUIRED, TRAIN_OUTPUT_DISK_LOW).
   render-job    verify (when --template-sha is given) and fill the job YAML's __LANE3_*__
                 placeholders (JOB_FILE_MISSING, JOB_SHA_MISMATCH, JOB_TEMPLATE_INVALID).
   copy-off      while ai-toolkit runs (and on final sweep), copy every file in the training folder
@@ -44,8 +48,10 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
                 bytes, and sha256 of every file in the training folder.
   check-bundle-disk   VM side, before tar: verify lane3_out total bytes fit free disk.
   verify-bundle rig side, after colab download: verify every file in training_folder_manifest.json
-                arrived in rung_outputs/ with matching byte count and sha256
-                (TRAIN_OUTPUT_MANIFEST_MISMATCH).
+                arrived in rung_outputs/ with matching byte count and sha256, enumerating all
+                missing and mismatched files (TRAIN_OUTPUT_MANIFEST_MISMATCH).
+  repair-bundle rig side, after per-file VM refetch on verify-bundle failure: merge recovered
+                training-folder files into rung_outputs/ and manifest.jsonl inside the bundle tar.
   model-check   rig side, before a window opens: the model at the pinned revision answers the
                 request's read token (MODEL_AUTH_FAILED, MODEL_REVISION_NOT_FOUND,
                 MODEL_METADATA_FAILED; the same names for the VM's metadata call).
@@ -154,10 +160,23 @@ def safetensors_complete(path: Path) -> bool:
 class Refusal(Exception):
     """A named refusal: printed as `REFUSED: <code>: <detail>`."""
 
-    def __init__(self, code: str, detail: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        detail: str,
+        *,
+        missing_files: list[str] | None = None,
+        mismatched_files: list[str] | None = None,
+        bad_entries: list[dict[str, Any]] | None = None,
+        checked_files: int = 0,
+    ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
         self.detail = detail
+        self.missing_files = list(missing_files) if missing_files is not None else []
+        self.mismatched_files = list(mismatched_files) if mismatched_files is not None else []
+        self.bad_entries = list(bad_entries) if bad_entries is not None else []
+        self.checked_files = int(checked_files)
 
 
 def refuse_line(code: str, detail: str) -> str:
@@ -1111,6 +1130,60 @@ def _require_allowed_repo(repo_id: str, context: str) -> None:
         )
 
 
+AI_TOOLKIT_PIN_REF = "ostris/ai-toolkit@beb94824c51480a04d3c86c718603676fdef6938"
+_CONFIG_HUB_REF_CITATIONS: dict[str, str] = {
+    "qtype": (
+        f"{AI_TOOLKIT_PIN_REF} toolkit/config_modules.py:752-753 splits qtype on '|' into "
+        "accuracy_recovery_adapter and toolkit/util/quantize.py:527-540 calls hf_hub_download(repo_id, "
+        "filename=...) without parsing '@<40hex>' revisions (and run.py runs under HF_HUB_OFFLINE=1)"
+    ),
+    "accuracy_recovery_adapter": (
+        f"{AI_TOOLKIT_PIN_REF} toolkit/config_modules.py:752-753 and toolkit/util/quantize.py:527-540 "
+        "call hf_hub_download(repo_id, filename=...) without parsing '@<40hex>' revisions "
+        "(and run.py runs under HF_HUB_OFFLINE=1)"
+    ),
+    "assistant_lora_path": (
+        f"{AI_TOOLKIT_PIN_REF} toolkit/config_modules.py:662, toolkit/stable_diffusion_model.py:775-784,1147-1148 "
+        "and toolkit/assistant_lora.py:16 call hf_hub_download/safetensors.torch.load_file without parsing "
+        "'@<40hex>' revisions (and run.py runs under HF_HUB_OFFLINE=1)"
+    ),
+    "inference_lora_path": (
+        f"{AI_TOOLKIT_PIN_REF} toolkit/config_modules.py:663 and toolkit/stable_diffusion_model.py:775-784 "
+        "call hf_hub_download without parsing '@<40hex>' revisions (and run.py runs under HF_HUB_OFFLINE=1)"
+    ),
+    "lora_path": (
+        f"{AI_TOOLKIT_PIN_REF} toolkit/config_modules.py:664 and toolkit/stable_diffusion_model.py:775-784 "
+        "call hf_hub_download without parsing '@<40hex>' revisions (and run.py runs under HF_HUB_OFFLINE=1)"
+    ),
+    "vae_path": (
+        f"{AI_TOOLKIT_PIN_REF} toolkit/config_modules.py:656, toolkit/util/vae.py:4-18 "
+        "(AutoencoderKL.from_pretrained(vae_path)) and extensions_built_in/diffusion_models/flux2/flux2_model.py:150-171 "
+        "do not parse '@<40hex>' revisions (and run.py runs under HF_HUB_OFFLINE=1)"
+    ),
+}
+
+
+def _refuse_if_runtime_config_hub_ref(template_path: Path, key_path: str, val: str) -> None:
+    if not (key_path == "config" or key_path.startswith("config.")):
+        return
+    leaf = key_path.rsplit(".", 1)[-1]
+    leaf = re.sub(r"\[\d+\]$", "", leaf)
+    citation = _CONFIG_HUB_REF_CITATIONS.get(
+        leaf,
+        (
+            f"{AI_TOOLKIT_PIN_REF} (toolkit/config_modules.py:656,662,752-753; "
+            "toolkit/util/quantize.py:527-540; toolkit/stable_diffusion_model.py:775-784; "
+            "toolkit/util/vae.py:4-18) does not parse 'org/name@<40hex>' or hub URLs and run.py runs "
+            "under HF_HUB_OFFLINE=1"
+        ),
+    )
+    raise Refusal(
+        "JOB_UNSUPPORTED_HUB_REF",
+        f"{template_path} {key_path}={val!r}: runtime config.* keys cannot use hub references because "
+        f"{citation}; stage a local VM path instead (provenance hub refs belong under meta.*)",
+    )
+
+
 def _check_job_string_for_hub_refs(
     template_path: Path, key_path: str, val: str, pinned_refs: list[dict[str, str]]
 ) -> None:
@@ -1129,6 +1202,7 @@ def _check_job_string_for_hub_refs(
                 )
             repo_id, rev = m_res.group(1), m_res.group(2).lower()
             _require_allowed_repo(repo_id, f"{template_path} {key_path}={val!r}")
+            _refuse_if_runtime_config_hub_ref(template_path, key_path, val)
             pinned_refs.append({"path": key_path, "repo_id": repo_id, "revision": rev})
         return
 
@@ -1144,7 +1218,13 @@ def _check_job_string_for_hub_refs(
                     )
                 repo_id, rev = m_pipe.group(1), m_pipe.group(2).lower()
                 _require_allowed_repo(repo_id, f"{template_path} {key_path}={val!r}")
-                pinned_refs.append({"path": key_path, "repo_id": repo_id, "revision": rev})
+            _refuse_if_runtime_config_hub_ref(template_path, key_path, val)
+            for part in pipe_parts:
+                m_pipe = PINNED_HUB_SPEC_RE.match(part)
+                assert m_pipe is not None
+                pinned_refs.append(
+                    {"path": key_path, "repo_id": m_pipe.group(1), "revision": m_pipe.group(2).lower()}
+                )
             return
 
     if not any(ch.isspace() for ch in s) and "/" in s:
@@ -1158,6 +1238,7 @@ def _check_job_string_for_hub_refs(
             )
         repo_id, rev = m_hub.group(1), m_hub.group(2).lower()
         _require_allowed_repo(repo_id, f"{template_path} {key_path}={val!r}")
+        _refuse_if_runtime_config_hub_ref(template_path, key_path, val)
         pinned_refs.append({"path": key_path, "repo_id": repo_id, "revision": rev})
 
 
@@ -1305,7 +1386,9 @@ def validate_job_semantics(
                         "seconds_per_step",
                         "checkpoint_size_bytes",
                         "optimizer_size_bytes",
+                        "optimizer_size_source",
                         "samples_and_logs_bytes",
+                        "auxiliary_keep_all_bytes",
                         "download_floor_mb_s",
                         "upload_floor_mb_s",
                         "copy_tar_overhead",
@@ -1369,6 +1452,248 @@ def _pick_setting(cli_val: Any, meta: dict[str, Any], meta_key: str) -> tuple[An
     return None, None
 
 
+OPTIMIZER_SIZE_SOURCE_RE = re.compile(r"^(measured|estimate):\s*\S")
+
+
+def _resolve_optimizer_size_provenance(
+    cli_val: Any, meta: dict[str, Any], is_real_job: bool
+) -> tuple[str | None, str | None]:
+    """The `--job` path must say where its optimizer_size_bytes came from: `measured: <where>` or
+    `estimate: <how>` (flag --optimizer-size-source or meta.optimizer_size_source). The built-in rung
+    templates (--rung-job) keep their fixed estimate and need no statement."""
+    raw, origin = _pick_setting(cli_val, meta, "optimizer_size_source")
+    if raw is None:
+        if is_real_job:
+            raise Refusal(
+                "OPTIMIZER_SIZE_SOURCE_REQUIRED",
+                "a --job must state optimizer_size_source together with optimizer_size_bytes "
+                "(meta.optimizer_size_source or --optimizer-size-source): 'measured: <where>' or 'estimate: <how>'",
+            )
+        return None, None
+    text = str(raw).strip()
+    if not OPTIMIZER_SIZE_SOURCE_RE.match(text):
+        raise Refusal(
+            "OPTIMIZER_SIZE_SOURCE_REQUIRED",
+            f"optimizer_size_source={text!r} must read 'measured: <where>' or 'estimate: <how>'",
+        )
+    return text, origin
+
+
+def _resolve_download_timeout_basis(
+    *,
+    steps: int,
+    save_every: int,
+    meta: dict[str, Any],
+    is_real_job: bool,
+    download_chunk_bytes_raw: Any,
+    explicit_download_timeout_raw: Any,
+    download_timeout_source_raw: Any,
+    default_download_timeout_raw: Any,
+    download_floor_mb_s_arg: Any,
+    checkpoint_size_bytes_arg: Any,
+    optimizer_size_bytes_arg: Any,
+    samples_and_logs_bytes_arg: Any,
+    auxiliary_keep_all_bytes_arg: Any,
+    plan_sink: dict[str, Any] | None = None,
+) -> tuple[int, int, int, int | None, dict[str, Any], Any, str | None, Any, str | None]:
+    ckpt_count = math.ceil(steps / save_every) if (steps > 0 and save_every > 0) else 1
+    download_chunk_bytes = (
+        _parse_int_setting(download_chunk_bytes_raw, "DOWNLOAD_CHUNK_BYTES_INVALID", "download_chunk_bytes")
+        if download_chunk_bytes_raw is not None and str(download_chunk_bytes_raw).strip() != ""
+        else DEFAULT_DOWNLOAD_CHUNK_BYTES
+    )
+    explicit_raw = (explicit_download_timeout_raw or "").strip()
+    dl_src = (download_timeout_source_raw or "default").strip()
+    explicit_dl_s: int | None = None
+    if explicit_raw:
+        explicit_dl_s = _parse_int_setting(explicit_raw, "DOWNLOAD_TIMEOUT_INVALID", "download_timeout_s")
+
+    raw_dl_floor, dl_floor_src = _pick_setting(download_floor_mb_s_arg, meta, "download_floor_mb_s")
+    raw_ckpt_b, ckpt_b_src = _pick_setting(checkpoint_size_bytes_arg, meta, "checkpoint_size_bytes")
+    raw_opt_dl_b, opt_dl_src = _pick_setting(optimizer_size_bytes_arg, meta, "optimizer_size_bytes")
+    raw_samp_b, samp_b_src = _pick_setting(samples_and_logs_bytes_arg, meta, "samples_and_logs_bytes")
+    raw_aux_b, aux_b_src = _pick_setting(auxiliary_keep_all_bytes_arg, meta, "auxiliary_keep_all_bytes")
+
+    dl_floor_val: float | None = None
+    projected_dl_s: int | None = None
+    expected_bundle_bytes: int | None = None
+    download_part_count = 1
+    max_download_part_bytes: int | None = None
+    dl_ckpt_b: int | None = None
+    dl_opt_b: int | None = None
+    dl_samp_b: int | None = None
+    dl_aux_b = 0
+    if raw_dl_floor is not None:
+        dl_floor_val = parse_positive_number(str(raw_dl_floor), "DOWNLOAD_TIMEOUT_INVALID", "download_floor_mb_s")
+        if raw_ckpt_b is None or raw_opt_dl_b is None or raw_samp_b is None:
+            raise Refusal(
+                "DOWNLOAD_TIMEOUT_REQUIRED",
+                "projecting bundle download timeout requires checkpoint_size_bytes, "
+                "optimizer_size_bytes, and samples_and_logs_bytes",
+            )
+        dl_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+        dl_opt_b = _parse_int_setting(raw_opt_dl_b, "DOWNLOAD_TIMEOUT_INVALID", "optimizer_size_bytes")
+        dl_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+        dl_aux_b = (
+            _parse_int_setting(raw_aux_b, "DOWNLOAD_TIMEOUT_INVALID", "auxiliary_keep_all_bytes", allow_zero=True)
+            if raw_aux_b is not None
+            else 0
+        )
+        expected_bundle_bytes = ckpt_count * dl_ckpt_b + dl_opt_b + dl_samp_b + dl_aux_b
+        download_part_count = (
+            max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes)) if expected_bundle_bytes > 0 else 1
+        )
+        max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
+        projected_dl_s = max(1, math.ceil(max_download_part_bytes / (dl_floor_val * 1_000_000.0)))
+    elif raw_ckpt_b is not None and raw_opt_dl_b is not None:
+        try:
+            cand_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
+            cand_opt_b = _parse_int_setting(raw_opt_dl_b, "DOWNLOAD_TIMEOUT_INVALID", "optimizer_size_bytes")
+            cand_samp_b = (
+                _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
+                if raw_samp_b is not None
+                else 0
+            )
+            cand_aux_b = (
+                _parse_int_setting(raw_aux_b, "DOWNLOAD_TIMEOUT_INVALID", "auxiliary_keep_all_bytes", allow_zero=True)
+                if raw_aux_b is not None
+                else 0
+            )
+            dl_ckpt_b = cand_ckpt_b
+            dl_opt_b = cand_opt_b
+            dl_samp_b = cand_samp_b if raw_samp_b is not None else None
+            dl_aux_b = cand_aux_b
+            expected_bundle_bytes = ckpt_count * cand_ckpt_b + cand_opt_b + cand_samp_b + cand_aux_b
+            if expected_bundle_bytes > 0:
+                download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes))
+                max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
+        except Refusal:
+            pass
+
+    if is_real_job and explicit_dl_s is None and projected_dl_s is None:
+        if plan_sink is not None:
+            plan_sink["download_timeout_basis"] = {
+                "mode": "missing_on_real_job",
+                "is_real_job": True,
+                "steps": steps,
+                "save_every": save_every,
+            }
+        raise Refusal(
+            "DOWNLOAD_TIMEOUT_REQUIRED",
+            "--job must not use the 300 s default download timeout; pass --download-timeout-s <s> "
+            "or project it with checkpoint_size_bytes, optimizer_size_bytes, samples_and_logs_bytes "
+            "and --download-floor-mb-s <MB/s>",
+        )
+
+    if explicit_dl_s is not None and projected_dl_s is not None and explicit_dl_s < projected_dl_s:
+        if plan_sink is not None:
+            plan_sink["download_timeout_basis"] = {
+                "mode": "explicit_below_projected",
+                "source": dl_src,
+                "explicit_seconds": explicit_dl_s,
+                "projected_seconds": projected_dl_s,
+                "expected_bundle_bytes": expected_bundle_bytes,
+                "download_chunk_bytes": download_chunk_bytes,
+                "part_count": download_part_count,
+                "max_part_bytes": max_download_part_bytes,
+                "throughput_floor_mb_s": dl_floor_val,
+            }
+        raise Refusal(
+            "DOWNLOAD_TIMEOUT_TOO_SHORT",
+            f"--download-timeout-s {explicit_dl_s} s < projected per-part {projected_dl_s} s "
+            f"({max_download_part_bytes} bytes/part at {dl_floor_val} MB/s)",
+        )
+
+    if explicit_dl_s is not None:
+        chosen_dl_s = explicit_dl_s
+        dl_mode = "explicit"
+        dl_basis_source = dl_src if dl_src in ("cli", "env") else "cli"
+    elif projected_dl_s is not None:
+        chosen_dl_s = projected_dl_s
+        dl_mode = "projected"
+        dl_basis_source = dl_floor_src or "projection"
+    else:
+        chosen_dl_s = _parse_int_setting(
+            default_download_timeout_raw, "DOWNLOAD_TIMEOUT_INVALID", "default_download_timeout_s"
+        )
+        dl_mode = "rung_default"
+        dl_basis_source = "default"
+
+    basis = {
+        "mode": dl_mode,
+        "source": dl_basis_source,
+        "is_real_job": is_real_job,
+        "chosen_seconds": chosen_dl_s,
+        "salvage_download_timeout_seconds": chosen_dl_s,
+        "download_chunk_bytes": download_chunk_bytes,
+        "part_count": download_part_count,
+        "max_part_bytes": max_download_part_bytes,
+        "steps": steps,
+        "save_every": save_every,
+        "checkpoint_count": ckpt_count,
+        "checkpoint_size_bytes": dl_ckpt_b,
+        "checkpoint_size_source": ckpt_b_src if dl_ckpt_b is not None else None,
+        "optimizer_size_bytes": dl_opt_b,
+        "optimizer_size_source": opt_dl_src if dl_opt_b is not None else None,
+        "samples_and_logs_bytes": dl_samp_b,
+        "samples_and_logs_source": samp_b_src if dl_samp_b is not None else None,
+        "auxiliary_keep_all_bytes": dl_aux_b,
+        "auxiliary_keep_all_source": aux_b_src if raw_aux_b is not None else "default_zero",
+        "expected_bundle_bytes": expected_bundle_bytes,
+        "throughput_floor_mb_s": dl_floor_val,
+        "projected_seconds": projected_dl_s,
+    }
+    return (
+        chosen_dl_s,
+        download_chunk_bytes,
+        download_part_count,
+        max_download_part_bytes,
+        basis,
+        raw_samp_b,
+        samp_b_src,
+        raw_aux_b,
+        aux_b_src,
+    )
+
+
+def run_dry_download_bounds(args: argparse.Namespace) -> int:
+    """Resolve download_timeout_s, source, and projected salvage part_count for `launch_lane3_stub.sh --dry`."""
+    try:
+        job_p = Path(args.job_yaml)
+        if not job_p.is_file():
+            raise Refusal("JOB_TEMPLATE_INVALID", f"missing job file {job_p}")
+        doc = parse_job_yaml(job_p.read_text(encoding="utf-8"))
+        cfg = doc.get("config") if isinstance(doc.get("config"), dict) else {}
+        procs = cfg.get("process") if isinstance(cfg.get("process"), list) else []
+        proc = procs[0] if procs and isinstance(procs[0], dict) else {}
+        train_cfg = proc.get("train") if isinstance(proc.get("train"), dict) else {}
+        save_cfg = proc.get("save") if isinstance(proc.get("save"), dict) else {}
+        steps = int(train_cfg.get("steps") or 0)
+        save_every = int(save_cfg.get("save_every") or 0)
+        meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
+        chosen_dl_s, _, part_count, _, basis, _, _, _, _ = _resolve_download_timeout_basis(
+            steps=steps,
+            save_every=save_every,
+            meta=meta,
+            is_real_job=str(args.is_real_job).strip() == "1",
+            download_chunk_bytes_raw=args.download_chunk_bytes,
+            explicit_download_timeout_raw=args.explicit_download_timeout_s,
+            download_timeout_source_raw=args.download_timeout_source,
+            default_download_timeout_raw=args.default_download_timeout_s,
+            download_floor_mb_s_arg=args.download_floor_mb_s,
+            checkpoint_size_bytes_arg=args.checkpoint_size_bytes,
+            optimizer_size_bytes_arg=args.optimizer_size_bytes,
+            samples_and_logs_bytes_arg=args.samples_and_logs_bytes,
+            auxiliary_keep_all_bytes_arg=args.auxiliary_keep_all_bytes,
+        )
+        src_out = "projected" if basis["mode"] == "projected" else str(basis["source"])
+        print(f"{chosen_dl_s}\t{src_out}\t{int(part_count)}", flush=True)
+        return 0
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 2
+
+
 def run_plan_run(args: argparse.Namespace) -> int:
     """Rig-side pre-open planner for Parts 1, 2, 4, and 5: resolves download/upload timeouts,
     wall allowance from steps * seconds_per_step, and projected VM output disk fit."""
@@ -1385,118 +1710,36 @@ def run_plan_run(args: argparse.Namespace) -> int:
         is_real_job = str(args.is_real_job).strip() == "1"
 
         # 1. Bundle download timeout (Part 1; per-part under COLAB_DOWNLOAD_CHUNK_BYTES in Addendum 1 Part 2b)
-        download_chunk_bytes = (
-            _parse_int_setting(args.download_chunk_bytes, "DOWNLOAD_CHUNK_BYTES_INVALID", "download_chunk_bytes")
-            if getattr(args, "download_chunk_bytes", None) is not None and str(args.download_chunk_bytes).strip() != ""
-            else DEFAULT_DOWNLOAD_CHUNK_BYTES
+        (
+            chosen_dl_s,
+            download_chunk_bytes,
+            download_part_count,
+            max_download_part_bytes,
+            dl_basis,
+            raw_samp_b,
+            samp_b_src,
+            raw_aux_b,
+            aux_b_src,
+        ) = _resolve_download_timeout_basis(
+            steps=steps,
+            save_every=save_every,
+            meta=meta,
+            is_real_job=is_real_job,
+            download_chunk_bytes_raw=getattr(args, "download_chunk_bytes", None),
+            explicit_download_timeout_raw=args.explicit_download_timeout_s,
+            download_timeout_source_raw=args.download_timeout_source,
+            default_download_timeout_raw=args.default_download_timeout_s,
+            download_floor_mb_s_arg=args.download_floor_mb_s,
+            checkpoint_size_bytes_arg=args.checkpoint_size_bytes,
+            optimizer_size_bytes_arg=args.optimizer_size_bytes,
+            samples_and_logs_bytes_arg=args.samples_and_logs_bytes,
+            auxiliary_keep_all_bytes_arg=getattr(args, "auxiliary_keep_all_bytes", None),
+            plan_sink=plan,
         )
-        explicit_raw = (args.explicit_download_timeout_s or "").strip()
-        dl_src = (args.download_timeout_source or "default").strip()
-        explicit_dl_s: int | None = None
-        if explicit_raw:
-            explicit_dl_s = _parse_int_setting(explicit_raw, "DOWNLOAD_TIMEOUT_INVALID", "download_timeout_s")
-
-        raw_dl_floor, dl_floor_src = _pick_setting(args.download_floor_mb_s, meta, "download_floor_mb_s")
-        raw_ckpt_b, ckpt_b_src = _pick_setting(args.checkpoint_size_bytes, meta, "checkpoint_size_bytes")
-        raw_samp_b, samp_b_src = _pick_setting(args.samples_and_logs_bytes, meta, "samples_and_logs_bytes")
-
-        dl_floor_val: float | None = None
-        projected_dl_s: int | None = None
-        expected_bundle_bytes: int | None = None
-        download_part_count = 1
-        max_download_part_bytes: int | None = None
-        dl_ckpt_b: int | None = None
-        dl_samp_b: int | None = None
-        if raw_dl_floor is not None:
-            dl_floor_val = parse_positive_number(str(raw_dl_floor), "DOWNLOAD_TIMEOUT_INVALID", "download_floor_mb_s")
-            if raw_ckpt_b is None or raw_samp_b is None:
-                raise Refusal(
-                    "DOWNLOAD_TIMEOUT_REQUIRED",
-                    "projecting bundle download timeout requires checkpoint_size_bytes and samples_and_logs_bytes",
-                )
-            dl_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
-            dl_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
-            expected_bundle_bytes = ckpt_count * dl_ckpt_b + dl_samp_b
-            download_part_count = max(1, math.ceil(expected_bundle_bytes / download_chunk_bytes)) if expected_bundle_bytes > 0 else 1
-            max_download_part_bytes = min(expected_bundle_bytes, download_chunk_bytes)
-            projected_dl_s = max(1, math.ceil(max_download_part_bytes / (dl_floor_val * 1_000_000.0)))
-        elif raw_ckpt_b is not None and raw_samp_b is not None:
-            try:
-                cand_ckpt_b = _parse_int_setting(raw_ckpt_b, "DOWNLOAD_TIMEOUT_INVALID", "checkpoint_size_bytes")
-                cand_samp_b = _parse_int_setting(raw_samp_b, "DOWNLOAD_TIMEOUT_INVALID", "samples_and_logs_bytes", allow_zero=True)
-                cand_bundle_b = ckpt_count * cand_ckpt_b + cand_samp_b
-                if cand_bundle_b > 0:
-                    download_part_count = max(1, math.ceil(cand_bundle_b / download_chunk_bytes))
-            except Refusal:
-                pass
-
-        if is_real_job and explicit_dl_s is None and projected_dl_s is None:
-            plan["download_timeout_basis"] = {
-                "mode": "missing_on_real_job",
-                "is_real_job": True,
-                "steps": steps,
-                "save_every": save_every,
-            }
-            raise Refusal(
-                "DOWNLOAD_TIMEOUT_REQUIRED",
-                "--job must not use the 300 s default download timeout; pass --download-timeout-s <s> "
-                "or project it with checkpoint_size_bytes, samples_and_logs_bytes and --download-floor-mb-s <MB/s>",
-            )
-
-        if explicit_dl_s is not None and projected_dl_s is not None and explicit_dl_s < projected_dl_s:
-            plan["download_timeout_basis"] = {
-                "mode": "explicit_below_projected",
-                "source": dl_src,
-                "explicit_seconds": explicit_dl_s,
-                "projected_seconds": projected_dl_s,
-                "expected_bundle_bytes": expected_bundle_bytes,
-                "download_chunk_bytes": download_chunk_bytes,
-                "part_count": download_part_count,
-                "max_part_bytes": max_download_part_bytes,
-                "throughput_floor_mb_s": dl_floor_val,
-            }
-            raise Refusal(
-                "DOWNLOAD_TIMEOUT_TOO_SHORT",
-                f"--download-timeout-s {explicit_dl_s} s < projected per-part {projected_dl_s} s "
-                f"({max_download_part_bytes} bytes/part at {dl_floor_val} MB/s)",
-            )
-
-        if explicit_dl_s is not None:
-            chosen_dl_s = explicit_dl_s
-            dl_mode = "explicit"
-            dl_basis_source = dl_src if dl_src in ("cli", "env") else "cli"
-        elif projected_dl_s is not None:
-            chosen_dl_s = projected_dl_s
-            dl_mode = "projected"
-            dl_basis_source = dl_floor_src or "projection"
-        else:
-            chosen_dl_s = _parse_int_setting(args.default_download_timeout_s, "DOWNLOAD_TIMEOUT_INVALID", "default_download_timeout_s")
-            dl_mode = "rung_default"
-            dl_basis_source = "default"
-
         plan["download_timeout_s"] = chosen_dl_s
         plan["salvage_download_timeout_s"] = chosen_dl_s
         plan["download_chunk_bytes"] = download_chunk_bytes
-        plan["download_timeout_basis"] = {
-            "mode": dl_mode,
-            "source": dl_basis_source,
-            "is_real_job": is_real_job,
-            "chosen_seconds": chosen_dl_s,
-            "salvage_download_timeout_seconds": chosen_dl_s,
-            "download_chunk_bytes": download_chunk_bytes,
-            "part_count": download_part_count,
-            "max_part_bytes": max_download_part_bytes,
-            "steps": steps,
-            "save_every": save_every,
-            "checkpoint_count": ckpt_count,
-            "checkpoint_size_bytes": dl_ckpt_b,
-            "checkpoint_size_source": ckpt_b_src if dl_ckpt_b is not None else None,
-            "samples_and_logs_bytes": dl_samp_b,
-            "samples_and_logs_source": samp_b_src if dl_samp_b is not None else None,
-            "expected_bundle_bytes": expected_bundle_bytes,
-            "throughput_floor_mb_s": dl_floor_val,
-            "projected_seconds": projected_dl_s,
-        }
+        plan["download_timeout_basis"] = dl_basis
 
         # 2. Dataset archive upload timeout (Part 2; per-part under COLAB_UPLOAD_CHUNK_BYTES in Addendum 1 Part 2)
         upload_timeout_s = _parse_int_setting(args.upload_timeout_s, "UPLOAD_TIMEOUT_INVALID", "upload_timeout_s")
@@ -1543,8 +1786,8 @@ def run_plan_run(args: argparse.Namespace) -> int:
                 f"at {up_floor_val} MB/s needs {projected_upload_s:.2f} s > upload timeout {upload_timeout_s} s",
             )
 
-        # 3. Output disk projection (Part 5; checked before wall allowance so a job that cannot
-        # physically fit on the VM disk refuses TRAIN_OUTPUT_DISK_LOW regardless of --wall-s)
+        # 3. Keep-all bundle breakdown + output disk projection (checked before wall allowance so a
+        # job that cannot physically fit on the VM disk refuses TRAIN_OUTPUT_DISK_LOW regardless of --wall-s)
         raw_out_ckpt_b, out_ckpt_src = _pick_setting(args.checkpoint_size_bytes, meta, "checkpoint_size_bytes")
         raw_opt_b, opt_src = _pick_setting(args.optimizer_size_bytes, meta, "optimizer_size_bytes")
         raw_overhead, overhead_src = _pick_setting(args.output_overhead_factor, meta, "copy_tar_overhead")
@@ -1554,7 +1797,24 @@ def run_plan_run(args: argparse.Namespace) -> int:
             raw_out_ckpt_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "checkpoint_size_bytes"
         )
         opt_size_b = _parse_int_setting(
-            raw_opt_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "optimizer_size_bytes", allow_zero=True
+            raw_opt_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "optimizer_size_bytes"
+        )
+        opt_provenance, _opt_prov_origin = _resolve_optimizer_size_provenance(
+            getattr(args, "optimizer_size_source", None), meta, is_real_job
+        )
+        samp_size_b = (
+            _parse_int_setting(
+                raw_samp_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "samples_and_logs_bytes", allow_zero=True
+            )
+            if raw_samp_b is not None
+            else 0
+        )
+        aux_size_b = (
+            _parse_int_setting(
+                raw_aux_b, "TRAIN_OUTPUT_PROJECTION_REQUIRED", "auxiliary_keep_all_bytes", allow_zero=True
+            )
+            if raw_aux_b is not None
+            else 0
         )
         if raw_overhead is None:
             overhead = DEFAULT_OUTPUT_COPY_TAR_OVERHEAD
@@ -1574,8 +1834,78 @@ def run_plan_run(args: argparse.Namespace) -> int:
             else DEFAULT_VM_DISK_BUDGET_GIB
         )
 
-        raw_output_bytes = ckpt_count * ckpt_size_b + opt_size_b
-        projected_output_bytes = math.ceil(raw_output_bytes * overhead)
+        checkpoints_total_b = ckpt_count * ckpt_size_b
+        full_bundle_bytes = checkpoints_total_b + opt_size_b + samp_size_b + aux_size_b
+        expected_bundle_bytes = full_bundle_bytes
+        download_part_count = max(1, math.ceil(full_bundle_bytes / download_chunk_bytes))
+        max_download_part_bytes = min(full_bundle_bytes, download_chunk_bytes)
+
+        bundle_projection = {
+            "formula": (
+                "expected_bundle_bytes = checkpoint_count * checkpoint_size_bytes "
+                "+ optimizer_size_bytes + samples_and_logs_bytes + auxiliary_keep_all_bytes"
+            ),
+            "keep_all_sources": {
+                "checkpoints": (
+                    f"{AI_TOOLKIT_PIN_REF} jobs/process/BaseSDTrainProcess.py:518-526,2727,2830 "
+                    "(live copy-off retains every saved step checkpoint plus final safetensors)"
+                ),
+                "optimizer_state": (
+                    f"{AI_TOOLKIT_PIN_REF} jobs/process/BaseSDTrainProcess.py:704-713 "
+                    "(single overwritten {name}/optimizer.pt)"
+                ),
+                "samples_logs_and_config": (
+                    f"{AI_TOOLKIT_PIN_REF} jobs/process/BaseSDTrainProcess.py:286, "
+                    "jobs/process/BaseTrainProcess.py:48-49,75-79, toolkit/logging_aitk.py:341-342"
+                ),
+                "auxiliary_keep_all": "lane3_rung.py copy-off underscore subdirectories (e.g. _latent_cache)",
+            },
+            "steps": steps,
+            "save_every": save_every,
+            "checkpoint_count": ckpt_count,
+            "checkpoint_size_bytes": ckpt_size_b,
+            "checkpoint_size_source": out_ckpt_src,
+            "checkpoints_bytes": checkpoints_total_b,
+            "optimizer_size_bytes": opt_size_b,
+            "optimizer_size_source": opt_src,
+            "optimizer_size_provenance": opt_provenance,
+            "optimizer_state_bytes": opt_size_b,
+            "samples_and_logs_bytes": samp_size_b,
+            "samples_and_logs_source": samp_b_src if raw_samp_b is not None else "default_zero",
+            "samples_logs_and_config_bytes": samp_size_b,
+            "auxiliary_keep_all_bytes": aux_size_b,
+            "auxiliary_keep_all_source": aux_b_src if raw_aux_b is not None else "default_zero",
+            "expected_bundle_bytes": full_bundle_bytes,
+            "download_chunk_bytes": download_chunk_bytes,
+            "part_count": download_part_count,
+            "max_part_bytes": max_download_part_bytes,
+        }
+        plan["bundle_projection"] = bundle_projection
+        plan["download_timeout_basis"].update({
+            "part_count": download_part_count,
+            "max_part_bytes": max_download_part_bytes,
+            "checkpoint_size_bytes": ckpt_size_b,
+            "checkpoint_size_source": out_ckpt_src,
+            "optimizer_size_bytes": opt_size_b,
+            "optimizer_size_source": opt_src,
+            "optimizer_size_provenance": opt_provenance,
+            "samples_and_logs_bytes": samp_size_b,
+            "samples_and_logs_source": samp_b_src if raw_samp_b is not None else "default_zero",
+            "auxiliary_keep_all_bytes": aux_size_b,
+            "auxiliary_keep_all_source": aux_b_src if raw_aux_b is not None else "default_zero",
+            "expected_bundle_bytes": full_bundle_bytes,
+            "keep_all_breakdown": {
+                "checkpoints_bytes": checkpoints_total_b,
+                "optimizer_state_bytes": opt_size_b,
+                "samples_logs_and_config_bytes": samp_size_b,
+                "auxiliary_keep_all_bytes": aux_size_b,
+            },
+        })
+
+        raw_output_bytes = full_bundle_bytes
+        split_copy_overhead = 1.0 if raw_output_bytes > download_chunk_bytes else 0.0
+        effective_overhead = round(overhead + split_copy_overhead, 6)
+        projected_output_bytes = math.ceil(raw_output_bytes * effective_overhead)
         vm_budget_bytes = int(vm_budget_gib * GIB)
         avail_for_output_bytes = vm_budget_bytes - expected_model_b
         disk_ok = projected_output_bytes <= avail_for_output_bytes
@@ -1587,8 +1917,17 @@ def run_plan_run(args: argparse.Namespace) -> int:
             "checkpoint_size_source": out_ckpt_src,
             "optimizer_size_bytes": opt_size_b,
             "optimizer_size_source": opt_src,
+            "optimizer_size_provenance": opt_provenance,
+            "samples_and_logs_bytes": samp_size_b,
+            "samples_and_logs_source": samp_b_src if raw_samp_b is not None else "default_zero",
+            "auxiliary_keep_all_bytes": aux_size_b,
+            "auxiliary_keep_all_source": aux_b_src if raw_aux_b is not None else "default_zero",
             "raw_output_bytes": raw_output_bytes,
-            "copy_tar_overhead": overhead,
+            "base_copy_tar_overhead": overhead,
+            "split_copy_overhead": split_copy_overhead,
+            "chunked_download_split_required": raw_output_bytes > download_chunk_bytes,
+            "download_chunk_bytes": download_chunk_bytes,
+            "copy_tar_overhead": effective_overhead,
             "overhead_source": overhead_src,
             "projected_output_bytes": projected_output_bytes,
             "expected_model_bytes": expected_model_b,
@@ -1602,7 +1941,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
             raise Refusal(
                 "TRAIN_OUTPUT_DISK_LOW",
                 f"projected output {projected_output_bytes} bytes "
-                f"(({ckpt_count} * {ckpt_size_b} + {opt_size_b}) * {overhead}) "
+                f"({raw_output_bytes} * {effective_overhead} [base {overhead} + split {split_copy_overhead}]) "
                 f"cannot fit within {avail_for_output_bytes} bytes "
                 f"(VM disk guard {vm_budget_gib} GiB minus model {expected_model_b} bytes)",
             )
@@ -1921,7 +2260,9 @@ def run_check_bundle_disk(
     return 0
 
 
-def verify_bundle_against_manifest(bundle_tar: Path) -> dict[str, Any]:
+def verify_bundle_against_manifest(
+    bundle_tar: Path, *, recovered_files: list[str] | None = None
+) -> dict[str, Any]:
     if not bundle_tar.is_file() or not tarfile.is_tarfile(bundle_tar):
         raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"downloaded bundle {bundle_tar} is missing or not a tar archive")
     member_map: dict[str, tarfile.TarInfo] = {}
@@ -1952,6 +2293,10 @@ def verify_bundle_against_manifest(bundle_tar: Path) -> dict[str, Any]:
 
         checked = 0
         total_bytes = 0
+        missing_files: list[str] = []
+        mismatched_files: list[str] = []
+        bad_entries: list[dict[str, Any]] = []
+        reasons: list[str] = []
         for entry in files:
             if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
                 raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"malformed manifest entry {entry!r}")
@@ -1961,13 +2306,34 @@ def verify_bundle_against_manifest(bundle_tar: Path) -> dict[str, Any]:
             tar_rel = f"rung_outputs/{rel_path}"
             m_info = member_map.get(tar_rel)
             if m_info is None:
-                raise Refusal(
-                    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
-                    f"missing training output in bundle: {tar_rel} (expected {exp_bytes} bytes, sha256={exp_sha})",
+                missing_files.append(rel_path)
+                bad_entries.append({
+                    "path": rel_path,
+                    "tar_path": tar_rel,
+                    "expected_bytes": exp_bytes,
+                    "expected_sha256": exp_sha,
+                    "actual_bytes": None,
+                    "actual_sha256": None,
+                    "reason": "missing",
+                })
+                reasons.append(
+                    f"missing training output in bundle: {tar_rel} (expected {exp_bytes} bytes, sha256={exp_sha})"
                 )
+                continue
             fh = tf.extractfile(m_info)
             if fh is None:
-                raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"unreadable bundle member {tar_rel}")
+                mismatched_files.append(rel_path)
+                bad_entries.append({
+                    "path": rel_path,
+                    "tar_path": tar_rel,
+                    "expected_bytes": exp_bytes,
+                    "expected_sha256": exp_sha,
+                    "actual_bytes": None,
+                    "actual_sha256": None,
+                    "reason": "unreadable",
+                })
+                reasons.append(f"unreadable bundle member {tar_rel}")
+                continue
             h = hashlib.sha256()
             got_bytes = 0
             with fh:
@@ -1976,26 +2342,65 @@ def verify_bundle_against_manifest(bundle_tar: Path) -> dict[str, Any]:
                     h.update(chunk)
             got_sha = h.hexdigest()
             if got_bytes != exp_bytes:
-                raise Refusal(
-                    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
-                    f"size mismatch for {tar_rel}: got {got_bytes} bytes, expected {exp_bytes} bytes",
-                )
+                mismatched_files.append(rel_path)
+                bad_entries.append({
+                    "path": rel_path,
+                    "tar_path": tar_rel,
+                    "expected_bytes": exp_bytes,
+                    "expected_sha256": exp_sha,
+                    "actual_bytes": got_bytes,
+                    "actual_sha256": got_sha,
+                    "reason": "size_mismatch",
+                })
+                reasons.append(f"size mismatch for {tar_rel}: got {got_bytes} bytes, expected {exp_bytes} bytes")
+                continue
             if got_sha != exp_sha:
-                raise Refusal(
-                    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
-                    f"sha256 mismatch for {tar_rel}: got {got_sha}, expected {exp_sha}",
-                )
+                mismatched_files.append(rel_path)
+                bad_entries.append({
+                    "path": rel_path,
+                    "tar_path": tar_rel,
+                    "expected_bytes": exp_bytes,
+                    "expected_sha256": exp_sha,
+                    "actual_bytes": got_bytes,
+                    "actual_sha256": got_sha,
+                    "reason": "sha256_mismatch",
+                })
+                reasons.append(f"sha256 mismatch for {tar_rel}: got {got_sha}, expected {exp_sha}")
+                continue
             checked += 1
             total_bytes += got_bytes
-    return {"ok": True, "checked_files": checked, "total_bytes": total_bytes}
+        if bad_entries:
+            raise Refusal(
+                "TRAIN_OUTPUT_MANIFEST_MISMATCH",
+                "; ".join(reasons),
+                missing_files=missing_files,
+                mismatched_files=mismatched_files,
+                bad_entries=bad_entries,
+                checked_files=checked,
+            )
+    ok_rec: dict[str, Any] = {"ok": True, "checked_files": checked, "total_bytes": total_bytes}
+    if recovered_files:
+        ok_rec["recovered_files"] = list(recovered_files)
+    return ok_rec
 
 
 def run_verify_bundle(args: argparse.Namespace) -> int:
     out_path = Path(args.out) if getattr(args, "out", None) else None
+    recovered = list(getattr(args, "recovered_file", None) or [])
     try:
-        rec = verify_bundle_against_manifest(Path(args.bundle_tar))
+        rec = verify_bundle_against_manifest(Path(args.bundle_tar), recovered_files=recovered)
     except Refusal as exc:
-        fail_rec = {"ok": False, "refusal_code": exc.code, "why": exc.detail}
+        fail_rec: dict[str, Any] = {
+            "ok": False,
+            "refusal_code": exc.code,
+            "why": exc.detail,
+            "checked_files": exc.checked_files,
+            "missing_files": exc.missing_files,
+            "mismatched_files": exc.mismatched_files,
+            "bad_entries": exc.bad_entries,
+        }
+        if recovered:
+            fail_rec["recovered_files"] = recovered
         if out_path is not None:
             write_json(out_path, fail_rec)
         print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
@@ -2003,6 +2408,95 @@ def run_verify_bundle(args: argparse.Namespace) -> int:
     if out_path is not None:
         write_json(out_path, rec)
     print("BUNDLE_MANIFEST_OK " + json.dumps(rec), flush=True)
+    return 0
+
+
+def repair_bundle_with_files(bundle_tar: Path, stage_dir: Path, rel_files: list[str]) -> dict[str, Any]:
+    """Merge refetched training-folder files from `stage_dir/<rel>` into `bundle_tar`'s `rung_outputs/`
+    and `rung_outputs/manifest.jsonl` (and refresh `train_facts.json` when present)."""
+    if not bundle_tar.is_file() or not tarfile.is_tarfile(bundle_tar):
+        raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"bundle {bundle_tar} is missing or not a tar archive")
+    extract_dir = bundle_tar.parent / f".sdlab_repair_{os.getpid()}_{int(time.time() * 1000)}"
+    tmp_tar = bundle_tar.with_suffix(bundle_tar.suffix + ".repaired.tmp")
+    extract_root = extract_dir.resolve()
+    repaired: list[str] = []
+    try:
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(bundle_tar, "r:gz") as tf:
+            for member in tf.getmembers():
+                rel = member.name.lstrip("/")
+                while rel.startswith("./"):
+                    rel = rel[2:]
+                if not rel or rel == ".":
+                    continue
+                parts = Path(rel).parts
+                if ".." in parts:
+                    raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"unsafe member path {member.name!r} in bundle")
+                target = (extract_dir / rel).resolve()
+                if extract_root not in target.parents and target != extract_root:
+                    raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"unsafe member target {member.name!r} in bundle")
+                if member.isdir():
+                    target.mkdir(parents=True, exist_ok=True)
+                elif member.isfile():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    src_fh = tf.extractfile(member)
+                    if src_fh is not None:
+                        with src_fh, target.open("wb") as out_fh:
+                            shutil.copyfileobj(src_fh, out_fh)
+
+        rung_dir = extract_dir / "rung_outputs"
+        rung_dir.mkdir(parents=True, exist_ok=True)
+        man_jsonl = rung_dir / "manifest.jsonl"
+        for rel_path in rel_files:
+            clean_rel = rel_path.strip().lstrip("/")
+            if not clean_rel or ".." in Path(clean_rel).parts:
+                raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"invalid repair path {rel_path!r}")
+            staged = stage_dir / clean_rel
+            if not staged.is_file():
+                raise Refusal("TRAIN_OUTPUT_MANIFEST_MISMATCH", f"staged repair file missing: {staged}")
+            dst = rung_dir / clean_rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(staged, dst)
+            size = dst.stat().st_size
+            sha = sha256_file(dst)
+            is_partial = (
+                dst.suffix == ".safetensors"
+                and not _is_underscore_subpath(clean_rel)
+                and not safetensors_complete(dst)
+            )
+            man_line = {
+                "path": clean_rel,
+                "bytes": size,
+                "sha256": sha,
+                "partial": is_partial,
+                "recovered_by_refetch": True,
+            }
+            with man_jsonl.open("a", encoding="utf-8", newline="\n") as fh:
+                fh.write(json.dumps(man_line) + "\n")
+            repaired.append(clean_rel)
+
+        if (extract_dir / "train_facts.json").is_file():
+            run_finish(argparse.Namespace(lane3_out=str(extract_dir), failed_rc=None))
+
+        tmp_tar.unlink(missing_ok=True)
+        with tarfile.open(tmp_tar, "w:gz") as out_tf:
+            out_tf.add(str(extract_dir), arcname=".")
+        os.replace(tmp_tar, bundle_tar)
+    finally:
+        tmp_tar.unlink(missing_ok=True)
+        shutil.rmtree(extract_dir, ignore_errors=True)
+    return {"ok": True, "repaired_files": repaired}
+
+
+def run_repair_bundle(args: argparse.Namespace) -> int:
+    try:
+        rec = repair_bundle_with_files(
+            Path(args.bundle_tar), Path(args.stage_dir), list(getattr(args, "rel_file", None) or [])
+        )
+    except Refusal as exc:
+        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
+        return 1
+    print("BUNDLE_REPAIRED " + json.dumps(rec), flush=True)
     return 0
 
 
@@ -2250,6 +2744,7 @@ def build_parser() -> argparse.ArgumentParser:
     pr = sub.add_parser("plan-run")
     pr.add_argument("--job-plan", required=True)
     pr.add_argument("--is-real-job", default="0")
+    pr.add_argument("--optimizer-size-source", default=None)
     pr.add_argument("--explicit-download-timeout-s", default="")
     pr.add_argument("--download-timeout-source", default="default")
     pr.add_argument("--default-download-timeout-s", default="300")
@@ -2271,6 +2766,7 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--checkpoint-size-bytes", default=None)
     pr.add_argument("--optimizer-size-bytes", default=None)
     pr.add_argument("--samples-and-logs-bytes", default=None)
+    pr.add_argument("--auxiliary-keep-all-bytes", default=None)
     pr.add_argument("--output-overhead-factor", default=None)
     pr.add_argument("--expected-model-bytes", default=None)
     pr.add_argument("--vm-disk-budget-gib", default=None)
@@ -2309,6 +2805,12 @@ def build_parser() -> argparse.ArgumentParser:
     vb = sub.add_parser("verify-bundle")
     vb.add_argument("--bundle-tar", required=True)
     vb.add_argument("--out", default=None)
+    vb.add_argument("--recovered-file", action="append", default=[])
+
+    rb = sub.add_parser("repair-bundle")
+    rb.add_argument("--bundle-tar", required=True)
+    rb.add_argument("--stage-dir", required=True)
+    rb.add_argument("--rel-file", action="append", default=[])
 
     mc = sub.add_parser("model-check")
     mc.add_argument("--repo", required=True)
@@ -2322,6 +2824,19 @@ def build_parser() -> argparse.ArgumentParser:
     bn.add_argument("--content", required=True)
     bn.add_argument("--rc", required=True, type=int)
     bn.add_argument("--settle-s", default=2.0, type=float)
+
+    ddb = sub.add_parser("dry-download-bounds")
+    ddb.add_argument("--job-yaml", required=True)
+    ddb.add_argument("--is-real-job", default="0")
+    ddb.add_argument("--explicit-download-timeout-s", default="")
+    ddb.add_argument("--download-timeout-source", default="default")
+    ddb.add_argument("--default-download-timeout-s", default="300")
+    ddb.add_argument("--download-chunk-bytes", default=None)
+    ddb.add_argument("--download-floor-mb-s", default=None)
+    ddb.add_argument("--checkpoint-size-bytes", default=None)
+    ddb.add_argument("--optimizer-size-bytes", default=None)
+    ddb.add_argument("--samples-and-logs-bytes", default=None)
+    ddb.add_argument("--auxiliary-keep-all-bytes", default=None)
 
     f = sub.add_parser("finish")
     f.add_argument("--lane3-out", required=True)
@@ -2337,12 +2852,14 @@ def main(argv: list[str] | None = None) -> int:
         "dataset": run_dataset,
         "check-job": run_check_job,
         "plan-run": run_plan_run,
+        "dry-download-bounds": run_dry_download_bounds,
         "render-job": run_render_job,
         "copy-off": run_copy_off,
         "check-output-disk": run_check_output_disk,
         "write-train-manifest": run_write_train_manifest,
         "check-bundle-disk": run_check_bundle_disk,
         "verify-bundle": run_verify_bundle,
+        "repair-bundle": run_repair_bundle,
         "finish": run_finish,
         "model-check": run_model_check,
         "bundle-now": run_bundle_now,
