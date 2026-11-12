@@ -50,15 +50,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="fdc56bf1f74d4d4c1f63647f3b5961d6793fd83ed45ecbc898136b01a24a5a0d"
+PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="564f2bafcaf1a904114c69cf401bf74803e4536d073c9692720c75a84b23a6c9"
+PINNED_COLAB_WINDOW_SHA="5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187"
 PINNED_LANE3_RUNG_SHA="8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad"
 PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="1a29b5f1947c376154385171306799ae7cdc7ddf51cdb24c7622ffb256897808"
+PINNED_SELF_SHA="b54dbb9a55709dcada27b80e89ab8ec8441677da39565654530df8dfa04c8163"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -773,8 +773,8 @@ lane3_translate_wsl_path() {
 }
 
 # lane3_upload_max_bytes <local-wheels-json> <wheel-dir> <dataset-archive-or-dir> [other files...]: the size in
-# bytes of the largest file this window uploads (a directory counts as the sum of its files, an upper bound of
-# the dataset tar), so the cap gate can price the VM-side chunked-upload reassembly exec (COLAB_UPLOAD_MAX_BYTES).
+# bytes of the largest file this window uploads (a directory counts as the sum of its files, a LOWER bound of
+# the dataset tar: tar headers and padding add to it), so the cap gate can price the VM-side chunked-upload reassembly exec (COLAB_UPLOAD_MAX_BYTES).
 lane3_upload_max_bytes() {
   "${PY_BIN}" -c '
 import json, os, sys

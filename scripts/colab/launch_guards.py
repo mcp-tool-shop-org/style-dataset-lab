@@ -1222,10 +1222,11 @@ def prepare_single_content_download(
     _unlink_dl_prefix_files(root, prefix)
 
     free_b = _dl_split_free_bytes(root, free_bytes_override)
-    if free_b < size:
+    headroom = 16 * 1024 * 1024
+    if free_b < size + headroom:
         why = (
-            f"/content/{rel} ({size} bytes > chunk_bytes={chunk_bytes}) needs {size} free bytes on "
-            f"{root} for the VM split copy, but only {free_b} bytes are free"
+            f"/content/{rel} ({size} bytes > chunk_bytes={chunk_bytes}) needs {size} free bytes plus "
+            f"{headroom} bytes of headroom on {root} for the VM split copy, but only {free_b} bytes are free"
         )
         rec = {
             "rel": rel,

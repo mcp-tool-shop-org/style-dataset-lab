@@ -291,16 +291,16 @@ def test_download_split_refuses_low_disk_before_any_part_is_written(tmp_path: Pa
     root.mkdir()
     data = os.urandom(300)
     (root / "big.tar.gz").write_bytes(data)
-    # `free_b < size` is the whole check: one byte short refuses, exactly `size` bytes free goes ahead.
-    rec = lg.prepare_single_content_download(root, "big.tar.gz", 100, free_bytes_override=len(data) - 1)
+    # `free_b < size + 16 MiB` is the whole check: one byte short of the headroom refuses, exactly size + 16 MiB free goes ahead.
+    rec = lg.prepare_single_content_download(root, "big.tar.gz", 100, free_bytes_override=len(data) + 16 * 1024 * 1024 - 1)
     assert rec["split_failed"] is True and rec["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
-    assert rec["free_bytes"] == len(data) - 1 and rec["whole_bytes"] == len(data)
-    assert "only 299 bytes are free" in rec["why"]
+    assert rec["free_bytes"] == len(data) + 16 * 1024 * 1024 - 1 and rec["whole_bytes"] == len(data)
+    assert f"only {len(data) + 16 * 1024 * 1024 - 1} bytes are free" in rec["why"] and "16777216 bytes of headroom" in rec["why"]
     assert not [p for p in root.iterdir() if p.name.startswith(".sdlab_dl_")]
     printed = json.loads(capsys.readouterr().out.split("SDLAB_DOWNLOAD_PREPARE_JSON ", 1)[1])
     assert printed["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
 
-    ok = lg.prepare_single_content_download(root, "big.tar.gz", 100, free_bytes_override=len(data), emit=False)
+    ok = lg.prepare_single_content_download(root, "big.tar.gz", 100, free_bytes_override=len(data) + 16 * 1024 * 1024, emit=False)
     assert ok["split"] is True and ok["part_count"] == 3 and "split_failed" not in ok
     manifest = json.loads((root / Path(ok["manifest_remote"]).name).read_text(encoding="utf-8"))
     assert manifest["whole_sha256"] == _sha(data) == ok["whole_sha256"]
@@ -353,12 +353,12 @@ def test_prepare_content_downloads_skips_non_bundles_and_reports_each_bundle(
     (root / "b.tar.gz").write_bytes(b"b" * 250)
     (root / ".sdlab_dl_old.tar.gz").write_bytes(b"x")
     (root / "notes.txt").write_text("hi", encoding="utf-8")
-    recs = lg.prepare_content_downloads(root, 100, free_bytes_override=10_000)
+    recs = lg.prepare_content_downloads(root, 100, free_bytes_override=16 * 1024 * 1024 + 10_000)
     assert [r["rel"] for r in recs] == ["a.tar.gz", "b.tar.gz"]
     assert recs[0]["split"] is False and recs[1]["part_count"] == 3
     out = capsys.readouterr().out
     assert out.strip().splitlines()[-1] == "SDLAB_DOWNLOAD_PREPARE_DONE chunk_bytes=100"
-    quiet = lg.prepare_content_downloads(root, 100, free_bytes_override=10_000, emit=False)
+    quiet = lg.prepare_content_downloads(root, 100, free_bytes_override=16 * 1024 * 1024 + 10_000, emit=False)
     assert len(quiet) == 2 and capsys.readouterr().out == ""
 
 

@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "564f2bafcaf1a904114c69cf401bf74803e4536d073c9692720c75a84b23a6c9",
+          "hash": "5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -18459,32 +18459,32 @@
             {
               "in": "prepare_single_content_download",
               "kind": "raise",
-              "line": 1266
+              "line": 1267
             },
             {
               "in": "prepare_single_content_download",
               "kind": "except",
-              "line": 1305
+              "line": 1306
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 1489
+              "line": 1490
             },
             {
               "kind": "raise",
-              "line": 1603
+              "line": 1604
             }
           ],
-          "hash": "fdc56bf1f74d4d4c1f63647f3b5961d6793fd83ed45ecbc898136b01a24a5a0d",
+          "hash": "61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "8a0d36262271d497b6b0a515ebbe031b11f685ac01e59b9e761fb2bf3a6eae94",
+          "hash": "f4c7fe1b598000effca15274336d9d2f23335d5f52ddfda3008e2cee71043184",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "662f5cb6e7f1f230b43a8c233505553d6d3ffca4330d2f2d7082d164973e31a3",
+          "hash": "012587c44ac1401c2252c04660a25284fb011cf9430568ea31bad89e2f57fb78",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -18524,7 +18524,7 @@
           "path": "scripts/colab/preflight_resolve.sh"
         },
         {
-          "hash": "0e17d5d6d78282719ff8c1a175afd5023fd6009ee8afb08eb9ad3119d267355b",
+          "hash": "3a6ffc3d7b0c9f74c86a3bd68c4b5962f488468616395e4d6549edbec8988bab",
           "path": "scripts/colab/probe_upload_limit.sh"
         },
         {
@@ -20203,7 +20203,7 @@
         "node --test",
         "pytest"
       ],
-      "testedBy": 31,
+      "testedBy": 32,
       "unresolvedSites": 0
     },
     {
@@ -20933,7 +20933,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "895ccca7b6ad443ccce63df37a989012be218622a51e39e04f4a4d6c4062407e",
+          "hash": "ac1a67a41acf18ac67568cc93dc1a587cb725abd2000bab9ba43c1aeb736e39d",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -20997,10 +20997,11 @@
             "test_n5_download_prep_has_single_source_in_launch_guards_without_copy_drift",
             "test_part_failing_its_own_check_is_not_kept_but_the_verified_parts_before_it_are",
             "test_probe_upload_limit_sweeps_both_directions_stops_at_first_500_and_stops_session",
+            "test_refetch_partial_dir_is_named_after_the_training_file_not_the_temp_file",
             "test_salvage_deadline_counts_the_split_manifest_fetch_and_every_5xx_retry",
             "test_salvage_path_uses_chunked_download_above_chunk_size"
           ],
-          "hash": "62821d38f1f40b622845580d784922f7e8bdf5ca429e2a849ee3b4fbed52fe5f",
+          "hash": "fb060eea957df5970efc259aa595f6d91f11015922e3ae209a69b020a104f602",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_bundle_now.py",
@@ -21201,6 +21202,7 @@
             "test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls",
             "test_expected_repo_bytes_uses_the_listing",
             "test_failed_download_prints_no_token_into_exec_history",
+            "test_failed_early_stop_is_not_recorded_as_stopped_and_the_exit_trap_stops_the_session",
             "test_failed_normal_download_still_salvages_bundle",
             "test_final_sweep_recopies_a_partial_file",
             "test_finish_gathers_records_and_marks_a_failed_run",
@@ -21294,7 +21296,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "a7133c8cbd7227684275984f5d9b7b774d327c7234173ba52d7aab0eaed0b36b",
+          "hash": "237c9aa3c76312f933f3799b97cdfbafc912421cbf8df78916752f1357e63d98",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -21313,6 +21315,35 @@
             "scripts/colab/classify_install_log.py"
           ],
           "path": "tests/colab/test_lane3_gpu_rung.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_download_prep_missing_single_and_prefix_helpers",
+            "test_download_split_enospc_mid_split_unlinks_partial_parts_and_reports_named_code",
+            "test_download_split_refuses_low_disk_before_any_part_is_written",
+            "test_optimizer_size_provenance_must_read_measured_or_estimate",
+            "test_prepare_content_downloads_skips_non_bundles_and_reports_each_bundle",
+            "test_remote_runner_runs_script_and_prepares_downloads_or_refuses_without_one",
+            "test_remote_runner_scrubs_tokens_resolves_bash_and_loads_launch_guards",
+            "test_repair_bundle_refuses_by_name_and_leaves_the_bundle_untouched",
+            "test_repair_bundle_splices_verified_files_updates_manifest_and_verifies",
+            "test_split_free_bytes_override_fake_site_env_and_real_disk",
+            "test_verify_bundle_names_missing_size_and_sha_mismatches_and_recovered_files",
+            "test_verify_bundle_ok_records_recovered_files_and_malformed_manifests_refuse"
+          ],
+          "hash": "e657df1b86417dcd015bd747830fa676d1f8b2f6db0c8058c8c30712f917138d",
+          "importOrder": [
+            "scripts/colab/launch_guards.py",
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/remote_runner.py"
+          ],
+          "importsFiles": [
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/launch_guards.py",
+            "scripts/colab/remote_runner.py"
+          ],
+          "path": "tests/colab/test_lane3_inprocess_fix3.py",
           "testFramework": "pytest"
         },
         {
@@ -22642,7 +22673,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 127
+          "files": 128
         },
         {
           "boundary": "lib",
@@ -22943,7 +22974,7 @@
         },
         {
           "coverage": true,
-          "files": 22,
+          "files": 23,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -23600,8 +23631,8 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "310232f4b39aab15ca994fcc3b6c7c7be3287cb8",
-    "tracked": 3311
+    "commit": "2d3c4705dc4728b05ac1ba2d86f0611075aaeafb",
+    "tracked": 3312
   },
   "landings": [
     {
@@ -26600,7 +26631,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 137,
+  "testFiles": 138,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

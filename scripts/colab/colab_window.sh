@@ -1224,14 +1224,17 @@ if sys.argv[2]:
 # `<out_dir>/salvage_partial/<mode>_<name>[_n]/` with `arrived_parts_receipt.json`, then remove the
 # temp directory. A part that failed its own check is not kept (it was never verified).
 _colab_keep_arrived_parts() {
-  "$1" - "$2" "$3" "$4" "$5" "$6" << 'PYEOF'
-import json, pathlib, shutil, sys
+  "$1" - "$2" "$3" "$4" "$5" "$6" "${7:-}" << 'PYEOF'
+import json, pathlib, re, shutil, sys
 
 tmp_dir = pathlib.Path(sys.argv[1])
 out_dir = pathlib.Path(sys.argv[2])
 receipt_p = pathlib.Path(sys.argv[3])
 mode = sys.argv[4]
 dst_name = pathlib.Path(sys.argv[5]).name
+if mode == "refetch" and sys.argv[6]:
+    # a refetch writes to a temp file (cand_N.bin): name the directory after the training file instead
+    dst_name = re.sub(r"[^A-Za-z0-9._-]", "_", sys.argv[6].removeprefix("/content/lane3_train/"))
 kept = []
 try:
     rec = json.loads(receipt_p.read_text(encoding="utf-8")) if receipt_p.is_file() else {}
@@ -1777,7 +1780,7 @@ with pathlib.Path(sys.argv[5]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
 ' "${receipt_file}" "${total_retries}" "${p_idx}" "${p_http}" "${receipt_jsonl}" | tr -d '\r'
       )
-      _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}"
+      _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}" "${src}"
       rm -f "${dst}"
       if [ "${mode}" = "normal" ]; then
         colab_refuse_logged "${out_dir}" DOWNLOAD_PART_FAILED "${src} -> ${dst} part ${p_num}/${prep_part_count}: colab download rc=${p_rc} http=${p_http} attempts=${p_attempts} arrived_parts=[${arrived_csv}] (CLI output in colab.log; verified parts kept in ${out_dir}/salvage_partial)"
@@ -1815,7 +1818,7 @@ with pathlib.Path(sys.argv[4]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
 ' "${receipt_file}" "${total_retries}" "${p_idx}" "${receipt_jsonl}"
       rm -f "${tmp_dl_dir}/part.$(printf '%04d' "${p_idx}")"
-      _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}"
+      _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}" "${src}"
       rm -f "${dst}"
       if [ "${mode}" = "normal" ]; then
         colab_refuse_logged "${out_dir}" DOWNLOAD_SHA_MISMATCH "${src} -> ${dst} part ${p_num}/${prep_part_count}: local sha256=${got_p_sha} (bytes=${got_p_bytes}) != VM manifest sha256=${p_exp_sha} (bytes=${p_exp_bytes})"
@@ -1892,7 +1895,7 @@ p.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
 with pathlib.Path(sys.argv[3]).open("a", encoding="utf-8", newline="\n") as fh:
     fh.write(json.dumps(rec) + "\n")
 ' "${receipt_file}" "${reassembled_sha}" "${receipt_jsonl}"
-    _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}"
+    _colab_keep_arrived_parts "${py_bin}" "${tmp_dl_dir}" "${out_dir}" "${receipt_file}" "${mode}" "${dst}" "${src}"
     if [ "${mode}" = "normal" ]; then
       colab_refuse_logged "${out_dir}" DOWNLOAD_SHA_MISMATCH "${src} -> ${dst}: reassembled sha256=${reassembled_sha} != VM manifest sha256=${prep_whole_sha}:${prep_whole_bytes}"
     fi
@@ -2335,7 +2338,15 @@ colab_stop_session_early() {
   printf '1\n' > "${out_dir}/stop_reached.txt"
   echo "STOP_EARLY_BEFORE_RIG_REPAIR session=${session}" | tee -a "${out_dir}/guards.log" >&2
   colab_stop_and_log_closing "${py_bin}" "${session}" "${out_dir}"
-  printf '1\n' > "${out_dir}/stopped_early.txt"
+  # `colab_stop_and_log_closing` never fails, so confirm the stop from its own record. Only a confirmed stop
+  # leaves `stopped_early.txt` (which tells the EXIT trap not to stop again). An unconfirmed one leaves the
+  # trap to make its own bounded attempts, and withdraws `stop_reached.txt` so the wall watcher stays armed.
+  if grep -F "STOP_COMPLETED" "${out_dir}/stop.log" 2>/dev/null | grep -Fq "session=${session}"; then
+    printf '1\n' > "${out_dir}/stopped_early.txt"
+  else
+    rm -f "${out_dir}/stopped_early.txt" "${out_dir}/stop_reached.txt"
+    echo "STOP_EARLY_UNCONFIRMED session=${session}: the EXIT trap will stop the session" | tee -a "${out_dir}/guards.log" >&2
+  fi
 }
 
 # colab_repair_recovered_bundle <py_bin> <rung_py> <bundle_tar> <out_dir>: after the session has

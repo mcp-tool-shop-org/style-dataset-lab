@@ -989,3 +989,24 @@ def test_in_flight_bound_counts_the_reassembly_exec_and_the_prep_exec(tmp_path: 
         'echo "${COLAB_REASSEMBLE_BOUND_S} ${COLAB_IN_FLIGHT_BOUND_S}"',
     )
     assert res.stdout.split() == ["900", "910"]
+
+
+def test_refetch_partial_dir_is_named_after_the_training_file_not_the_temp_file(tmp_path: Path) -> None:
+    # fix4 note 1: a refetch writes to cand_N.bin; its kept parts go to a directory named for the training file.
+    _, _, env = fc.make_fake_colab_env(tmp_path)
+    out_dir = tmp_path / "out"
+    tmp_dl = out_dir / ".sdlab_dl_tmp_1_2"
+    tmp_dl.mkdir(parents=True)
+    (tmp_dl / "part.0000").write_bytes(b"verified")
+    (tmp_dl / "manifest.json").write_text("{}", encoding="utf-8")
+    receipt = out_dir / ".refetch_last_download.json"
+    receipt.write_text(json.dumps({"arrived_parts": [0], "status": "part_failed"}), encoding="utf-8")
+    res = _window_fn(
+        env,
+        f'_colab_keep_arrived_parts python3 "{_p(tmp_dl)}" "{_p(out_dir)}" "{_p(receipt)}" refetch '
+        f'"{_p(out_dir / "refetch_cand_0.bin")}" "/content/lane3_train/rustline v5/optimizer.pt"',
+    )
+    assert res.returncode == 0, res.stderr
+    kept = out_dir / "salvage_partial" / "refetch_rustline_v5_optimizer.pt"
+    assert sorted(p.name for p in kept.iterdir()) == ["arrived_parts_receipt.json", "part.0000", "vm_split_manifest.json"]
+    assert not tmp_dl.exists()

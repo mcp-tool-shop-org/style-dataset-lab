@@ -1552,6 +1552,10 @@ def main(argv: list[str] | None = None) -> int:
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ONCE") == "ignore_term")
         if os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") in ("1", "ignore_term"):
             _hang_process(state_dir, os.environ.get("FAKE_COLAB_STOP_HANG_ALWAYS") == "ignore_term")
+        fail_first = os.environ.get("FAKE_COLAB_STOP_FAIL_FIRST", "").strip()
+        if fail_first.isdigit() and stop_cnt <= int(fail_first):
+            sys.stderr.write("colab stop failed (injected)\n")
+            return 1
         if os.environ.get("FAKE_COLAB_STOP_DELAY_S"):
             time.sleep(float(os.environ["FAKE_COLAB_STOP_DELAY_S"]))
         with (state_dir / "stops.log").open("a", encoding="utf-8", newline="\n") as fh:

@@ -5036,3 +5036,30 @@ def test_job_must_state_where_optimizer_size_bytes_came_from(tmp_path: Path) -> 
     assert plan["download_timeout_basis"]["optimizer_size_provenance"] == want
     assert plan["output_disk_projection"]["optimizer_size_provenance"] == want
     assert plan["bundle_projection"]["optimizer_size_bytes"] == 2000
+
+
+def test_failed_early_stop_is_not_recorded_as_stopped_and_the_exit_trap_stops_the_session(tmp_path: Path) -> None:
+    # fix4 B1: `colab stop` fails on both early-stop attempts. At 2d3c4705 colab_stop_session_early wrote
+    # stopped_early.txt anyway (colab_window.sh:2338), the EXIT trap then skipped its own stop, and the VM kept
+    # billing. Now only a confirmed STOP_COMPLETED leaves the marker; here the trap makes the third attempt.
+    state, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_DROP_TRAIN_SOURCE_FILE": "rustline_style_v5/optimizer.pt",
+        "FAKE_COLAB_STOP_FAIL_FIRST": "2",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "5",
+    })
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    stop_log = (out_dir / "stop.log").read_text(encoding="utf-8")
+    assert "STOP_EARLY_UNCONFIRMED" in guards and "STOP_EARLY_UNCONFIRMED" in res.stderr
+    assert stop_log.count("STOP_FAILED") == 2 and stop_log.count("STOP_COMPLETED") == 1
+    assert stop_log.index("STOP_FAILED") < stop_log.index("STOP_COMPLETED")
+    calls = (state / "calls.log").read_text(encoding="utf-8").splitlines()
+    assert sum(1 for ln in calls if ln.startswith("CALL stop")) == 3
+    assert (state / "stops.log").read_text(encoding="utf-8").count("STOP -s sdlab-l3-gpu-rung") == 1
+    assert not (state / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+    assert not (out_dir / "stopped_early.txt").exists()
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["stopped_before_rig_repair"] is False
+    assert (out_dir / "stop_reached.txt").exists(), "the trap's own stop ran"
