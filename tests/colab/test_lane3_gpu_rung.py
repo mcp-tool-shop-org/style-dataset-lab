@@ -4291,6 +4291,7 @@ def test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches(
     for bad_yaml in (
         "# only comment\n",
         "\tjob: extension\n",
+        "  \tjob: extension\n",
         "a: 1\n  b: 2\n",
         "not_a_kv_line\n",
         "- item1\n- item2\n",

@@ -972,7 +972,7 @@ def parse_job_yaml(text: str, template_path: Path = Path("<job.yaml>")) -> dict[
     lines: list[tuple[int, str, int]] = []
     for lno, raw in enumerate(text.splitlines(), start=1):
         clean = raw.rstrip("\r")
-        stripped = clean.lstrip(" ")
+        stripped = clean.lstrip(" \t")
         if "\t" in clean[: len(clean) - len(stripped)]:
             raise Refusal("JOB_TEMPLATE_INVALID", f"{template_path}:{lno}: tabs are not valid YAML indentation")
         if not stripped or stripped.startswith("#"):
