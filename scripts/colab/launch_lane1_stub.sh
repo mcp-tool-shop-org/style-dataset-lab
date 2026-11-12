@@ -34,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
-PINNED_REMOTE_RUNNER_SHA="393929ed704ccbacaee2b590010e348a5d635cbdd70361209d3e0103d1fba6eb"
-PINNED_COLAB_WINDOW_SHA="db761fb414da915c8835bad8ef1544992e39aa5b3d636a1d81d17d231f26e974"
-PINNED_SELF_SHA="2138d73dc803e5ad463fbec5189bbb477c3a96bde23384c4f9eef97bee7454c5"
+PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
+PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
+PINNED_COLAB_WINDOW_SHA="5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187"
+PINNED_SELF_SHA="cec067c4035dae56878139c6b2e74e4f0229da9e2168c037abdb24f1b4932462"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -56,6 +56,8 @@ SHAPE=""
 MIN_RUNTIME_S=""
 DOWNLOAD_TIMEOUT_S_ARG=""
 UPLOAD_TIMEOUT_S_ARG=""
+UPLOAD_REASSEMBLE_TIMEOUT_S_ARG=""
+UPLOAD_REASSEMBLE_MB_S_ARG=""
 UPLOAD_CHUNK_BYTES_ARG=""
 DOWNLOAD_CHUNK_BYTES_ARG=""
 DRY_RUN=0
@@ -74,6 +76,8 @@ while [ "$#" -gt 0 ]; do
     --min-runtime-s) MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-timeout-s) DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-timeout-s) UPLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-reassemble-timeout-s) UPLOAD_REASSEMBLE_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-reassemble-mb-s) UPLOAD_REASSEMBLE_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-chunk-bytes) UPLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-chunk-bytes) DOWNLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --dry) DRY_RUN=1; shift ;;
@@ -86,6 +90,7 @@ done
 
 colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
+colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
 
@@ -146,6 +151,8 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
   SDLAB_TEST_NEW_TIMEOUT_S
   SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_REASSEMBLE_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_REASSEMBLE_MB_S
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S

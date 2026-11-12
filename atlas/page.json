@@ -75,7 +75,7 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
+      "added": 1,
       "changed": 8,
       "moved": 0,
       "parts": 2,
@@ -84,42 +84,42 @@
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-11; 8 files changed content.",
+        "sentence": "Nothing structural changed since 2026-11-12; 1 file added and 8 changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "b58b97351107c66f7a9892bd4c09426665215cfa",
-      "generatedAt": "2026-11-11T22:47:46.714Z"
+      "commit": "310232f4b39aab15ca994fcc3b6c7c7be3287cb8",
+      "generatedAt": "2026-11-12T19:46:09.088Z"
     },
     "unchanged": true
   },
   "changesTogether": [
     {
-      "a": "tests/colab/fixtures/fake_colab.py",
-      "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 15,
+      "a": "scripts/colab/lane3_rung.py",
+      "b": "tests/colab/test_lane3_gpu_rung.py",
+      "either": 12,
       "partLabels": [
-        "tests",
+        "scripts",
         "tests"
       ],
       "parts": [
-        "tests",
+        "scripts",
         "tests"
       ],
-      "relation": "inside",
-      "shared": 8
+      "relation": "b-imports-a",
+      "shared": 6
     }
   ],
   "changesTogetherNote": [
     "1 file changed together with its own test, as expected.",
     "Confidence is low: fewer than 25 source files reach 10 revisions in the window.",
-    "Window: 180 days; a pair counts from 3 shared commits, since 2 source files reach 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 4 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "fc64dbeada4edc2de016c0eea58ef4e552aad3f1",
+  "commit": "2d3c4705dc4728b05ac1ba2d86f0611075aaeafb",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (59), shell (9), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (61), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -144,7 +144,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 126
+          "files": 128
         },
         {
           "boundary": "lib",
@@ -189,7 +189,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 34,
-      "runsMore": 121,
+      "runsMore": 123,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -456,12 +456,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-12T02:06:29.997Z",
+  "generatedAt": "2026-11-12T20:27:17.378Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
-    "43 writes and 73 reads use paths built at run time and are not named here.",
+    "44 writes and 74 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "162 writes and 311 reads go to a path their caller passes, not to this repository.",
+    "164 writes and 314 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -742,14 +742,14 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 136,
+  "testFiles": 138,
   "testedBy": {
     "bin": 11,
     "lib": 98,
-    "scripts": 30
+    "scripts": 32
   },
   "testedCodeParts": 3,
-  "unnamedWrites": 43,
+  "unnamedWrites": 44,
   "unread": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",

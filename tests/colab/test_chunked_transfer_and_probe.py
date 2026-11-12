@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COLAB_DIR = REPO_ROOT / "scripts" / "colab"
 WINDOW_SH = COLAB_DIR / "colab_window.sh"
@@ -256,8 +258,10 @@ def test_chunked_download_over_chunk_size_retries_500_once_verifies_sha_and_clea
     assert hashlib.sha256(rig_bundle.read_bytes()).hexdigest() == want_sha
     assert rig_bundle.stat().st_size > 131_072
 
-    leftover_dl = [p.name for p in (state / "content").iterdir() if p.name.startswith(".sdlab_dl_")]
-    assert leftover_dl == [], leftover_dl
+    # N4 bullet 3: no post-download VM `cleanup_dl.py` exec is run (`colab stop` wipes `/content`).
+    calls_log = (state / "calls.log").read_text(encoding="utf-8")
+    assert "cleanup_dl.py" not in calls_log
+    assert "SDLAB_DL_PREFIX=" not in calls_log
 
     guards = (out_dir / "guards.log").read_text(encoding="utf-8")
     assert "DOWNLOAD_PART_RETRY" in guards and "http=500" in guards
@@ -416,6 +420,7 @@ def test_chunk_size_validation_and_per_part_plan_run_timeouts(tmp_path: Path) ->
                 "seconds_per_step": 1.0,
                 "checkpoint_size_bytes": 200_000_000,
                 "optimizer_size_bytes": 100_000_000,
+                "optimizer_size_source": "estimate: fixture value, no run behind it",
                 "samples_and_logs_bytes": 50_000_000,
                 "copy_tar_overhead": 2.0,
                 "expected_model_bytes": 1_000_000_000,
@@ -427,8 +432,8 @@ def test_chunk_size_validation_and_per_part_plan_run_timeouts(tmp_path: Path) ->
     archive.write_bytes(b"a" * 200_000)  # 200 KB total -> 4 parts of 50 KB under --upload-chunk-bytes 50000
 
     # At 0.001 MB/s (1000 B/s), whole archive would take 200 s, but each 50 KB part takes 50 s <= 60 s!
-    # Expected bundle = 2 * 200 MB + 50 MB = 450 MB; under 150 MB download chunks (3 parts), each part
-    # at 10 MB/s takes ceil(150 MB / 10 MB/s) = 15 s (whereas unchunked would need 45 s).
+    # Expected keep-all bundle = 2 * 200 MB + 100 MB optimizer + 50 MB samples/logs = 550 MB;
+    # under 150 MB download chunks (4 parts), each part at 10 MB/s takes ceil(150 MB / 10 MB/s) = 15 s.
     out_plan = tmp_path / "run_plan.json"
     rc_ok = lr.main([
         "plan-run",
@@ -453,11 +458,12 @@ def test_chunk_size_validation_and_per_part_plan_run_timeouts(tmp_path: Path) ->
     assert rc_ok == 0
     plan = json.loads(out_plan.read_text(encoding="utf-8"))
     assert plan["download_timeout_s"] == 15
-    assert plan["download_timeout_basis"]["part_count"] == 3
+    assert plan["bundle_projection"]["expected_bundle_bytes"] == 550_000_000
+    assert plan["download_timeout_basis"]["part_count"] == 4
     assert plan["upload_timeout_check"]["part_count"] == 4
     assert plan["upload_timeout_check"]["projected_upload_seconds"] == 50.0
     assert plan["upload_timeout_check"]["projected_total_upload_seconds"] == 200.0
-    assert plan["wall_allowance"]["fetch_allowance_s"] == 45  # 3 parts * 15 s/part
+    assert plan["wall_allowance"]["fetch_allowance_s"] == 60  # 4 parts * 15 s/part
 
     # Lowering per-part upload timeout to 40 s (< 50 s/part) refuses UPLOAD_TIMEOUT_TOO_SHORT.
     rc_short = lr.main([
@@ -653,3 +659,354 @@ def test_in_process_remote_download_prep_salvage_and_single_download_sha_guards(
     bd_m = json.loads((out_m / "bundle_download.json").read_text(encoding="utf-8"))
     assert bd_m["retries"] == 1 and bd_m["verified"] is True
 
+
+def test_n4_big_archive_upload_reassembly_scales_with_size_and_rate_where_old_bound_times_out(
+    tmp_path: Path,
+) -> None:
+    """N4 bullet 1: VM reassembly exec scales by file size and rate (or explicit setting) instead of
+    the per-part `upload_timeout` (120 s at df9a1b3b `colab_window.sh:938` / `:1014`).
+    """
+    payload = os.urandom(600_000)
+    src_archive = tmp_path / "big_dataset.tar"
+    src_archive.write_bytes(payload)
+
+    # 1. Invalid reassembly flags refuse UPLOAD_TIMEOUT_INVALID before any colab call.
+    _, state_bad, env_bad = fc.make_fake_colab_env(tmp_path / "bad_reass")
+    res_bad_t = _run(
+        [_bash(), _p(LANE1_SH), "--upload-reassemble-timeout-s", "0", "--out-dir", _p(tmp_path / "bad_t")],
+        env_bad,
+    )
+    assert res_bad_t.returncode == 2 and "REFUSED: UPLOAD_TIMEOUT_INVALID:" in res_bad_t.stderr
+    res_bad_r = _run(
+        [_bash(), _p(LANE1_SH), "--upload-reassemble-mb-s", "0", "--out-dir", _p(tmp_path / "bad_r")],
+        env_bad,
+    )
+    assert res_bad_r.returncode == 2 and "REFUSED: UPLOAD_TIMEOUT_INVALID:" in res_bad_r.stderr
+    assert not (state_bad / "calls.log").exists()
+
+    # 2. Per-part upload timeout is 2 s, while VM reassembly takes 3.2 s (`FAKE_VM_UPLOAD_REASSEMBLE_SLEEP_S=3.2`).
+    # At 0.1 MB/s (`COLAB_UPLOAD_REASSEMBLE_MB_S=0.1`), 600,000 B budgets `ceil(600000 / 100000) + 30 = 36 s`
+    # (whereas at df9a1b3b `colab_window.sh:1014` bounded reassembly by `upload_timeout = 2 s` and timed out).
+    _, state_ok, env_ok = fc.make_fake_colab_env(tmp_path / "reass_ok")
+    env_ok.update({
+        "COLAB_UPLOAD_CHUNK_BYTES": "200000",
+        "COLAB_UPLOAD_TIMEOUT_S": "2",
+        "COLAB_UPLOAD_REASSEMBLE_MB_S": "0.1",
+        "COLAB_KILL_GRACE_S": "1",
+        "FAKE_VM_UPLOAD_REASSEMBLE_SLEEP_S": "3.2",
+    })
+    out_ok = tmp_path / "reass_ok" / "out"
+    out_ok.mkdir()
+    res_ok = _window_fn(
+        env_ok,
+        f'export COLAB_KILL_GRACE_S=1 && '
+        f'colab_configure_upload_timeout "" && '
+        f'colab_configure_upload_reassemble_timeout "" "0.1" && '
+        f'colab_upload_checked s1 "{_p(src_archive)}" /content/big_dataset.tar "{_p(out_ok)}"',
+    )
+    assert res_ok.returncode == 0, res_ok.stdout + res_ok.stderr
+    assert hashlib.sha256((state_ok / "content" / "big_dataset.tar").read_bytes()).hexdigest() == hashlib.sha256(
+        payload
+    ).hexdigest()
+    up_rec = json.loads((out_ok / "upload_receipts.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    assert up_rec["ok"] is True
+    assert up_rec["part_count"] == 3
+    assert up_rec["reassemble_timeout_s"] == 36
+    assert up_rec["reassemble_timeout_source"] == "size_and_rate"
+    assert up_rec["reassemble_mb_s"] == 0.1
+
+    # 3. Forcing an explicit reassemble bound of 1 s (`--upload-reassemble-timeout-s 1`) proves timeout is named.
+    _, _, env_to = fc.make_fake_colab_env(tmp_path / "reass_to")
+    env_to.update({
+        "COLAB_UPLOAD_CHUNK_BYTES": "200000",
+        "COLAB_UPLOAD_TIMEOUT_S": "2",
+        "COLAB_KILL_GRACE_S": "1",
+        "FAKE_VM_UPLOAD_REASSEMBLE_SLEEP_S": "3.0",
+    })
+    out_to = tmp_path / "reass_to" / "out"
+    out_to.mkdir()
+    res_to = _window_fn(
+        env_to,
+        f'export COLAB_KILL_GRACE_S=1 && '
+        f'colab_configure_upload_timeout "" && '
+        f'colab_configure_upload_reassemble_timeout "1" "" && '
+        f'colab_upload_checked s1 "{_p(src_archive)}" /content/big_dataset.tar "{_p(out_to)}"',
+    )
+    assert res_to.returncode != 0
+    assert "REFUSED: UPLOAD_PART_FAILED:" in res_to.stderr
+    assert "UPLOAD_TIMEOUT" in (out_to / "guards.log").read_text(encoding="utf-8")
+    assert "step=reassemble timeout_s=1" in (out_to / "guards.log").read_text(encoding="utf-8")
+
+
+def test_n4_download_split_out_of_disk_refuses_named_code_without_single_get_fallthrough(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """N4 bullet 2: running out of disk during VM download split refuses `DOWNLOAD_SPLIT_DISK_LOW`
+    cleanly without crashing into a single `colab download` GET (which happened at df9a1b3b
+    `colab_window.sh:1399-1400`).
+    """
+    big_blob = os.urandom(90_000)
+
+    # Case A: Pre-split free-disk check (`FAKE_VM_DL_SPLIT_FREE_BYTES=40000 < 90000 + 16 MiB`) via
+    # standalone `prepare_download.py` exec (`colab_download_checked` with no prior `vitals.log`).
+    _, state_a, env_a = fc.make_fake_colab_env(tmp_path / "split_pre_low")
+    env_a["COLAB_DOWNLOAD_CHUNK_BYTES"] = "32768"
+    env_a["FAKE_VM_DL_SPLIT_FREE_BYTES"] = "40000"
+    (state_a / "content" / "huge_bundle.tar.gz").write_bytes(big_blob)
+    out_a = tmp_path / "split_pre_low" / "out"
+    out_a.mkdir()
+    res_a = _window_fn(
+        env_a,
+        f'colab_download_checked s1 /content/huge_bundle.tar.gz "{_p(out_a / "huge_bundle.tar.gz")}" "{_p(out_a)}"',
+    )
+    assert res_a.returncode != 0
+    assert "REFUSED: DOWNLOAD_SPLIT_DISK_LOW:" in res_a.stderr
+    assert not (out_a / "huge_bundle.tar.gz").exists()
+    calls_a = (state_a / "calls.log").read_text(encoding="utf-8")
+    assert "CALL download " not in calls_a, f"must never fall through to single GET: {calls_a}"
+    bd_a = json.loads((out_a / "bundle_download.json").read_text(encoding="utf-8"))
+    assert bd_a["status"] == "split_disk_low" and bd_a["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
+
+    # Case B: Mid-split `OSError(errno.ENOSPC)` on part 1 (`FAKE_VM_DL_SPLIT_ENOSPC_ON_PART=1`) during
+    # `remote_runner.py` pre-split (`vitals.log` carries `SDLAB_DOWNLOAD_PREPARE_JSON`), verifying
+    # partial `.sdlab_dl_*` files are unlinked and `colab_download_checked` refuses `DOWNLOAD_SPLIT_DISK_LOW`
+    # with zero `colab download` calls.
+    _, state_b, env_b = fc.make_fake_colab_env(tmp_path / "split_mid_enospc")
+    env_b["COLAB_DOWNLOAD_CHUNK_BYTES"] = "32768"
+    env_b["FAKE_VM_DL_SPLIT_ENOSPC_ON_PART"] = "1"
+    content_b = state_b / "content"
+    (content_b / "lane3_stub_bundle.tar.gz").write_bytes(big_blob)
+    out_b = tmp_path / "split_mid_enospc" / "out"
+    out_b.mkdir()
+    monkeypatch.setenv("FAKE_VM_SITE", "1")
+    monkeypatch.setenv("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART", "1")
+    recs_b = rr.prepare_content_downloads(content_b, 32_768)
+    monkeypatch.delenv("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART", raising=False)
+    monkeypatch.delenv("FAKE_VM_SITE", raising=False)
+    assert len(recs_b) == 1 and recs_b[0]["split_failed"] is True
+    assert recs_b[0]["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
+    assert [p.name for p in content_b.iterdir() if p.name.startswith(".sdlab_dl_")] == []
+    (out_b / "vitals.log").write_text(
+        "SDLAB_DOWNLOAD_PREPARE_JSON " + json.dumps(recs_b[0]) + "\nSDLAB_DOWNLOAD_PREPARE_DONE chunk_bytes=32768\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    res_b = _window_fn(
+        env_b,
+        f'colab_download_checked s1 /content/lane3_stub_bundle.tar.gz "{_p(out_b / "lane3_stub_bundle.tar.gz")}" "{_p(out_b)}"',
+    )
+    assert res_b.returncode != 0
+    assert "REFUSED: DOWNLOAD_SPLIT_DISK_LOW:" in res_b.stderr
+    assert not (state_b / "calls.log").exists()
+
+
+def test_n5_download_prep_has_single_source_in_launch_guards_without_copy_drift(tmp_path: Path) -> None:
+    """N5: download-prep logic lives in one source (`launch_guards.py` `# >>> sdlab-download-prep`),
+    with `remote_runner.py`, `lane3_bundle_now.py`, and `colab_window.sh` delegating to it instead of
+    duplicating split implementations (which existed at df9a1b3b `remote_runner.py:29-121`,
+    `lane3_bundle_now.py:27-119`, and `colab_window.sh:1087-1196`).
+    """
+    import launch_guards as lg
+
+    guards_src = (COLAB_DIR / "launch_guards.py").read_text(encoding="utf-8")
+    rr_src = (COLAB_DIR / "remote_runner.py").read_text(encoding="utf-8")
+    bn_src = (COLAB_DIR / "lane3_bundle_now.py").read_text(encoding="utf-8")
+    win_src = (COLAB_DIR / "colab_window.sh").read_text(encoding="utf-8")
+
+    assert "# >>> sdlab-download-prep" in guards_src and "# <<< sdlab-download-prep" in guards_src
+    # Neither `remote_runner.py` nor `lane3_bundle_now.py` carries its own `.part.%04d` writer or manifest writer,
+    # and `colab_window.sh` carries zero `.sdlab_dl_` download-split or `SDLAB_DOWNLOAD_PREPARE_JSON` emitter code
+    # (its single `.part.{idx:04d}` occurrence is rig-side upload splitting `.sdlab_up_`).
+    for other_name, other_src in (
+        ("remote_runner.py", rr_src),
+        ("lane3_bundle_now.py", bn_src),
+    ):
+        assert ".part.{idx:04d}" not in other_src, f"{other_name} still duplicates download split code"
+        assert "manifest_payload = {" not in other_src, f"{other_name} still duplicates manifest writer"
+    assert 'f".sdlab_dl_{' not in win_src, "colab_window.sh still duplicates download split prefix writer"
+    assert 'print("SDLAB_DOWNLOAD_PREPARE_JSON "' not in win_src, "colab_window.sh still duplicates download prep emitter"
+    assert win_src.count(".part.{idx:04d}") == 1, "colab_window.sh must only have rig-side upload part writer"
+
+    # Verify `_colab_write_download_prepare_py` emits the exact `launch_guards.py` block and runs without `__file__`.
+    _, _, env = fc.make_fake_colab_env(tmp_path / "prep_emit")
+    emitted_py = tmp_path / "emitted_prepare.py"
+    res = _window_fn(env, f'_colab_write_download_prepare_py "{_p(emitted_py)}"')
+    assert res.returncode == 0, res.stderr
+    emitted_text = emitted_py.read_text(encoding="utf-8")
+    start_m = "# >>> sdlab-download-prep"
+    end_m = "# <<< sdlab-download-prep"
+    expected_block = guards_src[guards_src.index(start_m) : guards_src.index(end_m) + len(end_m)]
+    assert emitted_text.startswith(expected_block)
+    assert "__file__" not in emitted_text
+    assert lg.prepare_content_downloads is not None
+
+
+def test_failed_salvage_part_keeps_every_arrived_part_with_a_receipt_and_deletes_nothing_verified(
+    tmp_path: Path,
+) -> None:
+    # fix3 Part 2: part 2 of a 3-part salvage fails (HTTP 500 on every attempt). Parts 0 and 1 had arrived and
+    # verified, so they are moved into <out_dir>/salvage_partial/ with the arrived-parts receipt and the VM's
+    # split manifest, never deleted. At 310232f4 the failure path ran `rm -rf "${tmp_dl_dir}"`
+    # (colab_window.sh:1703) and the verified bytes were gone.
+    _, state, env = fc.make_fake_colab_env(tmp_path)
+    env["COLAB_DOWNLOAD_CHUNK_BYTES"] = "65536"
+    env["FAKE_COLAB_DOWNLOAD_HTTP_500_FOR"] = ".part.0002"
+    lane3_out = state / "content" / "lane3_out"
+    (lane3_out / "rung_outputs").mkdir(parents=True)
+    (lane3_out / "rung_outputs" / "ckpt_blob.bin").write_bytes(os.urandom(160_000))
+    shutil.copyfile(COLAB_DIR / "launch_guards.py", state / "content" / "launch_guards.py")
+    shutil.copyfile(COLAB_DIR / "lane3_rung.py", state / "content" / "lane3_rung.py")
+
+    out_dir = tmp_path / "out_salvage_partial"
+    out_dir.mkdir()
+    dst = out_dir / "lane3_stub_bundle.tar.gz"
+    res = _window_fn(
+        env,
+        f'colab_salvage_bundle_after_failure s1 "{_p(COLAB_DIR / "lane3_bundle_now.py")}" '
+        f'/content/lane3_stub_bundle.tar.gz "{_p(dst)}" "{_p(out_dir)}" 143',
+    )
+    assert res.returncode == 0, res.stderr
+    assert not dst.exists()
+    assert "BUNDLE_AFTER_FAILURE: none on the VM" in (out_dir / "guards.log").read_text(encoding="utf-8")
+
+    kept_dirs = sorted((out_dir / "salvage_partial").iterdir())
+    assert [d.name for d in kept_dirs] == ["salvage_lane3_stub_bundle.tar.gz"]
+    kept = kept_dirs[0]
+    receipt = json.loads((kept / "arrived_parts_receipt.json").read_text(encoding="utf-8"))
+    assert receipt["status"] == "part_failed" and receipt["failed_part"] == 2
+    assert receipt["arrived_parts"] == [0, 1]
+    assert sorted(receipt["kept_files"]) == ["part.0000", "part.0001", "vm_split_manifest.json"]
+    vm_manifest = json.loads((kept / "vm_split_manifest.json").read_text(encoding="utf-8"))
+    assert vm_manifest["whole_sha256"] == receipt["whole_sha256_expected"]
+    for detail in receipt["arrived_part_details"]:
+        blob = (kept / f"part.{detail['index']:04d}").read_bytes()
+        assert len(blob) == detail["bytes"] == 65536
+        assert hashlib.sha256(blob).hexdigest() == detail["sha256"] == vm_manifest["parts"][detail["index"]]["sha256"]
+    assert not (kept / "part.0002").exists()
+    assert not [d for d in out_dir.iterdir() if d.name.startswith(".sdlab_dl_tmp_")], "no temp directory left behind"
+    sbd = json.loads((out_dir / "salvage_bundle_download.json").read_text(encoding="utf-8"))
+    assert sbd["arrived_parts"] == [0, 1] and sbd["status"] == "part_failed"
+
+    # A second failed salvage into the same out dir keeps its parts in a new directory (nothing is overwritten).
+    res2 = _window_fn(
+        env,
+        f'colab_salvage_bundle_after_failure s1 "{_p(COLAB_DIR / "lane3_bundle_now.py")}" '
+        f'/content/lane3_stub_bundle.tar.gz "{_p(dst)}" "{_p(out_dir)}" 143',
+    )
+    assert res2.returncode == 0, res2.stderr
+    assert sorted(d.name for d in (out_dir / "salvage_partial").iterdir()) == [
+        "salvage_lane3_stub_bundle.tar.gz",
+        "salvage_lane3_stub_bundle.tar.gz_2",
+    ]
+
+
+def test_part_failing_its_own_check_is_not_kept_but_the_verified_parts_before_it_are(tmp_path: Path) -> None:
+    # fix3 Part 2: a corrupted part 1 (sha mismatch) is not verified bytes and is dropped; verified part 0 stays.
+    _, state, env = fc.make_fake_colab_env(tmp_path)
+    env["COLAB_DOWNLOAD_CHUNK_BYTES"] = "65536"
+    env["FAKE_COLAB_CORRUPT_DOWNLOAD_FOR"] = ".part.0001"
+    (state / "content" / "b.tar.gz").write_bytes(os.urandom(65536 * 2 + 5000))
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    res = _window_fn(env, f'colab_download_checked s1 /content/b.tar.gz "{_p(out_dir / "b.tar.gz")}" "{_p(out_dir)}"')
+    assert res.returncode != 0 and "REFUSED: DOWNLOAD_SHA_MISMATCH:" in res.stderr
+    kept = out_dir / "salvage_partial" / "normal_b.tar.gz"
+    assert sorted(p.name for p in kept.iterdir()) == ["arrived_parts_receipt.json", "part.0000", "vm_split_manifest.json"]
+    assert json.loads((kept / "arrived_parts_receipt.json").read_text(encoding="utf-8"))["arrived_parts"] == [0]
+    assert not (out_dir / "b.tar.gz").exists()
+
+
+def _bounds(env: dict[str, str], setup: str) -> dict[str, int]:
+    res = _window_fn(
+        env,
+        setup + '\ncolab_compute_cleanup_bounds train\n'
+        'echo "salvage_deadline=${SALVAGE_DEADLINE_S} in_flight=${COLAB_IN_FLIGHT_BOUND_S} '
+        'reassemble=${COLAB_REASSEMBLE_BOUND_S} prep=${COLAB_PREP_EXEC_BOUND_S} '
+        'stop_by=${COLAB_CLEANUP_STOP_ATTEMPTED_BY_S} cleanup=${COLAB_CLEANUP_BOUND_S}"',
+    )
+    assert res.returncode == 0, res.stderr
+    line = res.stdout.strip().splitlines()[-1]
+    return {k: int(v) for k, v in (kv.split("=") for kv in line.split())}
+
+
+def test_salvage_deadline_counts_the_split_manifest_fetch_and_every_5xx_retry(tmp_path: Path) -> None:
+    # fix3 Part 4. A one-part bundle is one GET. A multi-part salvage also fetches the VM's split manifest and each
+    # part, and every one of those steps may be retried once on HTTP 5xx: 2 + 2 * parts download steps. At
+    # 310232f4 (colab_window.sh:155-157) the deadline counted only `parts` steps.
+    _, _, env = fc.make_fake_colab_env(tmp_path)
+    env.pop("COLAB_UPLOAD_MAX_BYTES", None)
+    step = 300 + 10  # download timeout + kill grace
+    one = _bounds(env, 'colab_configure_download_timeout "" "" 1')
+    assert one["salvage_deadline"] == (180 + 10) + (330 + 10) + 1 * step == 840
+    assert one["cleanup"] == one["in_flight"] + 840 + 2 * (60 + 10) == 1290
+    four = _bounds(env, 'colab_configure_download_timeout "" "" 4')
+    assert four["salvage_deadline"] == (180 + 10) + (330 + 10) + (2 + 2 * 4) * step == 3630
+    assert four["cleanup"] == four["in_flight"] + 3630 + 2 * (60 + 10) == 4080
+    two = _bounds(env, 'colab_configure_download_timeout "" "" 2')
+    assert two["salvage_deadline"] == (180 + 10) + (330 + 10) + 6 * step == 2390
+    # The window.json figures come from the same formula.
+    res = _window_fn(
+        env,
+        'colab_configure_download_timeout "" "" 4; colab_compute_cleanup_bounds train; '
+        'echo "${COLAB_SALVAGE_DOWNLOAD_PARTS} ${SALVAGE_DEADLINE_S}"',
+    )
+    assert res.stdout.split() == ["4", "3630"]
+
+
+def test_in_flight_bound_counts_the_reassembly_exec_and_the_prep_exec(tmp_path: Path) -> None:
+    # fix3 Part 4. The cap gate's in-flight step is the longest single bounded step a guard trip can interrupt. It now
+    # includes the VM download-prepare exec (min(download timeout, 180 s)) and the VM upload-reassembly exec (an
+    # explicit timeout, or max(upload timeout, ceil(max bytes / (MB/s * 1e6)) + 30)). At 310232f4
+    # (colab_window.sh:360-367) neither was counted.
+    _, _, env = fc.make_fake_colab_env(tmp_path)
+    for k in ("COLAB_UPLOAD_MAX_BYTES", "COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S", "COLAB_UPLOAD_REASSEMBLE_MB_S"):
+        env.pop(k, None)
+    plain = _bounds(env, "")
+    assert plain["reassemble"] == 0 and plain["prep"] == 180 and plain["in_flight"] == 300 + 10
+    # An explicit reassembly timeout counts when an upload can chunk (largest upload unknown, or above the chunk size).
+    explicit = _bounds(env, "export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S=900")
+    assert explicit["reassemble"] == 900 and explicit["in_flight"] == 900 + 10
+    assert explicit["stop_by"] == explicit["in_flight"] + (180 + 10) + (330 + 10) + (300 + 10)
+    big = _bounds(env, "export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S=900 COLAB_UPLOAD_MAX_BYTES=100000000")
+    assert big["reassemble"] == 900
+    # ...and not when the largest upload fits one request.
+    small = _bounds(env, "export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S=900 COLAB_UPLOAD_MAX_BYTES=1000")
+    assert small["reassemble"] == 0 and small["in_flight"] == 300 + 10
+    # Size and rate: 40 GB at 25 MB/s is 1600 s, plus 30 s; never below the upload timeout.
+    sized = _bounds(env, "export COLAB_UPLOAD_MAX_BYTES=40000000000")
+    assert sized["reassemble"] == 1630 and sized["in_flight"] == 1640
+    rated = _bounds(env, "export COLAB_UPLOAD_MAX_BYTES=40000000000 COLAB_UPLOAD_REASSEMBLE_MB_S=100")
+    assert rated["reassemble"] == 430
+    floor = _bounds(env, "export COLAB_UPLOAD_MAX_BYTES=100000000")
+    assert floor["reassemble"] == 120, "100 MB at 25 MB/s is 34 s: floored at the 120 s upload timeout"
+    # The prep exec is min(download timeout, 180): a short download timeout shortens it too.
+    short = _bounds(env, 'export COLAB_DOWNLOAD_TIMEOUT_S=100 COLAB_UPLOAD_TIMEOUT_S=50 COLAB_SESSIONS_TIMEOUT_S=20')
+    assert short["prep"] == 100 and short["in_flight"] == 100 + 10
+    # window.json uses the exported figure, so the dry record, the gate and window.json agree.
+    res = _window_fn(
+        env,
+        "export COLAB_UPLOAD_REASSEMBLE_TIMEOUT_S=900; colab_compute_cleanup_bounds train; "
+        'echo "${COLAB_REASSEMBLE_BOUND_S} ${COLAB_IN_FLIGHT_BOUND_S}"',
+    )
+    assert res.stdout.split() == ["900", "910"]
+
+
+def test_refetch_partial_dir_is_named_after_the_training_file_not_the_temp_file(tmp_path: Path) -> None:
+    # fix4 note 1: a refetch writes to cand_N.bin; its kept parts go to a directory named for the training file.
+    _, _, env = fc.make_fake_colab_env(tmp_path)
+    out_dir = tmp_path / "out"
+    tmp_dl = out_dir / ".sdlab_dl_tmp_1_2"
+    tmp_dl.mkdir(parents=True)
+    (tmp_dl / "part.0000").write_bytes(b"verified")
+    (tmp_dl / "manifest.json").write_text("{}", encoding="utf-8")
+    receipt = out_dir / ".refetch_last_download.json"
+    receipt.write_text(json.dumps({"arrived_parts": [0], "status": "part_failed"}), encoding="utf-8")
+    res = _window_fn(
+        env,
+        f'_colab_keep_arrived_parts python3 "{_p(tmp_dl)}" "{_p(out_dir)}" "{_p(receipt)}" refetch '
+        f'"{_p(out_dir / "refetch_cand_0.bin")}" "/content/lane3_train/rustline v5/optimizer.pt"',
+    )
+    assert res.returncode == 0, res.stderr
+    kept = out_dir / "salvage_partial" / "refetch_rustline_v5_optimizer.pt"
+    assert sorted(p.name for p in kept.iterdir()) == ["arrived_parts_receipt.json", "part.0000", "vm_split_manifest.json"]
+    assert not tmp_dl.exists()

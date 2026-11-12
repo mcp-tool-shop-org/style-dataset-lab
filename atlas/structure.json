@@ -16279,10 +16279,10 @@
       "unresolvedSites": 0
     },
     {
-      "dynamicReads": 12,
+      "dynamicReads": 13,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 21,
+      "dynamicWrites": 22,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -17252,11 +17252,11 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "b7ab63248172a7f0add1cd5ac5012e364e94a94bc060d98a590edb9760bcd5fa",
+          "hash": "2405c626785f243d041f44042ec36b0cc6896b82686a7a6998a5ea770db67c21",
           "path": "scripts/colab/README.md"
         },
         {
-          "hash": "e683108836655b0a76527c80866cb504004cc8604157770a5a74ebe399c4f18b",
+          "hash": "da77f1deb42c3f9340be64f8e032da027752ce547ee30047ccc0b7b892634661",
           "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
         },
         {
@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "244f2f542a292408b165faa4c4b77935d4f6532bd97a7575694b2efa92a35b4f",
+          "hash": "5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17503,11 +17503,11 @@
           "path": "scripts/colab/lane3/rung-dataset.json"
         },
         {
-          "hash": "36feb953ffd87cfc2f1a69206b1820a51912f7faeccbdd1a5948edd0a8b6869d",
+          "hash": "05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7",
           "path": "scripts/colab/lane3/rung-qwen-image-500.yaml"
         },
         {
-          "hash": "f4774e926c5edd7d4defa67beeca0f17599cd20d143710726a8718f2a77e9533",
+          "hash": "11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1",
           "path": "scripts/colab/lane3/rung-qwen-image.yaml"
         },
         {
@@ -17603,12 +17603,16 @@
           "exports": [
             "bundle_now"
           ],
-          "hash": "06db15826c9c5f229dbbab24ad405606723ae0fde4d911e464bf29c6c04db3f0",
+          "hash": "e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d",
+          "importsFiles": [
+            "scripts/colab/launch_guards.py"
+          ],
           "path": "scripts/colab/lane3_bundle_now.py"
         },
         {
           "exports": [
             "build_parser",
+            "build_training_folder_manifest",
             "check_model_api",
             "classify_hub_error",
             "copy_off_once",
@@ -17625,407 +17629,748 @@
             "measure_shm",
             "normalize_sha256",
             "pack_dataset_archive",
+            "parse_job_yaml",
             "parse_meminfo",
             "parse_positive_number",
             "pid_alive",
             "query_driver",
             "read_json",
             "refuse_line",
+            "repair_bundle_with_files",
             "repo_cache_dir",
             "run_bundle_now",
+            "run_check_bundle_disk",
             "run_check_job",
+            "run_check_output_disk",
             "run_checkpoint",
             "run_copy_off",
             "run_dataset",
             "run_download",
+            "run_dry_download_bounds",
             "run_finish",
             "run_guards",
             "run_model_check",
+            "run_plan_run",
             "run_render_job",
+            "run_repair_bundle",
+            "run_verify_bundle",
+            "run_write_train_manifest",
             "rung_pids",
             "safetensors_complete",
             "sha256_file",
             "unpack_and_verify_dataset_archive",
+            "validate_job_semantics",
             "validate_job_template",
+            "verify_bundle_against_manifest",
             "write_json"
           ],
           "failurePaths": [
             {
               "in": "safetensors_complete",
               "kind": "except",
-              "line": 91
+              "line": 156
             },
             {
               "in": "parse_positive_number",
               "kind": "raise",
-              "line": 124
+              "line": 202
             },
             {
               "in": "parse_positive_number",
               "kind": "except",
-              "line": 127
+              "line": 205
             },
             {
               "in": "parse_positive_number",
               "kind": "raise",
-              "line": 128
+              "line": 206
             },
             {
               "in": "parse_positive_number",
               "kind": "raise",
-              "line": 130
+              "line": 208
             },
             {
               "in": "measure_shm",
               "kind": "except",
-              "line": 193
+              "line": 271
             },
             {
               "in": "query_driver",
               "kind": "except",
-              "line": 209
+              "line": 287
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 236
+              "line": 314
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 254
+              "line": 332
             },
             {
               "in": "gpu_smoke",
               "kind": "raise",
-              "line": 266
+              "line": 344
             },
             {
               "in": "run_guards",
               "kind": "except",
-              "line": 280
+              "line": 358
             },
             {
               "in": "run_guards",
               "kind": "except",
-              "line": 288
+              "line": 366
             },
             {
               "in": "dir_bytes",
               "kind": "except",
-              "line": 346
+              "line": 424
             },
             {
               "in": "redirect_request",
               "kind": "raise",
-              "line": 398
+              "line": 476
             },
             {
               "in": "check_model_api",
               "kind": "except",
-              "line": 405
+              "line": 483
             },
             {
               "in": "check_model_api",
               "kind": "except",
-              "line": 409
+              "line": 487
             },
             {
               "in": "check_model_api",
               "kind": "raise",
-              "line": 412
+              "line": 490
             },
             {
               "in": "check_model_api",
               "kind": "raise",
-              "line": 415
+              "line": 493
             },
             {
               "in": "check_model_api",
               "kind": "raise",
-              "line": 416
+              "line": 494
             },
             {
               "in": "check_model_api",
               "kind": "except",
-              "line": 417
+              "line": 495
             },
             {
               "in": "check_model_api",
               "kind": "raise",
-              "line": 418
+              "line": 496
             },
             {
               "in": "check_model_api",
               "kind": "raise",
-              "line": 420
+              "line": 498
             },
             {
               "in": "run_model_check",
               "kind": "except",
-              "line": 429
+              "line": 507
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 485
+              "line": 563
             },
             {
               "in": "run_download",
               "kind": "raise",
-              "line": 487
+              "line": 565
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 488
+              "line": 566
             },
             {
               "in": "run_download",
               "kind": "except",
-              "line": 500
+              "line": 578
             },
             {
               "in": "normalize_sha256",
               "kind": "raise",
-              "line": 591
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 597
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 600
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 605
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 610
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 614
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 616
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 618
-            },
-            {
-              "in": "_validate_manifest_items",
-              "kind": "raise",
-              "line": 620
-            },
-            {
-              "in": "unpack_and_verify_dataset_archive",
-              "kind": "raise",
-              "line": 648
-            },
-            {
-              "in": "unpack_and_verify_dataset_archive",
-              "kind": "raise",
-              "line": 652
-            },
-            {
-              "in": "unpack_and_verify_dataset_archive",
-              "kind": "raise",
-              "line": 661
-            },
-            {
-              "in": "unpack_and_verify_dataset_archive",
-              "kind": "raise",
-              "line": 665
-            },
-            {
-              "in": "unpack_and_verify_dataset_archive",
-              "kind": "raise",
               "line": 669
             },
             {
-              "in": "unpack_and_verify_dataset_archive",
-              "kind": "except",
-              "line": 672
-            },
-            {
-              "in": "unpack_and_verify_dataset_archive",
+              "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 673
+              "line": 675
             },
             {
-              "in": "unpack_and_verify_dataset_archive",
+              "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 677
+              "line": 678
             },
             {
-              "in": "unpack_and_verify_dataset_archive",
+              "in": "_validate_manifest_items",
               "kind": "raise",
-              "line": 680
+              "line": 683
             },
             {
-              "in": "run_dataset",
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 688
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 692
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 694
+            },
+            {
+              "in": "_validate_manifest_items",
+              "kind": "raise",
+              "line": 696
+            },
+            {
+              "in": "_validate_manifest_items",
               "kind": "raise",
               "line": 698
             },
             {
-              "in": "run_dataset",
-              "kind": "raise",
-              "line": 703
-            },
-            {
-              "in": "run_dataset",
-              "kind": "except",
-              "line": 706
-            },
-            {
-              "in": "run_dataset",
-              "kind": "raise",
-              "line": 707
-            },
-            {
-              "in": "run_dataset",
-              "kind": "raise",
-              "line": 712
-            },
-            {
-              "in": "run_dataset",
-              "kind": "raise",
-              "line": 720
-            },
-            {
-              "in": "run_dataset",
+              "in": "unpack_and_verify_dataset_archive",
               "kind": "raise",
               "line": 726
             },
             {
-              "in": "run_dataset",
+              "in": "unpack_and_verify_dataset_archive",
               "kind": "raise",
-              "line": 729
+              "line": 730
             },
             {
-              "in": "run_dataset",
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 739
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 743
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 747
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
               "kind": "except",
-              "line": 746
+              "line": 750
             },
             {
-              "in": "validate_job_template",
+              "in": "unpack_and_verify_dataset_archive",
               "kind": "raise",
-              "line": 756
+              "line": 751
             },
             {
-              "in": "validate_job_template",
+              "in": "unpack_and_verify_dataset_archive",
+              "kind": "raise",
+              "line": 755
+            },
+            {
+              "in": "unpack_and_verify_dataset_archive",
               "kind": "raise",
               "line": 758
             },
             {
-              "in": "validate_job_template",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 768
+              "line": 776
             },
             {
-              "in": "validate_job_template",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 772
+              "line": 781
             },
             {
-              "in": "run_check_job",
-              "kind": "raise",
+              "in": "run_dataset",
+              "kind": "except",
               "line": 784
             },
             {
-              "in": "run_check_job",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 789
+              "line": 785
             },
             {
-              "in": "run_check_job",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 791
+              "line": 790
             },
             {
-              "in": "run_check_job",
-              "kind": "except",
-              "line": 794
-            },
-            {
-              "in": "run_render_job",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 806
+              "line": 798
             },
             {
-              "in": "run_render_job",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 811
+              "line": 804
             },
             {
-              "in": "run_render_job",
+              "in": "run_dataset",
               "kind": "raise",
-              "line": 822
+              "line": 807
             },
             {
-              "in": "run_render_job",
+              "in": "run_dataset",
               "kind": "except",
               "line": 824
             },
             {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 834
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 836
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 846
+            },
+            {
+              "in": "validate_job_template",
+              "kind": "raise",
+              "line": 850
+            },
+            {
+              "in": "_parse_yaml_scalar",
+              "kind": "except",
+              "line": 963
+            },
+            {
+              "in": "parse_job_yaml",
+              "kind": "raise",
+              "line": 996
+            },
+            {
+              "in": "parse_job_yaml",
+              "kind": "raise",
+              "line": 1002
+            },
+            {
+              "in": "_parse_mapping",
+              "kind": "raise",
+              "line": 1063
+            },
+            {
+              "in": "_parse_mapping",
+              "kind": "raise",
+              "line": 1068
+            },
+            {
+              "in": "parse_job_yaml",
+              "kind": "raise",
+              "line": 1106
+            },
+            {
+              "in": "parse_job_yaml",
+              "kind": "raise",
+              "line": 1108
+            },
+            {
+              "in": "_require_allowed_repo",
+              "kind": "raise",
+              "line": 1126
+            },
+            {
+              "in": "_refuse_if_runtime_config_hub_ref",
+              "kind": "raise",
+              "line": 1180
+            },
+            {
+              "in": "_check_job_string_for_hub_refs",
+              "kind": "raise",
+              "line": 1199
+            },
+            {
+              "in": "_check_job_string_for_hub_refs",
+              "kind": "raise",
+              "line": 1215
+            },
+            {
+              "in": "_check_job_string_for_hub_refs",
+              "kind": "raise",
+              "line": 1235
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1259
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1262
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1269
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1272
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1276
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1279
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1291
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1302
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1308
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1314
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1321
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1335
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1346
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1354
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1360
+            },
+            {
+              "in": "validate_job_semantics",
+              "kind": "raise",
+              "line": 1366
+            },
+            {
+              "in": "run_check_job",
+              "kind": "raise",
+              "line": 1412
+            },
+            {
+              "in": "run_check_job",
+              "kind": "raise",
+              "line": 1417
+            },
+            {
+              "in": "run_check_job",
+              "kind": "raise",
+              "line": 1419
+            },
+            {
+              "in": "run_check_job",
+              "kind": "except",
+              "line": 1427
+            },
+            {
+              "in": "_parse_int_setting",
+              "kind": "raise",
+              "line": 1436
+            },
+            {
+              "in": "_parse_int_setting",
+              "kind": "raise",
+              "line": 1439
+            },
+            {
+              "in": "_parse_int_setting",
+              "kind": "raise",
+              "line": 1443
+            },
+            {
+              "in": "_resolve_optimizer_size_provenance",
+              "kind": "raise",
+              "line": 1467
+            },
+            {
+              "in": "_resolve_optimizer_size_provenance",
+              "kind": "raise",
+              "line": 1475
+            },
+            {
+              "in": "_resolve_download_timeout_basis",
+              "kind": "raise",
+              "line": 1529
+            },
+            {
+              "in": "_resolve_download_timeout_basis",
+              "kind": "except",
+              "line": 1570
+            },
+            {
+              "in": "_resolve_download_timeout_basis",
+              "kind": "raise",
+              "line": 1581
+            },
+            {
+              "in": "_resolve_download_timeout_basis",
+              "kind": "raise",
+              "line": 1601
+            },
+            {
+              "in": "run_dry_download_bounds",
+              "kind": "raise",
+              "line": 1664
+            },
+            {
+              "in": "run_dry_download_bounds",
+              "kind": "except",
+              "line": 1692
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 1705
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 1760
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 1783
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 1825
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 1941
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 2016
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "raise",
+              "line": 2021
+            },
+            {
+              "in": "run_plan_run",
+              "kind": "except",
+              "line": 2027
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 2045
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 2050
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 2061
+            },
+            {
+              "in": "run_render_job",
+              "kind": "except",
+              "line": 2063
+            },
+            {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 874
+              "line": 2145
+            },
+            {
+              "in": "copy_off_once",
+              "kind": "except",
+              "line": 2148
+            },
+            {
+              "in": "copy_off_once",
+              "kind": "raise",
+              "line": 2150
             },
             {
               "in": "load_done",
               "kind": "except",
-              "line": 886
+              "line": 2162
+            },
+            {
+              "in": "run_check_output_disk",
+              "kind": "except",
+              "line": 2207
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2267
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2279
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2285
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "except",
+              "line": 2288
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2289
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2292
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2302
+            },
+            {
+              "in": "verify_bundle_against_manifest",
+              "kind": "raise",
+              "line": 2373
+            },
+            {
+              "in": "run_verify_bundle",
+              "kind": "except",
+              "line": 2392
+            },
+            {
+              "in": "repair_bundle_with_files",
+              "kind": "raise",
+              "line": 2418
+            },
+            {
+              "in": "repair_bundle_with_files",
+              "kind": "raise",
+              "line": 2434
+            },
+            {
+              "in": "repair_bundle_with_files",
+              "kind": "raise",
+              "line": 2437
+            },
+            {
+              "in": "repair_bundle_with_files",
+              "kind": "raise",
+              "line": 2453
+            },
+            {
+              "in": "repair_bundle_with_files",
+              "kind": "raise",
+              "line": 2456
+            },
+            {
+              "in": "run_repair_bundle",
+              "kind": "except",
+              "line": 2496
             },
             {
               "in": "pid_alive",
               "kind": "except",
-              "line": 896
+              "line": 2506
+            },
+            {
+              "in": "run_copy_off",
+              "kind": "except",
+              "line": 2534
             },
             {
               "in": "read_json",
               "kind": "except",
-              "line": 929
+              "line": 2543
             },
             {
               "in": "run_checkpoint",
               "kind": "except",
-              "line": 941
+              "line": 2555
             },
             {
               "in": "run_finish",
               "kind": "except",
-              "line": 960
+              "line": 2580
             },
             {
               "in": "rung_pids",
               "kind": "except",
-              "line": 1006
+              "line": 2646
             },
             {
               "in": "run_bundle_now",
               "kind": "except",
-              "line": 1027
+              "line": 2667
             },
             {
               "kind": "raise",
-              "line": 1155
+              "line": 2872
             }
           ],
-          "hash": "36708898cb9ae18e99b9b10ae7a3619e620055ec3c1c3bb4342dd9d7e9d4db49",
+          "hash": "8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad",
           "path": "scripts/colab/lane3_rung.py"
         },
         {
@@ -18047,6 +18392,8 @@
             "parse_active_assignments",
             "parse_usage_text",
             "parse_vitals_log",
+            "prepare_content_downloads",
+            "prepare_single_content_download",
             "run_between_item_fetch",
             "run_output_bytes",
             "scrub_colab_tokens",
@@ -18062,67 +18409,82 @@
             {
               "in": "verify_input_shas",
               "kind": "raise",
-              "line": 70
+              "line": 72
             },
             {
               "in": "verify_input_shas",
               "kind": "raise",
-              "line": 78
+              "line": 80
             },
             {
               "in": "parse_usage_text",
               "kind": "raise",
-              "line": 313
+              "line": 315
             },
             {
               "in": "_select_rate",
               "kind": "raise",
-              "line": 333
+              "line": 335
             },
             {
               "in": "_failure_rates",
               "kind": "except",
-              "line": 346
+              "line": 348
             },
             {
               "in": "parse_usage_text",
               "kind": "except",
-              "line": 422
+              "line": 424
             },
             {
               "in": "parse_usage_text",
               "kind": "raise",
-              "line": 425
+              "line": 427
             },
             {
               "in": "parse_vitals_log",
               "kind": "except",
-              "line": 715
+              "line": 717
             },
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 1104
+              "line": 1106
+            },
+            {
+              "in": "_unlink_dl_prefix_files",
+              "kind": "except",
+              "line": 1164
+            },
+            {
+              "in": "prepare_single_content_download",
+              "kind": "raise",
+              "line": 1267
+            },
+            {
+              "in": "prepare_single_content_download",
+              "kind": "except",
+              "line": 1306
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 1249
+              "line": 1490
             },
             {
               "kind": "raise",
-              "line": 1363
+              "line": 1604
             }
           ],
-          "hash": "4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085",
+          "hash": "61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "5389477eb7c9f2fc2e0df16136b5010835878ed2b99570ed033869ce656119fe",
+          "hash": "f4c7fe1b598000effca15274336d9d2f23335d5f52ddfda3008e2cee71043184",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "5b6249d3d730db3a2905a04ebf52c6be72fcc6765303a89a3d80280f1d523049",
+          "hash": "012587c44ac1401c2252c04660a25284fb011cf9430568ea31bad89e2f57fb78",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -18162,15 +18524,23 @@
           "path": "scripts/colab/preflight_resolve.sh"
         },
         {
+          "hash": "3a6ffc3d7b0c9f74c86a3bd68c4b5962f488468616395e4d6549edbec8988bab",
+          "path": "scripts/colab/probe_upload_limit.sh"
+        },
+        {
           "hash": "0438d06810515bb33a786025aba6f68fe9c907e1503870a67472a61514fa0e12",
           "path": "scripts/colab/relock.sh"
         },
         {
           "exports": [
+            "prepare_content_downloads",
             "run_remote_script",
             "scrub_line"
           ],
-          "hash": "7b346c97e2a56f86ead9417c1cbaa903f2ce1dd41aca7df41f32a78fae32c896",
+          "hash": "2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456",
+          "importsFiles": [
+            "scripts/colab/launch_guards.py"
+          ],
           "path": "scripts/colab/remote_runner.py"
         },
         {
@@ -19804,11 +20174,11 @@
       "origin": "authored",
       "outsidePlaces": [
         {
-          "reads": 68,
+          "reads": 71,
           "where": [
             "caller"
           ],
-          "writes": 30
+          "writes": 32
         },
         {
           "reads": 2,
@@ -19826,14 +20196,14 @@
           "writes": 0
         }
       ],
-      "outsideReads": 71,
-      "outsideWrites": 42,
+      "outsideReads": 74,
+      "outsideWrites": 44,
       "role": "code",
       "testRunners": [
         "node --test",
         "pytest"
       ],
-      "testedBy": 30,
+      "testedBy": 32,
       "unresolvedSites": 0
     },
     {
@@ -20563,7 +20933,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "845510de88f04793bd2cbd6d57406ebfd4d0205cccd330f0ca76e39c6d00bb52",
+          "hash": "ac1a67a41acf18ac67568cc93dc1a587cb725abd2000bab9ba43c1aeb736e39d",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -20609,6 +20979,45 @@
         {
           "hash": "974ae27b1dad3550a27733c0e0b6d17cef399d3f58ecc12c6b39ff5136e14b47",
           "path": "tests/colab/fixtures/vitals_ram_sdlab-l3-rung-g4a.txt"
+        },
+        {
+          "exports": [
+            "test_chunk_size_validation_and_per_part_plan_run_timeouts",
+            "test_chunked_download_over_chunk_size_retries_500_once_verifies_sha_and_cleans_vm_parts",
+            "test_chunked_download_two_500s_on_part_k_names_failure_lists_arrived_parts_and_stops_session",
+            "test_chunked_upload_500_twice_on_part_k_refuses_by_name_and_stops_session",
+            "test_chunked_upload_reassembles_verifies_sha_deletes_parts_and_retries_500_once",
+            "test_corrupted_upload_part_is_caught_by_vm_whole_file_sha_before_use_and_stops_session",
+            "test_failed_salvage_part_keeps_every_arrived_part_with_a_receipt_and_deletes_nothing_verified",
+            "test_file_under_chunk_size_is_still_one_single_upload",
+            "test_in_flight_bound_counts_the_reassembly_exec_and_the_prep_exec",
+            "test_in_process_remote_download_prep_salvage_and_single_download_sha_guards",
+            "test_n4_big_archive_upload_reassembly_scales_with_size_and_rate_where_old_bound_times_out",
+            "test_n4_download_split_out_of_disk_refuses_named_code_without_single_get_fallthrough",
+            "test_n5_download_prep_has_single_source_in_launch_guards_without_copy_drift",
+            "test_part_failing_its_own_check_is_not_kept_but_the_verified_parts_before_it_are",
+            "test_probe_upload_limit_sweeps_both_directions_stops_at_first_500_and_stops_session",
+            "test_refetch_partial_dir_is_named_after_the_training_file_not_the_temp_file",
+            "test_salvage_deadline_counts_the_split_manifest_fetch_and_every_5xx_retry",
+            "test_salvage_path_uses_chunked_download_above_chunk_size"
+          ],
+          "hash": "fb060eea957df5970efc259aa595f6d91f11015922e3ae209a69b020a104f602",
+          "importOrder": [
+            "tests/colab/fixtures/fake_colab.py",
+            "scripts/colab/lane3_bundle_now.py",
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/remote_runner.py",
+            "scripts/colab/launch_guards.py"
+          ],
+          "importsFiles": [
+            "scripts/colab/lane3_bundle_now.py",
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/launch_guards.py",
+            "scripts/colab/remote_runner.py",
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/test_chunked_transfer_and_probe.py",
+          "testFramework": "pytest"
         },
         {
           "exports": [
@@ -20761,6 +21170,7 @@
             "test_a_partial_copy_is_copied_again_until_complete",
             "test_a_stable_mid_run_rate_below_the_floor_is_a_bad_read",
             "test_a_window_rate_below_the_floor_or_never_stable_is_unread",
+            "test_bundle_manifest_mismatch_when_file_dropped_or_size_changed",
             "test_bundle_now_also_finds_the_download_grandchild",
             "test_bundle_now_cell_needs_its_env_and_runs_lane3_rung",
             "test_bundle_now_kills_sweeps_and_tars",
@@ -20768,6 +21178,7 @@
             "test_cap_clock_starts_at_open_success_and_counts_the_rate_polls",
             "test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_window_json",
             "test_cap_too_small_for_cleanup_or_min_runtime_refuses_before_any_colab_call",
+            "test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusals",
             "test_check_model_api_names_each_failure",
             "test_cli_dispatches_every_subcommand",
             "test_committed_rung_dataset_hits_all_three_buckets",
@@ -20786,10 +21197,12 @@
             "test_download_records_token_used_from_the_variable",
             "test_download_timeout_setting_flag_env_and_window_json",
             "test_download_too_slow_is_stopped_after_the_probe",
+            "test_dry_cleanup_bound_counts_split_retries_and_reassembly_exec",
             "test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05",
             "test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls",
             "test_expected_repo_bytes_uses_the_listing",
             "test_failed_download_prints_no_token_into_exec_history",
+            "test_failed_early_stop_is_not_recorded_as_stopped_and_the_exit_trap_stops_the_session",
             "test_failed_normal_download_still_salvages_bundle",
             "test_final_sweep_recopies_a_partial_file",
             "test_finish_gathers_records_and_marks_a_failed_run",
@@ -20802,6 +21215,8 @@
             "test_guards_refuse_by_name_and_still_record_all_three",
             "test_hung_new_and_open_lock_wait_are_cut_at_bound",
             "test_hung_upload_is_cut_at_bound_and_session_is_stopped",
+            "test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches",
+            "test_job_must_state_where_optimizer_size_bytes_came_from",
             "test_kit_model_check_refuses_a_dead_token_before_any_spend",
             "test_kit_refuses_a_dataset_that_does_not_match_its_manifest",
             "test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call",
@@ -20814,7 +21229,12 @@
             "test_metadata_exception_text_never_reaches_any_output",
             "test_model_check_cli_reads_the_token_from_the_environment",
             "test_model_check_refuses_a_cross_host_redirect_and_keeps_the_token",
+            "test_n1_optimizer_state_pushes_bundle_over_chunk_boundary_and_missing_optimizer_refuses",
+            "test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipart_bound",
+            "test_n4_split_copy_overhead_counted_in_output_disk_projection",
             "test_no_count_before_the_first_stable_read_is_not_registered_yet",
+            "test_note6_check_job_refuses_hub_refs_on_qtype_assistant_lora_path_and_vae_path",
+            "test_output_disk_projection_and_vm_disk_guards",
             "test_parallel_neighbour_reproducer_refuses_above_max",
             "test_parse_positive_number_refuses_missing_and_bad_values",
             "test_pre_exec_cap_trip_between_slow_uploads",
@@ -20823,6 +21243,7 @@
             "test_query_driver_reads_nvidia_smi_or_records_why_not",
             "test_rate_waits_for_stability_and_prices_at_the_max",
             "test_read_token_reaches_only_the_download_and_appears_in_no_file",
+            "test_real_job_download_timeout_required_and_projected_basis",
             "test_real_run_end_to_end_job_and_dataset_manifest_with_batched_archive",
             "test_real_run_job_check_unit_and_placeholder_guards",
             "test_real_run_pre_open_refusals_before_colab_new",
@@ -20856,8 +21277,11 @@
             "test_token_file_is_removed_when_its_upload_fails",
             "test_token_staging_failure_refuses_before_the_window_opens",
             "test_token_variable_reaches_the_download_only_when_a_token_was_staged",
+            "test_transient_refetch_failure_gets_one_bounded_followup_pass_then_repair_runs_after_the_stop",
             "test_truncated_checkpoint_is_partial_and_does_not_count",
+            "test_upload_timeout_setting_and_archive_throughput_refusal",
             "test_vm_metadata_failures_are_named",
+            "test_wall_allowance_from_job_steps_and_step_time_refusals",
             "test_wall_trip_during_hung_foreground_step_reaches_stop_by_watcher_path",
             "test_wall_trip_during_legitimate_post_exec_download_with_short_escalate",
             "test_wall_trip_during_post_exec_download_keeps_total_time_within_cleanup_bound",
@@ -20872,7 +21296,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "c14491ca13734a13f46242a1ecd5eee50ae2ae1c4d3fc34696f1f9a455b5dffb",
+          "hash": "237c9aa3c76312f933f3799b97cdfbafc912421cbf8df78916752f1357e63d98",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -20891,6 +21315,35 @@
             "scripts/colab/classify_install_log.py"
           ],
           "path": "tests/colab/test_lane3_gpu_rung.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
+            "test_download_prep_missing_single_and_prefix_helpers",
+            "test_download_split_enospc_mid_split_unlinks_partial_parts_and_reports_named_code",
+            "test_download_split_refuses_low_disk_before_any_part_is_written",
+            "test_optimizer_size_provenance_must_read_measured_or_estimate",
+            "test_prepare_content_downloads_skips_non_bundles_and_reports_each_bundle",
+            "test_remote_runner_runs_script_and_prepares_downloads_or_refuses_without_one",
+            "test_remote_runner_scrubs_tokens_resolves_bash_and_loads_launch_guards",
+            "test_repair_bundle_refuses_by_name_and_leaves_the_bundle_untouched",
+            "test_repair_bundle_splices_verified_files_updates_manifest_and_verifies",
+            "test_split_free_bytes_override_fake_site_env_and_real_disk",
+            "test_verify_bundle_names_missing_size_and_sha_mismatches_and_recovered_files",
+            "test_verify_bundle_ok_records_recovered_files_and_malformed_manifests_refuse"
+          ],
+          "hash": "e657df1b86417dcd015bd747830fa676d1f8b2f6db0c8058c8c30712f917138d",
+          "importOrder": [
+            "scripts/colab/launch_guards.py",
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/remote_runner.py"
+          ],
+          "importsFiles": [
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/launch_guards.py",
+            "scripts/colab/remote_runner.py"
+          ],
+          "path": "tests/colab/test_lane3_inprocess_fix3.py",
           "testFramework": "pytest"
         },
         {
@@ -22220,7 +22673,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 126
+          "files": 128
         },
         {
           "boundary": "lib",
@@ -22521,7 +22974,7 @@
         },
         {
           "coverage": true,
-          "files": 21,
+          "files": 23,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -23178,8 +23631,8 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "fc64dbeada4edc2de016c0eea58ef4e552aad3f1",
-    "tracked": 3309
+    "commit": "2d3c4705dc4728b05ac1ba2d86f0611075aaeafb",
+    "tracked": 3312
   },
   "landings": [
     {
@@ -26178,7 +26631,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 136,
+  "testFiles": 138,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
