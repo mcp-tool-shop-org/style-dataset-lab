@@ -82,3 +82,8 @@ config:
 meta:
   name: rustline_style_v5
   version: '1.0'
+  caption_dropout_source: 'trained rustline_style_v5 config.yaml (matches ai-toolkit beb94824 train_lora_qwen_image_24gb.yaml:34)'
+  seconds_per_step: 3.0
+  checkpoint_size_bytes: 157286400
+  optimizer_size_bytes: 167772160
+  samples_and_logs_bytes: 33554432

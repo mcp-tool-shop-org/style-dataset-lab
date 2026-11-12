@@ -48,12 +48,15 @@ COLAB_STOP_ATTEMPTS_DEFAULT=2
 COLAB_SESSIONS_TIMEOUT_S_DEFAULT=30
 
 COLAB_CALLER_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S:-}"
+COLAB_CALLER_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S:-}"
 export COLAB_KILL_GRACE_S="${COLAB_KILL_GRACE_S_DEFAULT}"
 export COLAB_OPEN_LOCK_TIMEOUT_S="${COLAB_OPEN_LOCK_TIMEOUT_S_DEFAULT}"
 export COLAB_NEW_TIMEOUT_S="${COLAB_NEW_TIMEOUT_S_DEFAULT}"
 export COLAB_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S_DEFAULT}"
+export COLAB_UPLOAD_TIMEOUT_SOURCE="default"
 export COLAB_WALL_ESCALATE_S="${COLAB_WALL_ESCALATE_S_DEFAULT}"
 export COLAB_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+export COLAB_DOWNLOAD_TIMEOUT_SOURCE="default"
 export COLAB_SALVAGE_RESTART_TIMEOUT_S="${COLAB_SALVAGE_RESTART_TIMEOUT_S_DEFAULT}"
 export COLAB_SALVAGE_EXEC_TIMEOUT_S="${COLAB_SALVAGE_EXEC_TIMEOUT_S_DEFAULT}"
 export COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S="${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S_DEFAULT}"
@@ -65,27 +68,64 @@ COLAB_CLEANUP_SIGNAL_COUNT=0
 COLAB_CLEANUP_SKIP_SALVAGE=0
 COLAB_SALVAGE_STEP_PID=""
 
-# colab_configure_download_timeout [cli_override]: resolve the `colab download` timeout from
-# `--download-timeout-s <s>` (precedence 1), `COLAB_DOWNLOAD_TIMEOUT_S` in the caller's environment
-# (precedence 2), or `COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT` (300 s, precedence 3). Refuses
+# colab_configure_download_timeout [cli_override] [forced_source]: resolve the `colab download`
+# timeout from `--download-timeout-s <s>` (precedence 1), `COLAB_DOWNLOAD_TIMEOUT_S` in the caller's
+# environment (precedence 2), or `COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT` (300 s, precedence 3). Refuses
 # DOWNLOAD_TIMEOUT_INVALID (exit 2) before `colab new` when non-positive or non-integer, and scales
 # both normal and post-failure salvage download bounds + SALVAGE_DEADLINE_S so cleanup_bound_s and
 # window.json record the exact setting used.
 colab_configure_download_timeout() {
   local cli_val="${1:-}"
+  local forced_src="${2:-}"
   local chosen="${cli_val}"
+  local src="cli"
   if [ -z "${chosen}" ]; then
-    chosen="${COLAB_CALLER_DOWNLOAD_TIMEOUT_S:-${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}}"
+    if [ -n "${COLAB_CALLER_DOWNLOAD_TIMEOUT_S}" ]; then
+      chosen="${COLAB_CALLER_DOWNLOAD_TIMEOUT_S}"
+      src="env"
+    else
+      chosen="${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}"
+      src="default"
+    fi
+  fi
+  if [ -n "${forced_src}" ]; then
+    src="${forced_src}"
   fi
   if ! [[ "${chosen}" =~ ^[1-9][0-9]*$ ]]; then
     echo "REFUSED: DOWNLOAD_TIMEOUT_INVALID: download timeout '${chosen}' must be a positive integer (seconds)" >&2
     return 2
   fi
   export COLAB_DOWNLOAD_TIMEOUT_S="${chosen}"
+  export COLAB_DOWNLOAD_TIMEOUT_SOURCE="${src}"
   export COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S="${chosen}"
   export SALVAGE_DEADLINE_S=$(( (COLAB_SALVAGE_RESTART_TIMEOUT_S + COLAB_KILL_GRACE_S) \
     + (COLAB_SALVAGE_EXEC_TIMEOUT_S + COLAB_KILL_GRACE_S) \
     + (COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S + COLAB_KILL_GRACE_S) ))
+}
+
+# colab_configure_upload_timeout [cli_override]: resolve the `colab upload` timeout from
+# `--upload-timeout-s <s>` (precedence 1), `COLAB_UPLOAD_TIMEOUT_S` in the caller's environment
+# (precedence 2), or `COLAB_UPLOAD_TIMEOUT_S_DEFAULT` (120 s, precedence 3). Refuses
+# UPLOAD_TIMEOUT_INVALID (exit 2) before `colab new` when non-positive or non-integer.
+colab_configure_upload_timeout() {
+  local cli_val="${1:-}"
+  local chosen="${cli_val}"
+  local src="cli"
+  if [ -z "${chosen}" ]; then
+    if [ -n "${COLAB_CALLER_UPLOAD_TIMEOUT_S}" ]; then
+      chosen="${COLAB_CALLER_UPLOAD_TIMEOUT_S}"
+      src="env"
+    else
+      chosen="${COLAB_UPLOAD_TIMEOUT_S_DEFAULT}"
+      src="default"
+    fi
+  fi
+  if ! [[ "${chosen}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "REFUSED: UPLOAD_TIMEOUT_INVALID: upload timeout '${chosen}' must be a positive integer (seconds)" >&2
+    return 2
+  fi
+  export COLAB_UPLOAD_TIMEOUT_S="${chosen}"
+  export COLAB_UPLOAD_TIMEOUT_SOURCE="${src}"
 }
 
 # colab_apply_test_cleanup_overrides <test_mode>: in fake-colab test mode only, allow short per-step
@@ -2166,7 +2206,17 @@ REFUSAL_CODES = (
     "JOB_FILE_MISSING",
     "JOB_SHA_MISMATCH",
     "JOB_TEMPLATE_INVALID",
+    "JOB_UNPINNED_HUB_REF",
+    "JOB_MODEL_LICENCE_NOT_ALLOWED",
+    "JOB_SAVE_CADENCE_INVALID",
+    "JOB_SAMPLE_CADENCE_INVALID",
+    "JOB_TRIGGER_WITH_CACHED_EMBEDDINGS",
+    "JOB_CAPTION_DROPOUT_INVALID",
     "DOWNLOAD_TIMEOUT_INVALID",
+    "DOWNLOAD_TIMEOUT_REQUIRED",
+    "DOWNLOAD_TIMEOUT_TOO_SHORT",
+    "UPLOAD_TIMEOUT_INVALID",
+    "UPLOAD_TIMEOUT_TOO_SHORT",
     "INPUT_FILE_MISSING",
     "INPUT_SHA_MISMATCH",
     "HF_READ_TOKEN_MISSING",
@@ -2185,7 +2235,13 @@ REFUSAL_CODES = (
     "TRAIN_SAMPLE_MISSING",
     "TRAIN_WALL_REQUIRED",
     "TRAIN_CAP_REQUIRED",
+    "TRAIN_STEP_TIME_REQUIRED",
     "TRAIN_WALL_TOO_SHORT",
+    "TRAIN_OUTPUT_PROJECTION_REQUIRED",
+    "TRAIN_OUTPUT_DISK_LOW",
+    "COPY_OFF_FAILED",
+    "BUNDLE_DISK_LOW",
+    "TRAIN_OUTPUT_MANIFEST_MISMATCH",
     "RUNG_JOB_REQUIRED",
     "MODEL_AUTH_FAILED",
     "MODEL_REVISION_NOT_FOUND",
@@ -2367,7 +2423,11 @@ if lane == "train":
 
     complete_ckpts: list[str] = []
     for rel_ckpt, rec in sorted(latest_manifest.items()):
-        if not rel_ckpt.endswith(".safetensors") or rec.get("partial"):
+        if (
+            not rel_ckpt.endswith(".safetensors")
+            or any(part.startswith("_") for part in Path(rel_ckpt).parts[:-1])
+            or rec.get("partial")
+        ):
             continue
         rec_bytes = int(rec.get("bytes") or 0)
         tar_rel = f"rung_outputs/{rel_ckpt}"
@@ -2426,7 +2486,9 @@ if lane == "train":
         if matched_final is None and job_name:
             numbered_suffix = f"_{train_steps_target:09d}.safetensors"
             has_partial_final = any(
-                p.endswith(numbered_suffix) and bool(r.get("partial"))
+                p.endswith(numbered_suffix)
+                and not any(part.startswith("_") for part in Path(p).parts[:-1])
+                and bool(r.get("partial"))
                 for p, r in latest_manifest.items()
             )
             if not has_partial_final:
@@ -2445,6 +2507,21 @@ if lane == "train":
         and final_checkpoint_present
     )
 
+    run_plan: dict = {}
+    if (out_dir / "run_plan.json").is_file():
+        try:
+            loaded_plan = json.loads((out_dir / "run_plan.json").read_text(encoding="utf-8"))
+            if isinstance(loaded_plan, dict):
+                run_plan = loaded_plan
+        except ValueError:
+            run_plan = {}
+    bundle_manifest_check = None
+    if (out_dir / "bundle_manifest_check.json").is_file():
+        try:
+            bundle_manifest_check = json.loads((out_dir / "bundle_manifest_check.json").read_text(encoding="utf-8"))
+        except ValueError:
+            bundle_manifest_check = None
+
     train_fields = {
         "train": train_state,
         "trained": bool(final_status == "ok" and train_state == "trained"),
@@ -2458,11 +2535,18 @@ if lane == "train":
         "job_sha256": job_sha256,
         "dataset_manifest_sha256": dataset_manifest_sha256,
         "dataset_archive_sha256": dataset_archive_sha256,
+        "download_timeout_basis": run_plan.get("download_timeout_basis"),
+        "upload_timeout_check": run_plan.get("upload_timeout_check"),
+        "wall_allowance": run_plan.get("wall_allowance"),
+        "output_disk_projection": run_plan.get("output_disk_projection"),
+        "training_output_manifest_check": bundle_manifest_check,
     }
 
 kill_grace_s = int(os.environ.get("COLAB_KILL_GRACE_S", "10"))
 dl_timeout_s = int(os.environ.get("COLAB_DOWNLOAD_TIMEOUT_S", "300"))
+dl_timeout_source = os.environ.get("COLAB_DOWNLOAD_TIMEOUT_SOURCE", "default")
 up_timeout_s = int(os.environ.get("COLAB_UPLOAD_TIMEOUT_S", "120"))
+up_timeout_source = os.environ.get("COLAB_UPLOAD_TIMEOUT_SOURCE", "default")
 sess_timeout_s = int(os.environ.get("COLAB_SESSIONS_TIMEOUT_S", "30"))
 in_flight_bound_s = max(dl_timeout_s, up_timeout_s, sess_timeout_s) + kill_grace_s
 salvage_restart_s = int(os.environ.get("COLAB_SALVAGE_RESTART_TIMEOUT_S", "180"))
@@ -2543,6 +2627,10 @@ window_payload = {
     "grace_s": grace_s,
     "margin": margin,
     "download_timeout_s": dl_timeout_s,
+    "download_timeout_source": dl_timeout_source,
+    "salvage_download_timeout_s": salvage_download_s,
+    "upload_timeout_s": up_timeout_s,
+    "upload_timeout_source": up_timeout_source,
     "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
     "cleanup_bound_s": cleanup_bound_s,
     "stop_path": stop_path,

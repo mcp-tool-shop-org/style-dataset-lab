@@ -757,12 +757,19 @@ out = Path(tf) / name
 (out / "samples").mkdir(parents=True, exist_ok=True)
 print("Loading Qwen Image model", flush=True)
 import json, struct
-def st(tag, truncate=False):
-    # A real safetensors layout: 8-byte header length, JSON header, data; truncate cuts the tail.
+def st_always(tag):
     data = tag * 64
     hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(data)], "data_offsets": [0, len(data)]}}).encode()
-    blob = struct.pack("<Q", len(hdr)) + hdr + data
+    return struct.pack("<Q", len(hdr)) + hdr + data
+def st(tag, truncate=False):
+    # A real safetensors layout: 8-byte header length, JSON header, data; truncate cuts the tail.
+    blob = st_always(tag)
     return blob[:-100] if (truncate or os.environ.get("FAKE_VM_TRAIN") == "truncated_save") else blob
+(out / "config.yaml").write_text(job, encoding="utf-8")
+(out / "optimizer.pt").write_bytes(b"FAKE-OPTIMIZER-STATE-" + name.encode() + b"\\n" * 16)
+(out / "loss.log").write_text(f"step=1 loss=0.4200\\nstep={steps} loss=0.1800\\n", encoding="utf-8")
+(out / "_latent_cache").mkdir(parents=True, exist_ok=True)
+(out / "_latent_cache" / "latents_000.safetensors").write_bytes(st_always(b"FAKE-LATENT-CACHE"))
 time.sleep(0.3)
 if os.environ.get("FAKE_VM_TRAIN") == "hang_after_step_250":
     assert (steps, save_every, sample_every) == (500, 250, 250), (steps, save_every, sample_every)
@@ -809,6 +816,14 @@ RUNPYEOF
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
   PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
     bash "${PWD}/remote_lane3_stub.sh.trainblock"
+  if [ -n "${FAKE_VM_DROP_OUTPUT_FILE:-}" ]; then
+    rm -f "${PWD}/lane3_out/rung_outputs/${FAKE_VM_DROP_OUTPUT_FILE}"
+    tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
+  fi
+  if [ -n "${FAKE_VM_CORRUPT_OUTPUT_FILE:-}" ]; then
+    printf 'x' >> "${PWD}/lane3_out/rung_outputs/${FAKE_VM_CORRUPT_OUTPUT_FILE}"
+    tar -czf "${PWD}/lane3_stub_bundle.tar.gz" -C "${PWD}/lane3_out" .
+  fi
 }
 run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
