@@ -36,8 +36,8 @@ PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187"
-PINNED_SELF_SHA="cec067c4035dae56878139c6b2e74e4f0229da9e2168c037abdb24f1b4932462"
+PINNED_COLAB_WINDOW_SHA="13bee0c4d6e1c4165632f97b6af3885740e8c404172de93b0293db0ccc2f1d77"
+PINNED_SELF_SHA="318211e40ed93efeb92ec1947975b225da7f366053ae343859e14f1ff9528346"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -214,11 +214,7 @@ cleanup_on_exit() {
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
+  colab_release_wall_watcher "${OUT_DIR}" "${SESSION}" "${WALL_WATCHER_PID}"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \

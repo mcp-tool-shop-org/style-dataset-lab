@@ -1,14 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-12 from commit 2d3c470 by Atlas 1.26.0.
+Mapped at 2026-11-12 from commit 075efde by Atlas 1.26.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (61), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-12 (310232f)
+## What changed since 2026-11-12 (2d3c470)
 
-Nothing structural changed since 2026-11-12; 1 file added and 8 changed content.
+Nothing structural changed since 2026-11-12; 6 files changed content.
 
 ## What comes in
 
@@ -62,13 +62,11 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **scripts/colab/lane3_rung.py** and **tests/colab/test_lane3_gpu_rung.py** changed together in 6 of 12 commits, and the tests part imports the scripts part.
+No two source files, other than a file and its own test, changed together often enough to name.
 
 1 file changed together with its own test, as expected.
 
-Confidence is low: fewer than 25 source files reach 10 revisions in the window.
-
-Window: 180 days; a pair counts from 3 shared commits, since 4 source files reach 10 revisions; the floor rises to 10 when 25 do.
+Window: 180 days; a pair counts from 3 shared commits, since 3 source files reach 10 revisions; the floor rises to 10 when 25 do.
 
 ## What no test touches
 

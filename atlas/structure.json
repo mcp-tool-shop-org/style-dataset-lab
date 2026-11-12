@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187",
+          "hash": "13bee0c4d6e1c4165632f97b6af3885740e8c404172de93b0293db0ccc2f1d77",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -18133,72 +18133,67 @@
             {
               "in": "_resolve_optimizer_size_provenance",
               "kind": "raise",
-              "line": 1467
+              "line": 1468
             },
             {
               "in": "_resolve_optimizer_size_provenance",
               "kind": "raise",
-              "line": 1475
+              "line": 1476
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "raise",
-              "line": 1529
+              "line": 1530
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "except",
-              "line": 1570
+              "line": 1571
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "raise",
-              "line": 1581
+              "line": 1582
             },
             {
               "in": "_resolve_download_timeout_basis",
               "kind": "raise",
-              "line": 1601
+              "line": 1602
             },
             {
               "in": "run_dry_download_bounds",
               "kind": "raise",
-              "line": 1664
+              "line": 1665
             },
             {
               "in": "run_dry_download_bounds",
               "kind": "except",
-              "line": 1692
+              "line": 1693
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1705
+              "line": 1706
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1760
+              "line": 1761
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1783
+              "line": 1784
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1825
+              "line": 1826
             },
             {
               "in": "run_plan_run",
               "kind": "raise",
-              "line": 1941
-            },
-            {
-              "in": "run_plan_run",
-              "kind": "raise",
-              "line": 2016
+              "line": 1945
             },
             {
               "in": "run_plan_run",
@@ -18207,13 +18202,13 @@
             },
             {
               "in": "run_plan_run",
-              "kind": "except",
-              "line": 2027
+              "kind": "raise",
+              "line": 2026
             },
             {
-              "in": "run_render_job",
-              "kind": "raise",
-              "line": 2045
+              "in": "run_plan_run",
+              "kind": "except",
+              "line": 2032
             },
             {
               "in": "run_render_job",
@@ -18223,154 +18218,159 @@
             {
               "in": "run_render_job",
               "kind": "raise",
-              "line": 2061
+              "line": 2055
+            },
+            {
+              "in": "run_render_job",
+              "kind": "raise",
+              "line": 2066
             },
             {
               "in": "run_render_job",
               "kind": "except",
-              "line": 2063
+              "line": 2068
             },
             {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 2145
+              "line": 2150
             },
             {
               "in": "copy_off_once",
               "kind": "except",
-              "line": 2148
+              "line": 2153
             },
             {
               "in": "copy_off_once",
               "kind": "raise",
-              "line": 2150
+              "line": 2155
             },
             {
               "in": "load_done",
               "kind": "except",
-              "line": 2162
+              "line": 2167
             },
             {
               "in": "run_check_output_disk",
               "kind": "except",
-              "line": 2207
+              "line": 2212
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2267
+              "line": 2272
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2279
+              "line": 2284
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2285
+              "line": 2290
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "except",
-              "line": 2288
+              "line": 2293
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2289
+              "line": 2294
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2292
+              "line": 2297
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2302
+              "line": 2307
             },
             {
               "in": "verify_bundle_against_manifest",
               "kind": "raise",
-              "line": 2373
+              "line": 2378
             },
             {
               "in": "run_verify_bundle",
               "kind": "except",
-              "line": 2392
+              "line": 2397
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2418
+              "line": 2423
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2434
+              "line": 2439
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2437
+              "line": 2442
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2453
+              "line": 2458
             },
             {
               "in": "repair_bundle_with_files",
               "kind": "raise",
-              "line": 2456
+              "line": 2461
             },
             {
               "in": "run_repair_bundle",
               "kind": "except",
-              "line": 2496
+              "line": 2501
             },
             {
               "in": "pid_alive",
               "kind": "except",
-              "line": 2506
+              "line": 2511
             },
             {
               "in": "run_copy_off",
               "kind": "except",
-              "line": 2534
+              "line": 2539
             },
             {
               "in": "read_json",
               "kind": "except",
-              "line": 2543
+              "line": 2548
             },
             {
               "in": "run_checkpoint",
               "kind": "except",
-              "line": 2555
+              "line": 2560
             },
             {
               "in": "run_finish",
               "kind": "except",
-              "line": 2580
+              "line": 2585
             },
             {
               "in": "rung_pids",
               "kind": "except",
-              "line": 2646
+              "line": 2651
             },
             {
               "in": "run_bundle_now",
               "kind": "except",
-              "line": 2667
+              "line": 2672
             },
             {
               "kind": "raise",
-              "line": 2872
+              "line": 2877
             }
           ],
-          "hash": "8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad",
+          "hash": "639d0973b0bad380a1ee0ed502e39931fdc7882e6d64c3aea9d4f047f9dbe325",
           "path": "scripts/colab/lane3_rung.py"
         },
         {
@@ -18480,11 +18480,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "f4c7fe1b598000effca15274336d9d2f23335d5f52ddfda3008e2cee71043184",
+          "hash": "41e49e2d8e92c434effd795f8ac514a8123eae343e23ffa24b95e15fb9e11201",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "012587c44ac1401c2252c04660a25284fb011cf9430568ea31bad89e2f57fb78",
+          "hash": "e7d714220c50216a8aa0b99cda22028c5517c12739be986f75a973f714a25344",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -18524,7 +18524,7 @@
           "path": "scripts/colab/preflight_resolve.sh"
         },
         {
-          "hash": "3a6ffc3d7b0c9f74c86a3bd68c4b5962f488468616395e4d6549edbec8988bab",
+          "hash": "7e037f14af5b7c6e1e55c9aa29e743fef6aa28a4d5ee3aca1fefde5f21c8ad55",
           "path": "scripts/colab/probe_upload_limit.sh"
         },
         {
@@ -21224,6 +21224,7 @@
             "test_kit_refuses_invalid_rung_job_or_rung_job_without_train",
             "test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound",
             "test_lane1_ignores_salvage_timeout_overrides_in_cleanup_bounds",
+            "test_lane1_watcher_is_kept_when_the_trap_stop_fails_and_lands_the_stop",
             "test_launch_guards_pre_exec_phase_unit_and_cli",
             "test_meminfo_and_host_ram_measurement",
             "test_metadata_exception_text_never_reaches_any_output",
@@ -21269,6 +21270,7 @@
             "test_safetensors_completeness_and_checkpoint_pick",
             "test_second_term_during_salvage_aborts_salvage_and_reaches_stop",
             "test_shm_record_and_its_error",
+            "test_stop_confirmation_matches_only_an_exact_stop_completed_line",
             "test_the_count_leading_the_rate_by_one_read_does_not_trip",
             "test_the_rebaseline_uses_the_highest_stable_rate_seen",
             "test_the_reviewers_sequence_a_neighbour_closing_with_the_rate_two_reads_ahead_then_our_rise_trips",
@@ -21293,10 +21295,11 @@
             "test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane1",
             "test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane3",
             "test_wall_watcher_waits_for_salvage_and_keeps_step_250",
+            "test_watcher_survives_the_launcher_when_early_and_trap_stops_all_fail_and_lands_the_stop",
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "237c9aa3c76312f933f3799b97cdfbafc912421cbf8df78916752f1357e63d98",
+          "hash": "adb99d551ef03be044c88a692be935d7597f8dbc024173b80868c62a69030298",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -23631,7 +23634,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "2d3c4705dc4728b05ac1ba2d86f0611075aaeafb",
+    "commit": "075efde1c81056803d746855e363fdf8f4a06bcb",
     "tracked": 3312
   },
   "landings": [
