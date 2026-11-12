@@ -25,12 +25,12 @@
 #   colab download: timeout -k 10 ${COLAB_DOWNLOAD_TIMEOUT_S:-300} (default 300 s -> 310 s; --download-timeout-s / COLAB_DOWNLOAD_TIMEOUT_S)
 #   restart-kernel: timeout -k 10 180 (190 s)
 #   bundle-now exec (--timeout 300): timeout -k 10 330 (340 s)
-#   salvage download: timeout -k 10 ${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300} (default 300 s -> 310 s)
-#   SALVAGE_DEADLINE_S=840 (past 840 s, remaining salvage steps are skipped -> colab stop)
+#   salvage download: timeout -k 10 ${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S:-300} per projected part (default 300 s -> 310 s * N)
+#   SALVAGE_DEADLINE_S=190+340+N*310 (840 s for N=1; 1150 s for N=2 rung jobs; past it -> colab stop)
 #   colab stop: timeout -k 10 60 with 1 retry (2 * 70 = 140 s)
 #   wall watcher escalation: 30 s after TERM -> watcher runs `colab stop` itself (stop_path: trap | watcher)
-#   measured from trip: cleanup_stop_attempted_by_s = 310 + 840 = 1150 s,
-#                       cleanup_bound_s = 310 + 840 + 140 = 1290 s
+#   measured from trip: cleanup_stop_attempted_by_s = 310 + SALVAGE_DEADLINE_S (1150 s for N=1; 1460 s for N=2),
+#                       cleanup_bound_s = cleanup_stop_attempted_by_s + 140 (1290 s for N=1; 1600 s for N=2)
 #   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
 #   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
 set -euo pipefail
@@ -50,15 +50,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="4c0c0ab6410eaa511a808d00f09a09d42d5d5b7d0504d85d58cfe3c65baeb085"
-PINNED_REMOTE_RUNNER_SHA="393929ed704ccbacaee2b590010e348a5d635cbdd70361209d3e0103d1fba6eb"
-PINNED_COLAB_WINDOW_SHA="db761fb414da915c8835bad8ef1544992e39aa5b3d636a1d81d17d231f26e974"
-PINNED_LANE3_RUNG_SHA="a5bfab71fdcce4688f3b75a6f688ed9479ae696e48736eda23af5ce3116e889c"
-PINNED_BUNDLE_NOW_SHA="0475356f7aceca25a83d406c1e83dfd0ff912fe1056dac3c93c38f7e22cab8bf"
+PINNED_LAUNCH_GUARDS_SHA="fdc56bf1f74d4d4c1f63647f3b5961d6793fd83ed45ecbc898136b01a24a5a0d"
+PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
+PINNED_COLAB_WINDOW_SHA="74b86d8414832fff79469935d905f33cdb43fb73155e96d0750c9546b4757726"
+PINNED_LANE3_RUNG_SHA="466abbbf6469a07bbfde2e2865051757c84df9c3bfac43af86be32d7aa06b44a"
+PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="a99d7c56aec9c3912190596c5be82cc24fce00a1804e99fea18047246cbaa37f"
+PINNED_SELF_SHA="8e13e5a3340dfabf889e547c8d3af7717ce8753be6e17f57cc116ed2a9e240e6"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -662,6 +662,8 @@ DATASET_MANIFEST_SHA=""
 MIN_RUNTIME_S=""
 DOWNLOAD_TIMEOUT_S_ARG=""
 UPLOAD_TIMEOUT_S_ARG=""
+UPLOAD_REASSEMBLE_TIMEOUT_S_ARG=""
+UPLOAD_REASSEMBLE_MB_S_ARG=""
 UPLOAD_CHUNK_BYTES_ARG=""
 DOWNLOAD_CHUNK_BYTES_ARG=""
 DOWNLOAD_FLOOR_MB_S_ARG=""
@@ -670,6 +672,7 @@ SECONDS_PER_STEP_ARG=""
 CHECKPOINT_SIZE_BYTES_ARG=""
 OPTIMIZER_SIZE_BYTES_ARG=""
 SAMPLES_AND_LOGS_BYTES_ARG=""
+AUXILIARY_KEEP_ALL_BYTES_ARG=""
 OUTPUT_OVERHEAD_FACTOR_ARG=""
 EXPECTED_MODEL_BYTES_ARG=""
 VM_DISK_BUDGET_GIB_ARG=""
@@ -694,6 +697,8 @@ while [ "$#" -gt 0 ]; do
     --min-runtime-s) SESSION_ARGS+=("$1"); MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-timeout-s) SESSION_ARGS+=("$1"); DOWNLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-timeout-s) SESSION_ARGS+=("$1"); UPLOAD_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-reassemble-timeout-s) SESSION_ARGS+=("$1"); UPLOAD_REASSEMBLE_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --upload-reassemble-mb-s) SESSION_ARGS+=("$1"); UPLOAD_REASSEMBLE_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --upload-chunk-bytes) SESSION_ARGS+=("$1"); UPLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-chunk-bytes) SESSION_ARGS+=("$1"); DOWNLOAD_CHUNK_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --download-floor-mb-s) SESSION_ARGS+=("$1"); DOWNLOAD_FLOOR_MB_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -702,6 +707,7 @@ while [ "$#" -gt 0 ]; do
     --checkpoint-size-bytes) SESSION_ARGS+=("$1"); CHECKPOINT_SIZE_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --optimizer-size-bytes) SESSION_ARGS+=("$1"); OPTIMIZER_SIZE_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --samples-and-logs-bytes) SESSION_ARGS+=("$1"); SAMPLES_AND_LOGS_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --auxiliary-keep-all-bytes) SESSION_ARGS+=("$1"); AUXILIARY_KEEP_ALL_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --output-overhead-factor) SESSION_ARGS+=("$1"); OUTPUT_OVERHEAD_FACTOR_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --expected-model-bytes) SESSION_ARGS+=("$1"); EXPECTED_MODEL_BYTES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --vm-disk-budget-gib) SESSION_ARGS+=("$1"); VM_DISK_BUDGET_GIB_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -723,7 +729,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}${DOWNLOAD_FLOOR_MB_S_ARG}${UPLOAD_FLOOR_MB_S_ARG}${SECONDS_PER_STEP_ARG}${CHECKPOINT_SIZE_BYTES_ARG}${OPTIMIZER_SIZE_BYTES_ARG}${SAMPLES_AND_LOGS_BYTES_ARG}${OUTPUT_OVERHEAD_FACTOR_ARG}${EXPECTED_MODEL_BYTES_ARG}${VM_DISK_BUDGET_GIB_ARG}" ]; then
+if [ "${TRAIN_REQUESTED}" != "1" ] && [ -n "${TRAIN_MODEL}${TRAIN_MODEL_REVISION}${TRAIN_HOST_RAM_REQUIRED_GIB}${TRAIN_DOWNLOAD_MAX_SECONDS}${DATASET_DIR}${RUNG_JOB}${JOB_YAML}${JOB_SHA}${DATASET_MANIFEST}${DATASET_MANIFEST_SHA}${DOWNLOAD_FLOOR_MB_S_ARG}${UPLOAD_FLOOR_MB_S_ARG}${SECONDS_PER_STEP_ARG}${CHECKPOINT_SIZE_BYTES_ARG}${OPTIMIZER_SIZE_BYTES_ARG}${SAMPLES_AND_LOGS_BYTES_ARG}${AUXILIARY_KEEP_ALL_BYTES_ARG}${OUTPUT_OVERHEAD_FACTOR_ARG}${EXPECTED_MODEL_BYTES_ARG}${VM_DISK_BUDGET_GIB_ARG}" ]; then
   echo "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN: --model, --model-revision, --host-ram-required-gib, --download-max-seconds, --dataset-dir, --rung-job, --job, --job-sha, --dataset-manifest, --dataset-manifest-sha and the training projection flags need --train" >&2
   exit 2
 fi
@@ -751,8 +757,22 @@ if [ "${EMIT_REQUESTED}" = "1" ]; then
   exit 0
 fi
 
+lane3_translate_wsl_path() {
+  local raw="$1"
+  if [[ "${raw}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
+    local drive_lower="${BASH_REMATCH[1],,}"
+    local rest_path="${BASH_REMATCH[2]}"
+    if [[ ! -e "${raw}" ]] && [[ -e "/mnt/${drive_lower}/${rest_path}" ]]; then
+      printf '%s' "/mnt/${drive_lower}/${rest_path}"
+      return 0
+    fi
+  fi
+  printf '%s' "${raw}"
+}
+
 colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
+colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
 
@@ -765,9 +785,85 @@ if [ "${DRY_RUN}" = "1" ]; then
   if colab_fake_test_mode_active; then
     DRY_TEST_MODE=1
   fi
-  colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
   PY_BIN="$(colab_resolve_python)"
   GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
+  if [ "${TRAIN_REQUESTED}" = "1" ]; then
+    DRY_ACTIVE_JOB=""
+    DRY_IS_REAL="0"
+    if [ "${RUNG_JOB}" = "500" ]; then
+      DRY_ACTIVE_JOB="${SCRIPT_DIR}/lane3/rung-qwen-image-500.yaml"
+    elif [ "${RUNG_JOB}" = "20" ]; then
+      DRY_ACTIVE_JOB="${SCRIPT_DIR}/lane3/rung-qwen-image.yaml"
+    elif [ -n "${JOB_YAML}" ]; then
+      DRY_ACTIVE_JOB="$(lane3_translate_wsl_path "${JOB_YAML}")"
+      DRY_IS_REAL="1"
+    fi
+    if [ -n "${DRY_ACTIVE_JOB}" ] && [ -f "${DRY_ACTIVE_JOB}" ]; then
+      DRY_EFF_DL_CHUNK="${COLAB_DOWNLOAD_CHUNK_BYTES}"
+      if [ "${DRY_TEST_MODE}" = "1" ] && [ -n "${SDLAB_TEST_DOWNLOAD_CHUNK_BYTES:-}" ]; then
+        DRY_EFF_DL_CHUNK="${SDLAB_TEST_DOWNLOAD_CHUNK_BYTES}"
+      fi
+      DRY_EXPLICIT_DL=""
+      if [ "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" != "default" ]; then
+        DRY_EXPLICIT_DL="${COLAB_DOWNLOAD_TIMEOUT_S}"
+      fi
+      DRY_DL_RES=""
+      if ! DRY_DL_RES="$("${PY_BIN}" - "${SCRIPT_DIR}/lane3_rung.py" "${DRY_ACTIVE_JOB}" "${DRY_IS_REAL}" "${DRY_EXPLICIT_DL}" "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" "${COLAB_DOWNLOAD_TIMEOUT_S_DEFAULT}" "${DRY_EFF_DL_CHUNK}" "${DOWNLOAD_FLOOR_MB_S_ARG}" "${CHECKPOINT_SIZE_BYTES_ARG}" "${OPTIMIZER_SIZE_BYTES_ARG}" "${SAMPLES_AND_LOGS_BYTES_ARG}" "${AUXILIARY_KEEP_ALL_BYTES_ARG}" << 'PYEOF' | tr -d '\r'
+import importlib.util, math, pathlib, sys
+rung_py = pathlib.Path(sys.argv[1])
+job_p = pathlib.Path(sys.argv[2])
+is_real = sys.argv[3] == "1"
+exp_dl_raw, dl_src, def_dl_raw, dl_chunk_raw, floor_raw, ckpt_raw, opt_raw, samp_raw, aux_raw = sys.argv[4:13]
+spec = importlib.util.spec_from_file_location("lane3_rung", rung_py)
+lr = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lr)
+try:
+    doc = lr._load_yaml_doc(job_p)
+    proc = ((doc.get("config") or {}).get("process") or [{}])[0]
+    steps = int((proc.get("train") or {}).get("steps") or 0)
+    save_every = int((proc.get("save") or {}).get("save_every") or 0)
+    ckpt_count = len({*range(save_every, steps + 1, save_every), steps}) if (steps > 0 and save_every > 0) else 1
+    meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
+    def _pick_pos(cli_v, meta_v, name):
+        if cli_v != "":
+            return lr._positive_int(cli_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
+        if meta_v is not None:
+            return lr._positive_int(meta_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
+        return None
+    def _pick_nonneg(cli_v, meta_v, name):
+        if cli_v != "":
+            return lr._non_negative_int(cli_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
+        if meta_v is not None:
+            return lr._non_negative_int(meta_v, flag_name=name, code="DOWNLOAD_TIMEOUT_REQUIRED")
+        return 0
+    ckpt_sz = _pick_pos(ckpt_raw, meta.get("checkpoint_size_bytes"), "--checkpoint-size-bytes")
+    opt_sz = _pick_pos(opt_raw, meta.get("optimizer_size_bytes"), "--optimizer-size-bytes")
+    samp_sz = _pick_nonneg(samp_raw, meta.get("samples_and_logs_bytes"), "--samples-and-logs-bytes")
+    aux_sz = _pick_nonneg(aux_raw, meta.get("auxiliary_keep_all_bytes"), "--auxiliary-keep-all-bytes")
+    floor_v = float(floor_raw) if floor_raw != "" else (float(meta["download_floor_mb_s"]) if meta.get("download_floor_mb_s") is not None else None)
+    exp_dl = int(exp_dl_raw) if exp_dl_raw != "" else None
+    dl_s, basis = lr.resolve_download_timeout(
+        is_real_job=is_real, explicit_timeout_s=exp_dl, explicit_source=dl_src,
+        default_timeout_s=int(def_dl_raw), floor_mb_s=floor_v, expected_checkpoint_count=ckpt_count,
+        checkpoint_size_bytes=ckpt_sz, optimizer_size_bytes=opt_sz,
+        samples_and_logs_bytes=samp_sz, auxiliary_keep_all_bytes=aux_sz,
+        download_chunk_bytes=int(dl_chunk_raw),
+    )
+    src_out = "projected" if basis["mode"] == "projected" else str(basis["source"])
+    parts_out = int(basis.get("part_count") or 1)
+    print(f"{dl_s}\t{src_out}\t{parts_out}")
+except lr.Refusal as ref:
+    sys.stderr.write(ref.line() + "\n")
+    raise SystemExit(2)
+PYEOF
+      )"; then
+        exit 2
+      fi
+      IFS=$'\t' read -r DRY_DL_S DRY_DL_SRC DRY_DL_PARTS <<< "${DRY_DL_RES}"
+      colab_configure_download_timeout "${DRY_DL_S}" "${DRY_DL_SRC}" "${DRY_DL_PARTS}" || exit 2
+    fi
+  fi
+  colab_apply_test_cleanup_overrides "${DRY_TEST_MODE}"
   colab_dry_cap_budget "${PY_BIN}" "${GUARDS_PY}" "train" "${CARD}" "${CAP}" "${MARGIN}" "${TRAIN_MAX_RATE}" "${RATE_CCU_PER_HOUR:-0.26}" "${MIN_RUNTIME_S}"
   exit $?
 fi
@@ -951,6 +1047,8 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
   SDLAB_TEST_NEW_TIMEOUT_S
   SDLAB_TEST_UPLOAD_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_REASSEMBLE_TIMEOUT_S
+  SDLAB_TEST_UPLOAD_REASSEMBLE_MB_S
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
@@ -1117,19 +1215,6 @@ colab_gpu_rate_gate_arm "${OUT_DIR}" "${CARD}" "${TRAIN_MAX_RATE}" "${TEST_MODE}
 # stub keeps colab new --high-mem and takes no --shape (colab_window.sh, colab_shape_gate_arm).
 colab_shape_gate_arm "${OUT_DIR}" "${CARD}" "${SHAPE}"
 
-lane3_translate_wsl_path() {
-  local raw="$1"
-  if [[ "${raw}" =~ ^([A-Za-z]):/(.*)$ ]] && [[ -d "/mnt/${BASH_REMATCH[1],,}" ]]; then
-    local drive_lower="${BASH_REMATCH[1],,}"
-    local rest_path="${BASH_REMATCH[2]}"
-    if [[ ! -e "${raw}" ]] && [[ -e "/mnt/${drive_lower}/${rest_path}" ]]; then
-      printf '%s' "/mnt/${drive_lower}/${rest_path}"
-      return 0
-    fi
-  fi
-  printf '%s' "${raw}"
-}
-
 WHEEL_DIR="$(lane3_translate_wsl_path "${WHEEL_DIR}")"
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
   DATASET_DIR="$(lane3_translate_wsl_path "${DATASET_DIR}")"
@@ -1195,6 +1280,7 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   [ -n "${CHECKPOINT_SIZE_BYTES_ARG}" ] && PLAN_ARGS+=(--checkpoint-size-bytes "${CHECKPOINT_SIZE_BYTES_ARG}")
   [ -n "${OPTIMIZER_SIZE_BYTES_ARG}" ] && PLAN_ARGS+=(--optimizer-size-bytes "${OPTIMIZER_SIZE_BYTES_ARG}")
   [ -n "${SAMPLES_AND_LOGS_BYTES_ARG}" ] && PLAN_ARGS+=(--samples-and-logs-bytes "${SAMPLES_AND_LOGS_BYTES_ARG}")
+  [ -n "${AUXILIARY_KEEP_ALL_BYTES_ARG}" ] && PLAN_ARGS+=(--auxiliary-keep-all-bytes "${AUXILIARY_KEEP_ALL_BYTES_ARG}")
   [ -n "${OUTPUT_OVERHEAD_FACTOR_ARG}" ] && PLAN_ARGS+=(--output-overhead-factor "${OUTPUT_OVERHEAD_FACTOR_ARG}")
   [ -n "${EXPECTED_MODEL_BYTES_ARG}" ] && PLAN_ARGS+=(--expected-model-bytes "${EXPECTED_MODEL_BYTES_ARG}")
 
@@ -1205,10 +1291,10 @@ if [ "${TRAIN_REQUESTED}" = "1" ]; then
   fi
   printf '%s\n' "${PLAN_OUT}" >> "${OUT_DIR}/guards.log"
 
-  read -r RESOLVED_DL_S RESOLVED_DL_SRC PROJECTED_OUTPUT_BYTES < <(
-    "${PY_BIN}" -c 'import json, sys; p = json.load(open(sys.argv[1], encoding="utf-8")); b = p["download_timeout_basis"]; print(p["download_timeout_s"], ("projected" if b["mode"] == "projected" else b["source"]), p["output_disk_projection"]["projected_output_bytes"])' "${OUT_DIR}/run_plan.json" | tr -d '\r'
+  read -r RESOLVED_DL_S RESOLVED_DL_SRC RESOLVED_DL_PARTS PROJECTED_OUTPUT_BYTES < <(
+    "${PY_BIN}" -c 'import json, sys; p = json.load(open(sys.argv[1], encoding="utf-8")); b = p["download_timeout_basis"]; print(p["download_timeout_s"], ("projected" if b["mode"] == "projected" else b["source"]), int(b.get("part_count") or 1), p["output_disk_projection"]["projected_output_bytes"])' "${OUT_DIR}/run_plan.json" | tr -d '\r'
   )
-  colab_configure_download_timeout "${RESOLVED_DL_S}" "${RESOLVED_DL_SRC}" || exit 2
+  colab_configure_download_timeout "${RESOLVED_DL_S}" "${RESOLVED_DL_SRC}" "${RESOLVED_DL_PARTS}" || exit 2
   colab_apply_test_cleanup_overrides "${TEST_MODE}"
 
   if [ -z "${RUNG_JOB}" ]; then
@@ -1278,6 +1364,7 @@ colab_check_cap_and_ram "${PY_BIN}" "${GUARDS_PY}" "stub" "0" "${WALL_S}" "${GRA
 WALL_INT="${WALL_S%.*}"
 GRACE_INT="${GRACE_S%.*}"
 WALL_LIMIT_S="$(( WALL_INT > GRACE_INT ? WALL_INT - GRACE_INT : 1 ))"
+WALL_WATCHER_START_EPOCH="$("${PY_BIN}" -c 'import time; print(f"{time.time():.6f}")' 2>/dev/null || date -u +%s)"
 MAIN_PID="$$"
 colab_run_wall_watcher \
   "${MAIN_PID}" "${WALL_LIMIT_S}" "${PY_BIN}" "${GUARDS_PY}" "${OUT_DIR}" \
@@ -1340,8 +1427,27 @@ EXEC_IN_FLIGHT=0
 if [ "${TRAIN_REQUESTED}" = "1" ]; then
   VERIFY_BUNDLE_OUT=""
   if ! VERIFY_BUNDLE_OUT="$("${PY_BIN}" "${RUNG_PY}" verify-bundle --bundle-tar "${OUT_DIR}/lane3_stub_bundle.tar.gz" --out "${OUT_DIR}/bundle_manifest_check.json" 2>&1)"; then
-    printf '%s\n' "${VERIFY_BUNDLE_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
-    exit 1
+    echo "BUNDLE_VERIFY_INITIAL_MISMATCH session=${SESSION} detail=$(printf '%s' "${VERIFY_BUNDLE_OUT}" | tr '\r\n' ' ')" | tee -a "${OUT_DIR}/guards.log" >&2
+    colab_refetch_missing_bundle_files \
+      "${PY_BIN}" "${RUNG_PY}" "${SESSION}" \
+      "${OUT_DIR}/lane3_stub_bundle.tar.gz" "${OUT_DIR}/bundle_manifest_check.json" \
+      "${OUT_DIR}" "${WALL_WATCHER_START_EPOCH}" "${WALL_LIMIT_S}" || true
+    REVERIFY_ARGS=(--bundle-tar "${OUT_DIR}/lane3_stub_bundle.tar.gz" --out "${OUT_DIR}/bundle_manifest_check.json")
+    if [ -s "${OUT_DIR}/.recovered_files.txt" ]; then
+      while IFS= read -r rec_spec; do
+        [ -z "${rec_spec}" ] && continue
+        REVERIFY_ARGS+=(--recovered-file "${rec_spec}")
+      done < "${OUT_DIR}/.recovered_files.txt"
+    fi
+    VERIFY_BUNDLE_OUT=""
+    if ! VERIFY_BUNDLE_OUT="$("${PY_BIN}" "${RUNG_PY}" verify-bundle "${REVERIFY_ARGS[@]}" 2>&1)"; then
+      printf '%s\n' "${VERIFY_BUNDLE_OUT}" | tee -a "${OUT_DIR}/guards.log" >&2
+      colab_hold_session_for_salvage_bound \
+        "${PY_BIN}" "${GUARDS_PY}" "${SESSION}" "${OUT_DIR}" \
+        "${WALL_S}" "${GRACE_S}" "${CAP}" "${MARGIN}"
+      exit 1
+    fi
+    echo "BUNDLE_REFETCH_RECOVERED session=${SESSION}" | tee -a "${OUT_DIR}/guards.log" >&2
   fi
   printf '%s\n' "${VERIFY_BUNDLE_OUT}" >> "${OUT_DIR}/guards.log"
 fi

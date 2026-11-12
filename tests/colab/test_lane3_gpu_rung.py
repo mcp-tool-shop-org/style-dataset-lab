@@ -1303,13 +1303,13 @@ def test_rate_waits_for_stability_and_prices_at_the_max(tmp_path: Path) -> None:
 
 def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_path: Path) -> None:
     # A stable 2.15/h reading must not stretch the cap: priced at max(9.5, 2.15) = 9.5, 0.05 units
-    # last 18.9 s (at 2.15/h they would last 84 s). With cleanup_bound_s = 1290 s at 9.5/h,
-    # cleanup_reserve = (1290 / 3600) * 9.5 = 3.404167 units, so cap 3.464167 minus margin 0.01
-    # minus reserve 3.404167 leaves effective_trip = 0.05 units (~18.95 s).
+    # last 18.9 s (at 2.15/h they would last 84 s). With cleanup_bound_s = 1600 s (N=2 parts) at 9.5/h,
+    # cleanup_reserve = (1600 / 3600) * 9.5 = 4.222222 units, so cap 4.282222 minus margin 0.01
+    # minus reserve 4.222222 leaves effective_trip = 0.05 units (~18.95 s).
     state_dir, env, src = _rung_env(tmp_path)
     env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "2.15/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
-    res, out_dir = _launch(tmp_path, env, src, "--cap", "3.464167", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "4.282222", "--margin", "0.01")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
@@ -1353,7 +1353,7 @@ def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Pa
                 "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
                 "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,8.88/hr,8.88/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
-    res, out_dir = _launch(tmp_path, env, src, "--cap", "3.464167", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "4.282222", "--margin", "0.01")
     content = state_dir / "content"
     try:
         win = _win(out_dir)
@@ -1678,11 +1678,11 @@ def test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial
         "FAKE_COLAB_POST_OPEN_RATE_STR": "8.88/hr",
         "GUARD_POLL_INTERVAL_S": "0.5",
     })
-    # Priced at max(9.5, 8.88) = 9.5/h with cleanup_bound_s = 1290 s -> cleanup_reserve = (1290 / 3600) * 9.5 = 3.404167 units.
-    # Adding 3.404167 to the old 0.03 cap gives cap = 3.434167 (effective_trip = 3.434167 - 0.01 - 3.404167 = 0.02 units,
+    # Priced at max(9.5, 8.88) = 9.5/h with cleanup_bound_s = 1600 s -> cleanup_reserve = (1600 / 3600) * 9.5 = 4.222222 units.
+    # Adding 4.222222 to the old 0.03 cap gives cap = 4.252222 (effective_trip = 4.252222 - 0.01 - 4.222222 = 0.02 units,
     # ~7.58 s at 9.5/h): gives the VM time to download, write step 250 + 6 samples + half-written step 500, and hang
     # before the cap guard trips.
-    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "3.434167", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "4.252222", "--margin", "0.01")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
@@ -1755,15 +1755,15 @@ def _assert_children_had_default_signals(state_dir: Path, *subcmds: str) -> None
 
 
 def test_window_json_records_cleanup_bounds_equal_to_configured_sum(tmp_path: Path) -> None:
-    # Default configured sum for lane 3 (train), measured from the trip:
-    # in-flight (300 + 10 = 310 s) + restart (180 + 10) + bundle-now exec (330 + 10) + download (300 + 10) = 1150 s;
-    # plus 2 stop attempts (2 * (60 + 10) = 140 s) -> cleanup_bound_s = 1290 s.
+    # Default configured sum for lane 3 (train, 2 projected bundle parts), measured from the trip:
+    # in-flight (300 + 10 = 310 s) + restart (180 + 10) + bundle-now exec (330 + 10) + 2 * download (2 * 310) = 1460 s;
+    # plus 2 stop attempts (2 * (60 + 10) = 140 s) -> cleanup_bound_s = 1600 s.
     _, env3, src = _rung_env(tmp_path / "l3_def")
     res3, out3 = _launch(tmp_path / "l3_def", env3, src)
     assert res3.returncode == 0, res3.stderr
     win3 = json.loads((out3 / "window.json").read_text(encoding="utf-8"))
-    assert win3["cleanup_stop_attempted_by_s"] == (300 + 10) + (180 + 10) + (330 + 10) + (300 + 10) == 1150
-    assert win3["cleanup_bound_s"] == 1150 + 2 * (60 + 10) == 1290
+    assert win3["cleanup_stop_attempted_by_s"] == (300 + 10) + (180 + 10) + (330 + 10) + 2 * (300 + 10) == 1460
+    assert win3["cleanup_bound_s"] == 1460 + 2 * (60 + 10) == 1600
 
     # Default configured sum for lane 1 (render), measured from the trip:
     # in-flight (300 + 10 = 310 s) + 0 salvage -> cleanup_stop_attempted_by_s = 310 s;
@@ -1794,9 +1794,9 @@ def test_window_json_records_cleanup_bounds_equal_to_configured_sum(tmp_path: Pa
     assert res3_c.returncode == 0, res3_c.stderr
     win3_c = json.loads((out3_c / "window.json").read_text(encoding="utf-8"))
     expected_in_flight_c = 15 + 2
-    expected_salvage_c = (10 + 2) + (20 + 2) + (15 + 2)
-    assert win3_c["cleanup_stop_attempted_by_s"] == expected_in_flight_c + expected_salvage_c == 68
-    assert win3_c["cleanup_bound_s"] == expected_in_flight_c + expected_salvage_c + 2 * (8 + 2) == 88
+    expected_salvage_c = (10 + 2) + (20 + 2) + 2 * (15 + 2)
+    assert win3_c["cleanup_stop_attempted_by_s"] == expected_in_flight_c + expected_salvage_c == 85
+    assert win3_c["cleanup_bound_s"] == expected_in_flight_c + expected_salvage_c + 2 * (8 + 2) == 105
 
 
 def test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound(tmp_path: Path) -> None:
@@ -1815,12 +1815,12 @@ def test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound(
         "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "2",
         "SDLAB_TEST_STOP_TIMEOUT_S": "3",
     })
-    # Configured bounds: in-flight (2+1=3) + restart (5+1=6) + exec (5+1=6) + download (2+1=3) = 18 s;
-    # stop (2 * (3+1) = 8 s) -> total cleanup_bound_s = 26 s.
-    # At 9.5/h, cleanup_reserve = (26 / 3600) * 9.5 = 0.068611 units; cap 0.098611 keeps effective_trip = 0.02 units.
+    # Configured bounds (2 projected parts): in-flight (2+1=3) + restart (5+1=6) + exec (5+1=6) + 2 * download (6) = 21 s;
+    # stop (2 * (3+1) = 8 s) -> total cleanup_bound_s = 29 s.
+    # At 9.5/h, cleanup_reserve = (29 / 3600) * 9.5 = 0.076528 units; cap 0.106528 keeps effective_trip = 0.02 units.
     try:
         res, out_dir = _launch(
-            tmp_path, env, src, "--rung-job", "500", "--cap", "0.098611", "--margin", "0.01", timeout_s=28
+            tmp_path, env, src, "--rung-job", "500", "--cap", "0.106528", "--margin", "0.01", timeout_s=28
         )
         assert res.returncode != 0
         guards = (out_dir / "guards.log").read_text(encoding="utf-8")
@@ -1842,8 +1842,8 @@ def test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound(
 
         win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
         assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
-        assert win["cleanup_stop_attempted_by_s"] == 18
-        assert win["cleanup_bound_s"] == 26
+        assert win["cleanup_stop_attempted_by_s"] == 21
+        assert win["cleanup_bound_s"] == 29
         _assert_children_had_default_signals(state_dir, "restart-kernel", "exec", "download", "stop")
         _assert_token_nowhere(out_dir)
     finally:
@@ -1862,10 +1862,10 @@ def test_rung_500_stop_hangs_once_then_retries_and_stops_session(tmp_path: Path)
         "SDLAB_TEST_STOP_TIMEOUT_S": "2",
     })
     try:
-        # cleanup_bound_s = 301 + (181 + 331 + 301) + 2 * (2 + 1) = 1120 s -> cleanup_reserve = (1120 / 3600) * 9.5 = 2.955556 units;
-        # cap 2.985556 minus margin 0.01 minus reserve 2.955556 keeps effective_trip = 0.02 units (~7.58 s).
+        # cleanup_bound_s = 301 + (181 + 331 + 2 * 301) + 2 * (2 + 1) = 1421 s -> cleanup_reserve = (1421 / 3600) * 9.5 = 3.749861 units;
+        # cap 3.779861 minus margin 0.01 minus reserve 3.749861 keeps effective_trip = 0.02 units (~7.58 s).
         res, out_dir = _launch(
-            tmp_path, env, src, "--rung-job", "500", "--cap", "2.985556", "--margin", "0.01", timeout_s=28
+            tmp_path, env, src, "--rung-job", "500", "--cap", "3.779861", "--margin", "0.01", timeout_s=28
         )
         assert res.returncode != 0
         _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "CAP_GUARD_TRIPPED")
@@ -1899,7 +1899,7 @@ def test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop(tmp_
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
         "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-        "--wall-s", "2900", "--cap", "3.434167", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "2900", "--cap", "4.252222", "--margin", "0.01", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -2040,41 +2040,41 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
         "FAKE_VM_TRAIN": "hang_after_save",
         "GUARD_POLL_INTERVAL_S": "0.5",
     })
-    # Hand-computed for Lane 3 (cleanup_bound_s = 1290 s) on G4 priced at max(10.5, 8.88) = 10.5/h:
-    # cleanup_reserve = (1290 / 3600) * 10.5 = 3.7625 units.
-    # With cap = 3.80, margin = 0.01:
-    # effective_trip = 3.80 - 0.01 - 3.7625 = 0.0275 units (~9.43 s at 10.5/h).
-    # Without cleanup_reserve, ceiling was 3.79 units (~1299.43 s) and would not trip within this window.
+    # Hand-computed for Lane 3 (cleanup_bound_s = 1600 s for N=2 parts) on G4 priced at max(10.5, 8.88) = 10.5/h:
+    # cleanup_reserve = (1600 / 3600) * 10.5 = 4.666667 units.
+    # With cap = 4.704167, margin = 0.01:
+    # effective_trip = 4.704167 - 0.01 - 4.666667 = 0.0275 units (~9.43 s at 10.5/h).
+    # Without cleanup_reserve, ceiling was 4.694167 units (~1609.43 s) and would not trip within this window.
     try:
         dry_res, _ = _launch(
             tmp_path / "dry_check", env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "3.80", "--margin", "0.01", "--dry",
+            "--max-rate", "10.5", "--cap", "4.704167", "--margin", "0.01", "--dry",
             timeout_s=15,
         )
         assert dry_res.returncode == 0, dry_res.stderr
         dry_rec = json.loads(dry_res.stdout.strip().splitlines()[-1])
-        assert dry_rec["cleanup_bound_s"] == 1290
-        assert dry_rec["reserve"] == 3.7625
+        assert dry_rec["cleanup_bound_s"] == 1600
+        assert dry_rec["reserve"] == 4.666667
         assert dry_rec["effective_trip"] == 0.0275
 
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "3.80", "--margin", "0.01",
+            "--max-rate", "10.5", "--cap", "4.704167", "--margin", "0.01",
             timeout_s=40,
         )
         assert res.returncode != 0
         win = _win(out_dir)
-        assert win["cleanup_bound_s"] == 1290
+        assert win["cleanup_bound_s"] == 1600
         assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
         assert win["rate_used_for_cap_and_projection"] == 10.5
-        assert win["cleanup_reserve_units"] == round((1290 / 3600) * 10.5, 6) == 3.7625
-        assert win["effective_trip_units"] == round(3.80 - 0.01 - 3.7625, 6) == 0.0275
+        assert win["cleanup_reserve_units"] == round((1600 / 3600) * 10.5, 6) == 4.666667
+        assert win["effective_trip_units"] == round(4.704167 - 0.01 - 4.666667, 6) == 0.0275
         assert win["cap_trip_formula"] == CAP_FORMULA_STR
         tripped = [r for r in _cap_records(out_dir) if r["tripped"]]
         assert tripped, "cap guard never tripped"
-        assert tripped[0]["cleanup_reserve_units"] == 3.7625
+        assert tripped[0]["cleanup_reserve_units"] == 4.666667
         assert tripped[0]["effective_trip_units"] == 0.0275
         assert tripped[0]["ceiling_ccu"] == 0.0275
         assert tripped[0]["formula"] == CAP_FORMULA_STR
@@ -2141,24 +2141,24 @@ def test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip(tmp_path
 
 
 def test_cap_too_small_for_cleanup_or_min_runtime_refuses_before_any_colab_call(tmp_path: Path) -> None:
-    # 1. Lane 3 GPU rung: cap - margin - cleanup_reserve <= 0 (3.70 - 0.01 - 3.7625 = -0.0725 <= 0).
+    # 1. Lane 3 GPU rung: cap - margin - cleanup_reserve <= 0 (4.604167 - 0.01 - 4.666667 = -0.0725 <= 0).
     state1, env1, src1 = _rung_env(tmp_path / "l3_no_room")
     res1, out1 = _launch(
         tmp_path / "l3_no_room", env1, src1,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "3.70", "--margin", "0.01",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "4.604167", "--margin", "0.01",
     )
     assert res1.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res1.stderr
     assert not (state1 / "calls.log").exists() and not (state1 / "card.txt").exists()
     win1 = _win(out1)
     assert win1["refusal_code"] == "CAP_TOO_SMALL_FOR_CLEANUP"
-    assert "3.7625" in win1["why"] and "-0.0725" in win1["why"]
-    assert win1["cleanup_reserve_units"] == 3.7625 and win1["effective_trip_units"] == -0.0725
+    assert "4.666667" in win1["why"] and "-0.0725" in win1["why"]
+    assert win1["cleanup_reserve_units"] == 4.666667 and win1["effective_trip_units"] == -0.0725
 
-    # 2. Lane 3 GPU rung with --min-runtime-s: cap 4.9 leaves 1.1275 units = 386.57 s at 10.5/h < 900 s.
+    # 2. Lane 3 GPU rung with --min-runtime-s: cap 5.804167 leaves 1.1275 units = 386.57 s at 10.5/h < 900 s.
     state2, env2, src2 = _rung_env(tmp_path / "l3_min_rt")
     res2, out2 = _launch(
         tmp_path / "l3_min_rt", env2, src2,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "4.9", "--margin", "0.01",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "5.804167", "--margin", "0.01",
         "--min-runtime-s", "900",
     )
     assert res2.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res2.stderr
@@ -2208,24 +2208,24 @@ def test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls(
     assert rec_guard["runtime_at_max_rate_s"] == round((0.59 / 10.5) * 3600, 2) == 202.29
     assert rec_guard["worst_case_total_spend"] == 4.9
 
-    # 2. Lane 3 launcher with --dry on G4 at --max-rate 10.5, --cap 4.9, --margin 0.01:
+    # 2. Lane 3 launcher with --dry on G4 at --max-rate 10.5, --cap 5.804167, --margin 0.01:
     state_l3, env_l3, src_l3 = _rung_env(tmp_path / "dry_l3")
     res_l3, _ = _launch(
         tmp_path / "dry_l3", env_l3, src_l3,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "4.9", "--margin", "0.01", "--dry",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "5.804167", "--margin", "0.01", "--dry",
     )
     assert res_l3.returncode == 0, res_l3.stderr
     assert not (state_l3 / "calls.log").exists()
     for token in (
-        "cap: 4.9", "margin: 0.01", "cleanup_bound_s: 1290", "priced_rate: 10.5/h",
-        "3.7625", "1.1275", "386.57 s", "worst_case_total_spend: 4.9",
+        "cap: 5.804167", "margin: 0.01", "cleanup_bound_s: 1600", "priced_rate: 10.5/h",
+        "4.666667", "1.1275", "386.57 s", "worst_case_total_spend: 5.804167",
     ):
         assert token in res_l3.stdout, (token, res_l3.stdout)
     rec_l3 = json.loads(res_l3.stdout.strip().splitlines()[-1])
-    assert rec_l3["cleanup_bound_s"] == 1290
-    assert rec_l3["reserve"] == 3.7625 and rec_l3["effective_trip"] == 1.1275
+    assert rec_l3["cleanup_bound_s"] == 1600
+    assert rec_l3["reserve"] == 4.666667 and rec_l3["effective_trip"] == 1.1275
     assert rec_l3["runtime_at_priced_rate_s"] == 386.57 and rec_l3["runtime_at_max_rate_s"] == 386.57
-    assert rec_l3["worst_case_total_spend"] == 4.9
+    assert rec_l3["worst_case_total_spend"] == 5.804167
 
     # 3. Lane 1 launcher with --dry on G4 at --max-rate 10.5, --cap 2.0, --margin 0.01:
     _, state_l1, env_l1 = fc.make_fake_colab_env(tmp_path / "dry_l1")
@@ -2540,15 +2540,15 @@ def test_pre_exec_cap_trip_during_slow_rate_polls(tmp_path: Path) -> None:
         "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.8",
         "GUARD_POLL_INTERVAL_S": "0.2",
     })
-    # cleanup_reserve = (1290 / 3600) * 10.5 = 3.7625 units.
-    # With cap = 3.775, margin = 0.01: effective_trip = 0.0025 units (~0.86 s at 10.5/h).
+    # cleanup_reserve = (1600 / 3600) * 10.5 = 4.666667 units.
+    # With cap = 4.679167, margin = 0.01: effective_trip = 0.0025 units (~0.86 s at 10.5/h).
     # Slow post-open rate polls (~0.6 s per usage call + 0.8 s interval) cross effective_trip
     # during colab_read_post_open_rate before any upload or exec is called.
     try:
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "3.775", "--margin", "0.01",
+            "--max-rate", "10.5", "--cap", "4.679167", "--margin", "0.01",
             timeout_s=20,
         )
         assert res.returncode != 0
@@ -2593,15 +2593,15 @@ def test_pre_exec_cap_trip_between_slow_uploads(tmp_path: Path) -> None:
         "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
         "GUARD_POLL_INTERVAL_S": "0.2",
     })
-    # cleanup_reserve = (1290 / 3600) * 10.5 = 3.7625 units.
-    # With cap = 3.780, margin = 0.01: effective_trip = 0.0075 units (~2.57 s at 10.5/h).
+    # cleanup_reserve = (1600 / 3600) * 10.5 = 4.666667 units.
+    # With cap = 4.684167, margin = 0.01: effective_trip = 0.0075 units (~2.57 s at 10.5/h).
     # Fast rate polls finish in ~0.25 s, then slow-but-successful uploads (0.35 s each) push
     # spend over effective_trip mid-upload-sequence before `colab exec` is ever called.
     try:
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "3.780", "--margin", "0.01",
+            "--max-rate", "10.5", "--cap", "4.684167", "--margin", "0.01",
             timeout_s=25,
         )
         assert res.returncode != 0
@@ -3279,7 +3279,7 @@ def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
     out_l3 = res_l3.stdout
     assert "worst_case_cap_path: 8.3 (= cap 8.3)" in out_l3, out_l3
     assert (
-        "worst_case_launcher_death_path: 8.25 ((death_time <= 1538.57 s + cleanup_bound_s 1290 s) / 3600 * 10.5/h)"
+        "worst_case_launcher_death_path: 8.25 ((death_time <= 1228.57 s + cleanup_bound_s 1600 s) / 3600 * 10.5/h)"
         in out_l3
     ), out_l3
     assert "worst_case_total_spend: 8.3 (= max(cap_path 8.3, launcher_death_path 8.25) = cap 8.3)" in out_l3, out_l3
@@ -3781,7 +3781,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
         "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--dry",
     )
     assert dry_l3_env.returncode == 0
-    assert json.loads(dry_l3_env.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1650
+    assert json.loads(dry_l3_env.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 2140
 
     dry_l3_cli, _ = _launch(
         tmp_path / "inv", env_480, src_inv,
@@ -3789,7 +3789,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
         "--download-timeout-s", "600", "--dry",
     )
     assert dry_l3_cli.returncode == 0
-    assert json.loads(dry_l3_cli.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1890
+    assert json.loads(dry_l3_cli.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 2500
 
     dry_l1_cli = subprocess.run(
         [
@@ -3809,8 +3809,8 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
     assert res_run.returncode == 0, res_run.stderr
     win_run = json.loads((out_run / "window.json").read_text(encoding="utf-8"))
     assert win_run["download_timeout_s"] == 600
-    assert win_run["cleanup_stop_attempted_by_s"] == 1750
-    assert win_run["cleanup_bound_s"] == 1890
+    assert win_run["cleanup_stop_attempted_by_s"] == 2360
+    assert win_run["cleanup_bound_s"] == 2500
 
 
 # --- real-run fix1: paid-run rig guards and full training-output retention ---------------------
@@ -3844,7 +3844,7 @@ def test_real_job_download_timeout_required_and_projected_basis(tmp_path: Path) 
     assert res_short.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_TOO_SHORT:" in res_short.stderr
     win_short = json.loads((out_short / "window.json").read_text(encoding="utf-8"))
     assert win_short["refusal_code"] == "DOWNLOAD_TIMEOUT_TOO_SHORT"
-    assert win_short["download_timeout_basis"]["projected_seconds"] == 122
+    assert win_short["download_timeout_basis"]["projected_seconds"] == 227
     assert not (state_short / "calls.log").exists()
 
     # 3. Invalid --download-floor-mb-s refuses DOWNLOAD_TIMEOUT_INVALID on the rig.
@@ -3859,22 +3859,23 @@ def test_real_job_download_timeout_required_and_projected_basis(tmp_path: Path) 
     assert res_badf.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_INVALID:" in res_badf.stderr
     assert not (state_badf / "calls.log").exists()
 
-    # 4. Projected --download-floor-mb-s (0.25 MB/s -> 487 s) sets both bundle and salvage timeouts.
+    # 4. Projected --download-floor-mb-s (0.25 MB/s -> 906 s for 216 MiB keep-all bundle) sets both bundle and salvage timeouts.
     _, env_proj = _real_run_env(tmp_path / "dl_proj")
     res_proj, out_proj = _launch_real(
         tmp_path / "dl_proj", env_proj, ds_dir,
         "--job", fc._to_posix(job_p), "--job-sha", job_sha,
         "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
         "--download-floor-mb-s", "0.25",
+        "--cap", "8",
         omit_download_timeout=True,
     )
     assert res_proj.returncode == 0, res_proj.stderr
     win_proj = json.loads((out_proj / "window.json").read_text(encoding="utf-8"))
-    assert win_proj["download_timeout_s"] == 487 and win_proj["salvage_download_timeout_s"] == 487
+    assert win_proj["download_timeout_s"] == 906 and win_proj["salvage_download_timeout_s"] == 906
     assert win_proj["download_timeout_source"] == "projected"
     assert win_proj["download_timeout_basis"]["mode"] == "projected"
-    assert win_proj["download_timeout_basis"]["chosen_seconds"] == 487
-    assert win_proj["cleanup_bound_s"] == 1664
+    assert win_proj["download_timeout_basis"]["chosen_seconds"] == 906
+    assert win_proj["cleanup_bound_s"] == 2502
 
 
 def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -> None:
@@ -3932,7 +3933,7 @@ def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -
         "--download-timeout-s", "300", "--upload-timeout-s", "500", "--dry",
     )
     assert dry_l3.returncode == 0
-    assert json.loads(dry_l3.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1490
+    assert json.loads(dry_l3.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 1800
     assert not (state_dry / "calls.log").exists()
 
 
@@ -4082,7 +4083,7 @@ def test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusa
             assert sub in (win["why"] or ""), (label, sub, win["why"])
         assert not (case_state / "calls.log").exists(), label
 
-    # Positive check: pinned allowed ref + trigger_word with cache_text_embeddings: false passes check-job.
+    # Positive check: local VM vae_path + provenance pinned ref under meta + trigger_word with cache_text_embeddings: false passes check-job.
     good_pinned = tmp_path / "good_pinned.yaml"
     good_pinned.write_text(
         base_text.replace(
@@ -4093,8 +4094,9 @@ def test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusa
             '    device: cuda:0\n    trigger_word: "synstyle"\n',
         ).replace(
             "      low_vram: false\n",
-            f'      low_vram: false\n      vae_path: "Qwen/Qwen-Image@{REVISION}"\n',
-        ),
+            '      low_vram: false\n      vae_path: "/content/local_vae"\n',
+        )
+        + f'  provenance_vae: "Qwen/Qwen-Image@{REVISION}"\n',
         encoding="utf-8",
         newline="\n",
     )
@@ -4231,30 +4233,79 @@ def test_output_disk_projection_and_vm_disk_guards(tmp_path: Path) -> None:
 
 
 def test_bundle_manifest_mismatch_when_file_dropped_or_size_changed(tmp_path: Path) -> None:
-    # 1. Fake drops optimizer.pt from rung_outputs before tarring -> rig fails with TRAIN_OUTPUT_MANIFEST_MISMATCH.
-    _, env_drop, src_drop = _rung_env(tmp_path / "drop_file")
-    env_drop["FAKE_VM_DROP_OUTPUT_FILE"] = "rustline_style_v5/optimizer.pt"
-    res_drop, out_drop = _launch(tmp_path / "drop_file", env_drop, src_drop)
-    assert res_drop.returncode != 0
-    win_drop = json.loads((out_drop / "window.json").read_text(encoding="utf-8"))
-    assert win_drop["status"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
-    assert win_drop["refusal_code"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
-    assert win_drop["trained"] is False
-    assert win_drop["training_output_manifest_check"]["ok"] is False
-    assert "missing training output in bundle: rung_outputs/rustline_style_v5/optimizer.pt" in (
-        win_drop["why"] or ""
-    )
+    # 1. N2 recovery: fake drops optimizer.pt and corrupts loss.log in rung_outputs before tarring while
+    # /content/lane3_train still holds intact files -> rig re-fetches each file once from the live VM,
+    # repairs lane3_stub_bundle.tar.gz, re-verifies, and succeeds without losing training output.
+    state_rec, env_rec, src_rec = _rung_env(tmp_path / "recover_files")
+    env_rec["FAKE_VM_DROP_OUTPUT_FILE"] = "rustline_style_v5/optimizer.pt"
+    env_rec["FAKE_VM_CORRUPT_OUTPUT_FILE"] = "rustline_style_v5/loss.log"
+    res_rec, out_rec = _launch(tmp_path / "recover_files", env_rec, src_rec)
+    assert res_rec.returncode == 0, f"STDOUT:\n{res_rec.stdout}\nSTDERR:\n{res_rec.stderr}"
+    win_rec = json.loads((out_rec / "window.json").read_text(encoding="utf-8"))
+    assert win_rec["status"] == "ok" and win_rec["refusal_code"] is None
+    assert win_rec["trained"] is True
+    assert win_rec["training_output_manifest_check"]["ok"] is True
+    assert sorted(win_rec["training_output_manifest_check"]["recovered_files"]) == [
+        "rustline_style_v5/loss.log",
+        "rustline_style_v5/optimizer.pt",
+    ]
+    assert win_rec["bundle_refetch"]["repaired_bundle"] is True
+    assert sorted(win_rec["bundle_refetch"]["recovered_files"]) == [
+        "rustline_style_v5/loss.log",
+        "rustline_style_v5/optimizer.pt",
+    ]
+    assert win_rec["bundle_refetch"]["still_bad_files"] == []
+    assert win_rec["session_hold"] is None
+    members_rec = _bundle(out_rec)
+    tf_man_rec = json.loads(members_rec["training_folder_manifest.json"].decode("utf-8"))
+    for entry in tf_man_rec["files"]:
+        blob = members_rec["rung_outputs/" + entry["path"]]
+        assert len(blob) == entry["bytes"]
+        assert hashlib.sha256(blob).hexdigest() == entry["sha256"]
+    calls_rec = (state_rec / "calls.log").read_text(encoding="utf-8")
+    assert calls_rec.count("/content/lane3_train/rustline_style_v5/optimizer.pt") == 1
+    assert calls_rec.count("/content/lane3_train/rustline_style_v5/loss.log") == 1
 
-    # 2. Fake alters loss.log size in rung_outputs before tarring -> rig fails with TRAIN_OUTPUT_MANIFEST_MISMATCH.
-    _, env_sz, src_sz = _rung_env(tmp_path / "size_mismatch")
-    env_sz["FAKE_VM_CORRUPT_OUTPUT_FILE"] = "rustline_style_v5/loss.log"
-    res_sz, out_sz = _launch(tmp_path / "size_mismatch", env_sz, src_sz)
-    assert res_sz.returncode != 0
-    win_sz = json.loads((out_sz / "window.json").read_text(encoding="utf-8"))
-    assert win_sz["refusal_code"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
-    assert win_sz["trained"] is False
-    assert win_sz["training_output_manifest_check"]["ok"] is False
-    assert "size mismatch for rung_outputs/rustline_style_v5/loss.log" in (win_sz["why"] or "")
+    # 2. Persistent multi-file failure: VM /content/lane3_train also lacks optimizer.pt and has corrupted
+    # loss.log -> 1 bounded retry per file fails, every bad file is named (not just the first), the
+    # session is held loudly for the salvage bound before stopping, and never stops silently.
+    state_fail, env_fail, src_fail = _rung_env(tmp_path / "persistent_mismatch")
+    env_fail.update({
+        "FAKE_VM_DROP_TRAIN_SOURCE_FILE": "rustline_style_v5/optimizer.pt",
+        "FAKE_VM_CORRUPT_TRAIN_SOURCE_FILE": "rustline_style_v5/loss.log",
+        "SDLAB_TEST_SALVAGE_DEADLINE_S": "2",
+    })
+    res_fail, out_fail = _launch(tmp_path / "persistent_mismatch", env_fail, src_fail)
+    assert res_fail.returncode != 0
+    win_fail = json.loads((out_fail / "window.json").read_text(encoding="utf-8"))
+    assert win_fail["status"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
+    assert win_fail["refusal_code"] == "TRAIN_OUTPUT_MANIFEST_MISMATCH"
+    assert win_fail["trained"] is False
+    mc_fail = win_fail["training_output_manifest_check"]
+    assert mc_fail["ok"] is False
+    assert mc_fail["missing_files"] == ["rustline_style_v5/optimizer.pt"]
+    assert mc_fail["mismatched_files"] == ["rustline_style_v5/loss.log"]
+    assert "missing training output in bundle: rung_outputs/rustline_style_v5/optimizer.pt" in (win_fail["why"] or "")
+    assert "size mismatch for rung_outputs/rustline_style_v5/loss.log" in (win_fail["why"] or "")
+    assert sorted(win_fail["bundle_refetch"]["still_bad_files"]) == [
+        "rustline_style_v5/loss.log",
+        "rustline_style_v5/optimizer.pt",
+    ]
+    hold = win_fail["session_hold"]
+    assert hold is not None and hold["status"] == "completed"
+    assert hold["hold_bound_s"] == 2 and hold["held_s"] >= 1.8
+    assert hold["missing_files"] == ["rustline_style_v5/optimizer.pt"]
+    assert hold["mismatched_files"] == ["rustline_style_v5/loss.log"]
+    guards_fail = (out_fail / "guards.log").read_text(encoding="utf-8")
+    for loud_tok in (
+        "MANIFEST_MISMATCH_SESSION_HOLD_START",
+        "MANIFEST_MISMATCH_SESSION_HOLD_DONE",
+        "rustline_style_v5/optimizer.pt",
+        "rustline_style_v5/loss.log",
+    ):
+        assert loud_tok in guards_fail, (loud_tok, guards_fail)
+        assert loud_tok in res_fail.stderr, (loud_tok, res_fail.stderr)
+    assert "STOP -s sdlab-l3-gpu-rung" in (state_fail / "stops.log").read_text(encoding="utf-8")
 
 
 def test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches(
@@ -4548,6 +4599,258 @@ def test_in_process_check_job_plan_run_dataset_and_bundle_verification_branches(
     capsys.readouterr()
     assert lr.main(["verify-bundle", "--bundle-tar", str(sha_bad_tar)]) == 1
     assert "sha256 mismatch" in capsys.readouterr().err
+
+
+# --- paid-run fix2: N1 keep-all optimizer projection, N3 multi-part salvage, N4 split disk, Note 6 ---
+
+
+def test_n1_optimizer_state_pushes_bundle_over_chunk_boundary_and_missing_optimizer_refuses(
+    tmp_path: Path,
+) -> None:
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "n1_ds", n=3)
+    mp = fc._to_posix(man_p)
+    base_p, _ = _write_synthetic_job(tmp_path / "n1_base", steps=40)
+    base_txt = base_p.read_text(encoding="utf-8")
+
+    # 1. Missing optimizer_size_bytes refuses before `colab new` (both explicit-dl and floor-projected modes).
+    no_opt = tmp_path / "n1_no_opt.yaml"
+    no_opt.write_text(
+        base_txt.replace("  optimizer_size_bytes: 104857600\n", ""),
+        encoding="utf-8",
+        newline="\n",
+    )
+    no_opt_sha = hashlib.sha256(no_opt.read_bytes()).hexdigest()
+    state_no1, env_no1 = _real_run_env(tmp_path / "n1_miss_exp")
+    res_no1, out_no1 = _launch_real(
+        tmp_path / "n1_miss_exp", env_no1, ds_dir,
+        "--job", fc._to_posix(no_opt), "--job-sha", no_opt_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+    )
+    assert res_no1.returncode == 2 and "REFUSED: TRAIN_OUTPUT_PROJECTION_REQUIRED:" in res_no1.stderr
+    assert "optimizer_size_bytes" in (json.loads((out_no1 / "window.json").read_text(encoding="utf-8"))["why"] or "")
+    assert not (state_no1 / "calls.log").exists()
+
+    state_no2, env_no2 = _real_run_env(tmp_path / "n1_miss_floor")
+    res_no2, _ = _launch_real(
+        tmp_path / "n1_miss_floor", env_no2, ds_dir,
+        "--job", fc._to_posix(no_opt), "--job-sha", no_opt_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+        "--download-floor-mb-s", "1.0",
+        omit_download_timeout=True,
+    )
+    assert res_no2.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_REQUIRED:" in res_no2.stderr
+    assert not (state_no2 / "calls.log").exists()
+
+    # 2. Checkpoints + samples alone are 150 MiB + 20 MiB = 170 MiB <= 256 MiB (1 part at df9a1b3b),
+    # while optimizer_size_bytes = 160 MiB + auxiliary_keep_all_bytes = 10 MiB makes expected_bundle_bytes
+    # = 340 MiB = 356,515,840 B > 256 MiB -> 2 parts, doubling fetch_allowance_s from 420 s to 840 s.
+    n1_job = tmp_path / "n1_two_part.yaml"
+    n1_job.write_text(
+        base_txt.replace(
+            "  checkpoint_size_bytes: 104857600\n  optimizer_size_bytes: 104857600\n  samples_and_logs_bytes: 16777216\n",
+            "  checkpoint_size_bytes: 157286400\n"
+            "  optimizer_size_bytes: 167772160\n"
+            "  samples_and_logs_bytes: 20971520\n"
+            "  auxiliary_keep_all_bytes: 10485760\n",
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    n1_sha = hashlib.sha256(n1_job.read_bytes()).hexdigest()
+
+    # Wall 1600 - grace 60 = 1540 s covered old 1-part requirement (60 + 900 + 120 + 420 = 1500 s),
+    # and now refuses TRAIN_WALL_TOO_SHORT because 2-part fetch_allowance_s = 840 s requires 1920 s.
+    state_ws, env_ws = _real_run_env(tmp_path / "n1_wall_short")
+    res_ws, out_ws = _launch_real(
+        tmp_path / "n1_wall_short", env_ws, ds_dir,
+        "--job", fc._to_posix(n1_job), "--job-sha", n1_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+        "--wall-s", "1600", "--grace-s", "60", "--cap", "6",
+    )
+    assert res_ws.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT:" in res_ws.stderr
+    win_ws = json.loads((out_ws / "window.json").read_text(encoding="utf-8"))
+    assert win_ws["wall_allowance"]["fetch_allowance_s"] == 840
+    assert win_ws["wall_allowance"]["required_wall_s"] == 1920
+    assert not (state_ws / "calls.log").exists()
+
+    # Full run with 2900 s wall and cap 6 records the full keep-all breakdown in run_plan.json and window.json.
+    _, env_ok = _real_run_env(tmp_path / "n1_ok")
+    res_ok, out_ok = _launch_real(
+        tmp_path / "n1_ok", env_ok, ds_dir,
+        "--job", fc._to_posix(n1_job), "--job-sha", n1_sha,
+        "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+        "--cap", "6",
+    )
+    assert res_ok.returncode == 0, res_ok.stderr
+    plan_ok = json.loads((out_ok / "run_plan.json").read_text(encoding="utf-8"))
+    win_ok = json.loads((out_ok / "window.json").read_text(encoding="utf-8"))
+    for bp in (plan_ok["bundle_projection"], win_ok["bundle_projection"]):
+        assert bp["checkpoints_bytes"] == 157_286_400
+        assert bp["optimizer_state_bytes"] == 167_772_160
+        assert bp["optimizer_size_source"] == "job_meta"
+        assert bp["samples_logs_and_config_bytes"] == 20_971_520
+        assert bp["auxiliary_keep_all_bytes"] == 10_485_760
+        assert bp["expected_bundle_bytes"] == 356_515_840
+        assert bp["part_count"] == 2
+        assert "BaseSDTrainProcess.py:704-713" in bp["keep_all_sources"]["optimizer_state"]
+    assert win_ok["salvage_download_parts"] == 2
+    assert win_ok["wall_allowance"]["fetch_allowance_s"] == 840
+
+
+def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipart_bound(
+    tmp_path: Path,
+) -> None:
+    # 1. Rig cap-budget gate reserves projected 4-part salvage before `colab new`:
+    # With chunk_bytes = 200,000 and 2*200,000 ckpts + 400,000 opt = 800,000 B -> 4 parts.
+    # Default timeouts with N=4 give cleanup_bound_s = 310 + (190 + 340 + 4 * 310) + 140 = 2220 s
+    # -> reserve = (2220 / 3600) * 9.5 = 5.858333 units, so cap 3.60 (which passed N=1 at df9a1b3b)
+    # refuses CAP_TOO_SMALL_FOR_CLEANUP before opening any session.
+    state_cap, env_cap, src_cap = _rung_env(tmp_path / "n3_cap")
+    env_cap["SDLAB_TEST_DOWNLOAD_CHUNK_BYTES"] = "200000"
+    res_cap, out_cap = _launch(
+        tmp_path / "n3_cap", env_cap, src_cap,
+        "--checkpoint-size-bytes", "200000",
+        "--optimizer-size-bytes", "400000",
+        "--samples-and-logs-bytes", "0",
+        "--cap", "3.60", "--margin", "0.01",
+    )
+    assert res_cap.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res_cap.stderr
+    win_cap = json.loads((out_cap / "window.json").read_text(encoding="utf-8"))
+    assert win_cap["salvage_download_parts"] == 4
+    assert win_cap["cleanup_bound_s"] == 2220
+    assert not (state_cap / "calls.log").exists()
+
+    # 2. End-to-end 4-part salvage: each `.part.` download takes 3.2 s (4 * 3.2 = 12.8 s), which exceeded
+    # the old 1-part SALVAGE_DEADLINE_S = (1+1) + (3+1) + 1*(5+1) = 12 s at df9a1b3b and cut salvage short.
+    # With N=4 projected parts, SALVAGE_DEADLINE_S = 2 + 4 + 4*6 = 30 s, completing all 4 parts and recording arrived_parts.
+    state_sal, env_sal, src_sal = _rung_env(tmp_path / "n3_salvage")
+    env_sal.update({
+        "FAKE_VM_TRAIN": "hang_after_save",
+        "FAKE_VM_EXTRA_BLOB_BYTES": "700000",
+        "SDLAB_TEST_DOWNLOAD_CHUNK_BYTES": "200000",
+        "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
+        "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "1",
+        "SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S": "3",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "5",
+        "SDLAB_TEST_KILL_GRACE_S": "1",
+        "FAKE_COLAB_DOWNLOAD_DELAY_FOR": ".part.",
+        "FAKE_COLAB_DOWNLOAD_DELAY_S": "3.2",
+        "GUARD_POLL_INTERVAL_S": "0.3",
+    })
+    try:
+        res_sal, out_sal = _launch(
+            tmp_path / "n3_salvage", env_sal, src_sal,
+            "--checkpoint-size-bytes", "200000",
+            "--optimizer-size-bytes", "400000",
+            "--samples-and-logs-bytes", "0",
+            "--download-max-seconds", "5",
+            "--wall-s", "10", "--grace-s", "2",
+            "--cap", "5",
+            timeout_s=60,
+        )
+        assert res_sal.returncode != 0
+        win_sal = json.loads((out_sal / "window.json").read_text(encoding="utf-8"))
+        assert win_sal["refusal_code"] == "WALL_GUARD_TRIPPED"
+        assert win_sal["salvage_download_parts"] == 4
+        assert win_sal["salvage_deadline_s"] == 30
+        sbd = win_sal["salvage_bundle_download"]
+        assert sbd is not None and sbd["mode"] == "chunked"
+        assert sbd["part_count"] == 4
+        assert sbd["arrived_parts"] == [0, 1, 2, 3]
+        assert sbd["verified"] is True
+        members_sal = _bundle(out_sal)
+        assert "rung_outputs/rustline_style_v5/optimizer_extra.bin" in members_sal
+        assert len(members_sal["rung_outputs/rustline_style_v5/optimizer_extra.bin"]) == 700_000
+    finally:
+        _kill_hung_test_pids(state_sal)
+
+
+def test_n4_split_copy_overhead_counted_in_output_disk_projection(tmp_path: Path) -> None:
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "n4_ds", n=3)
+    job_p, job_sha = _write_synthetic_job(tmp_path / "n4_job", steps=40)
+    state_dir, env = _real_run_env(tmp_path / "n4_run")
+    # 140 MiB ckpt + 140 MiB opt + 20 MiB samples = 300 MiB = 314,572,800 B > 256 MiB chunk size.
+    # Under df9a1b3b's 2.5x factor: 2.5 * 300 MiB = 750 MiB = 786,432,000 B <= 0.90 GiB (966,367,641 B).
+    # With +1.0 split_copy_overhead (3.5x): 3.5 * 300 MiB = 1050 MiB = 1,101,004,800 B > 0.90 GiB -> refuses TRAIN_OUTPUT_DISK_LOW.
+    res, out_dir = _launch_real(
+        tmp_path / "n4_run", env, ds_dir,
+        "--job", fc._to_posix(job_p), "--job-sha", job_sha,
+        "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
+        "--checkpoint-size-bytes", str(140 * 1024 * 1024),
+        "--optimizer-size-bytes", str(140 * 1024 * 1024),
+        "--samples-and-logs-bytes", str(20 * 1024 * 1024),
+        "--vm-disk-budget-gib", "0.90",
+    )
+    assert res.returncode == 2 and "REFUSED: TRAIN_OUTPUT_DISK_LOW:" in res.stderr
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "TRAIN_OUTPUT_DISK_LOW"
+    odp = win["output_disk_projection"]
+    assert odp["chunked_download_split_required"] is True
+    assert odp["base_copy_tar_overhead"] == 2.5
+    assert odp["split_copy_overhead"] == 1.0
+    assert odp["copy_tar_overhead"] == 3.5
+    assert odp["projected_output_bytes"] == 1_101_004_800
+    assert not (state_dir / "calls.log").exists()
+
+
+def test_note6_check_job_refuses_hub_refs_on_qtype_assistant_lora_path_and_vae_path(
+    tmp_path: Path,
+) -> None:
+    base_p, _ = _write_synthetic_job(tmp_path / "n6_base", steps=40)
+    base_txt = base_p.read_text(encoding="utf-8")
+    ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "n6_ds", n=3)
+    mp = fc._to_posix(man_p)
+
+    cases = [
+        (
+            "qtype_pinned_hub",
+            base_txt.replace(
+                "      quantize: false\n",
+                f'      quantize: true\n      qtype: "uint3|Qwen/Qwen-Image@{REVISION}"\n',
+            ),
+            ("toolkit/config_modules.py:752-753", "toolkit/util/quantize.py:527-540", "HF_HUB_OFFLINE=1"),
+        ),
+        (
+            "assistant_lora_pinned_hub",
+            base_txt.replace(
+                "      low_vram: false\n",
+                f'      low_vram: false\n      assistant_lora_path: "Qwen/Qwen-Image@{REVISION}"\n',
+            ),
+            (
+                "toolkit/config_modules.py:662",
+                "toolkit/stable_diffusion_model.py:775-784",
+                "toolkit/assistant_lora.py:16",
+                "HF_HUB_OFFLINE=1",
+            ),
+        ),
+        (
+            "vae_path_pinned_hub",
+            base_txt.replace(
+                "      low_vram: false\n",
+                f'      low_vram: false\n      vae_path: "Qwen/Qwen-Image@{REVISION}"\n',
+            ),
+            ("toolkit/config_modules.py:656", "toolkit/util/vae.py:4-18", "HF_HUB_OFFLINE=1"),
+        ),
+    ]
+    for label, body, expected_citations in cases:
+        c_root = tmp_path / label
+        state_c, env_c = _real_run_env(c_root)
+        c_job = c_root / "job.yaml"
+        c_job.write_text(body, encoding="utf-8", newline="\n")
+        c_sha = hashlib.sha256(c_job.read_bytes()).hexdigest()
+        res_c, out_c = _launch_real(
+            c_root, env_c, ds_dir,
+            "--job", fc._to_posix(c_job), "--job-sha", c_sha,
+            "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
+        )
+        assert res_c.returncode == 2 and "REFUSED: JOB_UNSUPPORTED_HUB_REF:" in res_c.stderr, (label, res_c.stderr)
+        win_c = json.loads((out_c / "window.json").read_text(encoding="utf-8"))
+        assert win_c["refusal_code"] == "JOB_UNSUPPORTED_HUB_REF"
+        for cite in expected_citations:
+            assert cite in (win_c["why"] or ""), (label, cite, win_c["why"])
+        assert not (state_c / "calls.log").exists()
+
 
 
 
