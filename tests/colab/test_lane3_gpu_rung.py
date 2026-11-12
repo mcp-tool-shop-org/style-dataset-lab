@@ -4732,9 +4732,10 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
     assert win_cap["cleanup_bound_s"] == 2220
     assert not (state_cap / "calls.log").exists()
 
-    # 2. End-to-end 4-part salvage: each `.part.` download takes 3.2 s (4 * 3.2 = 12.8 s), which exceeded
-    # the old 1-part SALVAGE_DEADLINE_S = (1+1) + (3+1) + 1*(5+1) = 12 s at df9a1b3b and cut salvage short.
-    # With N=4 projected parts, SALVAGE_DEADLINE_S = 2 + 4 + 4*6 = 30 s, completing all 4 parts and recording arrived_parts.
+    # 2. End-to-end 4-part salvage: bundle-now settles 2.0 s and each `.part.` download sleeps 5.1 s
+    # (2.0 + 4 * 5.1 = 22.4 s of pure sleep), which exceeded the old 1-part SALVAGE_DEADLINE_S =
+    # (2+1) + (10+1) + 1*(7+1) = 22 s at df9a1b3b and cut salvage short. With N=4 projected parts,
+    # SALVAGE_DEADLINE_S = 3 + 11 + 4*8 = 46 s, completing all 4 parts and recording arrived_parts.
     state_sal, env_sal, src_sal = _rung_env(tmp_path / "n3_salvage")
     env_sal.update({
         "FAKE_VM_TRAIN": "hang_after_save",
@@ -4742,12 +4743,12 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
         "SDLAB_TEST_DOWNLOAD_CHUNK_BYTES": "200000",
         "SDLAB_TEST_INSTALL_ALLOWANCE_S": "1",
         "SDLAB_TEST_TRAIN_ALLOWANCE_S": "1",
-        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "1",
-        "SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S": "3",
-        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "5",
+        "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "2",
+        "SDLAB_TEST_SALVAGE_EXEC_TIMEOUT_S": "10",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "7",
         "SDLAB_TEST_KILL_GRACE_S": "1",
         "FAKE_COLAB_DOWNLOAD_DELAY_FOR": ".part.",
-        "FAKE_COLAB_DOWNLOAD_DELAY_S": "3.2",
+        "FAKE_COLAB_DOWNLOAD_DELAY_S": "5.1",
         "GUARD_POLL_INTERVAL_S": "0.3",
     })
     try:
@@ -4759,13 +4760,13 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
             "--download-max-seconds", "5",
             "--wall-s", "10", "--grace-s", "2",
             "--cap", "5",
-            timeout_s=60,
+            timeout_s=120,
         )
         assert res_sal.returncode != 0
         win_sal = json.loads((out_sal / "window.json").read_text(encoding="utf-8"))
         assert win_sal["refusal_code"] == "WALL_GUARD_TRIPPED"
         assert win_sal["salvage_download_parts"] == 4
-        assert win_sal["salvage_deadline_s"] == 30
+        assert win_sal["salvage_deadline_s"] == 46
         sbd = win_sal["salvage_bundle_download"]
         assert sbd is not None and sbd["mode"] == "chunked"
         assert sbd["part_count"] == 4

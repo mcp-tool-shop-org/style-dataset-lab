@@ -1298,26 +1298,29 @@ for ln in reversed(raw.splitlines()):
             break
 if rec is not None:
     if not rec.get("exists"):
-        print("DIRECT\t0\t0\t\t1\t\t")
+        print("DIRECT\t0\t0\t-\t1\t-\t-")
     elif rec.get("split_failed"):
         wb = int(rec.get("whole_bytes") or 0)
         pc = int(rec.get("part_count") or 1)
-        code = str(rec.get("error_code") or "DOWNLOAD_SPLIT_DISK_LOW").replace("\t", " ").replace("\n", " ")
-        why = str(rec.get("why") or "VM split failed due to low disk").replace("\t", " ").replace("\n", " ")
-        print(f"SPLIT_ERR\t0\t{wb}\t\t{pc}\t{code}\t{why}")
+        code = str(rec.get("error_code") or "DOWNLOAD_SPLIT_DISK_LOW").replace("\t", " ").replace("\n", " ") or "DOWNLOAD_SPLIT_DISK_LOW"
+        why = str(rec.get("why") or "VM split failed due to low disk").replace("\t", " ").replace("\n", " ") or "VM split failed due to low disk"
+        print(f"SPLIT_ERR\t0\t{wb}\t-\t{pc}\t{code}\t{why}")
     elif not rec.get("split"):
-        wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
-        print(f"SINGLE\t0\t{wb}\t{ws}\t1\t\t")
+        wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"] or "-"
+        print(f"SINGLE\t0\t{wb}\t{ws}\t1\t-\t-")
     else:
-        wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
-        pc = int(rec["part_count"]); mr = rec["manifest_remote"]; px = rec["prefix"]
+        wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"] or "-"
+        pc = int(rec["part_count"]); mr = rec["manifest_remote"] or "-"; px = rec["prefix"] or "-"
         print(f"SPLIT\t1\t{wb}\t{ws}\t{pc}\t{mr}\t{px}")
 elif saw_done:
-    print("DIRECT\t0\t0\t\t1\t\t")
+    print("DIRECT\t0\t0\t-\t1\t-\t-")
 else:
-    print("NEED_PREP\t0\t0\t\t1\t\t")
+    print("NEED_PREP\t0\t0\t-\t1\t-\t-")
 ' "${prior_log}" "${rel_src}" "${chunk_bytes}" | tr -d '\r'
       )
+      [ "${prep_whole_sha}" = "-" ] && prep_whole_sha=""
+      [ "${prep_manifest_remote}" = "-" ] && prep_manifest_remote=""
+      [ "${prep_prefix}" = "-" ] && prep_prefix=""
       if [ "${prep_state}" != "NEED_PREP" ]; then
         need_prep_exec="0"
       elif [ "${mode}" = "salvage" ]; then
@@ -1365,26 +1368,29 @@ for ln in reversed(raw.splitlines()):
 if rec is None:
     low = raw.lower()
     if "enospc" in low or "no space left on device" in low:
-        print(f"SPLIT_ERR\t0\t0\t\t1\tDOWNLOAD_SPLIT_DISK_LOW\tVM download prepare exited rc={prep_rc} with ENOSPC")
+        print(f"SPLIT_ERR\t0\t0\t-\t1\tDOWNLOAD_SPLIT_DISK_LOW\tVM download prepare exited rc={prep_rc} with ENOSPC")
     else:
-        print(f"PREP_ERR\t0\t0\t\t1\tDOWNLOAD_FAILED\tVM download prepare failed rc={prep_rc} without SDLAB_DOWNLOAD_PREPARE_JSON")
+        print(f"PREP_ERR\t0\t0\t-\t1\tDOWNLOAD_FAILED\tVM download prepare failed rc={prep_rc} without SDLAB_DOWNLOAD_PREPARE_JSON")
 elif not rec.get("exists"):
-    print("DIRECT\t0\t0\t\t1\t\t")
+    print("DIRECT\t0\t0\t-\t1\t-\t-")
 elif rec.get("split_failed"):
     wb = int(rec.get("whole_bytes") or 0)
     pc = int(rec.get("part_count") or 1)
-    code = str(rec.get("error_code") or "DOWNLOAD_SPLIT_DISK_LOW").replace("\t", " ").replace("\n", " ")
-    why = str(rec.get("why") or "VM split failed due to low disk").replace("\t", " ").replace("\n", " ")
-    print(f"SPLIT_ERR\t0\t{wb}\t\t{pc}\t{code}\t{why}")
+    code = str(rec.get("error_code") or "DOWNLOAD_SPLIT_DISK_LOW").replace("\t", " ").replace("\n", " ") or "DOWNLOAD_SPLIT_DISK_LOW"
+    why = str(rec.get("why") or "VM split failed due to low disk").replace("\t", " ").replace("\n", " ") or "VM split failed due to low disk"
+    print(f"SPLIT_ERR\t0\t{wb}\t-\t{pc}\t{code}\t{why}")
 elif not rec.get("split"):
-    wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
-    print(f"SINGLE\t0\t{wb}\t{ws}\t1\t\t")
+    wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"] or "-"
+    print(f"SINGLE\t0\t{wb}\t{ws}\t1\t-\t-")
 else:
-    wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"]
-    pc = int(rec["part_count"]); mr = rec["manifest_remote"]; px = rec["prefix"]
+    wb = int(rec["whole_bytes"]); ws = rec["whole_sha256"] or "-"
+    pc = int(rec["part_count"]); mr = rec["manifest_remote"] or "-"; px = rec["prefix"] or "-"
     print(f"SPLIT\t1\t{wb}\t{ws}\t{pc}\t{mr}\t{px}")
 ' "${prep_rc}" <<< "${prep_out}" | tr -d '\r'
       )
+      [ "${prep_whole_sha}" = "-" ] && prep_whole_sha=""
+      [ "${prep_manifest_remote}" = "-" ] && prep_manifest_remote=""
+      [ "${prep_prefix}" = "-" ] && prep_prefix=""
     fi
   fi
 
@@ -1844,8 +1850,8 @@ for item in bad:
     if not rel or ".." in pathlib.PurePosixPath(rel).parts:
         continue
     exp_b = int(item.get("expected_bytes") if item.get("expected_bytes") is not None else (item.get("bytes") or 0))
-    exp_sha = str(item.get("expected_sha256") or item.get("sha256") or "").lower()
-    reason = str(item.get("reason") or "mismatch")
+    exp_sha = str(item.get("expected_sha256") or item.get("sha256") or "").lower() or "-"
+    reason = str(item.get("reason") or "mismatch") or "mismatch"
     print(f"{rel}\t{exp_b}\t{exp_sha}\t{reason}")
 PYEOF
   )" || rows=""
@@ -1873,6 +1879,7 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
 
   while IFS=$'\t' read -r b_rel b_exp_bytes b_exp_sha b_reason; do
     [ -z "${b_rel}" ] && continue
+    [ "${b_exp_sha}" = "-" ] && b_exp_sha=""
     local rem_wall_s
     rem_wall_s="$("${py_bin}" -c '
 import math, sys, time
