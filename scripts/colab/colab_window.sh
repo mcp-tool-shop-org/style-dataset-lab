@@ -33,7 +33,9 @@
 #   Lane 3 (train):  cleanup_stop_attempted_by_s = 310 + (190 + 340 + D * 310) (1150 s for N=1; 2700 s for N=2),
 #                    cleanup_bound_s = cleanup_stop_attempted_by_s + 140 (1290 s for N=1; 2840 s for N=2)
 #   Lane 1 (render): cleanup_stop_attempted_by_s = 310 + 0 = 310 s,
-#                    cleanup_bound_s = 310 + 0 + 140 = 450 s
+#                    cleanup_bound_s = 310 + 0 + 140 = 450 s (the stubs)
+#   Lane 1 real --render (COLAB_RENDER_SALVAGE=1): the same salvage as the train lane, so a wall or cap trip keeps the
+#                    stamped PNGs and renders.jsonl: cleanup_stop_attempted_by_s = 310 + SALVAGE_DEADLINE_S
 # Cap guard cleanup reserve (reserves cleanup_bound_s before the trip so total spend stays <= cap):
 #   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
 #   Refuses CAP_TOO_SMALL_FOR_CLEANUP before any colab call when effective_trip <= 0 or when
@@ -423,7 +425,9 @@ colab_compute_cleanup_bounds() {
   local stop_attempts="${COLAB_STOP_ATTEMPTS:-2}"
   local stop_bound_s=$(( stop_attempts * (stop_timeout_s + kill_grace_s) ))
   local salvage_bound_s=0
-  if [ "${lane}" = "train" ]; then
+  # A real `--render` window (COLAB_RENDER_SALVAGE=1, set by the lane 1 kit) keeps what it rendered on a trip, so
+  # its cleanup pays the same bounded salvage the train lane does; the stubs keep no salvage.
+  if [ "${lane}" = "train" ] || { [ "${lane}" = "render" ] && [ "${COLAB_RENDER_SALVAGE:-0}" = "1" ]; }; then
     salvage_bound_s="${salvage_steps_sum}"
     if [ "${salvage_deadline_s}" -lt "${salvage_bound_s}" ]; then
       salvage_bound_s="${salvage_deadline_s}"
@@ -4244,6 +4248,9 @@ REFUSAL_CODES = (
     "WEIGHTS_CORRUPT",
     "BG_REMOVAL_FORBIDDEN",
     "COMFY_STARTUP_FAILED",
+    "RENDER_CONSECUTIVE_FAILURES",
+    "BIREFNET_NODE_NOT_INSTALLED",
+    "WEIGHTS_DISK_LOW",
     "SESSION_OPEN_412_ACCOUNT_CAP",
     "SESSION_OPEN_503_POOL_EMPTY",
     # Rig-side live guards (colab_check_cap_and_ram, colab_run_exec_with_live_guards).
@@ -4630,7 +4637,11 @@ salvage_deadline_s = int(os.environ.get("SALVAGE_DEADLINE_S", str(salvage_steps_
 stop_timeout_s = int(os.environ.get("COLAB_STOP_TIMEOUT_S", "60"))
 stop_attempts = int(os.environ.get("COLAB_STOP_ATTEMPTS", "2"))
 stop_bound_s = stop_attempts * (stop_timeout_s + kill_grace_s)
-salvage_bound_s = min(salvage_steps_sum_s, salvage_deadline_s) if lane == "train" else 0
+salvage_bound_s = (
+    min(salvage_steps_sum_s, salvage_deadline_s)
+    if (lane == "train" or (lane == "render" and os.environ.get("COLAB_RENDER_SALVAGE", "0") == "1"))
+    else 0
+)
 cleanup_stop_attempted_by_s = in_flight_bound_s + salvage_bound_s
 cleanup_bound_s = cleanup_stop_attempted_by_s + stop_bound_s
 stop_path_raw = read_text_file(out_dir / "stop_path.txt")

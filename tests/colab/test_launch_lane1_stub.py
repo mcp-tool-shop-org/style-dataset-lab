@@ -1495,6 +1495,7 @@ def test_lane1_render_planned_colab_calls_in_order_and_stop(tmp_path: Path) -> N
         "/content/launch_guards.py",
         "/content/classify_install_log.py",
         "/content/lane3_rung.py",
+        "/content/lane1_bundle_now.py",
         "/content/weights_manifest.json",
         "/content/jobs.jsonl",
         "/content/remote_lane1_stub.sh",
@@ -1634,10 +1635,12 @@ def test_lane1_render_dry_on_gpu_card_prints_effective_trip(tmp_path: Path) -> N
     assert "effective_trip:" in res.stdout
     assert "runtime_to_trip" in res.stdout
     rec = json.loads(res.stdout.strip().splitlines()[-1])
-    assert rec["cleanup_bound_s"] == 450
-    assert rec["cleanup_reserve_units"] == pytest.approx(1.3125)
-    assert rec["effective_trip"] == pytest.approx(3.6775)
-    assert rec["runtime_to_trip_s"] == pytest.approx(round((3.6775 / 10.5) * 3600.0, 2))
+    # A real --render keeps its renders on a trip, so the cleanup bound counts the bounded salvage (restart 190 + bundle-now
+    # exec 340 + one download 310 = 840 s) where it was 450 s (310 in flight + 140 stop) when the lane kept nothing.
+    assert rec["cleanup_bound_s"] == 310 + 840 + 140
+    assert rec["cleanup_reserve_units"] == pytest.approx(1290 / 3600 * 10.5)
+    assert rec["effective_trip"] == pytest.approx(5.0 - 0.01 - 1290 / 3600 * 10.5)
+    assert rec["runtime_to_trip_s"] == pytest.approx(round((rec["effective_trip"] / 10.5) * 3600.0, 2))
 
     # --render --dry on CPU card is refused with RENDER_REQUIRES_GPU
     _, state_cpu, env_cpu = _make_fake_colab_env(tmp_path / "render_dry_cpu")
@@ -1652,6 +1655,7 @@ def _override_worktree_input_shas(env: dict[str, str]) -> None:
     pin_files = {
         "EXPECTED_LANE1_LOCK_SHA": colab_dir / "locks" / "lane1.lock",
         "EXPECTED_LANE1_RENDER_SHA": colab_dir / "lane1_render.py",
+        "EXPECTED_LANE1_BUNDLE_NOW_SHA": colab_dir / "lane1_bundle_now.py",
         "EXPECTED_LANE3_RUNG_SHA": colab_dir / "lane3_rung.py",
         "EXPECTED_INSTALL_CLASSIFIER_SHA": colab_dir / "classify_install_log.py",
         "EXPECTED_LAUNCH_GUARDS_SHA": colab_dir / "launch_guards.py",
@@ -2036,3 +2040,90 @@ def test_render_vm_refuses_staging_weights_over_fuse_mount_and_rmbg_before_open(
     win_mnt = json.loads((out_mnt / "window.json").read_text(encoding="utf-8"))
     assert win_mnt["status"] == "WEIGHTS_MOUNT_FORBIDDEN"
     assert "STOP -s sdlab-l1-mount" in (fx_mnt["state_dir"] / "stops.log").read_text(encoding="utf-8")
+
+
+def _extract_bundle(bundle: Path, dest: Path) -> Path:
+    dest.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(bundle, "r:gz") as tf:
+        tf.extractall(dest, filter="data")
+    return dest
+
+
+def test_render_wall_trip_mid_run_keeps_the_rendered_pngs_renders_jsonl_and_an_arrived_parts_receipt(tmp_path: Path) -> None:
+    """N1: a wall trip used to keep nothing from the render lane (no salvage bound, no partial bundle when
+    wall_trip_epoch.txt exists, copy-back on the VM only). The kit now salvages under a reserved bound."""
+    fx = _make_render_fixture(tmp_path / "fx_trip")
+    env = fx["env"]
+    env["FAKE_VM_RENDER_HANG_BEFORE_TAR"] = "90"
+    env["SDLAB_TEST_KILL_GRACE_S"] = "2"
+    out_dir = tmp_path / "out_trip"
+    res = _run_launcher(
+        [*fx["base_args"], "--wall-s", "45", "--grace-s", "10", "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-trip"],
+        env,
+        timeout=150,
+    )
+    assert res.returncode != 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert "WALL_GUARD_TRIPPED" in guards
+    assert (out_dir / "wall_trip_epoch.txt").is_file()
+    assert "BUNDLE_AFTER_FAILURE: downloaded lane1_render_bundle.tar.gz" in guards
+
+    ext = _extract_bundle(out_dir / "lane1_render_bundle.tar.gz", tmp_path / "ext_trip")
+    rows = [json.loads(ln) for ln in (ext / "renders.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
+    assert [r["job_id"] for r in rows] == ["render_01", "render_02", "render_03"]
+    for r in rows:
+        assert (ext / "pngs" / r["output_file"]).is_file()
+
+    receipt = json.loads((out_dir / "salvage_receipt.json").read_text(encoding="utf-8"))
+    assert receipt["trip"] == "wall" and receipt["bundle_downloaded"] is True
+    assert receipt["png_count"] == 3 and receipt["renders_jsonl"] is True and receipt["ok_rows"] == 3
+    assert (out_dir / "salvage_bundle_download.json").is_file(), "the keep-all download writes its arrived-parts receipt"
+
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["refusal_code"] == "WALL_GUARD_TRIPPED"
+    # The salvage time is reserved on top of the in-flight bound (restart 180 + bundle-now exec 330 + a download 300, each
+    # plus its kill grace), where it was 0 for every lane but train.
+    assert win["cleanup_stop_attempted_by_s"] >= 302 + (180 + 2) + (330 + 2) + (300 + 2)
+    assert "STOP -s sdlab-l1-trip" in (fx["state_dir"] / "stops.log").read_text(encoding="utf-8")
+
+
+def test_render_cleanup_bound_scales_with_the_projected_salvage_parts_and_the_stubs_keep_450(tmp_path: Path) -> None:
+    fx = _make_render_fixture(tmp_path / "fx_bound")
+    res = _run_launcher([*fx["base_args"], "--dry"], fx["env"])
+    assert res.returncode == 0, res.stderr
+    assert json.loads(res.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 310 + 840 + 140  # 3 jobs: 1 part
+    # A big queue projects a split salvage: 2 + 2N download steps, as the train lane counts them.
+    big = tmp_path / "big_jobs.jsonl"
+    big.write_text("".join(json.dumps({"job_id": f"j{i}"}) + "\n" for i in range(80)), encoding="utf-8")
+    env_big = dict(fx["env"])
+    args_big = _replace_arg(_replace_arg(fx["base_args"], "--jobs", _to_posix(big)), "--cap", "12.0")
+    res_big = _run_launcher([*args_big, "--dry"], env_big)
+    assert res_big.returncode == 0, res_big.stderr
+    # 80 jobs x 8 MiB = 640 MiB -> 3 parts of 256 MiB -> 2 + 2*3 = 8 download steps
+    assert json.loads(res_big.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 310 + (190 + 340 + 8 * 310) + 140
+    _, _, env_stub = _make_fake_colab_env(tmp_path / "stub_bound")
+    res_stub = _run_launcher(["--dry"], env_stub)
+    assert json.loads(res_stub.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 450
+
+
+def test_render_wall_is_derived_from_the_job_count_unless_given(tmp_path: Path) -> None:
+    fx = _make_render_fixture(tmp_path / "fx_wall")
+    out_a = tmp_path / "out_wall_derived"
+    res = _run_launcher([*fx["base_args"], "--out-dir", _to_posix(out_a), "--session", "sdlab-l1-wall-d"], fx["env"], timeout=90)
+    assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+    guards = (out_a / "guards.log").read_text(encoding="utf-8")
+    m = re.search(r"RENDER_WALL_DERIVED wall_s=(\d+) jobs=3 download_max_s=300", guards)
+    assert m, guards
+    assert int(m.group(1)) > 900, "three real jobs and a weight load do not fit the old 900 s default"
+    assert json.loads((out_a / "window.json").read_text(encoding="utf-8"))["wall_s"] == int(m.group(1))
+
+    fx_b = _make_render_fixture(tmp_path / "fx_wall_b")
+    out_b = tmp_path / "out_wall_explicit"
+    res_b = _run_launcher(
+        [*fx_b["base_args"], "--wall-s", "1234", "--out-dir", _to_posix(out_b), "--session", "sdlab-l1-wall-e"],
+        fx_b["env"],
+        timeout=90,
+    )
+    assert res_b.returncode == 0, res_b.stderr
+    assert "RENDER_WALL_DERIVED" not in (out_b / "guards.log").read_text(encoding="utf-8")
+    assert json.loads((out_b / "window.json").read_text(encoding="utf-8"))["wall_s"] in (1234, 1234.0)

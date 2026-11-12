@@ -17,6 +17,9 @@
 #   measured from trip: cleanup_stop_attempted_by_s = 310 s, cleanup_bound_s = 310 + 140 = 450 s
 #   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
 #   (CAP_TOO_SMALL_FOR_CLEANUP up front; --min-runtime-s; --dry)
+# A real --render window keeps what it rendered when a wall or cap guard trips: the cleanup runs the train lane's
+# bounded salvage (colab restart-kernel, lane1_bundle_now.py tars /content/lane1_out, keep-all download into
+# salvage_partial/), the cap gate reserves its time (COLAB_RENDER_SALVAGE=1), and salvage_receipt.json says what arrived.
 set -euo pipefail
 
 PINNED_UV_VERSION="0.13.5"
@@ -33,13 +36,14 @@ PINNED_COMFYUI_REPO="https://github.com/comfyanonymous/ComfyUI.git"
 PINNED_COMFYUI_COMMIT="158419f3a0017c2ce123484b14b6c527716d6ec8"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
-PINNED_LANE1_RENDER_SHA="d5c4ec12d14f82fe16dcb02a6e942db0ede680c25c97f06564b134a339df2bc7"
+PINNED_LANE1_RENDER_SHA="818580d18da800508efda37c4f0eb34d865f3c6fde1b39efe3854dddaec9d067"
+PINNED_LANE1_BUNDLE_NOW_SHA="4ff84e5f67db857cfd433b19432c708ca5f729aa144cae3c1fc214ab5b917fa2"
 PINNED_LANE3_RUNG_SHA="8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="028e3e52c5c595edc74f20639d9114c18b2916619894753a34efb77c8d2b9eec"
-PINNED_SELF_SHA="53aebe30c1ea2d12db380806ca0e7af12486c5a7719fa5cb5092a9c347d9be2a"
+PINNED_COLAB_WINDOW_SHA="b9ce5726864d7fd98dc4ae6892ff3b78fbc9f94edddb1b451a14c3f05dde6bcf"
+PINNED_SELF_SHA="fac0c18e085a9b60ec0d289d4d1eeda639fa3a538f53280b769d2da6f228ce15"
 
 LANE1_DISK_REQUIRED_GIB="50"
 LANE1_CPU_STUB_DISK_REQUIRED_GIB="5"
@@ -57,6 +61,8 @@ CARD="${CARD:-CPU-high-mem}"
 SESSION="sdlab-lane1-stub-$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR=""
 CAP="${CAP:-0.10}"
+WALL_S_SET=0
+[ -n "${WALL_S:-}" ] && WALL_S_SET=1
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
 MARGIN="${MARGIN:-0.01}"
@@ -85,6 +91,8 @@ RENDER_HOST_RAM_REQUIRED_GIB=""
 HOST_RAM_SET=0
 RENDER_DOWNLOAD_MAX_SECONDS=""
 DOWNLOAD_MAX_SET=0
+JOB_TIMEOUT_S_ARG=""
+MAX_CONSECUTIVE_FAILURES_ARG=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -92,7 +100,7 @@ while [ "$#" -gt 0 ]; do
     --session) SESSION="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --out-dir) OUT_DIR="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --cap) CAP="${2:-}"; CAP_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
-    --wall-s) WALL_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --wall-s) WALL_S="${2:-}"; WALL_S_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
     --grace-s) GRACE_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --margin) MARGIN="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -113,6 +121,8 @@ while [ "$#" -gt 0 ]; do
     --copy-back-every) COPY_BACK_EVERY="${2:-}"; COPY_BACK_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
     --host-ram-required-gib) RENDER_HOST_RAM_REQUIRED_GIB="${2:-}"; HOST_RAM_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
     --download-max-seconds) RENDER_DOWNLOAD_MAX_SECONDS="${2:-}"; DOWNLOAD_MAX_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
+    --job-timeout-s) JOB_TIMEOUT_S_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --max-consecutive-failures) MAX_CONSECUTIVE_FAILURES_ARG="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     *)
       echo "REFUSED: unknown argument: $1" >&2
       exit 2
@@ -130,6 +140,34 @@ colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
+
+if [ -n "${JOB_TIMEOUT_S_ARG}${MAX_CONSECUTIVE_FAILURES_ARG}" ] && [ "${RENDER_REQUESTED}" != "1" ]; then
+  echo "REFUSED: RENDER_OPTION_WITHOUT_RENDER: --job-timeout-s and --max-consecutive-failures need --render" >&2
+  exit 2
+fi
+if [ -n "${JOB_TIMEOUT_S_ARG}" ] && ! [[ "${JOB_TIMEOUT_S_ARG}" =~ ^[1-9][0-9]*(\.[0-9]+)?$ ]]; then
+  echo "REFUSED: RENDER_JOB_TIMEOUT_INVALID: --job-timeout-s must be a positive number of seconds" >&2
+  exit 2
+fi
+if [ -n "${MAX_CONSECUTIVE_FAILURES_ARG}" ] && ! [[ "${MAX_CONSECUTIVE_FAILURES_ARG}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "REFUSED: RENDER_CONSECUTIVE_FAILURES_INVALID: --max-consecutive-failures must be a positive integer" >&2
+  exit 2
+fi
+
+# A real --render keeps its renders on a trip: the cap gate and the cleanup bound count the bounded salvage, and the
+# salvage download is projected as N parts from the job count (about 8 MiB of PNG and copy-back per job) so the
+# 2 + 2N step budget is honest for a bundle that splits.
+if [ "${RENDER_REQUESTED}" = "1" ] && [ "${RENDER_CPU_STUB}" != "1" ]; then
+  export COLAB_RENDER_SALVAGE=1
+  RENDER_JOB_COUNT=0
+  if [ -n "${JOBS_FILE}" ] && [ -f "${JOBS_FILE}" ]; then
+    RENDER_JOB_COUNT="$(grep -c . "${JOBS_FILE}" || true)"
+  fi
+  [[ "${RENDER_JOB_COUNT}" =~ ^[0-9]+$ ]] || RENDER_JOB_COUNT=0
+  RENDER_SALVAGE_PARTS=$(( (RENDER_JOB_COUNT * 8 * 1048576 + COLAB_DOWNLOAD_CHUNK_BYTES - 1) / COLAB_DOWNLOAD_CHUNK_BYTES ))
+  [ "${RENDER_SALVAGE_PARTS}" -ge 1 ] || RENDER_SALVAGE_PARTS=1
+  colab_configure_download_timeout "${DOWNLOAD_TIMEOUT_S_ARG}" "" "${RENDER_SALVAGE_PARTS}" || exit 2
+fi
 
 if [ "${RENDER_REQUESTED}" != "1" ] && [ "${RENDER_CPU_STUB}" != "1" ] \
   && [ "${WEIGHTS_MANIFEST_SET}${JOBS_SET}${JOBS_SHA_SET}${COPY_BACK_SET}${HOST_RAM_SET}${DOWNLOAD_MAX_SET}" != "000000" ]; then
@@ -270,6 +308,7 @@ mkdir -p "${OUT_DIR}"
 PY_BIN="$(colab_resolve_python)"
 GUARDS_PY="${SCRIPT_DIR}/launch_guards.py"
 LANE1_PY="${SCRIPT_DIR}/lane1_render.py"
+BUNDLE_NOW_PY="${SCRIPT_DIR}/lane1_bundle_now.py"
 RUNG_PY="${SCRIPT_DIR}/lane3_rung.py"
 RUNNER_PY="${SCRIPT_DIR}/remote_runner.py"
 CLASSIFIER_PY="${SCRIPT_DIR}/classify_install_log.py"
@@ -279,6 +318,7 @@ LOCK_FILE="${SCRIPT_DIR}/locks/lane1.lock"
 PIN_OVERRIDE_VARS=(
   EXPECTED_LANE1_LOCK_SHA
   EXPECTED_LANE1_RENDER_SHA
+  EXPECTED_LANE1_BUNDLE_NOW_SHA
   EXPECTED_LANE3_RUNG_SHA
   EXPECTED_INSTALL_CLASSIFIER_SHA
   EXPECTED_LAUNCH_GUARDS_SHA
@@ -319,6 +359,7 @@ fi
 
 EXP_LOCK_SHA="${PINNED_LOCK_SHA}"
 EXP_LANE1_SHA="${PINNED_LANE1_RENDER_SHA}"
+EXP_BUNDLE_NOW_SHA="${PINNED_LANE1_BUNDLE_NOW_SHA}"
 EXP_RUNG_SHA="${PINNED_LANE3_RUNG_SHA}"
 EXP_CLASSIFIER_SHA="${PINNED_INSTALL_CLASSIFIER_SHA}"
 EXP_GUARDS_SHA="${PINNED_LAUNCH_GUARDS_SHA}"
@@ -328,6 +369,7 @@ EXP_SELF_SHA="${PINNED_SELF_SHA}"
 if [ "${TEST_MODE}" = "1" ]; then
   EXP_LOCK_SHA="${EXPECTED_LANE1_LOCK_SHA:-${EXP_LOCK_SHA}}"
   EXP_LANE1_SHA="${EXPECTED_LANE1_RENDER_SHA:-${EXP_LANE1_SHA}}"
+  EXP_BUNDLE_NOW_SHA="${EXPECTED_LANE1_BUNDLE_NOW_SHA:-${EXP_BUNDLE_NOW_SHA}}"
   EXP_RUNG_SHA="${EXPECTED_LANE3_RUNG_SHA:-${EXP_RUNG_SHA}}"
   EXP_CLASSIFIER_SHA="${EXPECTED_INSTALL_CLASSIFIER_SHA:-${EXP_CLASSIFIER_SHA}}"
   EXP_GUARDS_SHA="${EXPECTED_LAUNCH_GUARDS_SHA:-${EXP_GUARDS_SHA}}"
@@ -339,6 +381,7 @@ fi
 SHAS_JSON="$(colab_verify_input_shas "${PY_BIN}" "${GUARDS_PY}" \
   "${LOCK_FILE}=${EXP_LOCK_SHA}" \
   "${LANE1_PY}=${EXP_LANE1_SHA}" \
+  "${BUNDLE_NOW_PY}=${EXP_BUNDLE_NOW_SHA}" \
   "${RUNG_PY}=${EXP_RUNG_SHA}" \
   "${CLASSIFIER_PY}=${EXP_CLASSIFIER_SHA}" \
   "${GUARDS_PY}=${EXP_GUARDS_SHA}" \
@@ -377,6 +420,55 @@ lane1_download_partial_bundle_on_failure() {
   fi
 }
 
+# lane1_salvage_render_bundle <rc>: a wall or cap trip, a failed exec or a dead harness stopped only the local exec; the
+# VM's render script keeps running and its EXIT trap never fires. Run the shared bounded salvage (restart-kernel,
+# lane1_bundle_now.py tars /content/lane1_out with the stamped PNGs and renders.jsonl, then the keep-all download:
+# parts that arrive are kept in salvage_partial/), under SALVAGE_DEADLINE_S, which the cap gate reserved. Then write
+# salvage_receipt.json. Nothing here writes a REFUSED line, so the window's refusal stays the one that stopped the run.
+lane1_salvage_render_bundle() {
+  local rc="$1"
+  colab_salvage_bundle_after_failure \
+    "${SESSION}" "${BUNDLE_NOW_PY}" "/content/${BUNDLE_NAME}" "${OUT_DIR}/${BUNDLE_NAME}" "${OUT_DIR}" "${rc}"
+  "${PY_BIN}" - "${OUT_DIR}" "${BUNDLE_NAME}" "${rc}" << 'RECEIPTEOF' || true
+import json, pathlib, sys, tarfile, hashlib
+out = pathlib.Path(sys.argv[1]); name = sys.argv[2]; rc = int(sys.argv[3])
+bundle = out / name
+rec = {"failed_rc": rc, "bundle": name, "bundle_downloaded": bundle.is_file() and bundle.stat().st_size > 0,
+       "trip": "wall" if (out / "wall_trip_epoch.txt").is_file() else ("cap" if (out / "cap_trip_phase.txt").is_file() else "failure"),
+       "png_count": 0, "renders_jsonl": False, "ok_rows": 0, "failed_rows": 0, "salvage_partial_dirs": [], "arrived_parts": None}
+if rec["bundle_downloaded"]:
+    rec["bundle_bytes"] = bundle.stat().st_size
+    rec["bundle_sha256"] = hashlib.sha256(bundle.read_bytes()).hexdigest()
+    try:
+        with tarfile.open(bundle) as tf:
+            names = tf.getnames()
+            rec["png_count"] = sum(1 for n in names if n.startswith(("./pngs/", "pngs/")) and n.endswith(".png"))
+            for m in tf.getmembers():
+                if m.name.lstrip("./") == "renders.jsonl":
+                    rec["renders_jsonl"] = True
+                    for ln in tf.extractfile(m).read().decode("utf-8", "replace").splitlines():
+                        try:
+                            st = json.loads(ln).get("status")
+                        except ValueError:
+                            continue
+                        rec["ok_rows"] += st == "ok"
+                        rec["failed_rows"] += st == "failed"
+    except (tarfile.TarError, OSError) as exc:
+        rec["bundle_unreadable"] = f"{type(exc).__name__}: {exc}"
+sp = out / "salvage_partial"
+if sp.is_dir():
+    rec["salvage_partial_dirs"] = sorted(d.name for d in sp.iterdir() if d.is_dir())
+sbd = out / "salvage_bundle_download.json"
+if sbd.is_file():
+    try:
+        rec["arrived_parts"] = json.loads(sbd.read_text(encoding="utf-8")).get("arrived_parts")
+    except ValueError:
+        pass
+(out / "salvage_receipt.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
+print("RENDER_SALVAGE_RECEIPT " + json.dumps(rec), flush=True)
+RECEIPTEOF
+}
+
 cleanup_on_exit() {
   local rc=$?
   colab_enter_cleanup_trap "${OUT_DIR}"
@@ -388,7 +480,10 @@ cleanup_on_exit() {
   if [ -n "${TOKEN_DIR}" ]; then
     rm -rf "${TOKEN_DIR}" || true
   fi
-  if [ "${rc}" -ne 0 ] && [ "${LANE1_MODE}" != "stub" ] && [ "${EXEC_IN_FLIGHT}" = "1" ] \
+  if [ "${rc}" -ne 0 ] && [ "${LANE1_MODE}" = "render" ] && [ "${EXEC_IN_FLIGHT}" = "1" ] \
+    && [ ! -s "${OUT_DIR}/${BUNDLE_NAME}" ]; then
+    lane1_salvage_render_bundle "${rc}" || true
+  elif [ "${rc}" -ne 0 ] && [ "${LANE1_MODE}" != "stub" ] && [ "${EXEC_IN_FLIGHT}" = "1" ] \
     && [ ! -s "${OUT_DIR}/${BUNDLE_NAME}" ] && [ ! -f "${OUT_DIR}/wall_trip_epoch.txt" ] \
     && [ "${COLAB_CLEANUP_SKIP_SALVAGE:-0}" != "1" ]; then
     lane1_download_partial_bundle_on_failure "${rc}" || true
@@ -445,6 +540,17 @@ if [ "${LANE1_MODE}" = "render" ]; then
     exit 2
   fi
   printf '%s\n' "${VALIDATE_OUT}" >> "${OUT_DIR}/guards.log"
+  # No explicit wall: derive it from the job count (setup and weights, the first-job weight load, each job's bound, +10%)
+  # instead of a 900 s default that a real queue cannot meet.
+  if [ "${WALL_S_SET}" != "1" ]; then
+    if ! DERIVED_WALL_S="$("${PY_BIN}" "${LANE1_PY}" --derive-wall-s --jobs "${JOBS_FILE}" --setup-s "$(( RENDER_DOWNLOAD_MAX_SECONDS + 900 ))" 2>&1)" \
+      || ! [[ "${DERIVED_WALL_S}" =~ ^[1-9][0-9]*$ ]]; then
+      echo "REFUSED: RENDER_WALL_REQUIRED: no --wall-s and the wall could not be derived from the jobs (${DERIVED_WALL_S})" >&2
+      exit 2
+    fi
+    WALL_S="${DERIVED_WALL_S}"
+    echo "RENDER_WALL_DERIVED wall_s=${WALL_S} jobs=${RENDER_JOB_COUNT} download_max_s=${RENDER_DOWNLOAD_MAX_SECONDS}" >> "${OUT_DIR}/guards.log"
+  fi
 elif [ "${LANE1_MODE}" = "render_cpu_stub" ]; then
   VALIDATE_OUT=""
   if ! VALIDATE_OUT="$("${PY_BIN}" "${LANE1_PY}" --validate-render-inputs --weights-manifest "${WEIGHTS_MANIFEST}" --allow-no-jobs 2>&1)"; then
@@ -950,6 +1056,10 @@ else
     exit 1
   fi
 
+  QUEUE_EXTRA=(--max-consecutive-failures "\${LANE1_MAX_CONSECUTIVE_FAILURES:-2}")
+  if [ -n "\${LANE1_JOB_TIMEOUT_S:-}" ]; then
+    QUEUE_EXTRA+=(--job-timeout-s "\${LANE1_JOB_TIMEOUT_S}")
+  fi
   set +e
   /content/venv-lane1/bin/python /content/lane1_render.py \
     --bootstrap \
@@ -963,16 +1073,24 @@ else
     --out-dir /content/lane1_out/pngs \
     --copy-back-dir /content/lane1_out/copy_back \
     --copy-back-every "\${LANE1_COPY_BACK_EVERY}" \
+    "\${QUEUE_EXTRA[@]}" \
     --kill-after 1
   RC1=\$?
   set -e
+  if [ "\${RC1}" -eq 76 ]; then
+    echo "REFUSED: RENDER_CONSECUTIVE_FAILURES: the first pass stopped on a run of failed jobs" >&2
+    exit 76
+  fi
   if [ "\${RC1}" -ne 75 ]; then
     echo "Expected exit 75 on deliberate kill-after=1, got \${RC1}" >&2
     exit 1
   fi
+  # The first job may have failed and a later one rendered: the resume check uses the first row that rendered.
+  FIRST_JOB_ID="\$(/content/venv-lane1/bin/python -c 'import json, sys; print(next(r["job_id"] for r in map(json.loads, filter(str.strip, open(sys.argv[1], encoding="utf-8"))) if r.get("status") == "ok"))' /content/lane1_out/renders.jsonl)"
 
   SHA_BEFORE="\$(sha256sum "/content/lane1_out/pngs/\${FIRST_JOB_ID}.png" | awk '{print \$1}')"
 
+  set +e
   /content/venv-lane1/bin/python /content/lane1_render.py \
     --window-id "\${LANE1_SESSION_ID:-win_lane1_render}" \
     --comfy-url "\${COMFY_URL}" \
@@ -980,7 +1098,13 @@ else
     --renders /content/lane1_out/renders.jsonl \
     --out-dir /content/lane1_out/pngs \
     --copy-back-dir /content/lane1_out/copy_back \
-    --copy-back-every "\${LANE1_COPY_BACK_EVERY}"
+    --copy-back-every "\${LANE1_COPY_BACK_EVERY}" \
+    "\${QUEUE_EXTRA[@]}"
+  RC2=\$?
+  set -e
+  if [ "\${RC2}" -ne 0 ]; then
+    exit "\${RC2}"
+  fi
 
   SHA_AFTER="\$(sha256sum "/content/lane1_out/pngs/\${FIRST_JOB_ID}.png" | awk '{print \$1}')"
   SHA_COPY="\$(sha256sum "/content/lane1_out/copy_back/\${FIRST_JOB_ID}.png" | awk '{print \$1}')"
@@ -991,8 +1115,12 @@ else
 
   kill "\${COMFY_PID}" 2>/dev/null || true
   COMFY_PID=""
+  RENDER_STATE="rendered"
+  if grep -q '"status": "failed"' /content/lane1_out/renders.jsonl 2>/dev/null; then
+    RENDER_STATE="rendered_with_failures"
+  fi
   /content/venv-lane1/bin/python /content/lane1_render.py \
-    --merge-render-facts --lane1-out /content/lane1_out --render-state rendered
+    --merge-render-facts --lane1-out /content/lane1_out --render-state "\${RENDER_STATE}"
 fi
 
 RENDER_SCRUB_ARGS=()
@@ -1015,6 +1143,9 @@ colab_upload_checked "${SESSION}" "${GUARDS_PY}" /content/launch_guards.py "${OU
 colab_upload_checked "${SESSION}" "${CLASSIFIER_PY}" /content/classify_install_log.py "${OUT_DIR}"
 if [ "${LANE1_MODE}" != "stub" ]; then
   colab_upload_checked "${SESSION}" "${RUNG_PY}" /content/lane3_rung.py "${OUT_DIR}"
+  if [ "${LANE1_MODE}" = "render" ]; then
+    colab_upload_checked "${SESSION}" "${BUNDLE_NOW_PY}" /content/lane1_bundle_now.py "${OUT_DIR}"
+  fi
   colab_upload_checked "${SESSION}" "${WEIGHTS_MANIFEST}" /content/weights_manifest.json "${OUT_DIR}"
   if [ "${LANE1_MODE}" = "render" ]; then
     colab_upload_checked "${SESSION}" "${JOBS_FILE}" /content/jobs.jsonl "${OUT_DIR}"
@@ -1056,6 +1187,8 @@ if [ "${LANE1_MODE}" != "stub" ]; then
     REMOTE_ENV+=(
       "LANE1_JOBS_SHA256=${JOBS_SHA256_CLEAN}"
       "LANE1_COPY_BACK_EVERY=${COPY_BACK_EVERY}"
+      "LANE1_JOB_TIMEOUT_S=${JOB_TIMEOUT_S_ARG}"
+      "LANE1_MAX_CONSECUTIVE_FAILURES=${MAX_CONSECUTIVE_FAILURES_ARG:-2}"
     )
   fi
 fi

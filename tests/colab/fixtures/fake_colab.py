@@ -1014,6 +1014,11 @@ run_uploaded_render_block() {
     sed -n '/^# >>> sdlab-lane1-mode$/,/^# <<< sdlab-lane1-mode$/p' "${uploaded_sh}"
     sed -n '/^# >>> sdlab-lane1-render$/,/^# <<< sdlab-lane1-render$/p' "${uploaded_sh}"
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane1_stub.sh.renderblock
+  # FAKE_VM_RENDER_HANG_BEFORE_TAR=<s>: everything has rendered, then the VM script sleeps before it tars lane1_out, as a
+  # wedged run does when a rig-side guard trips (the EXIT trap never fires, so the rig has to salvage).
+  if [ -n "${FAKE_VM_RENDER_HANG_BEFORE_TAR:-}" ]; then
+    sed -i -e "s#^tar -czf #sleep ${FAKE_VM_RENDER_HANG_BEFORE_TAR}; tar -czf #" remote_lane1_stub.sh.renderblock
+  fi
 
   set +e
   MSYS2_ENV_CONV_EXCL="PYTHONPATH" \

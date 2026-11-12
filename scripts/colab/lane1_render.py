@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -57,6 +58,15 @@ CLEARED_LICENCES: dict[str, str] = {
     "comfy-org-qwen-image-repack": "Apache-2.0",
     "taesd-madebyollin": "MIT",
     "birefnet-mit": "MIT",
+}
+# A non-SPDX licence id is a registry entry for one repo. A manifest row may use it only for that repo, so an
+# alias can never label a different repo as cleared (N4). The plain SPDX ids (Apache-2.0, MIT) name a licence, not a repo.
+LICENCE_ALIAS_REPOS: dict[str, frozenset[str]] = {
+    "qwen-image-2512-card": frozenset({PINNED_BASE_MODEL_REPO}),
+    "qwen-image-licence": frozenset({PINNED_BASE_MODEL_REPO}),
+    "comfy-org-qwen-image-repack": frozenset({PINNED_COMFY_REPACK_REPO}),
+    "taesd-madebyollin": frozenset({"madebyollin/taesd"}),
+    "birefnet-mit": frozenset({"ZhengPeng7/BiRefNet"}),
 }
 # Never Qwen-Image 2.1 (`qwen-research`), Turbo/2-step/Lightning, or non-official distill weights.
 FORBIDDEN_WEIGHT_MODEL_RE = re.compile(
@@ -103,6 +113,19 @@ FORBIDDEN_RENDER_TEMPLATES = {"stub_fixture_64"}
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 GIB = 1024**3
 MIB = 1024**2
+# Per-job wait bound (N2). The bound comes from the job: BASE + steps * PER_STEP_MP_S * megapixels, never under MIN;
+# the first job this process renders also gets FIRST_JOB_ALLOWANCE_S for the weights to load into VRAM.
+JOB_TIMEOUT_BASE_S = 60.0
+JOB_TIMEOUT_PER_STEP_MP_S = 3.0
+JOB_TIMEOUT_MIN_S = 120.0
+FIRST_JOB_ALLOWANCE_S = 600.0
+DEFAULT_MAX_CONSECUTIVE_FAILURES = 2
+EXIT_RENDER_CONSECUTIVE_FAILURES = 76
+VRAM_SAMPLE_INTERVAL_S = 1.0
+
+
+class _JobTimeout(Exception):
+    """A job produced no result within its derived wait bound."""
 
 
 class _LocalRefusal(Exception):
@@ -1058,6 +1081,12 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
         if not isinstance(repo, str) or not rung.REPO_ID_RE.match(repo.strip()):
             raise refusal_cls("WEIGHTS_MANIFEST_INVALID", f"row {idx}: {repo!r} is not a Hugging Face repo id")
         repo_clean = repo.strip()
+        alias_repos = LICENCE_ALIAS_REPOS.get(lic_clean)
+        if alias_repos is not None and repo_clean not in alias_repos:
+            raise refusal_cls(
+                "WEIGHTS_LICENCE_INVALID",
+                f"row {idx}: licence_id {lic_clean!r} is the registry entry for {sorted(alias_repos)}, not {repo_clean!r}",
+            )
         revision = item.get("revision")
         if not isinstance(revision, str) or not rung.REVISION_RE.match(revision.strip()):
             raise refusal_cls("WEIGHTS_REVISION_INVALID", f"row {idx}: revision {revision!r} is not a 40-hex commit")
@@ -1101,6 +1130,15 @@ def validate_weights_manifest(manifest_path: Path) -> list[dict[str, Any]]:
             }
         )
     return entries
+
+
+def _workflow_mentions_birefnet(workflow: Any) -> bool:
+    if not isinstance(workflow, dict):
+        return False
+    for node in workflow.values():
+        if isinstance(node, dict) and BIREFNET_RE.search(" ".join([str(node.get("class_type") or ""), *_iter_strings(node.get("inputs"))])):
+            return True
+    return False
 
 
 def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> dict[str, Any]:
@@ -1189,7 +1227,13 @@ def validate_render_jobs(jobs_path: Path, expected_jobs_sha256: str | None) -> d
         if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
             raise refusal_cls("RENDER_JOB_INVALID", f"job {job_id}: missing or non-positive steps")
 
-        check_background_removal_allowed(row.get("workflow"), row)
+        bg_spec = check_background_removal_allowed(row.get("workflow"), row)
+        if bg_spec is not None or _workflow_mentions_birefnet(row.get("workflow")):
+            raise refusal_cls(
+                "BIREFNET_NODE_NOT_INSTALLED",
+                f"job {job_id}: BiRefNet background removal is allowed by licence, but its custom node is not installed in the "
+                "lane 1 ComfyUI, so the job would fail on the VM; drop background_removal or install the node at a pinned commit first",
+            )
         if not row.get("workflow"):
             build_qwen_lora_graph({**row, "prompt": "<redacted>"})
 
@@ -1435,6 +1479,33 @@ def _fail_weights(out_path: Path, rec: dict[str, Any], code: str, detail: str) -
     print("WEIGHTS_DOWNLOAD " + json.dumps(rec), flush=True)
     print(rung.refuse_line(code, detail), file=sys.stderr, flush=True)
     return 1
+
+
+def project_weights_disk_bytes(total_weight_bytes: int, *, linked: bool) -> int:
+    """Disk the weights need on the VM: one copy when they are hardlinked out of the HF cache, two when they are copied."""
+    return int(total_weight_bytes) * (1 if linked else 2)
+
+
+def stage_weight_file(cache_file: Path, target_path: Path) -> str:
+    """Put a downloaded weight file into `models/` without holding it twice.
+
+    The HF cache and `models/` are on the same VM disk, so a hardlink makes the staged file the same bytes as the
+    cached blob (about 28 GiB of weights, not about 56). If the link is refused (cross-device, or a filesystem
+    without hardlinks), the file is copied, but only when the disk can hold the second copy plus 1 GiB.
+    The caller checks the sha256 of `target_path` after this returns.
+    """
+    real = Path(os.path.realpath(cache_file))
+    try:
+        os.link(real, target_path)
+        return "hardlink"
+    except OSError:
+        pass
+    need = real.stat().st_size + GIB
+    free = shutil.disk_usage(target_path.parent).free
+    if free < need:
+        raise OSError(f"hardlink failed and {free} bytes free is under the {need} bytes a copy needs")
+    shutil.copyfile(real, target_path)
+    return "copy"
 
 
 def run_weights_download(
@@ -1685,9 +1756,14 @@ def run_weights_download(
         target_dir = models_dir / dest
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / Path(filename).name
-        if target_path.is_symlink():
+        if target_path.is_symlink() or target_path.exists():
             target_path.unlink()
-        shutil.copyfile(downloaded_path, target_path)
+        try:
+            staged_how = stage_weight_file(Path(downloaded_path), target_path)
+        except OSError as exc:
+            target_path.unlink(missing_ok=True)
+            return _fail_weights(out_path, rec, "WEIGHTS_DISK_LOW", f"staging {repo}:{filename} into {dest}/: {type(exc).__name__}: {exc}")
+        file_rec["staged_how"] = staged_how
         if target_path.is_symlink():
             target_path.unlink(missing_ok=True)
             return _fail_weights(out_path, rec, "WEIGHTS_MOUNT_FORBIDDEN", f"{target_path} must be a regular local file, not a symlink")
@@ -1714,6 +1790,13 @@ def run_weights_download(
                 )
             file_rec["safetensors_verified"] = True
 
+    weights_total = sum(int(f.get("expected_bytes") or 0) for f in rec["files"])
+    all_linked = bool(rec["files"]) and all(f.get("staged_how") == "hardlink" for f in rec["files"])
+    rec["disk_projection"] = {
+        "weights_bytes": weights_total,
+        "linked": all_linked,
+        "projected_bytes": project_weights_disk_bytes(weights_total, linked=all_linked),
+    }
     os.environ["HF_HUB_OFFLINE"] = "1"
     rec["hf_hub_offline_after_stage"] = True
     rung.write_json(out_path, rec)
@@ -1865,6 +1948,89 @@ def read_peak_vram_mib(
     return round(max(cuda_readings_mib), 2) if cuda_readings_mib else 0.0
 
 
+def derive_job_timeout_s(
+    job: dict[str, Any],
+    *,
+    first_job: bool = False,
+    first_job_allowance_s: float = FIRST_JOB_ALLOWANCE_S,
+) -> float:
+    """The wait bound for one job, from its step count and resolution (and the weight load for the first job)."""
+    steps = job.get("steps")
+    steps = int(steps) if isinstance(steps, (int, float)) and not isinstance(steps, bool) and steps > 0 else 22
+    width = job.get("width")
+    height = job.get("height")
+    w = int(width) if isinstance(width, (int, float)) and not isinstance(width, bool) and width > 0 else 1024
+    h = int(height) if isinstance(height, (int, float)) and not isinstance(height, bool) and height > 0 else 1024
+    megapixels = (w * h) / float(1024 * 1024)
+    bound = max(JOB_TIMEOUT_MIN_S, JOB_TIMEOUT_BASE_S + steps * JOB_TIMEOUT_PER_STEP_MP_S * megapixels)
+    if first_job:
+        bound += float(first_job_allowance_s)
+    return round(bound, 1)
+
+
+def derive_render_wall_s(jobs_path: Path, *, setup_s: float, first_job_allowance_s: float = FIRST_JOB_ALLOWANCE_S) -> int:
+    """A `--render` wall from the job count: setup and weights (`setup_s`), the first-job weight load, then each job's
+    derived bound once, with 10% over."""
+    total = float(setup_s) + float(first_job_allowance_s)
+    for line in jobs_path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            total += derive_job_timeout_s(json.loads(line))
+    return int(math.ceil(total * 1.1))
+
+
+def _interrupt_comfy(comfy_url: str) -> None:
+    """Best effort: ask ComfyUI to stop the prompt that is running, so a timed-out job does not hold the GPU."""
+    try:
+        req = urllib.request.Request(f"{comfy_url.rstrip('/')}/interrupt", data=b"{}", method="POST")
+        urllib.request.urlopen(req, timeout=10).close()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+class VramSampler:
+    """Poll `nvidia-smi memory.used` while a job runs and keep the highest reading (N5: the true peak, not the use after the image)."""
+
+    def __init__(self, runner: Callable[..., Any], interval_s: float = VRAM_SAMPLE_INTERVAL_S) -> None:
+        self._runner = runner
+        self._interval_s = interval_s
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self.peak_mib = 0.0
+        self.samples = 0
+
+    def _sample_once(self) -> None:
+        try:
+            res = self._runner(
+                ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
+            )
+            if getattr(res, "returncode", 1) == 0:
+                for ln in (res.stdout or "").splitlines():
+                    if ln.strip():
+                        self.peak_mib = max(self.peak_mib, float(ln.strip()))
+                        self.samples += 1
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
+
+    def _loop(self) -> None:
+        while not self._stop.is_set():
+            self._sample_once()
+            self._stop.wait(self._interval_s)
+
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=15)
+        self._sample_once()
+
+
 def run_queue(
     *,
     jobs_path: Path,
@@ -1879,8 +2045,15 @@ def run_queue(
     image_downloader: Any | None = None,
     system_stats_fetcher: Any | None = None,
     smi_runner: Callable[..., Any] | None = None,
+    job_timeout_s: float | None = None,
+    first_job_allowance_s: float = FIRST_JOB_ALLOWANCE_S,
+    max_consecutive_failures: int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
+    interrupter: Callable[[str], None] | None = None,
+    vram_sample_interval_s: float = VRAM_SAMPLE_INTERVAL_S,
 ) -> dict[str, Any]:
     assert_loopback_url(comfy_url)
+    if max_consecutive_failures < 1:
+        raise ValueError("max_consecutive_failures must be at least 1")
     out_dir.mkdir(parents=True, exist_ok=True)
     renders_path.parent.mkdir(parents=True, exist_ok=True)
     current_json = renders_path.parent / "current.json"
@@ -1905,6 +2078,14 @@ def run_queue(
     heartbeat_seq = 0
     copy_back_count = 0
     killed_early = False
+    failed_count = 0
+    consecutive_failures = 0
+    stopped_consecutive_failures = False
+    attempted_in_process = 0
+    sample_vram = smi_runner is not None or (
+        system_stats_fetcher is None and os.environ.get("CUDA_VISIBLE_DEVICES", "0") != ""
+    )
+    active_interrupter = interrupter if interrupter is not None else _interrupt_comfy
     started_at_epoch = time.time()
     last_image_at_epoch: float | None = None
     last_rendered_job_id: str | None = None
@@ -1963,67 +2144,122 @@ def run_queue(
         }
         extra_pnginfo = {STAMP_KEYS[k]: v for k, v in stamp_meta.items() if v}
 
-        prompt_id = active_client.queue_prompt(workflow, extra_pnginfo=extra_pnginfo)
-        if not prompt_id:
-            raise RuntimeError(f"Failed to queue prompt for job {job_id}")
-        history_entry = active_client.wait_for_completion(prompt_id, timeout=120.0, poll_interval=0.2)
-        if not history_entry:
-            raise RuntimeError(f"Timed out waiting for prompt {prompt_id} (job {job_id})")
-
-        img_info = pick_history_image(history_entry)
-        raw_png = active_downloader(
-            comfy_url,
-            img_info["filename"],
-            img_info.get("subfolder", ""),
-            img_info.get("type", "output"),
+        used_timeout_s = (
+            float(job_timeout_s)
+            if job_timeout_s is not None
+            else derive_job_timeout_s(job, first_job=attempted_in_process == 0, first_job_allowance_s=first_job_allowance_s)
         )
+        attempted_in_process += 1
+        sampler = VramSampler(smi_runner or subprocess.run, vram_sample_interval_s) if sample_vram else None
+        try:
+            if sampler is not None:
+                sampler.start()
+            try:
+                prompt_id = active_client.queue_prompt(workflow, extra_pnginfo=extra_pnginfo)
+                if not prompt_id:
+                    raise RuntimeError(f"Failed to queue prompt for job {job_id}")
+                history_entry = active_client.wait_for_completion(prompt_id, timeout=used_timeout_s, poll_interval=0.2)
+                if not history_entry:
+                    raise _JobTimeout(f"no result for prompt {prompt_id} within {used_timeout_s} s")
+            finally:
+                if sampler is not None:
+                    sampler.stop()
 
-        # Verify ComfyUI embedded the runnable prompt graph via comfy_headless
-        wf_meta = read_workflow_metadata(raw_png)
-        if not wf_meta.has_prompt:
-            raise RuntimeError(f"ComfyUI output for {job_id} missing embedded prompt graph")
+            img_info = pick_history_image(history_entry)
+            raw_png = active_downloader(
+                comfy_url,
+                img_info["filename"],
+                img_info.get("subfolder", ""),
+                img_info.get("type", "output"),
+            )
 
-        # Write canonical tEXt provenance stamp and immediately read back from disk (G8, H7)
-        stamped_png = stamp_png_provenance(raw_png, stamp_meta)
-        output_file = f"{job_id}.png"
-        out_path = out_dir / output_file
-        out_path.write_bytes(stamped_png)
+            # Verify ComfyUI embedded the runnable prompt graph via comfy_headless
+            wf_meta = read_workflow_metadata(raw_png)
+            if not wf_meta.has_prompt:
+                raise RuntimeError(f"ComfyUI output for {job_id} missing embedded prompt graph")
 
-        verified_stamp = verify_png_provenance(out_path, stamp_meta)
-        png_sha = sha256_file(out_path)
-        now_done = time.time()
-        elapsed_s = max(0.0, now_done - t0)
-        wall_s = round(elapsed_s, 3)
-        wall_ms = round(elapsed_s * 1000)
-        peak_vram_mib = read_peak_vram_mib(
-            comfy_url,
-            system_stats_fetcher=system_stats_fetcher,
-            smi_runner=smi_runner,
-        )
+            # Write canonical tEXt provenance stamp and immediately read back from disk (G8, H7)
+            stamped_png = stamp_png_provenance(raw_png, stamp_meta)
+            output_file = f"{job_id}.png"
+            out_path = out_dir / output_file
+            out_path.write_bytes(stamped_png)
 
-        row = {
-            "job_id": job_id,
-            "run_id": job["run_id"],
-            "status": "ok",
-            "output_file": output_file,
-            "png_sha256": png_sha,
-            "workflow_sha": job.get("workflow_sha"),
-            "seed": job.get("seed"),
-            "wall_s": wall_s,
-            "wall_ms": wall_ms,
-            "peak_vram_mib": peak_vram_mib,
-            "window_id": window_id,
-            "canon_sha": job["canon_sha"],
-            "entry_id": job["entry_id"],
-            "entry_sha256": job["entry_sha256"],
-            "owner": verified_stamp["owner"],
-            "licence": verified_stamp["licence"],
-            "credit": verified_stamp["credit"],
-            "model_pins": job.get("model_pins"),
-            "stamp_verified": True,
-        }
-        with renders_path.open("a", encoding="utf-8") as rf:
-            rf.write(json.dumps(row) + "\n")
+            verified_stamp = verify_png_provenance(out_path, stamp_meta)
+            png_sha = sha256_file(out_path)
+            now_done = time.time()
+            elapsed_s = max(0.0, now_done - t0)
+            wall_s = round(elapsed_s, 3)
+            wall_ms = round(elapsed_s * 1000)
+            peak_vram_mib = read_peak_vram_mib(
+                comfy_url,
+                system_stats_fetcher=system_stats_fetcher,
+                smi_runner=smi_runner,
+            )
+            peak_vram_source = "after_image"
+            if sampler is not None and sampler.samples and sampler.peak_mib > peak_vram_mib:
+                peak_vram_mib = round(sampler.peak_mib, 2)
+                peak_vram_source = "sampled_during_job"
+
+            row = {
+                "job_id": job_id,
+                "run_id": job["run_id"],
+                "status": "ok",
+                "output_file": output_file,
+                "png_sha256": png_sha,
+                "workflow_sha": job.get("workflow_sha"),
+                "seed": job.get("seed"),
+                "wall_s": wall_s,
+                "wall_ms": wall_ms,
+                "peak_vram_mib": peak_vram_mib,
+                "peak_vram_source": peak_vram_source,
+                "vram_samples": sampler.samples if sampler is not None else 0,
+                "timeout_s": used_timeout_s,
+                "window_id": window_id,
+                "canon_sha": job["canon_sha"],
+                "entry_id": job["entry_id"],
+                "entry_sha256": job["entry_sha256"],
+                "owner": verified_stamp["owner"],
+                "licence": verified_stamp["licence"],
+                "credit": verified_stamp["credit"],
+                "model_pins": job.get("model_pins"),
+                "stamp_verified": True,
+            }
+            with renders_path.open("a", encoding="utf-8") as rf:
+                rf.write(json.dumps(row) + "\n")
+        except Exception as exc:  # noqa: BLE001
+            # One slow or broken job must not end the queue (N2): record why, move on, stop only on a run of failures.
+            code = "RENDER_JOB_TIMEOUT" if isinstance(exc, _JobTimeout) else "RENDER_JOB_FAILED"
+            if isinstance(exc, _JobTimeout):
+                try:
+                    active_interrupter(comfy_url)
+                except Exception:  # noqa: BLE001
+                    pass
+            failed_wall_s = round(max(0.0, time.time() - t0), 3)
+            why = f"{type(exc).__name__}: {str(exc)[:300]}"
+            failed_row = {
+                "job_id": job_id,
+                "run_id": job.get("run_id"),
+                "status": "failed",
+                "code": code,
+                "why": why,
+                "wall_s": failed_wall_s,
+                "timeout_s": used_timeout_s,
+                "window_id": window_id,
+            }
+            with renders_path.open("a", encoding="utf-8") as rf:
+                rf.write(json.dumps(failed_row) + "\n")
+            failed_count += 1
+            consecutive_failures += 1
+            print(
+                f"RENDER_JOB_FAILED {job_id} code={code} wall_s={failed_wall_s} timeout_s={used_timeout_s} "
+                f"consecutive={consecutive_failures}",
+                flush=True,
+            )
+            if consecutive_failures >= max_consecutive_failures:
+                stopped_consecutive_failures = True
+                break
+            continue
+        consecutive_failures = 0
 
         completed_files.add(output_file)
         rendered_count += 1
@@ -2074,7 +2310,7 @@ def run_queue(
     write_render_heartbeat(
         heartbeat_path,
         window_id=window_id,
-        state="killed_early" if killed_early else "completed",
+        state="killed_early" if killed_early else ("failed_consecutive" if stopped_consecutive_failures else "completed"),
         total_jobs=len(jobs),
         skipped_jobs=skipped_count,
         images_rendered=rendered_count,
@@ -2100,6 +2336,8 @@ def run_queue(
         "copy_backs": copy_back_count,
         "killed_early": killed_early,
         "heartbeat_seq": heartbeat_seq,
+        "failed": failed_count,
+        "stopped_consecutive_failures": stopped_consecutive_failures,
     }
     print(f"SUMMARY {json.dumps(summary)}", flush=True)
     return summary
@@ -2152,6 +2390,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--merge-render-facts", action="store_true", help="Merge render guards/download facts into vm_window.json")
     parser.add_argument("--render-state", default=None, help="Render state label for vm_window.json")
     parser.add_argument("--failed-rc", type=int, default=None, help="Failure exit code when bundling after failure")
+    parser.add_argument("--job-timeout-s", type=float, default=None, help="Wait bound for every job (default: derived from each job's steps and size)")
+    parser.add_argument("--first-job-allowance-s", type=float, default=FIRST_JOB_ALLOWANCE_S, help="Extra wait for the first job this process renders (weights load)")
+    parser.add_argument(
+        "--max-consecutive-failures",
+        type=int,
+        default=DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        help="Stop the queue after this many failed jobs in a row (exit 76, RENDER_CONSECUTIVE_FAILURES)",
+    )
+    parser.add_argument("--derive-wall-s", action="store_true", help="Print a --render wall (seconds) derived from --jobs and --setup-s")
+    parser.add_argument("--setup-s", type=float, default=0.0, help="Setup and weight-download seconds counted into --derive-wall-s")
     args = parser.parse_args(argv)
 
     if args.validate_render_inputs:
@@ -2170,6 +2418,13 @@ def main(argv: list[str] | None = None) -> int:
             print(rung.refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
             return 1
         print("RENDER_INPUTS_OK " + json.dumps(checked), flush=True)
+        return 0
+
+    if args.derive_wall_s:
+        if args.jobs is None or not args.jobs.is_file():
+            print("REFUSED: JOBS_FILE_MISSING: --derive-wall-s needs --jobs <jobs.jsonl>", file=sys.stderr, flush=True)
+            return 1
+        print(derive_render_wall_s(args.jobs, setup_s=args.setup_s, first_job_allowance_s=args.first_job_allowance_s))
         return 0
 
     if args.vm_guards:
@@ -2255,7 +2510,18 @@ def main(argv: list[str] | None = None) -> int:
             copy_back_dir=args.copy_back_dir,
             copy_back_every=args.copy_back_every,
             kill_after=args.kill_after,
+            job_timeout_s=args.job_timeout_s,
+            first_job_allowance_s=args.first_job_allowance_s,
+            max_consecutive_failures=args.max_consecutive_failures,
         )
+        if summary["stopped_consecutive_failures"]:
+            print(
+                f"REFUSED: RENDER_CONSECUTIVE_FAILURES: {args.max_consecutive_failures} jobs failed in a row; "
+                f"{summary['rendered']} rendered and kept, {summary['failed']} failed rows in renders.jsonl",
+                file=sys.stderr,
+                flush=True,
+            )
+            return EXIT_RENDER_CONSECUTIVE_FAILURES
         if summary["killed_early"]:
             return 75
 
