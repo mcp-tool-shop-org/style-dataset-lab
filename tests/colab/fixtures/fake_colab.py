@@ -822,6 +822,13 @@ RUNPYEOF
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
   PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
     bash "${PWD}/remote_lane3_stub.sh.trainblock"
+  if [ -n "${FAKE_VM_POST_TRAIN_VITALS_TICKS:-}" ]; then
+    _cur_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo setup)"
+    for _ in $(seq 1 "${FAKE_VM_POST_TRAIN_VITALS_TICKS}"); do
+      emit_vitals "${_cur_phase}" ""
+      sleep "${vitals_interval}"
+    done
+  fi
   if [ -n "${FAKE_VM_DROP_OUTPUT_FILE:-}" ]; then
     IFS=',' read -ra _drop_rels <<< "${FAKE_VM_DROP_OUTPUT_FILE}"
     for _drel in "${_drop_rels[@]}"; do
