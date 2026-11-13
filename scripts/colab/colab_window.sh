@@ -33,7 +33,9 @@
 #   Lane 3 (train):  cleanup_stop_attempted_by_s = 310 + (190 + 340 + D * 310) (1150 s for N=1; 2700 s for N=2),
 #                    cleanup_bound_s = cleanup_stop_attempted_by_s + 140 (1290 s for N=1; 2840 s for N=2)
 #   Lane 1 (render): cleanup_stop_attempted_by_s = 310 + 0 = 310 s,
-#                    cleanup_bound_s = 310 + 0 + 140 = 450 s
+#                    cleanup_bound_s = 310 + 0 + 140 = 450 s (the stubs)
+#   Lane 1 real --render (COLAB_RENDER_SALVAGE=1): the same salvage as the train lane, so a wall or cap trip keeps the
+#                    stamped PNGs and renders.jsonl: cleanup_stop_attempted_by_s = 310 + SALVAGE_DEADLINE_S
 # Cap guard cleanup reserve (reserves cleanup_bound_s before the trip so total spend stays <= cap):
 #   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
 #   Refuses CAP_TOO_SMALL_FOR_CLEANUP before any colab call when effective_trip <= 0 or when
@@ -423,7 +425,9 @@ colab_compute_cleanup_bounds() {
   local stop_attempts="${COLAB_STOP_ATTEMPTS:-2}"
   local stop_bound_s=$(( stop_attempts * (stop_timeout_s + kill_grace_s) ))
   local salvage_bound_s=0
-  if [ "${lane}" = "train" ]; then
+  # A real `--render` window (COLAB_RENDER_SALVAGE=1, set by the lane 1 kit) keeps what it rendered on a trip, so
+  # its cleanup pays the same bounded salvage the train lane does; the stubs keep no salvage.
+  if [ "${lane}" = "train" ] || { [ "${lane}" = "render" ] && [ "${COLAB_RENDER_SALVAGE:-0}" = "1" ]; }; then
     salvage_bound_s="${salvage_steps_sum}"
     if [ "${salvage_deadline_s}" -lt "${salvage_bound_s}" ]; then
       salvage_bound_s="${salvage_deadline_s}"
@@ -3353,6 +3357,90 @@ PYEOF
   fi
 }
 
+# colab_classify_open_failure <session> <out_dir> <new_out_file> <rc>:
+# Distinguish HTTP 412 (account cap; never retry) from HTTP 503 (pool empty; retry later)
+# and generic open failures, recording session_open_status.json and emitting a named refusal.
+colab_classify_open_failure() {
+  local session="$1"
+  local out_dir="$2"
+  local new_out_file="$3"
+  local rc="$4"
+  local is_timeout=0
+  if colab_rc_is_timeout "${rc}"; then
+    is_timeout=1
+  fi
+
+  local code_and_why
+  code_and_why="$("${PY_BIN:?the kit must set PY_BIN}" - "${session}" "${out_dir}" "${new_out_file}" "${rc}" "${is_timeout}" << 'PYEOF'
+import json
+import re
+import sys
+from pathlib import Path
+
+session = sys.argv[1]
+out_dir = Path(sys.argv[2])
+new_out_file = Path(sys.argv[3])
+rc = int(sys.argv[4])
+is_timeout = sys.argv[5] == "1"
+
+raw = new_out_file.read_text(encoding="utf-8", errors="replace") if new_out_file.is_file() else ""
+is_412 = (not is_timeout) and bool(
+    re.search(r"(?:\bHTTP[/\s]*\d*(?:\.\d+)?\s+412\b|\b412\b|precondition failed|account(?:[\s_-]+assignment)?[\s_-]+cap)", raw, re.I)
+)
+is_503 = (not is_timeout) and (not is_412) and bool(
+    re.search(r"(?:\bHTTP[/\s]*\d*(?:\.\d+)?\s+503\b|\b503\b|service unavailable|pool empty|backend unavailable)", raw, re.I)
+)
+
+if is_412:
+    rec = {
+        "http_status": 412,
+        "classification": "account_cap",
+        "retry_policy": "never_retry",
+        "attempts": 1,
+        "rc": rc,
+    }
+    code = "SESSION_OPEN_412_ACCOUNT_CAP"
+    why = f"colab new -s {session} returned HTTP 412 (account cap; never retry)"
+    guard_line = f"OPEN_412_ACCOUNT_CAP session={session} retry=never rc={rc}"
+elif is_503:
+    rec = {
+        "http_status": 503,
+        "classification": "pool_empty",
+        "retry_policy": "retry_later",
+        "attempts": 1,
+        "rc": rc,
+    }
+    code = "SESSION_OPEN_503_POOL_EMPTY"
+    why = f"colab new -s {session} returned HTTP 503 (pool empty; retry later)"
+    guard_line = f"OPEN_503_POOL_EMPTY session={session} retry=later rc={rc}"
+else:
+    rec = {
+        "http_status": None,
+        "classification": "timeout" if is_timeout else "open_failed",
+        "retry_policy": "inspect_error",
+        "attempts": 1,
+        "rc": rc,
+    }
+    code = "SESSION_OPEN_FAILED"
+    why = f"colab new -s {session} failed (rc={rc})"
+    guard_line = ""
+
+(out_dir / "session_open_status.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
+if guard_line:
+    with (out_dir / "guards.log").open("a", encoding="utf-8", newline="\n") as gf:
+        gf.write(guard_line + "\n")
+    try:
+        (out_dir / "session_open_started.txt").unlink()
+    except OSError:
+        pass
+print(f"{code}\t{why}")
+PYEOF
+)"
+  local r_code="${code_and_why%%$'\t'*}"
+  local r_why="${code_and_why#*$'\t'}"
+  colab_refuse_logged "${out_dir}" "${r_code:-SESSION_OPEN_FAILED}" "${r_why:-colab new -s ${session} failed (rc=${rc})}"
+}
+
 colab_open_session_locked() {
   local session="$1"
   local card="$2"
@@ -3387,6 +3475,7 @@ colab_open_session_locked() {
   local open_lock_timeout="${COLAB_OPEN_LOCK_TIMEOUT_S:-180}"
   local new_timeout="${COLAB_NEW_TIMEOUT_S:-180}"
   local kill_grace="${COLAB_KILL_GRACE_S:-10}"
+  local new_out_file="${out_dir}/.colab_new_last.log"
   local open_rc=0
   if command -v flock >/dev/null 2>&1; then
     (
@@ -3401,16 +3490,20 @@ colab_open_session_locked() {
       fi
       printf '1\n' > "${lock_file}.held"
       printf '1\n' > "${out_dir}/session_open_started.txt"
+      : > "${new_out_file}"
       local new_rc=0
-      colab_run_bounded "${new_timeout}" "${kill_grace}" colab "${new_args[@]}" >> "${out_dir}/colab.log" 2>&1 || new_rc=$?
+      colab_run_bounded "${new_timeout}" "${kill_grace}" colab "${new_args[@]}" > "${new_out_file}" 2>&1 || new_rc=$?
+      cat "${new_out_file}" >> "${out_dir}/colab.log" 2>/dev/null || true
       rm -f "${lock_file}.held"
       if colab_rc_is_timeout "${new_rc}"; then
         echo "NEW_TIMEOUT session=${session} timeout_s=${new_timeout} kill_grace_s=${kill_grace} rc=${new_rc}" >> "${out_dir}/guards.log"
       fi
       if [ "${new_rc}" -ne 0 ]; then
-        colab_refuse_logged "${out_dir}" SESSION_OPEN_FAILED "colab new -s ${session} failed (rc=${new_rc})"
+        colab_classify_open_failure "${session}" "${out_dir}" "${new_out_file}" "${new_rc}"
+        rm -f "${new_out_file}"
         exit "${new_rc}"
       fi
+      rm -f "${new_out_file}"
     ) 9>"${lock_file}" || open_rc=$?
     if [ "${open_rc}" -ne 0 ]; then
       return "${open_rc}"
@@ -3428,18 +3521,23 @@ colab_open_session_locked() {
     fi
     printf '1\n' > "${lock_file}.held"
     printf '1\n' > "${out_dir}/session_open_started.txt"
+    : > "${new_out_file}"
     local rc=0
-    colab_run_bounded "${new_timeout}" "${kill_grace}" colab "${new_args[@]}" >> "${out_dir}/colab.log" 2>&1 || rc=$?
+    colab_run_bounded "${new_timeout}" "${kill_grace}" colab "${new_args[@]}" > "${new_out_file}" 2>&1 || rc=$?
+    cat "${new_out_file}" >> "${out_dir}/colab.log" 2>/dev/null || true
     rm -f "${lock_file}.held"
     rmdir "${lock_dir}" 2>/dev/null || true
     if colab_rc_is_timeout "${rc}"; then
       echo "NEW_TIMEOUT session=${session} timeout_s=${new_timeout} kill_grace_s=${kill_grace} rc=${rc}" >> "${out_dir}/guards.log"
     fi
     if [ "${rc}" -ne 0 ]; then
-      colab_refuse_logged "${out_dir}" SESSION_OPEN_FAILED "colab new -s ${session} failed (rc=${rc})"
+      colab_classify_open_failure "${session}" "${out_dir}" "${new_out_file}" "${rc}"
+      rm -f "${new_out_file}"
       return "${rc}"
     fi
+    rm -f "${new_out_file}"
   fi
+  "${PY_BIN:?the kit must set PY_BIN}" -c 'import json, sys; open(sys.argv[1], "w", encoding="utf-8", newline="\n").write(json.dumps({"http_status": 200, "classification": "opened", "retry_policy": "none", "attempts": 1, "rc": 0}, indent=2) + "\n")' "${out_dir}/session_open_status.json"
   printf '1\n' > "${out_dir}/session_opened.txt"
   # The cap clock starts the moment `colab new` succeeds on both GPU and CPU: rate polls, shape check,
   # and uploads are billed time and are checked against effective_trip throughout pre-exec.
@@ -3609,6 +3707,8 @@ deadline = time.monotonic() + max(0.0, wall_limit_s)
 while True:
     record_children()
     if stop_completed():
+        sys.exit(0)
+    if (out_dir / "stop_reached.txt").is_file() and not session_was_opened():
         sys.exit(0)
     if not launcher_alive():
         if stop_completed():
@@ -4125,6 +4225,34 @@ REFUSAL_CODES = (
     "MODEL_METADATA_FAILED",
     "HF_TOKEN_STAGING_FAILED",
     "HF_TOKEN_SHRED_FAILED",
+    "LANE1_MODE_INVALID",
+    "RENDER_OPTION_WITHOUT_RENDER",
+    "RENDER_REQUIRES_GPU",
+    "RENDER_CPU_STUB_REQUIRES_CPU",
+    "RENDER_MANIFEST_REQUIRED",
+    "RENDER_JOBS_REQUIRED",
+    "RENDER_JOBS_SHA_REQUIRED",
+    "RENDER_COPY_BACK_REQUIRED",
+    "RENDER_CAP_REQUIRED",
+    "RENDER_MAX_RATE_REQUIRED",
+    "JOBS_FILE_MISSING",
+    "JOBS_SHA_MISMATCH",
+    "RENDER_JOB_INVALID",
+    "WEIGHTS_MANIFEST_INVALID",
+    "WEIGHTS_REVISION_INVALID",
+    "WEIGHTS_DEST_INVALID",
+    "WEIGHTS_LICENCE_INVALID",
+    "WEIGHTS_MODEL_EXCLUDED",
+    "WEIGHTS_MOUNT_FORBIDDEN",
+    "WEIGHTS_SHA_MISMATCH",
+    "WEIGHTS_CORRUPT",
+    "BG_REMOVAL_FORBIDDEN",
+    "COMFY_STARTUP_FAILED",
+    "RENDER_CONSECUTIVE_FAILURES",
+    "BIREFNET_NODE_NOT_INSTALLED",
+    "WEIGHTS_DISK_LOW",
+    "SESSION_OPEN_412_ACCOUNT_CAP",
+    "SESSION_OPEN_503_POOL_EMPTY",
     # Rig-side live guards (colab_check_cap_and_ram, colab_run_exec_with_live_guards).
     "HOST_RAM_PROJECTION_EXCEEDED",
     "HOST_RAM_UNREADABLE",
@@ -4509,7 +4637,11 @@ salvage_deadline_s = int(os.environ.get("SALVAGE_DEADLINE_S", str(salvage_steps_
 stop_timeout_s = int(os.environ.get("COLAB_STOP_TIMEOUT_S", "60"))
 stop_attempts = int(os.environ.get("COLAB_STOP_ATTEMPTS", "2"))
 stop_bound_s = stop_attempts * (stop_timeout_s + kill_grace_s)
-salvage_bound_s = min(salvage_steps_sum_s, salvage_deadline_s) if lane == "train" else 0
+salvage_bound_s = (
+    min(salvage_steps_sum_s, salvage_deadline_s)
+    if (lane == "train" or (lane == "render" and os.environ.get("COLAB_RENDER_SALVAGE", "0") == "1"))
+    else 0
+)
 cleanup_stop_attempted_by_s = in_flight_bound_s + salvage_bound_s
 cleanup_bound_s = cleanup_stop_attempted_by_s + stop_bound_s
 stop_path_raw = read_text_file(out_dir / "stop_path.txt")
@@ -4558,6 +4690,15 @@ else:
     cleanup_reserve_units = None
     effective_trip_units = None
 
+session_open_status: dict | None = None
+if (out_dir / "session_open_status.json").is_file():
+    try:
+        loaded_sos = json.loads((out_dir / "session_open_status.json").read_text(encoding="utf-8"))
+        if isinstance(loaded_sos, dict):
+            session_open_status = loaded_sos
+    except ValueError:
+        session_open_status = None
+
 window_payload = {
     **vm_facts,
     "window_id": session,
@@ -4566,6 +4707,7 @@ window_payload = {
     "card": card,
     "shape_requested": shape_requested,
     "shape_check": shape_check,
+    "session_open_status": session_open_status,
     "status": final_status,
     "refusal_code": refusal_code,
     "why": refusal_why,
@@ -4628,6 +4770,7 @@ outcome_payload = {
     "lane": lane,
     "session": session,
     "card": card,
+    "session_open_status": session_open_status,
     "status": final_status,
     "refusal_code": refusal_code,
     "why": refusal_why,

@@ -1,0 +1,10 @@
+[
+  {
+    "repo": "madebyollin/taesd",
+    "revision": "614f76814bbe30edbe2e627ace1c2234c81a2c0e",
+    "file": "taesd_decoder.safetensors",
+    "dest": "vae",
+    "sha256": "f0fb51dd10d41c26612c070fa0b52ea0215a5ff90792134b4971109dd713c019",
+    "licence_id": "MIT"
+  }
+]

@@ -1,25 +1,25 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-12 from commit 2d3c470 by Atlas 1.26.0.
+Mapped at 2026-11-13 from commit 0a4027a by Atlas 1.26.0.
 
 ## What this is
 
-13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (61), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
+13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (66), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-12 (310232f)
+## What changed since 2026-11-13 (e7db832)
 
-Nothing structural changed since 2026-11-12; 1 file added and 8 changed content.
+Nothing structural changed since 2026-11-13; 4 files changed content.
 
 ## What comes in
 
-1. **CI.** On a pull request; on a push touching 16 paths; or by hand. Runs bin/sdlab.js, scripts/colab/preflight_resolve.sh, tests/checkpoint_eval/ and 123 more.
+1. **CI.** On a pull request; on a push touching 16 paths; or by hand. Runs bin/sdlab.js, scripts/colab/preflight_resolve.sh, tests/checkpoint_eval/ and 126 more.
 2. **Publish.** When a release is published; or by hand. Runs bin/sdlab.js, tests/canon-star-freight/, tests/cli-scripts/ and 74 more.
 3. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 4. **sdlab** (a command people run). Runs bin/sdlab.js.
 
 ## What happens through CI
 
-1. The workflow runs bin/sdlab.js in bin, scripts/colab/preflight_resolve.sh in scripts, and 124 files in tests.
+1. The workflow runs bin/sdlab.js in bin, scripts/colab/preflight_resolve.sh in scripts, and 127 files in tests.
    1. Inside bin/sdlab.js, `main` does, in order: `enableDebug` (lib) and `setLogLevel`.
    2. Or, for an entry of `namespaces` where `command === head`, `main` does `findClosest` (lib) and `inputError` instead.
    3. Or, when `command === 'critique'`, `main` does `run` (scripts) instead.
@@ -62,7 +62,7 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **scripts/colab/lane3_rung.py** and **tests/colab/test_lane3_gpu_rung.py** changed together in 6 of 12 commits, and the tests part imports the scripts part.
+- **scripts/colab/lane1_render.py** and **tests/colab/test_launch_lane1_stub.py** changed together in 6 of 11 commits, and the tests part imports the scripts part.
 
 1 file changed together with its own test, as expected.
 
@@ -126,7 +126,7 @@ Read those in order to follow one pull request end to end.
 - 5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.
 - 44 writes and 74 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
-- 164 writes and 314 reads go to a path their caller passes, not to this repository.
+- 170 writes and 329 reads go to a path their caller passes, not to this repository.
 - 12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.
 - 7 reads go to the directory the command is run in, not to this repository.
 - 1 write and 2 reads go to a temporary directory, not to this repository.
