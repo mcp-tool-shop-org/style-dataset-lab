@@ -2659,6 +2659,26 @@ def rung_pids(root: Path, proc: Path = Path("/proc"), skip: Iterable[int] = ()) 
     return found
 
 
+def _tar_gz_is_complete(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size <= 0:
+        return False
+    try:
+        with tarfile.open(path, "r:gz") as tf:
+            while True:
+                member = tf.next()
+                if member is None:
+                    break
+                if member.isfile():
+                    src = tf.extractfile(member)
+                    if src is not None:
+                        with src:
+                            while src.read(1 << 20):
+                                pass
+        return True
+    except (tarfile.TarError, EOFError, OSError):
+        return False
+
+
 def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None] = os.kill,
                    proc: Path = Path("/proc")) -> int:
     """After the kit killed its exec (wall, cap, stall, dead harness), the VM-side script is still
@@ -2669,13 +2689,15 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
     root = Path(args.content)
     out = root / "lane3_out"
     bundle = root / BUNDLE_NAME
+    bundle_tmp = root / f"{BUNDLE_NAME}.tmp"
     pids = rung_pids(root, proc, skip=(os.getpid(), os.getppid()))
     for pid in pids:
         try:
             kill(pid, signal.SIGKILL)
         except OSError:
             continue
-    if not pids and bundle.is_file() and bundle.stat().st_size > 0:
+    bundle_tmp.unlink(missing_ok=True)
+    if not pids and _tar_gz_is_complete(bundle):
         print(f"BUNDLE_NOW: the remote script already bundled {bundle}", flush=True)
         return 0
     if not out.is_dir():
@@ -2696,8 +2718,9 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
             subprocess.run([sys.executable, str(guards), "--scrub-file", str(f)], check=False,
                            stdin=subprocess.DEVNULL)
     bundle.unlink(missing_ok=True)
-    with tarfile.open(bundle, "w:gz") as tf:
+    with tarfile.open(bundle_tmp, "w:gz") as tf:
         tf.add(str(out), arcname=".")
+    os.replace(bundle_tmp, bundle)
     print(f"BUNDLE_NOW: killed {len(pids)} rung process(es) and bundled {bundle}", flush=True)
     return 0
 

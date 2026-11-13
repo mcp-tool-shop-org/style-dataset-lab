@@ -5172,3 +5172,64 @@ def test_lane1_watcher_is_kept_when_the_trap_stop_fails_and_lands_the_stop(tmp_p
     assert stop_log.count("STOP_COMPLETED attempt=") == 1
     assert (state / "stops.log").read_text(encoding="utf-8").count("STOP -s sdlab-l1-keepwatch") == 1
     assert not (state / "open_sessions" / "sdlab-l1-keepwatch.json").exists()
+
+
+def test_post_train_bundling_across_multiple_vitals_ticks_does_not_trip_dead_harness(tmp_path: Path) -> None:
+    # Regression for sdlab-ships-2512-v2: after ai-toolkit/run.py exits 0, tarring a 2+ GiB 6-checkpoint
+    # bundle spans >= 2 vitals samples with 0 worker procs. Switching phase.txt back out of "run" as soon
+    # as wait "${TRAIN_PID}" finishes prevents DEAD_HARNESS_TRIPPED from killing the exec mid-tar.
+    state, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_POST_TRAIN_VITALS_TICKS": "4",
+        "FAKE_COLAB_VITALS_INTERVAL_S": "0.15",
+        "GUARD_POLL_INTERVAL_S": "0.2",
+    })
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode == 0, f"STDERR:\n{res.stderr}\nGUARDS:\n{(out_dir / 'guards.log').read_text(encoding='utf-8')[-1500:]}"
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["status"] == "ok" and win["trained"] is True
+    assert "DEAD_HARNESS_TRIPPED" not in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert not (state / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+    _assert_token_nowhere(out_dir)
+
+
+def test_bundle_now_rebuilds_when_a_truncated_or_tmp_bundle_was_left_behind(tmp_path: Path) -> None:
+    # Regression for sdlab-ships-2512-v2 secondary failure: if a previous tar died mid-stream leaving a
+    # truncated gzip or a .tmp file, run_bundle_now must NOT treat it as already bundled; it must unlink
+    # the .tmp, rebuild a complete archive from lane3_out + lane3_train, and verify cleanly.
+    import argparse
+    import struct
+    import tarfile
+
+    content = tmp_path / "content"
+    out = content / "lane3_out"
+    train = content / "lane3_train" / "ships_v1"
+    (train / "samples").mkdir(parents=True)
+    out.mkdir(parents=True)
+    raw_data = b"STEP1500" * 16
+    st_hdr = json.dumps({"lora": {"dtype": "U8", "shape": [len(raw_data)], "data_offsets": [0, len(raw_data)]}}).encode()
+    ckpt_bytes = struct.pack("<Q", len(st_hdr)) + st_hdr + raw_data
+    (train / "ships_v1.safetensors").write_bytes(ckpt_bytes)
+    (train / "samples" / "1762400000000__000001500_0.jpg").write_bytes(b"\xff\xd8JPEG" * 16)
+    (out / "setup.log").write_text("ok\n", encoding="utf-8")
+
+    # Plant a non-empty truncated gzip at lane3_stub_bundle.tar.gz AND a stray .tmp
+    full_tmp = tmp_path / "full.tar.gz"
+    with tarfile.open(full_tmp, "w:gz") as tf:
+        tf.add(str(out), arcname=".")
+    raw_gz = full_tmp.read_bytes()
+    assert len(raw_gz) > 20
+    (content / lr.BUNDLE_NAME).write_bytes(raw_gz[: len(raw_gz) // 2])
+    (content / f"{lr.BUNDLE_NAME}.tmp").write_bytes(b"partial-tmp")
+    assert lr._tar_gz_is_complete(content / lr.BUNDLE_NAME) is False
+
+    rc = lr.run_bundle_now(
+        argparse.Namespace(content=str(content), rc=93, settle_s=0.0),
+        proc=tmp_path / "empty_proc",
+    )
+    assert rc == 0
+    assert not (content / f"{lr.BUNDLE_NAME}.tmp").exists()
+    assert lr._tar_gz_is_complete(content / lr.BUNDLE_NAME) is True
+    ver = lr.verify_bundle_against_manifest(content / lr.BUNDLE_NAME)
+    assert ver["ok"] is True
+

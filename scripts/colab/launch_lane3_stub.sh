@@ -53,12 +53,12 @@ PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa
 PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
 PINNED_COLAB_WINDOW_SHA="13bee0c4d6e1c4165632f97b6af3885740e8c404172de93b0293db0ccc2f1d77"
-PINNED_LANE3_RUNG_SHA="9cceb2446e68fbb184bea325a0d2ae14e2bf9435dc6eaee4d037e6251878bb99"
+PINNED_LANE3_RUNG_SHA="957c6e327ecb1d92aa64d7e832de276c07539dc3d27a92f3c4d2c1bbe0b4c05e"
 PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="5ccbb20eac124ba56dae8ff2c3e222d0fa3863bb163abae5fac1095ebb67e1a2"
+PINNED_SELF_SHA="f106f8060a014eee75295aa4aea49919b334d9c5a999f391c346275a5adc559d"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -404,8 +404,13 @@ lane3_train_on_exit() {
     while IFS= read -r -d '' f; do
       "\${LANE3_PY}" /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
     done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
-    tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out . || true
-    echo "TRAIN_BUNDLE_AFTER_FAILURE rc=\${rc} /content/lane3_stub_bundle.tar.gz"
+    rm -f /content/lane3_stub_bundle.tar.gz.tmp
+    if tar -czf /content/lane3_stub_bundle.tar.gz.tmp -C /content/lane3_out .; then
+      mv -f /content/lane3_stub_bundle.tar.gz.tmp /content/lane3_stub_bundle.tar.gz
+      echo "TRAIN_BUNDLE_AFTER_FAILURE rc=\${rc} /content/lane3_stub_bundle.tar.gz"
+    else
+      rm -f /content/lane3_stub_bundle.tar.gz.tmp
+    fi
   fi
   exit "\${rc}"
 }
@@ -469,6 +474,7 @@ TRAIN_PID=\$!
 COPY_PID=\$!
 wait "\${TRAIN_PID}"
 TRAIN_RC=\$?
+echo "setup" > /content/lane3_out/phase.txt
 wait "\${COPY_PID}"
 # Record the complete manifest of the training folder before the final sweep so the rig can verify
 # every file (path, bytes, sha256) arrived in the downloaded bundle.
@@ -552,7 +558,9 @@ fi
 while IFS= read -r -d '' f; do
   /content/venv-lane3/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
-tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
+rm -f /content/lane3_stub_bundle.tar.gz.tmp
+tar -czf /content/lane3_stub_bundle.tar.gz.tmp -C /content/lane3_out .
+mv -f /content/lane3_stub_bundle.tar.gz.tmp /content/lane3_stub_bundle.tar.gz
 # <<< sdlab-lane3-window
 REMOTEEOF
 }
