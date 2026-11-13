@@ -820,8 +820,23 @@ RUNPYEOF
     sed -n '/^# >>> sdlab-lane3-train$/,/^# <<< sdlab-lane3-train$/p' "${uploaded_sh}"
     sed -n '/^# >>> sdlab-lane3-window$/,/^# <<< sdlab-lane3-window$/p' "${uploaded_sh}"
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
+  if [ -n "${FAKE_VM_TRAIN_VITALS_TICKS:-}" ]; then
+    (
+      for _ in $(seq 1 "${FAKE_VM_TRAIN_VITALS_TICKS}"); do
+        sleep "${vitals_interval}"
+        _bg_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo run)"
+        emit_vitals "${_bg_phase}" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml"
+      done
+    ) &
+    _train_vit_pid="$!"
+  else
+    _train_vit_pid=""
+  fi
   PATH="${PWD}/.fake-vm-bin:${PATH}" PYTHONPATH="${FAKE_VM_SITE}${PYTHONPATH:+:${PYTHONPATH}}" \\
     bash "${PWD}/remote_lane3_stub.sh.trainblock"
+  if [ -n "${_train_vit_pid}" ]; then
+    wait "${_train_vit_pid}" 2>/dev/null || true
+  fi
   if [ -n "${FAKE_VM_POST_TRAIN_VITALS_TICKS:-}" ]; then
     _cur_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo setup)"
     for _ in $(seq 1 "${FAKE_VM_POST_TRAIN_VITALS_TICKS}"); do

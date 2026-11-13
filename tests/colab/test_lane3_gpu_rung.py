@@ -5175,20 +5175,30 @@ def test_lane1_watcher_is_kept_when_the_trap_stop_fails_and_lands_the_stop(tmp_p
 
 
 def test_post_train_bundling_across_multiple_vitals_ticks_does_not_trip_dead_harness(tmp_path: Path) -> None:
-    # Regression for sdlab-ships-2512-v2: after ai-toolkit/run.py exits 0, tarring a 2+ GiB 6-checkpoint
-    # bundle spans >= 2 vitals samples with 0 worker procs. Switching phase.txt back out of "run" as soon
-    # as wait "${TRAIN_PID}" finishes prevents DEAD_HARNESS_TRIPPED from killing the exec mid-tar.
+    # Regression for sdlab-ships-2512-v2 and sdlab-ships-2512-v2-r2:
+    # 1) Training runs longer than SETUP_STALL_S (2s here, with FAKE_VM_TRAIN_SLEEP_S=2.4) while SETUP_BYTES
+    #    stays frozen during phase="run".
+    # 2) After ai-toolkit/run.py exits 0, phase.txt switches to "bundle" and tarring spans >= 4 vitals
+    #    samples with 0 worker procs.
+    # Neither DEAD_HARNESS_TRIPPED nor SETUP_STALL_TRIPPED may fire during post-train bundling.
     state, env, src = _rung_env(tmp_path)
     env.update({
-        "FAKE_VM_POST_TRAIN_VITALS_TICKS": "4",
-        "FAKE_COLAB_VITALS_INTERVAL_S": "0.15",
+        "SETUP_STALL_S": "2",
+        "FAKE_VM_TRAIN_SLEEP_S": "2.4",
+        "FAKE_VM_TRAIN_VITALS_TICKS": "12",
+        "FAKE_VM_POST_TRAIN_VITALS_TICKS": "5",
+        "FAKE_COLAB_VITALS_INTERVAL_S": "0.2",
         "GUARD_POLL_INTERVAL_S": "0.2",
     })
     res, out_dir = _launch(tmp_path, env, src)
     assert res.returncode == 0, f"STDERR:\n{res.stderr}\nGUARDS:\n{(out_dir / 'guards.log').read_text(encoding='utf-8')[-1500:]}"
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    guards_txt = (out_dir / "guards.log").read_text(encoding="utf-8")
+    vitals_txt = (out_dir / "vitals.log").read_text(encoding="utf-8")
     assert win["status"] == "ok" and win["trained"] is True
-    assert "DEAD_HARNESS_TRIPPED" not in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert '"phase": "bundle"' in vitals_txt
+    assert "DEAD_HARNESS_TRIPPED" not in guards_txt
+    assert "SETUP_STALL_TRIPPED" not in guards_txt
     assert not (state / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
     _assert_token_nowhere(out_dir)
 

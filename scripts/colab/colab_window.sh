@@ -2827,6 +2827,7 @@ colab_run_exec_with_live_guards() {
   last_progress_epoch="$(date -u +%s)"
   local last_setup_bytes=0
   local last_setup_progress_epoch="${last_progress_epoch}"
+  local last_harness_phase=""
 
   local wall_int="${wall_s%.*}"
   local grace_int="${grace_s%.*}"
@@ -2878,6 +2879,15 @@ colab_run_exec_with_live_guards() {
       last_progress_epoch="${now_epoch}"
     fi
     idle_s="$((now_epoch - last_progress_epoch))"
+
+    local cur_harness_phase=""
+    cur_harness_phase="$(grep -E '^HARNESS:' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | sed -n 's/.*"phase"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' || true)"
+    if [ -n "${cur_harness_phase}" ] && [ "${cur_harness_phase}" != "${last_harness_phase}" ]; then
+      last_harness_phase="${cur_harness_phase}"
+      last_progress_epoch="${now_epoch}"
+      last_setup_progress_epoch="${now_epoch}"
+      idle_s=0
+    fi
 
     cur_setup_bytes="$(grep -E '^SETUP_BYTES:[[:space:]]*[0-9]+[[:space:]]*$' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | awk -F: '{gsub(/[[:space:]]/, "", $2); print $2}' || true)"
     if [ -n "${cur_setup_bytes}" ] && [ "${cur_setup_bytes}" != "${last_setup_bytes}" ]; then
