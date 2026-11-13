@@ -52,13 +52,13 @@ PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187"
-PINNED_LANE3_RUNG_SHA="8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad"
+PINNED_COLAB_WINDOW_SHA="13bee0c4d6e1c4165632f97b6af3885740e8c404172de93b0293db0ccc2f1d77"
+PINNED_LANE3_RUNG_SHA="9cceb2446e68fbb184bea325a0d2ae14e2bf9435dc6eaee4d037e6251878bb99"
 PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="b54dbb9a55709dcada27b80e89ab8ec8441677da39565654530df8dfa04c8163"
+PINNED_SELF_SHA="5ccbb20eac124ba56dae8ff2c3e222d0fa3863bb163abae5fac1095ebb67e1a2"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -1202,11 +1202,7 @@ cleanup_on_exit() {
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
+  colab_release_wall_watcher "${OUT_DIR}" "${SESSION}" "${WALL_WATCHER_PID}"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \

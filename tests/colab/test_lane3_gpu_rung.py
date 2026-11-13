@@ -18,6 +18,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 import sys
 import tarfile
 from collections import namedtuple
@@ -2751,14 +2752,15 @@ def test_launch_guards_pre_exec_phase_unit_and_cli(capsys: pytest.CaptureFixture
 
 
 def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_path: Path) -> None:
-    # 1. Lane 1: escalate 2 s, in-flight bound 6 + 1 = 7 s, download succeeds in ~5 s.
+    # 1. Lane 1: escalate 2 s, in-flight bound 9 + 1 = 10 s, download succeeds in ~7 s (wall trips at 5 s,
+    # safely after ~2-3.5 s pre-download setup under --cov and with >3 s remaining past the 2 s escalate).
     lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
     _, state1, env1 = fc.make_fake_colab_env(tmp_path / "l1")
     env1.update({
         "GUARD_POLL_INTERVAL_S": "0.2",
-        "FAKE_COLAB_DOWNLOAD_DELAY_S": "5.0",
+        "FAKE_COLAB_DOWNLOAD_DELAY_S": "7.0",
         "SDLAB_TEST_WALL_ESCALATE_S": "2",
-        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "6",
+        "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "9",
         "SDLAB_TEST_KILL_GRACE_S": "1",
         "SDLAB_TEST_STOP_TIMEOUT_S": "2",
     })
@@ -2768,9 +2770,9 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
             [
                 _bash(), fc._to_posix(lane1_sh),
                 "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-legit-dl",
-                "--wall-s", "5", "--grace-s", "2",
+                "--wall-s", "7", "--grace-s", "2",
             ],
-            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=25, check=False,
+            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
         )
         assert res1.returncode != 0
         assert not (out1 / "watcher_escalated.txt").exists()
@@ -2780,8 +2782,8 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
         assert win1["refusal_code"] == "WALL_GUARD_TRIPPED"
         assert win1["stop_path"] == "trap"
         assert win1["watcher_wait"] == "cleanup_seen"
-        assert win1["cleanup_stop_attempted_by_s"] == 7
-        assert win1["cleanup_bound_s"] == 13
+        assert win1["cleanup_stop_attempted_by_s"] == 10
+        assert win1["cleanup_bound_s"] == 16
         trip_ts1 = float((out1 / "wall_trip_epoch.txt").read_text(encoding="utf-8").strip())
         stop_done_ts1 = json.loads((state1 / "stops.jsonl").read_text(encoding="utf-8").splitlines()[-1])["done_ts"]
         assert stop_done_ts1 - trip_ts1 <= win1["cleanup_bound_s"], (stop_done_ts1 - trip_ts1, win1["cleanup_bound_s"])
@@ -4110,6 +4112,37 @@ def test_check_job_hub_refs_licences_cadences_trigger_and_caption_dropout_refusa
     ]) == 0
     capsys.readouterr()
 
+    # Cleared Qwen/Qwen-Image-2512 base model (matching lib/model-licences.js /^qwen[_-]image/i) passes check-job;
+    # Qwen-Image-2.1 remains unlisted and refused.
+    rev_2512 = "25468b98e3276ca6700de15c6628e51b7de54a26"
+    good_2512 = tmp_path / "good_2512.yaml"
+    good_2512.write_text(
+        base_text.replace(
+            "      name_or_path: Qwen/Qwen-Image\n",
+            "      name_or_path: Qwen/Qwen-Image-2512\n",
+        )
+        + f'  base_model: "Qwen/Qwen-Image-2512@{rev_2512}"\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    good_2512_sha = hashlib.sha256(good_2512.read_bytes()).hexdigest()
+    plan_2512 = tmp_path / "plan_2512.json"
+    assert lr.main([
+        "check-job", "--template", str(good_2512), "--template-sha", good_2512_sha,
+        "--model-revision", rev_2512, "--model-repo", "Qwen/Qwen-Image-2512",
+        "--plan-out", str(plan_2512),
+    ]) == 0
+    assert "JOB_TEMPLATE_OK" in capsys.readouterr().out
+    assert any(
+        r.get("repo_id") == "Qwen/Qwen-Image-2512"
+        for r in json.loads(plan_2512.read_text(encoding="utf-8"))["pinned_hub_refs"]
+    )
+    assert lr.main([
+        "check-job", "--template", str(good_2512), "--template-sha", good_2512_sha,
+        "--model-revision", rev_2512, "--model-repo", "Qwen/Qwen-Image-2.1",
+    ]) == 1
+    assert "JOB_MODEL_LICENCE_NOT_ALLOWED" in capsys.readouterr().err
+
 
 def test_wall_allowance_from_job_steps_and_step_time_refusals(tmp_path: Path) -> None:
     ds_dir, man_p, man_sha = _write_synthetic_dataset(tmp_path / "wall_ds", n=3)
@@ -4885,7 +4918,8 @@ def test_n4_split_copy_overhead_counted_in_output_disk_projection(tmp_path: Path
     assert odp["base_copy_tar_overhead"] == 3.0
     assert odp["split_copy_overhead"] == 1.0
     assert odp["copy_tar_overhead"] == 4.0
-    assert odp["projected_output_bytes"] == 1_258_291_200
+    assert odp["split_disk_headroom_bytes"] == 16 * 1024 * 1024
+    assert odp["projected_output_bytes"] == 1_258_291_200 + 16 * 1024 * 1024
     assert not (state_dir / "calls.log").exists()
 
 
@@ -5063,3 +5097,78 @@ def test_failed_early_stop_is_not_recorded_as_stopped_and_the_exit_trap_stops_th
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert win["stopped_before_rig_repair"] is False
     assert (out_dir / "stop_reached.txt").exists(), "the trap's own stop ran"
+
+
+def test_watcher_survives_the_launcher_when_early_and_trap_stops_all_fail_and_lands_the_stop(tmp_path: Path) -> None:
+    # fix5: both early-stop attempts and both EXIT-trap attempts fail (4 injected failures). At 3462f814 the trap
+    # killed the wall watcher regardless, so nothing was left to stop the VM. Now the watcher is kept until a
+    # STOP_COMPLETED is confirmed, sees the launcher gone with no confirmed stop, and stops the session itself.
+    state, env, src = _rung_env(tmp_path)
+    env.update({
+        "FAKE_VM_DROP_TRAIN_SOURCE_FILE": "rustline_style_v5/optimizer.pt",
+        "FAKE_COLAB_STOP_FAIL_FIRST": "4",
+        "SDLAB_TEST_STOP_TIMEOUT_S": "5",
+    })
+    res, out_dir = _launch(tmp_path, env, src)
+    assert res.returncode != 0
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert "STOP_EARLY_UNCONFIRMED" in guards and "WATCHER_KEPT_STOP_UNCONFIRMED" in guards
+    # The surviving watcher runs detached: wait (bounded) for its stop to land.
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline and "STOP_COMPLETED attempt=" not in (out_dir / "stop.log").read_text(encoding="utf-8"):
+        time.sleep(0.5)
+    stop_log = (out_dir / "stop.log").read_text(encoding="utf-8")
+    assert stop_log.count("STOP_FAILED") + stop_log.count("STOP_TIMEOUT") == 4
+    assert stop_log.count("STOP_COMPLETED attempt=") == 1
+    assert (state / "stops.log").read_text(encoding="utf-8").count("STOP -s sdlab-l3-gpu-rung") == 1
+    assert not (state / "open_sessions" / "sdlab-l3-gpu-rung.json").exists()
+    assert (out_dir / "watcher_wait.txt").read_text(encoding="utf-8").strip() == "launcher_gone_pre_trip"
+
+
+def test_stop_confirmation_matches_only_an_exact_stop_completed_line(tmp_path: Path) -> None:
+    # fix5: the early stop's check and the watcher's stop_completed() accept only
+    # `STOP_COMPLETED attempt=<n>/<m> session=<session>`, not a longer session name or a different line.
+    import re as _re
+    _, _, env = fc.make_fake_colab_env(tmp_path)
+    out = tmp_path / "o"
+    out.mkdir()
+
+    def confirmed(log: str, session: str = "s-1") -> bool:
+        (out / "stop.log").write_text(log, encoding="utf-8", newline="\n")
+        res = subprocess.run(
+            [_bash(), "-c", f'source "{fc._to_posix(COLAB_DIR / "colab_window.sh")}"; colab_stop_confirmed "{fc._to_posix(out)}" {session}'],
+            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False,
+        )
+        return res.returncode == 0
+
+    assert confirmed("STOP_COMPLETED attempt=1/2 session=s-1\n")
+    assert not confirmed("STOP_COMPLETED attempt=1/2 session=s-10\n")
+    assert not confirmed("xSTOP_COMPLETED attempt=1/2 session=s-1\n")
+    assert not confirmed("STOP_COMPLETED attempt=1/2 session=s-1 extra\n")
+    assert not confirmed("STOP_FAILED attempt=1/2 session=s-1\n")
+    assert not confirmed("")
+    src = (COLAB_DIR / "colab_window.sh").read_text(encoding="utf-8")
+    assert src.count('_re.compile(r"STOP_COMPLETED attempt=[0-9]+/[0-9]+ session=" + _re.escape(session))') == 2
+    assert _re.fullmatch(r"STOP_COMPLETED attempt=[0-9]+/[0-9]+ session=s\-1", "STOP_COMPLETED attempt=2/2 session=s-1")
+
+
+def test_lane1_watcher_is_kept_when_the_trap_stop_fails_and_lands_the_stop(tmp_path: Path) -> None:
+    # fix5, lane 1: both EXIT-trap stop attempts fail; the trap used to kill the wall watcher regardless
+    # (launch_lane1_stub.sh trap), leaving nothing to stop the VM. The watcher now survives and stops the session.
+    _, state, env = fc.make_fake_colab_env(tmp_path)
+    env.update({"GUARD_POLL_INTERVAL_S": "0.2", "FAKE_COLAB_STOP_FAIL_FIRST": "2", "SDLAB_TEST_STOP_TIMEOUT_S": "5"})
+    out = tmp_path / "out"
+    res = subprocess.run(
+        [_bash(), fc._to_posix(COLAB_DIR / "launch_lane1_stub.sh"), "--out-dir", fc._to_posix(out), "--session", "sdlab-l1-keepwatch"],
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120, check=False,
+    )
+    assert res.returncode == 0, res.stderr
+    assert "WATCHER_KEPT_STOP_UNCONFIRMED" in (out / "guards.log").read_text(encoding="utf-8")
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline and "STOP_COMPLETED attempt=" not in (out / "stop.log").read_text(encoding="utf-8"):
+        time.sleep(0.5)
+    stop_log = (out / "stop.log").read_text(encoding="utf-8")
+    assert stop_log.count("STOP_FAILED") + stop_log.count("STOP_TIMEOUT") == 2
+    assert stop_log.count("STOP_COMPLETED attempt=") == 1
+    assert (state / "stops.log").read_text(encoding="utf-8").count("STOP -s sdlab-l1-keepwatch") == 1
+    assert not (state / "open_sessions" / "sdlab-l1-keepwatch.json").exists()

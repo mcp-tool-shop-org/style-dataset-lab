@@ -75,22 +75,22 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 1,
-      "changed": 8,
+      "added": 0,
+      "changed": 1,
       "moved": 0,
-      "parts": 2,
+      "parts": 1,
       "removed": 0
     },
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-12; 1 file added and 8 changed content.",
+        "sentence": "Nothing structural changed since 2026-11-12; 1 file changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "310232f4b39aab15ca994fcc3b6c7c7be3287cb8",
-      "generatedAt": "2026-11-12T19:46:09.088Z"
+      "commit": "19b3fe1f5ae0f881252b6212598eaf06d4acea93",
+      "generatedAt": "2026-11-12T22:36:14.883Z"
     },
     "unchanged": true
   },
@@ -98,7 +98,7 @@
     {
       "a": "scripts/colab/lane3_rung.py",
       "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 12,
+      "either": 11,
       "partLabels": [
         "scripts",
         "tests"
@@ -117,8 +117,8 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 4 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "2d3c4705dc4728b05ac1ba2d86f0611075aaeafb",
-  "defaultBranch": "main",
+  "commit": "ce6da8a40949c592f389dbe5cb395a6f6d1688b1",
+  "defaultBranch": "fix/watcher-pre-trip-launcher-death",
   "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (61), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
@@ -456,7 +456,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-12T20:27:17.378Z",
+  "generatedAt": "2026-11-12T23:08:02.035Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
     "44 writes and 74 reads use paths built at run time and are not named here.",
@@ -486,7 +486,7 @@
   },
   "parts": 13,
   "readers": [],
-  "repo": "mcp-tool-shop-org/style-dataset-lab",
+  "repo": "@mcptoolshop/style-dataset-lab",
   "sequences": [
     {
       "alternatives": [

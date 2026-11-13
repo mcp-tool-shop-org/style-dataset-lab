@@ -16,8 +16,8 @@
 set -euo pipefail
 
 PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
-PINNED_COLAB_WINDOW_SHA="5ffe66d99d64c7262802d4ded9119ee915ef519010afd4832034100258f63187"
-PINNED_SELF_SHA="e062b1372518456660bf9e5d708e89e45fa0e345385762abaec8953a6a1051b8"
+PINNED_COLAB_WINDOW_SHA="13bee0c4d6e1c4165632f97b6af3885740e8c404172de93b0293db0ccc2f1d77"
+PINNED_SELF_SHA="af80ada1adb2bd9433272ef7e0bd721eb3eada69a0991b03a2fd599cd910d3ef"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/probe_upload_limit.sh"
@@ -265,11 +265,7 @@ cleanup_on_exit() {
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
+  colab_release_wall_watcher "${OUT_DIR}" "${SESSION}" "${WALL_WATCHER_PID}"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   probe_finalize_receipt "${rc}" "${closed_at}"

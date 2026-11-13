@@ -2325,6 +2325,38 @@ PYEOF
   fi
 }
 
+# colab_stop_confirmed <out_dir> <session>: true only when stop.log holds an exact
+# `STOP_COMPLETED attempt=<n>/<m> session=<session>` line (the line `colab_stop_and_log_closing` writes after a
+# `colab stop` that returned 0). Nothing looser counts.
+colab_stop_confirmed() {
+  local out_dir="$1"
+  local session="$2"
+  [ -f "${out_dir}/stop.log" ] || return 1
+  awk -v want="session=${session}" '
+    /^STOP_COMPLETED attempt=[0-9]+\/[0-9]+ session=/ {
+      if (NF == 3 && $3 == want) found = 1
+    }
+    END { exit found ? 0 : 1 }' "${out_dir}/stop.log"
+}
+
+# colab_release_wall_watcher <out_dir> <session> <watcher_pid>: the EXIT trap's last step for the wall watcher.
+# The watcher is the only thing that can still stop the VM when the launcher's own stop attempts failed, so it
+# is killed only once a stop is confirmed (`colab_stop_confirmed`). Otherwise it is left running: its pre-trip
+# loop sees the launcher gone with no STOP_COMPLETED and makes its own bounded stop attempts.
+colab_release_wall_watcher() {
+  local out_dir="$1"
+  local session="$2"
+  local watcher_pid="$3"
+  [ -n "${watcher_pid}" ] || return 0
+  if colab_stop_confirmed "${out_dir}" "${session}"; then
+    pkill -P "${watcher_pid}" 2>/dev/null || true
+    kill -9 "${watcher_pid}" 2>/dev/null || true
+    rm -f "${out_dir}/.watcher_tracked_pids.txt"
+  else
+    echo "WATCHER_KEPT_STOP_UNCONFIRMED session=${session}: no confirmed STOP_COMPLETED, the wall watcher keeps running to stop the session" >> "${out_dir}/guards.log"
+  fi
+}
+
 # colab_stop_session_early <py_bin> <session> <out_dir>: stop the billed session as soon as every
 # transfer is done, before any rig-side work (bundle repair, re-verification). Writes the same
 # stop_path / stop_reached markers the EXIT trap writes and a `stopped_early.txt` marker so the trap
@@ -2340,8 +2372,9 @@ colab_stop_session_early() {
   colab_stop_and_log_closing "${py_bin}" "${session}" "${out_dir}"
   # `colab_stop_and_log_closing` never fails, so confirm the stop from its own record. Only a confirmed stop
   # leaves `stopped_early.txt` (which tells the EXIT trap not to stop again). An unconfirmed one leaves the
-  # trap to make its own bounded attempts, and withdraws `stop_reached.txt` so the wall watcher stays armed.
-  if grep -F "STOP_COMPLETED" "${out_dir}/stop.log" 2>/dev/null | grep -Fq "session=${session}"; then
+  # trap to make its own bounded attempts. The wall watcher stays armed because no STOP_COMPLETED is logged,
+  # not because of the marker removal below (that only lets the trap write its own stop markers).
+  if colab_stop_confirmed "${out_dir}" "${session}"; then
     printf '1\n' > "${out_dir}/stopped_early.txt"
   else
     rm -f "${out_dir}/stopped_early.txt" "${out_dir}/stop_reached.txt"
@@ -3512,14 +3545,15 @@ tracked_p = out_dir / ".watcher_tracked_pids.txt"
 self_pid = os.getpid()
 
 def stop_completed() -> bool:
-    marker = f"session={session}"
+    import re as _re
+    pat = _re.compile(r"STOP_COMPLETED attempt=[0-9]+/[0-9]+ session=" + _re.escape(session))
     for log_name in ("stop.log", "guards.log"):
         lp = out_dir / log_name
         if not lp.is_file():
             continue
         try:
             for line in lp.read_text(encoding="utf-8", errors="replace").splitlines():
-                if line.startswith("STOP_COMPLETED ") and marker in line:
+                if pat.fullmatch(line):
                     return True
         except OSError:
             continue
@@ -3658,14 +3692,15 @@ tracked_p = out_dir / ".watcher_tracked_pids.txt"
 self_pid = os.getpid()
 
 def stop_completed() -> bool:
-    marker = f"session={session}"
+    import re as _re
+    pat = _re.compile(r"STOP_COMPLETED attempt=[0-9]+/[0-9]+ session=" + _re.escape(session))
     for log_name in ("stop.log", "guards.log"):
         lp = out_dir / log_name
         if not lp.is_file():
             continue
         try:
             for line in lp.read_text(encoding="utf-8", errors="replace").splitlines():
-                if line.startswith("STOP_COMPLETED ") and marker in line:
+                if pat.fullmatch(line):
                     return True
         except OSError:
             continue
@@ -3785,7 +3820,7 @@ PYEOF
     return 0
   fi
 
-  if [ "${wait_rc}" -ne 1 ] || grep -q "^STOP_COMPLETED .*session=${session}" "${out_dir}/stop.log" 2>/dev/null; then
+  if [ "${wait_rc}" -ne 1 ] || colab_stop_confirmed "${out_dir}" "${session}"; then
     rm -f "${out_dir}/.watcher_tracked_pids.txt"
     return 0
   fi
