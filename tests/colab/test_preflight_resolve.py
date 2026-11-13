@@ -266,7 +266,7 @@ def test_bound_hides_a_newer_upstream_release(tmp_path: Path) -> None:
     env["UV_EXCLUDE_NEWER_PACKAGE"] = "transformers=2030-01-01T00:00:00Z"
     res = _run(env, "lane1")
     assert res.returncode == 0, res.stderr
-    assert "PREFLIGHT_OK lane=lane1 python=3.14.9 pins=89 exclude_newer=2026-11-06T15:00:00Z" in res.stdout
+    assert "PREFLIGHT_OK lane=lane1 python=3.14.9 pins=109 exclude_newer=2026-11-06T15:00:00Z" in res.stdout
     log = argv_log.read_text(encoding="utf-8")
     assert "--exclude-newer 2026-11-06T15:00:00Z" in log
     assert "ENV UV_EXCLUDE_NEWER= UV_EXCLUDE_NEWER_PACKAGE=\n" in log
@@ -352,7 +352,7 @@ def test_relock_writes_lock_and_timestamp_together(tmp_path: Path) -> None:
     out.mkdir()
     res = _run_relock(env, "lane1", "--exclude-newer", "2026-11-06T15:00:00Z", "--locks-dir", fc._to_posix(out))
     assert res.returncode == 0, res.stderr
-    assert "RELOCK_OK lane=lane1 exclude_newer=2026-11-06T15:00:00Z pins=89" in res.stdout
+    assert "RELOCK_OK lane=lane1 exclude_newer=2026-11-06T15:00:00Z pins=109" in res.stdout
     lock_text = (out / "lane1.lock").read_text(encoding="utf-8")
     assert "--exclude-newer 2026-11-06T15:00:00Z scripts/colab/locks/lane1.in" in lock_text.splitlines()[1]
     assert "transformers==5.22.1 " in lock_text

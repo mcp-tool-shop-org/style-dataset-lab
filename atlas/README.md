@@ -1,14 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-13 from commit e7db832 by Atlas 1.26.0.
+Mapped at 2026-11-13 from commit 0a4027a by Atlas 1.26.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (66), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-12 (6323a95)
+## What changed since 2026-11-13 (e7db832)
 
-Nothing structural changed since 2026-11-12; 2 files changed content.
+Nothing structural changed since 2026-11-13; 4 files changed content.
 
 ## What comes in
 

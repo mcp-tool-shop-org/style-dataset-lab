@@ -1,30 +1,42 @@
 # Lane 1 (render) input requirements for CPython 3.14.9 (x86_64-manylinux_2_28)
-# Source: ComfyUI @ 158419f3a0017c2ce123484b14b6c527716d6ec8 (requirements.txt) + comfy-headless==3.1.0
-comfyui-frontend-package==1.18.10
-comfyui-workflow-templates==0.1.14
+# Source: ComfyUI @ 49b61c3cd044fb65acd97a960467a00414694146 (v0.44.1 requirements.txt) + comfy-headless==3.1.0
+comfyui-frontend-package==1.57.6
+comfyui-workflow-templates==0.11.103
+comfyui-embedded-docs==0.5.16
 torch
 torchsde
 torchvision
 torchaudio
 numpy>=1.25.0
 einops
-transformers>=4.28.1
+transformers>=4.50.3
 tokenizers>=0.13.3
 sentencepiece
 safetensors>=0.4.2
 aiohttp>=3.11.8
 yarl>=1.18.0
 pyyaml
-Pillow
+Pillow>=10.1.0
 scipy
 tqdm
 psutil
+alembic
+SQLAlchemy>=2.0.0
+filelock
+av>=17.0.0
+comfy-aimdo==0.6.0
+comfy-kitchen==0.2.40
+requests
+simpleeval>=1.0.0
+blake3
 
 #non essential dependencies:
 kornia>=0.7.1
 spandrel
 soundfile
-av>=14.2.0
 pydantic~=2.0
+pydantic-settings~=2.0
+PyOpenGL>=3.1.8
+comfy-angle
 
 comfy-headless==3.1.0

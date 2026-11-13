@@ -19043,7 +19043,7 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "8c34d7e9488e517237ecf3e8435cc1228411c308436e4724a46cffb971b5a0e3",
+          "hash": "3b2617564ea87c3eb0a09b2906d22dc04eeb763e02957ea35234f8fc95abce44",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
@@ -19059,11 +19059,11 @@
           "path": "scripts/colab/locks/lane1.exclude-newer"
         },
         {
-          "hash": "c14de38ba41776ac17e961e8020b10bdb67982688f6811aeba12c844dc81051f",
+          "hash": "6d709f46b762d5016a5fca14397009590fe33b110a5dfe2996e8af3467c68bf0",
           "path": "scripts/colab/locks/lane1.in"
         },
         {
-          "hash": "93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c",
+          "hash": "619e7105be1bead576aecae2bfc4c5318c6a5f9935a6e12e85c7d8163ca594dd",
           "path": "scripts/colab/locks/lane1.lock"
         },
         {
@@ -22196,7 +22196,7 @@
             "test_unreachable_repo_is_pin_check_unavailable",
             "test_uv_version_compile_failure_drift_and_ok"
           ],
-          "hash": "77c2dde42c4a4a9960478b2e91df94abdcdddbf8b591956f5eb53cb3941d7053",
+          "hash": "3eca52eff86037ffc50bcb13331f9ee8ad96da27d6bb604eb9d79181d3e8a4f0",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -24292,7 +24292,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "e7db832e37c643e8d55e3b38c672dc1744fa5419",
+    "commit": "0a4027a8e7e67dacd5d3cd907c51c68fc2016f50",
     "tracked": 3319
   },
   "landings": [
