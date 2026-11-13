@@ -758,7 +758,7 @@ def evaluate_vitals_and_stall_guard(
             }
         current_phase = raw_phase.strip()
         if (
-            (current_phase.startswith("run") or current_phase.startswith("setup"))
+            (current_phase.startswith("run") or current_phase.startswith("setup") or current_phase.startswith("bundle"))
             and last["worker_proc_count"] == 0
             and last.get("oom_kill")
         ):
@@ -798,6 +798,18 @@ def evaluate_vitals_and_stall_guard(
                 "code": "SETUP_STALL_TRIPPED",
                 "cgroup_oom": False,
                 "reason": f"No new setup.log output (SETUP_BYTES unchanged) in phase=setup for {eff_setup_idle}s (setup_stall_s={setup_stall_s}s)",
+                "samples_count": len(samples),
+            }
+    elif current_phase is not None and current_phase.startswith("bundle"):
+        # Post-train bundling (manifest, scrub, tar -czf of multi-GiB checkpoints) emits no run output
+        # while compressing; idle_seconds is reset on phase transition in colab_window.sh and allowed up
+        # to setup_stall_s (default 600s) before tripping STALL_GUARD_TRIPPED.
+        if float(idle_seconds) >= float(setup_stall_s):
+            return {
+                "tripped": True,
+                "code": "STALL_GUARD_TRIPPED",
+                "cgroup_oom": False,
+                "reason": f"No output row or vitals progress in phase=bundle for {idle_seconds}s (bundle_stall_s={setup_stall_s}s)",
                 "samples_count": len(samples),
             }
     elif float(idle_seconds) >= float(stall_s):
