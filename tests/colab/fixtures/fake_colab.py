@@ -423,6 +423,25 @@ def _hang_process(state_dir: Path, ignore_term: bool) -> None:
     time.sleep(3600)
 
 
+def _escape_timeout_and_hold_stdout(state_dir: Path) -> None:
+    """A `colab usage` whose child escapes `timeout`: the child starts its own session (so the signal
+    `timeout` sends to its process group misses it), keeps the inherited stdout pipe open for
+    FAKE_COLAB_ESCAPE_HOLD_S seconds (default 60), and records its pid in escaped_pids.txt so the test
+    can kill it. The parent then hangs until `timeout` kills it. The caller's `$(...)` never sees EOF
+    while the child lives."""
+    hold_s = float(os.environ.get("FAKE_COLAB_ESCAPE_HOLD_S", "60"))
+    child = os.fork()
+    if child == 0:
+        try:
+            os.setsid()
+            with (state_dir / "escaped_pids.txt").open("a", encoding="utf-8", newline="\n") as fh:
+                fh.write(f"{os.getpid()}\n")
+            time.sleep(hold_s)
+        finally:
+            os._exit(0)
+    _hang_process(state_dir, False)
+
+
 def _write_fake_remote_scripts(content_dir: Path) -> None:
     uv_logs_dst = content_dir / ".uv_logs"
     uv_logs_dst.mkdir(parents=True, exist_ok=True)
@@ -1291,6 +1310,8 @@ def main(argv: list[str] | None = None) -> int:
                 _hang_process(state_dir, False)
             if tok == "hang_ignore_term":
                 _hang_process(state_dir, True)
+            if tok == "escape_hold":
+                _escape_timeout_and_hold_stdout(state_dir)
             if tok.startswith("rc="):
                 rc_val = int(tok.split("=", 1)[1])
                 sys.stderr.write(f"colab usage failed (injected rc={rc_val})\n")
@@ -1308,6 +1329,16 @@ def main(argv: list[str] | None = None) -> int:
             seq_items = [x.strip() for x in usage_seq_raw.split(";")]
             step_dir = seq_items[c - 1] if (c - 1) < len(seq_items) else "ok"
             injected_rc = _apply_usage_directive(step_dir)
+            if injected_rc is not None:
+                return injected_rc
+
+        # FAKE_COLAB_USAGE_CLOSING: one directive for every `colab usage` made after `colab stop` has run
+        # (stops.log exists), i.e. the closing poll. FAKE_COLAB_USAGE_POST_OPEN_SEQ never reaches it.
+        closing_directive = os.environ.get("FAKE_COLAB_USAGE_CLOSING", "").strip()
+        if closing_directive and (state_dir / "stops.log").exists():
+            with (state_dir / "closing_usage_calls.log").open("a", encoding="utf-8", newline="\n") as fh:
+                fh.write(f"{closing_directive}\n")
+            injected_rc = _apply_usage_directive(closing_directive)
             if injected_rc is not None:
                 return injected_rc
 

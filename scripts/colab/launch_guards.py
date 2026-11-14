@@ -448,9 +448,20 @@ CAP_TRIP_FORMULA = (
 #   up to 3 attempts in all, each under `colab_run_bounded 30 5 colab usage` (30 s timeout + 5 s
 #   SIGKILL grace = 35 s max per attempt), with 2 s and 4 s backoffs between failed attempts:
 #     T_retry = 3 * (30 + 5) + 2 + 4 = 111 s.
-#   Blind-window spend at `priced_rate` must stay within half the cap margin:
-#     priced_rate * (T_retry / 3600) <= margin_ccu / 2.
-#   For G4 at 10.05/hr with margin 1.0: 10.05 * (111 / 3600) = 0.309875 <= 0.5 (fits with 0.190125 headroom).
+#   T_retry bounds one retry sequence because each attempt is bounded and the backoffs are fixed; the
+#   backoff clamp in colab_window.sh only shortens a sleep and does not enforce the bound.
+# Blind interval (from one live cap decision to the next; the margin gate prices this, not T_retry):
+#     blind_interval_s = T_retry + 2 * poll_s + slack_s = 111 + 2 * 2 + 2 = 117 s
+#   poll_s (GUARD_POLL_INTERVAL_S, default 2 s) counts twice: the tick slept before the next poll
+#   launches, and up to one tick of lag before the loop sees the poll exit. slack_s (2 s) covers the
+#   parse and timing Python runs (measured under 1 s per sequence on the rig) and the tick's guards.
+#   The live loop fails a poll still in flight after T_retry + slack_s closed with
+#   COLAB_USAGE_PARSE_FAILED (the in-flight deadline), so the interval holds even when `colab usage`
+#   never returns.
+#   Blind-interval spend at `priced_rate` must stay within half the cap margin:
+#     priced_rate * (blind_interval_s / 3600) <= margin_ccu / 2.
+#   For G4 at 10.05/hr with margin 1.0: 10.05 * (117 / 3600) = 0.326625 <= 0.5 (fits with 0.173375 headroom);
+#   the highest rate that fits margin 1.0 is 0.5 * 3600 / 117 = 15.38/hr.
 USAGE_POLL_ATTEMPTS = 3
 USAGE_POLL_TIMEOUT_S = 30
 USAGE_POLL_KILL_GRACE_S = 5
@@ -459,6 +470,20 @@ USAGE_RETRY_BOUND_S = (
     USAGE_POLL_ATTEMPTS * (USAGE_POLL_TIMEOUT_S + USAGE_POLL_KILL_GRACE_S)
     + sum(USAGE_POLL_BACKOFF_S[: max(0, USAGE_POLL_ATTEMPTS - 1)])
 )
+GUARD_POLL_INTERVAL_S_DEFAULT = 2
+USAGE_DECISION_SLACK_S = 2
+
+
+def usage_blind_interval_s(
+    usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
+    poll_s: float = GUARD_POLL_INTERVAL_S_DEFAULT,
+    slack_s: float = USAGE_DECISION_SLACK_S,
+) -> int | float:
+    total = max(0.0, float(usage_retry_bound_s)) + 2.0 * max(0.0, float(poll_s)) + max(0.0, float(slack_s))
+    return int(total) if total == int(total) else round(total, 6)
+
+
+USAGE_BLIND_INTERVAL_S = usage_blind_interval_s()
 
 
 def compute_usage_retry_budget(
@@ -466,17 +491,24 @@ def compute_usage_retry_budget(
     priced_rate: float,
     margin: float,
     usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
+    usage_blind_interval: float | None = None,
 ) -> dict[str, Any]:
     bound_raw = max(0.0, float(usage_retry_bound_s))
     bound_val: int | float = int(bound_raw) if bound_raw == int(bound_raw) else round(bound_raw, 6)
+    blind_val = (
+        usage_blind_interval_s(bound_raw)
+        if usage_blind_interval is None
+        else usage_blind_interval_s(float(usage_blind_interval), 0.0, 0.0)
+    )
     rate_v = max(0.0, float(priced_rate))
     margin_v = round(float(margin), 6)
-    spend_units = round((bound_raw / 3600.0) * rate_v, 6)
+    spend_units = round((float(blind_val) / 3600.0) * rate_v, 6)
     half_margin_units = round(margin_v / 2.0, 6)
     min_margin_units = round(2.0 * spend_units, 6)
     fits = bool(margin_v > 0.0 and spend_units <= half_margin_units)
     return {
         "usage_retry_bound_s": bound_val,
+        "usage_blind_interval_s": blind_val,
         "usage_retry_spend_units": spend_units,
         "usage_retry_half_margin_units": half_margin_units,
         "usage_retry_min_margin_units": min_margin_units,
@@ -517,6 +549,7 @@ def evaluate_cap_budget(
     max_rate: float | None = None,
     min_runtime_s: float | None = None,
     usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
+    usage_blind_interval: float | None = None,
 ) -> dict[str, Any]:
     trip = compute_cap_trip(cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=priced_rate)
     eff_max_rate = round(float(max_rate), 6) if max_rate is not None else trip["priced_rate"]
@@ -527,7 +560,10 @@ def evaluate_cap_budget(
     cap_v = trip["cap_ccu"]
     margin_v = trip["margin_ccu"]
     retry_budget = compute_usage_retry_budget(
-        priced_rate=p_rate, margin=margin_v, usage_retry_bound_s=usage_retry_bound_s
+        priced_rate=p_rate,
+        margin=margin_v,
+        usage_retry_bound_s=usage_retry_bound_s,
+        usage_blind_interval=usage_blind_interval,
     )
 
     runtime_at_priced_rate_s = round((effective_trip / p_rate) * 3600.0, 2) if p_rate > 0.0 else 0.0
@@ -573,7 +609,8 @@ def evaluate_cap_budget(
         tripped = True
         code = "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
         why = (
-            f"usage_retry_spend = priced_rate {p_rate}/h * (T_retry {retry_budget['usage_retry_bound_s']} s / 3600) "
+            f"usage_retry_spend = priced_rate {p_rate}/h * (blind_interval {retry_budget['usage_blind_interval_s']} s / 3600; "
+            f"blind_interval = T_retry {retry_budget['usage_retry_bound_s']} s + 2 * poll_s + slack_s) "
             f"= {retry_budget['usage_retry_spend_units']} units > margin / 2 = "
             f"{retry_budget['usage_retry_half_margin_units']} units "
             f"(margin {margin_v}; need --margin >= {retry_budget['usage_retry_min_margin_units']})"
@@ -593,6 +630,7 @@ def evaluate_cap_budget(
         "priced_rate": p_rate,
         "max_rate": eff_max_rate,
         "usage_retry_bound_s": retry_budget["usage_retry_bound_s"],
+        "usage_blind_interval_s": retry_budget["usage_blind_interval_s"],
         "usage_retry_spend_units": retry_budget["usage_retry_spend_units"],
         "usage_retry_half_margin_units": retry_budget["usage_retry_half_margin_units"],
         "usage_retry_min_margin_units": retry_budget["usage_retry_min_margin_units"],
@@ -637,9 +675,10 @@ def format_dry_cap_budget(rec: dict[str, Any]) -> str:
         f"priced_rate: {rec['priced_rate']}/h",
         f"max_rate: {rec['max_rate']}/h",
         f"usage_retry_bound_s (T_retry): {rec['usage_retry_bound_s']}",
+        f"usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): {rec['usage_blind_interval_s']}",
         (
             f"usage_retry_blind_bound: {rec['usage_retry_spend_units']} "
-            f"({rec['usage_retry_bound_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
+            f"({rec['usage_blind_interval_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
         ),
         f"reserve (cleanup_reserve): {rec['cleanup_reserve_units']} ({rec['cleanup_bound_s']} / 3600 * {rec['priced_rate']})",
         f"effective_trip: {rec['effective_trip_units']} ({rec['cap']} - {rec['margin']} - {rec['cleanup_reserve_units']})",
@@ -1489,7 +1528,14 @@ def main(argv: list[str] | None = None) -> int:
         "--usage-retry-bound-s",
         type=float,
         default=USAGE_RETRY_BOUND_S,
-        help="Worst-case colab usage retry blind window T_retry in seconds",
+        help="Worst-case duration T_retry of one bounded colab usage retry sequence, in seconds",
+    )
+    parser.add_argument(
+        "--usage-blind-interval-s",
+        type=float,
+        default=None,
+        help="Blind interval between live cap decisions (T_retry + 2 * poll_s + slack_s) that the margin "
+        "gate prices; default T_retry + 2 * 2 + 2",
     )
     parser.add_argument("--rate", type=float, default=0.0)
     parser.add_argument("--max-rate", type=float, default=None)
@@ -1541,6 +1587,7 @@ def main(argv: list[str] | None = None) -> int:
             max_rate=max_rate_val,
             min_runtime_s=args.min_runtime_s,
             usage_retry_bound_s=args.usage_retry_bound_s,
+            usage_blind_interval=args.usage_blind_interval_s,
         )
         if args.dry:
             print(format_dry_cap_budget(rec))
