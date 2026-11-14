@@ -34,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="290b414f567e337045315b01546a6014a5b65a66e9a78c698d7e51c20de783ad"
+PINNED_LAUNCH_GUARDS_SHA="5a134c04283a4e84f00a5921a7b29939911e778e479f1562d428a3338a3f5c50"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="9bb561bdc12bba4673994d9e5d49edc7515ae2522c2376a104cd253699c6536d"
-PINNED_SELF_SHA="529c1119c6439f5dd59059ac2980b65fc64fa040a8908f882e573cb8349acf64"
+PINNED_COLAB_WINDOW_SHA="1eeb07541a40d82d54fa5a35471d1e4ca0df337b261a76d26605bdccec99b832"
+PINNED_SELF_SHA="8e97dfe92d41d4f56f0bb387a89f4c96226a08b6a3c5db79b4583c458d190e02"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -50,7 +50,9 @@ OUT_DIR=""
 CAP="${CAP:-0.10}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
-MARGIN="${MARGIN:-0.01}"
+CALLER_MARGIN="${MARGIN:-}"
+MARGIN="${CALLER_MARGIN:-0.02}"
+MARGIN_SET=0
 MAX_RATE=""
 SHAPE=""
 MIN_RUNTIME_S=""
@@ -70,7 +72,7 @@ while [ "$#" -gt 0 ]; do
     --cap) CAP="$2"; shift 2 ;;
     --wall-s) WALL_S="$2"; shift 2 ;;
     --grace-s) GRACE_S="$2"; shift 2 ;;
-    --margin) MARGIN="$2"; shift 2 ;;
+    --margin) MARGIN="$2"; MARGIN_SET=1; shift 2 ;;
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --min-runtime-s) MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -93,6 +95,9 @@ colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
+if [ "${MARGIN_SET}" != "1" ] && [ -z "${CALLER_MARGIN}" ] && ! colab_card_is_cpu "${CARD}"; then
+  MARGIN="1.0"
+fi
 
 if [ "${DRY_RUN}" = "1" ]; then
   DRY_TEST_MODE=0
@@ -156,6 +161,10 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
+  SDLAB_TEST_USAGE_POLL_ATTEMPTS
+  SDLAB_TEST_USAGE_POLL_TIMEOUT_S
+  SDLAB_TEST_USAGE_POLL_KILL_GRACE_S
+  SDLAB_TEST_USAGE_POLL_BACKOFF_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 colab_apply_test_cleanup_overrides "${TEST_MODE}"

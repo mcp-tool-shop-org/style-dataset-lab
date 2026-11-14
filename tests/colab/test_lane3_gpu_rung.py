@@ -571,7 +571,7 @@ def _launch(
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
             "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
             "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-            "--wall-s", "2900", "--cap", "8.272222", "--max-rate", "9.5", *extra]
+            "--wall-s", "2900", "--cap", "9.262222", "--max-rate", "9.5", *extra]
     if "--shape" not in extra:
         args += ["--shape", "high-mem"]
     if "--rung-job" not in extra:
@@ -1310,7 +1310,7 @@ def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_pa
     state_dir, env, src = _rung_env(tmp_path)
     env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr", "FAKE_COLAB_POST_OPEN_RATE_STR": "2.15/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
-    res, out_dir = _launch(tmp_path, env, src, "--cap", "7.554444", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "8.544444", "--margin", "1.0")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
@@ -1354,7 +1354,7 @@ def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Pa
                 "FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
                 "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,8.88/hr,8.88/hr",
                 "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
-    res, out_dir = _launch(tmp_path, env, src, "--cap", "7.554444", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--cap", "8.544444", "--margin", "1.0")
     content = state_dir / "content"
     try:
         win = _win(out_dir)
@@ -1683,7 +1683,7 @@ def test_rung_500_stopped_by_cap_guard_keeps_step_250_and_marks_step_500_partial
     # Adding 7.494444 to the old 0.03 cap gives cap = 7.524444 (effective_trip = 7.524444 - 0.01 - 7.494444 = 0.02 units,
     # ~7.58 s at 9.5/h): gives the VM time to download, write step 250 + 6 samples + half-written step 500, and hang
     # before the cap guard trips.
-    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "7.524444", "--margin", "0.01")
+    res, out_dir = _launch(tmp_path, env, src, "--rung-job", "500", "--cap", "8.514444", "--margin", "1.0")
     content = state_dir / "content"
     try:
         assert res.returncode != 0
@@ -1822,7 +1822,7 @@ def test_rung_500_salvage_hung_download_ignoring_term_reaches_stop_within_bound(
     # At 9.5/h, cleanup_reserve = (41 / 3600) * 9.5 = 0.108194 units; cap 0.138194 keeps effective_trip = 0.02 units.
     try:
         res, out_dir = _launch(
-            tmp_path, env, src, "--rung-job", "500", "--cap", "0.138194", "--margin", "0.01", timeout_s=28
+            tmp_path, env, src, "--rung-job", "500", "--cap", "1.128194", "--margin", "1.0", timeout_s=28
         )
         assert res.returncode != 0
         guards = (out_dir / "guards.log").read_text(encoding="utf-8")
@@ -1867,7 +1867,7 @@ def test_rung_500_stop_hangs_once_then_retries_and_stops_session(tmp_path: Path)
         # cleanup_bound_s = 301 + (181 + 331 + 6 * 301) + 2 * (2 + 1) = 2625 s -> cleanup_reserve = (2625 / 3600) * 9.5 = 6.927083 units;
         # cap 6.957083 minus margin 0.01 minus reserve 6.927083 keeps effective_trip = 0.02 units (~7.58 s).
         res, out_dir = _launch(
-            tmp_path, env, src, "--rung-job", "500", "--cap", "6.957083", "--margin", "0.01", timeout_s=28
+            tmp_path, env, src, "--rung-job", "500", "--cap", "7.947083", "--margin", "1.0", timeout_s=28
         )
         assert res.returncode != 0
         _assert_r500_stopped_bundle_keeps_step_250_and_marks_step_500_partial(out_dir, state_dir, "CAP_GUARD_TRIPPED")
@@ -1901,7 +1901,7 @@ def test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop(tmp_
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
         "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "60",
-        "--wall-s", "2900", "--cap", "7.524444", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "2900", "--cap", "8.514444", "--margin", "1.0", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -1947,7 +1947,7 @@ def test_rung_500_term_during_salvage_still_completes_salvage_and_runs_stop(tmp_
         # cleanup_bound_s = 301 + 1 + 2 * (60 + 1) = 424 s -> cleanup_reserve = (424 / 3600) * 9.5 = 1.118889 units;
         # cap 1.148889 minus margin 0.01 minus reserve 1.118889 keeps effective_trip = 0.02 units (~7.58 s).
         res2, out2 = _launch(
-            tmp_path / "deadline", env2, src2, "--rung-job", "500", "--cap", "1.148889", "--margin", "0.01", timeout_s=25
+            tmp_path / "deadline", env2, src2, "--rung-job", "500", "--cap", "2.138889", "--margin", "1.0", timeout_s=25
         )
         assert res2.returncode != 0
         guards2 = (out2 / "guards.log").read_text(encoding="utf-8")
@@ -2051,7 +2051,7 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
         dry_res, _ = _launch(
             tmp_path / "dry_check", env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "8.320833", "--margin", "0.01", "--dry",
+            "--max-rate", "10.5", "--cap", "9.310833", "--margin", "1.0", "--dry",
             timeout_s=15,
         )
         assert dry_res.returncode == 0, dry_res.stderr
@@ -2063,7 +2063,7 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "8.320833", "--margin", "0.01",
+            "--max-rate", "10.5", "--cap", "9.310833", "--margin", "1.0",
             timeout_s=40,
         )
         assert res.returncode != 0
@@ -2072,7 +2072,7 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
         assert win["refusal_code"] == "CAP_GUARD_TRIPPED"
         assert win["rate_used_for_cap_and_projection"] == 10.5
         assert win["cleanup_reserve_units"] == round((2840 / 3600) * 10.5, 6) == 8.283333
-        assert win["effective_trip_units"] == round(8.320833 - 0.01 - 8.283333, 6) == 0.0275
+        assert win["effective_trip_units"] == round(9.310833 - 1.0 - 8.283333, 6) == 0.0275
         assert win["cap_trip_formula"] == CAP_FORMULA_STR
         tripped = [r for r in _cap_records(out_dir) if r["tripped"]]
         assert tripped, "cap guard never tripped"
@@ -2130,7 +2130,7 @@ def test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip(tmp_path
         [
             _bash(), fc._to_posix(LAUNCHER),
             "--out-dir", fc._to_posix(out_cpu), "--session", "sdlab-l3-rise-cpu",
-            "--cap", "0.50", "--margin", "0.01",
+            "--cap", "0.51", "--margin", "0.02",
         ],
         env=env_cpu, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=40, check=False,
     )
@@ -2138,7 +2138,7 @@ def test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip(tmp_path
     win_cpu = _win(out_cpu)
     assert win_cpu["refusal_code"] == "CAP_GUARD_TRIPPED"
     assert win_cpu["cleanup_reserve_units"] == round((1290 / 3600) * 1.80, 6) == 0.645
-    assert win_cpu["effective_trip_units"] == round(0.50 - 0.01 - 0.645, 6) == -0.155
+    assert win_cpu["effective_trip_units"] == round(0.51 - 0.02 - 0.645, 6) == -0.155
     assert "STOP -s sdlab-l3-rise-cpu" in (state_cpu / "stops.log").read_text(encoding="utf-8")
 
 
@@ -2195,47 +2195,47 @@ def test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls(
 
     # 1. Direct guard call with --dry where priced_rate (12.0/h) > --max-rate (10.5/h):
     rc = lg.main([
-        "--dry", "--cap", "4.9", "--margin", "0.01", "--cleanup-bound-s", "1290",
+        "--dry", "--cap", "5.89", "--margin", "1.0", "--cleanup-bound-s", "1290",
         "--rate", "12.0", "--max-rate", "10.5",
     ])
     out_guard = capsys.readouterr().out
     assert rc == 0
     rec_guard = json.loads(out_guard.strip().splitlines()[-1])
-    # reserve = (1290 / 3600) * 12.0 = 4.3; effective_trip = 4.9 - 0.01 - 4.3 = 0.59
-    assert rec_guard["cap"] == 4.9 and rec_guard["margin"] == 0.01
+    # reserve = (1290 / 3600) * 12.0 = 4.3; effective_trip = 5.89 - 1.0 - 4.3 = 0.59
+    assert rec_guard["cap"] == 5.89 and rec_guard["margin"] == 1.0
     assert rec_guard["cleanup_bound_s"] == 1290
     assert rec_guard["priced_rate"] == 12.0 and rec_guard["max_rate"] == 10.5
     assert rec_guard["reserve"] == 4.3 and rec_guard["effective_trip"] == 0.59
     assert rec_guard["runtime_at_priced_rate_s"] == round((0.59 / 12.0) * 3600, 2) == 177.0
     assert rec_guard["runtime_at_max_rate_s"] == round((0.59 / 10.5) * 3600, 2) == 202.29
-    assert rec_guard["worst_case_total_spend"] == 4.9
+    assert rec_guard["worst_case_total_spend"] == 5.89
 
-    # 2. Lane 3 launcher with --dry on G4 at --max-rate 10.5, --cap 9.420833, --margin 0.01:
+    # 2. Lane 3 launcher with --dry on G4 at --max-rate 10.5, --cap 10.410833, --margin 1.0:
     state_l3, env_l3, src_l3 = _rung_env(tmp_path / "dry_l3")
     res_l3, _ = _launch(
         tmp_path / "dry_l3", env_l3, src_l3,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "9.420833", "--margin", "0.01", "--dry",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "10.410833", "--margin", "1.0", "--dry",
     )
     assert res_l3.returncode == 0, res_l3.stderr
     assert not (state_l3 / "calls.log").exists()
     for token in (
-        "cap: 9.420833", "margin: 0.01", "cleanup_bound_s: 2840", "priced_rate: 10.5/h",
-        "8.283333", "1.1275", "386.57 s", "worst_case_total_spend: 9.420833",
+        "cap: 10.410833", "margin: 1.0", "cleanup_bound_s: 2840", "priced_rate: 10.5/h",
+        "8.283333", "1.1275", "386.57 s", "worst_case_total_spend: 10.410833",
     ):
         assert token in res_l3.stdout, (token, res_l3.stdout)
     rec_l3 = json.loads(res_l3.stdout.strip().splitlines()[-1])
     assert rec_l3["cleanup_bound_s"] == 2840
     assert rec_l3["reserve"] == 8.283333 and rec_l3["effective_trip"] == 1.1275
     assert rec_l3["runtime_at_priced_rate_s"] == 386.57 and rec_l3["runtime_at_max_rate_s"] == 386.57
-    assert rec_l3["worst_case_total_spend"] == 9.420833
+    assert rec_l3["worst_case_total_spend"] == 10.410833
 
-    # 3. Lane 1 launcher with --dry on G4 at --max-rate 10.5, --cap 2.0, --margin 0.01:
+    # 3. Lane 1 launcher with --dry on G4 at --max-rate 10.5, --cap 2.99, --margin 1.0:
     _, state_l1, env_l1 = fc.make_fake_colab_env(tmp_path / "dry_l1")
     lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
     res_l1 = subprocess.run(
         [
             _bash(), fc._to_posix(lane1_sh),
-            "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "2.0", "--margin", "0.01", "--dry",
+            "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "2.99", "--margin", "1.0", "--dry",
         ],
         env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
     )
@@ -2244,7 +2244,7 @@ def test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls(
     rec_l1 = json.loads(res_l1.stdout.strip().splitlines()[-1])
     assert rec_l1["cleanup_bound_s"] == 450
     assert rec_l1["reserve"] == 1.3125 and rec_l1["effective_trip"] == 0.6775
-    assert rec_l1["runtime_at_priced_rate_s"] == 232.29 and rec_l1["worst_case_total_spend"] == 2.0
+    assert rec_l1["runtime_at_priced_rate_s"] == 232.29 and rec_l1["worst_case_total_spend"] == 2.99
 
 
 # --- PR #66 fix round 3: bound every step from the trip ---------------------------------------
@@ -2467,7 +2467,7 @@ def test_second_term_during_salvage_aborts_salvage_and_reaches_stop(tmp_path: Pa
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
         "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
-        "--wall-s", "10", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "10", "--grace-s", "2", "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -2550,7 +2550,7 @@ def test_pre_exec_cap_trip_during_slow_rate_polls(tmp_path: Path) -> None:
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "8.295833", "--margin", "0.01",
+            "--max-rate", "10.5", "--cap", "9.285833", "--margin", "1.0",
             timeout_s=20,
         )
         assert res.returncode != 0
@@ -2603,7 +2603,7 @@ def test_pre_exec_cap_trip_between_slow_uploads(tmp_path: Path) -> None:
         res, out_dir = _launch(
             tmp_path, env, src,
             "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "8.300833", "--margin", "0.01",
+            "--max-rate", "10.5", "--cap", "9.290833", "--margin", "1.0",
             timeout_s=25,
         )
         assert res.returncode != 0
@@ -2649,7 +2649,7 @@ def test_wall_watcher_waits_for_salvage_and_keeps_step_250(tmp_path: Path) -> No
         res, out_dir = _launch(
             tmp_path, env, src,
             "--download-max-seconds", "5", "--wall-s", "9", "--grace-s", "2",
-            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
             timeout_s=25,
         )
@@ -2700,7 +2700,7 @@ def test_wall_watcher_escalates_when_salvage_overruns_cleanup_stop_attempted_by_
         res, out_dir = _launch(
             tmp_path, env, src,
             "--download-max-seconds", "5", "--wall-s", "9", "--grace-s", "2",
-            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
             timeout_s=20,
         )
@@ -2810,7 +2810,7 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
         res3, out3 = _launch(
             tmp_path / "l3", env3, src3,
             "--download-max-seconds", "3", "--wall-s", "22", "--grace-s", "2",
-            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
             timeout_s=45,
         )
@@ -2863,7 +2863,7 @@ def test_wall_watcher_late_cleanup_start_and_overrunning_salvage_kills_mutation_
         res, out_dir = _launch(
             tmp_path, env, src,
             "--download-max-seconds", "3", "--wall-s", "22", "--grace-s", "2",
-            "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+            "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
             timeout_s=45,
         )
@@ -2912,7 +2912,7 @@ def test_wall_watcher_stops_session_when_launcher_dies_mid_cleanup(tmp_path: Pat
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-kill-salvage",
         "--out-dir", fc._to_posix(out1), "--dataset-dir", fc._to_posix(src1), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
-        "--wall-s", "9", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "9", "--grace-s", "2", "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -2971,7 +2971,7 @@ def test_wall_watcher_stops_session_when_launcher_dies_mid_cleanup(tmp_path: Pat
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-kill-stopreached",
         "--out-dir", fc._to_posix(out2), "--dataset-dir", fc._to_posix(src2), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
-        "--wall-s", "9", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "9", "--grace-s", "2", "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -3056,7 +3056,7 @@ def test_wall_watcher_stops_session_when_launcher_dies_pre_trip_lane3(tmp_path: 
         _bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-pretrip-kill",
         "--out-dir", fc._to_posix(out_dir), "--dataset-dir", fc._to_posix(src), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5", "--download-max-seconds", "5",
-        "--wall-s", "30", "--grace-s", "2", "--cap", "5", "--margin", "0.01", "--max-rate", "9.5",
+        "--wall-s", "30", "--grace-s", "2", "--cap", "6", "--margin", "1.0", "--max-rate", "9.5",
         "--shape", "high-mem", "--rung-job", "500",
     ]
     try:
@@ -3271,47 +3271,47 @@ def test_wall_watcher_launcher_death_before_colab_new_exits_without_stop(tmp_pat
 
 
 def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
-    # 1. Lane 3 --dry at --card G4 --max-rate 10.5 --cap 11.95 --margin 0.05 (the 2-part bundle's cleanup bound is 2840 s; 8.3 no longer clears its reserve):
+    # 1. Lane 3 --dry at --card G4 --max-rate 10.5 --cap 12.9 --margin 1.0 (the 2-part bundle's cleanup bound is 2840 s; 8.3 no longer clears its reserve):
     state_l3, env_l3, src_l3 = _rung_env(tmp_path / "dry_g4_l3")
     res_l3, _ = _launch(
         tmp_path / "dry_g4_l3", env_l3, src_l3,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "11.95", "--margin", "0.05", "--dry",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "12.9", "--margin", "1.0", "--dry",
     )
     assert res_l3.returncode == 0, res_l3.stderr
     assert not (state_l3 / "calls.log").exists()
     out_l3 = res_l3.stdout
-    assert "worst_case_cap_path: 11.95 (= cap 11.95)" in out_l3, out_l3
+    assert "worst_case_cap_path: 12.9 (= cap 12.9)" in out_l3, out_l3
     assert (
         "worst_case_launcher_death_path: 11.9 ((death_time <= 1240.0 s + cleanup_bound_s 2840 s) / 3600 * 10.5/h)"
         in out_l3
     ), out_l3
-    assert "worst_case_total_spend: 11.95 (= max(cap_path 11.95, launcher_death_path 11.9) = cap 11.95)" in out_l3, out_l3
+    assert "worst_case_total_spend: 12.9 (= max(cap_path 12.9, launcher_death_path 11.9) = cap 12.9)" in out_l3, out_l3
     assert "assumptions: cap_path assumes " in out_l3 and "launcher_death_path assumes " in out_l3, out_l3
     rec_l3 = json.loads(out_l3.strip().splitlines()[-1])
-    assert rec_l3["worst_case_cap_path"] == 11.95
+    assert rec_l3["worst_case_cap_path"] == 12.9
     assert rec_l3["worst_case_launcher_death_path"] == 11.9
-    assert rec_l3["worst_case_total_spend"] == 11.95
+    assert rec_l3["worst_case_total_spend"] == 12.9
     assert "cap_path" in rec_l3["assumptions"] and "launcher_death_path" in rec_l3["assumptions"]
 
-    # 2. Lane 1 --dry at --card G4 --max-rate 10.5 --cap 8.3 --margin 0.05:
+    # 2. Lane 1 --dry at --card G4 --max-rate 10.5 --cap 9.25 --margin 1.0:
     _, state_l1, env_l1 = fc.make_fake_colab_env(tmp_path / "dry_g4_l1")
     lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
     res_l1 = subprocess.run(
         [
             _bash(), fc._to_posix(lane1_sh),
-            "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--dry",
+            "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "9.25", "--margin", "1.0", "--dry",
         ],
         env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
     )
     assert res_l1.returncode == 0, res_l1.stderr
     assert not (state_l1 / "calls.log").exists()
     out_l1 = res_l1.stdout
-    assert "worst_case_cap_path: 8.3 (= cap 8.3)" in out_l1, out_l1
+    assert "worst_case_cap_path: 9.25 (= cap 9.25)" in out_l1, out_l1
     assert (
         "worst_case_launcher_death_path: 8.25 ((death_time <= 2378.57 s + cleanup_bound_s 450 s) / 3600 * 10.5/h)"
         in out_l1
     ), out_l1
-    assert "worst_case_total_spend: 8.3 (= max(cap_path 8.3, launcher_death_path 8.25) = cap 8.3)" in out_l1, out_l1
+    assert "worst_case_total_spend: 9.25 (= max(cap_path 9.25, launcher_death_path 8.25) = cap 9.25)" in out_l1, out_l1
     assert "assumptions: cap_path assumes " in out_l1 and "launcher_death_path assumes " in out_l1, out_l1
 
 
@@ -3437,7 +3437,7 @@ def _launch_real(
         "--session", "sdlab-l3-real-run", "--out-dir", fc._to_posix(out_dir),
         "--dataset-dir", fc._to_posix(ds_dir), "--model", "Qwen/Qwen-Image",
         "--model-revision", REVISION, "--host-ram-required-gib", "96.5",
-        "--download-max-seconds", "60", "--wall-s", "2900", "--cap", "5", "--max-rate", "9.5",
+        "--download-max-seconds", "60", "--wall-s", "2900", "--cap", "6", "--max-rate", "9.5",
         *extra_list,
     ]
     res = subprocess.run(
@@ -3782,7 +3782,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
     env_480 = {**env_inv, "COLAB_DOWNLOAD_TIMEOUT_S": "480"}
     dry_l3_env, _ = _launch(
         tmp_path / "inv", env_480, src_inv,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "14.5", "--margin", "0.05", "--dry",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "15.5", "--margin", "1.0", "--dry",
     )
     assert dry_l3_env.returncode == 0
     # 490 in-flight + (190 + 340 + 6 * 490) salvage + 140 stop: 6 = the split manifest fetch, 2 parts, and a 5xx retry of each
@@ -3790,7 +3790,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
 
     dry_l3_cli, _ = _launch(
         tmp_path / "inv", env_480, src_inv,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "14.5", "--margin", "0.05",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "15.5", "--margin", "1.0",
         "--download-timeout-s", "600", "--dry",
     )
     assert dry_l3_cli.returncode == 0
@@ -3799,7 +3799,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
     dry_l1_cli = subprocess.run(
         [
             _bash(), fc._to_posix(lane1_sh), "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05", "--download-timeout-s", "600", "--dry",
+            "--max-rate", "10.5", "--cap", "9.3", "--margin", "1.0", "--download-timeout-s", "600", "--dry",
         ],
         env=env_inv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
     )
@@ -3809,7 +3809,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
     # End-to-end window.json records the configured download_timeout_s and scaled cleanup bounds
     _, env_run, src_run = _rung_env(tmp_path / "run600")
     res_run, out_run = _launch(
-        tmp_path / "run600", env_run, src_run, "--cap", "13.45", "--download-timeout-s", "600",
+        tmp_path / "run600", env_run, src_run, "--cap", "14.45", "--download-timeout-s", "600",
     )
     assert res_run.returncode == 0, res_run.stderr
     win_run = json.loads((out_run / "window.json").read_text(encoding="utf-8"))
@@ -3871,7 +3871,7 @@ def test_real_job_download_timeout_required_and_projected_basis(tmp_path: Path) 
         "--job", fc._to_posix(job_p), "--job-sha", job_sha,
         "--dataset-manifest", fc._to_posix(man_p), "--dataset-manifest-sha", man_sha,
         "--download-floor-mb-s", "0.25",
-        "--cap", "8",
+        "--cap", "9",
         omit_download_timeout=True,
     )
     assert res_proj.returncode == 0, res_proj.stderr
@@ -3924,7 +3924,7 @@ def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -
     dry_l1 = subprocess.run(
         [
             _bash(), fc._to_posix(lane1_sh), "--card", "G4", "--shape", "standard",
-            "--max-rate", "10.5", "--cap", "8.3", "--margin", "0.05",
+            "--max-rate", "10.5", "--cap", "9.3", "--margin", "1.0",
             "--download-timeout-s", "300", "--upload-timeout-s", "500", "--dry",
         ],
         env=env_dry, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
@@ -3934,7 +3934,7 @@ def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -
 
     dry_l3, _ = _launch(
         tmp_path / "up_dry", env_dry, src_dry,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "10", "--margin", "0.05",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "11", "--margin", "1.0",
         "--download-timeout-s", "300", "--upload-timeout-s", "500", "--dry",
     )
     assert dry_l3.returncode == 0
@@ -4792,7 +4792,7 @@ def test_n1_optimizer_state_pushes_bundle_over_chunk_boundary_and_missing_optimi
         tmp_path / "n1_wall_short", env_ws, ds_dir,
         "--job", fc._to_posix(n1_job), "--job-sha", n1_sha,
         "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
-        "--wall-s", "1600", "--grace-s", "60", "--cap", "9",
+        "--wall-s", "1600", "--grace-s", "60", "--cap", "10",
     )
     assert res_ws.returncode == 2 and "REFUSED: TRAIN_WALL_TOO_SHORT:" in res_ws.stderr
     win_ws = json.loads((out_ws / "window.json").read_text(encoding="utf-8"))
@@ -4800,13 +4800,13 @@ def test_n1_optimizer_state_pushes_bundle_over_chunk_boundary_and_missing_optimi
     assert win_ws["wall_allowance"]["required_wall_s"] == 1920
     assert not (state_ws / "calls.log").exists()
 
-    # Full run with 2900 s wall and cap 10 records the full keep-all breakdown in run_plan.json and window.json.
+    # Full run with 2900 s wall and cap 11 records the full keep-all breakdown in run_plan.json and window.json.
     _, env_ok = _real_run_env(tmp_path / "n1_ok")
     res_ok, out_ok = _launch_real(
         tmp_path / "n1_ok", env_ok, ds_dir,
         "--job", fc._to_posix(n1_job), "--job-sha", n1_sha,
         "--dataset-manifest", mp, "--dataset-manifest-sha", man_sha,
-        "--cap", "10",
+        "--cap", "11",
     )
     assert res_ok.returncode == 0, res_ok.stderr
     plan_ok = json.loads((out_ok / "run_plan.json").read_text(encoding="utf-8"))
@@ -4874,7 +4874,7 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
             "--samples-and-logs-bytes", "0",
             "--download-max-seconds", "5",
             "--wall-s", "10", "--grace-s", "2",
-            "--cap", "5",
+            "--cap", "6",
             timeout_s=120,
         )
         assert res_sal.returncode != 0
@@ -4988,7 +4988,7 @@ def test_dry_cleanup_bound_counts_split_retries_and_reassembly_exec(tmp_path: Pa
     _, env, src = _rung_env(tmp_path)
     dry_res, _ = _launch(
         tmp_path / "dry_bounds", env, src,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "20", "--margin", "0.01",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "20", "--margin", "1.0",
         "--upload-chunk-bytes", "1000", "--upload-reassemble-timeout-s", "900", "--dry",
         timeout_s=30,
     )
@@ -4998,7 +4998,7 @@ def test_dry_cleanup_bound_counts_split_retries_and_reassembly_exec(tmp_path: Pa
     # Without the chunking, the explicit reassembly bound does not apply (every upload is one request).
     dry2, _ = _launch(
         tmp_path / "dry_bounds2", env, src,
-        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "20", "--margin", "0.01",
+        "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "20", "--margin", "1.0",
         "--upload-reassemble-timeout-s", "900", "--dry",
         timeout_s=30,
     )

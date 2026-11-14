@@ -264,7 +264,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
     out_cap = tmp_path / "out_cap"
     res_cap = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l1-cap", "--cap", "0.10", "--margin", "0.01"],
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l1-cap", "--cap", "0.10", "--margin", "0.02"],
         env=env_cap,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -714,7 +714,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     env_cap_rate["GUARD_POLL_INTERVAL_S"] = "1"
     out_cap_rate = tmp_path / "out_rate_cap_trip"
     res_cap_rate = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap_rate), "--session", "sdlab-l1-rcap", "--cap", "0.05", "--margin", "0.01"],
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap_rate), "--session", "sdlab-l1-rcap", "--cap", "0.06", "--margin", "0.02"],
         env=env_cap_rate,
         stdin=subprocess.DEVNULL,
         capture_output=True,
