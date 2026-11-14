@@ -646,3 +646,304 @@ def test_missing_harness_phase_refuses_vitals_phase_unreadable_never_setup() -> 
     )
     assert res_waiting["tripped"] is False
     assert res_waiting["code"] is None
+
+
+def test_bundle_phase_uses_setup_stall_budget_and_keeps_oom_guard() -> None:
+    bundle_two_zero = (
+        "=== VITALS 2026-11-11T05:00:00Z ===\n"
+        "CGROUP_MEM: oom_kill 0\n"
+        "SETUP_BYTES: 500\n"
+        "PROC:\n"
+        'HARNESS: {"phase": "bundle"}\n'
+        "=== VITALS 2026-11-11T05:00:15Z ===\n"
+        "CGROUP_MEM: oom_kill 0\n"
+        "SETUP_BYTES: 500\n"
+        "PROC:\n"
+        'HARNESS: {"phase": "bundle"}\n'
+    )
+    # In phase=bundle, 0 worker processes does NOT trip DEAD_HARNESS_TRIPPED, and idle_seconds
+    # above stall_s (300s) but below setup_stall_s (600s) stays quiet.
+    quiet = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=bundle_two_zero,
+        idle_seconds=599.9,
+        setup_idle_seconds=900.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert quiet["tripped"] is False
+    assert quiet["code"] is None
+
+    # At idle_seconds >= setup_stall_s (600s), phase=bundle trips STALL_GUARD_TRIPPED.
+    tripped = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=bundle_two_zero,
+        idle_seconds=600.0,
+        setup_idle_seconds=900.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert tripped["tripped"] is True
+    assert tripped["code"] == "STALL_GUARD_TRIPPED"
+    assert "phase=bundle" in (tripped["reason"] or "")
+
+    # cgroup OOM kill in phase=bundle still trips DEAD_HARNESS_TRIPPED immediately.
+    bundle_oom = (
+        "=== VITALS 2026-11-11T05:01:00Z ===\n"
+        "CGROUP_MEM: oom_kill 1\n"
+        "PROC:\n"
+        'HARNESS: {"phase": "bundle"}\n'
+    )
+    oom_res = lg.evaluate_vitals_and_stall_guard(
+        vitals_text=bundle_oom,
+        idle_seconds=5.0,
+        stall_s=300.0,
+        setup_stall_s=600.0,
+    )
+    assert oom_res["tripped"] is True
+    assert oom_res["code"] == "DEAD_HARNESS_TRIPPED"
+    assert oom_res["cgroup_oom"] is True
+
+
+def test_detached_worker_and_poll_primitives_in_process_and_cli(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import os
+    import shutil
+    import tarfile
+    import time
+    import remote_runner as rr
+
+    content_root = tmp_path / "vm_content"
+    content_root.mkdir(parents=True)
+    shutil.copyfile(REPO_ROOT / "scripts" / "colab" / "launch_guards.py", content_root / "launch_guards.py")
+
+    # 1. Missing SDLAB_REMOTE_SCRIPT in run_detached_worker & start_detached_worker
+    rc_missing = lg.run_detached_worker(content_root, env={"PATH": os.environ.get("PATH", "")})
+    assert rc_missing == 2
+    poll_missing = lg.poll_detached_output(content_root, offset=0)
+    assert poll_missing["done"] is True
+    assert poll_missing["eof"] is True
+    assert poll_missing["rc"] == 2
+    assert "SDLAB_REMOTE_RC=2" in poll_missing["chunk"]
+
+    with pytest.raises(ValueError, match="SDLAB_REMOTE_SCRIPT is required"):
+        lg.start_detached_worker(content_root, script_path="", env={})
+
+    # 2. Unknown SDLAB_RUNNER_MODE in remote_runner
+    rc_bad_mode = rr.run_remote_script("ignored.sh", env={"SDLAB_RUNNER_MODE": "bogus"})
+    cap_bad = capsys.readouterr()
+    assert rc_bad_mode == 2
+    assert "SDLAB_REMOTE_RC=2" in cap_bad.out
+
+    # 3. Partial-line truncation while running + worker_dead detection
+    lg.clear_detached_state(content_root)
+    log_p = content_root / lg.DETACHED_LIVE_LOG
+    meta_p = content_root / lg.DETACHED_LIVE_META
+    log_p.write_bytes(b"first_complete_line\npartial_tail_without_nl")
+    meta_p.write_text(json.dumps({"worker_pid": os.getpid(), "child_pid": None}) + "\n", encoding="utf-8")
+    p_live = lg.poll_detached_output(content_root, offset=0)
+    assert p_live["done"] is False
+    assert p_live["eof"] is False
+    assert p_live["chunk"] == "first_complete_line\n"
+    assert p_live["next_offset"] == len(b"first_complete_line\n")
+    # Polling at partial tail while worker is still alive returns empty chunk and unchanged offset
+    p_wait = lg.poll_detached_output(content_root, offset=p_live["next_offset"])
+    assert p_wait["chunk"] == ""
+    assert p_wait["next_offset"] == p_live["next_offset"]
+
+    # Simulate dead worker PID without .sdlab_live.done -> drains remaining tail and sets worker_dead=True
+    meta_p.write_text(json.dumps({"worker_pid": 99999999, "child_pid": None}) + "\n", encoding="utf-8")
+    p_dead = lg.poll_detached_output(content_root, offset=p_live["next_offset"])
+    assert p_dead["done"] is True
+    assert p_dead["worker_dead"] is True
+    assert p_dead["eof"] is True
+    assert p_dead["chunk"] == "partial_tail_without_nl"
+
+    # 4. Full start -> poll (chunked) -> download-prep -> apply_detached_poll_response -> kill lifecycle
+    bundle_src = content_root / "payload.txt"
+    bundle_src.write_text("hello-bundle\n", encoding="utf-8")
+    with tarfile.open(content_root / "mini_bundle.tar.gz", "w:gz") as tf:
+        tf.add(bundle_src, arcname="payload.txt")
+
+    script = tmp_path / "detached_job.sh"
+    script.write_text(
+        "#!/usr/bin/env bash\n"
+        "echo 'ROW_ALPHA hf_1234567890abcdefghij'\n"
+        "echo 'ROW_BETA colab-runtime-proxy-token=tok_xyz_999'\n"
+        "exit 0\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    run_env = {
+        "PATH": os.environ.get("PATH", ""),
+        "SDLAB_CONTENT": str(content_root),
+        "SDLAB_REMOTE_SCRIPT": script.resolve().as_posix(),
+        "SDLAB_DL_CHUNK_BYTES": "4096",
+        "SDLAB_RUNNER_MODE": "start",
+    }
+    rc_start = rr.run_remote_script(env=run_env)
+    cap_start = capsys.readouterr()
+    assert rc_start == 0
+    assert lg.DETACHED_STARTED_PREFIX in cap_start.out
+
+    # Wait for detached worker to finish
+    deadline = time.monotonic() + 10.0
+    while not (content_root / lg.DETACHED_LIVE_DONE).is_file():
+        assert time.monotonic() < deadline, "detached worker did not finish in time"
+        time.sleep(0.05)
+
+    vitals_dest = tmp_path / "rig_vitals.log"
+    poll_file = tmp_path / "poll_stdout.txt"
+    offset = 0
+    polls_taken = 0
+    while True:
+        polls_taken += 1
+        rc_p = rr.run_remote_script(
+            env={
+                "SDLAB_CONTENT": str(content_root),
+                "SDLAB_RUNNER_MODE": "poll",
+                "SDLAB_POLL_OFFSET": str(offset),
+                "SDLAB_POLL_MAX_BYTES": "1024",
+            }
+        )
+        assert rc_p == 0
+        poll_out = capsys.readouterr().out
+        poll_file.write_text(poll_out, encoding="utf-8")
+        rc_apply = lg.main(["--apply-poll-file", str(poll_file), "--apply-poll-vitals", str(vitals_dest)])
+        assert rc_apply == 0
+        apply_line = capsys.readouterr().out.strip()
+        parts = apply_line.split("\t")
+        offset = int(parts[0])
+        if parts[2] == "1":
+            assert parts[3] == "0"
+            break
+        assert polls_taken < 20
+
+    vitals_text = vitals_dest.read_text(encoding="utf-8")
+    assert "ROW_ALPHA hf_[REDACTED]" in vitals_text
+    assert "hf_1234567890abcdefghij" not in vitals_text
+    assert "tok_xyz_999" not in vitals_text
+    assert "SDLAB_DOWNLOAD_PREPARE_JSON" in vitals_text
+    assert "SDLAB_REMOTE_RC=0" in vitals_text
+
+    # Error handling in --apply-poll-file and kill mode
+    assert lg.main(["--apply-poll-file", str(tmp_path / "missing_poll.txt")]) == 2
+    poll_file.write_text("NO_ENVELOPE_HERE\n", encoding="utf-8")
+    assert lg.main(["--apply-poll-file", str(poll_file), "--apply-poll-vitals", str(vitals_dest)]) == 1
+    capsys.readouterr()
+
+    with pytest.raises(ValueError, match="malformed SDLAB_POLL_ENVELOPE"):
+        lg.apply_detached_poll_response(
+            lg.DETACHED_POLL_PREFIX + json.dumps({"ok": True, "offset": 10, "next_offset": 5, "chunk": ""}),
+            vitals_dest,
+        )
+
+    rc_kill = rr.run_remote_script(env={"SDLAB_CONTENT": str(content_root), "SDLAB_RUNNER_MODE": "kill"})
+    cap_kill = capsys.readouterr()
+    assert rc_kill == 0
+    assert lg.DETACHED_KILLED_PREFIX in cap_kill.out
+
+
+def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_exhausted(tmp_path: Path) -> None:
+    import shutil
+
+    sys.path.insert(0, str(REPO_ROOT / "tests" / "colab" / "fixtures"))
+    import fake_colab as fc
+
+    launcher = REPO_ROOT / "scripts" / "colab" / "launch_lane1_stub.sh"
+    git_bash = Path("C:/Program Files/Git/bin/bash.exe")
+    bash_bin = str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
+
+    # 1. Transient full-NIC blip across 3 consecutive polls (both `colab exec` poll AND `colab usage` fail)
+    # recovers cleanly without false STALL_GUARD_TRIPPED or COLAB_USAGE_PARSE_FAILED.
+    _, state_blip, env_blip = fc.make_fake_colab_env(tmp_path / "blip_ok_case")
+    env_blip["FAKE_COLAB_MODE"] = "setup_phase"
+    env_blip["FAKE_COLAB_SETUP_DURATION_S"] = "1.0"
+    env_blip["GUARD_POLL_INTERVAL_S"] = "0.15"
+    env_blip["FAKE_COLAB_POLL_FAIL_CALLS"] = "2,3,4"
+    env_blip["FAKE_COLAB_USAGE_FAIL_DURING_BLIP"] = "1"
+    env_blip["SDLAB_TEST_POLL_RETRY_SLEEP_S"] = "0.1"
+    out_blip = tmp_path / "out_blip_ok"
+    res_blip = subprocess.run(
+        [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_blip), "--session", "sdlab-l1-blip-ok"],
+        env=env_blip,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res_blip.returncode == 0, f"STDOUT:\n{res_blip.stdout}\nSTDERR:\n{res_blip.stderr}"
+    guards_blip = (out_blip / "guards.log").read_text(encoding="utf-8")
+    assert "DETACHED_POLL_RETRY attempt=1/" in guards_blip
+    assert "DETACHED_POLL_RETRY attempt=3/" in guards_blip
+    assert "DETACHED_POLL_RECOVERED after_failures=3" in guards_blip
+    assert "COLAB_USAGE_PARSE_FAILED" not in guards_blip
+    assert "STALL_GUARD_TRIPPED" not in guards_blip
+    win_blip = json.loads((out_blip / "window.json").read_text(encoding="utf-8"))
+    assert win_blip["refusal_code"] is None
+    assert "LANE1_STUB_OK" in (out_blip / "vitals.log").read_text(encoding="utf-8")
+
+    # 2. Persistent poll outage beyond max retries refuses with POLL_RECONNECT_EXHAUSTED and stops VM.
+    _, state_exh, env_exh = fc.make_fake_colab_env(tmp_path / "blip_exh_case")
+    env_exh["FAKE_COLAB_MODE"] = "stall"
+    env_exh["GUARD_POLL_INTERVAL_S"] = "0.1"
+    env_exh["FAKE_COLAB_POLL_FAIL_CALLS"] = "all"
+    env_exh["FAKE_COLAB_USAGE_FAIL_DURING_BLIP"] = "1"
+    env_exh["SDLAB_TEST_POLL_MAX_RETRIES"] = "2"
+    env_exh["SDLAB_TEST_POLL_RETRY_SLEEP_S"] = "0.05"
+    out_exh = tmp_path / "out_blip_exh"
+    res_exh = subprocess.run(
+        [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_exh), "--session", "sdlab-l1-blip-exh"],
+        env=env_exh,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res_exh.returncode != 0
+    win_exh = json.loads((out_exh / "window.json").read_text(encoding="utf-8"))
+    assert win_exh["refusal_code"] == "POLL_RECONNECT_EXHAUSTED"
+    assert "STOP -s sdlab-l1-blip-exh" in (state_exh / "stops.log").read_text(encoding="utf-8")
+
+    # 3. Transient one-shot start failure and standalone `colab usage` timeout (rc=124) retry cleanly;
+    # persistent start failure refuses with DETACHED_START_FAILED.
+    _, state_s1, env_s1 = fc.make_fake_colab_env(tmp_path / "start_retry_ok_case")
+    env_s1["FAKE_COLAB_START_FAIL_ONCE"] = "1"
+    env_s1["FAKE_COLAB_USAGE_FAIL_CALLS"] = "3,4"
+    env_s1["SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S"] = "0.05"
+    env_s1["SDLAB_TEST_USAGE_POLL_RETRY_SLEEP_S"] = "0.05"
+    out_s1 = tmp_path / "out_start_retry_ok"
+    res_s1 = subprocess.run(
+        [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_s1), "--session", "sdlab-l1-start-retry"],
+        env=env_s1,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res_s1.returncode == 0, f"STDOUT:\n{res_s1.stdout}\nSTDERR:\n{res_s1.stderr}"
+    guards_s1 = (out_s1 / "guards.log").read_text(encoding="utf-8")
+    assert "DETACHED_START_RETRY attempt=1/3" in guards_s1
+    assert "USAGE_POLL_RETRY attempt=1/3 rc=124" in guards_s1
+    assert "USAGE_POLL_RETRY attempt=2/3 rc=124" in guards_s1
+    assert "COLAB_USAGE_PARSE_FAILED" not in guards_s1
+
+    _, state_sf, env_sf = fc.make_fake_colab_env(tmp_path / "start_fail_case")
+    env_sf["FAKE_COLAB_START_FAIL"] = "1"
+    env_sf["SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S"] = "0.05"
+    out_sf = tmp_path / "out_start_fail"
+    res_sf = subprocess.run(
+        [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_sf), "--session", "sdlab-l1-start-fail"],
+        env=env_sf,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert res_sf.returncode != 0
+    win_sf = json.loads((out_sf / "window.json").read_text(encoding="utf-8"))
+    assert win_sf["refusal_code"] == "DETACHED_START_FAILED"
+    assert "STOP -s sdlab-l1-start-fail" in (state_sf / "stops.log").read_text(encoding="utf-8")

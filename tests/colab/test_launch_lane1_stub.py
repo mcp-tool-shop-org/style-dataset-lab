@@ -356,17 +356,25 @@ def test_lane1_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: P
         if line.strip()
     ]
     exec_calls = [c for c in calls if c["subcmd"] == "exec"]
-    assert len(exec_calls) == 1
-    ec = exec_calls[0]
-    assert ec["positionals"] == []
-    f_vals = ec["parsed_opts"].get("-f") or ec["parsed_opts"].get("--file")
-    assert f_vals and f_vals[-1].endswith(".py")
-    timeout_val = float(ec["parsed_opts"]["--timeout"][-1])
-    assert timeout_val > 900.0
-    assert timeout_val == 1020.0
-    env_kv = ec["parsed_opts"].get("--env", [])
+    assert len(exec_calls) >= 2
+    ec_start = exec_calls[0]
+    assert ec_start["positionals"] == []
+    f_vals = ec_start["parsed_opts"].get("-f") or ec_start["parsed_opts"].get("--file")
+    assert f_vals and f_vals[-1].endswith("remote_runner.py")
+    start_timeout = float(ec_start["parsed_opts"]["--timeout"][-1])
+    assert start_timeout == 60.0
+    env_kv = ec_start["parsed_opts"].get("--env", [])
+    assert "SDLAB_RUNNER_MODE=start" in env_kv
     assert any(kv.endswith("/content/remote_lane1_stub.sh") and kv.startswith("SDLAB_REMOTE_SCRIPT=") for kv in env_kv)
     assert any(kv.startswith("PINNED_COMFYUI_COMMIT=") for kv in env_kv)
+    for ec_poll in exec_calls[1:]:
+        assert ec_poll["positionals"] == []
+        pf_vals = ec_poll["parsed_opts"].get("-f") or ec_poll["parsed_opts"].get("--file")
+        assert pf_vals and pf_vals[-1].endswith("remote_runner.py")
+        assert float(ec_poll["parsed_opts"]["--timeout"][-1]) == 30.0
+        poll_env = ec_poll["parsed_opts"].get("--env", [])
+        assert "SDLAB_RUNNER_MODE=poll" in poll_env
+        assert any(kv.startswith("SDLAB_POLL_OFFSET=") for kv in poll_env)
 
 
 def test_remote_runner_py_streams_output_and_prints_sdlab_remote_rc(
