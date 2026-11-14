@@ -1521,8 +1521,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--elapsed-s", type=float, default=0.0)
     parser.add_argument("--wall-s", type=float, default=3000.0)
     parser.add_argument("--grace-s", type=float, default=60.0)
-    parser.add_argument("--cap", type=float, default=0.05)
-    parser.add_argument("--margin", type=float, default=0.02)
+    parser.add_argument("--cap", type=float, default=0.08)
+    parser.add_argument("--margin", type=float, default=0.05)
     parser.add_argument("--cleanup-bound-s", type=float, default=0.0)
     parser.add_argument(
         "--usage-retry-bound-s",

@@ -3070,6 +3070,9 @@ print(code + "\t" + why)
 # child that escaped `timeout` holds its stdout), so the cap is failing blind: kill the poll's subtree,
 # write the overrun to usage_parse_error.txt, and fail the cap guard closed with COLAB_USAGE_PARSE_FAILED
 # (returns 1; the caller ends the exec and the EXIT trap stops this window's own session).
+# The check fails closed itself: a poll in flight (PID set) with no recorded launch time
+# (reason=launch_time_missing), or a clock check that exits non-zero or prints no verdict
+# (reason=clock_check_failed), counts as overdue. No PID means no poll in flight and returns 0.
 colab_live_usage_poll_deadline_check() {
   local py_bin="$1"
   local guards_py="$2"
@@ -3079,23 +3082,42 @@ colab_live_usage_poll_deadline_check() {
   local grace_s="$6"
   local cap="$7"
   local margin="$8"
-  [ -n "${COLAB_LIVE_USAGE_POLL_PID:-}" ] && [ -n "${COLAB_LIVE_USAGE_POLL_T0:-}" ] || return 0
+  [ -n "${COLAB_LIVE_USAGE_POLL_PID:-}" ] || return 0
   local deadline_s="${COLAB_USAGE_POLL_DEADLINE_S:-113}"
-  local verdict
-  verdict="$("${py_bin}" -c '
+  local verdict="" reason="" in_flight_s="unknown"
+  if [ -z "${COLAB_LIVE_USAGE_POLL_T0:-}" ]; then
+    reason="launch_time_missing"
+  else
+    verdict="$("${py_bin}" -c '
 import sys, time
 in_flight = max(0.0, time.monotonic() - float(sys.argv[1]))
 print(("OVERDUE " if in_flight > float(sys.argv[2]) else "OK ") + f"{in_flight:.3f}")
-' "${COLAB_LIVE_USAGE_POLL_T0}" "${deadline_s}" </dev/null 2>/dev/null || echo "OK 0")"
-  [ "${verdict%% *}" = "OVERDUE" ] || return 0
-  local in_flight_s="${verdict#* }"
+' "${COLAB_LIVE_USAGE_POLL_T0}" "${deadline_s}" </dev/null 2>/dev/null)" || verdict=""
+    case "${verdict}" in
+      "OK "*) return 0 ;;
+      "OVERDUE "*) reason="deadline_passed"; in_flight_s="${verdict#* }" ;;
+      *) reason="clock_check_failed" ;;
+    esac
+  fi
   colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
   COLAB_LIVE_USAGE_POLL_PID=""
   COLAB_LIVE_USAGE_POLL_T0=""
   rm -f "${out_dir}/.live_usage_metrics.txt" "${out_dir}/.live_usage_rc.txt"
-  echo "USAGE_POLL_DEADLINE_EXCEEDED in_flight_s=${in_flight_s} deadline_s=${deadline_s} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111} slack_s=${COLAB_USAGE_DECISION_SLACK_S:-2}" >> "${out_dir}/guards.log"
-  printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll still in flight after %s s, past its deadline of %s s (T_retry %s s + slack %s s)\n' \
-    "${in_flight_s}" "${deadline_s}" "${COLAB_USAGE_RETRY_BOUND_S:-111}" "${COLAB_USAGE_DECISION_SLACK_S:-2}" > "${out_dir}/usage_parse_error.txt"
+  echo "USAGE_POLL_DEADLINE_EXCEEDED in_flight_s=${in_flight_s} deadline_s=${deadline_s} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111} slack_s=${COLAB_USAGE_DECISION_SLACK_S:-2} reason=${reason}" >> "${out_dir}/guards.log"
+  case "${reason}" in
+    deadline_passed)
+      printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll still in flight after %s s, past its deadline of %s s (T_retry %s s + slack %s s)\n' \
+        "${in_flight_s}" "${deadline_s}" "${COLAB_USAGE_RETRY_BOUND_S:-111}" "${COLAB_USAGE_DECISION_SLACK_S:-2}" > "${out_dir}/usage_parse_error.txt"
+      ;;
+    launch_time_missing)
+      printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll in flight with no recorded launch time, so its %s s deadline cannot be checked; failing closed\n' \
+        "${deadline_s}" > "${out_dir}/usage_parse_error.txt"
+      ;;
+    *)
+      printf 'COLAB_USAGE_PARSE_FAILED: the deadline check on the live colab usage poll failed (the clock check exited non-zero or printed no verdict); failing closed\n' \
+        > "${out_dir}/usage_parse_error.txt"
+      ;;
+  esac
   local start_tok="NONE"
   if [ -s "${out_dir}/start_balance.txt" ]; then
     start_tok="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt")"
@@ -3174,7 +3196,8 @@ colab_run_exec_with_live_guards() {
         printf '%s\n' "${p_rc}" > "${usage_rc_file}"
       ) >/dev/null 2>&1 </dev/null &
       COLAB_LIVE_USAGE_POLL_PID="$!"
-      COLAB_LIVE_USAGE_POLL_T0="$("${py_bin}" -c 'import time; print(f"{time.monotonic():.6f}")' </dev/null)"
+      # A failed clock read leaves T0 empty; the deadline check then counts the poll overdue.
+      COLAB_LIVE_USAGE_POLL_T0="$("${py_bin}" -c 'import time; print(f"{time.monotonic():.6f}")  # live poll T0' </dev/null 2>/dev/null)" || COLAB_LIVE_USAGE_POLL_T0=""
       printf '%s\n' "${COLAB_LIVE_USAGE_POLL_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
       echo "USAGE_POLL_LAUNCHED pid=${COLAB_LIVE_USAGE_POLL_PID} deadline_s=${COLAB_USAGE_POLL_DEADLINE_S:-113} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111}" >> "${out_dir}/guards.log"
       poll_just_launched=1

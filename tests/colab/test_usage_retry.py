@@ -809,3 +809,117 @@ def test_post_open_rate_read_recovers_on_attempt_2(tmp_path: Path) -> None:
     )
     assert recovered_idx[0] < first_live_idx
     assert "REFUSED:" not in guards_log
+
+
+_PY_WRAPPER = """#!/usr/bin/env bash
+# Test wrapper for SDLAB_PYTHON: fails one named Python call made by the launcher and passes the rest
+# through. PYWRAP_FAIL=clock fails the live-poll deadline clock check (the -c program that prints
+# "OVERDUE "/"OK "); PYWRAP_FAIL=t0 fails the live-poll launch-time read ("# live poll T0").
+for a in "$@"; do
+  case "$a" in
+    *'"OVERDUE "'*) if [ "${PYWRAP_FAIL:-}" = clock ]; then echo clock >> "${PYWRAP_LOG}"; exit 3; fi ;;
+    *'# live poll T0'*) if [ "${PYWRAP_FAIL:-}" = t0 ]; then echo t0 >> "${PYWRAP_LOG}"; exit 3; fi ;;
+  esac
+done
+exec "__REAL_PY__" "$@"
+"""
+
+
+def _run_deadline_fail_closed(tmp_path: Path, fail_mode: str, session: str) -> tuple[Path, Path, Path, subprocess.CompletedProcess[str]]:
+    _, state_dir, env = fc.make_fake_colab_env(tmp_path)
+    out_dir = tmp_path / f"out_{fail_mode}"
+    wrapper = tmp_path / "pywrap.sh"
+    wrapper.write_text(_PY_WRAPPER.replace("__REAL_PY__", fc._to_posix(Path(fc._resolve_python()))), encoding="utf-8", newline="\n")
+    wrapper.chmod(0o755)
+    wrap_log = tmp_path / "pywrap.log"
+    env["SDLAB_PYTHON"] = fc._to_posix(wrapper)
+    env["PYWRAP_FAIL"] = fail_mode
+    env["PYWRAP_LOG"] = fc._to_posix(wrap_log)
+    env["FAKE_COLAB_MODE"] = "stall"
+    env["GUARD_POLL_INTERVAL_S"] = "0.3"
+    # T_retry = 3 * (1 + 1) + 1 + 1 = 8 s; deadline = 10 s.
+    env["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "1"
+    env["SDLAB_TEST_USAGE_POLL_KILL_GRACE_S"] = "1"
+    env["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "1,1"
+    env["SDLAB_TEST_STOP_TIMEOUT_S"] = "5"
+    env["SDLAB_TEST_SESSIONS_TIMEOUT_S"] = "5"
+    env["SDLAB_TEST_KILL_GRACE_S"] = "1"
+    # Live poll 1: attempt 1 hangs (in flight for about 1 s), attempt 2 reads fine. Without a fail-closed
+    # deadline check the poll recovers, the cap passes, and the stalled window runs to its wall trip.
+    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "hang;ok"
+    res = _run_lane1(
+        [
+            "--out-dir",
+            _to_posix(out_dir),
+            "--session",
+            session,
+            "--cap",
+            "0.10",
+            "--margin",
+            "0.02",
+            "--wall-s",
+            "30",
+            "--grace-s",
+            "10",
+        ],
+        env,
+        timeout=60,
+    )
+    return state_dir, out_dir, wrap_log, res
+
+
+def _assert_deadline_failed_closed(state_dir: Path, out_dir: Path, res: subprocess.CompletedProcess[str], reason: str, session: str, err_part: str) -> None:
+    assert res.returncode != 0
+    window = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert window["status"] == "COLAB_USAGE_PARSE_FAILED", f"got {window['status']}"
+    assert window["refusal_code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert err_part in window["usage_parse_error"], window["usage_parse_error"]
+
+    guards_log = (out_dir / "guards.log").read_text(encoding="utf-8")
+    deadline_lines = [ln for ln in guards_log.splitlines() if ln.startswith("USAGE_POLL_DEADLINE_EXCEEDED ")]
+    assert len(deadline_lines) == 1, deadline_lines
+    assert deadline_lines[0].endswith(f" reason={reason}"), deadline_lines[0]
+    assert "in_flight_s=unknown " in deadline_lines[0]
+    # The poll was failed closed while in flight: attempt 1 never came back, so no RETRY line.
+    assert "USAGE_POLL_RETRY " not in guards_log
+    records = _parse_json_lines(guards_log)
+    live_cap = [r for r in records if isinstance(r.get("cap"), dict) and r["cap"].get("mode") == "live"]
+    assert live_cap and all(r["cap"]["tripped"] for r in live_cap), live_cap
+    assert live_cap[-1]["cap"]["code"] == "COLAB_USAGE_PARSE_FAILED"
+
+    # It fired on the first in-flight tick, long before the 10 s deadline, measured from poll launch.
+    calls = _calls(state_dir)
+    new_ts = next(c["ts"] for c in calls if c["subcmd"] == "new")
+    stop_calls = [c for c in calls if c["subcmd"] == "stop"]
+    live_usage = [c for c in calls if c["subcmd"] == "usage" and new_ts <= c["ts"] < stop_calls[0]["ts"]]
+    assert len(live_usage) == 1, f"expected only the hung attempt 1, got {len(live_usage)}"
+    cleanup_started_ts = float((out_dir / "cleanup_started.txt").read_text(encoding="utf-8").strip())
+    assert cleanup_started_ts - live_usage[0]["ts"] < 5.0
+
+    # Only its own session was stopped.
+    assert {c["parsed_opts"]["-s"][-1] for c in stop_calls} == {session}
+    assert "STOP_COMPLETED" in (out_dir / "stop.log").read_text(encoding="utf-8")
+
+
+def test_deadline_check_fails_closed_when_its_clock_check_fails(tmp_path: Path) -> None:
+    """Fail-closed (a): with a live poll in flight, the deadline's clock check exits non-zero (SDLAB_PYTHON
+    is a wrapper that fails that one Python call). The check counts the poll overdue, logs
+    `reason=clock_check_failed`, and the cap guard fails closed with `COLAB_USAGE_PARSE_FAILED`; only the
+    window's own session is stopped. Before the fix the failed check read as "OK 0" and never fired."""
+    session = "sdlab-l1-deadline-clock-fail"
+    state_dir, out_dir, wrap_log, res = _run_deadline_fail_closed(tmp_path, "clock", session)
+    _assert_deadline_failed_closed(state_dir, out_dir, res, "clock_check_failed", session, "deadline check on the live colab usage poll failed")
+    # The wrapper really failed the clock check, at least once.
+    assert "clock" in wrap_log.read_text(encoding="utf-8").split()
+
+
+def test_deadline_check_fails_closed_when_poll_launch_time_is_missing(tmp_path: Path) -> None:
+    """Fail-closed (b): the live poll is launched (PID set) but its launch-time read fails, so T0 is empty.
+    The deadline check counts the poll overdue, logs `reason=launch_time_missing`, and the cap guard fails
+    closed with `COLAB_USAGE_PARSE_FAILED`; only the window's own session is stopped. Before the fix a set
+    PID with an empty T0 returned OK and the deadline never fired."""
+    session = "sdlab-l1-deadline-no-t0"
+    state_dir, out_dir, wrap_log, res = _run_deadline_fail_closed(tmp_path, "t0", session)
+    _assert_deadline_failed_closed(state_dir, out_dir, res, "launch_time_missing", session, "no recorded launch time")
+    # The wrapper really failed the launch-time read.
+    assert "t0" in wrap_log.read_text(encoding="utf-8").split()

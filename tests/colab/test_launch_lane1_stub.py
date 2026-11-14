@@ -689,9 +689,8 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     env_cfg["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "OMIT"
     env_cfg["FAKE_COLAB_POST_OPEN_RATE_STR"] = "OMIT"
     env_cfg["RATE_CCU_PER_HOUR"] = "0.31"
-    # The margin gate prices the blind interval T_retry + 2 * poll_s + slack_s. At the default 2 s tick
-    # (117 s), 0.31/hr spends 0.010075 > margin 0.02 / 2 and refuses; at a 0.2 s tick (113.4 s) it fits.
-    env_cfg["GUARD_POLL_INTERVAL_S"] = "0.2"
+    # Default 2 s tick: the gate prices the 117 s blind interval, 0.31/hr * 117 / 3600 = 0.010075, which
+    # fits the CPU default margin 0.05 (half-margin 0.025).
     out_cfg = tmp_path / "out_rate_cfg"
     res_cfg = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cfg), "--session", "sdlab-l1-rcfg"],
