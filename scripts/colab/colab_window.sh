@@ -378,6 +378,30 @@ colab_apply_test_cleanup_overrides() {
   if [ -n "${SDLAB_TEST_SESSIONS_TIMEOUT_S:-}" ]; then
     export COLAB_SESSIONS_TIMEOUT_S="${SDLAB_TEST_SESSIONS_TIMEOUT_S}"
   fi
+  if [ -n "${SDLAB_TEST_DETACHED_START_TIMEOUT_S:-}" ]; then
+    export COLAB_DETACHED_START_TIMEOUT_S="${SDLAB_TEST_DETACHED_START_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_DETACHED_START_ATTEMPTS:-}" ]; then
+    export COLAB_DETACHED_START_ATTEMPTS="${SDLAB_TEST_DETACHED_START_ATTEMPTS}"
+  fi
+  if [ -n "${SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S:-}" ]; then
+    export COLAB_DETACHED_START_RETRY_SLEEP_S="${SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S}"
+  fi
+  if [ -n "${SDLAB_TEST_POLL_EXEC_TIMEOUT_S:-}" ]; then
+    export COLAB_POLL_EXEC_TIMEOUT_S="${SDLAB_TEST_POLL_EXEC_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_POLL_MAX_RETRIES:-}" ]; then
+    export COLAB_POLL_MAX_RETRIES="${SDLAB_TEST_POLL_MAX_RETRIES}"
+  fi
+  if [ -n "${SDLAB_TEST_POLL_RETRY_SLEEP_S:-}" ]; then
+    export COLAB_POLL_RETRY_SLEEP_S="${SDLAB_TEST_POLL_RETRY_SLEEP_S}"
+  fi
+  if [ -n "${SDLAB_TEST_USAGE_POLL_ATTEMPTS:-}" ]; then
+    export COLAB_USAGE_POLL_ATTEMPTS="${SDLAB_TEST_USAGE_POLL_ATTEMPTS}"
+  fi
+  if [ -n "${SDLAB_TEST_USAGE_POLL_RETRY_SLEEP_S:-}" ]; then
+    export COLAB_USAGE_POLL_RETRY_SLEEP_S="${SDLAB_TEST_USAGE_POLL_RETRY_SLEEP_S}"
+  fi
   local step_sum
   step_sum="$(colab_salvage_steps_sum_s)"
   if [ -n "${SDLAB_TEST_SALVAGE_DEADLINE_S:-}" ]; then
@@ -727,8 +751,12 @@ colab_upload_checked() {
   local kill_grace="${COLAB_KILL_GRACE_S:-10}"
 
   local file_bytes="" rig_sha=""
-  read -r file_bytes rig_sha < <(
-    "${py_bin}" -c '
+  if command -v sha256sum >/dev/null 2>&1; then
+    file_bytes="$(wc -c < "${src}" | tr -d '[:space:]')"
+    rig_sha="$(sha256sum "${src}" | awk '{print $1}')"
+  else
+    read -r file_bytes rig_sha < <(
+      "${py_bin}" -c '
 import hashlib, pathlib, sys
 p = pathlib.Path(sys.argv[1])
 h = hashlib.sha256()
@@ -739,7 +767,8 @@ with p.open("rb") as fh:
         h.update(blk)
 print(sz, h.hexdigest())
 ' "${src}" | tr -d '\r'
-  )
+    )
+  fi
 
   # Single-request fast path when file_bytes <= COLAB_UPLOAD_CHUNK_BYTES.
   if [ "${file_bytes}" -le "${chunk_bytes}" ]; then
@@ -2461,8 +2490,24 @@ colab_poll_usage_and_ram() {
 
   local usage_text=""
   local usage_rc=0
-  # Bounded: a hung `colab usage` cannot stretch a poll (or the live guard loop) past 30 s.
-  usage_text="$(colab_run_bounded 30 5 colab usage 2>>"${out_dir}/colab.log")" || usage_rc=$?
+  local usage_max_attempts="${COLAB_USAGE_POLL_ATTEMPTS:-3}"
+  local usage_retry_sleep_s="${COLAB_USAGE_POLL_RETRY_SLEEP_S:-2}"
+  local usage_attempt=0
+  # Bounded: a hung `colab usage` cannot stretch an attempt past 30 s; transient non-zero CLI exits
+  # (e.g. a one-off 30 s HTTP timeout rc=124 or 502/503) retry up to COLAB_USAGE_POLL_ATTEMPTS before
+  # failing closed as COLAB_USAGE_PARSE_FAILED.
+  while [ "${usage_attempt}" -lt "${usage_max_attempts}" ]; do
+    usage_attempt=$((usage_attempt + 1))
+    usage_rc=0
+    usage_text="$(colab_run_bounded 30 5 colab usage 2>>"${out_dir}/colab.log")" || usage_rc=$?
+    if [ "${usage_rc}" -eq 0 ]; then
+      break
+    fi
+    if [ "${usage_attempt}" -lt "${usage_max_attempts}" ]; then
+      echo "USAGE_POLL_RETRY attempt=${usage_attempt}/${usage_max_attempts} rc=${usage_rc}" >> "${out_dir}/guards.log"
+      sleep "${usage_retry_sleep_s}"
+    fi
+  done
   printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
 
   "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_CARD_CLASS:?the kit must set COLAB_CARD_CLASS to gpu or cpu}" << 'PYEOF'
@@ -2746,30 +2791,94 @@ colab_check_cap_and_ram() {
   # window.json reads refusal_code and why), and its record, with the numbers that tripped it,
   # goes to guards.log first. A trip used to leave refusal_code null: the wall/cap record had no
   # REFUSED line, and the RAM guard's message went to stderr only.
-  local guard_rc=0 guard_out=""
-  guard_out="$("${py_bin}" "${guards_py}" "${guard_args[@]}" </dev/null)" || guard_rc=$?
-  [ -n "${guard_out}" ] && printf '%s\n' "${guard_out}" >> "${out_dir}/guards.log"
-  if [ "${mode}" = "live" ] && ! colab_midrun_rate_check "${py_bin}" "${out_dir}"; then
-    return 1
-  fi
-  if [ "${guard_rc}" -ne 0 ]; then
-    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_out}" GUARD_FAILED
-    return 1
-  fi
+  local combo_rc=0 combo_out=""
+  combo_out="$("${py_bin}" - "${guards_py}" "${out_dir}" "${mode}" "${COLAB_CARD_CLASS:-}" "${PROJECTED_DELTA_MB:-2048}" "${guard_args[@]}" << 'PYEOF'
+import contextlib, io, json, sys
+from pathlib import Path
 
-  # Private memory from the newest complete vitals sample (or the one before it); no vitals yet is
-  # a skipped check, never a default. Two samples with no complete one is HOST_RAM_UNREADABLE.
-  local ram_args=(
-    "--check-ram"
-    "--projected-delta-mb" "${PROJECTED_DELTA_MB:-2048}"
-    "--ram-vitals-file" "${out_dir}/vitals.log"
-  )
-  local ram_rc=0 ram_out=""
-  ram_out="$("${py_bin}" "${guards_py}" "${ram_args[@]}" </dev/null)" || ram_rc=$?
-  [ -n "${ram_out}" ] && printf '%s\n' "${ram_out}" >> "${out_dir}/guards.log"
-  if [ "${ram_rc}" -ne 0 ]; then
-    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
-    return "${ram_rc}"
+guards_py = Path(sys.argv[1])
+out_dir = Path(sys.argv[2])
+mode = sys.argv[3]
+card_class = sys.argv[4]
+proj_delta = sys.argv[5]
+guard_args = sys.argv[6:]
+
+sys.path.insert(0, str(guards_py.parent))
+import launch_guards as lg
+
+guards_log = out_dir / "guards.log"
+
+buf1 = io.StringIO()
+with contextlib.redirect_stdout(buf1):
+    try:
+        guard_rc = int(lg.main(guard_args))
+    except SystemExit as exc:
+        guard_rc = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+g_out = buf1.getvalue().rstrip("\n")
+if g_out:
+    with guards_log.open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(g_out + "\n")
+
+if mode == "live" and card_class == "gpu" and (out_dir / "max_rate.txt").is_file() and (out_dir / "rate_window.json").is_file():
+    state = json.loads((out_dir / "rate_window.json").read_text(encoding="utf-8"))
+    mr = float((out_dir / "max_rate.txt").read_text(encoding="utf-8").strip())
+    dec = lg.window_rate_decision(state, mr)
+    if dec in ("assignments_unreadable", "above_max"):
+        print(f"RATE_REFUSAL\t{dec}")
+        raise SystemExit(1)
+
+if guard_rc != 0:
+    print("GUARD_REFUSAL\t" + json.dumps(g_out))
+    raise SystemExit(1)
+
+ram_args = [
+    "--check-ram",
+    "--projected-delta-mb", proj_delta,
+    "--ram-vitals-file", str(out_dir / "vitals.log"),
+]
+buf2 = io.StringIO()
+with contextlib.redirect_stdout(buf2):
+    try:
+        ram_rc = int(lg.main(ram_args))
+    except SystemExit as exc:
+        ram_rc = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+r_out = buf2.getvalue().rstrip("\n")
+if r_out:
+    with guards_log.open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(r_out + "\n")
+
+if ram_rc != 0:
+    print(f"RAM_REFUSAL\t{ram_rc}\t" + json.dumps(r_out))
+    raise SystemExit(ram_rc)
+PYEOF
+)" || combo_rc=$?
+
+  if [ "${combo_rc}" -ne 0 ]; then
+    local kind="${combo_out%%$'\t'*}"
+    local rest="${combo_out#*$'\t'}"
+    if [ "${kind}" = "RATE_REFUSAL" ]; then
+      if [ "${rest}" = "assignments_unreadable" ]; then
+        colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: 3 consecutive bad reads: no readable Active assignments count (missing or 0), or a stable window rate below the floor (rate_window.json)"
+      else
+        colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "mid-run: the window's stable rate rose above --max-rate $(cat "${out_dir}/max_rate.txt")/h (rate_window.json)"
+      fi
+      return 1
+    elif [ "${kind}" = "GUARD_REFUSAL" ]; then
+      local guard_out
+      guard_out="$("${py_bin}" -c 'import json, sys; print(json.loads(sys.argv[1]))' "${rest}" 2>/dev/null || true)"
+      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_out}" GUARD_FAILED
+      return 1
+    elif [ "${kind}" = "RAM_REFUSAL" ]; then
+      local ram_rc="${rest%%$'\t'*}"
+      local ram_json="${rest#*$'\t'}"
+      local ram_out
+      ram_out="$("${py_bin}" -c 'import json, sys; print(json.loads(sys.argv[1]))' "${ram_json}" 2>/dev/null || true)"
+      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
+      return "${ram_rc}"
+    else
+      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "" GUARD_FAILED
+      return 1
+    fi
   fi
 }
 
@@ -2822,6 +2931,17 @@ colab_run_exec_with_live_guards() {
   local poll_s="${GUARD_POLL_INTERVAL_S:-2}"
   local stall_s="${STALL_S:-300}"
   local setup_stall_s="${SETUP_STALL_S:-600}"
+  local kill_grace="${COLAB_KILL_GRACE_S:-10}"
+  local dl_bound_s="${COLAB_DOWNLOAD_TIMEOUT_S:-300}"
+  local start_exec_t="${COLAB_DETACHED_START_TIMEOUT_S:-60}"
+  [ "${start_exec_t}" -gt "${dl_bound_s}" ] && start_exec_t="${dl_bound_s}"
+  local max_start_attempts="${COLAB_DETACHED_START_ATTEMPTS:-3}"
+  local start_retry_sleep_s="${COLAB_DETACHED_START_RETRY_SLEEP_S:-2}"
+  local poll_exec_t="${COLAB_POLL_EXEC_TIMEOUT_S:-30}"
+  [ "${poll_exec_t}" -gt "${dl_bound_s}" ] && poll_exec_t="${dl_bound_s}"
+  local max_poll_retries="${COLAB_POLL_MAX_RETRIES:-12}"
+  local poll_retry_sleep_s="${COLAB_POLL_RETRY_SLEEP_S:-5}"
+
   local last_size=0
   local last_progress_epoch
   last_progress_epoch="$(date -u +%s)"
@@ -2829,50 +2949,165 @@ colab_run_exec_with_live_guards() {
   local last_setup_progress_epoch="${last_progress_epoch}"
   local last_harness_phase=""
 
-  local wall_int="${wall_s%.*}"
-  local grace_int="${grace_s%.*}"
-  local exec_timeout="$(( wall_int + grace_int + 60 ))"
+  : > "${out_dir}/vitals.log"
 
   local dl_chunk_env="${COLAB_DOWNLOAD_CHUNK_BYTES:-${COLAB_DOWNLOAD_CHUNK_BYTES_DEFAULT}}"
-  local exec_args=(
-    "-s" "${session}" "-f" "${runner_py}" "--timeout" "${exec_timeout}"
+  local start_args=(
+    "-s" "${session}" "-f" "${runner_py}" "--timeout" "${start_exec_t}"
     "--env" "SDLAB_CONTENT=/content"
     "--env" "SDLAB_DL_CHUNK_BYTES=${dl_chunk_env}"
+    "--env" "SDLAB_RUNNER_MODE=start"
   )
   for kv in "${env_pairs[@]}"; do
-    exec_args+=("--env" "${kv}")
+    start_args+=("--env" "${kv}")
   done
 
-  colab exec "${exec_args[@]}" </dev/null > "${out_dir}/vitals.log" 2>&1 &
-  EXEC_PID="$!"
-  printf '%s\n' "${EXEC_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
-
-  while kill -0 "${EXEC_PID}" 2>/dev/null; do
-    sleep "${poll_s}"
-    if ! kill -0 "${EXEC_PID}" 2>/dev/null; then
+  local start_out_file="${out_dir}/.detached_start.out"
+  local start_attempt=0 start_rc=0 start_ok=0
+  while [ "${start_attempt}" -lt "${max_start_attempts}" ]; do
+    start_attempt=$((start_attempt + 1))
+    start_rc=0
+    (
+      trap - TERM INT
+      exec timeout -k "${kill_grace}" "${start_exec_t}" colab exec "${start_args[@]}" </dev/null
+    ) > "${start_out_file}" 2>&1 &
+    EXEC_PID="$!"
+    printf '%s\n' "${EXEC_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
+    wait "${EXEC_PID}" || start_rc=$?
+    EXEC_PID=""
+    if [ "${start_rc}" -eq 0 ] && grep -q '^SDLAB_DETACHED_STARTED ' "${start_out_file}" 2>/dev/null; then
+      start_ok=1
       break
     fi
+    if [ "${start_attempt}" -lt "${max_start_attempts}" ]; then
+      echo "DETACHED_START_RETRY attempt=${start_attempt}/${max_start_attempts} rc=${start_rc}" >> "${out_dir}/guards.log"
+      sleep "${start_retry_sleep_s}"
+    fi
+  done
+
+  if [ "${start_ok}" -ne 1 ]; then
+    "${py_bin}" "${guards_py}" --scrub-file "${start_out_file}" </dev/null 2>/dev/null || true
+    cat "${start_out_file}" >> "${out_dir}/colab.log" 2>/dev/null || true
+    rm -f "${start_out_file}"
+    colab_refuse_logged "${out_dir}" DETACHED_START_FAILED "detached remote runner start failed after ${start_attempt} attempt(s) (rc=${start_rc})"
+    if [ "${start_rc}" -ne 0 ]; then
+      return "${start_rc}"
+    fi
+    return 94
+  fi
+  rm -f "${start_out_file}"
+
+  local remote_offset=0
+  local poll_failures=0
+  local drain_immediately=0
+
+  while true; do
+    if [ "${drain_immediately}" -eq 0 ]; then
+      sleep "${poll_s}"
+    else
+      drain_immediately=0
+    fi
+
     local now_epoch elapsed_s cur_size idle_s cur_setup_bytes setup_idle_s run_only_bytes
     now_epoch="$(date -u +%s)"
     if [ -f "${out_dir}/session_open_epoch.txt" ]; then
-      elapsed_s="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((now_epoch - start_epoch))")"
+      if [ -n "${EPOCHREALTIME:-}" ]; then
+        elapsed_s="$(awk -v now="${EPOCHREALTIME}" '{ d = now - $1; if (d < 0) d = 0; printf "%.6f\n", d }' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((now_epoch - start_epoch))")"
+      else
+        elapsed_s="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((now_epoch - start_epoch))")"
+      fi
     else
       elapsed_s="$((now_epoch - start_epoch))"
+    fi
+
+    local poll_out_file="${out_dir}/.detached_poll.out"
+    local poll_args=(
+      "-s" "${session}" "-f" "${runner_py}" "--timeout" "${poll_exec_t}"
+      "--env" "SDLAB_CONTENT=/content"
+      "--env" "SDLAB_RUNNER_MODE=poll"
+      "--env" "SDLAB_POLL_OFFSET=${remote_offset}"
+    )
+    (
+      trap - TERM INT
+      exec timeout -k "${kill_grace}" "${poll_exec_t}" colab exec "${poll_args[@]}" </dev/null
+    ) > "${poll_out_file}" 2>&1 &
+    EXEC_PID="$!"
+    printf '%s\n' "${EXEC_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
+    local poll_exec_rc=0
+    wait "${EXEC_PID}" || poll_exec_rc=$?
+    EXEC_PID=""
+
+    local parsed_poll="" parse_rc=0
+    if [ "${poll_exec_rc}" -eq 0 ]; then
+      parsed_poll="$("${py_bin}" "${guards_py}" --apply-poll-file "${poll_out_file}" --apply-poll-vitals "${out_dir}/vitals.log" </dev/null 2>/dev/null)" || parse_rc=$?
+    else
+      parse_rc="${poll_exec_rc}"
+    fi
+    rm -f "${poll_out_file}"
+
+    if [ "${parse_rc}" -ne 0 ] || [ -z "${parsed_poll}" ]; then
+      poll_failures=$((poll_failures + 1))
+      echo "DETACHED_POLL_RETRY attempt=${poll_failures}/${max_poll_retries} offset=${remote_offset} rc=${parse_rc}" >> "${out_dir}/guards.log"
+
+      # Keep local wall and priced-rate cap ceiling enforced even while the host NIC is unreachable.
+      if [ -f "${out_dir}/start_balance.txt" ] && [ -f "${out_dir}/end_balance.txt" ]; then
+        local cached_start cached_cur cached_rate offline_rc=0 offline_out=""
+        cached_start="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt")"
+        cached_cur="$(tr -d '[:space:]' < "${out_dir}/end_balance.txt")"
+        cached_rate="0.26"
+        if [ -f "${out_dir}/rate_for_projection.txt" ]; then
+          cached_rate="$(tr -d '[:space:]' < "${out_dir}/rate_for_projection.txt")"
+        fi
+        offline_out="$("${py_bin}" "${guards_py}" \
+          --mode "live" \
+          --elapsed-s "${elapsed_s}" \
+          --wall-s "${wall_s}" \
+          --grace-s "${grace_s}" \
+          --cap "${cap}" \
+          --margin "${margin}" \
+          --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S:-0}" \
+          --rate "${cached_rate:-0.26}" \
+          --start-balance "${cached_start}" \
+          --current-balance "${cached_cur}" </dev/null)" || offline_rc=$?
+        [ -n "${offline_out}" ] && printf '%s\n' "${offline_out}" >> "${out_dir}/guards.log"
+        if [ "${offline_rc}" -ne 0 ]; then
+          colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${offline_out}" GUARD_FAILED
+          return 91
+        fi
+      fi
+
+      if [ "${poll_failures}" -gt "${max_poll_retries}" ]; then
+        colab_refuse_logged "${out_dir}" POLL_RECONNECT_EXHAUSTED "detached remote runner poll failed ${poll_failures} consecutive times at offset=${remote_offset} (last rc=${parse_rc})"
+        return 94
+      fi
+      sleep "${poll_retry_sleep_s}"
+      continue
+    fi
+
+    if [ "${poll_failures}" -gt 0 ]; then
+      echo "DETACHED_POLL_RECOVERED after_failures=${poll_failures} offset=${remote_offset}" >> "${out_dir}/guards.log"
+      poll_failures=0
+    fi
+
+    local poll_done="0" poll_eof="0" poll_rc_val=""
+    run_only_bytes="0"
+    IFS=$'\t' read -r remote_offset poll_done poll_eof poll_rc_val run_only_bytes <<< "${parsed_poll}"
+    if [ "${poll_eof}" = "1" ]; then
+      break
+    fi
+    if [ "${poll_done}" = "1" ]; then
+      drain_immediately=1
+      continue
     fi
 
     local check_rc=0
     colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}" || check_rc=$?
     if [ "${check_rc}" -ne 0 ]; then
-      pkill -P "${EXEC_PID}" 2>/dev/null || true
-      kill -9 "${EXEC_PID}" 2>/dev/null || true
-      wait "${EXEC_PID}" 2>/dev/null || true
-      EXEC_PID=""
       return 91
     fi
 
     # Run output only: every vitals line the emitters print is skipped (launch_guards.VITALS_LINE_PREFIXES,
     # one list, checked against the emitters by tests), so vitals blocks never count as progress.
-    run_only_bytes="$("${py_bin}" "${guards_py}" --run-output-bytes "${out_dir}/vitals.log" </dev/null 2>/dev/null || echo 0)"
     cur_size="${run_only_bytes:-0}"
     if [ "${cur_size:-0}" != "${last_size}" ]; then
       last_size="${cur_size:-0}"
@@ -2906,27 +3141,17 @@ colab_run_exec_with_live_guards() {
     [ -n "${vitals_out}" ] && printf '%s\n' "${vitals_out}" >> "${out_dir}/guards.log"
     if [ "${vitals_rc}" -ne 0 ]; then
       colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${vitals_out}" GUARD_FAILED
-      pkill -P "${EXEC_PID}" 2>/dev/null || true
-      kill -9 "${EXEC_PID}" 2>/dev/null || true
-      wait "${EXEC_PID}" 2>/dev/null || true
-      EXEC_PID=""
       return 93
     fi
   done
 
   local exec_rc=0
-  wait "${EXEC_PID}" || exec_rc=$?
-  EXEC_PID=""
-
   colab_scrub_all_logs "${py_bin}" "${guards_py}" "${out_dir}"
 
   local marker_line=""
   marker_line="$(grep -E '^SDLAB_REMOTE_RC=-?[0-9]+$' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | tr -d '\r' || true)"
   if [ -z "${marker_line}" ]; then
     echo "REFUSED: SDLAB_REMOTE_RC marker missing from vitals.log (colab exec_rc=${exec_rc})" >> "${out_dir}/guards.log"
-    if [ "${exec_rc}" -ne 0 ]; then
-      return "${exec_rc}"
-    fi
     return 94
   fi
   local remote_rc="${marker_line#SDLAB_REMOTE_RC=}"
@@ -4180,6 +4405,8 @@ REFUSAL_CODES = (
     "STALL_GUARD_TRIPPED",
     "SETUP_STALL_TRIPPED",
     "VITALS_PHASE_UNREADABLE",
+    "DETACHED_START_FAILED",
+    "POLL_RECONNECT_EXHAUSTED",
     "GUARD_FAILED",
 )
 # A refusal code comes only from a line the kit itself emits, starting `REFUSED: <CODE>`, in the

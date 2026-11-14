@@ -1274,6 +1274,19 @@ def main(argv: list[str] | None = None) -> int:
         if os.environ.get("FAKE_COLAB_USAGE_FAIL") == "1":
             sys.stderr.write("colab usage failed\n")
             return 1
+        usage_fail_spec = os.environ.get("FAKE_COLAB_USAGE_FAIL_CALLS", "").strip()
+        if usage_fail_spec:
+            uf_set = {int(tok.strip()) for tok in usage_fail_spec.split(",") if tok.strip().isdigit()}
+            if c in uf_set:
+                sys.stderr.write(f"colab usage call #{c} timed out (simulated rc=124)\n")
+                return 124
+        if (
+            os.environ.get("FAKE_COLAB_USAGE_FAIL_DURING_BLIP") == "1"
+            and (state_dir / "blip_active.txt").is_file()
+            and not (state_dir / "stops.log").exists()
+        ):
+            sys.stderr.write("colab usage failed: simulated host NIC / WebSocket outage\n")
+            return 1
         if mode == "usage_fail_start" and c == 1:
             print("UNPARSEABLE_USAGE_TEXT_WITHOUT_BALANCE")
             return 0
@@ -1585,6 +1598,28 @@ def main(argv: list[str] | None = None) -> int:
         with (state_dir / "stops.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps({"sid": sid, "attempt": stop_cnt, "done_ts": time.time()}) + "\n")
         (_open_sessions_dir(state_dir) / f"{sid}.json").unlink(missing_ok=True)
+        (state_dir / "blip_active.txt").unlink(missing_ok=True)
+        detached_meta_f = content_dir / ".sdlab_live.meta.json"
+        if detached_meta_f.is_file():
+            import signal as _signal
+
+            try:
+                dmeta = json.loads(detached_meta_f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                dmeta = {}
+            for k_pid in ("child_pid", "worker_pid"):
+                dpid = dmeta.get(k_pid)
+                if isinstance(dpid, int) and dpid > 1:
+                    try:
+                        dpgid = os.getpgid(dpid)
+                        if dpgid > 1 and dpgid != os.getpgrp():
+                            os.killpg(dpgid, _signal.SIGKILL)
+                    except OSError:
+                        pass
+                    try:
+                        os.kill(dpid, _signal.SIGKILL)
+                    except OSError:
+                        pass
         _kill_recorded_groups(state_dir, sid)
         _kernel_file(state_dir, sid, "pid").unlink(missing_ok=True)
         return 0
@@ -1684,6 +1719,31 @@ def main(argv: list[str] | None = None) -> int:
         kernel_env["FAKE_VM_SITE"] = str(FIXTURES_DIR / "fake_vm_site")
         kernel_env.update(env_vars)
 
+        if py_path.name == "remote_runner.py":
+            runner_mode = env_vars.get("SDLAB_RUNNER_MODE", "").strip().lower()
+            if runner_mode == "start":
+                start_cnt_f = state_dir / "start_calls.txt"
+                start_n = int(start_cnt_f.read_text(encoding="utf-8").strip()) if start_cnt_f.is_file() else 0
+                start_n += 1
+                start_cnt_f.write_text(f"{start_n}\n", encoding="utf-8", newline="\n")
+                if os.environ.get("FAKE_COLAB_START_FAIL") == "1" or (
+                    os.environ.get("FAKE_COLAB_START_FAIL_ONCE") == "1" and start_n == 1
+                ):
+                    sys.stderr.write("colab exec failed: simulated start WebSocket / 502 error\n")
+                    return 1
+            if runner_mode == "poll":
+                poll_cnt_f = state_dir / "poll_calls.txt"
+                poll_n = int(poll_cnt_f.read_text(encoding="utf-8").strip()) if poll_cnt_f.is_file() else 0
+                poll_n += 1
+                poll_cnt_f.write_text(f"{poll_n}\n", encoding="utf-8", newline="\n")
+                fail_spec = os.environ.get("FAKE_COLAB_POLL_FAIL_CALLS", "").strip()
+                fail_set = {int(tok.strip()) for tok in fail_spec.split(",") if tok.strip().isdigit()}
+                if fail_spec.lower() == "all" or poll_n in fail_set:
+                    (state_dir / "blip_active.txt").write_text("1\n", encoding="utf-8", newline="\n")
+                    sys.stderr.write(f"colab exec poll #{poll_n} failed: simulated WebSocket / 502 blip\n")
+                    return 1
+                (state_dir / "blip_active.txt").unlink(missing_ok=True)
+
         env_lines = "".join(f"os.environ[{k!r}] = {v!r}\n" for k, v in env_vars.items())
         code_logged = "import os\n" + env_lines + py_path.read_text(encoding="utf-8")
 
@@ -1751,7 +1811,7 @@ def main(argv: list[str] | None = None) -> int:
                 if time.monotonic() > deadline:
                     timed_out = True
                     break
-                time.sleep(0.05)
+                time.sleep(0.01)
         if timed_out:
             # As the real client: the local call gives up, the cell keeps running on the kernel.
             sys.stderr.write(f"Execution timed out after {timeout_s}s\n")
