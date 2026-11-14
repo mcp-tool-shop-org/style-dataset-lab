@@ -1271,16 +1271,64 @@ def main(argv: list[str] | None = None) -> int:
         c += 1
         count_file.write_text(f"{c}\n", encoding="utf-8", newline="\n")
 
+        session_opened = (state_dir / "session_opened.txt").is_file()
+        post_count = 0
+        if session_opened:
+            post_count_file = state_dir / "post_open_usage_count.txt"
+            post_count = (
+                int(post_count_file.read_text(encoding="utf-8").strip())
+                if post_count_file.is_file()
+                else 0
+            )
+            post_count += 1
+            post_count_file.write_text(f"{post_count}\n", encoding="utf-8", newline="\n")
+
+        def _apply_usage_directive(directive: str) -> int | None:
+            tok = directive.strip()
+            if not tok or tok == "ok":
+                return None
+            if tok == "hang":
+                _hang_process(state_dir, False)
+            if tok == "hang_ignore_term":
+                _hang_process(state_dir, True)
+            if tok.startswith("rc="):
+                rc_val = int(tok.split("=", 1)[1])
+                sys.stderr.write(f"colab usage failed (injected rc={rc_val})\n")
+                return rc_val
+            if tok == "unparseable":
+                print("UNPARSEABLE_USAGE_TEXT_WITHOUT_BALANCE")
+                return 0
+            if tok.startswith("raw:"):
+                print(tok[4:])
+                return 0
+            raise ValueError(f"unknown FAKE_COLAB usage directive: {tok!r}")
+
+        usage_seq_raw = os.environ.get("FAKE_COLAB_USAGE_SEQ", "").strip()
+        if usage_seq_raw:
+            seq_items = [x.strip() for x in usage_seq_raw.split(";")]
+            step_dir = seq_items[c - 1] if (c - 1) < len(seq_items) else "ok"
+            injected_rc = _apply_usage_directive(step_dir)
+            if injected_rc is not None:
+                return injected_rc
+
+        post_usage_seq_raw = os.environ.get("FAKE_COLAB_USAGE_POST_OPEN_SEQ", "").strip()
+        if session_opened and post_usage_seq_raw and not (state_dir / "stops.log").exists():
+            post_seq_items = [x.strip() for x in post_usage_seq_raw.split(";")]
+            step_dir = post_seq_items[post_count - 1] if (post_count - 1) < len(post_seq_items) else "ok"
+            injected_rc = _apply_usage_directive(step_dir)
+            if injected_rc is not None:
+                return injected_rc
+
         if os.environ.get("FAKE_COLAB_USAGE_FAIL") == "1":
             sys.stderr.write("colab usage failed\n")
             return 1
-        if mode == "usage_fail_start" and c == 1:
+        if mode == "usage_fail_start" and not session_opened:
             print("UNPARSEABLE_USAGE_TEXT_WITHOUT_BALANCE")
             return 0
         if mode == "usage_fail_midrun" and c >= 2:
             print("UNPARSEABLE_USAGE_TEXT_MIDRUN")
             return 0
-        if mode == "negative_balance_start" and c == 1:
+        if mode == "negative_balance_start" and not session_opened:
             print("Current balance: -5.00 compute units\nUsage rate: 0.26/hr\nActive assignments: 1")
             return 0
         if mode == "negative_balance_midrun" and c >= 2:
@@ -1291,7 +1339,6 @@ def main(argv: list[str] | None = None) -> int:
             print(raw_override)
             return 0
         bal = "9.75" if (mode == "cap_burn" and c >= 2) else os.environ.get("FAKE_COLAB_BALANCE", "9.85")
-        session_opened = (state_dir / "session_opened.txt").is_file()
         if session_opened and os.environ.get("FAKE_COLAB_USAGE_DELAY_S") and not (state_dir / "stops.log").exists():
             time.sleep(float(os.environ["FAKE_COLAB_USAGE_DELAY_S"]))
         if session_opened and os.environ.get("FAKE_COLAB_BURN_BALANCE") == "1" and (state_dir / "new_done_epoch.txt").is_file():
@@ -1303,16 +1350,6 @@ def main(argv: list[str] | None = None) -> int:
             burn_rate = float(os.environ.get("FAKE_COLAB_BURN_RATE_CCU_PER_H", "10.5"))
             base_bal = float(os.environ.get("FAKE_COLAB_BALANCE", "9.85"))
             bal = f"{max(0.0, base_bal - max(0.0, end_ts - open_ts) * (burn_rate / 3600.0)):.4f}"
-        post_count = 0
-        if session_opened:
-            post_count_file = state_dir / "post_open_usage_count.txt"
-            post_count = (
-                int(post_count_file.read_text(encoding="utf-8").strip())
-                if post_count_file.is_file()
-                else 0
-            )
-            post_count += 1
-            post_count_file.write_text(f"{post_count}\n", encoding="utf-8", newline="\n")
         pre_rate_str = os.environ.get("FAKE_COLAB_PRE_OPEN_RATE_STR")
         post_rate_seq_raw = os.environ.get("FAKE_COLAB_POST_OPEN_RATE_SEQ")
         post_rate_str = os.environ.get("FAKE_COLAB_POST_OPEN_RATE_STR")

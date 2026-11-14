@@ -38,6 +38,14 @@
 #   effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate
 #   Refuses CAP_TOO_SMALL_FOR_CLEANUP before any colab call when effective_trip <= 0 or when
 #   runtime_to_trip < --min-runtime-s; --dry prints the trip arithmetic and exits.
+# Bounded `colab usage` retry contract:
+#   COLAB_USAGE_POLL_ATTEMPTS_DEFAULT=3         (up to 3 attempts in all: 1 initial + 2 retries)
+#   COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT=30       (30 s timeout per `colab usage` attempt)
+#   COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT=5     (5 s `-k` SIGKILL grace -> 35 s max per attempt)
+#   COLAB_USAGE_POLL_BACKOFF_S_DEFAULT="2,4"    (2 s after attempt 1 fails; 4 s after attempt 2 fails)
+#   T_retry = COLAB_USAGE_RETRY_BOUND_S = 3 * (30 + 5) + 2 + 4 = 111 s
+#   Launch refuses CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY before any colab call when
+#   priced_rate * (T_retry / 3600) > margin / 2.
 set -euo pipefail
 
 COLAB_WINDOW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,6 +66,10 @@ COLAB_SESSIONS_TIMEOUT_S_DEFAULT=30
 COLAB_UPLOAD_CHUNK_BYTES_DEFAULT=33554432
 COLAB_DOWNLOAD_CHUNK_BYTES_DEFAULT=268435456
 COLAB_UPLOAD_REASSEMBLE_MB_S_DEFAULT=25
+COLAB_USAGE_POLL_ATTEMPTS_DEFAULT=3
+COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT=30
+COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT=5
+COLAB_USAGE_POLL_BACKOFF_S_DEFAULT="2,4"
 
 COLAB_CALLER_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S:-}"
 COLAB_CALLER_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S:-}"
@@ -114,9 +126,36 @@ export SALVAGE_DEADLINE_S="${SALVAGE_DEADLINE_S_DEFAULT}"
 export COLAB_STOP_TIMEOUT_S="${COLAB_STOP_TIMEOUT_S_DEFAULT}"
 export COLAB_STOP_ATTEMPTS="${COLAB_STOP_ATTEMPTS_DEFAULT}"
 export COLAB_SESSIONS_TIMEOUT_S="${COLAB_SESSIONS_TIMEOUT_S_DEFAULT}"
+export COLAB_USAGE_POLL_ATTEMPTS="${COLAB_USAGE_POLL_ATTEMPTS_DEFAULT}"
+export COLAB_USAGE_POLL_TIMEOUT_S="${COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT}"
+export COLAB_USAGE_POLL_KILL_GRACE_S="${COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT}"
+export COLAB_USAGE_POLL_BACKOFF_S="${COLAB_USAGE_POLL_BACKOFF_S_DEFAULT}"
 COLAB_CLEANUP_SIGNAL_COUNT=0
 COLAB_CLEANUP_SKIP_SALVAGE=0
 COLAB_SALVAGE_STEP_PID=""
+COLAB_LIVE_USAGE_POLL_PID=""
+
+# colab_usage_retry_bound_s: stated maximum duration T_retry (in seconds) of one bounded
+# `colab usage` retry sequence: attempts * (timeout_s + kill_grace_s) + backoffs between attempts
+# (default: 3 * (30 + 5) + 2 + 4 = 111 s).
+colab_usage_retry_bound_s() {
+  local attempts="${COLAB_USAGE_POLL_ATTEMPTS:-3}"
+  local timeout_s="${COLAB_USAGE_POLL_TIMEOUT_S:-30}"
+  local grace_s="${COLAB_USAGE_POLL_KILL_GRACE_S:-5}"
+  local backoffs="${COLAB_USAGE_POLL_BACKOFF_S:-2,4}"
+  awk -v a="${attempts}" -v t="${timeout_s}" -v g="${grace_s}" -v b="${backoffs}" 'BEGIN {
+    n = split(b, arr, ",");
+    sum_b = 0;
+    for (i = 1; i <= a - 1; i++) {
+      v = (i <= n && arr[i] != "") ? (arr[i] + 0) : ((n > 0 && arr[n] != "") ? (arr[n] + 0) : 0);
+      if (v > 0) sum_b += v;
+    }
+    total = a * (t + g) + sum_b;
+    if (total == int(total)) printf "%d\n", total;
+    else printf "%.6f\n", total;
+  }'
+}
+export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
 
 # colab_salvage_steps_sum_s: the worst-case wall of one post-failure salvage, from the environment:
 # restart-kernel + bundle-now exec + every download step. A single-part bundle is one GET. A
@@ -378,6 +417,19 @@ colab_apply_test_cleanup_overrides() {
   if [ -n "${SDLAB_TEST_SESSIONS_TIMEOUT_S:-}" ]; then
     export COLAB_SESSIONS_TIMEOUT_S="${SDLAB_TEST_SESSIONS_TIMEOUT_S}"
   fi
+  if [ -n "${SDLAB_TEST_USAGE_POLL_ATTEMPTS:-}" ]; then
+    export COLAB_USAGE_POLL_ATTEMPTS="${SDLAB_TEST_USAGE_POLL_ATTEMPTS}"
+  fi
+  if [ -n "${SDLAB_TEST_USAGE_POLL_TIMEOUT_S:-}" ]; then
+    export COLAB_USAGE_POLL_TIMEOUT_S="${SDLAB_TEST_USAGE_POLL_TIMEOUT_S}"
+  fi
+  if [ -n "${SDLAB_TEST_USAGE_POLL_KILL_GRACE_S:-}" ]; then
+    export COLAB_USAGE_POLL_KILL_GRACE_S="${SDLAB_TEST_USAGE_POLL_KILL_GRACE_S}"
+  fi
+  if [ -n "${SDLAB_TEST_USAGE_POLL_BACKOFF_S:-}" ]; then
+    export COLAB_USAGE_POLL_BACKOFF_S="${SDLAB_TEST_USAGE_POLL_BACKOFF_S}"
+  fi
+  export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
   local step_sum
   step_sum="$(colab_salvage_steps_sum_s)"
   if [ -n "${SDLAB_TEST_SALVAGE_DEADLINE_S:-}" ]; then
@@ -436,6 +488,7 @@ colab_compute_cleanup_bounds() {
   export COLAB_PREP_EXEC_BOUND_S="${prep_exec_s}"
   export COLAB_CLEANUP_STOP_ATTEMPTED_BY_S="${cleanup_stop_attempted_by_s}"
   export COLAB_CLEANUP_BOUND_S=$(( cleanup_stop_attempted_by_s + stop_bound_s ))
+  export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
 }
 
 # colab_run_bounded <timeout_s> <kill_grace_s> <cmd> [args...]: run a command under `timeout -k`
@@ -523,14 +576,59 @@ os.execvp("timeout", ["timeout", "-k", sys.argv[1], sys.argv[2], *sys.argv[3:]])
   return "${step_rc}"
 }
 
+# colab_kill_pid_subtree <py_bin> <root_pid>: SIGKILL <root_pid> and its entire /proc descendant
+# tree (including nested subshells, `timeout -k`, and `colab` children), then reap <root_pid>.
+colab_kill_pid_subtree() {
+  local py_bin="$1"
+  local root_pid="${2:-}"
+  [ -n "${root_pid}" ] || return 0
+  "${py_bin}" - "${root_pid}" << 'PYEOF' 2>/dev/null || true
+import os, signal, sys
+from pathlib import Path
+
+root = int(sys.argv[1])
+self_pid = os.getpid()
+children: dict[int, list[int]] = {}
+for stat_p in Path("/proc").glob("[0-9]*/stat"):
+    try:
+        data = stat_p.read_text(encoding="utf-8")
+        pid_s, rest = data.split(" (", 1)
+        ppid_s = rest.rsplit(") ", 1)[1].split()[1]
+        children.setdefault(int(ppid_s), []).append(int(pid_s))
+    except Exception:
+        continue
+out: list[int] = []
+seen: set[int] = set()
+stack = [root]
+while stack:
+    cur = stack.pop()
+    if cur in seen or cur == self_pid:
+        continue
+    seen.add(cur)
+    out.append(cur)
+    stack.extend(children.get(cur, []))
+for pid in reversed(out):
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except OSError:
+        pass
+PYEOF
+  kill -9 "${root_pid}" 2>/dev/null || true
+  wait "${root_pid}" 2>/dev/null || true
+}
+
 # colab_enter_cleanup_trap <out_dir>: arm cleanup signal handling and record the cleanup start
 # epoch (`time.time()` float seconds, matching wall_trip_epoch.txt) in cleanup_started.txt
 # at the very top of `cleanup_on_exit` (before post-failure salvage) so `colab_run_wall_watcher`
 # knows the main shell entered cleanup and waits up to COLAB_CLEANUP_STOP_ATTEMPTED_BY_S for salvage.
 colab_enter_cleanup_trap() {
   local out_dir="$1"
+  local py_bin="${PY_BIN:-$(colab_resolve_python)}"
+  if [ -n "${COLAB_LIVE_USAGE_POLL_PID:-}" ]; then
+    colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+    COLAB_LIVE_USAGE_POLL_PID=""
+  fi
   if [ -n "${out_dir}" ] && [ -d "${out_dir}" ] && [ ! -f "${out_dir}/cleanup_started.txt" ]; then
-    local py_bin="${PY_BIN:-$(colab_resolve_python)}"
     "${py_bin}" -c 'import sys, time; open(sys.argv[1], "w", encoding="utf-8").write(f"{time.time():.6f}\n")' "${out_dir}/cleanup_started.txt" 2>/dev/null \
       || date -u +%s > "${out_dir}/cleanup_started.txt"
   fi
@@ -2440,9 +2538,21 @@ colab_verify_input_shas() {
   "${py_bin}" "${guards_py}" "${args[@]}" </dev/null
 }
 
+# colab_poll_usage_and_ram <py_bin> <out_dir> [closing]: poll `colab usage` with bounded retry.
+# When `closing != "1"`, retries a non-zero exit or unparseable reading up to
+# COLAB_USAGE_POLL_ATTEMPTS (default 3) attempts in all under `colab_run_bounded`
+# (default 30 s timeout + 5 s SIGKILL grace = 35 s max per attempt) with COLAB_USAGE_POLL_BACKOFF_S
+# (default 2 s, 4 s -> T_retry = 111 s max total blind time).
+#   - Non-final failures leave balance/rate/error state files untouched (no stale pass) and log
+#     `USAGE_POLL_RETRY` to guards.log.
+#   - A recovery on attempt 2..N logs `USAGE_POLL_RECOVERED` to guards.log before returning metrics.
+#   - Final failure writes the last attempt's error to usage_parse_error.txt and fails closed.
+#   - When `closing == "1"` (best-effort post-stop poll), runs 1 attempt with no retry log lines
+#     and never touches usage_parse_error.txt or unlinks end_balance.txt.
 colab_poll_usage_and_ram() {
   local py_bin="$1"
   local out_dir="$2"
+  local closing="${3:-0}"
   local fault_mode="${SDLAB_FAULT_POLL_HELPER:-}"
   if [ -f "${out_dir}/start_balance.txt" ] && [ -n "${SDLAB_FAULT_POLL_HELPER_MIDRUN:-}" ]; then
     fault_mode="${SDLAB_FAULT_POLL_HELPER_MIDRUN}"
@@ -2459,15 +2569,35 @@ colab_poll_usage_and_ram() {
   local guards_py
   guards_py="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launch_guards.py"
 
-  local usage_text=""
-  local usage_rc=0
-  # Bounded: a hung `colab usage` cannot stretch a poll (or the live guard loop) past 30 s.
-  usage_text="$(colab_run_bounded 30 5 colab usage 2>>"${out_dir}/colab.log")" || usage_rc=$?
-  printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
+  local max_attempts="${COLAB_USAGE_POLL_ATTEMPTS:-3}"
+  local base_timeout_s="${COLAB_USAGE_POLL_TIMEOUT_S:-30}"
+  local base_grace_s="${COLAB_USAGE_POLL_KILL_GRACE_S:-5}"
+  local backoff_csv="${COLAB_USAGE_POLL_BACKOFF_S:-2,4}"
+  local retry_bound_s
+  retry_bound_s="$(colab_usage_retry_bound_s)"
+  if [ "${closing}" = "1" ]; then
+    max_attempts=1
+  fi
+  local IFS_SAVE="${IFS}"
+  local backoff_arr=()
+  IFS=',' read -r -a backoff_arr <<< "${backoff_csv}"
+  IFS="${IFS_SAVE}"
 
-  "${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_CARD_CLASS:?the kit must set COLAB_CARD_CLASS to gpu or cpu}" << 'PYEOF'
+  local poll_t0
+  poll_t0="$("${py_bin}" -c 'import time; print(f"{time.monotonic():.6f}")')"
+  local attempt=1
+  while [ "${attempt}" -le "${max_attempts}" ]; do
+    local is_final=0
+    [ "${attempt}" -ge "${max_attempts}" ] && is_final=1
+
+    local usage_text=""
+    local usage_rc=0
+    usage_text="$(colab_run_bounded "${base_timeout_s}" "${base_grace_s}" colab usage 2>>"${out_dir}/colab.log")" || usage_rc=$?
+    printf '%s\n' "${usage_text}" >> "${out_dir}/usage.log"
+
+    local py_out=""
+    py_out="$("${py_bin}" - "${out_dir}" "${default_rate}" "${usage_rc}" "${usage_text}" "${guards_py}" "${COLAB_CARD_CLASS:?the kit must set COLAB_CARD_CLASS to gpu or cpu}" "${is_final}" "${closing}" << 'PYEOF'
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -2477,6 +2607,8 @@ usage_rc = int(sys.argv[3])
 raw_usage = sys.argv[4]
 guards_py = Path(sys.argv[5])
 card_class = sys.argv[6]
+is_final = sys.argv[7] == "1"
+is_closing = sys.argv[8] == "1"
 
 sys.path.insert(0, str(guards_py.parent))
 import launch_guards as lg
@@ -2517,11 +2649,6 @@ try:
         pre_open_rate=existing_pre,
     )
 except lg.RateUnread as exc:
-    # A GPU window without a positive live rate. Before the open there is no window to price, so
-    # only the balance and the pre-open reading are kept (projection 0). After the open it is
-    # RATE_UNREAD: the post-open rate read treats it as "not yet" and polls again; the live cap
-    # check refuses RATE_UNREAD. (Once a positive live rate has been read, parse_usage_text keeps
-    # it, so a later reading of 0.00 never gets here.)
     part = exc.partial
     rate_unread = session_opened
     parsed = {
@@ -2535,6 +2662,15 @@ except lg.RateUnread as exc:
         "error": None,
     }
 
+if not parsed["ok"]:
+    err_msg = " ".join(str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED").split())
+    if is_closing:
+        print("CLOSING_FAIL\tNONE NONE 0.0 COLAB_USAGE_PARSE_FAILED")
+        raise SystemExit(0)
+    if not is_final:
+        print(f"RETRY\t{err_msg}")
+        raise SystemExit(0)
+
 if card_class == "gpu" and session_opened:
     import json as _json
     from datetime import datetime, timezone
@@ -2546,12 +2682,15 @@ if card_class == "gpu" and session_opened:
     max_rate = _read_float(out_dir / "max_rate.txt")
     if parsed.get("ok"):
         import time as _time
-        state = lg.update_window_rate(state, account_rate=parsed.get("rate_measured"),
-                                      pre_open_rate=existing_pre,
-                                      at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                      epoch=_time.time(),
-                                      assignments=lg.parse_active_assignments(raw_usage),
-                                      min_gap_s=float(os.environ.get("COLAB_RATE_READ_INTERVAL_S", lg.RATE_STABLE_GAP_S)))
+        state = lg.update_window_rate(
+            state,
+            account_rate=parsed.get("rate_measured"),
+            pre_open_rate=existing_pre,
+            at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            epoch=_time.time(),
+            assignments=lg.parse_active_assignments(raw_usage),
+            min_gap_s=float(os.environ.get("COLAB_RATE_READ_INTERVAL_S", lg.RATE_STABLE_GAP_S)),
+        )
         state_f.write_text(_json.dumps(state, indent=2) + "\n", encoding="utf-8", newline="\n")
     if max_rate is not None:
         parsed["rate_for_projection"] = lg.gpu_projection_rate(state, max_rate)
@@ -2575,7 +2714,10 @@ if parsed["ok"]:
         rate_f.write_text(f"{parsed['rate_measured_pre_open']}\n", encoding="utf-8", newline="\n")
     rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
+    if not is_closing and err_f.exists():
+        err_f.unlink()
     err_tok = "RATE_UNREAD" if rate_unread else "NONE"
+    print(f"OK\t{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok}")
 else:
     err_msg = str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED")
     err_f.write_text(f"{err_msg}\n", encoding="utf-8", newline="\n")
@@ -2585,13 +2727,50 @@ else:
     cur_bal_str = "NONE"
     rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
-    err_tok = "COLAB_USAGE_PARSE_FAILED"
-
-# The host-RAM reading is not taken here: the RAM check reads vitals.log itself
-# (launch_guards.py --check-ram --ram-vitals-file, host_ram_status), so no default value can stand
-# in for a VM reading.
-print(f"{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok}")
+    print(f"FAIL\t{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} COLAB_USAGE_PARSE_FAILED")
 PYEOF
+)"
+    local status_tag="${py_out%%$'\t'*}"
+    local payload="${py_out#*$'\t'}"
+    if [ "${status_tag}" = "OK" ]; then
+      if [ "${closing}" != "1" ] && [ "${attempt}" -gt 1 ] && [ -d "${out_dir}" ]; then
+        local rec_elapsed
+        rec_elapsed="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.monotonic() - float(sys.argv[1])):.3f}")' "${poll_t0}")"
+        echo "USAGE_POLL_RECOVERED attempt=${attempt}/${max_attempts} elapsed_s=${rec_elapsed} retry_bound_s=${retry_bound_s}" >> "${out_dir}/guards.log"
+      fi
+      printf '%s\n' "${payload}"
+      return 0
+    fi
+    if [ "${status_tag}" = "RETRY" ]; then
+      local b_idx=$((attempt - 1))
+      local raw_backoff="0"
+      if [ "${#backoff_arr[@]}" -gt 0 ]; then
+        if [ "${b_idx}" -lt "${#backoff_arr[@]}" ]; then
+          raw_backoff="${backoff_arr[${b_idx}]}"
+        else
+          raw_backoff="${backoff_arr[$(( ${#backoff_arr[@]} - 1 ))]}"
+        fi
+      fi
+      local timing_pair
+      timing_pair="$("${py_bin}" -c '
+import sys, time
+t0, bound, raw_b = float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3] or 0.0)
+elapsed = max(0.0, time.monotonic() - t0)
+sleep_s = max(0.0, min(raw_b, bound - elapsed))
+print(f"{elapsed:.3f} {sleep_s:.3f}")
+' "${poll_t0}" "${retry_bound_s}" "${raw_backoff}")"
+      local retry_elapsed="${timing_pair%% *}"
+      local sleep_s="${timing_pair#* }"
+      if [ -d "${out_dir}" ]; then
+        echo "USAGE_POLL_RETRY attempt=${attempt}/${max_attempts} next_backoff_s=${sleep_s} elapsed_s=${retry_elapsed} retry_bound_s=${retry_bound_s} rc=${usage_rc} reason=${payload}" >> "${out_dir}/guards.log"
+      fi
+      "${py_bin}" -c 'import sys, time; s = float(sys.argv[1]); time.sleep(s) if s > 0 else None' "${sleep_s}" </dev/null
+      attempt=$((attempt + 1))
+      continue
+    fi
+    printf '%s\n' "${payload}"
+    return 0
+  done
 }
 
 # colab_read_post_open_rate <py> <out_dir> <polls> <interval_s> <max_rate>: right after a GPU window
@@ -2686,7 +2865,7 @@ PYEOF
   fi
 }
 
-colab_check_cap_and_ram() {
+colab_evaluate_cap_and_ram_from_metrics() {
   local py_bin="$1"
   local guards_py="$2"
   local mode="$3"
@@ -2696,10 +2875,9 @@ colab_check_cap_and_ram() {
   local cap="$7"
   local margin="$8"
   local out_dir="$9"
+  local poll_rc="${10}"
+  local metrics="${11}"
 
-  local metrics=""
-  local poll_rc=0
-  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || poll_rc=$?
   local start_bal="" cur_bal="" rate_val="" err_tok=""
   if [ "${poll_rc}" -ne 0 ]; then
     err_tok="COLAB_USAGE_PARSE_FAILED"
@@ -2771,6 +2949,25 @@ colab_check_cap_and_ram() {
     colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
     return "${ram_rc}"
   fi
+}
+
+colab_check_cap_and_ram() {
+  local py_bin="$1"
+  local guards_py="$2"
+  local mode="$3"
+  local elapsed_s="$4"
+  local wall_s="$5"
+  local grace_s="$6"
+  local cap="$7"
+  local margin="$8"
+  local out_dir="$9"
+
+  local metrics=""
+  local poll_rc=0
+  metrics="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || poll_rc=$?
+  colab_evaluate_cap_and_ram_from_metrics \
+    "${py_bin}" "${guards_py}" "${mode}" "${elapsed_s}" "${wall_s}" "${grace_s}" \
+    "${cap}" "${margin}" "${out_dir}" "${poll_rc}" "${metrics}"
 }
 
 # colab_refuse_from_guard_record <py> <out_dir> <guard stdout> <fallback CODE>: a guard that exited
@@ -2847,11 +3044,49 @@ colab_run_exec_with_live_guards() {
   EXEC_PID="$!"
   printf '%s\n' "${EXEC_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
 
+  local usage_metrics_file="${out_dir}/.live_usage_metrics.txt"
+  local usage_rc_file="${out_dir}/.live_usage_rc.txt"
+  COLAB_LIVE_USAGE_POLL_PID=""
+
   while kill -0 "${EXEC_PID}" 2>/dev/null; do
     sleep "${poll_s}"
     if ! kill -0 "${EXEC_PID}" 2>/dev/null; then
       break
     fi
+
+    local poll_just_launched=0
+    if [ -z "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+      rm -f "${usage_metrics_file}" "${usage_rc_file}"
+      (
+        trap - EXIT TERM INT
+        p_rc=0
+        p_out=""
+        p_out="$(colab_poll_usage_and_ram "${py_bin}" "${out_dir}")" || p_rc=$?
+        printf '%s\n' "${p_out}" > "${usage_metrics_file}"
+        printf '%s\n' "${p_rc}" > "${usage_rc_file}"
+      ) >/dev/null 2>&1 </dev/null &
+      COLAB_LIVE_USAGE_POLL_PID="$!"
+      printf '%s\n' "${COLAB_LIVE_USAGE_POLL_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
+      poll_just_launched=1
+    fi
+
+    # Fast path when `colab usage` answers promptly; if it hangs or enters retry backoff past
+    # `poll_s`, do not block the local wall, host-RAM, or vitals/stall guards and do not emit any
+    # cap check on stale data.
+    if [ "${poll_just_launched}" = "1" ] && kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; then
+      "${py_bin}" - "${COLAB_LIVE_USAGE_POLL_PID}" "${poll_s}" << 'PYEOF' </dev/null 2>/dev/null || true
+import os, sys, time
+pid, limit_s = int(sys.argv[1]), max(0.05, float(sys.argv[2]))
+deadline = time.monotonic() + limit_s
+while time.monotonic() < deadline:
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        break
+    time.sleep(min(0.05, max(0.01, deadline - time.monotonic())))
+PYEOF
+    fi
+
     local now_epoch elapsed_s cur_size idle_s cur_setup_bytes setup_idle_s run_only_bytes
     now_epoch="$(date -u +%s)"
     if [ -f "${out_dir}/session_open_epoch.txt" ]; then
@@ -2860,14 +3095,57 @@ colab_run_exec_with_live_guards() {
       elapsed_s="$((now_epoch - start_epoch))"
     fi
 
-    local check_rc=0
-    colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}" || check_rc=$?
-    if [ "${check_rc}" -ne 0 ]; then
-      pkill -P "${EXEC_PID}" 2>/dev/null || true
-      kill -9 "${EXEC_PID}" 2>/dev/null || true
-      wait "${EXEC_PID}" 2>/dev/null || true
-      EXEC_PID=""
-      return 91
+    if kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; then
+      local wall_only_rc=0 wall_only_out=""
+      wall_only_out="$("${py_bin}" "${guards_py}" --check-wall-only --mode live --elapsed-s "${elapsed_s}" --wall-s "${wall_s}" --grace-s "${grace_s}" </dev/null)" || wall_only_rc=$?
+      [ -n "${wall_only_out}" ] && printf '%s\n' "${wall_only_out}" >> "${out_dir}/guards.log"
+      if [ "${wall_only_rc}" -ne 0 ]; then
+        colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${wall_only_out}" WALL_GUARD_TRIPPED
+        colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+        COLAB_LIVE_USAGE_POLL_PID=""
+        colab_kill_pid_subtree "${py_bin}" "${EXEC_PID}"
+        EXEC_PID=""
+        return 91
+      fi
+      local live_ram_rc=0 live_ram_out=""
+      live_ram_out="$("${py_bin}" "${guards_py}" --check-ram --projected-delta-mb "${PROJECTED_DELTA_MB:-2048}" --ram-vitals-file "${out_dir}/vitals.log" </dev/null)" || live_ram_rc=$?
+      [ -n "${live_ram_out}" ] && printf '%s\n' "${live_ram_out}" >> "${out_dir}/guards.log"
+      if [ "${live_ram_rc}" -ne 0 ]; then
+        colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${live_ram_out}" GUARD_FAILED
+        colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+        COLAB_LIVE_USAGE_POLL_PID=""
+        colab_kill_pid_subtree "${py_bin}" "${EXEC_PID}"
+        EXEC_PID=""
+        return 91
+      fi
+    else
+      wait "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null || true
+      COLAB_LIVE_USAGE_POLL_PID=""
+      local done_poll_rc=0 done_metrics=""
+      if [ -f "${usage_rc_file}" ]; then
+        done_poll_rc="$(tr -d '[:space:]' < "${usage_rc_file}" 2>/dev/null || echo 1)"
+      else
+        done_poll_rc=1
+      fi
+      if [ -f "${usage_metrics_file}" ]; then
+        done_metrics="$(cat "${usage_metrics_file}" 2>/dev/null || true)"
+      fi
+      rm -f "${usage_metrics_file}" "${usage_rc_file}"
+      now_epoch="$(date -u +%s)"
+      if [ -f "${out_dir}/session_open_epoch.txt" ]; then
+        elapsed_s="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((now_epoch - start_epoch))")"
+      else
+        elapsed_s="$((now_epoch - start_epoch))"
+      fi
+      local check_rc=0
+      colab_evaluate_cap_and_ram_from_metrics \
+        "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" \
+        "${cap}" "${margin}" "${out_dir}" "${done_poll_rc}" "${done_metrics}" || check_rc=$?
+      if [ "${check_rc}" -ne 0 ]; then
+        colab_kill_pid_subtree "${py_bin}" "${EXEC_PID}"
+        EXEC_PID=""
+        return 91
+      fi
     fi
 
     # Run output only: every vitals line the emitters print is skipped (launch_guards.VITALS_LINE_PREFIXES,
@@ -2906,9 +3184,11 @@ colab_run_exec_with_live_guards() {
     [ -n "${vitals_out}" ] && printf '%s\n' "${vitals_out}" >> "${out_dir}/guards.log"
     if [ "${vitals_rc}" -ne 0 ]; then
       colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${vitals_out}" GUARD_FAILED
-      pkill -P "${EXEC_PID}" 2>/dev/null || true
-      kill -9 "${EXEC_PID}" 2>/dev/null || true
-      wait "${EXEC_PID}" 2>/dev/null || true
+      if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+        colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+        COLAB_LIVE_USAGE_POLL_PID=""
+      fi
+      colab_kill_pid_subtree "${py_bin}" "${EXEC_PID}"
       EXEC_PID=""
       return 93
     fi
@@ -2923,6 +3203,11 @@ colab_run_exec_with_live_guards() {
   local marker_line=""
   marker_line="$(grep -E '^SDLAB_REMOTE_RC=-?[0-9]+$' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | tr -d '\r' || true)"
   if [ -z "${marker_line}" ]; then
+    if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+      colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+      COLAB_LIVE_USAGE_POLL_PID=""
+    fi
+    rm -f "${usage_metrics_file}" "${usage_rc_file}"
     echo "REFUSED: SDLAB_REMOTE_RC marker missing from vitals.log (colab exec_rc=${exec_rc})" >> "${out_dir}/guards.log"
     if [ "${exec_rc}" -ne 0 ]; then
       return "${exec_rc}"
@@ -2931,6 +3216,11 @@ colab_run_exec_with_live_guards() {
   fi
   local remote_rc="${marker_line#SDLAB_REMOTE_RC=}"
   if [ "${remote_rc}" -ne 0 ]; then
+    if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+      colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+      COLAB_LIVE_USAGE_POLL_PID=""
+    fi
+    rm -f "${usage_metrics_file}" "${usage_rc_file}"
     echo "REFUSED: remote runner reported SDLAB_REMOTE_RC=${remote_rc}" >> "${out_dir}/guards.log"
     return "${remote_rc}"
   fi
@@ -2939,9 +3229,58 @@ colab_run_exec_with_live_guards() {
   final_vitals_out="$("${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null)" || final_vitals_rc=$?
   [ -n "${final_vitals_out}" ] && printf '%s\n' "${final_vitals_out}" >> "${out_dir}/guards.log"
   if [ "${final_vitals_rc}" -ne 0 ]; then
+    if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+      colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+      COLAB_LIVE_USAGE_POLL_PID=""
+    fi
+    rm -f "${usage_metrics_file}" "${usage_rc_file}"
     colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${final_vitals_out}" GUARD_FAILED
     return 93
   fi
+
+  if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+    while kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; do
+      sleep "${poll_s}"
+      if ! kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; then
+        break
+      fi
+      local post_now post_elapsed post_wall_rc=0 post_wall_out=""
+      post_now="$(date -u +%s)"
+      if [ -f "${out_dir}/session_open_epoch.txt" ]; then
+        post_elapsed="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((post_now - start_epoch))")"
+      else
+        post_elapsed="$((post_now - start_epoch))"
+      fi
+      post_wall_out="$("${py_bin}" "${guards_py}" --check-wall-only --mode live --elapsed-s "${post_elapsed}" --wall-s "${wall_s}" --grace-s "${grace_s}" </dev/null)" || post_wall_rc=$?
+      [ -n "${post_wall_out}" ] && printf '%s\n' "${post_wall_out}" >> "${out_dir}/guards.log"
+      if [ "${post_wall_rc}" -ne 0 ]; then
+        colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${post_wall_out}" WALL_GUARD_TRIPPED
+        colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+        COLAB_LIVE_USAGE_POLL_PID=""
+        rm -f "${usage_metrics_file}" "${usage_rc_file}"
+        return 91
+      fi
+    done
+    wait "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null || true
+    COLAB_LIVE_USAGE_POLL_PID=""
+    local tail_poll_rc=0 tail_metrics=""
+    if [ -f "${usage_rc_file}" ]; then
+      tail_poll_rc="$(tr -d '[:space:]' < "${usage_rc_file}" 2>/dev/null || echo 1)"
+    else
+      tail_poll_rc=1
+    fi
+    if [ -f "${usage_metrics_file}" ]; then
+      tail_metrics="$(cat "${usage_metrics_file}" 2>/dev/null || true)"
+    fi
+    rm -f "${usage_metrics_file}" "${usage_rc_file}"
+    local tail_epoch tail_elapsed
+    tail_epoch="$(date -u +%s)"
+    tail_elapsed="$((tail_epoch - start_epoch))"
+    colab_evaluate_cap_and_ram_from_metrics \
+      "${py_bin}" "${guards_py}" "live" "${tail_elapsed}" "${wall_s}" "${grace_s}" \
+      "${cap}" "${margin}" "${out_dir}" "${tail_poll_rc}" "${tail_metrics}" || return $?
+  fi
+
   local end_epoch elapsed_final
   end_epoch="$(date -u +%s)"
   elapsed_final="$((end_epoch - start_epoch))"
@@ -3061,7 +3400,7 @@ colab_stop_and_log_closing() {
   if colab_rc_is_timeout "${sess_rc}"; then
     echo "SESSIONS_TIMEOUT session=${session} timeout_s=${sessions_timeout} kill_grace_s=${kill_grace} rc=${sess_rc}" >> "${out_dir}/guards.log"
   fi
-  colab_poll_usage_and_ram "${py_bin}" "${out_dir}" >/dev/null 2>&1 || true
+  colab_poll_usage_and_ram "${py_bin}" "${out_dir}" 1 >/dev/null 2>&1 || true
 }
 
 # True when the card names a CPU runtime (no GPU): the kits' CPU-high-mem default, or CPU.
@@ -3193,6 +3532,7 @@ colab_dry_cap_budget() {
     "--cap" "${cap}"
     "--margin" "${margin}"
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
+    "--usage-retry-bound-s" "${COLAB_USAGE_RETRY_BOUND_S}"
     "--rate" "${priced_rate}"
     "--max-rate" "${eff_max_rate}"
   )
@@ -3207,8 +3547,9 @@ colab_dry_cap_budget() {
 }
 
 # colab_cap_budget_gate <py_bin> <guards_py> <out_dir> <lane> <card> <cap> <margin> <max_rate> <default_rate> <min_runtime_s>:
-# refuse CAP_TOO_SMALL_FOR_CLEANUP before any colab call when cap - margin - cleanup_reserve <= 0
-# or when the cap leaves less runtime than --min-runtime-s.
+# refuse CAP_TOO_SMALL_FOR_CLEANUP or CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY before any colab call
+# when cap - margin - cleanup_reserve <= 0, runtime_to_trip < --min-runtime-s, or
+# priced_rate * (T_retry / 3600) > margin / 2.
 colab_cap_budget_gate() {
   local py_bin="$1"
   local guards_py="$2"
@@ -3236,6 +3577,7 @@ colab_cap_budget_gate() {
     "--cap" "${cap}"
     "--margin" "${margin}"
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
+    "--usage-retry-bound-s" "${COLAB_USAGE_RETRY_BOUND_S}"
     "--rate" "${priced_rate}"
     "--max-rate" "${eff_max_rate}"
   )
@@ -4153,6 +4495,7 @@ REFUSAL_CODES = (
     "MAX_RATE_REQUIRED",
     "TRAIN_MAX_RATE_REQUIRED",
     "CAP_TOO_SMALL_FOR_CLEANUP",
+    "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY",
     "TRAIN_SAMPLE_MISSING",
     "TRAIN_WALL_REQUIRED",
     "TRAIN_CAP_REQUIRED",
@@ -4557,6 +4900,10 @@ stop_bound_s = stop_attempts * (stop_timeout_s + kill_grace_s)
 salvage_bound_s = min(salvage_steps_sum_s, salvage_deadline_s) if lane == "train" else 0
 cleanup_stop_attempted_by_s = in_flight_bound_s + salvage_bound_s
 cleanup_bound_s = cleanup_stop_attempted_by_s + stop_bound_s
+usage_retry_bound_raw = float(os.environ.get("COLAB_USAGE_RETRY_BOUND_S", "111"))
+usage_retry_bound_s: int | float = (
+    int(usage_retry_bound_raw) if usage_retry_bound_raw == int(usage_retry_bound_raw) else round(usage_retry_bound_raw, 6)
+)
 stop_path_raw = read_text_file(out_dir / "stop_path.txt")
 stop_path = stop_path_raw if stop_path_raw in ("trap", "watcher") else "trap"
 watcher_wait_raw = read_text_file(out_dir / "watcher_wait.txt")
@@ -4639,6 +4986,7 @@ window_payload = {
     "salvage_bundle_download": salvage_bundle_download,
     "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
     "cleanup_bound_s": cleanup_bound_s,
+    "usage_retry_bound_s": usage_retry_bound_s,
     "stop_path": stop_path,
     "watcher_wait": watcher_wait,
     "phase": cap_trip_phase if cap_trip_phase else ("live" if (out_dir / "session_opened.txt").is_file() else "pre_open"),

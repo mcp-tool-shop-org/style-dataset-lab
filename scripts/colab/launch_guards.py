@@ -444,6 +444,45 @@ CAP_TRIP_FORMULA = (
     "effective_trip = cap - margin - cleanup_reserve; cleanup_reserve = (cleanup_bound_s / 3600) * priced_rate"
 )
 
+# Bounded `colab usage` poll retry rule:
+#   up to 3 attempts in all, each under `colab_run_bounded 30 5 colab usage` (30 s timeout + 5 s
+#   SIGKILL grace = 35 s max per attempt), with 2 s and 4 s backoffs between failed attempts:
+#     T_retry = 3 * (30 + 5) + 2 + 4 = 111 s.
+#   Blind-window spend at `priced_rate` must stay within half the cap margin:
+#     priced_rate * (T_retry / 3600) <= margin_ccu / 2.
+#   For G4 at 10.05/hr with margin 1.0: 10.05 * (111 / 3600) = 0.309875 <= 0.5 (fits with 0.190125 headroom).
+USAGE_POLL_ATTEMPTS = 3
+USAGE_POLL_TIMEOUT_S = 30
+USAGE_POLL_KILL_GRACE_S = 5
+USAGE_POLL_BACKOFF_S = (2, 4)
+USAGE_RETRY_BOUND_S = (
+    USAGE_POLL_ATTEMPTS * (USAGE_POLL_TIMEOUT_S + USAGE_POLL_KILL_GRACE_S)
+    + sum(USAGE_POLL_BACKOFF_S[: max(0, USAGE_POLL_ATTEMPTS - 1)])
+)
+
+
+def compute_usage_retry_budget(
+    *,
+    priced_rate: float,
+    margin: float,
+    usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
+) -> dict[str, Any]:
+    bound_raw = max(0.0, float(usage_retry_bound_s))
+    bound_val: int | float = int(bound_raw) if bound_raw == int(bound_raw) else round(bound_raw, 6)
+    rate_v = max(0.0, float(priced_rate))
+    margin_v = round(float(margin), 6)
+    spend_units = round((bound_raw / 3600.0) * rate_v, 6)
+    half_margin_units = round(margin_v / 2.0, 6)
+    min_margin_units = round(2.0 * spend_units, 6)
+    fits = bool(margin_v > 0.0 and spend_units <= half_margin_units)
+    return {
+        "usage_retry_bound_s": bound_val,
+        "usage_retry_spend_units": spend_units,
+        "usage_retry_half_margin_units": half_margin_units,
+        "usage_retry_min_margin_units": min_margin_units,
+        "fits": fits,
+    }
+
 
 def compute_cap_trip(
     cap: float,
@@ -477,6 +516,7 @@ def evaluate_cap_budget(
     priced_rate: float,
     max_rate: float | None = None,
     min_runtime_s: float | None = None,
+    usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
 ) -> dict[str, Any]:
     trip = compute_cap_trip(cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=priced_rate)
     eff_max_rate = round(float(max_rate), 6) if max_rate is not None else trip["priced_rate"]
@@ -486,6 +526,9 @@ def evaluate_cap_budget(
     bound_s = trip["cleanup_bound_s"]
     cap_v = trip["cap_ccu"]
     margin_v = trip["margin_ccu"]
+    retry_budget = compute_usage_retry_budget(
+        priced_rate=p_rate, margin=margin_v, usage_retry_bound_s=usage_retry_bound_s
+    )
 
     runtime_at_priced_rate_s = round((effective_trip / p_rate) * 3600.0, 2) if p_rate > 0.0 else 0.0
     runtime_at_max_rate_s = (
@@ -526,6 +569,15 @@ def evaluate_cap_budget(
             f"(cleanup_bound_s {bound_s} / 3600 * priced_rate {p_rate}/h) = {effective_trip} units "
             f"leaves {runtime_at_priced_rate_s} s at {p_rate}/h < --min-runtime-s {min_rt} s"
         )
+    elif not retry_budget["fits"]:
+        tripped = True
+        code = "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
+        why = (
+            f"usage_retry_spend = priced_rate {p_rate}/h * (T_retry {retry_budget['usage_retry_bound_s']} s / 3600) "
+            f"= {retry_budget['usage_retry_spend_units']} units > margin / 2 = "
+            f"{retry_budget['usage_retry_half_margin_units']} units "
+            f"(margin {margin_v}; need --margin >= {retry_budget['usage_retry_min_margin_units']})"
+        )
 
     rec: dict[str, Any] = {
         "check": "cap_budget",
@@ -540,6 +592,10 @@ def evaluate_cap_budget(
         "cleanup_bound_s": bound_s,
         "priced_rate": p_rate,
         "max_rate": eff_max_rate,
+        "usage_retry_bound_s": retry_budget["usage_retry_bound_s"],
+        "usage_retry_spend_units": retry_budget["usage_retry_spend_units"],
+        "usage_retry_half_margin_units": retry_budget["usage_retry_half_margin_units"],
+        "usage_retry_min_margin_units": retry_budget["usage_retry_min_margin_units"],
         "reserve": cleanup_reserve,
         "cleanup_reserve": cleanup_reserve,
         "cleanup_reserve_units": cleanup_reserve,
@@ -580,6 +636,11 @@ def format_dry_cap_budget(rec: dict[str, Any]) -> str:
         f"cleanup_bound_s: {rec['cleanup_bound_s']}",
         f"priced_rate: {rec['priced_rate']}/h",
         f"max_rate: {rec['max_rate']}/h",
+        f"usage_retry_bound_s (T_retry): {rec['usage_retry_bound_s']}",
+        (
+            f"usage_retry_blind_bound: {rec['usage_retry_spend_units']} "
+            f"({rec['usage_retry_bound_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
+        ),
         f"reserve (cleanup_reserve): {rec['cleanup_reserve_units']} ({rec['cleanup_bound_s']} / 3600 * {rec['priced_rate']})",
         f"effective_trip: {rec['effective_trip_units']} ({rec['cap']} - {rec['margin']} - {rec['cleanup_reserve_units']})",
         f"runtime_to_trip (priced_rate {rec['priced_rate']}/h): {rec['runtime_at_priced_rate_s']} s",
@@ -1422,12 +1483,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--wall-s", type=float, default=3000.0)
     parser.add_argument("--grace-s", type=float, default=60.0)
     parser.add_argument("--cap", type=float, default=0.05)
-    parser.add_argument("--margin", type=float, default=0.01)
+    parser.add_argument("--margin", type=float, default=0.02)
     parser.add_argument("--cleanup-bound-s", type=float, default=0.0)
+    parser.add_argument(
+        "--usage-retry-bound-s",
+        type=float,
+        default=USAGE_RETRY_BOUND_S,
+        help="Worst-case colab usage retry blind window T_retry in seconds",
+    )
     parser.add_argument("--rate", type=float, default=0.0)
     parser.add_argument("--max-rate", type=float, default=None)
     parser.add_argument("--min-runtime-s", type=float, default=None)
     parser.add_argument("--check-cap-budget", action="store_true", help="Check cap budget against cleanup reserve and --min-runtime-s")
+    parser.add_argument("--check-wall-only", action="store_true", help="Evaluate only the local wall guard while usage poll retries are in flight")
     parser.add_argument("--dry", action="store_true", help="Print cap trip arithmetic and exit")
     parser.add_argument("--start-balance", type=float, default=None)
     parser.add_argument("--current-balance", type=float, default=None)
@@ -1472,6 +1540,7 @@ def main(argv: list[str] | None = None) -> int:
             priced_rate=priced_rate,
             max_rate=max_rate_val,
             min_runtime_s=args.min_runtime_s,
+            usage_retry_bound_s=args.usage_retry_bound_s,
         )
         if args.dry:
             print(format_dry_cap_budget(rec))
@@ -1585,6 +1654,21 @@ def main(argv: list[str] | None = None) -> int:
             vit["refusal"] = {"code": vit["code"], "why": vit["reason"]}
         print(json.dumps(vit))
         return 1 if vit["tripped"] else 0
+
+    if args.check_wall_only:
+        wall = evaluate_wall_guard(mode=args.mode, elapsed_s=args.elapsed_s, wall_s=args.wall_s, grace_s=args.grace_s)
+        out_wall: dict[str, Any] = {"check": "wall_only", "wall": wall}
+        if args.phase is not None:
+            out_wall["phase"] = args.phase
+        if args.checkpoint is not None:
+            out_wall["checkpoint"] = args.checkpoint
+        if wall["tripped"]:
+            out_wall["refusal"] = {
+                "code": wall["code"],
+                "why": f"wall guard: {wall['remaining_s']} s remaining of threshold {wall['threshold_s']} s (wall - grace)",
+            }
+        print(json.dumps(out_wall))
+        return 1 if wall["tripped"] else 0
 
     wall = evaluate_wall_guard(mode=args.mode, elapsed_s=args.elapsed_s, wall_s=args.wall_s, grace_s=args.grace_s)
     cap = evaluate_cap_guard(

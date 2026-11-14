@@ -646,3 +646,115 @@ def test_missing_harness_phase_refuses_vitals_phase_unreadable_never_setup() -> 
     )
     assert res_waiting["tripped"] is False
     assert res_waiting["code"] is None
+
+
+def test_usage_retry_budget_g4_arithmetic_and_wall_only_cli(capsys: pytest.CaptureFixture[str]) -> None:
+    assert lg.USAGE_POLL_ATTEMPTS == 3
+    assert lg.USAGE_POLL_TIMEOUT_S == 30
+    assert lg.USAGE_POLL_KILL_GRACE_S == 5
+    assert lg.USAGE_POLL_BACKOFF_S == (2, 4)
+    assert lg.USAGE_RETRY_BOUND_S == 111
+
+    g4_ok = lg.compute_usage_retry_budget(priced_rate=10.05, margin=1.0)
+    assert g4_ok == {
+        "usage_retry_bound_s": 111,
+        "usage_retry_spend_units": 0.309875,
+        "usage_retry_half_margin_units": 0.5,
+        "usage_retry_min_margin_units": 0.61975,
+        "fits": True,
+    }
+
+    g4_refuse = lg.evaluate_cap_budget(
+        cap=5.0,
+        margin=0.60,
+        cleanup_bound_s=450.0,
+        priced_rate=10.05,
+        max_rate=10.05,
+    )
+    assert g4_refuse["tripped"] is True
+    assert g4_refuse["code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
+    assert g4_refuse["usage_retry_spend_units"] == 0.309875
+    assert g4_refuse["usage_retry_half_margin_units"] == 0.3
+    assert g4_refuse["usage_retry_min_margin_units"] == 0.61975
+    assert g4_refuse["refusal"]["code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
+
+    rc_refuse = lg.main(
+        [
+            "--check-cap-budget",
+            "--cap",
+            "5.0",
+            "--margin",
+            "0.60",
+            "--cleanup-bound-s",
+            "450",
+            "--rate",
+            "10.05",
+            "--max-rate",
+            "10.05",
+        ]
+    )
+    assert rc_refuse == 2
+    captured_refuse = capsys.readouterr()
+    assert "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY" in captured_refuse.err
+
+    rc_dry_ok = lg.main(
+        [
+            "--dry",
+            "--cap",
+            "5.0",
+            "--margin",
+            "1.0",
+            "--cleanup-bound-s",
+            "450",
+            "--rate",
+            "10.05",
+            "--max-rate",
+            "10.05",
+        ]
+    )
+    assert rc_dry_ok == 0
+    captured_dry = capsys.readouterr()
+    assert "usage_retry_bound_s (T_retry): 111" in captured_dry.out
+
+    rc_wall_quiet = lg.main(
+        [
+            "--check-wall-only",
+            "--mode",
+            "live",
+            "--phase",
+            "live",
+            "--checkpoint",
+            "usage_retry",
+            "--elapsed-s",
+            "10",
+            "--wall-s",
+            "900",
+            "--grace-s",
+            "60",
+        ]
+    )
+    assert rc_wall_quiet == 0
+    wall_quiet_rec = json.loads(capsys.readouterr().out.strip())
+    assert wall_quiet_rec["check"] == "wall_only"
+    assert "cap" not in wall_quiet_rec
+    assert wall_quiet_rec["wall"]["tripped"] is False
+
+    rc_wall_trip = lg.main(
+        [
+            "--check-wall-only",
+            "--mode",
+            "live",
+            "--elapsed-s",
+            "850",
+            "--wall-s",
+            "900",
+            "--grace-s",
+            "60",
+        ]
+    )
+    assert rc_wall_trip == 1
+    wall_trip_rec = json.loads(capsys.readouterr().out.strip())
+    assert wall_trip_rec["check"] == "wall_only"
+    assert "cap" not in wall_trip_rec
+    assert wall_trip_rec["refusal"]["code"] == "WALL_GUARD_TRIPPED"
+
