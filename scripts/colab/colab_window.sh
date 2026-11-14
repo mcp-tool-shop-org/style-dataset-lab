@@ -43,9 +43,26 @@
 #   COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT=30       (30 s timeout per `colab usage` attempt)
 #   COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT=5     (5 s `-k` SIGKILL grace -> 35 s max per attempt)
 #   COLAB_USAGE_POLL_BACKOFF_S_DEFAULT="2,4"    (2 s after attempt 1 fails; 4 s after attempt 2 fails)
-#   T_retry = COLAB_USAGE_RETRY_BOUND_S = 3 * (30 + 5) + 2 + 4 = 111 s
+#   T_retry = COLAB_USAGE_RETRY_BOUND_S = 3 * (30 + 5) + 2 + 4 = 111 s (one retry sequence; the bound holds
+#                                               because every attempt and backoff is bounded, not because of
+#                                               the backoff clamp, which only shortens a sleep)
+#   COLAB_USAGE_DECISION_SLACK_S_DEFAULT=2      (parse and timing Python runs plus the tick's guards; measured
+#                                                under 1 s per sequence on the rig)
+#   blind_interval_s = COLAB_USAGE_BLIND_INTERVAL_S = T_retry + 2 * poll_s + slack_s = 111 + 2 * 2 + 2 = 117 s
+#                                               (from one live cap decision to the next: the tick slept before
+#                                                the poll launches, the retry sequence, the parse, and up to one
+#                                                tick before the loop sees the poll exit; poll_s =
+#                                                GUARD_POLL_INTERVAL_S, default 2 s)
+#   usage_poll_deadline_s = COLAB_USAGE_POLL_DEADLINE_S = T_retry + slack_s = 113 s
+#                                               (a live poll still in flight past it fails closed with
+#                                                COLAB_USAGE_PARSE_FAILED, so a `colab usage` that never returns
+#                                                cannot stretch the blind interval)
 #   Launch refuses CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY before any colab call when
-#   priced_rate * (T_retry / 3600) > margin / 2.
+#   priced_rate * (blind_interval_s / 3600) > margin / 2.
+# Closing `colab usage` (one attempt, after `colab stop`): a success writes end_balance.txt and
+# end_balance_source.txt = closing_poll; a failure keeps the last live reading in end_balance.txt, marks
+# end_balance_source.txt = stale_after_failed_close and keeps its error in closing_usage_error.txt, apart
+# from the live usage_parse_error.txt.
 set -euo pipefail
 
 COLAB_WINDOW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,6 +87,7 @@ COLAB_USAGE_POLL_ATTEMPTS_DEFAULT=3
 COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT=30
 COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT=5
 COLAB_USAGE_POLL_BACKOFF_S_DEFAULT="2,4"
+COLAB_USAGE_DECISION_SLACK_S_DEFAULT=2
 
 COLAB_CALLER_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S:-}"
 COLAB_CALLER_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S:-}"
@@ -130,10 +148,12 @@ export COLAB_USAGE_POLL_ATTEMPTS="${COLAB_USAGE_POLL_ATTEMPTS_DEFAULT}"
 export COLAB_USAGE_POLL_TIMEOUT_S="${COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT}"
 export COLAB_USAGE_POLL_KILL_GRACE_S="${COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT}"
 export COLAB_USAGE_POLL_BACKOFF_S="${COLAB_USAGE_POLL_BACKOFF_S_DEFAULT}"
+export COLAB_USAGE_DECISION_SLACK_S="${COLAB_USAGE_DECISION_SLACK_S_DEFAULT}"
 COLAB_CLEANUP_SIGNAL_COUNT=0
 COLAB_CLEANUP_SKIP_SALVAGE=0
 COLAB_SALVAGE_STEP_PID=""
 COLAB_LIVE_USAGE_POLL_PID=""
+COLAB_LIVE_USAGE_POLL_T0=""
 
 # colab_usage_retry_bound_s: stated maximum duration T_retry (in seconds) of one bounded
 # `colab usage` retry sequence: attempts * (timeout_s + kill_grace_s) + backoffs between attempts
@@ -156,6 +176,29 @@ colab_usage_retry_bound_s() {
   }'
 }
 export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
+
+# colab_usage_blind_interval_s: the blind interval the margin gate prices, from one live cap decision
+# to the next: T_retry + 2 * poll_s + slack_s (default 111 + 2 * 2 + 2 = 117 s), with poll_s the live
+# guard tick (GUARD_POLL_INTERVAL_S, default 2 s) and slack_s COLAB_USAGE_DECISION_SLACK_S.
+colab_usage_blind_interval_s() {
+  awk -v t="${COLAB_USAGE_RETRY_BOUND_S:-111}" -v p="${GUARD_POLL_INTERVAL_S:-2}" -v s="${COLAB_USAGE_DECISION_SLACK_S:-2}" 'BEGIN {
+    total = t + 2 * p + s;
+    if (total == int(total)) printf "%d\n", total;
+    else printf "%.6f\n", total;
+  }'
+}
+
+# colab_usage_poll_deadline_s: how long a live `colab usage` poll may stay in flight before the live
+# loop fails it closed: T_retry + slack_s (default 111 + 2 = 113 s).
+colab_usage_poll_deadline_s() {
+  awk -v t="${COLAB_USAGE_RETRY_BOUND_S:-111}" -v s="${COLAB_USAGE_DECISION_SLACK_S:-2}" 'BEGIN {
+    total = t + s;
+    if (total == int(total)) printf "%d\n", total;
+    else printf "%.6f\n", total;
+  }'
+}
+export COLAB_USAGE_BLIND_INTERVAL_S="$(colab_usage_blind_interval_s)"
+export COLAB_USAGE_POLL_DEADLINE_S="$(colab_usage_poll_deadline_s)"
 
 # colab_salvage_steps_sum_s: the worst-case wall of one post-failure salvage, from the environment:
 # restart-kernel + bundle-now exec + every download step. A single-part bundle is one GET. A
@@ -454,6 +497,8 @@ colab_apply_test_cleanup_overrides() {
     export COLAB_USAGE_POLL_BACKOFF_S="${SDLAB_TEST_USAGE_POLL_BACKOFF_S}"
   fi
   export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
+  export COLAB_USAGE_BLIND_INTERVAL_S="$(colab_usage_blind_interval_s)"
+  export COLAB_USAGE_POLL_DEADLINE_S="$(colab_usage_poll_deadline_s)"
   local step_sum
   step_sum="$(colab_salvage_steps_sum_s)"
   if [ -n "${SDLAB_TEST_SALVAGE_DEADLINE_S:-}" ]; then
@@ -513,6 +558,8 @@ colab_compute_cleanup_bounds() {
   export COLAB_CLEANUP_STOP_ATTEMPTED_BY_S="${cleanup_stop_attempted_by_s}"
   export COLAB_CLEANUP_BOUND_S=$(( cleanup_stop_attempted_by_s + stop_bound_s ))
   export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
+  export COLAB_USAGE_BLIND_INTERVAL_S="$(colab_usage_blind_interval_s)"
+  export COLAB_USAGE_POLL_DEADLINE_S="$(colab_usage_poll_deadline_s)"
 }
 
 # colab_run_bounded <timeout_s> <kill_grace_s> <cmd> [args...]: run a command under `timeout -k`
@@ -2571,13 +2618,17 @@ colab_verify_input_shas() {
 # When `closing != "1"`, retries a non-zero exit or unparseable reading up to
 # COLAB_USAGE_POLL_ATTEMPTS (default 3) attempts in all under `colab_run_bounded`
 # (default 30 s timeout + 5 s SIGKILL grace = 35 s max per attempt) with COLAB_USAGE_POLL_BACKOFF_S
-# (default 2 s, 4 s -> T_retry = 111 s max total blind time).
+# (default 2 s, 4 s -> T_retry = 111 s for one sequence; the blind interval the margin gate prices is
+# T_retry + 2 * poll_s + slack_s, COLAB_USAGE_BLIND_INTERVAL_S, 117 s by default).
 #   - Non-final failures leave balance/rate/error state files untouched (no stale pass) and log
 #     `USAGE_POLL_RETRY` to guards.log.
 #   - A recovery on attempt 2..N logs `USAGE_POLL_RECOVERED` to guards.log before returning metrics.
 #   - Final failure writes the last attempt's error to usage_parse_error.txt and fails closed.
 #   - When `closing == "1"` (best-effort post-stop poll), runs 1 attempt with no retry log lines
-#     and never touches usage_parse_error.txt or unlinks end_balance.txt.
+#     and never touches usage_parse_error.txt or unlinks end_balance.txt. A success marks
+#     end_balance_source.txt = closing_poll. A failure keeps the last live reading in end_balance.txt,
+#     marks it end_balance_source.txt = stale_after_failed_close (when there is one) and writes its
+#     error to closing_usage_error.txt.
 colab_poll_usage_and_ram() {
   local py_bin="$1"
   local out_dir="$2"
@@ -2694,6 +2745,14 @@ except lg.RateUnread as exc:
 if not parsed["ok"]:
     err_msg = " ".join(str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED").split())
     if is_closing:
+        # Keep the last live reading as the end balance, but mark it: the closing read failed, so
+        # end_balance.txt predates the stop. The closing error has its own file, apart from the live
+        # usage_parse_error.txt.
+        (out_dir / "closing_usage_error.txt").write_text(f"{err_msg}\n", encoding="utf-8", newline="\n")
+        if end_f.exists():
+            (out_dir / "end_balance_source.txt").write_text(
+                "stale_after_failed_close\n", encoding="utf-8", newline="\n"
+            )
         print("CLOSING_FAIL\tNONE NONE 0.0 COLAB_USAGE_PARSE_FAILED")
         raise SystemExit(0)
     if not is_final:
@@ -2745,6 +2804,8 @@ if parsed["ok"]:
     rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
     if not is_closing and err_f.exists():
         err_f.unlink()
+    if is_closing:
+        (out_dir / "end_balance_source.txt").write_text("closing_poll\n", encoding="utf-8", newline="\n")
     err_tok = "RATE_UNREAD" if rate_unread else "NONE"
     print(f"OK\t{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} {err_tok}")
 else:
@@ -3095,6 +3156,75 @@ print(code + "\t" + why)
   colab_refuse_logged "${out_dir}" "${code}" "${why}"
 }
 
+# colab_live_usage_poll_deadline_check <py_bin> <guards_py> <out_dir> <elapsed_s> <wall_s> <grace_s> <cap> <margin>:
+# the in-flight deadline on the live `colab usage` poll (COLAB_LIVE_USAGE_POLL_PID, launched at
+# COLAB_LIVE_USAGE_POLL_T0 on the monotonic clock). Returns 0 while the poll is within
+# COLAB_USAGE_POLL_DEADLINE_S (T_retry + slack_s) of its launch. Past it, the poll may never return (a
+# child that escaped `timeout` holds its stdout), so the cap is failing blind: kill the poll's subtree,
+# write the overrun to usage_parse_error.txt, and fail the cap guard closed with COLAB_USAGE_PARSE_FAILED
+# (returns 1; the caller ends the exec and the EXIT trap stops this window's own session).
+# The check fails closed itself: a poll in flight (PID set) with no recorded launch time
+# (reason=launch_time_missing), or a clock check that exits non-zero or prints no verdict
+# (reason=clock_check_failed), counts as overdue. No PID means no poll in flight and returns 0.
+colab_live_usage_poll_deadline_check() {
+  local py_bin="$1"
+  local guards_py="$2"
+  local out_dir="$3"
+  local elapsed_s="$4"
+  local wall_s="$5"
+  local grace_s="$6"
+  local cap="$7"
+  local margin="$8"
+  [ -n "${COLAB_LIVE_USAGE_POLL_PID:-}" ] || return 0
+  local deadline_s="${COLAB_USAGE_POLL_DEADLINE_S:-113}"
+  local verdict="" reason="" in_flight_s="unknown"
+  if [ -z "${COLAB_LIVE_USAGE_POLL_T0:-}" ]; then
+    reason="launch_time_missing"
+  else
+    verdict="$("${py_bin}" -c '
+import sys, time
+in_flight = max(0.0, time.monotonic() - float(sys.argv[1]))
+print(("OVERDUE " if in_flight > float(sys.argv[2]) else "OK ") + f"{in_flight:.3f}")
+' "${COLAB_LIVE_USAGE_POLL_T0}" "${deadline_s}" </dev/null 2>/dev/null)" || verdict=""
+    case "${verdict}" in
+      "OK "*) return 0 ;;
+      "OVERDUE "*) reason="deadline_passed"; in_flight_s="${verdict#* }" ;;
+      *) reason="clock_check_failed" ;;
+    esac
+  fi
+  colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+  COLAB_LIVE_USAGE_POLL_PID=""
+  COLAB_LIVE_USAGE_POLL_T0=""
+  rm -f "${out_dir}/.live_usage_metrics.txt" "${out_dir}/.live_usage_rc.txt"
+  echo "USAGE_POLL_DEADLINE_EXCEEDED in_flight_s=${in_flight_s} deadline_s=${deadline_s} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111} slack_s=${COLAB_USAGE_DECISION_SLACK_S:-2} reason=${reason}" >> "${out_dir}/guards.log"
+  case "${reason}" in
+    deadline_passed)
+      printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll still in flight after %s s, past its deadline of %s s (T_retry %s s + slack %s s)\n' \
+        "${in_flight_s}" "${deadline_s}" "${COLAB_USAGE_RETRY_BOUND_S:-111}" "${COLAB_USAGE_DECISION_SLACK_S:-2}" > "${out_dir}/usage_parse_error.txt"
+      ;;
+    launch_time_missing)
+      printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll in flight with no recorded launch time, so its %s s deadline cannot be checked; failing closed\n' \
+        "${deadline_s}" > "${out_dir}/usage_parse_error.txt"
+      ;;
+    *)
+      printf 'COLAB_USAGE_PARSE_FAILED: the deadline check on the live colab usage poll failed (the clock check exited non-zero or printed no verdict); failing closed\n' \
+        > "${out_dir}/usage_parse_error.txt"
+      ;;
+  esac
+  local start_tok="NONE"
+  if [ -s "${out_dir}/start_balance.txt" ]; then
+    start_tok="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt")"
+  fi
+  colab_evaluate_cap_and_ram_from_metrics \
+    "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" \
+    "${cap}" "${margin}" "${out_dir}" 0 "${start_tok} NONE 0.0 COLAB_USAGE_PARSE_FAILED" || true
+  # The evaluator trips on the parse error; whatever it returned, the cap cannot be read, so fail closed.
+  if ! grep -q '^REFUSED: ' "${out_dir}/guards.log" 2>/dev/null; then
+    colab_refuse_logged "${out_dir}" COLAB_USAGE_PARSE_FAILED "$(cat "${out_dir}/usage_parse_error.txt")"
+  fi
+  return 1
+}
+
 # colab_live_usage_guard_tick <py_bin> <guards_py> <out_dir> <start_epoch> <wall_s> <grace_s> <cap> <margin> <poll_s> [launch]:
 # one tick of the asynchronous live `colab usage` poll from #83, run by the detached poll loop after each
 # successful remote poll (launch=1, the default: start a usage sequence when none is in flight) and after a
@@ -3131,7 +3261,10 @@ colab_live_usage_guard_tick() {
       printf '%s\n' "${p_rc}" > "${usage_rc_file}"
     ) >/dev/null 2>&1 </dev/null &
     COLAB_LIVE_USAGE_POLL_PID="$!"
+    # A failed clock read leaves T0 empty; the deadline check then counts the poll overdue.
+    COLAB_LIVE_USAGE_POLL_T0="$("${py_bin}" -c 'import time; print(f"{time.monotonic():.6f}")  # live poll T0' </dev/null 2>/dev/null)" || COLAB_LIVE_USAGE_POLL_T0=""
     printf '%s\n' "${COLAB_LIVE_USAGE_POLL_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
+    echo "USAGE_POLL_LAUNCHED pid=${COLAB_LIVE_USAGE_POLL_PID} deadline_s=${COLAB_USAGE_POLL_DEADLINE_S:-113} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111}" >> "${out_dir}/guards.log"
     poll_just_launched=1
   fi
 
@@ -3168,6 +3301,7 @@ PYEOF
       colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${wall_only_out}" WALL_GUARD_TRIPPED
       colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
       COLAB_LIVE_USAGE_POLL_PID=""
+      COLAB_LIVE_USAGE_POLL_T0=""
       COLAB_LIVE_TICK_RC=91
       return 0
     fi
@@ -3178,12 +3312,20 @@ PYEOF
       colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${live_ram_out}" GUARD_FAILED
       colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
       COLAB_LIVE_USAGE_POLL_PID=""
+      COLAB_LIVE_USAGE_POLL_T0=""
+      COLAB_LIVE_TICK_RC=91
+      return 0
+    fi
+    # #84's in-flight deadline, on every tick a read is in flight (after a successful or a failed remote
+    # poll): past T_retry + slack_s the read is killed and the cap fails closed (COLAB_USAGE_PARSE_FAILED).
+    if ! colab_live_usage_poll_deadline_check "${py_bin}" "${guards_py}" "${out_dir}" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}"; then
       COLAB_LIVE_TICK_RC=91
       return 0
     fi
   else
     wait "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null || true
     COLAB_LIVE_USAGE_POLL_PID=""
+    COLAB_LIVE_USAGE_POLL_T0=""
     local done_poll_rc=0 done_metrics=""
     if [ -f "${usage_rc_file}" ]; then
       done_poll_rc="$(tr -d '[:space:]' < "${usage_rc_file}" 2>/dev/null || echo 1)"
@@ -3555,9 +3697,13 @@ colab_run_exec_with_live_guards() {
         rm -f "${usage_metrics_file}" "${usage_rc_file}"
         return 91
       fi
+      if ! colab_live_usage_poll_deadline_check "${py_bin}" "${guards_py}" "${out_dir}" "${post_elapsed}" "${wall_s}" "${grace_s}" "${cap}" "${margin}"; then
+        return 91
+      fi
     done
     wait "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null || true
     COLAB_LIVE_USAGE_POLL_PID=""
+    COLAB_LIVE_USAGE_POLL_T0=""
     local tail_poll_rc=0 tail_metrics=""
     if [ -f "${usage_rc_file}" ]; then
       tail_poll_rc="$(tr -d '[:space:]' < "${usage_rc_file}" 2>/dev/null || echo 1)"
@@ -3828,6 +3974,7 @@ colab_dry_cap_budget() {
     "--margin" "${margin}"
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
     "--usage-retry-bound-s" "${COLAB_USAGE_RETRY_BOUND_S}"
+    "--usage-blind-interval-s" "${COLAB_USAGE_BLIND_INTERVAL_S}"
     "--rate" "${priced_rate}"
     "--max-rate" "${eff_max_rate}"
   )
@@ -3844,7 +3991,7 @@ colab_dry_cap_budget() {
 # colab_cap_budget_gate <py_bin> <guards_py> <out_dir> <lane> <card> <cap> <margin> <max_rate> <default_rate> <min_runtime_s>:
 # refuse CAP_TOO_SMALL_FOR_CLEANUP or CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY before any colab call
 # when cap - margin - cleanup_reserve <= 0, runtime_to_trip < --min-runtime-s, or
-# priced_rate * (T_retry / 3600) > margin / 2.
+# priced_rate * (blind_interval_s / 3600) > margin / 2 (blind_interval_s = T_retry + 2 * poll_s + slack_s).
 colab_cap_budget_gate() {
   local py_bin="$1"
   local guards_py="$2"
@@ -3873,6 +4020,7 @@ colab_cap_budget_gate() {
     "--margin" "${margin}"
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
     "--usage-retry-bound-s" "${COLAB_USAGE_RETRY_BOUND_S}"
+    "--usage-blind-interval-s" "${COLAB_USAGE_BLIND_INTERVAL_S}"
     "--rate" "${priced_rate}"
     "--max-rate" "${eff_max_rate}"
   )
@@ -5201,6 +5349,33 @@ usage_retry_bound_raw = float(os.environ.get("COLAB_USAGE_RETRY_BOUND_S", "111")
 usage_retry_bound_s: int | float = (
     int(usage_retry_bound_raw) if usage_retry_bound_raw == int(usage_retry_bound_raw) else round(usage_retry_bound_raw, 6)
 )
+
+
+def _int_or_round(raw: float) -> int | float:
+    return int(raw) if raw == int(raw) else round(raw, 6)
+
+
+guard_poll_interval_s = _int_or_round(float(os.environ.get("GUARD_POLL_INTERVAL_S", "2") or "2"))
+usage_decision_slack_s = _int_or_round(float(os.environ.get("COLAB_USAGE_DECISION_SLACK_S", "2") or "2"))
+usage_blind_interval_s = _int_or_round(
+    float(
+        os.environ.get("COLAB_USAGE_BLIND_INTERVAL_S")
+        or (usage_retry_bound_raw + 2 * float(guard_poll_interval_s) + float(usage_decision_slack_s))
+    )
+)
+usage_poll_deadline_s = _int_or_round(
+    float(os.environ.get("COLAB_USAGE_POLL_DEADLINE_S") or (usage_retry_bound_raw + float(usage_decision_slack_s)))
+)
+end_balance_value = read_float_file(out_dir / "end_balance.txt")
+end_balance_source_raw = read_text_file(out_dir / "end_balance_source.txt")
+if end_balance_value is None:
+    end_balance_source = None
+elif end_balance_source_raw in ("closing_poll", "stale_after_failed_close"):
+    end_balance_source = end_balance_source_raw
+else:
+    # No closing poll ran (or it left no mark): the end balance is the last live reading.
+    end_balance_source = "last_live_poll"
+closing_usage_error = read_text_file(out_dir / "closing_usage_error.txt")
 stop_path_raw = read_text_file(out_dir / "stop_path.txt")
 stop_path = stop_path_raw if stop_path_raw in ("trap", "watcher") else "trap"
 watcher_wait_raw = read_text_file(out_dir / "watcher_wait.txt")
@@ -5284,6 +5459,10 @@ window_payload = {
     "cleanup_stop_attempted_by_s": cleanup_stop_attempted_by_s,
     "cleanup_bound_s": cleanup_bound_s,
     "usage_retry_bound_s": usage_retry_bound_s,
+    "usage_blind_interval_s": usage_blind_interval_s,
+    "usage_poll_deadline_s": usage_poll_deadline_s,
+    "guard_poll_interval_s": guard_poll_interval_s,
+    "usage_decision_slack_s": usage_decision_slack_s,
     "stop_path": stop_path,
     "watcher_wait": watcher_wait,
     "phase": cap_trip_phase if cap_trip_phase else ("live" if (out_dir / "session_opened.txt").is_file() else "pre_open"),
@@ -5293,7 +5472,9 @@ window_payload = {
     "cap_trip_formula": cap_trip_formula,
     "formula": cap_trip_formula,
     "start_balance": read_float_file(out_dir / "start_balance.txt"),
-    "end_balance": read_float_file(out_dir / "end_balance.txt"),
+    "end_balance": end_balance_value,
+    "end_balance_source": end_balance_source,
+    "closing_usage_error": closing_usage_error,
     "rate_measured": rate_measured,
     "rate_measured_pre_open": rate_measured_pre_open,
     "rate_measured_post_open": rate_measured_post_open,

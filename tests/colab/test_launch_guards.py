@@ -1543,15 +1543,32 @@ def test_usage_retry_budget_g4_arithmetic_and_wall_only_cli(capsys: pytest.Captu
     assert lg.USAGE_POLL_KILL_GRACE_S == 5
     assert lg.USAGE_POLL_BACKOFF_S == (2, 4)
     assert lg.USAGE_RETRY_BOUND_S == 111
+    # Blind interval the gate prices: T_retry + 2 * poll_s + slack_s = 111 + 2 * 2 + 2 = 117 s.
+    assert lg.GUARD_POLL_INTERVAL_S_DEFAULT == 2
+    assert lg.USAGE_DECISION_SLACK_S == 2
+    assert lg.USAGE_BLIND_INTERVAL_S == 117
+    assert lg.usage_blind_interval_s(9, 0.4, 2) == 11.8
 
     g4_ok = lg.compute_usage_retry_budget(priced_rate=10.05, margin=1.0)
     assert g4_ok == {
         "usage_retry_bound_s": 111,
-        "usage_retry_spend_units": 0.309875,
+        "usage_blind_interval_s": 117,
+        "usage_retry_spend_units": 0.326625,
         "usage_retry_half_margin_units": 0.5,
-        "usage_retry_min_margin_units": 0.61975,
+        "usage_retry_min_margin_units": 0.65325,
         "fits": True,
     }
+    # An explicit blind interval (the shell passes --usage-blind-interval-s) is priced as given.
+    explicit = lg.compute_usage_retry_budget(priced_rate=10.05, margin=1.0, usage_blind_interval=120)
+    assert explicit["usage_blind_interval_s"] == 120
+    assert explicit["usage_retry_spend_units"] == 0.335
+    # 16.0/hr fitted margin 1.0 at T_retry alone (0.493333) but not at the blind interval (0.52).
+    g16 = lg.compute_usage_retry_budget(priced_rate=16.0, margin=1.0)
+    assert g16["usage_retry_spend_units"] == 0.52
+    assert g16["fits"] is False
+    # The highest rate that fits margin 1.0: 0.5 * 3600 / 117 = 15.384615/hr.
+    assert lg.compute_usage_retry_budget(priced_rate=15.38, margin=1.0)["fits"] is True
+    assert lg.compute_usage_retry_budget(priced_rate=15.39, margin=1.0)["fits"] is False
 
     g4_refuse = lg.evaluate_cap_budget(
         cap=5.0,
@@ -1562,9 +1579,10 @@ def test_usage_retry_budget_g4_arithmetic_and_wall_only_cli(capsys: pytest.Captu
     )
     assert g4_refuse["tripped"] is True
     assert g4_refuse["code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
-    assert g4_refuse["usage_retry_spend_units"] == 0.309875
+    assert g4_refuse["usage_retry_spend_units"] == 0.326625
+    assert g4_refuse["usage_blind_interval_s"] == 117
     assert g4_refuse["usage_retry_half_margin_units"] == 0.3
-    assert g4_refuse["usage_retry_min_margin_units"] == 0.61975
+    assert g4_refuse["usage_retry_min_margin_units"] == 0.65325
     assert g4_refuse["refusal"]["code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
 
     rc_refuse = lg.main(
@@ -1604,6 +1622,27 @@ def test_usage_retry_budget_g4_arithmetic_and_wall_only_cli(capsys: pytest.Captu
     assert rc_dry_ok == 0
     captured_dry = capsys.readouterr()
     assert "usage_retry_bound_s (T_retry): 111" in captured_dry.out
+    assert "usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): 117" in captured_dry.out
+
+    rc_dry_explicit = lg.main(
+        [
+            "--dry",
+            "--cap",
+            "5.0",
+            "--margin",
+            "1.0",
+            "--cleanup-bound-s",
+            "450",
+            "--rate",
+            "10.05",
+            "--max-rate",
+            "10.05",
+            "--usage-blind-interval-s",
+            "120",
+        ]
+    )
+    assert rc_dry_explicit == 0
+    assert "usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): 120" in capsys.readouterr().out
 
     rc_wall_quiet = lg.main(
         [
