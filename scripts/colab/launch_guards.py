@@ -18,6 +18,7 @@ import contextlib
 import errno
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -735,7 +736,7 @@ def format_dry_cap_budget(rec: dict[str, Any]) -> str:
         f"detached_poll_lag_s (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s): {rec['detached_poll_lag_s']}",
         f"cap_check_interval_s (usage_blind_interval_s + detached_poll_lag_s): {rec['cap_check_interval_s']}",
         (
-            f"usage_retry_blind_bound: {rec['usage_retry_spend_units']} "
+            f"cap_check_interval_bound: {rec['usage_retry_spend_units']} "
             f"({rec['cap_check_interval_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
         ),
         f"reserve (cleanup_reserve): {rec['cleanup_reserve_units']} ({rec['cleanup_bound_s']} / 3600 * {rec['priced_rate']})",
@@ -855,32 +856,48 @@ def evaluate_offline_cap_projection(
     start_balance: float,
     cached_balance: float,
     balance_age_s: float,
+    card_class: str | None = None,
 ) -> dict[str, Any]:
     """The detached loop's cap check on a failed remote poll with no `colab usage` read in flight.
 
-    Trip-only: spend = max(cached drop, priced_rate * elapsed) at or above the ceiling refuses
-    (CAP_GUARD_TRIPPED). Below it the record is never a pass: its mode is `live_offline`, its
-    `balance_source` is `cached` with the balance's age in seconds, and `fresh_pass` is False.
-    A within-cap `"mode": "live"` record is written only on a fresh reading."""
+    Trip-only: spend = max(priced_rate * elapsed, cached drop + priced_rate * balance_age_s) at or above
+    the ceiling refuses (CAP_GUARD_TRIPPED). The second term grows the cached reading by this window's own
+    burn since it was taken, so a drop that already exceeds priced_rate * elapsed (other sessions on the
+    same account balance) does not freeze the projection. Below the ceiling the record is never a pass:
+    its mode is `live_offline`, its `balance_source` is `cached` with the balance's age in seconds, and
+    `fresh_pass` is False. A within-cap `"mode": "live"` record is written only on a fresh reading.
+    On a GPU window (card_class not "cpu"; unset counts as GPU) a rate that is not finite and positive
+    refuses RATE_UNREAD."""
+    rate_raw = float(rate_ccu_per_hour)
+    rate_ok = math.isfinite(rate_raw) and rate_raw > 0.0
+    is_cpu = (card_class or "").strip().lower() == "cpu"
+    rate_v = rate_raw if math.isfinite(rate_raw) else 0.0
     trip = compute_cap_trip(
-        cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=rate_ccu_per_hour
+        cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=max(0.0, rate_v)
     )
     ceiling = trip["ceiling_ccu"]
+    age_s = max(0.0, float(balance_age_s)) if math.isfinite(float(balance_age_s)) else float(elapsed_s)
     cached_drop = round(max(0.0, float(start_balance) - float(cached_balance)), 6)
-    projected = round(max(0.0, (float(rate_ccu_per_hour) * float(elapsed_s)) / 3600.0), 6)
-    spend = round(max(cached_drop, projected), 6)
-    tripped = spend >= ceiling
+    projected = round(max(0.0, (max(0.0, rate_v) * float(elapsed_s)) / 3600.0), 6)
+    aged_drop = round(cached_drop + (max(0.0, rate_v) * age_s) / 3600.0, 6)
+    spend = round(max(projected, aged_drop), 6)
+    if not rate_ok and not is_cpu:
+        tripped, code = True, "RATE_UNREAD"
+    else:
+        tripped = spend >= ceiling
+        code = "CAP_GUARD_TRIPPED" if tripped else None
     return {
         "mode": OFFLINE_CAP_MODE,
         "result": "trip" if tripped else "no_trip_projection",
         "fresh_pass": False,
         "tripped": tripped,
-        "code": "CAP_GUARD_TRIPPED" if tripped else None,
+        "code": code,
         "balance_source": "cached",
-        "balance_age_s": round(max(0.0, float(balance_age_s)), 3),
+        "balance_age_s": round(age_s, 3),
         "elapsed_s": round(float(elapsed_s), 6),
         "projected_spend_ccu": projected,
         "cached_drop_ccu": cached_drop,
+        "aged_drop_ccu": aged_drop,
         "spend_ccu": spend,
         "ceiling_ccu": ceiling,
         "cap_ccu": trip["cap_ccu"],
@@ -2186,15 +2203,15 @@ def main(argv: list[str] | None = None) -> int:
         "--usage-blind-interval-s",
         type=float,
         default=None,
-        help="Blind interval between live cap decisions (T_retry + 2 * poll_s + slack_s) that the margin "
-        "gate prices; default T_retry + 2 * 2 + 2",
+        help="Blind interval of one usage sequence (T_retry + 2 * poll_s + slack_s); the margin gate prices "
+        "the cap-check interval, this plus --detached-poll-lag-s; default T_retry + 2 * 2 + 2",
     )
     parser.add_argument(
         "--detached-poll-lag-s",
         type=float,
         default=None,
-        help="Detached-loop lag added to the blind interval (2 * (poll_retry_sleep_s + poll_exec_timeout_s) "
-        "+ kill_grace_s); default 2 * (5 + 30) + 10",
+        help="Detached-loop lag that, added to the blind interval, gives the cap-check interval the margin "
+        "gate prices (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s); default 2 * (5 + 30) + 10",
     )
     parser.add_argument("--rate", type=float, default=0.0)
     parser.add_argument("--max-rate", type=float, default=None)
@@ -2205,6 +2222,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Trip-only cap projection on cached balances (failed remote poll, no usage read in flight)")
     parser.add_argument("--balance-age-s", type=float, default=None,
                         help="Age in seconds of the cached balance (--check-offline-cap)")
+    parser.add_argument("--card-class", default=None,
+                        help="gpu or cpu (--check-offline-cap); unset counts as gpu, so a bad rate refuses")
     parser.add_argument("--dry", action="store_true", help="Print cap trip arithmetic and exit")
     parser.add_argument("--start-balance", type=float, default=None)
     parser.add_argument("--current-balance", type=float, default=None)
@@ -2414,6 +2433,7 @@ def main(argv: list[str] | None = None) -> int:
             start_balance=args.start_balance,
             cached_balance=args.current_balance,
             balance_age_s=args.balance_age_s,
+            card_class=args.card_class,
         )
         out_off: dict[str, Any] = {"check": "offline_cap", "cap": offline_cap}
         if args.phase is not None:
@@ -2421,15 +2441,19 @@ def main(argv: list[str] | None = None) -> int:
         if args.checkpoint is not None:
             out_off["checkpoint"] = args.checkpoint
         if offline_cap["tripped"]:
-            out_off["refusal"] = {
-                "code": offline_cap["code"],
-                "why": (
+            if offline_cap["code"] == "RATE_UNREAD":
+                why_off = (
+                    f"offline cap projection: a GPU window's priced rate {args.rate!r}/h is not finite and "
+                    "positive; it is not priced with a configured rate"
+                )
+            else:
+                why_off = (
                     f"offline cap projection: spend {offline_cap['spend_ccu']} ccu (max of priced_rate "
                     f"{offline_cap['priced_rate']}/h * elapsed {offline_cap['elapsed_s']} s and the cached drop "
-                    f"{offline_cap['cached_drop_ccu']}, balance {offline_cap['balance_age_s']} s old) "
-                    f">= ceiling {offline_cap['ceiling_ccu']} ccu"
-                ),
-            }
+                    f"{offline_cap['cached_drop_ccu']} + priced_rate * balance age {offline_cap['balance_age_s']} s "
+                    f"= {offline_cap['aged_drop_ccu']}) >= ceiling {offline_cap['ceiling_ccu']} ccu"
+                )
+            out_off["refusal"] = {"code": offline_cap["code"], "why": why_off}
         print(json.dumps(out_off))
         return 1 if offline_cap["tripped"] else 0
 

@@ -105,6 +105,7 @@ COLAB_POLL_EXEC_TIMEOUT_S_DEFAULT=30
 COLAB_POLL_MAX_RETRIES_DEFAULT=12
 COLAB_POLL_RETRY_SLEEP_S_DEFAULT=5
 COLAB_POLL_MAX_BYTES_DEFAULT=262144
+COLAB_POLL_OUTAGE_CEILING_S=300
 
 COLAB_CALLER_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S:-}"
 COLAB_CALLER_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S:-}"
@@ -3417,8 +3418,11 @@ PYEOF
 #   - the clock is recomputed from session_open_epoch.txt right before the checks (never the loop-top clock);
 #   - the wall is checked first and unconditionally (--check-wall-only);
 #   - start_balance.txt or end_balance.txt missing or unreadable is COLAB_USAGE_PARSE_FAILED (fail closed);
-#   - on a GPU window a missing, empty or non-positive rate_for_projection.txt is RATE_UNREAD (never 0.26);
-#   - the cap is a trip-only projection (--check-offline-cap): max(cached drop, priced_rate * elapsed) at or
+#   - on a GPU window (an unset or empty card class counts as GPU) a missing or empty rate_for_projection.txt,
+#     or a rate that is not finite and above zero however written, is RATE_UNREAD (never 0.26);
+#   - an unset or empty COLAB_CLEANUP_BOUND_S is GUARD_FAILED (never a ceiling without the cleanup reserve);
+#   - the cap is a trip-only projection (--check-offline-cap):
+#     max(priced_rate * elapsed, cached drop + priced_rate * balance_age_s) at or
 #     above the ceiling refuses CAP_GUARD_TRIPPED; below it the record is `"mode": "live_offline"` with
 #     `balance_source: cached`, the balance's age and `fresh_pass: false`, never a `"mode": "live"` pass;
 #   - the host-RAM guard runs as on the other ticks.
@@ -3462,15 +3466,27 @@ colab_offline_guard_tick() {
     return 0
   fi
 
+  # An unset or empty card class counts as GPU, so a bad rate refuses instead of taking the CPU rate.
+  local card_class_eff="${COLAB_CARD_CLASS:-}"
+  [ "${card_class_eff}" = "cpu" ] || card_class_eff="gpu"
   local cached_rate=""
   [ -f "${out_dir}/rate_for_projection.txt" ] && cached_rate="$(tr -d '[:space:]' < "${out_dir}/rate_for_projection.txt" 2>/dev/null || true)"
-  if ! [[ "${cached_rate}" =~ ^[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?$ ]] || [[ "${cached_rate}" =~ ^0+(\.0+)?$ ]]; then
-    if [ "${COLAB_CARD_CLASS:-}" = "gpu" ]; then
+  # A usable rate is a finite number above zero, however it is written (`0e0`, `1e-400` and `inf` are not).
+  if ! [[ "${cached_rate}" =~ ^[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?$ ]] \
+    || ! "${py_bin}" -c 'import math, sys; v = float(sys.argv[1]); sys.exit(0 if math.isfinite(v) and v > 0.0 else 1)' "${cached_rate}" </dev/null 2>/dev/null; then
+    if [ "${card_class_eff}" = "gpu" ]; then
       colab_refuse_logged "${out_dir}" RATE_UNREAD "offline guard: a GPU window's rate_for_projection.txt is missing, empty or not positive ('${cached_rate}') during a remote poll outage; it is not priced with a configured rate"
       COLAB_LIVE_TICK_RC=91
       return 0
     fi
     cached_rate="${RATE_CCU_PER_HOUR:-0.26}"
+  fi
+
+  # The cleanup reserve is part of the ceiling: an unset or empty bound refuses instead of reading as 0.
+  if ! [[ "${COLAB_CLEANUP_BOUND_S:-}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    colab_refuse_logged "${out_dir}" GUARD_FAILED "offline guard: COLAB_CLEANUP_BOUND_S is unset, empty or not a number ('${COLAB_CLEANUP_BOUND_S:-}'); the ceiling cannot reserve cleanup"
+    COLAB_LIVE_TICK_RC=91
+    return 0
   fi
 
   local balance_age_s
@@ -3483,11 +3499,12 @@ colab_offline_guard_tick() {
     --elapsed-s "${elapsed_s}" \
     --cap "${cap}" \
     --margin "${margin}" \
-    --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S:-0}" \
+    --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S}" \
     --rate "${cached_rate}" \
     --start-balance "${cached_start}" \
     --current-balance "${cached_cur}" \
-    --balance-age-s "${balance_age_s}" </dev/null)" || offline_rc=$?
+    --balance-age-s "${balance_age_s}" \
+    --card-class "${card_class_eff}" </dev/null)" || offline_rc=$?
   [ -n "${offline_out}" ] && printf '%s\n' "${offline_out}" >> "${out_dir}/guards.log"
   if [ "${offline_rc}" -ne 0 ]; then
     colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${offline_out}" GUARD_FAILED
@@ -3533,7 +3550,10 @@ colab_run_exec_with_live_guards() {
   [ "${poll_exec_t}" -gt "${dl_bound_s}" ] && poll_exec_t="${dl_bound_s}"
   local max_poll_retries="${COLAB_POLL_MAX_RETRIES:-12}"
   local poll_retry_sleep_s="${COLAB_POLL_RETRY_SLEEP_S:-5}"
+  # The outage bound is min(stall limit, 300 s): a larger stall setting never buys a longer blind outage.
+  # The SDLAB_TEST_POLL_OUTAGE_MAX_S override (fake-CLI test mode) is clamped the same way.
   local poll_outage_max_s="${COLAB_POLL_OUTAGE_MAX_S:-${stall_s}}"
+  [ "${poll_outage_max_s}" -gt "${COLAB_POLL_OUTAGE_CEILING_S}" ] && poll_outage_max_s="${COLAB_POLL_OUTAGE_CEILING_S}"
   local poll_max_bytes="${COLAB_POLL_MAX_BYTES:-262144}"
 
   local last_size=0

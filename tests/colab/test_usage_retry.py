@@ -461,7 +461,7 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
     assert "usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): 117" in dry_res.stdout
     assert "detached_poll_lag_s (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s): 80" in dry_res.stdout
     assert "cap_check_interval_s (usage_blind_interval_s + detached_poll_lag_s): 197" in dry_res.stdout
-    assert "usage_retry_blind_bound: 0.549958 (197 / 3600 * 10.05 <= margin/2 0.625)" in dry_res.stdout
+    assert "cap_check_interval_bound: 0.549958 (197 / 3600 * 10.05 <= margin/2 0.625)" in dry_res.stdout
 
     # 16.0/hr at margin 1.0: 16.0 * 197 / 3600 = 0.875556 > 0.5 refuses.
     dry_16 = _run_lane1(
