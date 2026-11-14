@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -862,7 +863,7 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
     env_blip["FAKE_COLAB_POLL_FAIL_CALLS"] = "2,3,4"
     env_blip["FAKE_COLAB_USAGE_FAIL_DURING_BLIP"] = "1"
     env_blip["SDLAB_TEST_POLL_RETRY_SLEEP_S"] = "0.1"
-    env_blip["SDLAB_TEST_USAGE_POLL_RETRY_SLEEP_S"] = "0.05"
+    env_blip["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "0.05,0.05"
     out_blip = tmp_path / "out_blip_ok"
     res_blip = subprocess.run(
         [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_blip), "--session", "sdlab-l1-blip-ok"],
@@ -878,9 +879,11 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
     assert "DETACHED_POLL_RETRY attempt=1/" in guards_blip
     assert "DETACHED_POLL_RETRY attempt=3/" in guards_blip
     assert "DETACHED_POLL_RECOVERED after_failures=3" in guards_blip
-    assert "USAGE_POLL_RETRY attempt=1/3 rc=1" in guards_blip
-    assert "USAGE_POLL_RETRY attempt=2/3 rc=1" in guards_blip
-    assert "COLAB_USAGE_PARSE_FAILED" not in guards_blip
+    assert re.search(r"^USAGE_POLL_RETRY attempt=1/3 .* rc=1 ", guards_blip, re.M)
+    assert re.search(r"^USAGE_POLL_RETRY attempt=2/3 .* rc=1 ", guards_blip, re.M)
+    assert "USAGE_POLL_RECOVERED attempt=3/3" in guards_blip
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_blip
+    assert '"code": "COLAB_USAGE_PARSE_FAILED"' not in guards_blip
     assert "STALL_GUARD_TRIPPED" not in guards_blip
     win_blip = json.loads((out_blip / "window.json").read_text(encoding="utf-8"))
     assert win_blip["refusal_code"] is None
@@ -913,9 +916,11 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
     # persistent start failure refuses with DETACHED_START_FAILED.
     _, state_s1, env_s1 = fc.make_fake_colab_env(tmp_path / "start_retry_ok_case")
     env_s1["FAKE_COLAB_START_FAIL_ONCE"] = "1"
-    env_s1["FAKE_COLAB_USAGE_FAIL_CALLS"] = "3,4"
+    # Calls 2 and 3 are the first post-open `colab usage` sequence (#83 polls asynchronously, so a short run
+    # makes fewer live calls than a synchronous poll per tick did); call 4 recovers on attempt 3.
+    env_s1["FAKE_COLAB_USAGE_FAIL_CALLS"] = "2,3"
     env_s1["SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S"] = "0.05"
-    env_s1["SDLAB_TEST_USAGE_POLL_RETRY_SLEEP_S"] = "0.05"
+    env_s1["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "0.05,0.05"
     out_s1 = tmp_path / "out_start_retry_ok"
     res_s1 = subprocess.run(
         [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_s1), "--session", "sdlab-l1-start-retry"],
@@ -929,9 +934,11 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
     assert res_s1.returncode == 0, f"STDOUT:\n{res_s1.stdout}\nSTDERR:\n{res_s1.stderr}"
     guards_s1 = (out_s1 / "guards.log").read_text(encoding="utf-8")
     assert "DETACHED_START_RETRY attempt=1/3" in guards_s1
-    assert "USAGE_POLL_RETRY attempt=1/3 rc=124" in guards_s1
-    assert "USAGE_POLL_RETRY attempt=2/3 rc=124" in guards_s1
-    assert "COLAB_USAGE_PARSE_FAILED" not in guards_s1
+    assert re.search(r"^USAGE_POLL_RETRY attempt=1/3 .* rc=124 ", guards_s1, re.M)
+    assert re.search(r"^USAGE_POLL_RETRY attempt=2/3 .* rc=124 ", guards_s1, re.M)
+    assert "USAGE_POLL_RECOVERED attempt=3/3" in guards_s1
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_s1
+    assert '"code": "COLAB_USAGE_PARSE_FAILED"' not in guards_s1
 
     _, state_sf, env_sf = fc.make_fake_colab_env(tmp_path / "start_fail_case")
     env_sf["FAKE_COLAB_START_FAIL"] = "1"
@@ -1528,3 +1535,115 @@ def test_f6_poll_max_bytes_bounds_each_poll_and_drains_large_backlog(tmp_path: P
     for idx in range(1, 61):
         assert f"RENDER_ROW idx={idx}/60 job=stub_{idx} status=ok" in vitals_f6
     assert "LANE1_STUB_OK" in vitals_f6
+
+
+def test_usage_retry_budget_g4_arithmetic_and_wall_only_cli(capsys: pytest.CaptureFixture[str]) -> None:
+    assert lg.USAGE_POLL_ATTEMPTS == 3
+    assert lg.USAGE_POLL_TIMEOUT_S == 30
+    assert lg.USAGE_POLL_KILL_GRACE_S == 5
+    assert lg.USAGE_POLL_BACKOFF_S == (2, 4)
+    assert lg.USAGE_RETRY_BOUND_S == 111
+
+    g4_ok = lg.compute_usage_retry_budget(priced_rate=10.05, margin=1.0)
+    assert g4_ok == {
+        "usage_retry_bound_s": 111,
+        "usage_retry_spend_units": 0.309875,
+        "usage_retry_half_margin_units": 0.5,
+        "usage_retry_min_margin_units": 0.61975,
+        "fits": True,
+    }
+
+    g4_refuse = lg.evaluate_cap_budget(
+        cap=5.0,
+        margin=0.60,
+        cleanup_bound_s=450.0,
+        priced_rate=10.05,
+        max_rate=10.05,
+    )
+    assert g4_refuse["tripped"] is True
+    assert g4_refuse["code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
+    assert g4_refuse["usage_retry_spend_units"] == 0.309875
+    assert g4_refuse["usage_retry_half_margin_units"] == 0.3
+    assert g4_refuse["usage_retry_min_margin_units"] == 0.61975
+    assert g4_refuse["refusal"]["code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
+
+    rc_refuse = lg.main(
+        [
+            "--check-cap-budget",
+            "--cap",
+            "5.0",
+            "--margin",
+            "0.60",
+            "--cleanup-bound-s",
+            "450",
+            "--rate",
+            "10.05",
+            "--max-rate",
+            "10.05",
+        ]
+    )
+    assert rc_refuse == 2
+    captured_refuse = capsys.readouterr()
+    assert "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY" in captured_refuse.err
+
+    rc_dry_ok = lg.main(
+        [
+            "--dry",
+            "--cap",
+            "5.0",
+            "--margin",
+            "1.0",
+            "--cleanup-bound-s",
+            "450",
+            "--rate",
+            "10.05",
+            "--max-rate",
+            "10.05",
+        ]
+    )
+    assert rc_dry_ok == 0
+    captured_dry = capsys.readouterr()
+    assert "usage_retry_bound_s (T_retry): 111" in captured_dry.out
+
+    rc_wall_quiet = lg.main(
+        [
+            "--check-wall-only",
+            "--mode",
+            "live",
+            "--phase",
+            "live",
+            "--checkpoint",
+            "usage_retry",
+            "--elapsed-s",
+            "10",
+            "--wall-s",
+            "900",
+            "--grace-s",
+            "60",
+        ]
+    )
+    assert rc_wall_quiet == 0
+    wall_quiet_rec = json.loads(capsys.readouterr().out.strip())
+    assert wall_quiet_rec["check"] == "wall_only"
+    assert "cap" not in wall_quiet_rec
+    assert wall_quiet_rec["wall"]["tripped"] is False
+
+    rc_wall_trip = lg.main(
+        [
+            "--check-wall-only",
+            "--mode",
+            "live",
+            "--elapsed-s",
+            "850",
+            "--wall-s",
+            "900",
+            "--grace-s",
+            "60",
+        ]
+    )
+    assert rc_wall_trip == 1
+    wall_trip_rec = json.loads(capsys.readouterr().out.strip())
+    assert wall_trip_rec["check"] == "wall_only"
+    assert "cap" not in wall_trip_rec
+    assert wall_trip_rec["refusal"]["code"] == "WALL_GUARD_TRIPPED"
+
