@@ -100,11 +100,12 @@ def test_lane1_gpu_window_with_no_rate_refuses_rate_unread(tmp_path: Path) -> No
 def test_lane1_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_path: Path) -> None:
     # Priced at max(9.5, 2.15): 0.05 units last 18.9 s (at 2.15/h they would last 84 s).
     # On Lane 1 (cleanup_bound_s = 450 s) at 9.5/h, cleanup_reserve = (450 / 3600) * 9.5 = 1.1875 units;
-    # cap 2.2375 minus margin 1.0 minus reserve 1.1875 leaves effective_trip = 0.05 units (~18.95 s).
+    # cap 2.4875 minus margin 1.25 minus reserve 1.1875 leaves effective_trip = 0.05 units (~18.95 s).
+    # (margin 1.25: at 9.5/h the 197 s cap-check interval costs 0.519861 > 1.0 / 2.)
     res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
                                         "FAKE_COLAB_POST_OPEN_RATE_STR": "2.15/hr",
                                         "FAKE_COLAB_VITALS_INTERVAL_S": "1.0"},
-                             "--margin", "1.0", mode="stall", cap="2.2375")
+                             "--margin", "1.25", mode="stall", cap="2.4875")
     assert res.returncode != 0
     lines = [json.loads(ln) for ln in (out_dir / "guards.log").read_text(encoding="utf-8").splitlines()
              if ln.startswith("{") and '"cap"' in ln and '"live"' in ln]

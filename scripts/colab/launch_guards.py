@@ -465,8 +465,22 @@ CAP_TRIP_FORMULA = (
 #   never returns.
 #   Blind-interval spend at `priced_rate` must stay within half the cap margin:
 #     priced_rate * (blind_interval_s / 3600) <= margin_ccu / 2.
-#   For G4 at 10.05/hr with margin 1.0: 10.05 * (117 / 3600) = 0.326625 <= 0.5 (fits with 0.173375 headroom);
-#   the highest rate that fits margin 1.0 is 0.5 * 3600 / 117 = 15.38/hr.
+#   (#84's arithmetic for a loop that polls `colab usage` every tick.)
+# Detached poll lag (sdlab#82: the remote job runs detached and the rig polls it with `colab exec`):
+#     detached_poll_lag_s = 2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s = 2 * (5 + 30) + 10 = 80 s
+#   A usage read is launched only on a tick after a successful remote poll, and a finished (or overdue)
+#   read is reaped only at the next tick, which follows the next remote poll. So from the last cap check
+#   (a fresh one, or the offline projection after a failed poll) to the next fresh one:
+#     retry sleep + poll_s + a slow successful poll (<= poll_exec_timeout_s), then the read (<= its in-flight
+#     deadline T_retry + slack_s), then up to a retry sleep + poll_s + a failed poll killed at
+#     poll_exec_timeout_s + kill_grace_s:
+#     cap_check_interval_s = (r + p + e) + (T_retry + slack_s) + (r + p + e + g)
+#                          = blind_interval_s + detached_poll_lag_s = 117 + 80 = 197 s.
+#   The margin gate prices cap_check_interval_s:
+#     priced_rate * (cap_check_interval_s / 3600) <= margin_ccu / 2.
+#   For G4 at 10.05/hr: 10.05 * 197 / 3600 = 0.549958; margin 1.0 (half 0.5) refuses, margin 1.25 (half 0.625)
+#   passes with 0.075042 headroom (13.6 % of the spend). The highest rate that fits margin 1.25 is
+#   0.625 * 3600 / 197 = 11.42/hr.
 USAGE_POLL_ATTEMPTS = 3
 USAGE_POLL_TIMEOUT_S = 30
 USAGE_POLL_KILL_GRACE_S = 5
@@ -477,6 +491,21 @@ USAGE_RETRY_BOUND_S = (
 )
 GUARD_POLL_INTERVAL_S_DEFAULT = 2
 USAGE_DECISION_SLACK_S = 2
+DETACHED_POLL_RETRY_SLEEP_S = 5
+DETACHED_POLL_EXEC_TIMEOUT_S = 30
+DETACHED_KILL_GRACE_S = 10
+
+
+def detached_poll_lag_s(
+    poll_retry_sleep_s: float = DETACHED_POLL_RETRY_SLEEP_S,
+    poll_exec_timeout_s: float = DETACHED_POLL_EXEC_TIMEOUT_S,
+    kill_grace_s: float = DETACHED_KILL_GRACE_S,
+) -> int | float:
+    total = 2.0 * (max(0.0, float(poll_retry_sleep_s)) + max(0.0, float(poll_exec_timeout_s))) + max(0.0, float(kill_grace_s))
+    return int(total) if total == int(total) else round(total, 6)
+
+
+DETACHED_POLL_LAG_S = detached_poll_lag_s()
 
 
 def usage_blind_interval_s(
@@ -489,6 +518,11 @@ def usage_blind_interval_s(
 
 
 USAGE_BLIND_INTERVAL_S = usage_blind_interval_s()
+CAP_CHECK_INTERVAL_S = (
+    int(USAGE_BLIND_INTERVAL_S + DETACHED_POLL_LAG_S)
+    if float(USAGE_BLIND_INTERVAL_S + DETACHED_POLL_LAG_S).is_integer()
+    else round(USAGE_BLIND_INTERVAL_S + DETACHED_POLL_LAG_S, 6)
+)
 
 
 def compute_usage_retry_budget(
@@ -497,6 +531,7 @@ def compute_usage_retry_budget(
     margin: float,
     usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
     usage_blind_interval: float | None = None,
+    detached_poll_lag: float | None = None,
 ) -> dict[str, Any]:
     bound_raw = max(0.0, float(usage_retry_bound_s))
     bound_val: int | float = int(bound_raw) if bound_raw == int(bound_raw) else round(bound_raw, 6)
@@ -505,15 +540,25 @@ def compute_usage_retry_budget(
         if usage_blind_interval is None
         else usage_blind_interval_s(float(usage_blind_interval), 0.0, 0.0)
     )
+    lag_val = (
+        DETACHED_POLL_LAG_S
+        if detached_poll_lag is None
+        else max(0.0, float(detached_poll_lag))
+    )
+    lag_val = int(lag_val) if float(lag_val).is_integer() else round(float(lag_val), 6)
+    interval_raw = float(blind_val) + float(lag_val)
+    interval_val: int | float = int(interval_raw) if interval_raw.is_integer() else round(interval_raw, 6)
     rate_v = max(0.0, float(priced_rate))
     margin_v = round(float(margin), 6)
-    spend_units = round((float(blind_val) / 3600.0) * rate_v, 6)
+    spend_units = round((interval_raw / 3600.0) * rate_v, 6)
     half_margin_units = round(margin_v / 2.0, 6)
     min_margin_units = round(2.0 * spend_units, 6)
     fits = bool(margin_v > 0.0 and spend_units <= half_margin_units)
     return {
         "usage_retry_bound_s": bound_val,
         "usage_blind_interval_s": blind_val,
+        "detached_poll_lag_s": lag_val,
+        "cap_check_interval_s": interval_val,
         "usage_retry_spend_units": spend_units,
         "usage_retry_half_margin_units": half_margin_units,
         "usage_retry_min_margin_units": min_margin_units,
@@ -555,6 +600,7 @@ def evaluate_cap_budget(
     min_runtime_s: float | None = None,
     usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
     usage_blind_interval: float | None = None,
+    detached_poll_lag: float | None = None,
 ) -> dict[str, Any]:
     trip = compute_cap_trip(cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=priced_rate)
     eff_max_rate = round(float(max_rate), 6) if max_rate is not None else trip["priced_rate"]
@@ -569,6 +615,7 @@ def evaluate_cap_budget(
         margin=margin_v,
         usage_retry_bound_s=usage_retry_bound_s,
         usage_blind_interval=usage_blind_interval,
+        detached_poll_lag=detached_poll_lag,
     )
 
     runtime_at_priced_rate_s = round((effective_trip / p_rate) * 3600.0, 2) if p_rate > 0.0 else 0.0
@@ -614,8 +661,10 @@ def evaluate_cap_budget(
         tripped = True
         code = "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
         why = (
-            f"usage_retry_spend = priced_rate {p_rate}/h * (blind_interval {retry_budget['usage_blind_interval_s']} s / 3600; "
-            f"blind_interval = T_retry {retry_budget['usage_retry_bound_s']} s + 2 * poll_s + slack_s) "
+            f"usage_retry_spend = priced_rate {p_rate}/h * (cap_check_interval {retry_budget['cap_check_interval_s']} s / 3600; "
+            f"cap_check_interval = blind_interval {retry_budget['usage_blind_interval_s']} s (T_retry "
+            f"{retry_budget['usage_retry_bound_s']} s + 2 * poll_s + slack_s) + detached_poll_lag "
+            f"{retry_budget['detached_poll_lag_s']} s) "
             f"= {retry_budget['usage_retry_spend_units']} units > margin / 2 = "
             f"{retry_budget['usage_retry_half_margin_units']} units "
             f"(margin {margin_v}; need --margin >= {retry_budget['usage_retry_min_margin_units']})"
@@ -636,6 +685,8 @@ def evaluate_cap_budget(
         "max_rate": eff_max_rate,
         "usage_retry_bound_s": retry_budget["usage_retry_bound_s"],
         "usage_blind_interval_s": retry_budget["usage_blind_interval_s"],
+        "detached_poll_lag_s": retry_budget["detached_poll_lag_s"],
+        "cap_check_interval_s": retry_budget["cap_check_interval_s"],
         "usage_retry_spend_units": retry_budget["usage_retry_spend_units"],
         "usage_retry_half_margin_units": retry_budget["usage_retry_half_margin_units"],
         "usage_retry_min_margin_units": retry_budget["usage_retry_min_margin_units"],
@@ -681,9 +732,11 @@ def format_dry_cap_budget(rec: dict[str, Any]) -> str:
         f"max_rate: {rec['max_rate']}/h",
         f"usage_retry_bound_s (T_retry): {rec['usage_retry_bound_s']}",
         f"usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): {rec['usage_blind_interval_s']}",
+        f"detached_poll_lag_s (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s): {rec['detached_poll_lag_s']}",
+        f"cap_check_interval_s (usage_blind_interval_s + detached_poll_lag_s): {rec['cap_check_interval_s']}",
         (
             f"usage_retry_blind_bound: {rec['usage_retry_spend_units']} "
-            f"({rec['usage_blind_interval_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
+            f"({rec['cap_check_interval_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
         ),
         f"reserve (cleanup_reserve): {rec['cleanup_reserve_units']} ({rec['cleanup_bound_s']} / 3600 * {rec['priced_rate']})",
         f"effective_trip: {rec['effective_trip_units']} ({rec['cap']} - {rec['margin']} - {rec['cleanup_reserve_units']})",
@@ -786,6 +839,58 @@ def evaluate_cap_guard(
         "spend_ccu": spend,
         "ceiling_ccu": ceiling,
         **extra,
+    }
+
+
+OFFLINE_CAP_MODE = "live_offline"
+
+
+def evaluate_offline_cap_projection(
+    *,
+    cap: float,
+    margin: float,
+    cleanup_bound_s: float,
+    rate_ccu_per_hour: float,
+    elapsed_s: float,
+    start_balance: float,
+    cached_balance: float,
+    balance_age_s: float,
+) -> dict[str, Any]:
+    """The detached loop's cap check on a failed remote poll with no `colab usage` read in flight.
+
+    Trip-only: spend = max(cached drop, priced_rate * elapsed) at or above the ceiling refuses
+    (CAP_GUARD_TRIPPED). Below it the record is never a pass: its mode is `live_offline`, its
+    `balance_source` is `cached` with the balance's age in seconds, and `fresh_pass` is False.
+    A within-cap `"mode": "live"` record is written only on a fresh reading."""
+    trip = compute_cap_trip(
+        cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=rate_ccu_per_hour
+    )
+    ceiling = trip["ceiling_ccu"]
+    cached_drop = round(max(0.0, float(start_balance) - float(cached_balance)), 6)
+    projected = round(max(0.0, (float(rate_ccu_per_hour) * float(elapsed_s)) / 3600.0), 6)
+    spend = round(max(cached_drop, projected), 6)
+    tripped = spend >= ceiling
+    return {
+        "mode": OFFLINE_CAP_MODE,
+        "result": "trip" if tripped else "no_trip_projection",
+        "fresh_pass": False,
+        "tripped": tripped,
+        "code": "CAP_GUARD_TRIPPED" if tripped else None,
+        "balance_source": "cached",
+        "balance_age_s": round(max(0.0, float(balance_age_s)), 3),
+        "elapsed_s": round(float(elapsed_s), 6),
+        "projected_spend_ccu": projected,
+        "cached_drop_ccu": cached_drop,
+        "spend_ccu": spend,
+        "ceiling_ccu": ceiling,
+        "cap_ccu": trip["cap_ccu"],
+        "margin_ccu": trip["margin_ccu"],
+        "cleanup_bound_s": trip["cleanup_bound_s"],
+        "priced_rate": trip["priced_rate"],
+        "cleanup_reserve_units": trip["cleanup_reserve_units"],
+        "effective_trip_units": trip["effective_trip_units"],
+        "formula": CAP_TRIP_FORMULA,
+        "cap_trip_formula": CAP_TRIP_FORMULA,
     }
 
 
@@ -2084,11 +2189,22 @@ def main(argv: list[str] | None = None) -> int:
         help="Blind interval between live cap decisions (T_retry + 2 * poll_s + slack_s) that the margin "
         "gate prices; default T_retry + 2 * 2 + 2",
     )
+    parser.add_argument(
+        "--detached-poll-lag-s",
+        type=float,
+        default=None,
+        help="Detached-loop lag added to the blind interval (2 * (poll_retry_sleep_s + poll_exec_timeout_s) "
+        "+ kill_grace_s); default 2 * (5 + 30) + 10",
+    )
     parser.add_argument("--rate", type=float, default=0.0)
     parser.add_argument("--max-rate", type=float, default=None)
     parser.add_argument("--min-runtime-s", type=float, default=None)
     parser.add_argument("--check-cap-budget", action="store_true", help="Check cap budget against cleanup reserve and --min-runtime-s")
     parser.add_argument("--check-wall-only", action="store_true", help="Evaluate only the local wall guard while usage poll retries are in flight")
+    parser.add_argument("--check-offline-cap", action="store_true",
+                        help="Trip-only cap projection on cached balances (failed remote poll, no usage read in flight)")
+    parser.add_argument("--balance-age-s", type=float, default=None,
+                        help="Age in seconds of the cached balance (--check-offline-cap)")
     parser.add_argument("--dry", action="store_true", help="Print cap trip arithmetic and exit")
     parser.add_argument("--start-balance", type=float, default=None)
     parser.add_argument("--current-balance", type=float, default=None)
@@ -2170,6 +2286,7 @@ def main(argv: list[str] | None = None) -> int:
             min_runtime_s=args.min_runtime_s,
             usage_retry_bound_s=args.usage_retry_bound_s,
             usage_blind_interval=args.usage_blind_interval_s,
+            detached_poll_lag=args.detached_poll_lag_s,
         )
         if args.dry:
             print(format_dry_cap_budget(rec))
@@ -2283,6 +2400,38 @@ def main(argv: list[str] | None = None) -> int:
             vit["refusal"] = {"code": vit["code"], "why": vit["reason"]}
         print(json.dumps(vit))
         return 1 if vit["tripped"] else 0
+
+    if args.check_offline_cap:
+        if args.start_balance is None or args.current_balance is None or args.balance_age_s is None:
+            print("REFUSED: --check-offline-cap requires --start-balance, --current-balance and --balance-age-s", file=sys.stderr)
+            return 2
+        offline_cap = evaluate_offline_cap_projection(
+            cap=args.cap,
+            margin=args.margin,
+            cleanup_bound_s=args.cleanup_bound_s,
+            rate_ccu_per_hour=args.rate,
+            elapsed_s=args.elapsed_s,
+            start_balance=args.start_balance,
+            cached_balance=args.current_balance,
+            balance_age_s=args.balance_age_s,
+        )
+        out_off: dict[str, Any] = {"check": "offline_cap", "cap": offline_cap}
+        if args.phase is not None:
+            out_off["phase"] = args.phase
+        if args.checkpoint is not None:
+            out_off["checkpoint"] = args.checkpoint
+        if offline_cap["tripped"]:
+            out_off["refusal"] = {
+                "code": offline_cap["code"],
+                "why": (
+                    f"offline cap projection: spend {offline_cap['spend_ccu']} ccu (max of priced_rate "
+                    f"{offline_cap['priced_rate']}/h * elapsed {offline_cap['elapsed_s']} s and the cached drop "
+                    f"{offline_cap['cached_drop_ccu']}, balance {offline_cap['balance_age_s']} s old) "
+                    f">= ceiling {offline_cap['ceiling_ccu']} ccu"
+                ),
+            }
+        print(json.dumps(out_off))
+        return 1 if offline_cap["tripped"] else 0
 
     if args.check_wall_only:
         wall = evaluate_wall_guard(mode=args.mode, elapsed_s=args.elapsed_s, wall_s=args.wall_s, grace_s=args.grace_s)

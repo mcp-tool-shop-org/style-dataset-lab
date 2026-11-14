@@ -57,8 +57,18 @@
 #                                               (a live poll still in flight past it fails closed with
 #                                                COLAB_USAGE_PARSE_FAILED, so a `colab usage` that never returns
 #                                                cannot stretch the blind interval)
+#   detached_poll_lag_s = COLAB_DETACHED_POLL_LAG_S = 2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s
+#                                               = 2 * (5 + 30) + 10 = 80 s (sdlab#82's detached loop: a usage
+#                                                read launches only on a tick after a successful remote poll,
+#                                                which can follow a retry sleep and a slow poll, and a finished
+#                                                or overdue read is reaped only at the next tick, after the next
+#                                                remote poll, which can hang to its kill)
+#   cap_check_interval_s = COLAB_CAP_CHECK_INTERVAL_S = blind_interval_s + detached_poll_lag_s = 117 + 80 = 197 s
+#                                               = (r + p + e) + (T_retry + slack_s) + (r + p + e + g): from the
+#                                                last cap check (fresh, or the offline projection) to the next
+#                                                fresh one
 #   Launch refuses CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY before any colab call when
-#   priced_rate * (blind_interval_s / 3600) > margin / 2.
+#   priced_rate * (cap_check_interval_s / 3600) > margin / 2.
 # Closing `colab usage` (one attempt, after `colab stop`): a success writes end_balance.txt and
 # end_balance_source.txt = closing_poll; a failure keeps the last live reading in end_balance.txt, marks
 # end_balance_source.txt = stale_after_failed_close and keeps its error in closing_usage_error.txt, apart
@@ -88,6 +98,13 @@ COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT=30
 COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT=5
 COLAB_USAGE_POLL_BACKOFF_S_DEFAULT="2,4"
 COLAB_USAGE_DECISION_SLACK_S_DEFAULT=2
+COLAB_DETACHED_START_TIMEOUT_S_DEFAULT=60
+COLAB_DETACHED_START_ATTEMPTS_DEFAULT=3
+COLAB_DETACHED_START_RETRY_SLEEP_S_DEFAULT=2
+COLAB_POLL_EXEC_TIMEOUT_S_DEFAULT=30
+COLAB_POLL_MAX_RETRIES_DEFAULT=12
+COLAB_POLL_RETRY_SLEEP_S_DEFAULT=5
+COLAB_POLL_MAX_BYTES_DEFAULT=262144
 
 COLAB_CALLER_DOWNLOAD_TIMEOUT_S="${COLAB_DOWNLOAD_TIMEOUT_S:-}"
 COLAB_CALLER_UPLOAD_TIMEOUT_S="${COLAB_UPLOAD_TIMEOUT_S:-}"
@@ -149,6 +166,18 @@ export COLAB_USAGE_POLL_TIMEOUT_S="${COLAB_USAGE_POLL_TIMEOUT_S_DEFAULT}"
 export COLAB_USAGE_POLL_KILL_GRACE_S="${COLAB_USAGE_POLL_KILL_GRACE_S_DEFAULT}"
 export COLAB_USAGE_POLL_BACKOFF_S="${COLAB_USAGE_POLL_BACKOFF_S_DEFAULT}"
 export COLAB_USAGE_DECISION_SLACK_S="${COLAB_USAGE_DECISION_SLACK_S_DEFAULT}"
+# The detached runner's start and poll knobs are reset here like every other cleanup knob, so a value
+# exported in the caller's shell never changes a live run; only colab_apply_test_cleanup_overrides
+# (SDLAB_TEST_*, fake-CLI test mode only) moves them. COLAB_POLL_OUTAGE_MAX_S is unset: its default is
+# the window's STALL_S.
+export COLAB_DETACHED_START_TIMEOUT_S="${COLAB_DETACHED_START_TIMEOUT_S_DEFAULT}"
+export COLAB_DETACHED_START_ATTEMPTS="${COLAB_DETACHED_START_ATTEMPTS_DEFAULT}"
+export COLAB_DETACHED_START_RETRY_SLEEP_S="${COLAB_DETACHED_START_RETRY_SLEEP_S_DEFAULT}"
+export COLAB_POLL_EXEC_TIMEOUT_S="${COLAB_POLL_EXEC_TIMEOUT_S_DEFAULT}"
+export COLAB_POLL_MAX_RETRIES="${COLAB_POLL_MAX_RETRIES_DEFAULT}"
+export COLAB_POLL_RETRY_SLEEP_S="${COLAB_POLL_RETRY_SLEEP_S_DEFAULT}"
+export COLAB_POLL_MAX_BYTES="${COLAB_POLL_MAX_BYTES_DEFAULT}"
+unset COLAB_POLL_OUTAGE_MAX_S
 COLAB_CLEANUP_SIGNAL_COUNT=0
 COLAB_CLEANUP_SKIP_SALVAGE=0
 COLAB_SALVAGE_STEP_PID=""
@@ -199,6 +228,30 @@ colab_usage_poll_deadline_s() {
 }
 export COLAB_USAGE_BLIND_INTERVAL_S="$(colab_usage_blind_interval_s)"
 export COLAB_USAGE_POLL_DEADLINE_S="$(colab_usage_poll_deadline_s)"
+
+# colab_detached_poll_lag_s: the detached loop's lag on top of the blind interval, from the environment:
+# 2 * (COLAB_POLL_RETRY_SLEEP_S + poll exec timeout) + COLAB_KILL_GRACE_S (default 2 * (5 + 30) + 10 = 80 s),
+# where the poll exec timeout is COLAB_POLL_EXEC_TIMEOUT_S clamped to COLAB_DOWNLOAD_TIMEOUT_S as the loop
+# clamps it. colab_cap_check_interval_s: blind_interval_s + detached_poll_lag_s (default 197 s), the
+# interval the margin gate prices.
+colab_detached_poll_lag_s() {
+  awk -v r="${COLAB_POLL_RETRY_SLEEP_S:-5}" -v e="${COLAB_POLL_EXEC_TIMEOUT_S:-30}" -v d="${COLAB_DOWNLOAD_TIMEOUT_S:-300}" -v g="${COLAB_KILL_GRACE_S:-10}" 'BEGIN {
+    if (e + 0 > d + 0) e = d;
+    total = 2 * (r + e) + g;
+    if (total == int(total)) printf "%d\n", total;
+    else printf "%.6f\n", total;
+  }'
+}
+
+colab_cap_check_interval_s() {
+  awk -v b="${COLAB_USAGE_BLIND_INTERVAL_S:-117}" -v l="${COLAB_DETACHED_POLL_LAG_S:-80}" 'BEGIN {
+    total = b + l;
+    if (total == int(total)) printf "%d\n", total;
+    else printf "%.6f\n", total;
+  }'
+}
+export COLAB_DETACHED_POLL_LAG_S="$(colab_detached_poll_lag_s)"
+export COLAB_CAP_CHECK_INTERVAL_S="$(colab_cap_check_interval_s)"
 
 # colab_salvage_steps_sum_s: the worst-case wall of one post-failure salvage, from the environment:
 # restart-kernel + bundle-now exec + every download step. A single-part bundle is one GET. A
@@ -499,6 +552,8 @@ colab_apply_test_cleanup_overrides() {
   export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
   export COLAB_USAGE_BLIND_INTERVAL_S="$(colab_usage_blind_interval_s)"
   export COLAB_USAGE_POLL_DEADLINE_S="$(colab_usage_poll_deadline_s)"
+  export COLAB_DETACHED_POLL_LAG_S="$(colab_detached_poll_lag_s)"
+  export COLAB_CAP_CHECK_INTERVAL_S="$(colab_cap_check_interval_s)"
   local step_sum
   step_sum="$(colab_salvage_steps_sum_s)"
   if [ -n "${SDLAB_TEST_SALVAGE_DEADLINE_S:-}" ]; then
@@ -560,6 +615,8 @@ colab_compute_cleanup_bounds() {
   export COLAB_USAGE_RETRY_BOUND_S="$(colab_usage_retry_bound_s)"
   export COLAB_USAGE_BLIND_INTERVAL_S="$(colab_usage_blind_interval_s)"
   export COLAB_USAGE_POLL_DEADLINE_S="$(colab_usage_poll_deadline_s)"
+  export COLAB_DETACHED_POLL_LAG_S="$(colab_detached_poll_lag_s)"
+  export COLAB_CAP_CHECK_INTERVAL_S="$(colab_cap_check_interval_s)"
 }
 
 # colab_run_bounded <timeout_s> <kill_grace_s> <cmd> [args...]: run a command under `timeout -k`
@@ -3354,6 +3411,101 @@ PYEOF
   return 0
 }
 
+# colab_offline_guard_tick <py_bin> <guards_py> <out_dir> <start_epoch> <wall_s> <grace_s> <cap> <margin>:
+# the guard pass the detached poll loop runs on a failed remote poll while no `colab usage` read is in
+# flight. Nothing here is a fresh reading, so nothing here can pass a cap check:
+#   - the clock is recomputed from session_open_epoch.txt right before the checks (never the loop-top clock);
+#   - the wall is checked first and unconditionally (--check-wall-only);
+#   - start_balance.txt or end_balance.txt missing or unreadable is COLAB_USAGE_PARSE_FAILED (fail closed);
+#   - on a GPU window a missing, empty or non-positive rate_for_projection.txt is RATE_UNREAD (never 0.26);
+#   - the cap is a trip-only projection (--check-offline-cap): max(cached drop, priced_rate * elapsed) at or
+#     above the ceiling refuses CAP_GUARD_TRIPPED; below it the record is `"mode": "live_offline"` with
+#     `balance_source: cached`, the balance's age and `fresh_pass: false`, never a `"mode": "live"` pass;
+#   - the host-RAM guard runs as on the other ticks.
+# Sets COLAB_LIVE_TICK_RC: 0, or 91 after a logged refusal. Always returns 0, so the caller runs it without
+# `||` and `set -e` stays in force inside it.
+colab_offline_guard_tick() {
+  local py_bin="$1"
+  local guards_py="$2"
+  local out_dir="$3"
+  local start_epoch="$4"
+  local wall_s="$5"
+  local grace_s="$6"
+  local cap="$7"
+  local margin="$8"
+  COLAB_LIVE_TICK_RC=0
+
+  local now_epoch elapsed_s
+  now_epoch="$(date -u +%s)"
+  if [ -f "${out_dir}/session_open_epoch.txt" ]; then
+    elapsed_s="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((now_epoch - start_epoch))")"
+  else
+    elapsed_s="$((now_epoch - start_epoch))"
+  fi
+
+  local wall_rc=0 wall_out=""
+  wall_out="$("${py_bin}" "${guards_py}" --check-wall-only --mode live --checkpoint offline --elapsed-s "${elapsed_s}" --wall-s "${wall_s}" --grace-s "${grace_s}" </dev/null)" || wall_rc=$?
+  [ -n "${wall_out}" ] && printf '%s\n' "${wall_out}" >> "${out_dir}/guards.log"
+  if [ "${wall_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${wall_out}" WALL_GUARD_TRIPPED
+    COLAB_LIVE_TICK_RC=91
+    return 0
+  fi
+
+  local cached_start="" cached_cur=""
+  [ -f "${out_dir}/start_balance.txt" ] && cached_start="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt" 2>/dev/null || true)"
+  [ -f "${out_dir}/end_balance.txt" ] && cached_cur="$(tr -d '[:space:]' < "${out_dir}/end_balance.txt" 2>/dev/null || true)"
+  if ! [[ "${cached_start}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || ! [[ "${cached_cur}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    printf 'COLAB_USAGE_PARSE_FAILED: offline guard: start_balance.txt or end_balance.txt missing or unreadable during a remote poll outage (start=%s, end=%s)\n' "${cached_start:-missing}" "${cached_cur:-missing}" > "${out_dir}/usage_parse_error.txt"
+    colab_refuse_logged "${out_dir}" COLAB_USAGE_PARSE_FAILED "offline guard: start_balance.txt or end_balance.txt missing or unreadable during a remote poll outage (start=${cached_start:-missing}, end=${cached_cur:-missing}); the cap is not projected without a balance"
+    COLAB_LIVE_TICK_RC=91
+    return 0
+  fi
+
+  local cached_rate=""
+  [ -f "${out_dir}/rate_for_projection.txt" ] && cached_rate="$(tr -d '[:space:]' < "${out_dir}/rate_for_projection.txt" 2>/dev/null || true)"
+  if ! [[ "${cached_rate}" =~ ^[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?$ ]] || [[ "${cached_rate}" =~ ^0+(\.0+)?$ ]]; then
+    if [ "${COLAB_CARD_CLASS:-}" = "gpu" ]; then
+      colab_refuse_logged "${out_dir}" RATE_UNREAD "offline guard: a GPU window's rate_for_projection.txt is missing, empty or not positive ('${cached_rate}') during a remote poll outage; it is not priced with a configured rate"
+      COLAB_LIVE_TICK_RC=91
+      return 0
+    fi
+    cached_rate="${RATE_CCU_PER_HOUR:-0.26}"
+  fi
+
+  local balance_age_s
+  balance_age_s="$("${py_bin}" -c 'import os, sys, time; print(f"{max(0.0, time.time() - os.path.getmtime(sys.argv[1])):.3f}")' "${out_dir}/end_balance.txt" 2>/dev/null || echo "${elapsed_s}")"
+
+  local offline_rc=0 offline_out=""
+  offline_out="$("${py_bin}" "${guards_py}" \
+    --check-offline-cap \
+    --checkpoint offline \
+    --elapsed-s "${elapsed_s}" \
+    --cap "${cap}" \
+    --margin "${margin}" \
+    --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S:-0}" \
+    --rate "${cached_rate}" \
+    --start-balance "${cached_start}" \
+    --current-balance "${cached_cur}" \
+    --balance-age-s "${balance_age_s}" </dev/null)" || offline_rc=$?
+  [ -n "${offline_out}" ] && printf '%s\n' "${offline_out}" >> "${out_dir}/guards.log"
+  if [ "${offline_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${offline_out}" GUARD_FAILED
+    COLAB_LIVE_TICK_RC=91
+    return 0
+  fi
+
+  local ram_rc=0 ram_out=""
+  ram_out="$("${py_bin}" "${guards_py}" --check-ram --projected-delta-mb "${PROJECTED_DELTA_MB:-2048}" --ram-vitals-file "${out_dir}/vitals.log" </dev/null)" || ram_rc=$?
+  [ -n "${ram_out}" ] && printf '%s\n' "${ram_out}" >> "${out_dir}/guards.log"
+  if [ "${ram_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
+    COLAB_LIVE_TICK_RC=91
+    return 0
+  fi
+  return 0
+}
+
 colab_run_exec_with_live_guards() {
   local py_bin="$1"
   local guards_py="$2"
@@ -3454,6 +3606,12 @@ colab_run_exec_with_live_guards() {
   local poll_outage_start_epoch=0
   local drain_immediately=0
 
+  # Invariant of the detached loop: the wall is checked on every pass, and no pass runs without one of
+  #   (a) a cap check on a fresh reading (a `colab usage` read that completed in this pass's tick),
+  #   (b) the offline trip-only projection (failed remote poll, no read in flight: colab_offline_guard_tick),
+  #   (c) a read in flight (wall-only and RAM, as #83; the cap is checked on that read's own result when it
+  #       completes; a read is bounded by T_retry and is reaped at the first tick after it ends).
+  # A within-cap `"mode": "live"` cap record is written only under (a).
   while true; do
     if [ "${drain_immediately}" -eq 0 ]; then
       sleep "${poll_s}"
@@ -3527,31 +3685,11 @@ colab_run_exec_with_live_guards() {
           return "${COLAB_LIVE_TICK_RC}"
         fi
       else
-        # Keep local wall and priced-rate cap ceiling enforced even while the host NIC is unreachable.
-        if [ -f "${out_dir}/start_balance.txt" ] && [ -f "${out_dir}/end_balance.txt" ]; then
-          local cached_start cached_cur cached_rate offline_rc=0 offline_out=""
-          cached_start="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt")"
-          cached_cur="$(tr -d '[:space:]' < "${out_dir}/end_balance.txt")"
-          cached_rate="0.26"
-          if [ -f "${out_dir}/rate_for_projection.txt" ]; then
-            cached_rate="$(tr -d '[:space:]' < "${out_dir}/rate_for_projection.txt")"
-          fi
-          offline_out="$("${py_bin}" "${guards_py}" \
-            --mode "live" \
-            --elapsed-s "${elapsed_s}" \
-            --wall-s "${wall_s}" \
-            --grace-s "${grace_s}" \
-            --cap "${cap}" \
-            --margin "${margin}" \
-            --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S:-0}" \
-            --rate "${cached_rate:-0.26}" \
-            --start-balance "${cached_start}" \
-            --current-balance "${cached_cur}" </dev/null)" || offline_rc=$?
-          [ -n "${offline_out}" ] && printf '%s\n' "${offline_out}" >> "${out_dir}/guards.log"
-          if [ "${offline_rc}" -ne 0 ]; then
-            colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${offline_out}" GUARD_FAILED
-            return 91
-          fi
+        # No read in flight and the remote poll failed: the offline guard (wall, trip-only cap projection on
+        # cached balances, RAM), never a cap pass on old data.
+        colab_offline_guard_tick "${py_bin}" "${guards_py}" "${out_dir}" "${start_epoch}" "${wall_s}" "${grace_s}" "${cap}" "${margin}"
+        if [ "${COLAB_LIVE_TICK_RC}" -ne 0 ]; then
+          return "${COLAB_LIVE_TICK_RC}"
         fi
       fi
 
@@ -3975,6 +4113,7 @@ colab_dry_cap_budget() {
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
     "--usage-retry-bound-s" "${COLAB_USAGE_RETRY_BOUND_S}"
     "--usage-blind-interval-s" "${COLAB_USAGE_BLIND_INTERVAL_S}"
+    "--detached-poll-lag-s" "${COLAB_DETACHED_POLL_LAG_S}"
     "--rate" "${priced_rate}"
     "--max-rate" "${eff_max_rate}"
   )
@@ -3991,7 +4130,8 @@ colab_dry_cap_budget() {
 # colab_cap_budget_gate <py_bin> <guards_py> <out_dir> <lane> <card> <cap> <margin> <max_rate> <default_rate> <min_runtime_s>:
 # refuse CAP_TOO_SMALL_FOR_CLEANUP or CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY before any colab call
 # when cap - margin - cleanup_reserve <= 0, runtime_to_trip < --min-runtime-s, or
-# priced_rate * (blind_interval_s / 3600) > margin / 2 (blind_interval_s = T_retry + 2 * poll_s + slack_s).
+# priced_rate * (cap_check_interval_s / 3600) > margin / 2 (cap_check_interval_s = blind_interval_s +
+# detached_poll_lag_s; blind_interval_s = T_retry + 2 * poll_s + slack_s).
 colab_cap_budget_gate() {
   local py_bin="$1"
   local guards_py="$2"
@@ -4021,6 +4161,7 @@ colab_cap_budget_gate() {
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S}"
     "--usage-retry-bound-s" "${COLAB_USAGE_RETRY_BOUND_S}"
     "--usage-blind-interval-s" "${COLAB_USAGE_BLIND_INTERVAL_S}"
+    "--detached-poll-lag-s" "${COLAB_DETACHED_POLL_LAG_S}"
     "--rate" "${priced_rate}"
     "--max-rate" "${eff_max_rate}"
   )
@@ -5363,6 +5504,8 @@ usage_blind_interval_s = _int_or_round(
         or (usage_retry_bound_raw + 2 * float(guard_poll_interval_s) + float(usage_decision_slack_s))
     )
 )
+detached_poll_lag_s = _int_or_round(float(os.environ.get("COLAB_DETACHED_POLL_LAG_S") or "80"))
+cap_check_interval_s = _int_or_round(float(usage_blind_interval_s) + float(detached_poll_lag_s))
 usage_poll_deadline_s = _int_or_round(
     float(os.environ.get("COLAB_USAGE_POLL_DEADLINE_S") or (usage_retry_bound_raw + float(usage_decision_slack_s)))
 )
@@ -5460,6 +5603,8 @@ window_payload = {
     "cleanup_bound_s": cleanup_bound_s,
     "usage_retry_bound_s": usage_retry_bound_s,
     "usage_blind_interval_s": usage_blind_interval_s,
+    "detached_poll_lag_s": detached_poll_lag_s,
+    "cap_check_interval_s": cap_check_interval_s,
     "usage_poll_deadline_s": usage_poll_deadline_s,
     "guard_poll_interval_s": guard_poll_interval_s,
     "usage_decision_slack_s": usage_decision_slack_s,

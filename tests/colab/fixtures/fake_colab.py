@@ -1405,6 +1405,29 @@ def main(argv: list[str] | None = None) -> int:
         bal = "9.75" if (mode == "cap_burn" and c >= 2) else os.environ.get("FAKE_COLAB_BALANCE", "9.85")
         if session_opened and os.environ.get("FAKE_COLAB_USAGE_DELAY_S") and not (state_dir / "stops.log").exists():
             time.sleep(float(os.environ["FAKE_COLAB_USAGE_DELAY_S"]))
+        # FAKE_COLAB_USAGE_HOLD_AFTER_RETRY=<n> with FAKE_COLAB_USAGE_HOLD_LOG=<guards.log>: the first post-open
+        # usage call holds until guards.log has <n> DETACHED_POLL_RETRY lines and a wall_only record after the
+        # n-th (the loop's liveness check on that failed poll), then answers 0.05 s later: a read that finishes
+        # just after a liveness check on a dead link. Start and end epochs go to usage_events.jsonl.
+        hold_n = os.environ.get("FAKE_COLAB_USAGE_HOLD_AFTER_RETRY", "").strip()
+        hold_log = os.environ.get("FAKE_COLAB_USAGE_HOLD_LOG", "").strip()
+        hold_mark = state_dir / "usage_hold_done.txt"
+        if session_opened and hold_n.isdigit() and hold_log and not hold_mark.exists():
+            hold_mark.write_text("1\n", encoding="utf-8", newline="\n")
+            hold_t0 = time.time()
+            hold_deadline = time.monotonic() + 60.0
+            while time.monotonic() < hold_deadline:
+                try:
+                    glines = Path(hold_log).read_text(encoding="utf-8", errors="replace").splitlines()
+                except OSError:
+                    glines = []
+                idx = [i for i, ln in enumerate(glines) if ln.startswith("DETACHED_POLL_RETRY ")]
+                if len(idx) >= int(hold_n) and any('"check": "wall_only"' in ln for ln in glines[idx[int(hold_n) - 1] + 1 :]):
+                    break
+                time.sleep(0.01)
+            time.sleep(0.05)
+            with (state_dir / "usage_events.jsonl").open("a", encoding="utf-8", newline="\n") as ev_fh:
+                ev_fh.write(json.dumps({"start": hold_t0, "end": time.time()}) + "\n")
         if session_opened and os.environ.get("FAKE_COLAB_BURN_BALANCE") == "1" and (state_dir / "new_done_epoch.txt").is_file():
             open_ts = float((state_dir / "new_done_epoch.txt").read_text(encoding="utf-8").strip())
             if (state_dir / "stops.jsonl").is_file():
@@ -1838,6 +1861,38 @@ def main(argv: list[str] | None = None) -> int:
                     return 1
                 if os.environ.get("FAKE_COLAB_START_LOST_AFTER_RUN_ONCE") == "1" and start_n == 1:
                     lost_start_reply_after_run = True
+                # FAKE_COLAB_CRASH_WORKER_BEFORE_START_N=<n>: before start call <n> runs, the detached worker
+                # started by an earlier call is SIGKILLed with its whole process group once its live log has
+                # output, so it dies without `.done` (a crash on the VM between a lost start reply and the retry).
+                crash_at = os.environ.get("FAKE_COLAB_CRASH_WORKER_BEFORE_START_N", "").strip()
+                if crash_at.isdigit() and start_n == int(crash_at):
+                    import signal as _signal
+
+                    meta_p = content_dir / ".sdlab_live.meta.json"
+                    log_p = content_dir / ".sdlab_live.log"
+                    crash_deadline = time.monotonic() + 10.0
+                    while time.monotonic() < crash_deadline:
+                        if meta_p.is_file() and log_p.is_file() and log_p.stat().st_size > 0:
+                            break
+                        time.sleep(0.05)
+                    meta_c = json.loads(meta_p.read_text(encoding="utf-8"))
+                    victims = [int(meta_c.get("worker_pid") or 0), int(meta_c.get("child_pid") or 0)]
+                    wpgid_c = int(meta_c.get("worker_pgid") or 0)
+                    if wpgid_c > 1:
+                        try:
+                            os.killpg(wpgid_c, _signal.SIGKILL)
+                        except OSError:
+                            pass
+                    for vpid in victims:
+                        if vpid > 0:
+                            try:
+                                os.kill(vpid, _signal.SIGKILL)
+                            except OSError:
+                                pass
+                    for vpid in victims:
+                        while vpid > 0 and time.monotonic() < crash_deadline and _pid_alive(vpid):
+                            time.sleep(0.05)
+                    (state_dir / "worker_crashed.txt").write_text(json.dumps(victims) + "\n", encoding="utf-8", newline="\n")
             if runner_mode == "poll":
                 poll_cnt_f = state_dir / "poll_calls.txt"
                 poll_n = int(poll_cnt_f.read_text(encoding="utf-8").strip()) if poll_cnt_f.is_file() else 0
@@ -1853,9 +1908,29 @@ def main(argv: list[str] | None = None) -> int:
                     sys.stderr.flush()
                     (state_dir / "poll_hang_ready.txt").write_text("1\n", encoding="utf-8", newline="\n")
                     _hang_process(state_dir, ignore_term=False)
+                # FAKE_COLAB_POLL_SLOW_OK_CALLS=<n,...>: these polls succeed after FAKE_COLAB_POLL_SLOW_OK_S seconds.
+                # FAKE_COLAB_POLL_HANG_CALLS=<n,...>: these polls hang ignoring SIGTERM (a dead link held open),
+                # so `timeout -k` kills them only after the timeout plus the kill grace.
+                slow_spec = os.environ.get("FAKE_COLAB_POLL_SLOW_OK_CALLS", "").strip()
+                if poll_n in {int(t) for t in slow_spec.split(",") if t.strip().isdigit()}:
+                    time.sleep(float(os.environ.get("FAKE_COLAB_POLL_SLOW_OK_S", "1")))
+                hang_spec = os.environ.get("FAKE_COLAB_POLL_HANG_CALLS", "").strip()
+                if poll_n in {int(t) for t in hang_spec.split(",") if t.strip().isdigit()}:
+                    with (state_dir / "poll_events.jsonl").open("a", encoding="utf-8", newline="\n") as ev_fh:
+                        ev_fh.write(json.dumps({"n": poll_n, "start": time.time(), "hang": True}) + "\n")
+                    (state_dir / "blip_active.txt").write_text("1\n", encoding="utf-8", newline="\n")
+                    _hang_process(state_dir, ignore_term=True)
                 fail_spec = os.environ.get("FAKE_COLAB_POLL_FAIL_CALLS", "").strip()
                 fail_set = {int(tok.strip()) for tok in fail_spec.split(",") if tok.strip().isdigit()}
                 if fail_spec.lower() == "all" or poll_n in fail_set:
+                    poll_fail_t0 = time.time()
+                    # FAKE_COLAB_POLL_FAIL_DELAY_S: a failed poll takes this long before it fails (a slow dead
+                    # link). Every failed poll's start and end epochs go to poll_events.jsonl.
+                    fail_delay = os.environ.get("FAKE_COLAB_POLL_FAIL_DELAY_S", "").strip()
+                    if fail_delay:
+                        time.sleep(float(fail_delay))
+                    with (state_dir / "poll_events.jsonl").open("a", encoding="utf-8", newline="\n") as ev_fh:
+                        ev_fh.write(json.dumps({"n": poll_n, "start": poll_fail_t0, "end": time.time(), "failed": True}) + "\n")
                     (state_dir / "blip_active.txt").write_text("1\n", encoding="utf-8", newline="\n")
                     if os.environ.get("FAKE_COLAB_USAGE_FAIL_DURING_BLIP") == "1":
                         linger_n = os.environ.get("FAKE_COLAB_BLIP_USAGE_FAILURES", "2").strip()
