@@ -573,6 +573,7 @@ run_uploaded_remote_dirs_block() {
   bash .remote_dirs_block.sh
 }
 run_uploaded_remote_dirs_block "remote_lane1_stub.sh.uploaded"
+printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 [ -d lane1_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane1_out not made by the kit" >&2; exit 1; }
 : > lane1_out/setup.log
 echo "setup" > lane1_out/phase.txt
@@ -665,10 +666,21 @@ done
 printf 'setup_complete\\n' >> lane1_out/setup.log
 echo "run" > lane1_out/phase.txt
 emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+if [ -n "${FAKE_RUN_ROWS_N:-}" ] && [ "${FAKE_RUN_ROWS_N}" -gt 0 ]; then
+  row_sleep="${FAKE_RUN_ROW_SLEEP_S:-${vitals_interval}}"
+  for row_idx in $(seq 1 "${FAKE_RUN_ROWS_N}"); do
+    echo "RENDER_ROW idx=${row_idx}/${FAKE_RUN_ROWS_N} job=stub_${row_idx} status=ok"
+    emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+    sleep "${row_sleep}"
+  done
+fi
 echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
 echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
 if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
   "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+fi
+if [ -f .sdlab_live.err.log ]; then
+  cp -f .sdlab_live.err.log lane1_out/detached_worker_stderr.log
 fi
 tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
 """
@@ -880,6 +892,7 @@ RUNPYEOF
 }
 run_uploaded_lane3_mode_block "remote_lane3_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
+printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 [ -d lane3_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane3_out not made by the kit" >&2; exit 1; }
 : > lane3_out/setup.log
 echo "setup" > lane3_out/phase.txt
@@ -1098,6 +1111,9 @@ window_rec='{"system_python": "3.13.16", "python": "3.12.15", "python_sha256": "
 printf '%s\\n' "${window_rec}" > lane3_out/vm_window.json
 echo "WINDOW_JSON ${window_rec}"
 echo "LANE3_STUB_OK python=3.12.15 sentencepiece=0.2.1 train=${train_state}"
+if [ -f .sdlab_live.err.log ]; then
+  cp -f .sdlab_live.err.log lane3_out/detached_worker_stderr.log
+fi
 tar -czf lane3_stub_bundle.tar.gz -C lane3_out .
 """
     )
@@ -1280,13 +1296,17 @@ def main(argv: list[str] | None = None) -> int:
             if c in uf_set:
                 sys.stderr.write(f"colab usage call #{c} timed out (simulated rc=124)\n")
                 return 124
-        if (
-            os.environ.get("FAKE_COLAB_USAGE_FAIL_DURING_BLIP") == "1"
-            and (state_dir / "blip_active.txt").is_file()
-            and not (state_dir / "stops.log").exists()
-        ):
-            sys.stderr.write("colab usage failed: simulated host NIC / WebSocket outage\n")
-            return 1
+        if os.environ.get("FAKE_COLAB_USAGE_FAIL_DURING_BLIP") == "1" and not (state_dir / "stops.log").exists():
+            blip_rem_f = state_dir / "blip_usage_remaining.txt"
+            blip_rem = int(blip_rem_f.read_text(encoding="utf-8").strip()) if blip_rem_f.is_file() else 0
+            if (state_dir / "blip_active.txt").is_file() or blip_rem > 0:
+                if not (state_dir / "blip_active.txt").is_file() and blip_rem > 0:
+                    if blip_rem <= 1:
+                        blip_rem_f.unlink(missing_ok=True)
+                    else:
+                        blip_rem_f.write_text(f"{blip_rem - 1}\n", encoding="utf-8", newline="\n")
+                sys.stderr.write("colab usage failed: simulated host NIC / WebSocket outage\n")
+                return 1
         if mode == "usage_fail_start" and c == 1:
             print("UNPARSEABLE_USAGE_TEXT_WITHOUT_BALANCE")
             return 0
@@ -1599,15 +1619,16 @@ def main(argv: list[str] | None = None) -> int:
             fh.write(json.dumps({"sid": sid, "attempt": stop_cnt, "done_ts": time.time()}) + "\n")
         (_open_sessions_dir(state_dir) / f"{sid}.json").unlink(missing_ok=True)
         (state_dir / "blip_active.txt").unlink(missing_ok=True)
+        (state_dir / "blip_usage_remaining.txt").unlink(missing_ok=True)
+        import signal as _signal
+
         detached_meta_f = content_dir / ".sdlab_live.meta.json"
         if detached_meta_f.is_file():
-            import signal as _signal
-
             try:
                 dmeta = json.loads(detached_meta_f.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 dmeta = {}
-            for k_pid in ("child_pid", "worker_pid"):
+            for k_pid in ("worker_pid", "child_pid"):
                 dpid = dmeta.get(k_pid)
                 if isinstance(dpid, int) and dpid > 1:
                     try:
@@ -1618,6 +1639,21 @@ def main(argv: list[str] | None = None) -> int:
                         pass
                     try:
                         os.kill(dpid, _signal.SIGKILL)
+                    except OSError:
+                        pass
+        proc_root = Path("/proc")
+        if proc_root.is_dir():
+            content_mark = str(content_dir)
+            for p_ent in proc_root.iterdir():
+                if not p_ent.name.isdigit() or int(p_ent.name) == os.getpid():
+                    continue
+                try:
+                    cmdline_s = (p_ent / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace")
+                except OSError:
+                    continue
+                if content_mark in cmdline_s:
+                    try:
+                        os.kill(int(p_ent.name), _signal.SIGKILL)
                     except OSError:
                         pass
         _kill_recorded_groups(state_dir, sid)
@@ -1719,6 +1755,7 @@ def main(argv: list[str] | None = None) -> int:
         kernel_env["FAKE_VM_SITE"] = str(FIXTURES_DIR / "fake_vm_site")
         kernel_env.update(env_vars)
 
+        lost_start_reply_after_run = False
         if py_path.name == "remote_runner.py":
             runner_mode = env_vars.get("SDLAB_RUNNER_MODE", "").strip().lower()
             if runner_mode == "start":
@@ -1731,15 +1768,32 @@ def main(argv: list[str] | None = None) -> int:
                 ):
                     sys.stderr.write("colab exec failed: simulated start WebSocket / 502 error\n")
                     return 1
+                if os.environ.get("FAKE_COLAB_START_LOST_AFTER_RUN_ONCE") == "1" and start_n == 1:
+                    lost_start_reply_after_run = True
             if runner_mode == "poll":
                 poll_cnt_f = state_dir / "poll_calls.txt"
                 poll_n = int(poll_cnt_f.read_text(encoding="utf-8").strip()) if poll_cnt_f.is_file() else 0
                 poll_n += 1
                 poll_cnt_f.write_text(f"{poll_n}\n", encoding="utf-8", newline="\n")
+                hang_tok_at = os.environ.get("FAKE_COLAB_POLL_HANG_WITH_TOKEN_AT", "").strip()
+                if hang_tok_at.isdigit() and poll_n == int(hang_tok_at):
+                    fake_hf = "hf_" + ("PollWaitTok" * 3)
+                    sys.stderr.write(
+                        "colab exec error: https://colab.research.google.com/"
+                        f"?colab-runtime-proxy-token=secret_poll_wait_tok_333 {fake_hf}\n"
+                    )
+                    sys.stderr.flush()
+                    (state_dir / "poll_hang_ready.txt").write_text("1\n", encoding="utf-8", newline="\n")
+                    _hang_process(state_dir, ignore_term=False)
                 fail_spec = os.environ.get("FAKE_COLAB_POLL_FAIL_CALLS", "").strip()
                 fail_set = {int(tok.strip()) for tok in fail_spec.split(",") if tok.strip().isdigit()}
                 if fail_spec.lower() == "all" or poll_n in fail_set:
                     (state_dir / "blip_active.txt").write_text("1\n", encoding="utf-8", newline="\n")
+                    if os.environ.get("FAKE_COLAB_USAGE_FAIL_DURING_BLIP") == "1":
+                        linger_n = os.environ.get("FAKE_COLAB_BLIP_USAGE_FAILURES", "2").strip()
+                        (state_dir / "blip_usage_remaining.txt").write_text(
+                            f"{linger_n}\n", encoding="utf-8", newline="\n"
+                        )
                     sys.stderr.write(f"colab exec poll #{poll_n} failed: simulated WebSocket / 502 blip\n")
                     return 1
                 (state_dir / "blip_active.txt").unlink(missing_ok=True)
@@ -1799,12 +1853,13 @@ def main(argv: list[str] | None = None) -> int:
             while True:
                 chunk = fh.read()
                 if chunk:
-                    sys.stdout.buffer.write(chunk)
-                    sys.stdout.flush()
+                    if not lost_start_reply_after_run:
+                        sys.stdout.buffer.write(chunk)
+                        sys.stdout.flush()
                     pos += len(chunk)
                 if not _pid_alive(cell):
                     rest = fh.read()
-                    if rest:
+                    if rest and not lost_start_reply_after_run:
                         sys.stdout.buffer.write(rest)
                         sys.stdout.flush()
                     break
@@ -1824,6 +1879,10 @@ def main(argv: list[str] | None = None) -> int:
         history.mkdir(exist_ok=True)
         with (history / f"{sid}.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps({"code": code_logged, "outputs": [{"output_type": "stream", "text": outputs}]}) + "\n")
+
+        if lost_start_reply_after_run:
+            sys.stderr.write("colab exec failed after cell start: simulated WebSocket reset before reply\n")
+            return 1
 
         # On the real Colab CLI, cell execution exit codes are not reliably propagated as CLI exit code
         if os.environ.get("FAKE_COLAB_FORCE_EXEC_RC_ZERO", "1") == "1":

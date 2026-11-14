@@ -366,6 +366,7 @@ def test_lane3_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: P
     assert start_timeout == 60.0
     env_kv = ec_start["parsed_opts"].get("--env", [])
     assert "SDLAB_RUNNER_MODE=start" in env_kv
+    assert any(kv.startswith("SDLAB_START_TOKEN=") for kv in env_kv)
     assert any(kv.endswith("/content/remote_lane3_stub.sh") and kv.startswith("SDLAB_REMOTE_SCRIPT=") for kv in env_kv)
     assert any(kv.startswith("PINNED_AI_TOOLKIT_COMMIT=") for kv in env_kv)
     for ec_poll in exec_calls[1:]:
@@ -376,6 +377,7 @@ def test_lane3_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: P
         poll_env = ec_poll["parsed_opts"].get("--env", [])
         assert "SDLAB_RUNNER_MODE=poll" in poll_env
         assert any(kv.startswith("SDLAB_POLL_OFFSET=") for kv in poll_env)
+        assert "SDLAB_POLL_MAX_BYTES=262144" in poll_env
 
 
 def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0(tmp_path: Path) -> None:

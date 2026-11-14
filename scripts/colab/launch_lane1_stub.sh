@@ -34,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="e660f9f72c53ad00d662911ec9620c0ba3f38a85cd9d0ae1e4ab86b6684223a8"
-PINNED_REMOTE_RUNNER_SHA="a4bd74c22bc8916813e263cac327d023961f4069390cd3ab3b9d674a22b5b6a7"
-PINNED_COLAB_WINDOW_SHA="c90f0803c4a00d78ea294588b1a7eca91e575b6c8a1aef3c5455caecb57d0ca7"
-PINNED_SELF_SHA="7ce6b511002151f39b7588171b3dba9fb721e7b579da8ce64ba2baab89493a7b"
+PINNED_LAUNCH_GUARDS_SHA="67e0135743a5b74a40561b5f49b4d935c8c3ae95462a5fb86ba889721f0a45c9"
+PINNED_REMOTE_RUNNER_SHA="68f215d26a85c7138cee1dcbc5bc80accae75fb3ba53f47de403d9460d2c5dc4"
+PINNED_COLAB_WINDOW_SHA="7e28a43b82f9a61f4adad58d8220d2d8b92affbade8dd26d13486a4f9ae7f2e6"
+PINNED_SELF_SHA="1e0f3813b86a93257f423f949691ae3d3fd7d5828c7dd0bb2f8d442ea7b569c8"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -156,6 +156,16 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
+  SDLAB_TEST_DETACHED_START_TIMEOUT_S
+  SDLAB_TEST_DETACHED_START_ATTEMPTS
+  SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S
+  SDLAB_TEST_POLL_EXEC_TIMEOUT_S
+  SDLAB_TEST_POLL_MAX_RETRIES
+  SDLAB_TEST_POLL_RETRY_SLEEP_S
+  SDLAB_TEST_POLL_OUTAGE_MAX_S
+  SDLAB_TEST_POLL_MAX_BYTES
+  SDLAB_TEST_USAGE_POLL_ATTEMPTS
+  SDLAB_TEST_USAGE_POLL_RETRY_SLEEP_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 colab_apply_test_cleanup_overrides "${TEST_MODE}"
@@ -197,6 +207,7 @@ cleanup_on_exit() {
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true
+    wait "${EXEC_PID}" 2>/dev/null || true
   fi
   if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
     sleep 3600
@@ -502,6 +513,9 @@ if [ "\${SHA_BEFORE}" != "\${SHA_AFTER}" ] || [ "\${SHA_BEFORE}" != "\${SHA_COPY
 fi
 
 kill "\${COMFY_PID}" 2>/dev/null || true
+if [ -f /content/.sdlab_live.err.log ]; then
+  cp -f /content/.sdlab_live.err.log /content/lane1_out/detached_worker_stderr.log 2>/dev/null || true
+fi
 while IFS= read -r -d '' f; do
   /content/venv-lane1/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)

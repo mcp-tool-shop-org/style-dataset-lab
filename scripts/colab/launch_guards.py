@@ -25,6 +25,7 @@ import signal
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -1388,13 +1389,15 @@ def prepare_content_downloads(
 
 
 DETACHED_LIVE_LOG = ".sdlab_live.log"
+DETACHED_LIVE_ERR = ".sdlab_live.err.log"
 DETACHED_LIVE_META = ".sdlab_live.meta.json"
 DETACHED_LIVE_RC = ".sdlab_live.rc"
 DETACHED_LIVE_DONE = ".sdlab_live.done"
 DETACHED_STARTED_PREFIX = "SDLAB_DETACHED_STARTED "
 DETACHED_POLL_PREFIX = "SDLAB_POLL_ENVELOPE "
 DETACHED_KILLED_PREFIX = "SDLAB_DETACHED_KILLED "
-DETACHED_POLL_MAX_BYTES_DEFAULT = 2097152
+DETACHED_POLL_MAX_BYTES_DEFAULT = 262144
+DETACHED_STDERR_TAIL_BYTES = 262144
 
 
 def _atomic_write_text(path: Path, content: str) -> None:
@@ -1447,10 +1450,120 @@ def _pid_is_alive(pid: int) -> bool:
 
 def clear_detached_state(content_root: str | Path) -> None:
     root = Path(content_root)
-    for rel in (DETACHED_LIVE_LOG, DETACHED_LIVE_META, DETACHED_LIVE_RC, DETACHED_LIVE_DONE):
+    for rel in (DETACHED_LIVE_LOG, DETACHED_LIVE_ERR, DETACHED_LIVE_META, DETACHED_LIVE_RC, DETACHED_LIVE_DONE):
         p = root / rel
         if p.exists() or p.is_symlink():
             p.unlink(missing_ok=True)
+
+
+def _pgid_has_live_member(pgid: int) -> bool:
+    if pgid <= 1 or os.name == "nt" or pgid == os.getpgrp():
+        return False
+    proc_root = Path("/proc")
+    if proc_root.is_dir():
+        for stat_p in proc_root.glob("[0-9]*/stat"):
+            try:
+                pid_val = int(stat_p.parent.name)
+                if pid_val == os.getpid():
+                    continue
+                fields = stat_p.read_text(encoding="utf-8").rsplit(")", 1)[-1].split()
+                if fields[0] == "Z":
+                    continue
+                if int(fields[2]) == pgid or int(fields[3]) == pgid:
+                    return True
+            except (OSError, ValueError, IndexError):
+                continue
+        return False
+    try:  # pragma: no cover - non-procfs POSIX fallback
+        os.kill(-int(pgid), 0)
+        return True
+    except OSError:
+        return False
+
+
+def _scan_proc_for_detached_worker(root: Path) -> int:
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return 0
+    root_str = str(root)
+    root_resolved = str(root.resolve())
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid_val = int(entry.name)
+        if pid_val == os.getpid() or not _pid_is_alive(pid_val):
+            continue
+        try:
+            raw = (entry / "cmdline").read_bytes()
+        except OSError:
+            continue
+        if not raw:
+            continue
+        parts = [tok.decode("utf-8", errors="replace") for tok in raw.split(b"\0") if tok]
+        if "--detached-worker" in parts and (root_str in parts or root_resolved in parts):
+            return pid_val
+    return 0
+
+
+def _find_existing_detached_worker(root: Path, *, start_token: str = "") -> dict[str, Any] | None:
+    meta_path = root / DETACHED_LIVE_META
+    done_path = root / DETACHED_LIVE_DONE
+    meta: dict[str, Any] = {}
+    if meta_path.is_file():
+        try:
+            loaded = json.loads(meta_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                meta = loaded
+        except (ValueError, OSError):
+            meta = {}
+
+    wpid = int(meta.get("worker_pid") or 0) if isinstance(meta.get("worker_pid"), int) else 0
+    cpid = int(meta.get("child_pid") or 0) if isinstance(meta.get("child_pid"), int) else 0
+    wpgid = int(meta.get("worker_pgid") or 0) if isinstance(meta.get("worker_pgid"), int) else 0
+    meta_token = str(meta.get("start_token") or "")
+
+    if not done_path.is_file():
+        if (
+            (wpid > 0 and _pid_is_alive(wpid))
+            or (cpid > 0 and _pid_is_alive(cpid))
+            or (wpgid > 1 and _pgid_has_live_member(wpgid))
+        ):
+            return {
+                "worker_pid": wpid or cpid,
+                "worker_pgid": wpgid or None,
+                "child_pid": cpid or None,
+                "script": meta.get("script"),
+                "started_epoch": meta.get("started_epoch"),
+                "start_token": meta_token or start_token,
+            }
+
+    if start_token and meta_token == start_token and (done_path.is_file() or (root / DETACHED_LIVE_LOG).is_file()):
+        return {
+            "worker_pid": wpid,
+            "worker_pgid": wpgid or None,
+            "child_pid": cpid or None,
+            "script": meta.get("script"),
+            "started_epoch": meta.get("started_epoch"),
+            "start_token": start_token,
+        }
+
+    proc_pid = _scan_proc_for_detached_worker(root)
+    if proc_pid > 0:
+        proc_pgid: int | None = None
+        if os.name != "nt":
+            try:
+                proc_pgid = os.getpgid(proc_pid)
+            except OSError:
+                proc_pgid = None
+        return {
+            "worker_pid": proc_pid,
+            "worker_pgid": proc_pgid,
+            "child_pid": None,
+            "script": meta.get("script"),
+            "started_epoch": meta.get("started_epoch") or round(time.time(), 6),
+            "start_token": meta_token or start_token,
+        }
+    return None
 
 
 class _ScrubbingLogStream:
@@ -1476,64 +1589,102 @@ def run_detached_worker(
     *,
     env: dict[str, str] | None = None,
 ) -> int:
-    """Execute `SDLAB_REMOTE_SCRIPT` on the VM, writing scrubbed live output + exit rc to files."""
+    """Execute `SDLAB_REMOTE_SCRIPT` on the VM, writing scrubbed live output, stderr, and exit rc to files."""
     root = Path(content_root)
     root.mkdir(parents=True, exist_ok=True)
     effective_env = dict(os.environ if env is None else env)
     target_script = effective_env.get("SDLAB_REMOTE_SCRIPT", "").strip()
+    start_token = effective_env.get("SDLAB_START_TOKEN", "").strip()
     log_path = root / DETACHED_LIVE_LOG
+    err_path = root / DETACHED_LIVE_ERR
     meta_path = root / DETACHED_LIVE_META
     rc_path = root / DETACHED_LIVE_RC
     done_path = root / DETACHED_LIVE_DONE
 
-    if not target_script:
-        with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
-            log_fh.write("REFUSED: SDLAB_REMOTE_SCRIPT is required\nSDLAB_REMOTE_RC=2\n")
-            log_fh.flush()
-        _atomic_write_text(rc_path, "2\n")
-        _atomic_write_text(done_path, json.dumps({"rc": 2, "finished_epoch": round(time.time(), 6)}) + "\n")
-        return 2
+    orig_stderr = sys.stderr
+    scrubbed_stderr = _ScrubbingLogStream(orig_stderr)
+    sys.stderr = scrubbed_stderr  # type: ignore[assignment]
+    try:
+        if not target_script:
+            with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
+                log_fh.write("REFUSED: SDLAB_REMOTE_SCRIPT is required\nSDLAB_REMOTE_RC=2\n")
+                log_fh.flush()
+            _atomic_write_text(rc_path, "2\n")
+            _atomic_write_text(
+                done_path,
+                json.dumps({"rc": 2, "finished_epoch": round(time.time(), 6), "start_token": start_token}) + "\n",
+            )
+            return 2
 
-    cmd = [_resolve_bash_bin(effective_env), target_script]
-    started_epoch = round(time.time(), 6)
-    with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
-        proc = subprocess.Popen(
-            cmd,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            env=effective_env,
-        )
+        cmd = [_resolve_bash_bin(effective_env), target_script]
+        started_epoch = round(time.time(), 6)
+        worker_pgid = os.getpgrp() if os.name != "nt" else None
         _atomic_write_text(
             meta_path,
             json.dumps(
                 {
                     "worker_pid": os.getpid(),
-                    "child_pid": proc.pid,
+                    "worker_pgid": worker_pgid,
+                    "child_pid": None,
                     "script": target_script,
                     "started_epoch": started_epoch,
+                    "start_token": start_token,
                 }
             )
             + "\n",
         )
-        assert proc.stdout is not None
-        for line in proc.stdout:
-            log_fh.write(scrub_colab_tokens(line))
+        with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                errors="replace",
+                bufsize=1,
+                env=effective_env,
+            )
+            _atomic_write_text(
+                meta_path,
+                json.dumps(
+                    {
+                        "worker_pid": os.getpid(),
+                        "worker_pgid": worker_pgid,
+                        "child_pid": proc.pid,
+                        "script": target_script,
+                        "started_epoch": started_epoch,
+                        "start_token": start_token,
+                    }
+                )
+                + "\n",
+            )
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                log_fh.write(scrub_colab_tokens(line))
+                log_fh.flush()
+            rc = int(proc.wait())
+            dl_chunk_raw = effective_env.get("SDLAB_DL_CHUNK_BYTES", "").strip()
+            if dl_chunk_raw.isdigit() and int(dl_chunk_raw) > 0:
+                stream = _ScrubbingLogStream(log_fh)
+                with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):  # type: ignore[arg-type]
+                    prepare_content_downloads(root, int(dl_chunk_raw))
+            log_fh.write(f"SDLAB_REMOTE_RC={rc}\n")
             log_fh.flush()
-        rc = int(proc.wait())
-        dl_chunk_raw = effective_env.get("SDLAB_DL_CHUNK_BYTES", "").strip()
-        if dl_chunk_raw.isdigit() and int(dl_chunk_raw) > 0:
-            stream = _ScrubbingLogStream(log_fh)
-            with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):  # type: ignore[arg-type]
-                prepare_content_downloads(root, int(dl_chunk_raw))
-        log_fh.write(f"SDLAB_REMOTE_RC={rc}\n")
-        log_fh.flush()
 
-    _atomic_write_text(rc_path, f"{rc}\n")
-    _atomic_write_text(done_path, json.dumps({"rc": rc, "finished_epoch": round(time.time(), 6)}) + "\n")
-    return rc
+        _atomic_write_text(rc_path, f"{rc}\n")
+        _atomic_write_text(
+            done_path,
+            json.dumps({"rc": rc, "finished_epoch": round(time.time(), 6), "start_token": start_token}) + "\n",
+        )
+        return rc
+    except Exception:
+        scrubbed_stderr.write(traceback.format_exc())
+        scrubbed_stderr.flush()
+        raise
+    finally:
+        scrubbed_stderr.flush()
+        sys.stderr = orig_stderr
+        scrub_file_in_place(err_path)
 
 
 def start_detached_worker(
@@ -1542,7 +1693,7 @@ def start_detached_worker(
     script_path: str | None = None,
     env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Clear stale live state and spawn `run_detached_worker` in the background, returning immediately."""
+    """Idempotently start `run_detached_worker` in the background, returning an existing live worker on retry."""
     root = Path(content_root)
     root.mkdir(parents=True, exist_ok=True)
     effective_env = dict(os.environ if env is None else env)
@@ -1550,31 +1701,62 @@ def start_detached_worker(
     if not target_script:
         raise ValueError("REFUSED: SDLAB_REMOTE_SCRIPT is required")
 
+    start_token = effective_env.get("SDLAB_START_TOKEN", "").strip()
+    meta_path = root / DETACHED_LIVE_META
+    existing = _find_existing_detached_worker(root, start_token=start_token)
+    if existing is not None:
+        if not meta_path.is_file():
+            _atomic_write_text(
+                meta_path,
+                json.dumps(
+                    {
+                        "worker_pid": existing["worker_pid"],
+                        "worker_pgid": existing.get("worker_pgid"),
+                        "child_pid": existing.get("child_pid"),
+                        "script": existing.get("script") or target_script,
+                        "started_epoch": existing.get("started_epoch") or round(time.time(), 6),
+                        "start_token": existing.get("start_token") or start_token,
+                    }
+                )
+                + "\n",
+            )
+        return {
+            "ok": True,
+            "worker_pid": existing["worker_pid"],
+            "already_running": True,
+            "content_root": str(root),
+            "script": existing.get("script") or target_script,
+        }
+
     clear_detached_state(root)
     (root / DETACHED_LIVE_LOG).write_bytes(b"")
+    err_path = root / DETACHED_LIVE_ERR
     worker_env = dict(effective_env)
     worker_env["SDLAB_REMOTE_SCRIPT"] = target_script
     worker_env["SDLAB_CONTENT"] = str(root)
 
     started_epoch = round(time.time(), 6)
-    worker = subprocess.Popen(
-        [sys.executable, "-u", str(Path(__file__).resolve()), "--detached-worker", "--content-root", str(root)],
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=worker_env,
-        start_new_session=(os.name != "nt"),
-    )
-    meta_path = root / DETACHED_LIVE_META
+    with err_path.open("wb") as err_fh:
+        worker = subprocess.Popen(
+            [sys.executable, "-u", str(Path(__file__).resolve()), "--detached-worker", "--content-root", str(root)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=err_fh,
+            env=worker_env,
+            start_new_session=(os.name != "nt"),
+        )
+    worker_pgid = worker.pid if os.name != "nt" else None
     if not meta_path.is_file():
         _atomic_write_text(
             meta_path,
             json.dumps(
                 {
                     "worker_pid": worker.pid,
+                    "worker_pgid": worker_pgid,
                     "child_pid": None,
                     "script": target_script,
                     "started_epoch": started_epoch,
+                    "start_token": start_token,
                 }
             )
             + "\n",
@@ -1582,6 +1764,7 @@ def start_detached_worker(
     return {
         "ok": True,
         "worker_pid": worker.pid,
+        "already_running": False,
         "content_root": str(root),
         "script": target_script,
     }
@@ -1600,6 +1783,7 @@ def poll_detached_output(
     rc_path = root / DETACHED_LIVE_RC
     meta_path = root / DETACHED_LIVE_META
     log_path = root / DETACHED_LIVE_LOG
+    err_path = root / DETACHED_LIVE_ERR
 
     done_before = done_path.is_file()
     worker_dead_without_done = False
@@ -1642,7 +1826,7 @@ def poll_detached_output(
     next_offset = safe_offset + len(raw_slice)
     chunk_text = scrub_colab_tokens(raw_slice.decode("utf-8", errors="replace")) if raw_slice else ""
     eof = bool(is_terminal and next_offset >= total_bytes)
-    return {
+    res: dict[str, Any] = {
         "ok": True,
         "offset": safe_offset,
         "next_offset": next_offset,
@@ -1652,33 +1836,58 @@ def poll_detached_output(
         "rc": rc_val,
         "chunk": chunk_text,
     }
+    if eof:
+        worker_stderr = ""
+        if err_path.is_file():
+            scrub_file_in_place(err_path)
+            raw_err = err_path.read_bytes()
+            if len(raw_err) > DETACHED_STDERR_TAIL_BYTES:
+                raw_err = raw_err[-DETACHED_STDERR_TAIL_BYTES:]
+            worker_stderr = scrub_colab_tokens(raw_err.decode("utf-8", errors="replace"))
+        res["worker_stderr"] = worker_stderr
+    return res
 
 
-def stop_detached_worker(content_root: str | Path) -> dict[str, Any]:
-    """Best-effort terminate recorded child + worker PIDs in `.sdlab_live.meta.json`."""
+def stop_detached_worker(content_root: str | Path, *, sig: int | None = None) -> dict[str, Any]:
+    """Best-effort terminate recorded worker + child PIDs (worker first so child EOF cannot trigger download prep)."""
     root = Path(content_root)
     meta_path = root / DETACHED_LIVE_META
+    eff_sig = int(signal.SIGTERM if sig is None else sig)
     signaled: list[int] = []
+    candidate_pids: list[int] = []
+    wpgid = 0
     if meta_path.is_file():
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except (ValueError, OSError):
             meta = {}
-        for key in ("child_pid", "worker_pid"):
+        if isinstance(meta.get("worker_pgid"), int):
+            wpgid = int(meta["worker_pgid"])
+        for key in ("worker_pid", "child_pid"):
             raw_pid = meta.get(key)
-            if isinstance(raw_pid, int) and raw_pid > 0 and raw_pid != os.getpid():
-                if os.name != "nt":
-                    try:
-                        pgid = os.getpgid(raw_pid)
-                        if pgid > 1 and pgid != os.getpgrp():
-                            os.killpg(pgid, signal.SIGTERM)
-                    except OSError:
-                        pass
-                try:
-                    os.kill(raw_pid, signal.SIGTERM)
-                    signaled.append(raw_pid)
-                except OSError:
-                    pass
+            if isinstance(raw_pid, int) and raw_pid > 0 and raw_pid != os.getpid() and raw_pid not in candidate_pids:
+                candidate_pids.append(raw_pid)
+    proc_pid = _scan_proc_for_detached_worker(root)
+    if proc_pid > 0 and proc_pid not in candidate_pids:
+        candidate_pids.insert(0, proc_pid)
+    for raw_pid in candidate_pids:
+        try:
+            os.kill(raw_pid, eff_sig)
+            signaled.append(raw_pid)
+        except OSError:
+            pass
+        if os.name != "nt":
+            try:
+                pgid = os.getpgid(raw_pid)
+                if pgid > 1 and pgid != os.getpgrp():
+                    os.killpg(pgid, eff_sig)
+            except OSError:
+                pass
+    if os.name != "nt" and wpgid > 1 and wpgid != os.getpgrp():
+        try:
+            os.killpg(wpgid, eff_sig)
+        except OSError:
+            pass
     return {"ok": True, "signaled_pids": signaled}
 
 
@@ -1707,6 +1916,10 @@ def apply_detached_poll_response(raw_poll_stdout: str, vitals_path: Path) -> dic
         with vitals_path.open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(cleaned)
             fh.flush()
+    if bool(envelope.get("eof")) and isinstance(envelope.get("worker_stderr"), str):
+        vitals_path.parent.mkdir(parents=True, exist_ok=True)
+        stderr_out = vitals_path.parent / "detached_worker_stderr.log"
+        stderr_out.write_text(scrub_colab_tokens(envelope["worker_stderr"]), encoding="utf-8", newline="\n")
     return {
         "offset": offset,
         "next_offset": next_offset,
@@ -1811,7 +2024,7 @@ def main(argv: list[str] | None = None) -> int:
         except (ValueError, OSError) as exc:
             print(f"POLL_PARSE_ERROR: {exc}", file=sys.stderr)
             return 1
-        rc_str = "" if res_poll["rc"] is None else str(res_poll["rc"])
+        rc_str = "none" if res_poll["rc"] is None else str(res_poll["rc"])
         done_flag = 1 if res_poll["done"] else 0
         eof_flag = 1 if res_poll["eof"] else 0
         run_bytes = (

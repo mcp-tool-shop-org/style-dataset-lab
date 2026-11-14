@@ -790,7 +790,9 @@ def test_rig_side_kill_still_brings_back_the_outputs(tmp_path: Path) -> None:
         # The killed exec's cell still held the session's one kernel: the kit restarted it first.
         assert "RESTART -s sdlab-l3-gpu-rung" in (state_dir / "restarts.log").read_text(encoding="utf-8")
         assert "rung_outputs/rustline_style_v5/samples/1762400000000__000000020_0.jpg" in members
+        assert "detached_worker_stderr.log" in members
         assert json.loads(members["vm_window.json"])["train"] == "failed"
+        assert not (content / ".sdlab_live.done").exists()
         assert _rung_processes(content) == []
         _assert_token_nowhere(out_dir)
     finally:

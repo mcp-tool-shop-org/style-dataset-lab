@@ -396,6 +396,12 @@ colab_apply_test_cleanup_overrides() {
   if [ -n "${SDLAB_TEST_POLL_RETRY_SLEEP_S:-}" ]; then
     export COLAB_POLL_RETRY_SLEEP_S="${SDLAB_TEST_POLL_RETRY_SLEEP_S}"
   fi
+  if [ -n "${SDLAB_TEST_POLL_OUTAGE_MAX_S:-}" ]; then
+    export COLAB_POLL_OUTAGE_MAX_S="${SDLAB_TEST_POLL_OUTAGE_MAX_S}"
+  fi
+  if [ -n "${SDLAB_TEST_POLL_MAX_BYTES:-}" ]; then
+    export COLAB_POLL_MAX_BYTES="${SDLAB_TEST_POLL_MAX_BYTES}"
+  fi
   if [ -n "${SDLAB_TEST_USAGE_POLL_ATTEMPTS:-}" ]; then
     export COLAB_USAGE_POLL_ATTEMPTS="${SDLAB_TEST_USAGE_POLL_ATTEMPTS}"
   fi
@@ -2941,6 +2947,8 @@ colab_run_exec_with_live_guards() {
   [ "${poll_exec_t}" -gt "${dl_bound_s}" ] && poll_exec_t="${dl_bound_s}"
   local max_poll_retries="${COLAB_POLL_MAX_RETRIES:-12}"
   local poll_retry_sleep_s="${COLAB_POLL_RETRY_SLEEP_S:-5}"
+  local poll_outage_max_s="${COLAB_POLL_OUTAGE_MAX_S:-${stall_s}}"
+  local poll_max_bytes="${COLAB_POLL_MAX_BYTES:-262144}"
 
   local last_size=0
   local last_progress_epoch
@@ -2952,11 +2960,13 @@ colab_run_exec_with_live_guards() {
   : > "${out_dir}/vitals.log"
 
   local dl_chunk_env="${COLAB_DOWNLOAD_CHUNK_BYTES:-${COLAB_DOWNLOAD_CHUNK_BYTES_DEFAULT}}"
+  local start_token="sdlab-start-$$-${start_epoch}-${RANDOM:-0}"
   local start_args=(
     "-s" "${session}" "-f" "${runner_py}" "--timeout" "${start_exec_t}"
     "--env" "SDLAB_CONTENT=/content"
     "--env" "SDLAB_DL_CHUNK_BYTES=${dl_chunk_env}"
     "--env" "SDLAB_RUNNER_MODE=start"
+    "--env" "SDLAB_START_TOKEN=${start_token}"
   )
   for kv in "${env_pairs[@]}"; do
     start_args+=("--env" "${kv}")
@@ -2976,6 +2986,9 @@ colab_run_exec_with_live_guards() {
     wait "${EXEC_PID}" || start_rc=$?
     EXEC_PID=""
     if [ "${start_rc}" -eq 0 ] && grep -q '^SDLAB_DETACHED_STARTED ' "${start_out_file}" 2>/dev/null; then
+      if grep -Eq '"already_running":[[:space:]]*true' "${start_out_file}" 2>/dev/null; then
+        echo "DETACHED_START_ALREADY_RUNNING attempt=${start_attempt}/${max_start_attempts}" >> "${out_dir}/guards.log"
+      fi
       start_ok=1
       break
     fi
@@ -2999,6 +3012,7 @@ colab_run_exec_with_live_guards() {
 
   local remote_offset=0
   local poll_failures=0
+  local poll_outage_start_epoch=0
   local drain_immediately=0
 
   while true; do
@@ -3020,16 +3034,25 @@ colab_run_exec_with_live_guards() {
       elapsed_s="$((now_epoch - start_epoch))"
     fi
 
+    local eff_poll_exec_t="${poll_exec_t}"
+    if [ "${poll_outage_start_epoch}" -gt 0 ]; then
+      local rem_outage_s=$(( poll_outage_max_s - (now_epoch - poll_outage_start_epoch) ))
+      [ "${rem_outage_s}" -lt 1 ] && rem_outage_s=1
+      [ "${rem_outage_s}" -lt "${eff_poll_exec_t}" ] && eff_poll_exec_t="${rem_outage_s}"
+    fi
+
     local poll_out_file="${out_dir}/.detached_poll.out"
     local poll_args=(
-      "-s" "${session}" "-f" "${runner_py}" "--timeout" "${poll_exec_t}"
+      "-s" "${session}" "-f" "${runner_py}" "--timeout" "${eff_poll_exec_t}"
       "--env" "SDLAB_CONTENT=/content"
       "--env" "SDLAB_RUNNER_MODE=poll"
       "--env" "SDLAB_POLL_OFFSET=${remote_offset}"
+      "--env" "SDLAB_POLL_MAX_BYTES=${poll_max_bytes}"
     )
+    local poll_attempt_epoch="${now_epoch}"
     (
       trap - TERM INT
-      exec timeout -k "${kill_grace}" "${poll_exec_t}" colab exec "${poll_args[@]}" </dev/null
+      exec timeout -k "${kill_grace}" "${eff_poll_exec_t}" colab exec "${poll_args[@]}" </dev/null
     ) > "${poll_out_file}" 2>&1 &
     EXEC_PID="$!"
     printf '%s\n' "${EXEC_PID}" >> "${out_dir}/.watcher_tracked_pids.txt" 2>/dev/null || true
@@ -3047,7 +3070,14 @@ colab_run_exec_with_live_guards() {
 
     if [ "${parse_rc}" -ne 0 ] || [ -z "${parsed_poll}" ]; then
       poll_failures=$((poll_failures + 1))
-      echo "DETACHED_POLL_RETRY attempt=${poll_failures}/${max_poll_retries} offset=${remote_offset} rc=${parse_rc}" >> "${out_dir}/guards.log"
+      if [ "${poll_outage_start_epoch}" -eq 0 ]; then
+        poll_outage_start_epoch="${poll_attempt_epoch}"
+      fi
+      local outage_now_epoch outage_elapsed_s
+      outage_now_epoch="$(date -u +%s)"
+      outage_elapsed_s=$(( outage_now_epoch - poll_outage_start_epoch ))
+      [ "${outage_elapsed_s}" -lt 0 ] && outage_elapsed_s=0
+      echo "DETACHED_POLL_RETRY attempt=${poll_failures}/${max_poll_retries} offset=${remote_offset} rc=${parse_rc} outage_s=${outage_elapsed_s}/${poll_outage_max_s}" >> "${out_dir}/guards.log"
 
       # Keep local wall and priced-rate cap ceiling enforced even while the host NIC is unreachable.
       if [ -f "${out_dir}/start_balance.txt" ] && [ -f "${out_dir}/end_balance.txt" ]; then
@@ -3076,8 +3106,8 @@ colab_run_exec_with_live_guards() {
         fi
       fi
 
-      if [ "${poll_failures}" -gt "${max_poll_retries}" ]; then
-        colab_refuse_logged "${out_dir}" POLL_RECONNECT_EXHAUSTED "detached remote runner poll failed ${poll_failures} consecutive times at offset=${remote_offset} (last rc=${parse_rc})"
+      if [ "${poll_failures}" -gt "${max_poll_retries}" ] || [ "${outage_elapsed_s}" -ge "${poll_outage_max_s}" ]; then
+        colab_refuse_logged "${out_dir}" POLL_RECONNECT_EXHAUSTED "detached remote runner poll failed ${poll_failures} consecutive times over ${outage_elapsed_s}s (max_retries=${max_poll_retries}, max_outage_s=${poll_outage_max_s}, offset=${remote_offset}, last rc=${parse_rc})"
         return 94
       fi
       sleep "${poll_retry_sleep_s}"
@@ -3087,11 +3117,13 @@ colab_run_exec_with_live_guards() {
     if [ "${poll_failures}" -gt 0 ]; then
       echo "DETACHED_POLL_RECOVERED after_failures=${poll_failures} offset=${remote_offset}" >> "${out_dir}/guards.log"
       poll_failures=0
+      poll_outage_start_epoch=0
     fi
 
     local poll_done="0" poll_eof="0" poll_rc_val=""
     run_only_bytes="0"
-    IFS=$'\t' read -r remote_offset poll_done poll_eof poll_rc_val run_only_bytes <<< "${parsed_poll}"
+    IFS='|' read -r remote_offset poll_done poll_eof poll_rc_val run_only_bytes <<< "${parsed_poll//$'\t'/|}"
+    [ "${poll_rc_val}" = "none" ] && poll_rc_val=""
     if [ "${poll_eof}" = "1" ]; then
       break
     fi
@@ -4165,7 +4197,7 @@ colab_scrub_all_logs() {
   local scrub_args=()
   while IFS= read -r -d '' f; do
     scrub_args+=("--scrub-file" "${f}")
-  done < <(find "${out_dir}" -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" -o -name "*.sh" \) -print0 2>/dev/null || true)
+  done < <(find "${out_dir}" -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" -o -name "*.sh" -o -name ".detached_*.out" -o -name "*.out" \) -print0 2>/dev/null || true)
   if [ "${#scrub_args[@]}" -gt 0 ]; then
     "${py_bin}" "${guards_py}" "${scrub_args[@]}" </dev/null || true
   fi

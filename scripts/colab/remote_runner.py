@@ -122,6 +122,7 @@ def run_remote_script(
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         bufsize=1,
         env=effective_env,
     )
