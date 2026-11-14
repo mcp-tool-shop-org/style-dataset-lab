@@ -50,15 +50,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
+PINNED_LAUNCH_GUARDS_SHA="5a134c04283a4e84f00a5921a7b29939911e778e479f1562d428a3338a3f5c50"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="b9ce5726864d7fd98dc4ae6892ff3b78fbc9f94edddb1b451a14c3f05dde6bcf"
-PINNED_LANE3_RUNG_SHA="8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad"
+PINNED_COLAB_WINDOW_SHA="49e217fa483f441b8d7351364c3e72c73881ae2db0545de7244935290a3fbb63"
+PINNED_LANE3_RUNG_SHA="957c6e327ecb1d92aa64d7e832de276c07539dc3d27a92f3c4d2c1bbe0b4c05e"
 PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="abb711ec49555ecd9fb8f9b79b11675538988ed2864ba2b6346981666852640f"
+PINNED_SELF_SHA="8e1e8c2396b243c165a90701e5d52d6d56a8262b1c220b9e5eb306982f6071c7"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -404,8 +404,13 @@ lane3_train_on_exit() {
     while IFS= read -r -d '' f; do
       "\${LANE3_PY}" /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
     done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
-    tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out . || true
-    echo "TRAIN_BUNDLE_AFTER_FAILURE rc=\${rc} /content/lane3_stub_bundle.tar.gz"
+    rm -f /content/lane3_stub_bundle.tar.gz.tmp
+    if tar -czf /content/lane3_stub_bundle.tar.gz.tmp -C /content/lane3_out .; then
+      mv -f /content/lane3_stub_bundle.tar.gz.tmp /content/lane3_stub_bundle.tar.gz
+      echo "TRAIN_BUNDLE_AFTER_FAILURE rc=\${rc} /content/lane3_stub_bundle.tar.gz"
+    else
+      rm -f /content/lane3_stub_bundle.tar.gz.tmp
+    fi
   fi
   exit "\${rc}"
 }
@@ -469,6 +474,7 @@ TRAIN_PID=\$!
 COPY_PID=\$!
 wait "\${TRAIN_PID}"
 TRAIN_RC=\$?
+echo "bundle" > /content/lane3_out/phase.txt
 wait "\${COPY_PID}"
 # Record the complete manifest of the training folder before the final sweep so the rig can verify
 # every file (path, bytes, sha256) arrived in the downloaded bundle.
@@ -552,7 +558,9 @@ fi
 while IFS= read -r -d '' f; do
   /content/venv-lane3/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane3_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.jsonl" -o -name "*.txt" \) -print0 2>/dev/null || true)
-tar -czf /content/lane3_stub_bundle.tar.gz -C /content/lane3_out .
+rm -f /content/lane3_stub_bundle.tar.gz.tmp
+tar -czf /content/lane3_stub_bundle.tar.gz.tmp -C /content/lane3_out .
+mv -f /content/lane3_stub_bundle.tar.gz.tmp /content/lane3_stub_bundle.tar.gz
 # <<< sdlab-lane3-window
 REMOTEEOF
 }
@@ -641,7 +649,9 @@ WHEEL_DIR="${SDLAB_WHEEL_DIR:-}"
 CAP="${CAP:-0.15}"
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
-MARGIN="${MARGIN:-0.01}"
+CALLER_MARGIN="${MARGIN:-}"
+MARGIN="${CALLER_MARGIN:-0.02}"
+MARGIN_SET=0
 EMIT_REMOTE_SCRIPT=""
 EMIT_REQUESTED=0
 TRAIN_REQUESTED=0
@@ -691,7 +701,7 @@ while [ "$#" -gt 0 ]; do
     --cap) SESSION_ARGS+=("$1"); CAP="$2"; CAP_SET=1; shift 2 ;;
     --wall-s) SESSION_ARGS+=("$1"); WALL_S="$2"; WALL_SET=1; shift 2 ;;
     --grace-s) SESSION_ARGS+=("$1"); GRACE_S="$2"; shift 2 ;;
-    --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; shift 2 ;;
+    --margin) SESSION_ARGS+=("$1"); MARGIN="$2"; MARGIN_SET=1; shift 2 ;;
     --train) TRAIN_REQUESTED=1; shift ;;
     --max-rate) SESSION_ARGS+=("$1"); TRAIN_MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SESSION_ARGS+=("$1"); SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -817,6 +827,9 @@ colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
+if [ "${MARGIN_SET}" != "1" ] && [ -z "${CALLER_MARGIN}" ] && ! colab_card_is_cpu "${CARD}"; then
+  MARGIN="1.0"
+fi
 
 if [ "${DRY_RUN}" = "1" ]; then
   if [ -n "${JOB_YAML}" ] && [ "${COLAB_DOWNLOAD_TIMEOUT_SOURCE}" = "default" ] && [ -z "${DOWNLOAD_FLOOR_MB_S_ARG}" ]; then
@@ -1065,6 +1078,10 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
+  SDLAB_TEST_USAGE_POLL_ATTEMPTS
+  SDLAB_TEST_USAGE_POLL_TIMEOUT_S
+  SDLAB_TEST_USAGE_POLL_KILL_GRACE_S
+  SDLAB_TEST_USAGE_POLL_BACKOFF_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 colab_apply_test_cleanup_overrides "${TEST_MODE}"
@@ -1202,11 +1219,7 @@ cleanup_on_exit() {
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
+  colab_release_wall_watcher "${OUT_DIR}" "${SESSION}" "${WALL_WATCHER_PID}"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \

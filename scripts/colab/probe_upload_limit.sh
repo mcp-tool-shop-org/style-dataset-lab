@@ -15,9 +15,9 @@
 # each step, and always stops its session on exit.
 set -euo pipefail
 
-PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
-PINNED_COLAB_WINDOW_SHA="b9ce5726864d7fd98dc4ae6892ff3b78fbc9f94edddb1b451a14c3f05dde6bcf"
-PINNED_SELF_SHA="4568eecf70cbe8a0adf4d29468c9494eae7814cd95434df27526138c048292e0"
+PINNED_LAUNCH_GUARDS_SHA="5a134c04283a4e84f00a5921a7b29939911e778e479f1562d428a3338a3f5c50"
+PINNED_COLAB_WINDOW_SHA="49e217fa483f441b8d7351364c3e72c73881ae2db0545de7244935290a3fbb63"
+PINNED_SELF_SHA="c1f659e5d7498fe7fb2f2ef3ba106cb877c1192613ccf7b31cc936570db01105"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/probe_upload_limit.sh"
@@ -30,7 +30,7 @@ OUT_DIR=""
 CAP="${CAP:-0.20}"
 WALL_S="${WALL_S:-1800}"
 GRACE_S="${GRACE_S:-60}"
-MARGIN="${MARGIN:-0.01}"
+MARGIN="${MARGIN:-0.02}"
 MIN_RUNTIME_S=""
 UPLOAD_SIZES_MB="16,32,64,96,128,160,200"
 DOWNLOAD_SIZES_MB="256,512,768,1024,1536,2048"
@@ -162,6 +162,10 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_OPEN_LOCK_TIMEOUT_S
   SDLAB_TEST_NEW_TIMEOUT_S
   SDLAB_TEST_WALL_ESCALATE_S
+  SDLAB_TEST_USAGE_POLL_ATTEMPTS
+  SDLAB_TEST_USAGE_POLL_TIMEOUT_S
+  SDLAB_TEST_USAGE_POLL_KILL_GRACE_S
+  SDLAB_TEST_USAGE_POLL_BACKOFF_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 colab_apply_test_cleanup_overrides "${TEST_MODE}"
@@ -265,11 +269,7 @@ cleanup_on_exit() {
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
+  colab_release_wall_watcher "${OUT_DIR}" "${SESSION}" "${WALL_WATCHER_PID}"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   probe_finalize_receipt "${rc}" "${closed_at}"

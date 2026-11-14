@@ -38,12 +38,12 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="619e7105be1bead576aecae2bfc4c5318c6a5f9935a6e12e85c7d8163ca594dd"
 PINNED_LANE1_RENDER_SHA="818580d18da800508efda37c4f0eb34d865f3c6fde1b39efe3854dddaec9d067"
 PINNED_LANE1_BUNDLE_NOW_SHA="4ff84e5f67db857cfd433b19432c708ca5f729aa144cae3c1fc214ab5b917fa2"
-PINNED_LANE3_RUNG_SHA="8055b0820faaac20fdcf39acd01ca86377f94df6ae962cf5e3d4a5a866336bad"
+PINNED_LANE3_RUNG_SHA="957c6e327ecb1d92aa64d7e832de276c07539dc3d27a92f3c4d2c1bbe0b4c05e"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="61519c8a72dd16e91042368b232e48d60581a92807bb0d1333b5f845ffe90c24"
+PINNED_LAUNCH_GUARDS_SHA="5a134c04283a4e84f00a5921a7b29939911e778e479f1562d428a3338a3f5c50"
 PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="b9ce5726864d7fd98dc4ae6892ff3b78fbc9f94edddb1b451a14c3f05dde6bcf"
-PINNED_SELF_SHA="045f8afa4222913379ebc1944d91a86f7d5e0e34c15338a83601d1e305b9158d"
+PINNED_COLAB_WINDOW_SHA="49e217fa483f441b8d7351364c3e72c73881ae2db0545de7244935290a3fbb63"
+PINNED_SELF_SHA="c6deee203b192ffacb555d6ba56329e621662a7118b5ad03ff8db439e198dbcc"
 
 LANE1_DISK_REQUIRED_GIB="50"
 LANE1_CPU_STUB_DISK_REQUIRED_GIB="5"
@@ -65,7 +65,9 @@ WALL_S_SET=0
 [ -n "${WALL_S:-}" ] && WALL_S_SET=1
 WALL_S="${WALL_S:-900}"
 GRACE_S="${GRACE_S:-60}"
-MARGIN="${MARGIN:-0.01}"
+CALLER_MARGIN="${MARGIN:-}"
+MARGIN="${CALLER_MARGIN:-0.02}"
+MARGIN_SET=0
 MAX_RATE=""
 SHAPE=""
 MIN_RUNTIME_S=""
@@ -102,7 +104,7 @@ while [ "$#" -gt 0 ]; do
     --cap) CAP="${2:-}"; CAP_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
     --wall-s) WALL_S="${2:-}"; WALL_S_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
     --grace-s) GRACE_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
-    --margin) MARGIN="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --margin) MARGIN="${2:-}"; MARGIN_SET=1; shift; [ "$#" -gt 0 ] && shift ;;
     --max-rate) MAX_RATE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --shape) SHAPE="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
     --min-runtime-s) MIN_RUNTIME_S="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
@@ -140,6 +142,9 @@ colab_configure_upload_timeout "${UPLOAD_TIMEOUT_S_ARG}" || exit 2
 colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "${UPLOAD_REASSEMBLE_MB_S_ARG}" || exit 2
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
+if [ "${MARGIN_SET}" != "1" ] && [ -z "${CALLER_MARGIN}" ] && ! colab_card_is_cpu "${CARD}"; then
+  MARGIN="1.0"
+fi
 
 if [ -n "${JOB_TIMEOUT_S_ARG}${MAX_CONSECUTIVE_FAILURES_ARG}" ] && [ "${RENDER_REQUESTED}" != "1" ]; then
   echo "REFUSED: RENDER_OPTION_WITHOUT_RENDER: --job-timeout-s and --max-consecutive-failures need --render" >&2
@@ -346,6 +351,10 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_PROBE_SECONDS
   SDLAB_TEST_PROBE_BYTES
   SDLAB_TEST_COMFY_PORT
+  SDLAB_TEST_USAGE_POLL_ATTEMPTS
+  SDLAB_TEST_USAGE_POLL_TIMEOUT_S
+  SDLAB_TEST_USAGE_POLL_KILL_GRACE_S
+  SDLAB_TEST_USAGE_POLL_BACKOFF_S
 )
 colab_refuse_live_pin_overrides "${OUT_DIR}" "${TEST_MODE}" "${PIN_OVERRIDE_VARS[@]}"
 colab_apply_test_cleanup_overrides "${TEST_MODE}"
@@ -504,11 +513,7 @@ cleanup_on_exit() {
   if [ -f "${OUT_DIR}/wall_trip_epoch.txt" ] && [ ! -f "${OUT_DIR}/watcher_escalated.txt" ] && [ ! -f "${OUT_DIR}/watcher_wait.txt" ]; then
     printf 'cleanup_seen\n' > "${OUT_DIR}/watcher_wait.txt"
   fi
-  if [ -n "${WALL_WATCHER_PID}" ]; then
-    pkill -P "${WALL_WATCHER_PID}" 2>/dev/null || true
-    kill -9 "${WALL_WATCHER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${OUT_DIR}/.watcher_tracked_pids.txt"
+  colab_release_wall_watcher "${OUT_DIR}" "${SESSION}" "${WALL_WATCHER_PID}"
   local closed_at
   closed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   colab_write_window_and_outcome \

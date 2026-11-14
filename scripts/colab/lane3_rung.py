@@ -97,6 +97,10 @@ LANE3_MODEL_LICENCE_ALLOWLIST: dict[str, dict[str, str]] = {
         "spdx_id": "Apache-2.0",
         "url": "https://github.com/QwenLM/Qwen-Image/blob/main/LICENSE",
     },
+    "Qwen/Qwen-Image-2512": {
+        "spdx_id": "Apache-2.0",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2512",
+    },
     "Qwen/Qwen2.5-VL-7B-Instruct": {
         "spdx_id": "Apache-2.0",
         "url": "https://github.com/QwenLM/Qwen2.5-VL/blob/main/LICENSE",
@@ -1452,6 +1456,7 @@ def _pick_setting(cli_val: Any, meta: dict[str, Any], meta_key: str) -> tuple[An
     return None, None
 
 
+SPLIT_DISK_HEADROOM_BYTES = 16 * 1024 * 1024
 OPTIMIZER_SIZE_SOURCE_RE = re.compile(r"^(measured|estimate):\s*\S")
 
 
@@ -1905,7 +1910,9 @@ def run_plan_run(args: argparse.Namespace) -> int:
         raw_output_bytes = full_bundle_bytes
         split_copy_overhead = 1.0 if raw_output_bytes > download_chunk_bytes else 0.0
         effective_overhead = round(overhead + split_copy_overhead, 6)
-        projected_output_bytes = math.ceil(raw_output_bytes * effective_overhead)
+        # the VM split check needs size + 16 MiB free (launch_guards.prepare_single_content_download)
+        split_disk_headroom_bytes = SPLIT_DISK_HEADROOM_BYTES if raw_output_bytes > download_chunk_bytes else 0
+        projected_output_bytes = math.ceil(raw_output_bytes * effective_overhead) + split_disk_headroom_bytes
         vm_budget_bytes = int(vm_budget_gib * GIB)
         avail_for_output_bytes = vm_budget_bytes - expected_model_b
         disk_ok = projected_output_bytes <= avail_for_output_bytes
@@ -1925,6 +1932,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
             "raw_output_bytes": raw_output_bytes,
             "base_copy_tar_overhead": overhead,
             "split_copy_overhead": split_copy_overhead,
+            "split_disk_headroom_bytes": split_disk_headroom_bytes,
             "chunked_download_split_required": raw_output_bytes > download_chunk_bytes,
             "download_chunk_bytes": download_chunk_bytes,
             "copy_tar_overhead": effective_overhead,
@@ -1941,7 +1949,8 @@ def run_plan_run(args: argparse.Namespace) -> int:
             raise Refusal(
                 "TRAIN_OUTPUT_DISK_LOW",
                 f"projected output {projected_output_bytes} bytes "
-                f"({raw_output_bytes} * {effective_overhead} [base {overhead} + split {split_copy_overhead}]) "
+                f"({raw_output_bytes} * {effective_overhead} [base {overhead} + split {split_copy_overhead}] "
+                f"+ {split_disk_headroom_bytes} headroom) "
                 f"cannot fit within {avail_for_output_bytes} bytes "
                 f"(VM disk guard {vm_budget_gib} GiB minus model {expected_model_b} bytes)",
             )
@@ -2650,6 +2659,26 @@ def rung_pids(root: Path, proc: Path = Path("/proc"), skip: Iterable[int] = ()) 
     return found
 
 
+def _tar_gz_is_complete(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size <= 0:
+        return False
+    try:
+        with tarfile.open(path, "r:gz") as tf:
+            while True:
+                member = tf.next()
+                if member is None:
+                    break
+                if member.isfile():
+                    src = tf.extractfile(member)
+                    if src is not None:
+                        with src:
+                            while src.read(1 << 20):
+                                pass
+        return True
+    except (tarfile.TarError, EOFError, OSError):
+        return False
+
+
 def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None] = os.kill,
                    proc: Path = Path("/proc")) -> int:
     """After the kit killed its exec (wall, cap, stall, dead harness), the VM-side script is still
@@ -2660,13 +2689,15 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
     root = Path(args.content)
     out = root / "lane3_out"
     bundle = root / BUNDLE_NAME
+    bundle_tmp = root / f"{BUNDLE_NAME}.tmp"
     pids = rung_pids(root, proc, skip=(os.getpid(), os.getppid()))
     for pid in pids:
         try:
             kill(pid, signal.SIGKILL)
         except OSError:
             continue
-    if not pids and bundle.is_file() and bundle.stat().st_size > 0:
+    bundle_tmp.unlink(missing_ok=True)
+    if not pids and _tar_gz_is_complete(bundle):
         print(f"BUNDLE_NOW: the remote script already bundled {bundle}", flush=True)
         return 0
     if not out.is_dir():
@@ -2687,8 +2718,9 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
             subprocess.run([sys.executable, str(guards), "--scrub-file", str(f)], check=False,
                            stdin=subprocess.DEVNULL)
     bundle.unlink(missing_ok=True)
-    with tarfile.open(bundle, "w:gz") as tf:
+    with tarfile.open(bundle_tmp, "w:gz") as tf:
         tf.add(str(out), arcname=".")
+    os.replace(bundle_tmp, bundle)
     print(f"BUNDLE_NOW: killed {len(pids)} rung process(es) and bundled {bundle}", flush=True)
     return 0
 
