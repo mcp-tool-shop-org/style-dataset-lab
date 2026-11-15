@@ -2641,22 +2641,42 @@ BUNDLE_NAME = "lane3_stub_bundle.tar.gz"
 
 
 def rung_pids(root: Path, proc: Path = Path("/proc"), skip: Iterable[int] = ()) -> list[int]:
-    """Processes of the rung on this VM: the remote script (and its subshells), ai-toolkit's run.py
-    and the lane3_rung.py helpers, found by their command lines under `root`."""
-    marks = (f"{root}/remote_lane3_stub.sh", f"{root}/ai-toolkit/run.py", f"{root}/lane3_rung.py copy-off",
-             f"{root}/lane3_rung.py download", "snapshot_download(repo_id=sys.argv[1]")
+    """Processes of the rung on this VM: the detached worker supervisor FIRST (so killing child
+    processes never triggers EOF download-prep in the worker), followed by the remote script (and
+    its subshells), ai-toolkit's run.py and the lane3_rung.py helpers, found under `root`."""
+    worker_marks = (f"--detached-worker --content-root {root}", f"{root}/launch_guards.py --detached-worker")
+    child_marks = (f"{root}/remote_lane3_stub.sh", f"{root}/ai-toolkit/run.py", f"{root}/lane3_rung.py copy-off",
+                   f"{root}/lane3_rung.py download", "snapshot_download(repo_id=sys.argv[1]")
     skip_set = set(skip)
-    found = []
+    worker_pids: list[int] = []
+    child_pids: list[int] = []
+    meta_p = root / ".sdlab_live.meta.json"
+    if meta_p.is_file() and proc.is_dir():
+        try:
+            meta = json.loads(meta_p.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            meta = {}
+        wpid = meta.get("worker_pid")
+        if isinstance(wpid, int) and wpid > 0 and wpid not in skip_set and (proc / str(wpid)).is_dir():
+            worker_pids.append(wpid)
+        cpid = meta.get("child_pid")
+        if isinstance(cpid, int) and cpid > 0 and cpid not in skip_set and (proc / str(cpid)).is_dir() and cpid not in worker_pids:
+            child_pids.append(cpid)
     for entry in proc.iterdir() if proc.is_dir() else []:
         if not entry.name.isdigit() or int(entry.name) in skip_set:
             continue
+        pid_val = int(entry.name)
         try:
             cmd = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace")
         except OSError:
             continue
-        if any(m in cmd for m in marks):
-            found.append(int(entry.name))
-    return found
+        if any(m in cmd for m in worker_marks):
+            if pid_val not in worker_pids:
+                worker_pids.append(pid_val)
+        elif any(m in cmd for m in child_marks):
+            if pid_val not in child_pids and pid_val not in worker_pids:
+                child_pids.append(pid_val)
+    return worker_pids + child_pids
 
 
 def _tar_gz_is_complete(path: Path) -> bool:
@@ -2713,6 +2733,13 @@ def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None]
     copy_off_once(train_dir, rung_dir, manifest, {"done": load_done(manifest)}, final=True)
     run_finish(argparse.Namespace(lane3_out=str(out), failed_rc=int(args.rc)))
     guards = root / "launch_guards.py"
+    err_log = root / ".sdlab_live.err.log"
+    if err_log.is_file():
+        shutil.copyfile(err_log, out / "detached_worker_stderr.log")
+        scrub_guard = guards if guards.is_file() else (Path(__file__).resolve().parent / "launch_guards.py")
+        if scrub_guard.is_file():
+            subprocess.run([sys.executable, str(scrub_guard), "--scrub-file", str(out / "detached_worker_stderr.log")],
+                           check=False, stdin=subprocess.DEVNULL)
     for f in out.rglob("*"):
         if f.is_file() and f.suffix in (".log", ".json", ".jsonl", ".txt") and guards.is_file():
             subprocess.run([sys.executable, str(guards), "--scrub-file", str(f)], check=False,

@@ -269,7 +269,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
     out_cap = tmp_path / "out_cap"
     res_cap = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l1-cap", "--cap", "0.10", "--margin", "0.02"],
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l1-cap", "--cap", "0.13", "--margin", "0.05"],
         env=env_cap,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -361,17 +361,27 @@ def test_lane1_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: P
         if line.strip()
     ]
     exec_calls = [c for c in calls if c["subcmd"] == "exec"]
-    assert len(exec_calls) == 1
-    ec = exec_calls[0]
-    assert ec["positionals"] == []
-    f_vals = ec["parsed_opts"].get("-f") or ec["parsed_opts"].get("--file")
-    assert f_vals and f_vals[-1].endswith(".py")
-    timeout_val = float(ec["parsed_opts"]["--timeout"][-1])
-    assert timeout_val > 900.0
-    assert timeout_val == 1020.0
-    env_kv = ec["parsed_opts"].get("--env", [])
+    assert len(exec_calls) >= 2
+    ec_start = exec_calls[0]
+    assert ec_start["positionals"] == []
+    f_vals = ec_start["parsed_opts"].get("-f") or ec_start["parsed_opts"].get("--file")
+    assert f_vals and f_vals[-1].endswith("remote_runner.py")
+    start_timeout = float(ec_start["parsed_opts"]["--timeout"][-1])
+    assert start_timeout == 60.0
+    env_kv = ec_start["parsed_opts"].get("--env", [])
+    assert "SDLAB_RUNNER_MODE=start" in env_kv
+    assert any(kv.startswith("SDLAB_START_TOKEN=") for kv in env_kv)
     assert any(kv.endswith("/content/remote_lane1_stub.sh") and kv.startswith("SDLAB_REMOTE_SCRIPT=") for kv in env_kv)
     assert any(kv.startswith("PINNED_COMFYUI_COMMIT=") for kv in env_kv)
+    for ec_poll in exec_calls[1:]:
+        assert ec_poll["positionals"] == []
+        pf_vals = ec_poll["parsed_opts"].get("-f") or ec_poll["parsed_opts"].get("--file")
+        assert pf_vals and pf_vals[-1].endswith("remote_runner.py")
+        assert float(ec_poll["parsed_opts"]["--timeout"][-1]) == 30.0
+        poll_env = ec_poll["parsed_opts"].get("--env", [])
+        assert "SDLAB_RUNNER_MODE=poll" in poll_env
+        assert any(kv.startswith("SDLAB_POLL_OFFSET=") for kv in poll_env)
+        assert "SDLAB_POLL_MAX_BYTES=262144" in poll_env
 
 
 def test_remote_runner_py_streams_output_and_prints_sdlab_remote_rc(
@@ -694,6 +704,8 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     env_cfg["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "OMIT"
     env_cfg["FAKE_COLAB_POST_OPEN_RATE_STR"] = "OMIT"
     env_cfg["RATE_CCU_PER_HOUR"] = "0.31"
+    # Default 2 s tick: the gate prices the 117 s blind interval, 0.31/hr * 117 / 3600 = 0.010075, which
+    # fits the CPU default margin 0.05 (half-margin 0.025).
     out_cfg = tmp_path / "out_rate_cfg"
     res_cfg = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cfg), "--session", "sdlab-l1-rcfg"],
@@ -719,7 +731,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     env_cap_rate["GUARD_POLL_INTERVAL_S"] = "1"
     out_cap_rate = tmp_path / "out_rate_cap_trip"
     res_cap_rate = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap_rate), "--session", "sdlab-l1-rcap", "--cap", "0.06", "--margin", "0.02"],
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap_rate), "--session", "sdlab-l1-rcap", "--cap", "0.09", "--margin", "0.05"],
         env=env_cap_rate,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -1152,7 +1164,7 @@ def _make_render_fixture(root: Path, *, hf_token_required: bool = False) -> dict
         "--download-max-seconds",
         "300",
         "--cap",
-        "5.0",
+        "5.25",
         "--max-rate",
         "10.5",
     ]
@@ -1623,7 +1635,7 @@ def test_lane1_render_dry_on_gpu_card_prints_effective_trip(tmp_path: Path) -> N
             "--shape",
             "high-mem",
             "--cap",
-            "5.0",
+            "5.25",
             "--max-rate",
             "10.5",
             "--dry",
@@ -1639,7 +1651,7 @@ def test_lane1_render_dry_on_gpu_card_prints_effective_trip(tmp_path: Path) -> N
     # exec 340 + one download 310 = 840 s) where it was 450 s (310 in flight + 140 stop) when the lane kept nothing.
     assert rec["cleanup_bound_s"] == 310 + 840 + 140
     assert rec["cleanup_reserve_units"] == pytest.approx(1290 / 3600 * 10.5)
-    assert rec["effective_trip"] == pytest.approx(5.0 - 1.0 - 1290 / 3600 * 10.5)
+    assert rec["effective_trip"] == pytest.approx(5.25 - 1.25 - 1290 / 3600 * 10.5)
     assert rec["runtime_to_trip_s"] == pytest.approx(round((rec["effective_trip"] / 10.5) * 3600.0, 2))
 
     # --render --dry on CPU card is refused with RENDER_REQUIRES_GPU
