@@ -1170,6 +1170,8 @@ if [ -n "${FAKE_RUN_ROWS_N:-}" ] && [ "${FAKE_RUN_ROWS_N}" -gt 0 ]; then
 fi
 run_uploaded_stub_block "remote_lane1_stub.sh.uploaded" || exit $?
 if [ -z "${FAKE_COLAB_STUB_FAULT:-}" ]; then
+  # main's fake marker for a finished stub (the kit's stub block exits 1 on a resume hash mismatch).
+  echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
   if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
     "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
   fi
