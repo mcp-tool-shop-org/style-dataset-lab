@@ -2099,6 +2099,63 @@ def test_render_wall_trip_mid_run_keeps_the_rendered_pngs_renders_jsonl_and_an_a
     assert "STOP -s sdlab-l1-trip" in (fx["state_dir"] / "stops.log").read_text(encoding="utf-8")
 
 
+def _vitals_samples(vitals_log: Path) -> list[dict[str, Any]]:
+    import launch_guards as lg
+
+    return lg.parse_vitals_log(vitals_log.read_text(encoding="utf-8"))
+
+
+def test_render_archive_with_no_worker_alive_reports_phase_bundle_and_the_bundle_stall_still_applies(tmp_path: Path) -> None:
+    """Window sdlab-l1-eval-salt-road-s45 (2026-11-14) rendered all 240 images, then tripped DEAD_HARNESS_TRIPPED (rc 93)
+    in its final archive: phase.txt still read `run` while tar ran with no worker process alive. The kit writes `bundle`
+    to phase.txt before it archives lane1_out, so the guard takes its bundle branch, with the bundle stall bound."""
+    # 1. The archive takes 2.4 s, over ten 0.2 s vitals ticks, with no worker alive: the window finishes ok.
+    fx = _make_render_fixture(tmp_path / "fx_archive")
+    env = fx["env"]
+    env["FAKE_VM_RENDER_ARCHIVE_S"] = "2.4"
+    out_dir = tmp_path / "out_archive"
+    res = _run_launcher(
+        [*fx["base_args"], "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-archive"], env, timeout=150
+    )
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert res.returncode == 0, f"STDERR:\n{res.stderr[-3000:]}\nGUARDS:\n{guards[-2000:]}"
+    assert "DEAD_HARNESS_TRIPPED" not in guards
+    win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
+    assert win["status"] == "ok" and win["refusal_code"] is None and win["render"] == "rendered"
+    assert "lane1_render_bundle.tar.gz" in win["downloaded_files"]
+    bundle_samples = [s for s in _vitals_samples(out_dir / "vitals.log") if s["phase"] == "bundle"]
+    assert len(bundle_samples) >= 2, "the guard saw the archive across at least two vitals ticks"
+    assert all(s["worker_proc_count"] == 0 for s in bundle_samples), "no worker process was alive during the archive"
+    rows = [
+        json.loads(ln)
+        for ln in (_extract_bundle(out_dir / "lane1_render_bundle.tar.gz", tmp_path / "ext_archive") / "renders.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if ln.strip()
+    ]
+    assert [r["job_id"] for r in rows] == ["render_01", "render_02", "render_03"]
+
+    # 2. An archive that hangs past the bundle stall bound (SETUP_STALL_S) still trips, as a stall in phase=bundle.
+    fx_hang = _make_render_fixture(tmp_path / "fx_archive_hang")
+    env_hang = fx_hang["env"]
+    env_hang["FAKE_VM_RENDER_ARCHIVE_S"] = "40"
+    env_hang["SETUP_STALL_S"] = "6"
+    env_hang["SDLAB_TEST_KILL_GRACE_S"] = "2"
+    out_hang = tmp_path / "out_archive_hang"
+    res_hang = _run_launcher(
+        [*fx_hang["base_args"], "--out-dir", _to_posix(out_hang), "--session", "sdlab-l1-archive-hang"],
+        env_hang,
+        timeout=150,
+    )
+    guards_hang = (out_hang / "guards.log").read_text(encoding="utf-8")
+    assert res_hang.returncode != 0, f"STDERR:\n{res_hang.stderr[-3000:]}"
+    assert "DEAD_HARNESS_TRIPPED" not in guards_hang, guards_hang[-2000:]
+    assert "STALL_GUARD_TRIPPED" in guards_hang and "in phase=bundle" in guards_hang, guards_hang[-2000:]
+    win_hang = json.loads((out_hang / "window.json").read_text(encoding="utf-8"))
+    assert win_hang["refusal_code"] == "STALL_GUARD_TRIPPED"
+    assert "STOP -s sdlab-l1-archive-hang" in (fx_hang["state_dir"] / "stops.log").read_text(encoding="utf-8")
+
+
 def test_render_cleanup_bound_scales_with_the_projected_salvage_parts_and_the_stubs_keep_450(tmp_path: Path) -> None:
     fx = _make_render_fixture(tmp_path / "fx_bound")
     res = _run_launcher([*fx["base_args"], "--dry"], fx["env"])

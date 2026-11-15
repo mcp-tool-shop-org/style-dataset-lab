@@ -1018,7 +1018,7 @@ run_uploaded_render_block() {
   (
     while true; do
       cur_ph="$(cat lane1_out/phase.txt 2>/dev/null || echo setup)"
-      if [ "${cur_ph}" = "run" ]; then
+      if [ "${cur_ph}" = "run" ] && [ ! -f .fake-vm-archiving ]; then
         emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --listen 127.0.0.1"
       else
         emit_vitals "${cur_ph}" ""
@@ -1038,6 +1038,21 @@ run_uploaded_render_block() {
   # wedged run does when a rig-side guard trips (the EXIT trap never fires, so the rig has to salvage).
   if [ -n "${FAKE_VM_RENDER_HANG_BEFORE_TAR:-}" ]; then
     sed -i -e "s#^tar -czf #sleep ${FAKE_VM_RENDER_HANG_BEFORE_TAR}; tar -czf #" remote_lane1_stub.sh.renderblock
+  fi
+  # FAKE_VM_RENDER_ARCHIVE_S=<s>: the archive of lane1_out into lane1_render_bundle.tar.gz takes <s> seconds, and no
+  # worker process is alive while it runs (ComfyUI has been stopped; only tar is working), as on the VM of window
+  # sdlab-l1-eval-salt-road-s45. The vitals then show whatever phase the script wrote, with an empty process list.
+  if [ -n "${FAKE_VM_RENDER_ARCHIVE_S:-}" ]; then
+    local real_tar
+    real_tar="$(command -v tar)"
+    {
+      printf '#!/usr/bin/env bash\n'
+      printf 'case " $* " in\n'
+      printf '  *lane1_render_bundle.tar.gz*) : > "%s/.fake-vm-archiving"; sleep %s ;;\n' "${PWD}" "${FAKE_VM_RENDER_ARCHIVE_S}"
+      printf 'esac\n'
+      printf 'exec "%s" "$@"\n' "${real_tar}"
+    } > .fake-vm-bin/tar
+    chmod +x .fake-vm-bin/tar
   fi
 
   set +e
