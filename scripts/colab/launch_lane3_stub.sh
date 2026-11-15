@@ -50,15 +50,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="75ed92d30b77a166705e0d0d046047b6707eebb521676f08ebaa6aa3dd8eec45"
-PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="714bd48a5562cf9d7ed2353fb9ed6b31419fb95118c7aa7a151137a9b40aca19"
-PINNED_LANE3_RUNG_SHA="957c6e327ecb1d92aa64d7e832de276c07539dc3d27a92f3c4d2c1bbe0b4c05e"
-PINNED_BUNDLE_NOW_SHA="e986835500add747c1188f2819505348c977f9ab6ecd800bc46875329a183b1d"
+PINNED_LAUNCH_GUARDS_SHA="62c8deff9bb91102bd735f445a4899b88749c469e75d69eb2709f172c793d2e3"
+PINNED_REMOTE_RUNNER_SHA="68f215d26a85c7138cee1dcbc5bc80accae75fb3ba53f47de403d9460d2c5dc4"
+PINNED_COLAB_WINDOW_SHA="c6c11c83bf50507a86c4f381b3f424a4f5ab852206fe6b1a5a9360f93fc2d794"
+PINNED_LANE3_RUNG_SHA="dd26b9183b2692dd2fcf25f9b8e8c85627ee310f1996d276f7ea11c96c851c20"
+PINNED_BUNDLE_NOW_SHA="7603d421be95872956eba16bfaff92fcf2f1bc4cf2247c6a808432bc7885ae09"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="ab0356c621f5f1a4543fbfa99b86aa42f3a9f0e5e089035de7658afde732bcca"
+PINNED_SELF_SHA="1b93a33c22aca55e686924f942929f31e0801352189a6f68efcca164086b3548"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -551,6 +551,9 @@ Path("/content/lane3_out/vm_window.json").write_text(json.dumps(rec, indent=2) +
 print("WINDOW_JSON " + json.dumps(rec), flush=True)
 WINPYEOF
 
+if [ -f /content/.sdlab_live.err.log ]; then
+  cp -f /content/.sdlab_live.err.log /content/lane3_out/detached_worker_stderr.log 2>/dev/null || true
+fi
 if [ "\${LANE3_MODE:-install}" = "train" ]; then
   /content/venv-lane3/bin/python /content/lane3_rung.py check-bundle-disk \
     --bundle-dir /content/lane3_out --out /content/lane3_out/bundle_disk_check.json 2>&1 | tee -a /content/lane3_out/setup.log
@@ -828,7 +831,7 @@ colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
 if [ "${MARGIN_SET}" != "1" ] && [ -z "${CALLER_MARGIN}" ] && ! colab_card_is_cpu "${CARD}"; then
-  MARGIN="1.0"
+  MARGIN="1.25"
 fi
 
 if [ "${DRY_RUN}" = "1" ]; then
@@ -1078,6 +1081,14 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
+  SDLAB_TEST_DETACHED_START_TIMEOUT_S
+  SDLAB_TEST_DETACHED_START_ATTEMPTS
+  SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S
+  SDLAB_TEST_POLL_EXEC_TIMEOUT_S
+  SDLAB_TEST_POLL_MAX_RETRIES
+  SDLAB_TEST_POLL_RETRY_SLEEP_S
+  SDLAB_TEST_POLL_OUTAGE_MAX_S
+  SDLAB_TEST_POLL_MAX_BYTES
   SDLAB_TEST_USAGE_POLL_ATTEMPTS
   SDLAB_TEST_USAGE_POLL_TIMEOUT_S
   SDLAB_TEST_USAGE_POLL_KILL_GRACE_S
@@ -1167,13 +1178,14 @@ TOKEN_DIR=""
 # colab_salvage_bundle_after_failure (`colab restart-kernel` under `timeout -k 10 180`, bundle-now
 # `colab exec --timeout 300` under `timeout -k 10 330`, and `colab download` under `timeout -k 10 ${COLAB_SALVAGE_DOWNLOAD_TIMEOUT_S}`,
 # all under `SALVAGE_DEADLINE_S`). Every exec on a session runs on its one stored kernel and
-# Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so while the killed exec's
-# cell still runs, a new exec would only queue behind it: `colab restart-kernel` ends that cell.
-# Processes the cell spawned may outlive the restart, so bundle-now kills the rung's processes by
-# command line either way. A rig-side kill (wall, cap, stall, dead harness) stops only the local exec:
-# the VM-side script keeps running and its EXIT trap never fires, so bundle-now stops it, sweeps the
-# training folder, writes the failure record and tars lane3_out. Nothing here writes a REFUSED line,
-# so the window's refusal stays the one that stopped the run.
+# Jupyter runs one cell at a time (docs/colab-cli-contract.md, section 1), so if a killed start/poll
+# exec left a cell in flight on the kernel, `colab restart-kernel` clears that cell before bundle-now.
+# The detached worker (`launch_guards.py --detached-worker`) and the rung processes it started run in
+# their own session outside the kernel and survive `restart-kernel`; `bundle-now` SIGKILLs
+# `--detached-worker` first (so child EOF never triggers `prepare_content_downloads` alongside salvage)
+# and then SIGKILLs the remote script and training children, sweeps the training folder, writes the
+# failure record and tars lane3_out. Nothing here writes a REFUSED line, so the window's refusal stays
+# the one that stopped the run.
 lane3_download_bundle_after_failure() {
   local rc="$1"
   colab_salvage_bundle_after_failure \

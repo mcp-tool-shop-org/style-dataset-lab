@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 
@@ -60,10 +61,13 @@ def bundle_now(env: dict[str, str] | None = None) -> int:
     if not root or not rc.lstrip("-").isdigit():
         print("SDLAB_BUNDLE_NOW_RC=2 (SDLAB_CONTENT and SDLAB_BUNDLE_RC are required)", flush=True)
         return 2
+    lg = _load_launch_guards(root)
+    lg.scrub_file_in_place(Path(root) / ".sdlab_live.err.log")
     venv_py = os.path.join(root, "venv-lane3", "bin", "python")
     py = venv_py if os.path.exists(venv_py) else sys.executable
     res = subprocess.run([py, os.path.join(root, "lane3_rung.py"), "bundle-now", "--content", root, "--rc", rc],
                          stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False, env=env)
+    lg.stop_detached_worker(root, sig=signal.SIGKILL)
     sys.stdout.write(_HF_TOKEN_RE.sub("hf_[REDACTED]", res.stdout + res.stderr))
     dl_chunk_raw = env.get("SDLAB_DL_CHUNK_BYTES", "").strip()
     if res.returncode == 0 and dl_chunk_raw.isdigit() and int(dl_chunk_raw) > 0:

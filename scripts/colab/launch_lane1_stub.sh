@@ -34,10 +34,10 @@ PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="93904e77dc9ef4ce983a875809b3e399dfe206754c20b48b2a2c14e75278738c"
 PINNED_LANE1_RENDER_SHA="45a2cf892cda07c8aa312e2995ef9d5f9fdd575b6e70a737d4137ed0eecb52b7"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="75ed92d30b77a166705e0d0d046047b6707eebb521676f08ebaa6aa3dd8eec45"
-PINNED_REMOTE_RUNNER_SHA="2ff3499ce2075a3fe0eaa83c75585eb694401c04775bd36e30975eac19ce2456"
-PINNED_COLAB_WINDOW_SHA="714bd48a5562cf9d7ed2353fb9ed6b31419fb95118c7aa7a151137a9b40aca19"
-PINNED_SELF_SHA="616c53f8a6daf8e09c3c37d41cd93a816860d35050388912ecf99fe9a046cede"
+PINNED_LAUNCH_GUARDS_SHA="62c8deff9bb91102bd735f445a4899b88749c469e75d69eb2709f172c793d2e3"
+PINNED_REMOTE_RUNNER_SHA="68f215d26a85c7138cee1dcbc5bc80accae75fb3ba53f47de403d9460d2c5dc4"
+PINNED_COLAB_WINDOW_SHA="c6c11c83bf50507a86c4f381b3f424a4f5ab852206fe6b1a5a9360f93fc2d794"
+PINNED_SELF_SHA="28a6f2bf07a712f2a1cdec40f44ae23de0632ebd241320e5e62c42e7738cd613"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
@@ -96,7 +96,7 @@ colab_configure_upload_reassemble_timeout "${UPLOAD_REASSEMBLE_TIMEOUT_S_ARG}" "
 colab_configure_upload_chunk_bytes "${UPLOAD_CHUNK_BYTES_ARG}" || exit 2
 colab_configure_download_chunk_bytes "${DOWNLOAD_CHUNK_BYTES_ARG}" || exit 2
 if [ "${MARGIN_SET}" != "1" ] && [ -z "${CALLER_MARGIN}" ] && ! colab_card_is_cpu "${CARD}"; then
-  MARGIN="1.0"
+  MARGIN="1.25"
 fi
 
 if [ "${DRY_RUN}" = "1" ]; then
@@ -161,6 +161,14 @@ PIN_OVERRIDE_VARS=(
   SDLAB_TEST_UPLOAD_CHUNK_BYTES
   SDLAB_TEST_DOWNLOAD_CHUNK_BYTES
   SDLAB_TEST_WALL_ESCALATE_S
+  SDLAB_TEST_DETACHED_START_TIMEOUT_S
+  SDLAB_TEST_DETACHED_START_ATTEMPTS
+  SDLAB_TEST_DETACHED_START_RETRY_SLEEP_S
+  SDLAB_TEST_POLL_EXEC_TIMEOUT_S
+  SDLAB_TEST_POLL_MAX_RETRIES
+  SDLAB_TEST_POLL_RETRY_SLEEP_S
+  SDLAB_TEST_POLL_OUTAGE_MAX_S
+  SDLAB_TEST_POLL_MAX_BYTES
   SDLAB_TEST_USAGE_POLL_ATTEMPTS
   SDLAB_TEST_USAGE_POLL_TIMEOUT_S
   SDLAB_TEST_USAGE_POLL_KILL_GRACE_S
@@ -206,6 +214,7 @@ cleanup_on_exit() {
   if [ -n "${EXEC_PID}" ]; then
     pkill -P "${EXEC_PID}" 2>/dev/null || true
     kill -9 "${EXEC_PID}" 2>/dev/null || true
+    wait "${EXEC_PID}" 2>/dev/null || true
   fi
   if [ -f "${OUT_DIR}/watcher_escalated.txt" ]; then
     sleep 3600
@@ -511,6 +520,9 @@ if [ "\${SHA_BEFORE}" != "\${SHA_AFTER}" ] || [ "\${SHA_BEFORE}" != "\${SHA_COPY
 fi
 
 kill "\${COMFY_PID}" 2>/dev/null || true
+if [ -f /content/.sdlab_live.err.log ]; then
+  cp -f /content/.sdlab_live.err.log /content/lane1_out/detached_worker_stderr.log 2>/dev/null || true
+fi
 while IFS= read -r -d '' f; do
   /content/venv-lane1/bin/python /content/launch_guards.py --scrub-file "\${f}" </dev/null || true
 done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -name "*.txt" \) -print0 2>/dev/null || true)

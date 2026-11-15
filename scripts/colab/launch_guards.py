@@ -14,13 +14,19 @@ Provides:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import errno
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
+import signal
+import subprocess
 import sys
+import time
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -460,8 +466,22 @@ CAP_TRIP_FORMULA = (
 #   never returns.
 #   Blind-interval spend at `priced_rate` must stay within half the cap margin:
 #     priced_rate * (blind_interval_s / 3600) <= margin_ccu / 2.
-#   For G4 at 10.05/hr with margin 1.0: 10.05 * (117 / 3600) = 0.326625 <= 0.5 (fits with 0.173375 headroom);
-#   the highest rate that fits margin 1.0 is 0.5 * 3600 / 117 = 15.38/hr.
+#   (#84's arithmetic for a loop that polls `colab usage` every tick.)
+# Detached poll lag (sdlab#82: the remote job runs detached and the rig polls it with `colab exec`):
+#     detached_poll_lag_s = 2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s = 2 * (5 + 30) + 10 = 80 s
+#   A usage read is launched only on a tick after a successful remote poll, and a finished (or overdue)
+#   read is reaped only at the next tick, which follows the next remote poll. So from the last cap check
+#   (a fresh one, or the offline projection after a failed poll) to the next fresh one:
+#     retry sleep + poll_s + a slow successful poll (<= poll_exec_timeout_s), then the read (<= its in-flight
+#     deadline T_retry + slack_s), then up to a retry sleep + poll_s + a failed poll killed at
+#     poll_exec_timeout_s + kill_grace_s:
+#     cap_check_interval_s = (r + p + e) + (T_retry + slack_s) + (r + p + e + g)
+#                          = blind_interval_s + detached_poll_lag_s = 117 + 80 = 197 s.
+#   The margin gate prices cap_check_interval_s:
+#     priced_rate * (cap_check_interval_s / 3600) <= margin_ccu / 2.
+#   For G4 at 10.05/hr: 10.05 * 197 / 3600 = 0.549958; margin 1.0 (half 0.5) refuses, margin 1.25 (half 0.625)
+#   passes with 0.075042 headroom (13.6 % of the spend). The highest rate that fits margin 1.25 is
+#   0.625 * 3600 / 197 = 11.42/hr.
 USAGE_POLL_ATTEMPTS = 3
 USAGE_POLL_TIMEOUT_S = 30
 USAGE_POLL_KILL_GRACE_S = 5
@@ -472,6 +492,21 @@ USAGE_RETRY_BOUND_S = (
 )
 GUARD_POLL_INTERVAL_S_DEFAULT = 2
 USAGE_DECISION_SLACK_S = 2
+DETACHED_POLL_RETRY_SLEEP_S = 5
+DETACHED_POLL_EXEC_TIMEOUT_S = 30
+DETACHED_KILL_GRACE_S = 10
+
+
+def detached_poll_lag_s(
+    poll_retry_sleep_s: float = DETACHED_POLL_RETRY_SLEEP_S,
+    poll_exec_timeout_s: float = DETACHED_POLL_EXEC_TIMEOUT_S,
+    kill_grace_s: float = DETACHED_KILL_GRACE_S,
+) -> int | float:
+    total = 2.0 * (max(0.0, float(poll_retry_sleep_s)) + max(0.0, float(poll_exec_timeout_s))) + max(0.0, float(kill_grace_s))
+    return int(total) if total == int(total) else round(total, 6)
+
+
+DETACHED_POLL_LAG_S = detached_poll_lag_s()
 
 
 def usage_blind_interval_s(
@@ -484,6 +519,11 @@ def usage_blind_interval_s(
 
 
 USAGE_BLIND_INTERVAL_S = usage_blind_interval_s()
+CAP_CHECK_INTERVAL_S = (
+    int(USAGE_BLIND_INTERVAL_S + DETACHED_POLL_LAG_S)
+    if float(USAGE_BLIND_INTERVAL_S + DETACHED_POLL_LAG_S).is_integer()
+    else round(USAGE_BLIND_INTERVAL_S + DETACHED_POLL_LAG_S, 6)
+)
 
 
 def compute_usage_retry_budget(
@@ -492,6 +532,7 @@ def compute_usage_retry_budget(
     margin: float,
     usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
     usage_blind_interval: float | None = None,
+    detached_poll_lag: float | None = None,
 ) -> dict[str, Any]:
     bound_raw = max(0.0, float(usage_retry_bound_s))
     bound_val: int | float = int(bound_raw) if bound_raw == int(bound_raw) else round(bound_raw, 6)
@@ -500,15 +541,25 @@ def compute_usage_retry_budget(
         if usage_blind_interval is None
         else usage_blind_interval_s(float(usage_blind_interval), 0.0, 0.0)
     )
+    lag_val = (
+        DETACHED_POLL_LAG_S
+        if detached_poll_lag is None
+        else max(0.0, float(detached_poll_lag))
+    )
+    lag_val = int(lag_val) if float(lag_val).is_integer() else round(float(lag_val), 6)
+    interval_raw = float(blind_val) + float(lag_val)
+    interval_val: int | float = int(interval_raw) if interval_raw.is_integer() else round(interval_raw, 6)
     rate_v = max(0.0, float(priced_rate))
     margin_v = round(float(margin), 6)
-    spend_units = round((float(blind_val) / 3600.0) * rate_v, 6)
+    spend_units = round((interval_raw / 3600.0) * rate_v, 6)
     half_margin_units = round(margin_v / 2.0, 6)
     min_margin_units = round(2.0 * spend_units, 6)
     fits = bool(margin_v > 0.0 and spend_units <= half_margin_units)
     return {
         "usage_retry_bound_s": bound_val,
         "usage_blind_interval_s": blind_val,
+        "detached_poll_lag_s": lag_val,
+        "cap_check_interval_s": interval_val,
         "usage_retry_spend_units": spend_units,
         "usage_retry_half_margin_units": half_margin_units,
         "usage_retry_min_margin_units": min_margin_units,
@@ -550,6 +601,7 @@ def evaluate_cap_budget(
     min_runtime_s: float | None = None,
     usage_retry_bound_s: float = USAGE_RETRY_BOUND_S,
     usage_blind_interval: float | None = None,
+    detached_poll_lag: float | None = None,
 ) -> dict[str, Any]:
     trip = compute_cap_trip(cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=priced_rate)
     eff_max_rate = round(float(max_rate), 6) if max_rate is not None else trip["priced_rate"]
@@ -564,6 +616,7 @@ def evaluate_cap_budget(
         margin=margin_v,
         usage_retry_bound_s=usage_retry_bound_s,
         usage_blind_interval=usage_blind_interval,
+        detached_poll_lag=detached_poll_lag,
     )
 
     runtime_at_priced_rate_s = round((effective_trip / p_rate) * 3600.0, 2) if p_rate > 0.0 else 0.0
@@ -609,8 +662,10 @@ def evaluate_cap_budget(
         tripped = True
         code = "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
         why = (
-            f"usage_retry_spend = priced_rate {p_rate}/h * (blind_interval {retry_budget['usage_blind_interval_s']} s / 3600; "
-            f"blind_interval = T_retry {retry_budget['usage_retry_bound_s']} s + 2 * poll_s + slack_s) "
+            f"usage_retry_spend = priced_rate {p_rate}/h * (cap_check_interval {retry_budget['cap_check_interval_s']} s / 3600; "
+            f"cap_check_interval = blind_interval {retry_budget['usage_blind_interval_s']} s (T_retry "
+            f"{retry_budget['usage_retry_bound_s']} s + 2 * poll_s + slack_s) + detached_poll_lag "
+            f"{retry_budget['detached_poll_lag_s']} s) "
             f"= {retry_budget['usage_retry_spend_units']} units > margin / 2 = "
             f"{retry_budget['usage_retry_half_margin_units']} units "
             f"(margin {margin_v}; need --margin >= {retry_budget['usage_retry_min_margin_units']})"
@@ -631,6 +686,8 @@ def evaluate_cap_budget(
         "max_rate": eff_max_rate,
         "usage_retry_bound_s": retry_budget["usage_retry_bound_s"],
         "usage_blind_interval_s": retry_budget["usage_blind_interval_s"],
+        "detached_poll_lag_s": retry_budget["detached_poll_lag_s"],
+        "cap_check_interval_s": retry_budget["cap_check_interval_s"],
         "usage_retry_spend_units": retry_budget["usage_retry_spend_units"],
         "usage_retry_half_margin_units": retry_budget["usage_retry_half_margin_units"],
         "usage_retry_min_margin_units": retry_budget["usage_retry_min_margin_units"],
@@ -676,9 +733,11 @@ def format_dry_cap_budget(rec: dict[str, Any]) -> str:
         f"max_rate: {rec['max_rate']}/h",
         f"usage_retry_bound_s (T_retry): {rec['usage_retry_bound_s']}",
         f"usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): {rec['usage_blind_interval_s']}",
+        f"detached_poll_lag_s (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s): {rec['detached_poll_lag_s']}",
+        f"cap_check_interval_s (usage_blind_interval_s + detached_poll_lag_s): {rec['cap_check_interval_s']}",
         (
-            f"usage_retry_blind_bound: {rec['usage_retry_spend_units']} "
-            f"({rec['usage_blind_interval_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
+            f"cap_check_interval_bound: {rec['usage_retry_spend_units']} "
+            f"({rec['cap_check_interval_s']} / 3600 * {rec['priced_rate']} <= margin/2 {rec['usage_retry_half_margin_units']})"
         ),
         f"reserve (cleanup_reserve): {rec['cleanup_reserve_units']} ({rec['cleanup_bound_s']} / 3600 * {rec['priced_rate']})",
         f"effective_trip: {rec['effective_trip_units']} ({rec['cap']} - {rec['margin']} - {rec['cleanup_reserve_units']})",
@@ -781,6 +840,74 @@ def evaluate_cap_guard(
         "spend_ccu": spend,
         "ceiling_ccu": ceiling,
         **extra,
+    }
+
+
+OFFLINE_CAP_MODE = "live_offline"
+
+
+def evaluate_offline_cap_projection(
+    *,
+    cap: float,
+    margin: float,
+    cleanup_bound_s: float,
+    rate_ccu_per_hour: float,
+    elapsed_s: float,
+    start_balance: float,
+    cached_balance: float,
+    balance_age_s: float,
+    card_class: str | None = None,
+) -> dict[str, Any]:
+    """The detached loop's cap check on a failed remote poll with no `colab usage` read in flight.
+
+    Trip-only: spend = max(priced_rate * elapsed, cached drop + priced_rate * balance_age_s) at or above
+    the ceiling refuses (CAP_GUARD_TRIPPED). The second term grows the cached reading by this window's own
+    burn since it was taken, so a drop that already exceeds priced_rate * elapsed (other sessions on the
+    same account balance) does not freeze the projection. Below the ceiling the record is never a pass:
+    its mode is `live_offline`, its `balance_source` is `cached` with the balance's age in seconds, and
+    `fresh_pass` is False. A within-cap `"mode": "live"` record is written only on a fresh reading.
+    On a GPU window (card_class not "cpu"; unset counts as GPU) a rate that is not finite and positive
+    refuses RATE_UNREAD."""
+    rate_raw = float(rate_ccu_per_hour)
+    rate_ok = math.isfinite(rate_raw) and rate_raw > 0.0
+    is_cpu = (card_class or "").strip().lower() == "cpu"
+    rate_v = rate_raw if math.isfinite(rate_raw) else 0.0
+    trip = compute_cap_trip(
+        cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=max(0.0, rate_v)
+    )
+    ceiling = trip["ceiling_ccu"]
+    age_s = max(0.0, float(balance_age_s)) if math.isfinite(float(balance_age_s)) else float(elapsed_s)
+    cached_drop = round(max(0.0, float(start_balance) - float(cached_balance)), 6)
+    projected = round(max(0.0, (max(0.0, rate_v) * float(elapsed_s)) / 3600.0), 6)
+    aged_drop = round(cached_drop + (max(0.0, rate_v) * age_s) / 3600.0, 6)
+    spend = round(max(projected, aged_drop), 6)
+    if not rate_ok and not is_cpu:
+        tripped, code = True, "RATE_UNREAD"
+    else:
+        tripped = spend >= ceiling
+        code = "CAP_GUARD_TRIPPED" if tripped else None
+    return {
+        "mode": OFFLINE_CAP_MODE,
+        "result": "trip" if tripped else "no_trip_projection",
+        "fresh_pass": False,
+        "tripped": tripped,
+        "code": code,
+        "balance_source": "cached",
+        "balance_age_s": round(age_s, 3),
+        "elapsed_s": round(float(elapsed_s), 6),
+        "projected_spend_ccu": projected,
+        "cached_drop_ccu": cached_drop,
+        "aged_drop_ccu": aged_drop,
+        "spend_ccu": spend,
+        "ceiling_ccu": ceiling,
+        "cap_ccu": trip["cap_ccu"],
+        "margin_ccu": trip["margin_ccu"],
+        "cleanup_bound_s": trip["cleanup_bound_s"],
+        "priced_rate": trip["priced_rate"],
+        "cleanup_reserve_units": trip["cleanup_reserve_units"],
+        "effective_trip_units": trip["effective_trip_units"],
+        "formula": CAP_TRIP_FORMULA,
+        "cap_trip_formula": CAP_TRIP_FORMULA,
     }
 
 
@@ -1483,6 +1610,548 @@ def prepare_content_downloads(
 # <<< sdlab-download-prep
 
 
+DETACHED_LIVE_LOG = ".sdlab_live.log"
+DETACHED_LIVE_ERR = ".sdlab_live.err.log"
+DETACHED_LIVE_META = ".sdlab_live.meta.json"
+DETACHED_LIVE_RC = ".sdlab_live.rc"
+DETACHED_LIVE_DONE = ".sdlab_live.done"
+DETACHED_STARTED_PREFIX = "SDLAB_DETACHED_STARTED "
+DETACHED_POLL_PREFIX = "SDLAB_POLL_ENVELOPE "
+DETACHED_KILLED_PREFIX = "SDLAB_DETACHED_KILLED "
+DETACHED_POLL_MAX_BYTES_DEFAULT = 262144
+DETACHED_STDERR_TAIL_BYTES = 262144
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    tmp = path.with_name(f"{path.name}.tmp.{os.getpid()}")
+    tmp.write_text(content, encoding="utf-8", newline="\n")
+    os.replace(tmp, path)
+
+
+def _resolve_bash_bin(env: dict[str, str]) -> str:
+    git_bash = "C:/Program Files/Git/bin/bash.exe"
+    if os.name == "nt" and os.path.exists(git_bash):
+        return git_bash
+    found = shutil.which("bash", path=env.get("PATH"))
+    return found or "bash"
+
+
+def _pid_is_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if os.name == "nt":  # pragma: no cover - Windows host fallback
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x1000, False, int(pid))
+        if not handle:
+            return False
+        try:
+            code = ctypes.c_ulong()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                return False
+            return int(code.value) == 259
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:  # pragma: no cover
+        return True
+    proc_stat = Path(f"/proc/{int(pid)}/stat")
+    if proc_stat.exists():
+        try:
+            state = proc_stat.read_text(encoding="utf-8").rsplit(")", 1)[-1].split()[0]
+            if state == "Z":
+                return False
+        except (OSError, IndexError):  # pragma: no cover
+            pass
+    return True
+
+
+def clear_detached_state(content_root: str | Path) -> None:
+    root = Path(content_root)
+    for rel in (DETACHED_LIVE_LOG, DETACHED_LIVE_ERR, DETACHED_LIVE_META, DETACHED_LIVE_RC, DETACHED_LIVE_DONE):
+        p = root / rel
+        if p.exists() or p.is_symlink():
+            p.unlink(missing_ok=True)
+
+
+def _pgid_has_live_member(pgid: int) -> bool:
+    if pgid <= 1 or os.name == "nt" or pgid == os.getpgrp():
+        return False
+    proc_root = Path("/proc")
+    if proc_root.is_dir():
+        for stat_p in proc_root.glob("[0-9]*/stat"):
+            try:
+                pid_val = int(stat_p.parent.name)
+                if pid_val == os.getpid():
+                    continue
+                fields = stat_p.read_text(encoding="utf-8").rsplit(")", 1)[-1].split()
+                if fields[0] == "Z":
+                    continue
+                if int(fields[2]) == pgid or int(fields[3]) == pgid:
+                    return True
+            except (OSError, ValueError, IndexError):
+                continue
+        return False
+    try:  # pragma: no cover - non-procfs POSIX fallback
+        os.kill(-int(pgid), 0)
+        return True
+    except OSError:
+        return False
+
+
+def _scan_proc_for_detached_worker(root: Path) -> int:
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return 0
+    root_str = str(root)
+    root_resolved = str(root.resolve())
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid_val = int(entry.name)
+        if pid_val == os.getpid() or not _pid_is_alive(pid_val):
+            continue
+        try:
+            raw = (entry / "cmdline").read_bytes()
+        except OSError:
+            continue
+        if not raw:
+            continue
+        parts = [tok.decode("utf-8", errors="replace") for tok in raw.split(b"\0") if tok]
+        if "--detached-worker" in parts and (root_str in parts or root_resolved in parts):
+            return pid_val
+    return 0
+
+
+def _find_existing_detached_worker(root: Path, *, start_token: str = "") -> dict[str, Any] | None:
+    meta_path = root / DETACHED_LIVE_META
+    done_path = root / DETACHED_LIVE_DONE
+    meta: dict[str, Any] = {}
+    if meta_path.is_file():
+        try:
+            loaded = json.loads(meta_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                meta = loaded
+        except (ValueError, OSError):
+            meta = {}
+
+    wpid = int(meta.get("worker_pid") or 0) if isinstance(meta.get("worker_pid"), int) else 0
+    cpid = int(meta.get("child_pid") or 0) if isinstance(meta.get("child_pid"), int) else 0
+    wpgid = int(meta.get("worker_pgid") or 0) if isinstance(meta.get("worker_pgid"), int) else 0
+    meta_token = str(meta.get("start_token") or "")
+
+    if not done_path.is_file():
+        if (
+            (wpid > 0 and _pid_is_alive(wpid))
+            or (cpid > 0 and _pid_is_alive(cpid))
+            or (wpgid > 1 and _pgid_has_live_member(wpgid))
+        ):
+            return {
+                "worker_pid": wpid or cpid,
+                "worker_pgid": wpgid or None,
+                "child_pid": cpid or None,
+                "script": meta.get("script"),
+                "started_epoch": meta.get("started_epoch"),
+                "start_token": meta_token or start_token,
+            }
+
+    if start_token and meta_token == start_token and (done_path.is_file() or (root / DETACHED_LIVE_LOG).is_file()):
+        return {
+            "worker_pid": wpid,
+            "worker_pgid": wpgid or None,
+            "child_pid": cpid or None,
+            "script": meta.get("script"),
+            "started_epoch": meta.get("started_epoch"),
+            "start_token": start_token,
+        }
+
+    proc_pid = _scan_proc_for_detached_worker(root)
+    if proc_pid > 0:
+        proc_pgid: int | None = None
+        if os.name != "nt":
+            try:
+                proc_pgid = os.getpgid(proc_pid)
+            except OSError:
+                proc_pgid = None
+        return {
+            "worker_pid": proc_pid,
+            "worker_pgid": proc_pgid,
+            "child_pid": None,
+            "script": meta.get("script"),
+            "started_epoch": meta.get("started_epoch") or round(time.time(), 6),
+            "start_token": meta_token or start_token,
+        }
+    return None
+
+
+class _ScrubbingLogStream:
+    """File-like wrapper that scrubs tokens from every write and flushes immediately."""
+
+    def __init__(self, fh: Any) -> None:
+        self._fh = fh
+
+    def write(self, text: str) -> int:
+        if not text:
+            return 0
+        cleaned = scrub_colab_tokens(text)
+        n = self._fh.write(cleaned)
+        self._fh.flush()
+        return int(n)
+
+    def flush(self) -> None:
+        self._fh.flush()
+
+
+def run_detached_worker(
+    content_root: str | Path,
+    *,
+    env: dict[str, str] | None = None,
+) -> int:
+    """Execute `SDLAB_REMOTE_SCRIPT` on the VM, writing scrubbed live output, stderr, and exit rc to files."""
+    root = Path(content_root)
+    root.mkdir(parents=True, exist_ok=True)
+    effective_env = dict(os.environ if env is None else env)
+    target_script = effective_env.get("SDLAB_REMOTE_SCRIPT", "").strip()
+    start_token = effective_env.get("SDLAB_START_TOKEN", "").strip()
+    log_path = root / DETACHED_LIVE_LOG
+    err_path = root / DETACHED_LIVE_ERR
+    meta_path = root / DETACHED_LIVE_META
+    rc_path = root / DETACHED_LIVE_RC
+    done_path = root / DETACHED_LIVE_DONE
+
+    orig_stderr = sys.stderr
+    scrubbed_stderr = _ScrubbingLogStream(orig_stderr)
+    sys.stderr = scrubbed_stderr  # type: ignore[assignment]
+    try:
+        if not target_script:
+            with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
+                log_fh.write("REFUSED: SDLAB_REMOTE_SCRIPT is required\nSDLAB_REMOTE_RC=2\n")
+                log_fh.flush()
+            _atomic_write_text(rc_path, "2\n")
+            _atomic_write_text(
+                done_path,
+                json.dumps({"rc": 2, "finished_epoch": round(time.time(), 6), "start_token": start_token}) + "\n",
+            )
+            return 2
+
+        cmd = [_resolve_bash_bin(effective_env), target_script]
+        started_epoch = round(time.time(), 6)
+        worker_pgid = os.getpgrp() if os.name != "nt" else None
+        _atomic_write_text(
+            meta_path,
+            json.dumps(
+                {
+                    "worker_pid": os.getpid(),
+                    "worker_pgid": worker_pgid,
+                    "child_pid": None,
+                    "script": target_script,
+                    "started_epoch": started_epoch,
+                    "start_token": start_token,
+                }
+            )
+            + "\n",
+        )
+        with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                errors="replace",
+                bufsize=1,
+                env=effective_env,
+            )
+            _atomic_write_text(
+                meta_path,
+                json.dumps(
+                    {
+                        "worker_pid": os.getpid(),
+                        "worker_pgid": worker_pgid,
+                        "child_pid": proc.pid,
+                        "script": target_script,
+                        "started_epoch": started_epoch,
+                        "start_token": start_token,
+                    }
+                )
+                + "\n",
+            )
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                log_fh.write(scrub_colab_tokens(line))
+                log_fh.flush()
+            rc = int(proc.wait())
+            dl_chunk_raw = effective_env.get("SDLAB_DL_CHUNK_BYTES", "").strip()
+            if dl_chunk_raw.isdigit() and int(dl_chunk_raw) > 0:
+                stream = _ScrubbingLogStream(log_fh)
+                with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):  # type: ignore[arg-type]
+                    prepare_content_downloads(root, int(dl_chunk_raw))
+            log_fh.write(f"SDLAB_REMOTE_RC={rc}\n")
+            log_fh.flush()
+
+        _atomic_write_text(rc_path, f"{rc}\n")
+        _atomic_write_text(
+            done_path,
+            json.dumps({"rc": rc, "finished_epoch": round(time.time(), 6), "start_token": start_token}) + "\n",
+        )
+        return rc
+    except Exception:
+        scrubbed_stderr.write(traceback.format_exc())
+        scrubbed_stderr.flush()
+        raise
+    finally:
+        scrubbed_stderr.flush()
+        sys.stderr = orig_stderr
+        scrub_file_in_place(err_path)
+
+
+def start_detached_worker(
+    content_root: str | Path,
+    *,
+    script_path: str | None = None,
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Idempotently start `run_detached_worker` in the background, returning an existing live worker on retry."""
+    root = Path(content_root)
+    root.mkdir(parents=True, exist_ok=True)
+    effective_env = dict(os.environ if env is None else env)
+    target_script = (script_path or effective_env.get("SDLAB_REMOTE_SCRIPT", "")).strip()
+    if not target_script:
+        raise ValueError("REFUSED: SDLAB_REMOTE_SCRIPT is required")
+
+    start_token = effective_env.get("SDLAB_START_TOKEN", "").strip()
+    meta_path = root / DETACHED_LIVE_META
+    existing = _find_existing_detached_worker(root, start_token=start_token)
+    if existing is not None:
+        if not meta_path.is_file():
+            _atomic_write_text(
+                meta_path,
+                json.dumps(
+                    {
+                        "worker_pid": existing["worker_pid"],
+                        "worker_pgid": existing.get("worker_pgid"),
+                        "child_pid": existing.get("child_pid"),
+                        "script": existing.get("script") or target_script,
+                        "started_epoch": existing.get("started_epoch") or round(time.time(), 6),
+                        "start_token": existing.get("start_token") or start_token,
+                    }
+                )
+                + "\n",
+            )
+        return {
+            "ok": True,
+            "worker_pid": existing["worker_pid"],
+            "already_running": True,
+            "content_root": str(root),
+            "script": existing.get("script") or target_script,
+        }
+
+    clear_detached_state(root)
+    (root / DETACHED_LIVE_LOG).write_bytes(b"")
+    err_path = root / DETACHED_LIVE_ERR
+    worker_env = dict(effective_env)
+    worker_env["SDLAB_REMOTE_SCRIPT"] = target_script
+    worker_env["SDLAB_CONTENT"] = str(root)
+
+    started_epoch = round(time.time(), 6)
+    with err_path.open("wb") as err_fh:
+        worker = subprocess.Popen(
+            [sys.executable, "-u", str(Path(__file__).resolve()), "--detached-worker", "--content-root", str(root)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=err_fh,
+            env=worker_env,
+            start_new_session=(os.name != "nt"),
+        )
+    worker_pgid = worker.pid if os.name != "nt" else None
+    if not meta_path.is_file():
+        _atomic_write_text(
+            meta_path,
+            json.dumps(
+                {
+                    "worker_pid": worker.pid,
+                    "worker_pgid": worker_pgid,
+                    "child_pid": None,
+                    "script": target_script,
+                    "started_epoch": started_epoch,
+                    "start_token": start_token,
+                }
+            )
+            + "\n",
+        )
+    return {
+        "ok": True,
+        "worker_pid": worker.pid,
+        "already_running": False,
+        "content_root": str(root),
+        "script": target_script,
+    }
+
+
+def poll_detached_output(
+    content_root: str | Path,
+    offset: int = 0,
+    max_bytes: int = DETACHED_POLL_MAX_BYTES_DEFAULT,
+) -> dict[str, Any]:
+    """Read new complete lines from `.sdlab_live.log` starting at `offset` without tearing lines."""
+    root = Path(content_root)
+    safe_offset = max(0, int(offset))
+    cap_bytes = max(1024, int(max_bytes))
+    done_path = root / DETACHED_LIVE_DONE
+    rc_path = root / DETACHED_LIVE_RC
+    meta_path = root / DETACHED_LIVE_META
+    log_path = root / DETACHED_LIVE_LOG
+    err_path = root / DETACHED_LIVE_ERR
+
+    done_before = done_path.is_file()
+    worker_dead_without_done = False
+    if not done_before and meta_path.is_file():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            wpid = int(meta.get("worker_pid") or 0)
+        except (ValueError, OSError):
+            wpid = 0
+        if wpid > 0 and not _pid_is_alive(wpid):
+            if done_path.is_file():
+                done_before = True
+            else:
+                worker_dead_without_done = True
+
+    rc_val: int | None = None
+    if done_before and rc_path.is_file():
+        raw_rc = rc_path.read_text(encoding="utf-8", errors="replace").strip()
+        if raw_rc.lstrip("-").isdigit():
+            rc_val = int(raw_rc)
+
+    is_terminal = done_before or worker_dead_without_done
+    total_bytes = 0
+    raw_slice = b""
+    if log_path.is_file():
+        total_bytes = log_path.stat().st_size
+        if safe_offset < total_bytes:
+            with log_path.open("rb") as fh:
+                fh.seek(safe_offset)
+                raw_slice = fh.read(cap_bytes)
+
+    hit_cap = (safe_offset + len(raw_slice)) < total_bytes
+    if raw_slice and (not is_terminal or hit_cap):
+        last_nl = raw_slice.rfind(b"\n")
+        if last_nl >= 0:
+            raw_slice = raw_slice[: last_nl + 1]
+        elif not is_terminal:
+            raw_slice = b""
+
+    next_offset = safe_offset + len(raw_slice)
+    chunk_text = scrub_colab_tokens(raw_slice.decode("utf-8", errors="replace")) if raw_slice else ""
+    eof = bool(is_terminal and next_offset >= total_bytes)
+    res: dict[str, Any] = {
+        "ok": True,
+        "offset": safe_offset,
+        "next_offset": next_offset,
+        "done": is_terminal,
+        "worker_dead": worker_dead_without_done,
+        "eof": eof,
+        "rc": rc_val,
+        "chunk": chunk_text,
+    }
+    if eof:
+        worker_stderr = ""
+        if err_path.is_file():
+            scrub_file_in_place(err_path)
+            raw_err = err_path.read_bytes()
+            if len(raw_err) > DETACHED_STDERR_TAIL_BYTES:
+                raw_err = raw_err[-DETACHED_STDERR_TAIL_BYTES:]
+            worker_stderr = scrub_colab_tokens(raw_err.decode("utf-8", errors="replace"))
+        res["worker_stderr"] = worker_stderr
+    return res
+
+
+def stop_detached_worker(content_root: str | Path, *, sig: int | None = None) -> dict[str, Any]:
+    """Best-effort terminate recorded worker + child PIDs (worker first so child EOF cannot trigger download prep)."""
+    root = Path(content_root)
+    meta_path = root / DETACHED_LIVE_META
+    eff_sig = int(signal.SIGTERM if sig is None else sig)
+    signaled: list[int] = []
+    candidate_pids: list[int] = []
+    wpgid = 0
+    if meta_path.is_file():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            meta = {}
+        if isinstance(meta.get("worker_pgid"), int):
+            wpgid = int(meta["worker_pgid"])
+        for key in ("worker_pid", "child_pid"):
+            raw_pid = meta.get(key)
+            if isinstance(raw_pid, int) and raw_pid > 0 and raw_pid != os.getpid() and raw_pid not in candidate_pids:
+                candidate_pids.append(raw_pid)
+    proc_pid = _scan_proc_for_detached_worker(root)
+    if proc_pid > 0 and proc_pid not in candidate_pids:
+        candidate_pids.insert(0, proc_pid)
+    for raw_pid in candidate_pids:
+        try:
+            os.kill(raw_pid, eff_sig)
+            signaled.append(raw_pid)
+        except OSError:
+            pass
+        if os.name != "nt":
+            try:
+                pgid = os.getpgid(raw_pid)
+                if pgid > 1 and pgid != os.getpgrp():
+                    os.killpg(pgid, eff_sig)
+            except OSError:
+                pass
+    if os.name != "nt" and wpgid > 1 and wpgid != os.getpgrp():
+        try:
+            os.killpg(wpgid, eff_sig)
+        except OSError:
+            pass
+    return {"ok": True, "signaled_pids": signaled}
+
+
+def apply_detached_poll_response(raw_poll_stdout: str, vitals_path: Path) -> dict[str, Any]:
+    """Parse `SDLAB_POLL_ENVELOPE {...}` from `colab exec` stdout and append new chunk to `vitals.log`."""
+    envelope: dict[str, Any] | None = None
+    for raw_line in reversed(raw_poll_stdout.splitlines()):
+        line = raw_line.strip()
+        if line.startswith(DETACHED_POLL_PREFIX):
+            payload = line[len(DETACHED_POLL_PREFIX) :].strip()
+            parsed = json.loads(payload)
+            if isinstance(parsed, dict):
+                envelope = parsed
+                break
+    if envelope is None or envelope.get("ok") is not True:
+        raise ValueError("missing or non-ok SDLAB_POLL_ENVELOPE in poll output")
+    offset = envelope.get("offset")
+    next_offset = envelope.get("next_offset")
+    chunk = envelope.get("chunk")
+    if not isinstance(offset, int) or not isinstance(next_offset, int) or next_offset < offset or not isinstance(chunk, str):
+        raise ValueError(f"malformed SDLAB_POLL_ENVELOPE fields: offset={offset!r}, next_offset={next_offset!r}")
+
+    cleaned = scrub_colab_tokens(chunk)
+    if cleaned:
+        vitals_path.parent.mkdir(parents=True, exist_ok=True)
+        with vitals_path.open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(cleaned)
+            fh.flush()
+    if bool(envelope.get("eof")) and isinstance(envelope.get("worker_stderr"), str):
+        vitals_path.parent.mkdir(parents=True, exist_ok=True)
+        stderr_out = vitals_path.parent / "detached_worker_stderr.log"
+        stderr_out.write_text(scrub_colab_tokens(envelope["worker_stderr"]), encoding="utf-8", newline="\n")
+    return {
+        "offset": offset,
+        "next_offset": next_offset,
+        "done": bool(envelope.get("done")),
+        "eof": bool(envelope.get("eof")),
+        "rc": envelope.get("rc"),
+        "bytes_appended": len(cleaned.encode("utf-8")),
+    }
+
+
 def wall_cap_refusal(wall: dict[str, Any], cap: dict[str, Any]) -> dict[str, Any] | None:
     """The kit's named refusal for a wall/cap trip, with the numbers that tripped it. When both trip,
     the cap's code is the one named (a failed usage read or a spent cap is the costlier finding)."""
@@ -1534,14 +2203,27 @@ def main(argv: list[str] | None = None) -> int:
         "--usage-blind-interval-s",
         type=float,
         default=None,
-        help="Blind interval between live cap decisions (T_retry + 2 * poll_s + slack_s) that the margin "
-        "gate prices; default T_retry + 2 * 2 + 2",
+        help="Blind interval of one usage sequence (T_retry + 2 * poll_s + slack_s); the margin gate prices "
+        "the cap-check interval, this plus --detached-poll-lag-s; default T_retry + 2 * 2 + 2",
+    )
+    parser.add_argument(
+        "--detached-poll-lag-s",
+        type=float,
+        default=None,
+        help="Detached-loop lag that, added to the blind interval, gives the cap-check interval the margin "
+        "gate prices (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s); default 2 * (5 + 30) + 10",
     )
     parser.add_argument("--rate", type=float, default=0.0)
     parser.add_argument("--max-rate", type=float, default=None)
     parser.add_argument("--min-runtime-s", type=float, default=None)
     parser.add_argument("--check-cap-budget", action="store_true", help="Check cap budget against cleanup reserve and --min-runtime-s")
     parser.add_argument("--check-wall-only", action="store_true", help="Evaluate only the local wall guard while usage poll retries are in flight")
+    parser.add_argument("--check-offline-cap", action="store_true",
+                        help="Trip-only cap projection on cached balances (failed remote poll, no usage read in flight)")
+    parser.add_argument("--balance-age-s", type=float, default=None,
+                        help="Age in seconds of the cached balance (--check-offline-cap)")
+    parser.add_argument("--card-class", default=None,
+                        help="gpu or cpu (--check-offline-cap); unset counts as gpu, so a bad rate refuses")
     parser.add_argument("--dry", action="store_true", help="Print cap trip arithmetic and exit")
     parser.add_argument("--start-balance", type=float, default=None)
     parser.add_argument("--current-balance", type=float, default=None)
@@ -1565,7 +2247,42 @@ def main(argv: list[str] | None = None) -> int:
                         help="With --check-ram: read private memory from this vitals.log (host_ram_status)")
     parser.add_argument("--run-output-bytes", type=Path, default=None,
                         help="Print the bytes of this vitals.log that are not vitals lines (stall guard progress)")
+    parser.add_argument("--detached-worker", action="store_true",
+                        help="Internal VM background worker mode for detached remote_runner")
+    parser.add_argument("--content-root", type=Path, default=Path("/content"),
+                        help="VM content directory for --detached-worker")
+    parser.add_argument("--apply-poll-file", type=Path, default=None,
+                        help="Parse SDLAB_POLL_ENVELOPE from this file and append chunk to --apply-poll-vitals")
+    parser.add_argument("--apply-poll-vitals", type=Path, default=None,
+                        help="Destination vitals.log for --apply-poll-file")
     args = parser.parse_args(argv)
+
+    if args.detached_worker:
+        run_detached_worker(args.content_root)
+        return 0
+
+    if args.apply_poll_file is not None:
+        if args.apply_poll_vitals is None or not args.apply_poll_file.is_file():
+            print("REFUSED: --apply-poll-file requires an existing file and --apply-poll-vitals", file=sys.stderr)
+            return 2
+        try:
+            res_poll = apply_detached_poll_response(
+                args.apply_poll_file.read_text(encoding="utf-8", errors="replace"),
+                args.apply_poll_vitals,
+            )
+        except (ValueError, OSError) as exc:
+            print(f"POLL_PARSE_ERROR: {exc}", file=sys.stderr)
+            return 1
+        rc_str = "none" if res_poll["rc"] is None else str(res_poll["rc"])
+        done_flag = 1 if res_poll["done"] else 0
+        eof_flag = 1 if res_poll["eof"] else 0
+        run_bytes = (
+            run_output_bytes(args.apply_poll_vitals.read_text(encoding="utf-8", errors="replace"))
+            if args.apply_poll_vitals.exists()
+            else 0
+        )
+        print(f"{res_poll['next_offset']}\t{done_flag}\t{eof_flag}\t{rc_str}\t{run_bytes}")
+        return 0
 
     if args.dry or args.check_cap_budget:
         eff_rate = (
@@ -1588,6 +2305,7 @@ def main(argv: list[str] | None = None) -> int:
             min_runtime_s=args.min_runtime_s,
             usage_retry_bound_s=args.usage_retry_bound_s,
             usage_blind_interval=args.usage_blind_interval_s,
+            detached_poll_lag=args.detached_poll_lag_s,
         )
         if args.dry:
             print(format_dry_cap_budget(rec))
@@ -1701,6 +2419,43 @@ def main(argv: list[str] | None = None) -> int:
             vit["refusal"] = {"code": vit["code"], "why": vit["reason"]}
         print(json.dumps(vit))
         return 1 if vit["tripped"] else 0
+
+    if args.check_offline_cap:
+        if args.start_balance is None or args.current_balance is None or args.balance_age_s is None:
+            print("REFUSED: --check-offline-cap requires --start-balance, --current-balance and --balance-age-s", file=sys.stderr)
+            return 2
+        offline_cap = evaluate_offline_cap_projection(
+            cap=args.cap,
+            margin=args.margin,
+            cleanup_bound_s=args.cleanup_bound_s,
+            rate_ccu_per_hour=args.rate,
+            elapsed_s=args.elapsed_s,
+            start_balance=args.start_balance,
+            cached_balance=args.current_balance,
+            balance_age_s=args.balance_age_s,
+            card_class=args.card_class,
+        )
+        out_off: dict[str, Any] = {"check": "offline_cap", "cap": offline_cap}
+        if args.phase is not None:
+            out_off["phase"] = args.phase
+        if args.checkpoint is not None:
+            out_off["checkpoint"] = args.checkpoint
+        if offline_cap["tripped"]:
+            if offline_cap["code"] == "RATE_UNREAD":
+                why_off = (
+                    f"offline cap projection: a GPU window's priced rate {args.rate!r}/h is not finite and "
+                    "positive; it is not priced with a configured rate"
+                )
+            else:
+                why_off = (
+                    f"offline cap projection: spend {offline_cap['spend_ccu']} ccu (max of priced_rate "
+                    f"{offline_cap['priced_rate']}/h * elapsed {offline_cap['elapsed_s']} s and the cached drop "
+                    f"{offline_cap['cached_drop_ccu']} + priced_rate * balance age {offline_cap['balance_age_s']} s "
+                    f"= {offline_cap['aged_drop_ccu']}) >= ceiling {offline_cap['ceiling_ccu']} ccu"
+                )
+            out_off["refusal"] = {"code": offline_cap["code"], "why": why_off}
+        print(json.dumps(out_off))
+        return 1 if offline_cap["tripped"] else 0
 
     if args.check_wall_only:
         wall = evaluate_wall_guard(mode=args.mode, elapsed_s=args.elapsed_s, wall_s=args.wall_s, grace_s=args.grace_s)

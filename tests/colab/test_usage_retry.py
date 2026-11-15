@@ -387,11 +387,11 @@ def test_unparseable_output_then_success_recovers_and_completes_window(tmp_path:
 
 
 def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_path: Path) -> None:
-    """Test 5: the gate prices the blind interval `T_retry + 2 * poll_s + slack_s = 111 + 4 + 2 = 117` s,
-    not `T_retry` alone. On G4 at `10.05/hr`, `rate * (117 / 3600) = 0.326625` CCU.
-    `--margin 0.60` (`margin / 2 = 0.30 < 0.326625`) refuses at launch before any `colab` call, whereas
-    `--margin 1.0` (`margin / 2 = 0.50 >= 0.326625`) passes. A card at `16.0/hr` fitted margin 1.0 under
-    `T_retry` alone (`0.493333`) but not under the blind interval (`0.52`), so it refuses."""
+    """Test 5: the gate prices the detached loop's cap-check interval, the blind interval
+    `T_retry + 2 * poll_s + slack_s = 117` s plus the detached poll lag `2 * (5 + 30) + 10 = 80` s = 197 s
+    (sdlab#82). On G4 at `10.05/hr`, `rate * (197 / 3600) = 0.549958` CCU. `--margin 0.60` and `--margin 1.0`
+    (`margin / 2 = 0.50 < 0.549958`) refuse at launch before any `colab` call, whereas the GPU default margin
+    `1.25` (`0.625 >= 0.549958`) passes. A card at `16.0/hr` refuses at margin 1.0 (`0.875556`)."""
     _, state_dir, env = fc.make_fake_colab_env(tmp_path)
     out_dir = tmp_path / "out_margin_refusal"
 
@@ -423,14 +423,23 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
     assert res.returncode == 2, f"expected exit 2 launch refusal, got rc={res.returncode}\nstderr={res.stderr}"
     combined = res.stdout + res.stderr
     assert "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY" in combined
-    assert "0.326625" in combined
+    assert "0.549958" in combined
     assert not (state_dir / "calls.log").exists(), "window must refuse before any colab CLI call"
 
     window = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
     assert window["status"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
     assert window["refusal_code"] == "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY"
 
-    # At margin 1.0 on G4 10.05/hr, 0.309875 <= 0.50 passes --dry.
+    # At the old GPU default margin 1.0 on G4 10.05/hr, 0.549958 > 0.50 refuses --dry.
+    dry_old = _run_lane1(
+        ["--dry", "--card", "G4", "--shape", "standard", "--max-rate", "10.05", "--cap", "5.0", "--margin", "1.0"],
+        env,
+        timeout=30,
+    )
+    assert dry_old.returncode == 2, f"expected --margin 1.0 --dry to refuse, got rc={dry_old.returncode}"
+    assert "0.549958 units > margin / 2 = 0.5 units" in dry_old.stderr
+
+    # With no --margin a GPU card gets the default 1.25: 0.549958 <= 0.625 passes --dry.
     dry_res = _run_lane1(
         [
             "--dry",
@@ -442,18 +451,19 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
             "10.05",
             "--cap",
             "5.0",
-            "--margin",
-            "1.0",
         ],
         env,
         timeout=30,
     )
-    assert dry_res.returncode == 0, f"expected --margin 1.0 --dry to pass, got: {dry_res.stderr}"
+    assert dry_res.returncode == 0, f"expected the default-margin --dry to pass, got: {dry_res.stderr}"
+    assert "margin: 1.25" in dry_res.stdout
     assert "usage_retry_bound_s (T_retry): 111" in dry_res.stdout
     assert "usage_blind_interval_s (T_retry + 2 * poll_s + slack_s): 117" in dry_res.stdout
-    assert "usage_retry_blind_bound: 0.326625 (117 / 3600 * 10.05 <= margin/2 0.5)" in dry_res.stdout
+    assert "detached_poll_lag_s (2 * (poll_retry_sleep_s + poll_exec_timeout_s) + kill_grace_s): 80" in dry_res.stdout
+    assert "cap_check_interval_s (usage_blind_interval_s + detached_poll_lag_s): 197" in dry_res.stdout
+    assert "cap_check_interval_bound: 0.549958 (197 / 3600 * 10.05 <= margin/2 0.625)" in dry_res.stdout
 
-    # 16.0/hr at margin 1.0: 16.0 * 117 / 3600 = 0.52 > 0.5 refuses (it fitted at 111 s: 0.493333).
+    # 16.0/hr at margin 1.0: 16.0 * 197 / 3600 = 0.875556 > 0.5 refuses.
     dry_16 = _run_lane1(
         [
             "--dry",
@@ -473,8 +483,8 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
     )
     assert dry_16.returncode == 2, f"expected 16.0/hr at margin 1.0 to refuse, got rc={dry_16.returncode}"
     assert "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY" in dry_16.stderr
-    assert "0.52 units > margin / 2 = 0.5 units" in dry_16.stderr
-    assert "need --margin >= 1.04" in dry_16.stderr
+    assert "0.875556 units > margin / 2 = 0.5 units" in dry_16.stderr
+    assert "need --margin >= 1.751112" in dry_16.stderr
 
 
 def test_local_wall_guard_keeps_running_and_trips_during_hung_usage_retry(tmp_path: Path) -> None:
