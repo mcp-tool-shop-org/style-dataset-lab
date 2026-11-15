@@ -455,6 +455,8 @@ def test_lane1_bundle_now_cell_merges_scrubs_tars_and_splits_on_salvage(
         assert fake_tok not in renders_txt and "hf_[REDACTED]" in renders_txt
         vm_win = json.loads(tf.extractfile("./vm_window.json").read().decode("utf-8"))  # type: ignore[union-attr]
         assert vm_win["failed_rc"] == 143
+        # The salvage archive is a bundle phase too, as the kit's own archives are.
+        assert tf.extractfile("./phase.txt").read().decode("utf-8") == "bundle\n"  # type: ignore[union-attr]
     man = json.loads((content / ".sdlab_dl_lane1_render_bundle.tar.gz.manifest.json").read_text(encoding="utf-8"))
     assert man["part_count"] >= 2
 
