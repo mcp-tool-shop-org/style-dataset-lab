@@ -20881,7 +20881,7 @@
         "node --test",
         "pytest"
       ],
-      "testedBy": 35,
+      "testedBy": 36,
       "unresolvedSites": 0
     },
     {
@@ -21588,9 +21588,13 @@
         },
         {
           "exports": [
-            "persistent_out_root"
+            "persistent_out_root",
+            "slow_runner_shim"
           ],
-          "hash": "e614d202e326448a5170af73df58d5790d8db666cbf5d5f96d963591431bf1ef",
+          "hash": "52a82af8fd00ca07d1530a1feb5a0f8525ec77041e077fcc7d005a8d361b20ef",
+          "importsFiles": [
+            "tests/colab/fixtures/slow_runner_shim.py"
+          ],
           "path": "tests/colab/conftest.py",
           "testFramework": "pytest"
         },
@@ -21611,7 +21615,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "46c40ab773ed958576edb2577b86c07b73fc7440abcdb84c9b741d50782168c0",
+          "hash": "843569313517f7dc9e1ed70963a669b68414ad2142bce3760ca2963def368339",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -21642,6 +21646,16 @@
           ],
           "hash": "6c50455a4860c2374a9844e8144b4ca4d9270484295c9fdc773eeed1246f1907",
           "path": "tests/colab/fixtures/fake_vm_site/torch/__init__.py"
+        },
+        {
+          "exports": [
+            "install_slow_runner_shim"
+          ],
+          "hash": "f75ec67aaee8071047d63ad011e1cd1a808d28048bdddb446e3fb4c2a1347f65",
+          "importsFiles": [
+            "tests/colab/fixtures/fake_colab.py"
+          ],
+          "path": "tests/colab/fixtures/slow_runner_shim.py"
         },
         {
           "hash": "27d359d114a56953811be6f248357c90944d22c861636e3f470ee77dcb37d7c0",
@@ -21688,7 +21702,7 @@
             "test_salvage_deadline_counts_the_split_manifest_fetch_and_every_5xx_retry",
             "test_salvage_path_uses_chunked_download_above_chunk_size"
           ],
-          "hash": "fb060eea957df5970efc259aa595f6d91f11015922e3ae209a69b020a104f602",
+          "hash": "1de4d963f802bd8f6ed65e6e7d3960fab946bb47a9c90fe84171b7b35609744c",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_bundle_now.py",
@@ -21739,7 +21753,7 @@
             "test_offline_wall_trip_uses_a_clock_read_after_the_failed_poll",
             "test_usage_read_followed_during_outage_trips_cap_on_its_own_result"
           ],
-          "hash": "9286bf87b227260a1c7c7c341cb8329ff89b6310fd515e364b7135bec8b5b55a",
+          "hash": "35091812bec9fef7356fcf94bca36dc4da21b9a843de0355eb427b820ca996e5",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -21784,7 +21798,7 @@
             "test_open_refuses_a_gpu_card_that_was_not_armed",
             "test_the_gate_arms_five_second_reads_and_refuses_the_test_hook_live"
           ],
-          "hash": "72a61d9342e5c3a86c4cb8c1c56549dac4d00ec739adc8e83d0a3da321405222",
+          "hash": "e7d197029c06a8113c4e4a2bb770a10e05c55b9a612c28d7be9c6006c60b8c3c",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -21815,7 +21829,7 @@
             "test_wall_cap_and_vitals_records_carry_a_refusal",
             "vitals_ends_torn"
           ],
-          "hash": "61dc81e5b0ac0563c6908ff6ccf2b7d98bb3c59e74156baf69dccf7af6731537",
+          "hash": "599d5c34a56fbabdc5ee4994d88ed4778b3414991050912436d0108ebb606de9",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/launch_guards.py"
@@ -21847,7 +21861,7 @@
             "test_upload_and_download_helpers_refuse_by_name",
             "test_upload_failure_is_upload_failed_with_http_status_and_no_token"
           ],
-          "hash": "9166ff9f765252c945699e3a9636a1e92f18e1f8765bf4245fa4144d28c700fd",
+          "hash": "a1d5e7fe3a4a056516195e9721185758778256b9f05bf22a1add1e285dc49ac0",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22079,7 +22093,7 @@
             "test_window_json_records_cleanup_bounds_equal_to_configured_sum",
             "test_window_rate_state_unit"
           ],
-          "hash": "e204c3217a3c824f4b46f5e8e6f567da5e0a10aaf08b88d2e371a497f55d81a5",
+          "hash": "c86d9a25a21eb68dbeb3b65ccd46bf2d7f0e948588fc135c2e671b9f154d1656",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/lane3_rung.py",
@@ -22146,7 +22160,7 @@
             "test_window_writer_adds_no_train_fields_to_other_lanes",
             "test_window_writer_reads_train_state_strictly"
           ],
-          "hash": "59c15deff7a652657ab557fdaf2e596cbe90a34057dff206ff83a6dbaf54dd2e",
+          "hash": "57f9c168ca2bb27f59564efd6105cd7f3216af98c54600d29b2749189db2d5de",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22221,7 +22235,7 @@
             "test_vitals_parsing_and_stall_guard_trips_and_stays_quiet_just_under",
             "test_wall_guard_trips_on_fixture_and_stays_quiet_just_under"
           ],
-          "hash": "9f913a02c4379ebc15fed77c9f3b719d2cdf9d0560fc6074591ea534943b75cf",
+          "hash": "d37e7212b80097767bf7a77ffa274b4834303906b8b5fd94547ede27b369c72e",
           "importOrder": [
             "scripts/colab/launch_guards.py",
             "scripts/colab/remote_runner.py",
@@ -22284,7 +22298,7 @@
             "test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_usage_text_parsed_into_live_balance_and_rate_in_window_json"
           ],
-          "hash": "a7ddabc304b5b912a99c8daaa0103f52d641c1d887cd4812184c963a01831fa2",
+          "hash": "71973cd54e4a1304d80a7f207ed9f8175b4fcef586c6bb5cd9349ce8b74c139f",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/remote_runner.py",
@@ -22328,7 +22342,7 @@
             "test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode",
             "test_trap_stops_session_on_command_failure_and_wall"
           ],
-          "hash": "96241a59e1e58ab61bc369dab65e09805b26d20d25329d55b48cd891ef580cee",
+          "hash": "33054618cfe8a7239469d89ea8a2dd1718026fbacc263d4f071e085a62ff8a41",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22352,7 +22366,7 @@
             "test_open_refuses_a_gpu_card_whose_shape_was_not_armed",
             "test_the_cpu_stub_is_unchanged_and_takes_no_shape"
           ],
-          "hash": "ae76813b2a000babdc994033831a6fed426e271b1b5a63471c15a55588e74dea",
+          "hash": "f548c4c0e6eda971f04341e7c9f7971b5e30181ef0afc1a33954dcd3578918ff",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22382,6 +22396,18 @@
         },
         {
           "exports": [
+            "test_slow_runner_shim_pre_open_zero_rate_and_post_open_rate",
+            "test_slow_runner_shim_probe_upload_limit"
+          ],
+          "hash": "a170553996edaa6d87655288e90c832a9b60863e8e0d67d81b94d8dbe2770506",
+          "importsFiles": [
+            "tests/colab/test_chunked_transfer_and_probe.py",
+            "tests/colab/test_launch_lane1_stub.py"
+          ],
+          "path": "tests/colab/test_slow_runner_shim.py"
+        },
+        {
+          "exports": [
             "test_deadline_check_fails_closed_when_its_clock_check_fails",
             "test_deadline_check_fails_closed_when_poll_launch_time_is_missing",
             "test_failed_closing_poll_keeps_last_live_reading_marked_stale",
@@ -22395,7 +22421,7 @@
             "test_three_failures_trip_parse_failed_within_t_retry_and_keep_last_error",
             "test_unparseable_output_then_success_recovers_and_completes_window"
           ],
-          "hash": "eb6f2bf382b637d8ed639d86d37b9c56e94b47bb3a1e8de5b8ae1b963a92cae6",
+          "hash": "8d88e9e8af4e6a3bfac4bf0aca58de49283daa377221339056a28b2ea55d7fc6",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -23533,7 +23559,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 133
+          "files": 135
         },
         {
           "boundary": "lib",
@@ -23834,7 +23860,7 @@
         },
         {
           "coverage": true,
-          "files": 28,
+          "files": 30,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -24491,8 +24517,8 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "717bdb9da9d5d8582cfbb340750895f793f49202",
-    "tracked": 3321
+    "commit": "5502eda64c4c04c907891378d85bdba325bd1f34",
+    "tracked": 3323
   },
   "landings": [
     {
@@ -27375,6 +27401,24 @@
     {
       "readers": [
         {
+          "by": "tests/colab/conftest.py",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        },
+        {
+          "by": "tests/colab/test_slow_runner_shim.py",
+          "call": "literal",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "tests/colab/fixtures",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
           "by": "tests/colab/fixtures/fake_colab.py",
           "call": "literal",
           "confidence": "ast",
@@ -27502,7 +27546,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 143,
+  "testFiles": 145,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"

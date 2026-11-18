@@ -75,48 +75,49 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 9,
-      "changed": 24,
+      "added": 2,
+      "changed": 14,
       "moved": 0,
-      "parts": 2,
+      "parts": 1,
       "removed": 0
     },
     "items": [
       {
         "kind": "landing",
-        "sentence": "scripts/colab/launch_guards.py is now read by scripts/colab/lane3_rung.py.",
+        "sentence": "tests/colab/fixtures/ is now read by tests/colab/conftest.py and tests/colab/test_slow_runner_shim.py.",
         "subjects": [
-          "scripts/colab/launch_guards.py",
-          "scripts/colab/lane3_rung.py"
+          "tests/colab/fixtures/",
+          "tests/colab/conftest.py",
+          "tests/colab/test_slow_runner_shim.py"
         ]
       },
       {
         "kind": "counts",
-        "sentence": "9 files added and 24 changed content, across 2 parts.",
+        "sentence": "2 files added and 14 changed content, across 1 part.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "ce6da8a40949c592f389dbe5cb395a6f6d1688b1",
-      "generatedAt": "2026-11-12T23:08:02.035Z"
+      "commit": "717bdb9da9d5d8582cfbb340750895f793f49202",
+      "generatedAt": "2026-11-18T11:45:32.054Z"
     },
     "unchanged": false
   },
   "changesTogether": [
     {
-      "a": "scripts/colab/lane3_rung.py",
-      "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 14,
+      "a": "tests/colab/fixtures/fake_colab.py",
+      "b": "tests/colab/test_launch_lane1_stub.py",
+      "either": 30,
       "partLabels": [
-        "scripts",
+        "tests",
         "tests"
       ],
       "parts": [
-        "scripts",
+        "tests",
         "tests"
       ],
-      "relation": "b-imports-a",
-      "shared": 7
+      "relation": "inside",
+      "shared": 15
     },
     {
       "a": "scripts/colab/lane3_rung.py",
@@ -132,6 +133,21 @@
       ],
       "relation": "inside",
       "shared": 4
+    },
+    {
+      "a": "tests/colab/test_gpu_rate_gate.py",
+      "b": "tests/colab/test_host_ram_guard.py",
+      "either": 8,
+      "partLabels": [
+        "tests",
+        "tests"
+      ],
+      "parts": [
+        "tests",
+        "tests"
+      ],
+      "relation": "inside",
+      "shared": 4
     }
   ],
   "changesTogetherNote": [
@@ -140,9 +156,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "717bdb9da9d5d8582cfbb340750895f793f49202",
+  "commit": "5502eda64c4c04c907891378d85bdba325bd1f34",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (68), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (70), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -167,7 +183,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 133
+          "files": 135
         },
         {
           "boundary": "lib",
@@ -212,7 +228,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 34,
-      "runsMore": 128,
+      "runsMore": 130,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -479,7 +495,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-18T11:45:32.054Z",
+  "generatedAt": "2026-11-18T16:23:54.764Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
     "44 writes and 79 reads use paths built at run time and are not named here.",
@@ -765,11 +781,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 143,
+  "testFiles": 145,
   "testedBy": {
     "bin": 11,
     "lib": 98,
-    "scripts": 35
+    "scripts": 36
   },
   "testedCodeParts": 3,
   "unnamedWrites": 44,
