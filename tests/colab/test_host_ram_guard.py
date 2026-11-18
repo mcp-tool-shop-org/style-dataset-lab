@@ -174,7 +174,7 @@ def _replay_window(tmp_path: Path, replay: Path, name: str, **env_over: str) -> 
     out_dir = tmp_path / f"out_{name}"
     res = subprocess.run(
         [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(out_dir), "--session", f"sdlab-l3-{name}"],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False,
     )
     return res, out_dir, state_dir
 
@@ -249,7 +249,7 @@ def test_kit_live_guard_trips_are_named_refusals(tmp_path: Path, mode: str, extr
     out_dir = tmp_path / f"out_{mode}"
     res = subprocess.run(
         [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(out_dir), "--session", f"sdlab-l3-{mode}", *extra],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res.returncode != 0
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))

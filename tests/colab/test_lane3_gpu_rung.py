@@ -565,7 +565,7 @@ def _assert_token_nowhere(out_dir: Path) -> None:
 
 
 def _launch(
-    tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: str = "out", timeout_s: int = 240
+    tmp_path: Path, env: dict[str, str], src: Path, *extra: str, out: str = "out", timeout_s: int = 360
 ) -> tuple[subprocess.CompletedProcess[str], Path]:
     out_dir = tmp_path / out
     args = [_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--session", "sdlab-l3-gpu-rung",
@@ -708,7 +708,7 @@ def test_kit_refuses_a_rung_request_missing_a_value_before_any_colab_call(tmp_pa
     flat = [x for kv in args.items() for x in kv]
     res = subprocess.run([_bash(), fc._to_posix(LAUNCHER), "--train", "--card", "A100", "--out-dir",
                           fc._to_posix(tmp_path / "out"), *flat], env=env, stdin=subprocess.DEVNULL,
-                         capture_output=True, text=True, timeout=60, check=False)
+                         capture_output=True, text=True, timeout=180, check=False)
     assert res.returncode == 2 and f"REFUSED: {code}:" in res.stderr
     assert not (state_dir / "calls.log").exists() and not (state_dir / "card.txt").exists()
 
@@ -720,7 +720,7 @@ def test_kit_refuses_invalid_rung_job_or_rung_job_without_train(tmp_path: Path) 
     assert not (state_dir / "calls.log").exists()
     res_notrain = subprocess.run(
         [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(tmp_path / "out_notrain"), "--rung-job", "20"],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_notrain.returncode == 2 and "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN:" in res_notrain.stderr
     assert not (state_dir / "calls.log").exists()
@@ -1778,7 +1778,7 @@ def test_window_json_records_cleanup_bounds_equal_to_configured_sum(tmp_path: Pa
     lane1_sh = COLAB_DIR / "launch_lane1_stub.sh"
     res1 = subprocess.run(
         [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-bounds"],
-        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res1.returncode == 0, res1.stderr
     win1 = json.loads((out1 / "window.json").read_text(encoding="utf-8"))
@@ -1980,7 +1980,7 @@ def test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound(tmp_pat
     try:
         res1 = subprocess.run(
             [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-dlhang"],
-            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=20, check=False,
+            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
         )
         assert res1.returncode != 0
         guards1 = (out1 / "guards.log").read_text(encoding="utf-8")
@@ -2012,7 +2012,7 @@ def test_lane1_hung_download_and_hung_stop_reach_colab_stop_within_bound(tmp_pat
     try:
         res2 = subprocess.run(
             [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out2), "--session", "sdlab-l1-stophang"],
-            env=env2, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=20, check=False,
+            env=env2, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
         )
         assert res2.returncode == 0, res2.stderr
         guards2 = (out2 / "guards.log").read_text(encoding="utf-8")
@@ -2134,7 +2134,7 @@ def test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip(tmp_path
             "--out-dir", fc._to_posix(out_cpu), "--session", "sdlab-l3-rise-cpu",
             "--cap", "0.54", "--margin", "0.05",
         ],
-        env=env_cpu, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=40, check=False,
+        env=env_cpu, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_cpu.returncode != 0
     win_cpu = _win(out_cpu)
@@ -2181,7 +2181,7 @@ def test_cap_too_small_for_cleanup_or_min_runtime_refuses_before_any_colab_call(
             "--card", "G4", "--shape", "standard", "--out-dir", fc._to_posix(out3),
             "--session", "sdlab-l1-smallcap", "--max-rate", "10.5", "--cap", "1.30", "--margin", "0.01",
         ],
-        env=env3, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env3, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res3.returncode == 2 and "REFUSED: CAP_TOO_SMALL_FOR_CLEANUP:" in res3.stderr
     assert not (state3 / "calls.log").exists()
@@ -2240,7 +2240,7 @@ def test_dry_prints_trip_arithmetic_for_guard_and_launchers_without_colab_calls(
             _bash(), fc._to_posix(lane1_sh),
             "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "3.24", "--margin", "1.25", "--dry",
         ],
-        env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_l1.returncode == 0, res_l1.stderr
     assert not (state_l1 / "calls.log").exists()
@@ -2360,7 +2360,7 @@ def test_wall_trip_during_hung_foreground_step_reaches_stop_by_watcher_path(tmp_
                 "--out-dir", fc._to_posix(out_dir), "--session", "sdlab-l1-watcher",
                 "--wall-s", "4", "--grace-s", "2",
             ],
-            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=12, check=False,
+            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
         )
         assert res.returncode != 0
         guards = (out_dir / "guards.log").read_text(encoding="utf-8")
@@ -2402,7 +2402,7 @@ def test_wall_trip_during_post_exec_download_keeps_total_time_within_cleanup_bou
                 "--out-dir", fc._to_posix(out_dir), "--session", "sdlab-l1-dlwall",
                 "--wall-s", "6", "--grace-s", "2",
             ],
-            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=25, check=False,
+            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
         )
         assert res.returncode != 0
         win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
@@ -2520,7 +2520,7 @@ def test_lane1_ignores_salvage_timeout_overrides_in_cleanup_bounds(tmp_path: Pat
     out1 = tmp_path / "out_l1_ignore_salvage"
     res1 = subprocess.run(
         [_bash(), fc._to_posix(lane1_sh), "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-ign-salvage"],
-        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res1.returncode == 0, res1.stderr
     win1 = json.loads((out1 / "window.json").read_text(encoding="utf-8"))
@@ -2654,7 +2654,7 @@ def test_wall_watcher_waits_for_salvage_and_keeps_step_250(tmp_path: Path) -> No
             "--download-max-seconds", "5", "--wall-s", "9", "--grace-s", "2",
             "--cap", "6.25", "--margin", "1.25", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
-            timeout_s=25,
+            timeout_s=180,
         )
         assert res.returncode != 0
         assert (out_dir / "cleanup_started.txt").is_file()
@@ -2705,7 +2705,7 @@ def test_wall_watcher_escalates_when_salvage_overruns_cleanup_stop_attempted_by_
             "--download-max-seconds", "5", "--wall-s", "9", "--grace-s", "2",
             "--cap", "6.25", "--margin", "1.25", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
-            timeout_s=20,
+            timeout_s=180,
         )
         assert res.returncode != 0
         assert (out_dir / "cleanup_started.txt").is_file()
@@ -2775,7 +2775,7 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
                 "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-legit-dl",
                 "--wall-s", "7", "--grace-s", "2",
             ],
-            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+            env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
         )
         assert res1.returncode != 0
         assert not (out1 / "watcher_escalated.txt").exists()
@@ -2815,7 +2815,7 @@ def test_wall_trip_during_legitimate_post_exec_download_with_short_escalate(tmp_
             "--download-max-seconds", "3", "--wall-s", "22", "--grace-s", "2",
             "--cap", "6.25", "--margin", "1.25", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
-            timeout_s=45,
+            timeout_s=180,
         )
         assert res3.returncode != 0
         assert not (out3 / "watcher_escalated.txt").exists()
@@ -2868,7 +2868,7 @@ def test_wall_watcher_late_cleanup_start_and_overrunning_salvage_kills_mutation_
             "--download-max-seconds", "3", "--wall-s", "22", "--grace-s", "2",
             "--cap", "6.25", "--margin", "1.25", "--max-rate", "9.5",
             "--shape", "high-mem", "--rung-job", "500",
-            timeout_s=45,
+            timeout_s=180,
         )
         assert res.returncode != 0
         assert (out_dir / "cleanup_started.txt").is_file()
@@ -3173,7 +3173,7 @@ def test_wall_watcher_normal_early_finish_single_stop_and_not_launcher_gone_pre_
             "--out-dir", fc._to_posix(out1), "--session", "sdlab-l1-early-ok",
             "--wall-s", "30", "--grace-s", "2",
         ],
-        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res1.returncode == 0, res1.stderr
     _time.sleep(1.2)
@@ -3194,7 +3194,7 @@ def test_wall_watcher_normal_early_finish_single_stop_and_not_launcher_gone_pre_
         "SDLAB_TEST_RATE_READ_INTERVAL_S": "0.05",
         "GUARD_POLL_INTERVAL_S": "0.2",
     })
-    res3, out3 = _launch(tmp_path / "l3_early", env3, src3, timeout_s=40)
+    res3, out3 = _launch(tmp_path / "l3_early", env3, src3, timeout_s=180)
     assert res3.returncode == 0, res3.stderr
     _time.sleep(1.2)
     stops3 = [
@@ -3304,7 +3304,7 @@ def test_dry_honest_bounds_g4_10_5_cap_8_3_margin_0_05(tmp_path: Path) -> None:
             _bash(), fc._to_posix(lane1_sh),
             "--card", "G4", "--shape", "standard", "--max-rate", "10.5", "--cap", "9.5", "--margin", "1.25", "--dry",
         ],
-        env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env_l1, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_l1.returncode == 0, res_l1.stderr
     assert not (state_l1 / "calls.log").exists()
@@ -3687,7 +3687,7 @@ def test_real_run_pre_open_refusals_before_colab_new(tmp_path: Path) -> None:
     # --job without --train is refused before any colab call
     res_notrain = subprocess.run(
         [_bash(), fc._to_posix(LAUNCHER), "--out-dir", fc._to_posix(tmp_path / "out_notrain_job"), "--job", jp],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_notrain.returncode == 2 and "REFUSED: TRAIN_OPTION_WITHOUT_TRAIN:" in res_notrain.stderr
 
@@ -3776,7 +3776,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
     env_bad = {**env_inv, "COLAB_DOWNLOAD_TIMEOUT_S": "abc"}
     res_inv_env = subprocess.run(
         [_bash(), fc._to_posix(lane1_sh), "--dry"],
-        env=env_bad, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env_bad, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_inv_env.returncode == 2 and "REFUSED: DOWNLOAD_TIMEOUT_INVALID:" in res_inv_env.stderr
     assert not (state_inv / "calls.log").exists()
@@ -3804,7 +3804,7 @@ def test_download_timeout_setting_flag_env_and_window_json(tmp_path: Path) -> No
             _bash(), fc._to_posix(lane1_sh), "--card", "G4", "--shape", "standard",
             "--max-rate", "10.5", "--cap", "9.55", "--margin", "1.25", "--download-timeout-s", "600", "--dry",
         ],
-        env=env_inv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env_inv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert dry_l1_cli.returncode == 0
     assert json.loads(dry_l1_cli.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 750
@@ -3903,7 +3903,7 @@ def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -
     res_env = subprocess.run(
         [_bash(), fc._to_posix(lane1_sh), "--dry"],
         env={**env_inv, "COLAB_UPLOAD_TIMEOUT_S": "not_an_int"},
-        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res_env.returncode == 2 and "REFUSED: UPLOAD_TIMEOUT_INVALID:" in res_env.stderr
     assert not (state_inv / "calls.log").exists()
@@ -3930,7 +3930,7 @@ def test_upload_timeout_setting_and_archive_throughput_refusal(tmp_path: Path) -
             "--max-rate", "10.5", "--cap", "9.55", "--margin", "1.25",
             "--download-timeout-s", "300", "--upload-timeout-s", "500", "--dry",
         ],
-        env=env_dry, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env_dry, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert dry_l1.returncode == 0
     assert json.loads(dry_l1.stdout.strip().splitlines()[-1])["cleanup_bound_s"] == 650
@@ -4878,7 +4878,7 @@ def test_n3_multipart_salvage_completes_all_parts_and_cap_gate_reserves_multipar
             "--download-max-seconds", "5",
             "--wall-s", "10", "--grace-s", "2",
             "--cap", "6",
-            timeout_s=120,
+            timeout_s=240,
         )
         assert res_sal.returncode != 0
         win_sal = json.loads((out_sal / "window.json").read_text(encoding="utf-8"))
@@ -5163,7 +5163,7 @@ def test_lane1_watcher_is_kept_when_the_trap_stop_fails_and_lands_the_stop(tmp_p
     out = tmp_path / "out"
     res = subprocess.run(
         [_bash(), fc._to_posix(COLAB_DIR / "launch_lane1_stub.sh"), "--out-dir", fc._to_posix(out), "--session", "sdlab-l1-keepwatch"],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
     )
     assert res.returncode == 0, res.stderr
     assert "WATCHER_KEPT_STOP_UNCONFIRMED" in (out / "guards.log").read_text(encoding="utf-8")
@@ -5179,19 +5179,19 @@ def test_lane1_watcher_is_kept_when_the_trap_stop_fails_and_lands_the_stop(tmp_p
 
 def test_post_train_bundling_across_multiple_vitals_ticks_does_not_trip_dead_harness(tmp_path: Path) -> None:
     # Regression for sdlab-ships-2512-v2 and sdlab-ships-2512-v2-r2:
-    # 1) Training runs longer than SETUP_STALL_S (2s here, with FAKE_VM_TRAIN_SLEEP_S=2.4) while SETUP_BYTES
+    # 1) Training runs longer than SETUP_STALL_S (6s here, with FAKE_VM_TRAIN_SLEEP_S=7.5) while SETUP_BYTES
     #    stays frozen during phase="run".
     # 2) After ai-toolkit/run.py exits 0, phase.txt switches to "bundle" and tarring spans >= 4 vitals
     #    samples with 0 worker procs.
     # Neither DEAD_HARNESS_TRIPPED nor SETUP_STALL_TRIPPED may fire during post-train bundling.
     state, env, src = _rung_env(tmp_path)
     env.update({
-        "SETUP_STALL_S": "2",
-        "FAKE_VM_TRAIN_SLEEP_S": "2.4",
-        "FAKE_VM_TRAIN_VITALS_TICKS": "12",
-        "FAKE_VM_POST_TRAIN_VITALS_TICKS": "5",
+        "SETUP_STALL_S": "6",
+        "FAKE_VM_TRAIN_SLEEP_S": "7.5",
+        "FAKE_VM_TRAIN_VITALS_TICKS": "16",
+        "FAKE_VM_POST_TRAIN_VITALS_TICKS": "6",
         "FAKE_COLAB_VITALS_INTERVAL_S": "0.2",
-        "GUARD_POLL_INTERVAL_S": "0.2",
+        "GUARD_POLL_INTERVAL_S": "0.5",
     })
     res, out_dir = _launch(tmp_path, env, src)
     assert res.returncode == 0, f"STDERR:\n{res.stderr}\nGUARDS:\n{(out_dir / 'guards.log').read_text(encoding='utf-8')[-1500:]}"

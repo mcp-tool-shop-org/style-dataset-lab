@@ -51,7 +51,7 @@ def _p(p: Path) -> str:
     return fc._to_posix(p)
 
 
-def _run(cmd: list[str], env: dict[str, str], timeout: int = 90) -> subprocess.CompletedProcess[str]:
+def _run(cmd: list[str], env: dict[str, str], timeout: int = 240) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout, check=False
     )

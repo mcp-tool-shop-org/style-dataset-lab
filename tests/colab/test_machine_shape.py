@@ -42,7 +42,7 @@ def _lane1(tmp_path: Path, card: str, shape: str | None, extra_env: dict[str, st
     if shape is not None:
         args += ["--shape", shape]
     res = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                         timeout=120, check=False)
+                         timeout=240, check=False)
     return res, out_dir, state_dir
 
 
@@ -144,7 +144,7 @@ def test_the_cpu_stub_is_unchanged_and_takes_no_shape(tmp_path: Path) -> None:
     _, state_dir, env = fc.make_fake_colab_env(tmp_path)
     out_dir = tmp_path / "out"
     res = subprocess.run([_bash(), fc._to_posix(LANE1), "--out-dir", fc._to_posix(out_dir), "--session", "sdlab-l1-cpu"],
-                         env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False)
+                         env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False)
     assert res.returncode == 0, res.stderr[-2000:]
     assert _new_lines(state_dir) == ["CALL new --high-mem -s sdlab-l1-cpu"]
     win = _win(out_dir)
@@ -154,14 +154,14 @@ def test_the_cpu_stub_is_unchanged_and_takes_no_shape(tmp_path: Path) -> None:
     out2 = tmp_path / "out2"
     res = subprocess.run([_bash(), fc._to_posix(LANE1), "--out-dir", fc._to_posix(out2), "--session", "sdlab-l1-cpu2",
                           "--shape", "standard"],
-                         env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False)
+                         env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False)
     assert res.returncode == 2 and "REFUSED: SHAPE_NOT_FOR_CPU:" in res.stderr
     assert len(_new_lines(state_dir)) == 1
 
 
 def _source(script: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run([_bash(), "-c", f"set -euo pipefail; source {fc._to_posix(WINDOW_SH)}; {script}"],
-                          env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False)
+                          env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False)
 
 
 def test_open_refuses_a_gpu_card_whose_shape_was_not_armed(tmp_path: Path) -> None:

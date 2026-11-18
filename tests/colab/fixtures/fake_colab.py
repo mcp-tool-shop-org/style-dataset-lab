@@ -220,7 +220,7 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
         "#!/usr/bin/env bash\n"
         "#SDLAB_FAKE_COLAB_CLI=1\n"
         "set -euo pipefail\n"
-        f"exec '{py_posix}' '{fake_py_posix}' \"$@\"\n",
+        f"exec '{py_posix}' -S '{fake_py_posix}' \"$@\"\n",
         encoding="utf-8",
         newline="\n",
     )
@@ -230,6 +230,7 @@ def make_fake_colab_env(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
     _write_fake_remote_scripts(content_dir)
 
     env = os.environ.copy()
+    env.pop("CUDA_VISIBLE_DEVICES", None)
     git_bash_bin = Path("C:/Program Files/Git/bin")
     git_usr_bin = Path("C:/Program Files/Git/usr/bin")
     extra_bins = [f"{_to_posix(bin_dir)}", str(bin_dir)]
@@ -352,9 +353,11 @@ def _running_cell(state_dir: Path, sid: str) -> int | None:
     return pid if _pid_alive(pid) else None
 
 
-def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: Path) -> int:
+def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: Path) -> tuple[int, int]:
     """Start argv in its own session, reparented away from this process (double fork), with stdout
-    and stderr to out_path. Returns the cell's pid; its process group is its own."""
+    and stderr to out_path. Creates out_path before forking so readers never race ENOENT, and returns
+    (cell_pid, session_pgid)."""
+    out_fd = os.open(str(out_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     r, w = os.pipe()
     pid = os.fork()
     if pid == 0:  # pragma: no cover - child
@@ -363,16 +366,21 @@ def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: P
             os.setsid()
             pid2 = os.fork()
             if pid2 == 0:
-                fd = os.open(str(out_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-                os.dup2(fd, 1)
-                os.dup2(fd, 2)
+                os.dup2(out_fd, 1)
+                os.dup2(out_fd, 2)
+                os.close(out_fd)
+                os.close(w)
                 null = os.open(os.devnull, os.O_RDONLY)
                 os.dup2(null, 0)
+                if null > 2:
+                    os.close(null)
                 os.chdir(str(cwd))
                 os.execve(argv[0], argv, env)
-            os.write(w, str(pid2).encode())
+            os.close(out_fd)
+            os.write(w, f"{pid2} {os.getpgrp()}".encode())
         finally:
             os._exit(0)
+    os.close(out_fd)
     os.close(w)
     data = b""
     while True:
@@ -382,7 +390,8 @@ def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: P
         data += chunk
     os.close(r)
     os.waitpid(pid, 0)
-    return int(data.decode())
+    cell_s, pgid_s = data.decode().split()
+    return int(cell_s), int(pgid_s)
 
 
 def _kill_recorded_groups(state_dir: Path, sid: str) -> None:
@@ -591,35 +600,77 @@ run_uploaded_remote_dirs_block() {
   sed -n '/^# >>> sdlab-remote-dirs$/,/^# <<< sdlab-remote-dirs$/p' "${uploaded_sh}" | sed "s#/content#${PWD}#g" > .remote_dirs_block.sh
   bash .remote_dirs_block.sh
 }
+fake_card="$(cat "${FAKE_COLAB_STATE_DIR:-..}/card.txt" 2>/dev/null || echo CPU)"
+mkdir -p .fake-vm-bin
+if [ "${fake_card}" = "CPU" ]; then
+  printf '#!/usr/bin/env bash\\necho "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2\\nexit 9\\n' > .fake-vm-bin/nvidia-smi
+else
+  cat > .fake-vm-bin/nvidia-smi << 'NVSMIEOF'
+#!/usr/bin/env bash
+case "$*" in
+  *-L*) echo "GPU 0: NVIDIA A100-SXM4-80GB (UUID: GPU-00000000-fake)" ;;
+  *memory.used*) echo "${FAKE_GPU_PEAK_VRAM_MIB:-14336}" ;;
+  *--query-gpu*) echo "580.82.07, NVIDIA A100-SXM4-80GB, 81920 MiB" ;;
+  *) echo "fake nvidia-smi" ;;
+esac
+NVSMIEOF
+fi
+chmod +x .fake-vm-bin/nvidia-smi
+printf '#!/usr/bin/env bash\\necho "uv 0.13.5"\\n' > .fake-vm-bin/uv
+chmod +x .fake-vm-bin/uv
+run_uploaded_lane1_mode_block() {
+  local uploaded_sh="$1"
+  if ! grep -q '^# >>> sdlab-lane1-mode$' "${uploaded_sh}" || ! grep -q '^# <<< sdlab-lane1-mode$' "${uploaded_sh}"; then
+    echo "REFUSED: LANE1_MODE_BLOCK_MISSING: ${uploaded_sh} has no sdlab-lane1-mode gate" >&2
+    exit 1
+  fi
+  sed -n '/^# >>> sdlab-lane1-mode$/,/^# <<< sdlab-lane1-mode$/p' "${uploaded_sh}" > .lane1_mode_block.sh
+  PATH="${PWD}/.fake-vm-bin:${PATH}" bash -c 'set -euo pipefail; source .lane1_mode_block.sh; echo "LANE1_MODE=${LANE1_MODE} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES-unset}"'
+}
+run_uploaded_lane1_mode_block "remote_lane1_stub.sh.uploaded"
 run_uploaded_remote_dirs_block "remote_lane1_stub.sh.uploaded"
 printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 [ -d lane1_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane1_out not made by the kit" >&2; exit 1; }
 : > lane1_out/setup.log
 echo "setup" > lane1_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
+hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
+
+read_phase_nonempty() {
+  local pfile="$1" fallback="$2" val="" _try
+  for _try in 1 2 3 4 5; do
+    val="$(tr -d '\\r\\n[:space:]' < "${pfile}" 2>/dev/null || true)"
+    [ -n "${val}" ] && break
+    sleep 0.01
+  done
+  printf '%s' "${val:-${fallback}}"
+}
 
 emit_vitals() {
-  local phase_val="$1"
+  local phase_val="${1:-setup}"
   local worker_line="$2"
-  local setup_sz
+  local setup_sz blk
   setup_sz="$(wc -c < lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-  echo "CGROUP_MEM_CURRENT: 536870912"
-  echo "CGROUP_MEM_MAX: 12884901888"
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "CGROUP_MEM_STAT: anon 268435456"
-  echo "CGROUP_MEM_STAT: file 268435456"
-  echo "CGROUP_MEM_STAT: shmem 0"
-  echo "MEM: MemTotal:       12582912 kB"
-  echo "MEM: MemAvailable:   11534336 kB"
-  echo "MEM: AnonPages:        262144 kB"
-  echo "MEM: Shmem:                 0 kB"
-  echo "SETUP_BYTES: ${setup_sz:-0}"
-  echo "PROC:"
-  if [ -n "${worker_line}" ]; then
-    echo "${worker_line}"
-  fi
-  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  blk="$(
+    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "CGROUP_MEM: oom_kill 0"
+    echo "CGROUP_MEM_STAT: anon 268435456"
+    echo "CGROUP_MEM_STAT: file 268435456"
+    echo "CGROUP_MEM_STAT: shmem 0"
+    echo "MEM: MemTotal:       12582912 kB"
+    echo "MEM: MemAvailable:   11534336 kB"
+    echo "MEM: AnonPages:        262144 kB"
+    echo "MEM: Shmem:                 0 kB"
+    echo "SETUP_BYTES: ${setup_sz:-0}"
+    echo "PROC:"
+    if [ -n "${worker_line}" ]; then
+      echo "${worker_line}"
+    fi
+    printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  )"
+  printf '%s\\n' "${blk}"
 }
 """
         + venv_check_helper
@@ -631,14 +682,14 @@ if [ "${mode}" = "fail" ]; then
   exit 42
 elif [ "${mode}" = "wall" ]; then
   echo "Simulated hung child ignoring inner timeout" | tee -a lane1_out/setup.log
-  for _ in $(seq 1 40); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
   echo "run" > lane1_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" ""
     sleep "${vitals_interval}"
   done
@@ -654,14 +705,14 @@ elif [ "${mode}" = "setup_phase" ]; then
   done
 elif [ "${mode}" = "setup_stall" ]; then
   printf 'initial_setup_line\\n' > lane1_out/setup.log
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane1_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
     sleep "${vitals_interval}"
   done
@@ -682,10 +733,456 @@ emit_vitals "setup" 'root        2216    2101 21 19:01 ?        00:00:02 /conten
 for mod_name in comfy_headless torch safetensors PIL yaml aiohttp; do
   echo "VENV_IMPORT ${mod_name} /content/venv-lane1/lib/python3.14/site-packages/${mod_name}/__init__.py" | tee -a lane1_out/setup.log
 done
+if [ "${LANE1_MODE:-stub}" != "stub" ]; then
+  echo "VENV_IMPORT huggingface_hub /content/venv-lane1/lib/python3.14/site-packages/huggingface_hub/__init__.py" | tee -a lane1_out/setup.log
+fi
 printf 'setup_complete\\n' >> lane1_out/setup.log
-echo "run" > lane1_out/phase.txt
-emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+"""
+        + r"""
+prepare_fake_lane1_vm_runtime() {
+  {
+    printf '%s\n' "${FAKE_VM_MEM_TOTAL_KB:-175000000}" "${FAKE_VM_MEM_AVAILABLE_KB:-170000000}"
+  } | awk 'NR==1{print "MemTotal:       " $1 " kB"} NR==2{print "MemFree:        " $1 " kB"; print "MemAvailable:   " $1 " kB"}' > .fake-vm-meminfo
+  mkdir -p .fake-vm-shm .fake-proc/net .fake-site .fake-vm-bin .fake-usr-local/cuda-12.6 .fake-usr-local/cuda-13.0 ComfyUI venv-lane1/bin
+  printf 'COLAB_RELEASE_TAG=%s\n' "${FAKE_COLAB_RUNTIME_VERSION:-release-colab-20261110_RC00}" > .fake-colab-release
+  printf '{"cuda":{"version":"12.6.3"}}\n' > .fake-usr-local/cuda-12.6/version.json
+  printf '{"cuda":{"version":"13.0.0"}}\n' > .fake-usr-local/cuda-13.0/version.json
+  ln -sfn cuda-12.6 .fake-usr-local/cuda 2>/dev/null || mkdir -p .fake-usr-local/cuda
+  if [ -n "${FAKE_VM_MOUNTS_LINE:-}" ]; then
+    printf '%s\n' "${FAKE_VM_MOUNTS_LINE//__CONTENT__/${PWD}}" > .fake-vm-mounts
+  else
+    printf 'overlay / overlay rw,relatime 0 0\n' > .fake-vm-mounts
+  fi
+  FAKE_HOST_PY="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
+  IFS=$'\t' read -r FAKE_HOST_PY_VER FAKE_PY_PATH < <(
+    "${FAKE_HOST_PY}" -S -c 'import os, pathlib, sys; print(sys.version.split()[0] + "\t" + os.pathsep.join([str(pathlib.Path(".fake-site").resolve()), os.environ["FAKE_VM_SITE"]]))'
+  )
+  printf '#!/usr/bin/env bash\necho "Python 3.13.16"\n' > .fake-vm-bin/sys_python3
+  chmod +x .fake-vm-bin/sys_python3
+  cat > .fake-site/sitecustomize.py << 'SITEEOF'
+import os
+import sys
+
+_fake_ver = os.environ.get("SDLAB_FAKE_VENV_PYTHON_VER")
+if _fake_ver:
+    sys.version = _fake_ver + " (main, Oct 21 2026)"
+SITEEOF
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'export SDLAB_CALLER_BASHPID="${BASHPID:-$$}"'
+    echo 'case "${1:-}" in */ComfyUI/main.py) exec "'"${FAKE_HOST_PY}"'" -S "$@" ;; esac'
+    echo 'exec "'"${FAKE_HOST_PY}"'" "$@"'
+  } > venv-lane1/bin/python
+  chmod +x venv-lane1/bin/python
+
+  cat > ComfyUI/main.py << 'COMFYEOF'
+import hashlib
+import http.server
+import json
+import os
+import signal
+import socket
+import socketserver
+import struct
+import sys
+import threading
+import time
+import urllib.parse
+import zlib
+from pathlib import Path
+
+if os.environ.get("FAKE_COMFY_FAIL") == "1":
+    sys.stderr.write("Simulated ComfyUI startup failure\n")
+    sys.exit(1)
+
+argv = sys.argv[1:]
+cpu_flag = "--cpu" in argv
+listen_host = "127.0.0.1"
+port = 8188
+for idx, tok in enumerate(argv):
+    if tok == "--listen" and idx + 1 < len(argv):
+        listen_host = argv[idx + 1]
+    elif tok == "--port" and idx + 1 < len(argv):
+        port = int(argv[idx + 1])
+
+state_dir = os.environ.get("FAKE_COLAB_STATE_DIR")
+started_info = {
+    "pid": os.getpid(),
+    "argv": argv,
+    "cpu": cpu_flag,
+    "listen": listen_host,
+    "port": port,
+    "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+    "hf_hub_offline": os.environ.get("HF_HUB_OFFLINE"),
+}
+if state_dir:
+    Path(state_dir, "comfy_started.json").write_text(
+        json.dumps(started_info, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+proc_root = Path(".fake-proc")
+(proc_root / "net").mkdir(parents=True, exist_ok=True)
+inode = "424242"
+pids = {str(os.getpid())}
+caller_pid = os.environ.get("SDLAB_CALLER_BASHPID", "").strip()
+if caller_pid:
+    pids.add(caller_pid)
+for pid_str in pids:
+    fd_dir = proc_root / pid_str / "fd"
+    fd_dir.mkdir(parents=True, exist_ok=True)
+    (fd_dir / "3").write_text(f"socket:[{inode}]\n", encoding="utf-8")
+
+reported_port = int(os.environ.get("SDLAB_FAKE_REPORTED_PORT") or port)
+addr_int = struct.unpack("<I", socket.inet_aton(listen_host))[0]
+tcp_line = f"  0: {addr_int:08X}:{reported_port:04X} 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 {inode}\n"
+(proc_root / "net" / "tcp").write_text(
+    "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n" + tcp_line,
+    encoding="utf-8",
+)
+(proc_root / "net" / "tcp6").write_text(
+    "  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n",
+    encoding="utf-8",
+)
+
+
+def _png_chunk(ctype: bytes, data: bytes) -> bytes:
+    crc = zlib.crc32(ctype + data) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + ctype + data + struct.pack(">I", crc)
+
+
+def _make_png(workflow: dict) -> bytes:
+    wf_json = json.dumps(workflow, sort_keys=True, separators=(",", ":"))
+    rgb = hashlib.sha256(wf_json.encode("utf-8")).digest()[:3]
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = _png_chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+    text_data = b"prompt\x00" + wf_json.encode("latin-1", errors="replace")
+    txt = _png_chunk(b"tEXt", text_data)
+    idat = _png_chunk(b"IDAT", zlib.compress(b"\x00" + rgb))
+    iend = _png_chunk(b"IEND", b"")
+    return sig + ihdr + txt + idat + iend
+
+
+STORE_LOCK = threading.Lock()
+HISTORY: dict[str, dict] = {}
+IMAGES: dict[str, bytes] = {}
+WORKFLOW_SUMMARIES: list[dict] = []
+SEQ = 0
+
+
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+class ComfyHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, fmt: str, *args: object) -> None:
+        return
+
+    def _send_json(self, obj: object, code: int = 200) -> None:
+        raw = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_GET(self) -> None:
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/system_stats":
+            if cpu_flag:
+                devs = [{"name": "cpu", "type": "cpu", "index": None, "vram_total": 0, "vram_free": 0}]
+            else:
+                peak_b = int(float(os.environ.get("FAKE_GPU_PEAK_VRAM_MIB", "14336")) * 1024 * 1024)
+                tot_b = 80 * 1024 * 1024 * 1024
+                devs = [
+                    {
+                        "name": "cuda:0 NVIDIA A100-SXM4-80GB : cudaMallocAsync",
+                        "type": "cuda",
+                        "index": 0,
+                        "vram_total": tot_b,
+                        "vram_free": tot_b - peak_b,
+                        "vram_peak": peak_b,
+                        "torch_vram_total": peak_b,
+                        "torch_vram_free": 0,
+                        "torch_vram_peak": peak_b,
+                    }
+                ]
+            self._send_json(
+                {
+                    "system": {"os": "posix", "comfyui_version": "0.3.14", "python_version": sys.version.split()[0]},
+                    "devices": devs,
+                }
+            )
+            return
+        if parsed.path.startswith("/history/"):
+            pid = urllib.parse.unquote(parsed.path[len("/history/") :]).strip("/")
+            with STORE_LOCK:
+                entry = HISTORY.get(pid)
+            self._send_json({pid: entry} if entry is not None else {})
+            return
+        if parsed.path == "/view":
+            qs = urllib.parse.parse_qs(parsed.query)
+            fname = (qs.get("filename") or [""])[0]
+            with STORE_LOCK:
+                img = IMAGES.get(fname)
+            if img is None:
+                self.send_response(404)
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(img)))
+            self.end_headers()
+            self.wfile.write(img)
+            return
+        self.send_response(404)
+        self.end_headers()
+
+    def do_POST(self) -> None:
+        global SEQ
+        if self.path != "/prompt":
+            self.send_response(404)
+            self.end_headers()
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        workflow = payload.get("prompt") or {}
+        png_bytes = _make_png(workflow)
+        class_types = sorted(
+            {str((node or {}).get("class_type", "")) for node in workflow.values() if isinstance(node, dict)}
+        )
+        with STORE_LOCK:
+            SEQ += 1
+            prompt_id = f"fake_prompt_{SEQ:04d}"
+            fname = f"{prompt_id}.png"
+            IMAGES[fname] = png_bytes
+            HISTORY[prompt_id] = {
+                "outputs": {"9": {"images": [{"filename": fname, "subfolder": "", "type": "output"}]}},
+                "status": {"completed": True},
+            }
+            WORKFLOW_SUMMARIES.append({"prompt_id": prompt_id, "class_types": class_types})
+            if state_dir:
+                Path(state_dir, "comfy_workflows.json").write_text(
+                    json.dumps(WORKFLOW_SUMMARIES, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+        self._send_json({"prompt_id": prompt_id, "number": SEQ})
+
+
+srv = ThreadedHTTPServer((listen_host, port), ComfyHandler)
+print(f"Starting server on http://{listen_host}:{port}", flush=True)
+if os.name == "nt":
+    devnull_fd = os.open(os.devnull, os.O_RDWR)
+    os.dup2(devnull_fd, 1)
+    os.dup2(devnull_fd, 2)
+    os.close(devnull_fd)
+
+signal.signal(signal.SIGTERM, lambda *_a: os._exit(0))
+signal.signal(signal.SIGINT, lambda *_a: os._exit(0))
+
+
+def _watch_done() -> None:
+    deadline = time.monotonic() + 60.0
+    vm_win = Path("lane1_out/vm_window.json")
+    bundle = Path("lane1_render_bundle.tar.gz")
+    stub_bundle = Path("lane1_stub_bundle.tar.gz")
+    while time.monotonic() < deadline:
+        if bundle.exists() or stub_bundle.exists():
+            os._exit(0)
+        if vm_win.is_file():
+            try:
+                data = json.loads(vm_win.read_text(encoding="utf-8"))
+                if data.get("render") is not None or data.get("failed_rc") is not None:
+                    os._exit(0)
+            except Exception:
+                pass
+        time.sleep(0.02)
+    os._exit(0)
+
+
+threading.Thread(target=_watch_done, daemon=True).start()
+srv.serve_forever()
+COMFYEOF
+}
+
+stop_fake_comfy_if_running() {
+  "${FAKE_HOST_PY}" -S - << 'STOPEOF' 2>/dev/null || true
+import json
+import os
+import signal
+from pathlib import Path
+
+state_dir = os.environ.get("FAKE_COLAB_STATE_DIR")
+if state_dir:
+    p = Path(state_dir, "comfy_started.json")
+    if p.is_file():
+        pid = json.loads(p.read_text(encoding="utf-8")).get("pid")
+        if isinstance(pid, int):
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError:
+                pass
+STOPEOF
+}
+
+run_uploaded_render_block() {
+  local uploaded_sh="$1"
+  local blk
+  for blk in sdlab-hf-token sdlab-lane1-mode sdlab-lane1-render; do
+    if ! grep -q "^# >>> ${blk}$" "${uploaded_sh}" || ! grep -q "^# <<< ${blk}$" "${uploaded_sh}"; then
+      echo "REFUSED: RENDER_BLOCK_MISSING: ${uploaded_sh} has no ${blk} block" >&2
+      exit 1
+    fi
+  done
+  prepare_fake_lane1_vm_runtime
+
+  (
+    while true; do
+      cur_ph="$(read_phase_nonempty lane1_out/phase.txt setup)"
+      if [ "${cur_ph}" = "run" ] && [ ! -f .fake-vm-archiving ]; then
+        emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --listen 127.0.0.1"
+      else
+        emit_vitals "${cur_ph}" ""
+      fi
+      sleep "${vitals_interval}"
+    done
+  ) &
+  local render_vitals_pid="$!"
+
+  {
+    echo 'set -euo pipefail'
+    sed -n '/^# >>> sdlab-hf-token$/,/^# <<< sdlab-hf-token$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane1-mode$/,/^# <<< sdlab-lane1-mode$/p' "${uploaded_sh}"
+    sed -n '/^# >>> sdlab-lane1-render$/,/^# <<< sdlab-lane1-render$/p' "${uploaded_sh}"
+  } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane1_stub.sh.renderblock
+  # FAKE_VM_RENDER_HANG_BEFORE_TAR=<s>: everything has rendered, then the VM script sleeps before it tars lane1_out, as a
+  # wedged run does when a rig-side guard trips (the EXIT trap never fires, so the rig has to salvage).
+  if [ -n "${FAKE_VM_RENDER_HANG_BEFORE_TAR:-}" ]; then
+    sed -i -e "s#^tar -czf #sleep ${FAKE_VM_RENDER_HANG_BEFORE_TAR}; tar -czf #" remote_lane1_stub.sh.renderblock
+  fi
+  # FAKE_VM_RENDER_ARCHIVE_S=<s>: the archive of lane1_out into lane1_render_bundle.tar.gz takes <s> seconds, and no
+  # worker process is alive while it runs (ComfyUI has been stopped; only tar is working), as on the VM of window
+  # sdlab-l1-eval-salt-road-s45. The vitals then show whatever phase the script wrote, with an empty process list.
+  if [ -n "${FAKE_VM_RENDER_ARCHIVE_S:-}" ]; then
+    local real_tar
+    real_tar="$(command -v tar)"
+    {
+      printf '#!/usr/bin/env bash\n'
+      printf 'case " $* " in\n'
+      printf '  *lane1_render_bundle.tar.gz*) : > "%s/.fake-vm-archiving"; sleep %s ;;\n' "${PWD}" "${FAKE_VM_RENDER_ARCHIVE_S}"
+      printf 'esac\n'
+      printf 'exec "%s" "$@"\n' "${real_tar}"
+    } > .fake-vm-bin/tar
+    chmod +x .fake-vm-bin/tar
+  fi
+
+  set +e
+  MSYS2_ENV_CONV_EXCL="PYTHONPATH" \
+  SDLAB_EXPECTED_PYTHON="${FAKE_HOST_PY_VER}" \
+  SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
+  SDLAB_FAKE_SYS_PYTHON_BIN="${PWD}/.fake-vm-bin/sys_python3" \
+  SDLAB_COLAB_RELEASE_FILE="${PWD}/.fake-colab-release" \
+  SDLAB_CUDA_PARENT_DIR="${PWD}/.fake-usr-local" \
+  SDLAB_PROC_MOUNTS="${PWD}/.fake-vm-mounts" \
+  SDLAB_HF_429_BACKOFF_BASE_S="${FAKE_HF_429_BACKOFF_BASE_S:-0.02}" \
+  PATH="${PWD}/.fake-vm-bin:${PATH}" \
+  PYTHONPATH="${FAKE_PY_PATH}" \
+    bash "${PWD}/remote_lane1_stub.sh.renderblock"
+  local render_rc=$?
+  set -e
+  kill "${render_vitals_pid}" 2>/dev/null || true
+  stop_fake_comfy_if_running
+  return "${render_rc}"
+}
+
+run_uploaded_stub_block() {
+  local uploaded_sh="$1"
+  if ! grep -Fq '/content/ComfyUI/main.py --cpu --listen 127.0.0.1' "${uploaded_sh}"; then
+    echo "REFUSED: STUB_CPU_FLAG_MISSING: stub mode must start ComfyUI with --cpu --listen 127.0.0.1" >&2
+    exit 1
+  fi
+  case "${FAKE_COLAB_STUB_FAULT:-}" in
+    missing_bundle)
+      echo "run" > lane1_out/phase.txt
+      emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      rm -f lane1_stub_bundle.tar.gz
+      return 0
+      ;;
+    failing_bundle)
+      echo "run" > lane1_out/phase.txt
+      emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "'"${PINNED_COMFYUI_COMMIT}"'", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
+      printf '{"job_id":"stub_01","status":"failed","error":"simulated_stub_render_failure"}\n' > lane1_out/renders.jsonl
+      tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
+      return 0
+      ;;
+    remote_fail)
+      echo "run" > lane1_out/phase.txt
+      emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      echo "REFUSED: STUB_REMOTE_FAILED: simulated stub remote step failure" >&2
+      return 1
+      ;;
+  esac
+  prepare_fake_lane1_vm_runtime
+  "${FAKE_HOST_PY}" -S - "${uploaded_sh}" "${PWD}" << 'STUBBLKEOF'
+import socket
+import sys
+from pathlib import Path
+
+src = Path(sys.argv[1]).read_text(encoding="utf-8")
+pwd_str = sys.argv[2]
+with socket.socket() as s:
+    s.bind(("127.0.0.1", 0))
+    port = int(s.getsockname()[1])
+marker_start = 'if [ "${LANE1_MODE:-stub}" = "stub" ]; then\n'
+marker_end = "\nelse\n# >>> sdlab-lane1-render"
+if marker_start not in src or marker_end not in src:
+    sys.stderr.write("REFUSED: STUB_BLOCK_MISSING: uploaded script has no stub mode branch\n")
+    raise SystemExit(1)
+body = src.split(marker_start, 1)[1].split(marker_end, 1)[0]
+body = body.replace("    sleep 1\n", "    sleep 0.02\n")
+body = body.replace("--port 8188", f"--port {port}")
+body = body.replace("127.0.0.1:8188", f"127.0.0.1:{port}")
+body = body.replace("/content/lane1_render.py ", f"/content/lane1_render.py --comfy-url http://127.0.0.1:{port} ")
+body = body.replace("/content", pwd_str)
+Path("remote_lane1_stub.sh.stubblock").write_text("set -euo pipefail\n" + body + "\n", encoding="utf-8", newline="\n")
+STUBBLKEOF
+
+  (
+    while true; do
+      cur_ph="$(read_phase_nonempty lane1_out/phase.txt run)"
+      emit_vitals "${cur_ph}" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+      sleep "${vitals_interval}"
+    done
+  ) &
+  local stub_vitals_pid="$!"
+
+  set +e
+  MSYS2_ENV_CONV_EXCL="PYTHONPATH" \
+  SDLAB_FAKE_REPORTED_PORT="8188" \
+  SDLAB_FAKE_VENV_PYTHON_VER="3.14.9" \
+  SDLAB_FAKE_PROC_ROOT="${PWD}/.fake-proc" \
+  SDLAB_FAKE_SYS_PYTHON_BIN="${PWD}/.fake-vm-bin/sys_python3" \
+  SDLAB_COLAB_RELEASE_FILE="${PWD}/.fake-colab-release" \
+  SDLAB_CUDA_PARENT_DIR="${PWD}/.fake-usr-local" \
+  SDLAB_PROC_MOUNTS="${PWD}/.fake-vm-mounts" \
+  PATH="${PWD}/.fake-vm-bin:${PATH}" \
+  PYTHONPATH="${FAKE_PY_PATH}" \
+    bash "${PWD}/remote_lane1_stub.sh.stubblock"
+  local stub_rc=$?
+  set -e
+  kill "${stub_vitals_pid}" 2>/dev/null || true
+  stop_fake_comfy_if_running
+  return "${stub_rc}"
+}
+
+if [ "${LANE1_MODE:-stub}" != "stub" ]; then
+  run_uploaded_render_block "remote_lane1_stub.sh.uploaded"
+  exit $?
+fi
 if [ -n "${FAKE_RUN_ROWS_N:-}" ] && [ "${FAKE_RUN_ROWS_N}" -gt 0 ]; then
+  echo "run" > lane1_out/phase.txt
   row_sleep="${FAKE_RUN_ROW_SLEEP_S:-${vitals_interval}}"
   for row_idx in $(seq 1 "${FAKE_RUN_ROWS_N}"); do
     echo "RENDER_ROW idx=${row_idx}/${FAKE_RUN_ROWS_N} job=stub_${row_idx} status=ok"
@@ -693,15 +1190,16 @@ if [ -n "${FAKE_RUN_ROWS_N:-}" ] && [ "${FAKE_RUN_ROWS_N}" -gt 0 ]; then
     sleep "${row_sleep}"
   done
 fi
-echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "158419f3a0017c2ce123484b14b6c527716d6ec8", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
-echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
-if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
-  "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+run_uploaded_stub_block "remote_lane1_stub.sh.uploaded" || exit $?
+if [ -z "${FAKE_COLAB_STUB_FAULT:-}" ]; then
+  # main's fake marker for a finished stub (the kit's stub block exits 1 on a resume hash mismatch).
+  echo "LANE1_STUB_OK python=3.14.9 comfy_bind=127.0.0.1:8188 resume_hash_match=true"
+  if [ -n "${FAKE_VM_EXTRA_BUNDLE_BYTES:-}" ]; then
+    "${SDLAB_PYTHON:-python3}" -c 'import os, pathlib; pathlib.Path("lane1_out/extra_payload.bin").write_bytes(os.urandom(int(os.environ["FAKE_VM_EXTRA_BUNDLE_BYTES"])))'
+  fi
+  tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
 fi
-if [ -f .sdlab_live.err.log ]; then
-  cp -f .sdlab_live.err.log lane1_out/detached_worker_stderr.log
-fi
-tar -czf lane1_stub_bundle.tar.gz -C lane1_out .
+exit 0
 """
     )
     lane3_body = (
@@ -855,7 +1353,7 @@ RUNPYEOF
     (
       for _ in $(seq 1 "${FAKE_VM_TRAIN_VITALS_TICKS}"); do
         sleep "${vitals_interval}"
-        _bg_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo run)"
+        _bg_phase="$(read_phase_nonempty lane3_out/phase.txt run)"
         emit_vitals "${_bg_phase}" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml"
       done
     ) &
@@ -869,7 +1367,7 @@ RUNPYEOF
     wait "${_train_vit_pid}" 2>/dev/null || true
   fi
   if [ -n "${FAKE_VM_POST_TRAIN_VITALS_TICKS:-}" ]; then
-    _cur_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo setup)"
+    _cur_phase="$(read_phase_nonempty lane3_out/phase.txt setup)"
     for _ in $(seq 1 "${FAKE_VM_POST_TRAIN_VITALS_TICKS}"); do
       emit_vitals "${_cur_phase}" ""
       sleep "${vitals_interval}"
@@ -916,29 +1414,43 @@ printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 : > lane3_out/setup.log
 echo "setup" > lane3_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
+hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
+
+read_phase_nonempty() {
+  local pfile="$1" fallback="$2" val="" _try
+  for _try in 1 2 3 4 5; do
+    val="$(tr -d '\\r\\n[:space:]' < "${pfile}" 2>/dev/null || true)"
+    [ -n "${val}" ] && break
+    sleep 0.01
+  done
+  printf '%s' "${val:-${fallback}}"
+}
 
 emit_vitals() {
-  local phase_val="$1"
+  local phase_val="${1:-setup}"
   local worker_line="$2"
-  local setup_sz
+  local setup_sz blk
   setup_sz="$(wc -c < lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-  echo "CGROUP_MEM_CURRENT: 536870912"
-  echo "CGROUP_MEM_MAX: 12884901888"
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "CGROUP_MEM_STAT: anon 268435456"
-  echo "CGROUP_MEM_STAT: file 268435456"
-  echo "CGROUP_MEM_STAT: shmem 0"
-  echo "MEM: MemTotal:       12582912 kB"
-  echo "MEM: MemAvailable:   11534336 kB"
-  echo "MEM: AnonPages:        262144 kB"
-  echo "MEM: Shmem:                 0 kB"
-  echo "SETUP_BYTES: ${setup_sz:-0}"
-  echo "PROC:"
-  if [ -n "${worker_line}" ]; then
-    echo "${worker_line}"
-  fi
-  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  blk="$(
+    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "CGROUP_MEM: oom_kill 0"
+    echo "CGROUP_MEM_STAT: anon 268435456"
+    echo "CGROUP_MEM_STAT: file 268435456"
+    echo "CGROUP_MEM_STAT: shmem 0"
+    echo "MEM: MemTotal:       12582912 kB"
+    echo "MEM: MemAvailable:   11534336 kB"
+    echo "MEM: AnonPages:        262144 kB"
+    echo "MEM: Shmem:                 0 kB"
+    echo "SETUP_BYTES: ${setup_sz:-0}"
+    echo "PROC:"
+    if [ -n "${worker_line}" ]; then
+      echo "${worker_line}"
+    fi
+    printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  )"
+  printf '%s\\n' "${blk}"
 }
 """
         + venv_check_helper
@@ -950,14 +1462,14 @@ if [ "${mode}" = "fail" ]; then
   exit 42
 elif [ "${mode}" = "wall" ]; then
   echo "Simulated hung child ignoring inner timeout" | tee -a lane3_out/setup.log
-  for _ in $(seq 1 40); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
   echo "run" > lane3_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" ""
     sleep "${vitals_interval}"
   done
@@ -973,7 +1485,7 @@ elif [ "${mode}" = "setup_phase" ]; then
   done
 elif [ "${mode}" = "setup_stall" ]; then
   printf 'initial_setup_line\\n' > lane3_out/setup.log
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
@@ -997,18 +1509,22 @@ elif [ "${mode}" = "ram_replay" ]; then
   emit_ram_sample() {
     local anon_b=$(( $4 * 1024 ))
     local file_b=$(( $1 > anon_b ? $1 - anon_b : 0 ))
-    emit_ram_head "$1"
-    echo "CGROUP_MEM_STAT: anon ${anon_b}"
-    echo "CGROUP_MEM_STAT: file ${file_b}"
-    echo "CGROUP_MEM_STAT: shmem 0"
-    echo "MEM: MemTotal:       $2 kB"
-    echo "MEM: MemAvailable:   $3 kB"
-    echo "MEM: AnonPages:      $4 kB"
-    echo "MEM: Shmem:          0 kB"
-    echo "SETUP_BYTES: 0"
-    echo "PROC:"
-    echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-    printf 'HARNESS: {"phase": "run"}\\n'
+    local blk
+    blk="$(
+      emit_ram_head "$1"
+      echo "CGROUP_MEM_STAT: anon ${anon_b}"
+      echo "CGROUP_MEM_STAT: file ${file_b}"
+      echo "CGROUP_MEM_STAT: shmem 0"
+      echo "MEM: MemTotal:       $2 kB"
+      echo "MEM: MemAvailable:   $3 kB"
+      echo "MEM: AnonPages:      $4 kB"
+      echo "MEM: Shmem:          0 kB"
+      echo "SETUP_BYTES: 0"
+      echo "PROC:"
+      echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+      printf 'HARNESS: {"phase": "run"}\\n'
+    )"
+    printf '%s\\n' "${blk}"
   }
   last=""
   while read -r cg tot avail anon; do
@@ -1034,7 +1550,7 @@ elif [ "${mode}" = "ram_replay" ]; then
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane3_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
     sleep "${vitals_interval}"
   done
@@ -1513,6 +2029,24 @@ def main(argv: list[str] | None = None) -> int:
             held = res.returncode != 0
         with (state_dir / "lock.log").open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(f"LOCK_HELD={1 if held else 0}\n")
+        new_cnt_f = state_dir / "new_attempts.txt"
+        new_cnt = int(new_cnt_f.read_text(encoding="utf-8").strip()) if new_cnt_f.is_file() else 0
+        new_cnt += 1
+        new_cnt_f.write_text(f"{new_cnt}\n", encoding="utf-8", newline="\n")
+        forced_new_http = os.environ.get("FAKE_COLAB_NEW_HTTP_STATUS", "").strip()
+        if forced_new_http == "412":
+            sys.stderr.write(
+                "[colab] Failed to create session: 412 Client Error: Precondition Failed (account assignment cap reached)\n"
+            )
+            return 1
+        if forced_new_http == "503":
+            sys.stderr.write(
+                "[colab] Failed to create session: 503 Server Error: Service Unavailable (GPU pool empty)\n"
+            )
+            return 1
+        if forced_new_http == "500":
+            sys.stderr.write("[colab] Failed to create session: 500 Server Error: Internal Server Error\n")
+            return 1
         (state_dir / "session_opened.txt").write_text("1\n", encoding="utf-8", newline="\n")
         (state_dir / "card.txt").write_text((_get_opt("--gpu") or "CPU") + "\n", encoding="utf-8", newline="\n")
         gpu = _get_opt("--gpu")
@@ -1830,16 +2364,17 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 env_vars[k] = v
 
-        # Build isolated kernel environment: strip rig-side PINNED_*, LANE3_* and SDLAB_* (except
-        # SDLAB_PYTHON) so the remote runner only sees what was passed via --env, and set
+        # Build isolated kernel environment: strip rig-side PINNED_*, LANE1_*, LANE3_* and SDLAB_*
+        # (except SDLAB_PYTHON) so the remote runner only sees what was passed via --env, and set
         # UV_SYSTEM_PYTHON=1 to match Colab.
         kernel_env = {
             k: v
             for k, v in os.environ.items()
             if not k.startswith("PINNED_")
+            and not k.startswith("LANE1_")
             and not k.startswith("LANE3_")
             and (not k.startswith("SDLAB_") or k == "SDLAB_PYTHON")
-            and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN")
+            and k not in ("HF_TOKEN", "HF_TOKEN_GGUF_READ", "HUGGING_FACE_HUB_TOKEN", "CUDA_VISIBLE_DEVICES")
         }
         kernel_env.setdefault("UV_SYSTEM_PYTHON", "1")
         # The fake GPU VM's stand-ins for the lane's torch, bitsandbytes and huggingface_hub.
@@ -1967,6 +2502,8 @@ def main(argv: list[str] | None = None) -> int:
             "except BaseException:\n"
             "    import traceback; traceback.print_exc(); rc = 1\n"
             "finally:\n"
+            "    sys.stdout.flush()\n"
+            "    sys.stderr.flush()\n"
             "    pathlib.Path(os.environ['RC_PATH']).write_text(str(rc))\n"
         )
         (state_dir / "kernels").mkdir(exist_ok=True)
@@ -1985,10 +2522,10 @@ def main(argv: list[str] | None = None) -> int:
         argv = [py, "-u", "-c", kernel_code]
         cell_env = dict(kernel_env)
         cell_env["RC_PATH"] = str(rc_path)
-        cell = _spawn_detached(argv, cell_env, content_dir, out_path)
+        cell, cell_pgid = _spawn_detached(argv, cell_env, content_dir, out_path)
         _kernel_file(state_dir, sid, "pid").write_text(f"{cell}\n", encoding="utf-8")
         with _kernel_file(state_dir, sid, "pgids").open("a", encoding="utf-8") as fh:
-            fh.write(f"{os.getpgid(cell)}\n")
+            fh.write(f"{cell_pgid}\n")
 
         pos = 0
         timed_out = False

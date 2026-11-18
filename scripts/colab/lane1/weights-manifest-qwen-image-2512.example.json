@@ -1,0 +1,36 @@
+[
+  {
+    "repo": "Comfy-Org/Qwen-Image",
+    "revision": "1f12b17be14c89b026c51a91d67c32f84bb047bc",
+    "file": "split_files/diffusion_models/qwen_image_2512_fp8_e4m3fn.safetensors",
+    "dest": "diffusion_models",
+    "sha256": "<REPLACE_WITH_64_HEX_SHA256_QWEN_IMAGE_2512_FP8_E4M3FN>",
+    "licence_id": "Apache-2.0",
+    "licence_url": "https://huggingface.co/Comfy-Org/Qwen-Image/blob/1f12b17be14c89b026c51a91d67c32f84bb047bc/README.md#L2",
+    "upstream_base_repo": "Qwen/Qwen-Image-2512",
+    "upstream_base_revision": "25468b98e3276ca6700de15c6628e51b7de54a26",
+    "upstream_licence_url": "https://huggingface.co/Qwen/Qwen-Image-2512/blob/25468b98e3276ca6700de15c6628e51b7de54a26/README.md#L2"
+  },
+  {
+    "repo": "Comfy-Org/Qwen-Image",
+    "revision": "1f12b17be14c89b026c51a91d67c32f84bb047bc",
+    "file": "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "dest": "text_encoders",
+    "sha256": "<REPLACE_WITH_64_HEX_SHA256_QWEN_2_5_VL_7B_FP8_SCALED>",
+    "licence_id": "Apache-2.0",
+    "licence_url": "https://huggingface.co/Comfy-Org/Qwen-Image/blob/1f12b17be14c89b026c51a91d67c32f84bb047bc/README.md#L2",
+    "upstream_licence_url": "https://github.com/QwenLM/Qwen2.5-VL/blob/main/LICENSE"
+  },
+  {
+    "repo": "Comfy-Org/Qwen-Image",
+    "revision": "1f12b17be14c89b026c51a91d67c32f84bb047bc",
+    "file": "split_files/vae/qwen_image_vae.safetensors",
+    "dest": "vae",
+    "sha256": "<REPLACE_WITH_64_HEX_SHA256_QWEN_IMAGE_VAE>",
+    "licence_id": "Apache-2.0",
+    "licence_url": "https://huggingface.co/Comfy-Org/Qwen-Image/blob/1f12b17be14c89b026c51a91d67c32f84bb047bc/README.md#L2",
+    "upstream_base_repo": "Qwen/Qwen-Image-2512",
+    "upstream_base_revision": "25468b98e3276ca6700de15c6628e51b7de54a26",
+    "upstream_licence_url": "https://huggingface.co/Qwen/Qwen-Image-2512/blob/25468b98e3276ca6700de15c6628e51b7de54a26/README.md#L2"
+  }
+]

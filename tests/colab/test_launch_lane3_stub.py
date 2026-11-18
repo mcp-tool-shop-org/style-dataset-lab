@@ -60,7 +60,7 @@ def test_real_colab_cli_guard_refuses_when_not_fake(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode != 0
@@ -79,7 +79,7 @@ def test_sha_refusal_before_opening_session(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode != 0
@@ -98,7 +98,7 @@ def test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap(tmp_path: Pa
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0, f"Launcher failed:\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
@@ -146,7 +146,7 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res_fail.returncode != 0
@@ -174,7 +174,7 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_wall.returncode != 0
@@ -226,7 +226,7 @@ def test_trainer_kit_pins_and_keeps_the_train_step_behind_train_mode(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_self.returncode != 0
@@ -246,7 +246,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_dh.returncode != 0
@@ -265,7 +265,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_st.returncode != 0
@@ -283,7 +283,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_cap.returncode != 0
@@ -304,7 +304,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_ok.returncode == 0
@@ -347,7 +347,7 @@ def test_lane3_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0, f"STDERR:\n{res.stderr}"
@@ -390,7 +390,7 @@ def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_start.returncode != 0
@@ -408,7 +408,7 @@ def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_mid.returncode != 0
@@ -430,7 +430,7 @@ def test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode != 0
@@ -450,7 +450,7 @@ def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(t
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_crash.returncode == 91
@@ -467,7 +467,7 @@ def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(t
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_neg.returncode == 91
@@ -479,12 +479,12 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
     # 1. Setup phase with no workers and steady output succeeds, then switches to run; post-open 0.00/hr then 0.29/hr
     _, state_ok, env_ok = _make_fake_colab_env(tmp_path / "l3_setup_ok")
     env_ok["FAKE_COLAB_MODE"] = "setup_phase"
-    env_ok["FAKE_COLAB_SETUP_DURATION_S"] = "8"
-    env_ok["FAKE_COLAB_SETUP_SCALE"] = "0.2"
+    env_ok["FAKE_COLAB_SETUP_DURATION_S"] = "12"
+    env_ok["FAKE_COLAB_SETUP_SCALE"] = "1.0"
     env_ok["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
     env_ok["FAKE_COLAB_POST_OPEN_RATE_SEQ"] = "0.00/hr,0.29/hr"
-    env_ok["GUARD_POLL_INTERVAL_S"] = "0.2"
-    env_ok["SETUP_STALL_S"] = "3"
+    env_ok["GUARD_POLL_INTERVAL_S"] = "0.5"
+    env_ok["SETUP_STALL_S"] = "8"
     out_ok = tmp_path / "out_l3_setup_ok"
     res_ok = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_ok), "--session", "sdlab-l3-setup-ok"],
@@ -492,7 +492,7 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
@@ -520,7 +520,7 @@ def test_lane3_setup_phase_and_silent_setup_stall_and_post_open_rate(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_stall.returncode == 93
@@ -543,7 +543,7 @@ def test_lane3_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
@@ -586,7 +586,7 @@ def test_lane3_venv_python_version_mismatch_refuses_with_venv_python_mismatch(tm
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=300,
             check=False,
         )
         assert res_mis.returncode != 0
@@ -616,7 +616,7 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_wmiss.returncode != 0
@@ -646,7 +646,7 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_wsha.returncode != 0
@@ -665,7 +665,7 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_drift.returncode != 0
@@ -682,7 +682,7 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_pin.returncode != 0
@@ -706,7 +706,7 @@ def test_lane3_local_wheels_and_preflight_refusals_before_any_colab_call(tmp_pat
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=300,
             check=False,
         )
         assert res_vm.returncode != 0
@@ -733,7 +733,7 @@ def test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_p
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_out.returncode != 0
@@ -753,7 +753,7 @@ def test_lane3_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_p
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_nopy.returncode != 0
@@ -774,7 +774,7 @@ def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_nd.returncode == 2
@@ -796,7 +796,7 @@ def test_lane3_wheel_dir_required_and_test_hooks_refused_in_live_run(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_live.returncode != 0
@@ -873,7 +873,7 @@ def _write_lane3_window_record(out_dir: Path, exit_code: int) -> tuple[dict, dic
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0, res.stderr

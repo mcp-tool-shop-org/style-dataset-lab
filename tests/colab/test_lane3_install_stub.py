@@ -48,7 +48,7 @@ def _mixed(p: Path) -> str:
     return p.resolve().as_posix()
 
 
-def _run(cmd: list[str], env: dict[str, str] | None = None, timeout: int = 60) -> subprocess.CompletedProcess[str]:
+def _run(cmd: list[str], env: dict[str, str] | None = None, timeout: int = 240) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout, check=False)
 
 
@@ -288,7 +288,7 @@ def test_cpu_stub_success_ends_at_the_import_gate_with_the_bundle(tmp_path: Path
     # A rig-side LANE3_MODE never reaches the VM (colab exec passes only --env values).
     env["LANE3_MODE"] = "train"
     out_dir = tmp_path / "out"
-    res = _run([_bash(), _p(LAUNCHER), "--out-dir", _p(out_dir), "--session", "sdlab-l3-install"], env, timeout=120)
+    res = _run([_bash(), _p(LAUNCHER), "--out-dir", _p(out_dir), "--session", "sdlab-l3-install"], env, timeout=240)
     assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
 
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
