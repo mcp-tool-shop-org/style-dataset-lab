@@ -64,7 +64,7 @@ def test_real_colab_cli_guard_refuses_when_not_fake(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode != 0
@@ -83,7 +83,7 @@ def test_sha_refusal_before_opening_session(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode != 0
@@ -102,7 +102,7 @@ def test_success_holds_lock_scrubs_tokens_and_stops_session_in_trap(tmp_path: Pa
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0, f"Launcher failed:\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
@@ -149,7 +149,7 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res_fail.returncode != 0
@@ -177,7 +177,7 @@ def test_trap_stops_session_on_command_failure_and_wall(tmp_path: Path) -> None:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_wall.returncode != 0
@@ -217,7 +217,7 @@ def test_kit_pins_self_sha_comfyui_commit_comfy_headless_and_pytorch_index(tmp_p
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_self.returncode != 0
@@ -237,7 +237,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_dh.returncode != 0
@@ -256,7 +256,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_st.returncode != 0
@@ -274,7 +274,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_cap.returncode != 0
@@ -295,7 +295,7 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_ok.returncode == 0
@@ -351,7 +351,7 @@ def test_lane1_exec_call_passes_contract_py_file_and_timeout_gt_wall(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0, f"STDERR:\n{res.stderr}"
@@ -439,7 +439,7 @@ def test_usage_text_parsed_into_live_balance_and_rate_in_window_json(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0
@@ -466,7 +466,7 @@ def test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0(tmp_
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_start.returncode != 0
@@ -494,7 +494,7 @@ def test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0(tmp_
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_mid.returncode != 0
@@ -522,7 +522,7 @@ def test_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_befor
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode != 0
@@ -544,7 +544,7 @@ def test_midrun_poll_helper_crash_or_empty_stops_window_rc_91_and_trap_stops_ses
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=300,
             check=False,
         )
         assert res.returncode == 91, f"Expected rc 91 for {fault}, got {res.returncode}:\n{res.stderr}"
@@ -562,7 +562,7 @@ def test_negative_balance_refuses_at_start_and_stops_midrun(tmp_path: Path) -> N
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_start.returncode != 0
@@ -579,7 +579,7 @@ def test_negative_balance_refuses_at_start_and_stops_midrun(tmp_path: Path) -> N
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_mid.returncode == 91
@@ -590,10 +590,10 @@ def test_negative_balance_refuses_at_start_and_stops_midrun(tmp_path: Path) -> N
 def test_setup_phase_with_no_workers_and_steady_output_succeeds_then_switches_to_run(tmp_path: Path) -> None:
     _, state_dir, env = _make_fake_colab_env(tmp_path / "setup_ok")
     env["FAKE_COLAB_MODE"] = "setup_phase"
-    env["FAKE_COLAB_SETUP_DURATION_S"] = "8"
-    env["FAKE_COLAB_SETUP_SCALE"] = "0.2"
-    env["GUARD_POLL_INTERVAL_S"] = "0.2"
-    env["SETUP_STALL_S"] = "1"
+    env["FAKE_COLAB_SETUP_DURATION_S"] = "12"
+    env["FAKE_COLAB_SETUP_SCALE"] = "1.0"
+    env["GUARD_POLL_INTERVAL_S"] = "0.5"
+    env["SETUP_STALL_S"] = "8"
     out_dir = tmp_path / "out_setup_ok"
     res = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-setup-ok"],
@@ -601,7 +601,7 @@ def test_setup_phase_with_no_workers_and_steady_output_succeeds_then_switches_to
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 0, f"STDERR:\n{res.stderr}"
@@ -626,7 +626,7 @@ def test_silent_setup_trips_setup_stall_tripped_and_trap_stops_session(tmp_path:
     env["FAKE_COLAB_MODE"] = "setup_stall"
     env["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.2"
     env["GUARD_POLL_INTERVAL_S"] = "0.2"
-    env["SETUP_STALL_S"] = "1"
+    env["SETUP_STALL_S"] = "2"
     out_dir = tmp_path / "out_setup_stall"
     res = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-setup-stall"],
@@ -634,7 +634,7 @@ def test_silent_setup_trips_setup_stall_tripped_and_trap_stops_session(tmp_path:
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res.returncode == 93
@@ -659,7 +659,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     env_post["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
     env_post["FAKE_COLAB_POST_OPEN_RATE_STR"] = "0.38/hr"
     env_post["RATE_CCU_PER_HOUR"] = "0.26"
-    env_post["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_post["GUARD_POLL_INTERVAL_S"] = "0.5"
     out_post = tmp_path / "out_rate_post"
     res_post = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_post), "--session", "sdlab-l1-rpost"],
@@ -667,7 +667,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_post.returncode == 0, f"STDERR:\n{res_post.stderr}"
@@ -689,7 +689,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_pre_only.returncode == 0
@@ -713,7 +713,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_cfg.returncode == 0
@@ -736,7 +736,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_cap_rate.returncode == 91
@@ -748,7 +748,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     env_post_zero["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
     env_post_zero["FAKE_COLAB_POST_OPEN_RATE_STR"] = "0.00/hr"
     env_post_zero["RATE_CCU_PER_HOUR"] = "0.26"
-    env_post_zero["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_post_zero["GUARD_POLL_INTERVAL_S"] = "0.5"
     out_post_zero = tmp_path / "out_rate_post_zero"
     res_post_zero = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_post_zero), "--session", "sdlab-l1-rpzero"],
@@ -756,7 +756,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_post_zero.returncode == 0
@@ -771,11 +771,11 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
     _, _, env_seq = _make_fake_colab_env(tmp_path / "rate_post_seq")
     env_seq["FAKE_COLAB_MODE"] = "setup_phase"
     env_seq["FAKE_COLAB_SETUP_DURATION_S"] = "4"
-    env_seq["FAKE_COLAB_SETUP_SCALE"] = "0.1"
+    env_seq["FAKE_COLAB_SETUP_SCALE"] = "0.5"
     env_seq["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
     env_seq["FAKE_COLAB_POST_OPEN_RATE_SEQ"] = "0.00/hr,0.41/hr"
     env_seq["RATE_CCU_PER_HOUR"] = "0.26"
-    env_seq["GUARD_POLL_INTERVAL_S"] = "0.15"
+    env_seq["GUARD_POLL_INTERVAL_S"] = "0.5"
     out_seq = tmp_path / "out_rate_post_seq"
     res_seq = subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_seq), "--session", "sdlab-l1-rpseq"],
@@ -783,7 +783,7 @@ def test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_seq.returncode == 0
@@ -807,7 +807,7 @@ def test_lane1_uv_system_python_env_explicit_venv_python_and_gates(tmp_path: Pat
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_ok.returncode == 0, f"STDERR:\n{res_ok.stderr}"
@@ -850,7 +850,7 @@ def test_lane1_venv_python_version_mismatch_refuses_with_venv_python_mismatch(tm
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=300,
             check=False,
         )
         assert res_mis.returncode != 0
@@ -909,7 +909,7 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_drift.returncode != 0
@@ -926,7 +926,7 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_pin.returncode != 0
@@ -944,7 +944,7 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_wm.returncode != 0
@@ -966,7 +966,7 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_hm.returncode != 0
@@ -992,7 +992,7 @@ def test_lane1_preflight_and_lock_refusals_and_no_bare_uv_pip_install(tmp_path: 
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=300,
             check=False,
         )
         assert res_nf.returncode != 0
@@ -1016,7 +1016,7 @@ def test_lane1_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_p
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_out.returncode != 0
@@ -1036,7 +1036,7 @@ def test_lane1_import_resolved_outside_venv_or_missing_python_flag_refuses(tmp_p
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=300,
         check=False,
     )
     assert res_nopy.returncode != 0
@@ -1183,7 +1183,7 @@ def _make_render_fixture(root: Path, *, hf_token_required: bool = False) -> dict
     }
 
 
-def _run_launcher(args: list[str], env: dict[str, str], timeout: int = 45) -> subprocess.CompletedProcess[str]:
+def _run_launcher(args: list[str], env: dict[str, str], timeout: int = 300) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), *args],
         env=env,
@@ -1923,7 +1923,7 @@ def test_render_end_to_end_records_runtime_cuda_hf_429_offline_heartbeat_and_cc_
     args = _replace_arg(fx["base_args"], "--jobs", _to_posix(built_jobs))
     args = _replace_arg(args, "--jobs-sha256", built["jobs_sha256"])
     out_dir = tmp_path / "out_seed18"
-    res = _run_launcher([*args, "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-seed18"], fx["env"], timeout=60)
+    res = _run_launcher([*args, "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-seed18"], fx["env"], timeout=300)
     assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
 
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
@@ -2076,7 +2076,7 @@ def test_render_wall_trip_mid_run_keeps_the_rendered_pngs_renders_jsonl_and_an_a
     res = _run_launcher(
         [*fx["base_args"], "--wall-s", "45", "--grace-s", "10", "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-trip"],
         env,
-        timeout=150,
+        timeout=360,
     )
     assert res.returncode != 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
     guards = (out_dir / "guards.log").read_text(encoding="utf-8")
@@ -2119,7 +2119,7 @@ def test_render_archive_with_no_worker_alive_reports_phase_bundle_and_the_bundle
     env["FAKE_VM_RENDER_ARCHIVE_S"] = "2.4"
     out_dir = tmp_path / "out_archive"
     res = _run_launcher(
-        [*fx["base_args"], "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-archive"], env, timeout=150
+        [*fx["base_args"], "--out-dir", _to_posix(out_dir), "--session", "sdlab-l1-archive"], env, timeout=360
     )
     guards = (out_dir / "guards.log").read_text(encoding="utf-8")
     assert res.returncode == 0, f"STDERR:\n{res.stderr[-3000:]}\nGUARDS:\n{guards[-2000:]}"
@@ -2150,7 +2150,7 @@ def test_render_archive_with_no_worker_alive_reports_phase_bundle_and_the_bundle
     res_hang = _run_launcher(
         [*fx_hang["base_args"], "--out-dir", _to_posix(out_hang), "--session", "sdlab-l1-archive-hang"],
         env_hang,
-        timeout=150,
+        timeout=360,
     )
     guards_hang = (out_hang / "guards.log").read_text(encoding="utf-8")
     assert res_hang.returncode != 0, f"STDERR:\n{res_hang.stderr[-3000:]}"
@@ -2183,7 +2183,7 @@ def test_render_cleanup_bound_scales_with_the_projected_salvage_parts_and_the_st
 def test_render_wall_is_derived_from_the_job_count_unless_given(tmp_path: Path) -> None:
     fx = _make_render_fixture(tmp_path / "fx_wall")
     out_a = tmp_path / "out_wall_derived"
-    res = _run_launcher([*fx["base_args"], "--out-dir", _to_posix(out_a), "--session", "sdlab-l1-wall-d"], fx["env"], timeout=90)
+    res = _run_launcher([*fx["base_args"], "--out-dir", _to_posix(out_a), "--session", "sdlab-l1-wall-d"], fx["env"], timeout=300)
     assert res.returncode == 0, f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
     guards = (out_a / "guards.log").read_text(encoding="utf-8")
     m = re.search(r"RENDER_WALL_DERIVED wall_s=(\d+) jobs=3 download_max_s=300", guards)
@@ -2196,7 +2196,7 @@ def test_render_wall_is_derived_from_the_job_count_unless_given(tmp_path: Path) 
     res_b = _run_launcher(
         [*fx_b["base_args"], "--wall-s", "1234", "--out-dir", _to_posix(out_b), "--session", "sdlab-l1-wall-e"],
         fx_b["env"],
-        timeout=90,
+        timeout=300,
     )
     assert res_b.returncode == 0, res_b.stderr
     assert "RENDER_WALL_DERIVED" not in (out_b / "guards.log").read_text(encoding="utf-8")

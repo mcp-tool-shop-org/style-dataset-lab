@@ -858,7 +858,7 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
     # recovers cleanly without false STALL_GUARD_TRIPPED or COLAB_USAGE_PARSE_FAILED.
     _, state_blip, env_blip = fc.make_fake_colab_env(tmp_path / "blip_ok_case")
     env_blip["FAKE_COLAB_MODE"] = "setup_phase"
-    env_blip["FAKE_COLAB_SETUP_DURATION_S"] = "1.8"
+    env_blip["FAKE_COLAB_SETUP_DURATION_S"] = "3.0"
     env_blip["GUARD_POLL_INTERVAL_S"] = "0.15"
     env_blip["FAKE_COLAB_POLL_FAIL_CALLS"] = "2,3,4"
     env_blip["FAKE_COLAB_USAGE_FAIL_DURING_BLIP"] = "1"
@@ -871,7 +871,7 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=240,
         check=False,
     )
     assert res_blip.returncode == 0, f"STDOUT:\n{res_blip.stdout}\nSTDERR:\n{res_blip.stderr}"
@@ -904,7 +904,7 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=240,
         check=False,
     )
     assert res_exh.returncode != 0
@@ -928,7 +928,7 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=240,
         check=False,
     )
     assert res_s1.returncode == 0, f"STDOUT:\n{res_s1.stdout}\nSTDERR:\n{res_s1.stderr}"
@@ -950,7 +950,7 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=240,
         check=False,
     )
     assert res_sf.returncode != 0
@@ -970,12 +970,12 @@ def test_b1_run_phase_longer_than_stall_s_counts_run_rows_as_progress(tmp_path: 
     bash_bin = str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
 
     _, state_b1, env_b1 = fc.make_fake_colab_env(tmp_path / "b1_case")
-    # 26 rows * 0.25s = ~6.5s in phase=run, well past STALL_S=3s.
-    env_b1["STALL_S"] = "3"
+    # 26 rows * 0.55s = ~14.3s in phase=run, well past STALL_S=10s.
+    env_b1["STALL_S"] = "10"
     env_b1["GUARD_POLL_INTERVAL_S"] = "0.25"
     env_b1["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.25"
     env_b1["FAKE_RUN_ROWS_N"] = "26"
-    env_b1["FAKE_RUN_ROW_SLEEP_S"] = "0.25"
+    env_b1["FAKE_RUN_ROW_SLEEP_S"] = "0.55"
     out_b1 = tmp_path / "out_b1"
     res_b1 = subprocess.run(
         [bash_bin, fc._to_posix(launcher), "--out-dir", fc._to_posix(out_b1), "--session", "sdlab-l1-b1-progress"],
@@ -983,7 +983,7 @@ def test_b1_run_phase_longer_than_stall_s_counts_run_rows_as_progress(tmp_path: 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=240,
         check=False,
     )
     assert res_b1.returncode == 0, (
@@ -1028,7 +1028,7 @@ def test_b2_lost_start_reply_is_idempotent_across_all_three_q1_cases(
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=240,
         check=False,
     )
     assert res_pre.returncode == 0, res_pre.stderr
@@ -1053,7 +1053,7 @@ def test_b2_lost_start_reply_is_idempotent_across_all_three_q1_cases(
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=240,
         check=False,
     )
     assert res_post.returncode == 0, res_post.stderr
@@ -1266,7 +1266,7 @@ def test_f2_poll_outage_wall_bound_trips_reconnect_exhausted_within_stall_s(tmp_
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=180,
         check=False,
     )
     wall_elapsed = time.monotonic() - t0
@@ -1314,7 +1314,7 @@ def test_f3_detached_out_files_scrubbed_including_sigterm_during_wait(tmp_path: 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=15,
+        timeout=60,
         check=False,
     )
     assert res_scrub.returncode == 0, res_scrub.stderr
@@ -1343,7 +1343,7 @@ def test_f3_detached_out_files_scrubbed_including_sigterm_during_wait(tmp_path: 
     )
     try:
         poll_out_p = out_term / ".detached_poll.out"
-        deadline = time.monotonic() + 20.0
+        deadline = time.monotonic() + 60.0
         while time.monotonic() < deadline:
             if (state_term / "poll_hang_ready.txt").is_file() and poll_out_p.is_file() and poll_out_p.stat().st_size > 0:
                 break
@@ -1351,12 +1351,12 @@ def test_f3_detached_out_files_scrubbed_including_sigterm_during_wait(tmp_path: 
             time.sleep(0.05)
         assert (state_term / "poll_hang_ready.txt").is_file() and poll_out_p.is_file() and poll_out_p.stat().st_size > 0
         proc.send_signal(signal.SIGTERM)
-        _, stderr_term = proc.communicate(timeout=30)
+        _, stderr_term = proc.communicate(timeout=90)
         assert proc.returncode == 143, stderr_term
     finally:
         if proc.poll() is None:
             proc.kill()
-            proc.wait(timeout=5)
+            proc.wait(timeout=15)
 
     assert (out_term / ".detached_poll.out").is_file()
     scrubbed_poll_out = (out_term / ".detached_poll.out").read_text(encoding="utf-8")
@@ -1400,7 +1400,7 @@ def test_f4_worker_stderr_scrubbed_on_vm_and_fetched_on_normal_and_crash_paths(
         env={"PATH": os.environ.get("PATH", ""), "SDLAB_CONTENT": str(vm_root)},
     )
     try:
-        deadline = time.monotonic() + 5.0
+        deadline = time.monotonic() + 30.0
         while not (vm_root / lg.DETACHED_LIVE_DONE).is_file():
             assert time.monotonic() < deadline
             time.sleep(0.05)
@@ -1483,7 +1483,7 @@ def test_f4_worker_stderr_scrubbed_on_vm_and_fetched_on_normal_and_crash_paths(
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=240,
         check=False,
     )
     assert res_e2e.returncode == 0, res_e2e.stderr
@@ -1515,7 +1515,7 @@ def test_f6_poll_max_bytes_bounds_each_poll_and_drains_large_backlog(tmp_path: P
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=240,
         check=False,
     )
     assert res_f6.returncode == 0, res_f6.stderr

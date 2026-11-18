@@ -353,9 +353,11 @@ def _running_cell(state_dir: Path, sid: str) -> int | None:
     return pid if _pid_alive(pid) else None
 
 
-def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: Path) -> int:
+def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: Path) -> tuple[int, int]:
     """Start argv in its own session, reparented away from this process (double fork), with stdout
-    and stderr to out_path. Returns the cell's pid; its process group is its own."""
+    and stderr to out_path. Creates out_path before forking so readers never race ENOENT, and returns
+    (cell_pid, session_pgid)."""
+    out_fd = os.open(str(out_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     r, w = os.pipe()
     pid = os.fork()
     if pid == 0:  # pragma: no cover - child
@@ -364,16 +366,21 @@ def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: P
             os.setsid()
             pid2 = os.fork()
             if pid2 == 0:
-                fd = os.open(str(out_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-                os.dup2(fd, 1)
-                os.dup2(fd, 2)
+                os.dup2(out_fd, 1)
+                os.dup2(out_fd, 2)
+                os.close(out_fd)
+                os.close(w)
                 null = os.open(os.devnull, os.O_RDONLY)
                 os.dup2(null, 0)
+                if null > 2:
+                    os.close(null)
                 os.chdir(str(cwd))
                 os.execve(argv[0], argv, env)
-            os.write(w, str(pid2).encode())
+            os.close(out_fd)
+            os.write(w, f"{pid2} {os.getpgrp()}".encode())
         finally:
             os._exit(0)
+    os.close(out_fd)
     os.close(w)
     data = b""
     while True:
@@ -383,7 +390,8 @@ def _spawn_detached(argv: list[str], env: dict[str, str], cwd: Path, out_path: P
         data += chunk
     os.close(r)
     os.waitpid(pid, 0)
-    return int(data.decode())
+    cell_s, pgid_s = data.decode().split()
+    return int(cell_s), int(pgid_s)
 
 
 def _kill_recorded_groups(state_dir: Path, sid: str) -> None:
@@ -626,29 +634,43 @@ printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 : > lane1_out/setup.log
 echo "setup" > lane1_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
+hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
+
+read_phase_nonempty() {
+  local pfile="$1" fallback="$2" val="" _try
+  for _try in 1 2 3 4 5; do
+    val="$(tr -d '\\r\\n[:space:]' < "${pfile}" 2>/dev/null || true)"
+    [ -n "${val}" ] && break
+    sleep 0.01
+  done
+  printf '%s' "${val:-${fallback}}"
+}
 
 emit_vitals() {
-  local phase_val="$1"
+  local phase_val="${1:-setup}"
   local worker_line="$2"
-  local setup_sz
+  local setup_sz blk
   setup_sz="$(wc -c < lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-  echo "CGROUP_MEM_CURRENT: 536870912"
-  echo "CGROUP_MEM_MAX: 12884901888"
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "CGROUP_MEM_STAT: anon 268435456"
-  echo "CGROUP_MEM_STAT: file 268435456"
-  echo "CGROUP_MEM_STAT: shmem 0"
-  echo "MEM: MemTotal:       12582912 kB"
-  echo "MEM: MemAvailable:   11534336 kB"
-  echo "MEM: AnonPages:        262144 kB"
-  echo "MEM: Shmem:                 0 kB"
-  echo "SETUP_BYTES: ${setup_sz:-0}"
-  echo "PROC:"
-  if [ -n "${worker_line}" ]; then
-    echo "${worker_line}"
-  fi
-  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  blk="$(
+    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "CGROUP_MEM: oom_kill 0"
+    echo "CGROUP_MEM_STAT: anon 268435456"
+    echo "CGROUP_MEM_STAT: file 268435456"
+    echo "CGROUP_MEM_STAT: shmem 0"
+    echo "MEM: MemTotal:       12582912 kB"
+    echo "MEM: MemAvailable:   11534336 kB"
+    echo "MEM: AnonPages:        262144 kB"
+    echo "MEM: Shmem:                 0 kB"
+    echo "SETUP_BYTES: ${setup_sz:-0}"
+    echo "PROC:"
+    if [ -n "${worker_line}" ]; then
+      echo "${worker_line}"
+    fi
+    printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  )"
+  printf '%s\\n' "${blk}"
 }
 """
         + venv_check_helper
@@ -660,14 +682,14 @@ if [ "${mode}" = "fail" ]; then
   exit 42
 elif [ "${mode}" = "wall" ]; then
   echo "Simulated hung child ignoring inner timeout" | tee -a lane1_out/setup.log
-  for _ in $(seq 1 40); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
   echo "run" > lane1_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" ""
     sleep "${vitals_interval}"
   done
@@ -683,14 +705,14 @@ elif [ "${mode}" = "setup_phase" ]; then
   done
 elif [ "${mode}" = "setup_stall" ]; then
   printf 'initial_setup_line\\n' > lane1_out/setup.log
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane1_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
     sleep "${vitals_interval}"
   done
@@ -1017,7 +1039,7 @@ run_uploaded_render_block() {
 
   (
     while true; do
-      cur_ph="$(cat lane1_out/phase.txt 2>/dev/null || echo setup)"
+      cur_ph="$(read_phase_nonempty lane1_out/phase.txt setup)"
       if [ "${cur_ph}" = "run" ] && [ ! -f .fake-vm-archiving ]; then
         emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --listen 127.0.0.1"
       else
@@ -1129,7 +1151,7 @@ STUBBLKEOF
 
   (
     while true; do
-      cur_ph="$(cat lane1_out/phase.txt 2>/dev/null || echo run)"
+      cur_ph="$(read_phase_nonempty lane1_out/phase.txt run)"
       emit_vitals "${cur_ph}" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
       sleep "${vitals_interval}"
     done
@@ -1331,7 +1353,7 @@ RUNPYEOF
     (
       for _ in $(seq 1 "${FAKE_VM_TRAIN_VITALS_TICKS}"); do
         sleep "${vitals_interval}"
-        _bg_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo run)"
+        _bg_phase="$(read_phase_nonempty lane3_out/phase.txt run)"
         emit_vitals "${_bg_phase}" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml"
       done
     ) &
@@ -1345,7 +1367,7 @@ RUNPYEOF
     wait "${_train_vit_pid}" 2>/dev/null || true
   fi
   if [ -n "${FAKE_VM_POST_TRAIN_VITALS_TICKS:-}" ]; then
-    _cur_phase="$(cat lane3_out/phase.txt 2>/dev/null || echo setup)"
+    _cur_phase="$(read_phase_nonempty lane3_out/phase.txt setup)"
     for _ in $(seq 1 "${FAKE_VM_POST_TRAIN_VITALS_TICKS}"); do
       emit_vitals "${_cur_phase}" ""
       sleep "${vitals_interval}"
@@ -1392,29 +1414,43 @@ printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 : > lane3_out/setup.log
 echo "setup" > lane3_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
+hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
+
+read_phase_nonempty() {
+  local pfile="$1" fallback="$2" val="" _try
+  for _try in 1 2 3 4 5; do
+    val="$(tr -d '\\r\\n[:space:]' < "${pfile}" 2>/dev/null || true)"
+    [ -n "${val}" ] && break
+    sleep 0.01
+  done
+  printf '%s' "${val:-${fallback}}"
+}
 
 emit_vitals() {
-  local phase_val="$1"
+  local phase_val="${1:-setup}"
   local worker_line="$2"
-  local setup_sz
+  local setup_sz blk
   setup_sz="$(wc -c < lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-  echo "CGROUP_MEM_CURRENT: 536870912"
-  echo "CGROUP_MEM_MAX: 12884901888"
-  echo "CGROUP_MEM: oom_kill 0"
-  echo "CGROUP_MEM_STAT: anon 268435456"
-  echo "CGROUP_MEM_STAT: file 268435456"
-  echo "CGROUP_MEM_STAT: shmem 0"
-  echo "MEM: MemTotal:       12582912 kB"
-  echo "MEM: MemAvailable:   11534336 kB"
-  echo "MEM: AnonPages:        262144 kB"
-  echo "MEM: Shmem:                 0 kB"
-  echo "SETUP_BYTES: ${setup_sz:-0}"
-  echo "PROC:"
-  if [ -n "${worker_line}" ]; then
-    echo "${worker_line}"
-  fi
-  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  blk="$(
+    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "CGROUP_MEM_CURRENT: 536870912"
+    echo "CGROUP_MEM_MAX: 12884901888"
+    echo "CGROUP_MEM: oom_kill 0"
+    echo "CGROUP_MEM_STAT: anon 268435456"
+    echo "CGROUP_MEM_STAT: file 268435456"
+    echo "CGROUP_MEM_STAT: shmem 0"
+    echo "MEM: MemTotal:       12582912 kB"
+    echo "MEM: MemAvailable:   11534336 kB"
+    echo "MEM: AnonPages:        262144 kB"
+    echo "MEM: Shmem:                 0 kB"
+    echo "SETUP_BYTES: ${setup_sz:-0}"
+    echo "PROC:"
+    if [ -n "${worker_line}" ]; then
+      echo "${worker_line}"
+    fi
+    printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
+  )"
+  printf '%s\\n' "${blk}"
 }
 """
         + venv_check_helper
@@ -1426,14 +1462,14 @@ if [ "${mode}" = "fail" ]; then
   exit 42
 elif [ "${mode}" = "wall" ]; then
   echo "Simulated hung child ignoring inner timeout" | tee -a lane3_out/setup.log
-  for _ in $(seq 1 40); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
   echo "run" > lane3_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" ""
     sleep "${vitals_interval}"
   done
@@ -1449,7 +1485,7 @@ elif [ "${mode}" = "setup_phase" ]; then
   done
 elif [ "${mode}" = "setup_stall" ]; then
   printf 'initial_setup_line\\n' > lane3_out/setup.log
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "setup" ""
     sleep "${vitals_interval}"
   done
@@ -1473,18 +1509,22 @@ elif [ "${mode}" = "ram_replay" ]; then
   emit_ram_sample() {
     local anon_b=$(( $4 * 1024 ))
     local file_b=$(( $1 > anon_b ? $1 - anon_b : 0 ))
-    emit_ram_head "$1"
-    echo "CGROUP_MEM_STAT: anon ${anon_b}"
-    echo "CGROUP_MEM_STAT: file ${file_b}"
-    echo "CGROUP_MEM_STAT: shmem 0"
-    echo "MEM: MemTotal:       $2 kB"
-    echo "MEM: MemAvailable:   $3 kB"
-    echo "MEM: AnonPages:      $4 kB"
-    echo "MEM: Shmem:          0 kB"
-    echo "SETUP_BYTES: 0"
-    echo "PROC:"
-    echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-    printf 'HARNESS: {"phase": "run"}\\n'
+    local blk
+    blk="$(
+      emit_ram_head "$1"
+      echo "CGROUP_MEM_STAT: anon ${anon_b}"
+      echo "CGROUP_MEM_STAT: file ${file_b}"
+      echo "CGROUP_MEM_STAT: shmem 0"
+      echo "MEM: MemTotal:       $2 kB"
+      echo "MEM: MemAvailable:   $3 kB"
+      echo "MEM: AnonPages:      $4 kB"
+      echo "MEM: Shmem:          0 kB"
+      echo "SETUP_BYTES: 0"
+      echo "PROC:"
+      echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+      printf 'HARNESS: {"phase": "run"}\\n'
+    )"
+    printf '%s\\n' "${blk}"
   }
   last=""
   while read -r cg tot avail anon; do
@@ -1510,7 +1550,7 @@ elif [ "${mode}" = "ram_replay" ]; then
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
   echo "run" > lane3_out/phase.txt
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
     sleep "${vitals_interval}"
   done
@@ -2462,6 +2502,8 @@ def main(argv: list[str] | None = None) -> int:
             "except BaseException:\n"
             "    import traceback; traceback.print_exc(); rc = 1\n"
             "finally:\n"
+            "    sys.stdout.flush()\n"
+            "    sys.stderr.flush()\n"
             "    pathlib.Path(os.environ['RC_PATH']).write_text(str(rc))\n"
         )
         (state_dir / "kernels").mkdir(exist_ok=True)
@@ -2480,10 +2522,10 @@ def main(argv: list[str] | None = None) -> int:
         argv = [py, "-u", "-c", kernel_code]
         cell_env = dict(kernel_env)
         cell_env["RC_PATH"] = str(rc_path)
-        cell = _spawn_detached(argv, cell_env, content_dir, out_path)
+        cell, cell_pgid = _spawn_detached(argv, cell_env, content_dir, out_path)
         _kernel_file(state_dir, sid, "pid").write_text(f"{cell}\n", encoding="utf-8")
         with _kernel_file(state_dir, sid, "pgids").open("a", encoding="utf-8") as fh:
-            fh.write(f"{os.getpgid(cell)}\n")
+            fh.write(f"{cell_pgid}\n")
 
         pos = 0
         timed_out = False

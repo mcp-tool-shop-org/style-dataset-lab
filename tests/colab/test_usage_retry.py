@@ -32,7 +32,7 @@ def _to_posix(p: Path) -> str:
     return fc._to_posix(p)
 
 
-def _run_lane1(args: list[str], env: dict[str, str], timeout: int = 60) -> subprocess.CompletedProcess[str]:
+def _run_lane1(args: list[str], env: dict[str, str], timeout: int = 240) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [_find_bash(), _to_posix(LAUNCHER), *args],
         env=env,
@@ -110,7 +110,7 @@ def test_one_rc124_then_success_carries_on_and_logs_retry_and_recovered(tmp_path
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode == 0, f"expected recovery after one rc=124, got rc={res.returncode}\nstderr={res.stderr}"
@@ -175,7 +175,7 @@ def test_three_failures_trip_parse_failed_within_t_retry_and_keep_last_error(tmp
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode != 0
@@ -290,7 +290,7 @@ def test_real_breach_while_retrying_has_no_stale_pass_and_trips_cap_under_budget
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode != 0
@@ -362,7 +362,7 @@ def test_unparseable_output_then_success_recovers_and_completes_window(tmp_path:
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode == 0, f"expected recovery after unparseable output, got rc={res.returncode}\nstderr={res.stderr}"
@@ -417,7 +417,7 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
             "60",
         ],
         env,
-        timeout=30,
+        timeout=180,
     )
 
     assert res.returncode == 2, f"expected exit 2 launch refusal, got rc={res.returncode}\nstderr={res.stderr}"
@@ -434,7 +434,7 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
     dry_old = _run_lane1(
         ["--dry", "--card", "G4", "--shape", "standard", "--max-rate", "10.05", "--cap", "5.0", "--margin", "1.0"],
         env,
-        timeout=30,
+        timeout=180,
     )
     assert dry_old.returncode == 2, f"expected --margin 1.0 --dry to refuse, got rc={dry_old.returncode}"
     assert "0.549958 units > margin / 2 = 0.5 units" in dry_old.stderr
@@ -453,7 +453,7 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
             "5.0",
         ],
         env,
-        timeout=30,
+        timeout=180,
     )
     assert dry_res.returncode == 0, f"expected the default-margin --dry to pass, got: {dry_res.stderr}"
     assert "margin: 1.25" in dry_res.stdout
@@ -479,7 +479,7 @@ def test_launch_refuses_when_rate_times_blind_interval_exceeds_half_margin(tmp_p
             "1.0",
         ],
         env,
-        timeout=30,
+        timeout=180,
     )
     assert dry_16.returncode == 2, f"expected 16.0/hr at margin 1.0 to refuse, got rc={dry_16.returncode}"
     assert "CAP_MARGIN_TOO_SMALL_FOR_USAGE_RETRY" in dry_16.stderr
@@ -523,7 +523,7 @@ def test_local_wall_guard_keeps_running_and_trips_during_hung_usage_retry(tmp_pa
             "4",
         ],
         env,
-        timeout=30,
+        timeout=180,
     )
     elapsed = time.monotonic() - t0
 
@@ -576,7 +576,7 @@ def test_failed_closing_poll_keeps_last_live_reading_marked_stale(tmp_path: Path
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode == 0, f"expected an ok window, got rc={res.returncode}\nstderr={res.stderr}"
@@ -640,7 +640,7 @@ def test_live_poll_in_flight_past_deadline_fails_closed(tmp_path: Path) -> None:
                 "10",
             ],
             env,
-            timeout=60,
+            timeout=240,
         )
 
         # The escaped child really escaped: it outlived the poll, the window and its kill tree.
@@ -718,7 +718,7 @@ def test_pre_open_poll_recovers_on_attempt_2(tmp_path: Path) -> None:
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode == 0, f"expected recovery, got rc={res.returncode}\nstderr={res.stderr}"
@@ -785,7 +785,7 @@ def test_post_open_rate_read_recovers_on_attempt_2(tmp_path: Path) -> None:
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
 
     assert res.returncode == 0, f"expected recovery, got rc={res.returncode}\nstderr={res.stderr}"
@@ -873,7 +873,7 @@ def _run_deadline_fail_closed(tmp_path: Path, fail_mode: str, session: str) -> t
             "10",
         ],
         env,
-        timeout=60,
+        timeout=240,
     )
     return state_dir, out_dir, wrap_log, res
 

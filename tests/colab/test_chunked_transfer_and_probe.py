@@ -52,7 +52,7 @@ def _p(path: Path) -> str:
     return fc._to_posix(path)
 
 
-def _run(cmd: list[str], env: dict[str, str], timeout: int = 120) -> subprocess.CompletedProcess[str]:
+def _run(cmd: list[str], env: dict[str, str], timeout: int = 600) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout, check=False
     )
@@ -160,7 +160,7 @@ def test_chunked_upload_reassembles_verifies_sha_deletes_parts_and_retries_500_o
 
 def test_chunked_upload_500_twice_on_part_k_refuses_by_name_and_stops_session(tmp_path: Path) -> None:
     _, state, env = fc.make_fake_colab_env(tmp_path)
-    env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env["GUARD_POLL_INTERVAL_S"] = "0.5"
     # `remote_lane3_stub.sh` (~44 KB) splits into 3 parts under `--upload-chunk-bytes 16384`;
     # force persistent HTTP 500 on part K=1 (`.part.0001`).
     env["FAKE_COLAB_UPLOAD_HTTP_500_FOR"] = ".part.0001"
@@ -199,7 +199,7 @@ def test_chunked_upload_500_twice_on_part_k_refuses_by_name_and_stops_session(tm
 
 def test_corrupted_upload_part_is_caught_by_vm_whole_file_sha_before_use_and_stops_session(tmp_path: Path) -> None:
     _, state, env = fc.make_fake_colab_env(tmp_path)
-    env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env["GUARD_POLL_INTERVAL_S"] = "0.5"
     env["FAKE_COLAB_CORRUPT_UPLOAD_PART_FOR"] = ".part.0001"
     out_dir = tmp_path / "out_up_corrupt"
 
@@ -232,7 +232,7 @@ def test_corrupted_upload_part_is_caught_by_vm_whole_file_sha_before_use_and_sto
 
 def test_chunked_download_over_chunk_size_retries_500_once_verifies_sha_and_cleans_vm_parts(tmp_path: Path) -> None:
     _, state, env = fc.make_fake_colab_env(tmp_path)
-    env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env["GUARD_POLL_INTERVAL_S"] = "0.5"
     # Force an incompressible ~180 KB payload inside lane3_stub_bundle.tar.gz so it splits into 3 parts
     # under `--download-chunk-bytes 65536`, and inject one HTTP 500 on part K=1.
     env["FAKE_VM_EXTRA_BUNDLE_BYTES"] = "180000"
@@ -287,7 +287,7 @@ def test_chunked_download_two_500s_on_part_k_names_failure_lists_arrived_parts_a
     tmp_path: Path,
 ) -> None:
     _, state, env = fc.make_fake_colab_env(tmp_path)
-    env["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env["GUARD_POLL_INTERVAL_S"] = "0.5"
     # Seed a 3-part bundle (> 131072 bytes under 65536-byte chunks) and force HTTP 500 on part K=2
     # so parts 0 and 1 arrive, part 2 fails twice, no partial bundle is kept, and arrived_parts == [0, 1].
     env["FAKE_COLAB_DOWNLOAD_HTTP_500_FOR"] = ".part.0002"

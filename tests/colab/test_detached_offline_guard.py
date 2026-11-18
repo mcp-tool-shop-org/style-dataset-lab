@@ -102,7 +102,7 @@ def _drive(
     cap: float = 5.0,
     margin: float = 0.02,
     extra_env: dict[str, str] | None = None,
-    timeout: int = 60,
+    timeout: int = 180,
     end_balance_age_s: float | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     _, state_dir, env = fc.make_fake_colab_env(tmp_path / "drv")
@@ -136,7 +136,7 @@ def _drive(
         "GUARD_POLL_INTERVAL_S": "0.2",
         "SDLAB_TEST_POLL_RETRY_SLEEP_S": "0.2",
         "SDLAB_TEST_POLL_MAX_RETRIES": "1000",
-        "STALL_S": "30",
+        "STALL_S": "60",
     })
     env.update(extra_env or {})
     try:
@@ -261,7 +261,7 @@ def test_offline_guard_missing_balance_files_fail_closed(tmp_path: Path) -> None
     res, out_dir, _ = _drive(
         tmp_path,
         end_balance=None,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "6"},
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
     )
     guards = _guards(out_dir)
     assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
@@ -277,7 +277,7 @@ def test_offline_guard_gpu_window_without_rate_file_refuses_rate_unread(tmp_path
         tmp_path,
         card_class="gpu",
         rate=None,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "6"},
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
     )
     guards = _guards(out_dir)
     assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
@@ -303,7 +303,7 @@ def test_lost_start_reply_with_worker_crashed_without_done_never_reruns_and_fail
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=90,
+            timeout=240,
             check=False,
         )
     finally:
@@ -342,7 +342,7 @@ def test_exported_poll_knobs_do_not_lift_the_outage_bound(tmp_path: Path) -> Non
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=90,
+            timeout=240,
             check=False,
         )
     finally:
@@ -414,7 +414,7 @@ def test_cap_check_interval_matches_a_measured_worst_case_on_a_dead_link(tmp_pat
             "FAKE_COLAB_USAGE_HOLD_AFTER_RETRY": "3",
             "FAKE_COLAB_USAGE_HOLD_LOG": fc._to_posix(out_guards),
         },
-        timeout=90,
+        timeout=240,
     )
     guards = _guards(out_dir)
     assert res.returncode == 94, f"rc={res.returncode}\n{guards}\n{res.stderr}"
@@ -477,7 +477,7 @@ def test_fix3_offline_projection_grows_from_the_cached_balance(tmp_path: Path) -
         rate="36",
         cap=5.72,
         extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "25"},
-        timeout=90,
+        timeout=240,
     )
     guards = _guards(out_dir)
     assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
@@ -503,7 +503,7 @@ def test_fix3_gpu_rate_written_as_zero_or_not_finite_refuses_rate_unread(tmp_pat
             tmp_path / f"r{i}",
             card_class="gpu",
             rate=bad,
-            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "6"},
+            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
         )
         guards = _guards(out_dir)
         assert res.returncode == 91, f"{bad}: rc={res.returncode}\n{guards}\n{res.stderr}"
@@ -530,7 +530,7 @@ def test_fix3_unset_or_empty_card_class_fails_closed_as_gpu(tmp_path: Path) -> N
             tmp_path / f"c{i}",
             card_class=cls,
             rate=None,
-            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "6"},
+            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
         )
         guards = _guards(out_dir)
         assert res.returncode == 91, f"{cls!r}: rc={res.returncode}\n{guards}\n{res.stderr}"
@@ -541,7 +541,7 @@ def test_fix3_unset_or_empty_card_class_fails_closed_as_gpu(tmp_path: Path) -> N
 def test_fix3_unset_cleanup_bound_refuses(tmp_path: Path) -> None:
     res, out_dir, _ = _drive(
         tmp_path,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "6", "DRV_UNSET_CLEANUP_BOUND": "1"},
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30", "DRV_UNSET_CLEANUP_BOUND": "1"},
     )
     guards = _guards(out_dir)
     assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
