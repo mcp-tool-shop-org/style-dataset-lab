@@ -75,30 +75,38 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 1,
+      "added": 9,
+      "changed": 24,
       "moved": 0,
-      "parts": 1,
+      "parts": 2,
       "removed": 0
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "scripts/colab/launch_guards.py is now read by scripts/colab/lane3_rung.py.",
+        "subjects": [
+          "scripts/colab/launch_guards.py",
+          "scripts/colab/lane3_rung.py"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-12; 1 file changed content.",
+        "sentence": "9 files added and 24 changed content, across 2 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "19b3fe1f5ae0f881252b6212598eaf06d4acea93",
-      "generatedAt": "2026-11-12T22:36:14.883Z"
+      "commit": "ce6da8a40949c592f389dbe5cb395a6f6d1688b1",
+      "generatedAt": "2026-11-12T23:08:02.035Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [
     {
       "a": "scripts/colab/lane3_rung.py",
       "b": "tests/colab/test_lane3_gpu_rung.py",
-      "either": 11,
+      "either": 14,
       "partLabels": [
         "scripts",
         "tests"
@@ -108,18 +116,33 @@
         "tests"
       ],
       "relation": "b-imports-a",
-      "shared": 6
+      "shared": 7
+    },
+    {
+      "a": "scripts/colab/lane3_rung.py",
+      "b": "scripts/colab/remote_runner.py",
+      "either": 8,
+      "partLabels": [
+        "scripts",
+        "scripts"
+      ],
+      "parts": [
+        "scripts",
+        "scripts"
+      ],
+      "relation": "inside",
+      "shared": 4
     }
   ],
   "changesTogetherNote": [
     "1 file changed together with its own test, as expected.",
     "Confidence is low: fewer than 25 source files reach 10 revisions in the window.",
-    "Window: 180 days; a pair counts from 3 shared commits, since 4 source files reach 10 revisions; the floor rises to 10 when 25 do."
+    "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "ce6da8a40949c592f389dbe5cb395a6f6d1688b1",
-  "defaultBranch": "fix/watcher-pre-trip-launcher-death",
-  "derived": "13 parts, mostly JSON data (2619 files); code in JavaScript (249), Python (61), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "commit": "717bdb9da9d5d8582cfbb340750895f793f49202",
+  "defaultBranch": "main",
+  "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (68), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -139,12 +162,12 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 50
+          "files": 52
         },
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 128
+          "files": 133
         },
         {
           "boundary": "lib",
@@ -189,7 +212,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 34,
-      "runsMore": 123,
+      "runsMore": 128,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -456,12 +479,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-12T23:08:02.035Z",
+  "generatedAt": "2026-11-18T11:45:32.054Z",
   "limits": [
     "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
-    "44 writes and 74 reads use paths built at run time and are not named here.",
+    "44 writes and 79 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "164 writes and 314 reads go to a path their caller passes, not to this repository.",
+    "176 writes and 337 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -486,7 +509,7 @@
   },
   "parts": 13,
   "readers": [],
-  "repo": "@mcptoolshop/style-dataset-lab",
+  "repo": "mcp-tool-shop-org/style-dataset-lab",
   "sequences": [
     {
       "alternatives": [
@@ -742,11 +765,11 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 138,
+  "testFiles": 143,
   "testedBy": {
     "bin": 11,
     "lib": 98,
-    "scripts": 32
+    "scripts": 35
   },
   "testedCodeParts": 3,
   "unnamedWrites": 44,
