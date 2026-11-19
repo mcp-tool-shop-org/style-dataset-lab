@@ -145,8 +145,8 @@ Under `--render` (and CPU weights rehearsal `--render-cpu-stub`, mutually exclus
 Each lane's VM script writes its current phase (`setup`, `run` or `bundle`) to `phase.txt` in the lane's output folder, and the launcher's vitals reader reads it on every sample.
 
 - **Writers replace the file in one step.** Every writer writes a temporary file beside `phase.txt` and renames it over the old one (`printf … > .phase.txt.tmp.$$ && mv -f …` in shell, `os.replace` in `lane1_bundle_now.py`), so a reader never sees a half-written file.
-- **A failed write stops the run.** If the temporary write or the rename fails, the writer prints `REFUSED: PHASE_WRITE_FAILED` and exits `77`. The one exception is the on-exit salvage writer, which logs the failure and carries on so that the archive is still attempted.
-- **A reader keeps the last known phase on an empty read.** An empty or missing read does not change the phase and does not reset a stall clock. The stall clocks reset only when the phase word changes.
+- **A failed write stops the run.** If the temporary write or the rename fails, the writer prints `REFUSED: PHASE_WRITE_FAILED` and exits `77`. The one exception is the VM EXIT-trap writer, which logs the failure and carries on so that the archive is still attempted. The rig-invoked `lane1_bundle_now.py` returns `77`.
+- **A reader keeps the last known phase on an empty read.** An empty or missing read does not change the phase and does not reset a stall clock. The stall clocks reset only on new output from the run or on a changed phase word.
 - **An unknown phase word is refused.** A reader that sees a word other than `setup`, `run` or `bundle` stops with `VITALS_PHASE_INVALID` (exit `78` on the VM side, `93` from the rig-side guard).
 - **The launcher still stops its session.** `colab stop` runs from the launcher's EXIT trap on the rig, so no exit code from the VM can skip it.
 

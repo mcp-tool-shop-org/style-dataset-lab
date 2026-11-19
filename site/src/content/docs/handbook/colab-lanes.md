@@ -18,15 +18,15 @@ A lane is one launcher script that you run from your own machine. It opens one C
 
 Every launcher:
 
-1. **Checks its own inputs first.** It verifies the pinned sha256 of every script it uploads, including itself, and refuses to open a session if one differs.
+1. **Checks its own inputs first.** It verifies the pinned sha256 of every pinned input script, including itself, and refuses to open a session if one differs.
 2. **Runs under a spending cap.** It reads your live Colab balance and rate, and ends the run at the wall time, at the cap, or when the job stalls or dies. The cap reserves the time that cleanup needs.
 3. **Uploads only the files you point it at.**
-4. **Brings the results back and records the window.** `window.json` holds the card, the balances, the rate and the sha256 of every downloaded file. When a guard trips, a salvage step still tries to bring back what was produced.
+4. **Brings the results back and records the window.** `window.json` records the card, the end balance, the rate readings, the cap and the downloaded files. When a guard trips, a salvage step still tries to bring back what was produced.
 5. **Stops its own session on every exit,** from an exit trap on your machine.
 
 ## Run the CPU rehearsal first
 
-Each lane has a CPU rehearsal that installs the pinned environment and checks the downloads on a cheap CPU session. Run it at the commit you intend to use before any paid GPU window, and run the GPU window at that same commit.
+Each lane has a CPU rehearsal on a cheap CPU session. Lane 1's (`--render-cpu-stub`) installs the pinned environment and checks the weights download. Lane 3's installs the pinned environment and stops before any model download or training; its record says the training was skipped. Run the rehearsal at the commit you intend to use before any paid GPU window, and run the GPU window at that same commit.
 
 ## Pictures and licences
 
@@ -40,7 +40,7 @@ Each lane's script on the Colab VM writes its phase (`setup`, `run` or `bundle`)
 
 - Writers replace the file in one step, so the launcher never reads a half-written file.
 - If a write fails, the run stops with `PHASE_WRITE_FAILED` (exit `77`). It does not carry on with a stale phase.
-- An empty read keeps the last known phase. A stuck job is still caught, because the stall clocks reset only when the phase word changes.
+- An empty or missing read keeps the last known phase, and it never resets a stall clock. A stuck job is still caught: the stall clocks reset only on new output from the run or on a changed phase word.
 
 ## Where the detail is
 
