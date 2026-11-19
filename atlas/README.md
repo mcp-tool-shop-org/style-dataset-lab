@@ -1,15 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-19 from commit 7b7b06d by Atlas 1.26.0.
+Mapped at 2026-11-19 from commit 9524bd2 by Atlas 1.26.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (71), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-18 (5502eda)
+## What changed since 2026-11-19 (7b7b06d)
 
-- tests/colab/fixtures/fake_colab.py is now read by tests/colab/test_phase_txt_atomic.py.
-- 1 file added and 9 changed content, across 3 parts.
+Nothing structural changed since 2026-11-19; 11 files changed content.
 
 ## What comes in
 
@@ -127,7 +126,7 @@ Read those in order to follow one pull request end to end.
 
 ## What this map cannot see
 
-- 7 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 4 more.
+- 8 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 5 more.
 - 45 writes and 79 reads use paths built at run time and are not named here.
 - 3 writes go to places this repository does not track, so they are not listed as generated.
 - 176 writes and 337 reads go to a path their caller passes, not to this repository.
