@@ -793,6 +793,39 @@ def test_b1_every_writer_and_lane1_bundle_now_fail_loudly_on_temp_write_and_rena
         assert [p.name for p in out_bn.iterdir() if p.name.startswith(".phase.txt.tmp")] == []
 
 
+def _leftover_vitals_loops(fx_root: Path, *, settle_s: float = 5.0) -> list[str]:
+    """Processes still running the fake's extracted vitals script (`.real_vitals_lane<N>.sh`) from under `fx_root`,
+    after waiting up to `settle_s` for them to go. Identified by command line and working directory, read from /proc;
+    on a host without /proc (not Linux) there is nothing to read and the list is empty."""
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return []
+    want = str(fx_root.resolve())
+
+    def _scan() -> list[str]:
+        found: list[str] = []
+        for d in proc_root.iterdir():
+            if not d.name.isdigit():
+                continue
+            try:
+                cmd = (d / "cmdline").read_bytes().replace(b"\x00", b" ").decode("utf-8", "replace")
+                if ".real_vitals_lane" not in cmd:
+                    continue
+                cwd = os.readlink(d / "cwd")
+            except OSError:
+                continue
+            if cwd.startswith(want):
+                found.append(f"{d.name}: {cmd.strip()} (cwd {cwd})")
+        return found
+
+    deadline = time.monotonic() + settle_s
+    left = _scan()
+    while left and time.monotonic() < deadline:
+        time.sleep(0.1)
+        left = _scan()
+    return left
+
+
 @pytest.mark.parametrize("lane", ["lane1", "lane3"])
 def test_b2_stuck_run_and_stuck_setup_with_empty_reads_interleaved_trip_on_time_via_real_launchers(
     tmp_path: Path, lane: str
@@ -837,6 +870,10 @@ def test_b2_stuck_run_and_stuck_setup_with_empty_reads_interleaved_trip_on_time_
     m_idle_run = re.search(r"for\s+([0-9.]+)s\b", trip_recs_run[-1]["reason"])
     assert m_idle_run and float(m_idle_run.group(1)) >= 4.0
     assert 3.0 <= elapsed_run < 30.0
+    # No vitals loop of this run outlives the launcher. (The PR #87 review asked whether the fake's EXIT trap, which
+    # signals only the wrapper shell, leaves the forked loop behind. It does not on these paths: the loops are seen
+    # running during the window and are gone when the launcher returns. This pins that.)
+    assert _leftover_vitals_loops(tmp_path / f"fx_{lane}_run") == []
 
     # 2. Phase stuck at `setup` with empty and partial reads interleaved still trips SETUP_STALL_TRIPPED on time.
     _, _, env_setup = fc.make_fake_colab_env(tmp_path / f"fx_{lane}_setup")
@@ -873,6 +910,7 @@ def test_b2_stuck_run_and_stuck_setup_with_empty_reads_interleaved_trip_on_time_
     m_idle_setup = re.search(r"for\s+([0-9.]+)s\b", trip_recs_setup[-1]["reason"])
     assert m_idle_setup and float(m_idle_setup.group(1)) >= 4.0
     assert 3.0 <= elapsed_setup < 30.0
+    assert _leftover_vitals_loops(tmp_path / f"fx_{lane}_setup") == []
 
 
 def test_c3_readers_refuse_unknown_phase_word_with_vitals_phase_invalid(tmp_path: Path) -> None:
@@ -973,6 +1011,8 @@ def test_c3_readers_refuse_unknown_phase_word_with_vitals_phase_invalid(tmp_path
         env_inv["FAKE_INVALID_PHASE_WORD"] = "train"
         env_inv["GUARD_POLL_INTERVAL_S"] = "0.2"
         env_inv["FAKE_COLAB_VITALS_INTERVAL_S"] = "0.1"
+        # bash prints "unbound variable" through gettext; pin the locale so the check below reads the same text everywhere.
+        env_inv["LC_ALL"] = "C"
         out_inv = tmp_path / f"out_{lane}_inv"
         res_inv = subprocess.run(
             [_bash(), _p(launcher), "--out-dir", _p(out_inv), "--session", f"sdlab-c3-{lane}-invalid", "--wall-s", "60", "--grace-s", "10"],
@@ -984,10 +1024,13 @@ def test_c3_readers_refuse_unknown_phase_word_with_vitals_phase_invalid(tmp_path
             check=False,
         )
         assert res_inv.returncode in (78, 93), f"{lane} invalid phase rc={res_inv.returncode}: {res_inv.stderr}"
-        # The fake VM's own log: its EXIT trap must not die under `set -u` (that turned 78 into 1 on main),
-        # and the reader must have refused inside the fake's wait budget.
+        # Either refusal may end this run: 78 from the VM-side reader or 93 from the rig-side guard. Part 1 above is
+        # the check that the VM-side reader alone refuses (it runs the reader with no rig guard and asserts 78).
+        # The fake VM's own log must exist, and up to the moment the launcher returned it must not show its EXIT trap
+        # dying under `set -u` (that turned 78 into 1 on main) or its wait budget running out.
         live_log = tmp_path / f"fx_{lane}_inv" / "colab_state" / "content" / ".sdlab_live.log"
-        live_txt = live_log.read_text(encoding="utf-8", errors="replace") if live_log.is_file() else ""
+        assert live_log.is_file(), f"{lane}: the fake VM wrote no log at {live_log}"
+        live_txt = live_log.read_text(encoding="utf-8", errors="replace")
         assert "unbound variable" not in live_txt, f"{lane}: fake remote trap failed under set -u: {live_txt[-400:]}"
         assert "FAKE_INVALID_PHASE_NOT_REFUSED" not in live_txt, f"{lane}: reader never refused: {live_txt[-400:]}"
         win_inv = json.loads((out_inv / "window.json").read_text(encoding="utf-8"))
