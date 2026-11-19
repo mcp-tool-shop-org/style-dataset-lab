@@ -577,6 +577,127 @@ def _write_fake_remote_scripts(content_dir: Path) -> None:
   fi
 }
 """
+    real_vitals_helper = r"""
+run_real_vitals_mode() {
+  local lane_num="$1"
+  local mode="$2"
+  local uploaded_sh="remote_lane${lane_num}_stub.sh.uploaded"
+  local out_dir="lane${lane_num}_out"
+  local py_bin="${SDLAB_PYTHON:-$(command -v python3 || command -v python)}"
+  local subshell_sh=".real_vitals_lane${lane_num}.sh"
+  mkdir -p .fake-stuck-cgroup
+  printf '536870912\n' > .fake-stuck-cgroup/memory.current
+  printf '12884901888\n' > .fake-stuck-cgroup/memory.max
+  printf 'oom_kill 0\n' > .fake-stuck-cgroup/memory.events
+  printf 'anon 268435456\nfile 268435456\nshmem 0\n' > .fake-stuck-cgroup/memory.stat
+  cat > .fake-stuck-meminfo << 'MEMEOF'
+MemTotal:       12582912 kB
+MemAvailable:   11534336 kB
+AnonPages:        262144 kB
+Shmem:                 0 kB
+MEMEOF
+  "${py_bin}" - "${uploaded_sh}" "${lane_num}" "${vitals_interval}" "${subshell_sh}" << 'VITEXEOF'
+import pathlib, sys
+uploaded_sh, lane_num, interval_s, out_sh = sys.argv[1:5]
+src = pathlib.Path(uploaded_sh).read_text(encoding="utf-8")
+start_m = f": > /content/lane{lane_num}_out/setup.log\n"
+end_m = '\nVITALS_PID="$!"'
+assert start_m in src and end_m in src, f"missing vitals subshell markers in {uploaded_sh}"
+sub = src.split(start_m, 1)[1].split(end_m, 1)[0]
+assert sub.endswith(") &"), f"unexpected vitals tail: {sub[-40:]!r}"
+sub = sub[:-2].rstrip()
+pwd_str = pathlib.Path.cwd().as_posix()
+if len(pwd_str) >= 2 and pwd_str[1] == ":":
+    pwd_str = "/" + pwd_str[0].lower() + pwd_str[2:]
+sub = sub.replace("/content", pwd_str)
+sub = sub.replace("/proc/meminfo", f"{pwd_str}/.fake-stuck-meminfo")
+sub = sub.replace("/sys/fs/cgroup", f"{pwd_str}/.fake-stuck-cgroup")
+sub = sub.replace("\n    sleep 15\n", f"\n    sleep {interval_s}\n")
+pathlib.Path(out_sh).write_text("#!/usr/bin/env bash\nset -euo pipefail\n" + sub + "\n", encoding="utf-8", newline="\n")
+VITEXEOF
+
+  local _rv_vit_pid="" _rv_worker_pid=""
+  _rv_cleanup() {
+    kill "${_rv_vit_pid}" 2>/dev/null || true
+    kill "${_rv_worker_pid}" 2>/dev/null || true
+  }
+  trap _rv_cleanup EXIT
+
+  if [ "${mode}" = "real_vitals_stuck_setup" ]; then
+    printf 'initial_setup_line\n' > "${out_dir}/setup.log"
+    write_phase_atomic "${out_dir}/phase.txt" "setup"
+    bash "${subshell_sh}" &
+    _rv_vit_pid="$!"
+    for _ in $(seq 1 100); do
+      grep -q '"phase": "setup"' "${out_dir}/vitals.log" 2>/dev/null && break
+      sleep 0.02
+    done
+    for _ in $(seq 1 "${hold_ticks}"); do
+      : > "${out_dir}/phase.txt"
+      sleep "${vitals_interval}"
+      printf '%s' "set" > "${out_dir}/phase.txt"
+      sleep "${vitals_interval}"
+      write_phase_atomic "${out_dir}/phase.txt" "setup"
+      sleep "${vitals_interval}"
+    done
+    return 0
+  elif [ "${mode}" = "real_vitals_stuck_run" ]; then
+    if [ "${lane_num}" = "1" ]; then
+      mkdir -p ComfyUI
+      printf 'import time\ntime.sleep(120)\n' > ComfyUI/main.py
+      "${py_bin}" "${PWD}/ComfyUI/main.py" --cpu --listen 127.0.0.1 >/dev/null 2>&1 &
+      _rv_worker_pid="$!"
+    else
+      mkdir -p ai-toolkit
+      printf 'import time\ntime.sleep(120)\n' > ai-toolkit/run.py
+      "${py_bin}" "${PWD}/ai-toolkit/run.py" "${PWD}/lane3_out/synth_job.yaml" >/dev/null 2>&1 &
+      _rv_worker_pid="$!"
+    fi
+    write_phase_atomic "${out_dir}/phase.txt" "setup"
+    bash "${subshell_sh}" &
+    _rv_vit_pid="$!"
+    for _ in $(seq 1 100); do
+      grep -q '"phase": "setup"' "${out_dir}/vitals.log" 2>/dev/null && break
+      sleep 0.02
+    done
+    write_phase_atomic "${out_dir}/phase.txt" "run"
+    for _ in $(seq 1 100); do
+      grep -q '"phase": "run"' "${out_dir}/vitals.log" 2>/dev/null && break
+      sleep 0.02
+    done
+    for _ in $(seq 1 "${hold_ticks}"); do
+      : > "${out_dir}/phase.txt"
+      sleep "${vitals_interval}"
+      printf '%s' "bun" > "${out_dir}/phase.txt"
+      sleep "${vitals_interval}"
+      write_phase_atomic "${out_dir}/phase.txt" "run"
+      sleep "${vitals_interval}"
+    done
+    return 0
+  elif [ "${mode}" = "real_vitals_invalid_phase" ]; then
+    write_phase_atomic "${out_dir}/phase.txt" "setup"
+    bash "${subshell_sh}" &
+    _rv_vit_pid="$!"
+    for _ in $(seq 1 100); do
+      grep -q '"phase": "setup"' "${out_dir}/vitals.log" 2>/dev/null && break
+      sleep 0.02
+    done
+    printf '%s\n' "${FAKE_INVALID_PHASE_WORD:-train}" > "${out_dir}/phase.txt"
+    local _inv_ticks=0 _max_inv_ticks="${FAKE_COLAB_INVALID_WAIT_TICKS:-25}"
+    while kill -0 "${_rv_vit_pid}" 2>/dev/null && [ "${_inv_ticks}" -lt "${_max_inv_ticks}" ]; do
+      _inv_ticks=$(( _inv_ticks + 1 ))
+      sleep "${vitals_interval}"
+    done
+    if ! kill -0 "${_rv_vit_pid}" 2>/dev/null; then
+      local _vrc=0
+      wait "${_rv_vit_pid}" || _vrc=$?
+      _rv_vit_pid=""
+      return "${_vrc}"
+    fi
+    return 0
+  fi
+}
+"""
     lane1_body = (
         """#!/usr/bin/env bash
 set -euo pipefail
@@ -638,7 +759,11 @@ hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
 write_phase_atomic() {
   local pfile="$1" pval="$2" ptmp
   ptmp="$(dirname "${pfile}")/.$(basename "${pfile}").tmp.$$"
-  printf '%s\\n' "${pval}" > "${ptmp}" && mv -f "${ptmp}" "${pfile}"
+  { printf '%s\\n' "${pval}" > "${ptmp}" && mv -f "${ptmp}" "${pfile}"; } || {
+    rm -f "${ptmp}" 2>/dev/null || true
+    echo "REFUSED: PHASE_WRITE_FAILED: failed to write ${pfile} (${pval})" >&2
+    exit 77
+  }
 }
 
 read_phase_keep_last() {
@@ -647,8 +772,12 @@ read_phase_keep_last() {
   if { IFS= read -r raw_ph < "${pfile}"; } 2>/dev/null; then
     raw_ph="${raw_ph%${cr}}"
     case "${raw_ph}" in
-      setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+      setup|run|bundle)
         last_ph="${raw_ph}"
+        ;;
+      *)
+        echo "REFUSED: VITALS_PHASE_INVALID: unexpected phase in ${pfile}: ${raw_ph}" >&2
+        exit 78
         ;;
     esac
   fi
@@ -682,9 +811,13 @@ emit_vitals() {
 }
 """
         + venv_check_helper
+        + real_vitals_helper
         + """
 mode="${FAKE_COLAB_MODE:-success}"
-if [ "${mode}" = "fail" ]; then
+if [ "${mode}" = "real_vitals_stuck_setup" ] || [ "${mode}" = "real_vitals_stuck_run" ] || [ "${mode}" = "real_vitals_invalid_phase" ]; then
+  run_real_vitals_mode "1" "${mode}" || exit $?
+  exit 0
+elif [ "${mode}" = "fail" ]; then
   emit_vitals "setup" ""
   echo "Simulated remote failure with colab-runtime-proxy-token=secret_proxy_tok_lane1_999" >&2
   exit 42
@@ -779,6 +912,16 @@ SITEEOF
     echo '#!/usr/bin/env bash'
     echo 'export SDLAB_CALLER_BASHPID="${BASHPID:-$$}"'
     echo 'case "${1:-}" in */ComfyUI/main.py) exec "'"${FAKE_HOST_PY}"'" -S "$@" ;; esac'
+    echo 'if [ "${FAKE_VM_READONLY_OUT_AFTER_SCRUB:-0}" = "1" ]; then'
+    echo '  case "${1:-}:${2:-}" in'
+    echo '    */launch_guards.py:--scrub-file)'
+    echo '      rc=0'
+    echo '      "'"${FAKE_HOST_PY}"'" "$@" || rc=$?'
+    echo '      chmod 0555 "${1%/*}/lane1_out" 2>/dev/null || true'
+    echo '      exit "${rc}"'
+    echo '      ;;'
+    echo '  esac'
+    echo 'fi'
     echo 'exec "'"${FAKE_HOST_PY}"'" "$@"'
   } > venv-lane1/bin/python
   chmod +x venv-lane1/bin/python
@@ -1100,6 +1243,9 @@ run_uploaded_render_block() {
     bash "${PWD}/remote_lane1_stub.sh.renderblock"
   local render_rc=$?
   set -e
+  if [ "${FAKE_VM_READONLY_OUT_AFTER_SCRUB:-0}" = "1" ] && [ "${FAKE_VM_KEEP_READONLY_FOR_SALVAGE:-0}" != "1" ]; then
+    chmod 0755 lane1_out 2>/dev/null || true
+  fi
   kill "${render_vitals_pid}" 2>/dev/null || true
   stop_fake_comfy_if_running
   return "${render_rc}"
@@ -1182,6 +1328,9 @@ STUBBLKEOF
     bash "${PWD}/remote_lane1_stub.sh.stubblock"
   local stub_rc=$?
   set -e
+  if [ "${FAKE_VM_READONLY_OUT_AFTER_SCRUB:-0}" = "1" ] && [ "${FAKE_VM_KEEP_READONLY_FOR_SALVAGE:-0}" != "1" ]; then
+    chmod 0755 lane1_out 2>/dev/null || true
+  fi
   kill "${stub_vitals_pid}" 2>/dev/null || true
   stop_fake_comfy_if_running
   return "${stub_rc}"
@@ -1430,7 +1579,11 @@ hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
 write_phase_atomic() {
   local pfile="$1" pval="$2" ptmp
   ptmp="$(dirname "${pfile}")/.$(basename "${pfile}").tmp.$$"
-  printf '%s\\n' "${pval}" > "${ptmp}" && mv -f "${ptmp}" "${pfile}"
+  { printf '%s\\n' "${pval}" > "${ptmp}" && mv -f "${ptmp}" "${pfile}"; } || {
+    rm -f "${ptmp}" 2>/dev/null || true
+    echo "REFUSED: PHASE_WRITE_FAILED: failed to write ${pfile} (${pval})" >&2
+    exit 77
+  }
 }
 
 read_phase_keep_last() {
@@ -1439,8 +1592,12 @@ read_phase_keep_last() {
   if { IFS= read -r raw_ph < "${pfile}"; } 2>/dev/null; then
     raw_ph="${raw_ph%${cr}}"
     case "${raw_ph}" in
-      setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+      setup|run|bundle)
         last_ph="${raw_ph}"
+        ;;
+      *)
+        echo "REFUSED: VITALS_PHASE_INVALID: unexpected phase in ${pfile}: ${raw_ph}" >&2
+        exit 78
         ;;
     esac
   fi
@@ -1474,9 +1631,13 @@ emit_vitals() {
 }
 """
         + venv_check_helper
+        + real_vitals_helper
         + """
 mode="${FAKE_COLAB_MODE:-success}"
-if [ "${mode}" = "fail" ]; then
+if [ "${mode}" = "real_vitals_stuck_setup" ] || [ "${mode}" = "real_vitals_stuck_run" ] || [ "${mode}" = "real_vitals_invalid_phase" ]; then
+  run_real_vitals_mode "3" "${mode}" || exit $?
+  exit 0
+elif [ "${mode}" = "fail" ]; then
   emit_vitals "setup" ""
   echo "Simulated remote failure with colab-runtime-proxy-token=secret_proxy_tok_lane3_999" >&2
   exit 42

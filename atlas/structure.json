@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "d70f77a79f5d389cabf81d6c547d27cdd794134e76a265c062cd9865aedeaebe",
+          "hash": "94187c3c1eb2f0f5ce841e337edb378ea4e45f1a1c736409f7ceb1faa2c8c2a3",
           "path": "CHANGELOG.md"
         },
         {
@@ -17276,7 +17276,7 @@
           "path": "scripts/colab/classify_install_log.py"
         },
         {
-          "hash": "81f19194360077fed2facccb4d86e2d5d9e54fb998ebf211cd62bcb4ff7e2594",
+          "hash": "ce778e83488d09f384e9232e09d350df5a6849966a1cbc95cb593af3fc6c9128",
           "path": "scripts/colab/colab_window.sh"
         },
         {
@@ -17291,7 +17291,18 @@
           "exports": [
             "bundle_now"
           ],
-          "hash": "ea01d36c75e54496253ddf8dd67815ad0dc2a8fe89441e832df4f696da1075a7",
+          "failurePaths": [
+            {
+              "in": "bundle_now",
+              "kind": "except",
+              "line": 89
+            },
+            {
+              "kind": "raise",
+              "line": 114
+            }
+          ],
+          "hash": "fcbdc6060fabeb2bb0db7e8bcc941252b2a179487e5417fb8361c85dcfa90daf",
           "importsFiles": [
             "scripts/colab/launch_guards.py"
           ],
@@ -19032,137 +19043,137 @@
             {
               "in": "check_host_ram_projection",
               "kind": "raise",
-              "line": 1345
+              "line": 1361
             },
             {
               "in": "_unlink_dl_prefix_files",
               "kind": "except",
-              "line": 1403
+              "line": 1419
             },
             {
               "in": "prepare_single_content_download",
               "kind": "raise",
-              "line": 1506
+              "line": 1522
             },
             {
               "in": "prepare_single_content_download",
               "kind": "except",
-              "line": 1545
+              "line": 1561
             },
             {
               "in": "_pid_is_alive",
               "kind": "except",
-              "line": 1658
+              "line": 1674
             },
             {
               "in": "_pid_is_alive",
               "kind": "except",
-              "line": 1660
+              "line": 1676
             },
             {
               "in": "_pid_is_alive",
               "kind": "except",
-              "line": 1668
+              "line": 1684
             },
             {
               "in": "_pgid_has_live_member",
               "kind": "except",
-              "line": 1696
+              "line": 1712
             },
             {
               "in": "_pgid_has_live_member",
               "kind": "except",
-              "line": 1702
+              "line": 1718
             },
             {
               "in": "_scan_proc_for_detached_worker",
               "kind": "except",
-              "line": 1720
+              "line": 1736
             },
             {
               "in": "_find_existing_detached_worker",
               "kind": "except",
-              "line": 1739
+              "line": 1755
             },
             {
               "in": "_find_existing_detached_worker",
               "kind": "except",
-              "line": 1778
+              "line": 1794
             },
             {
               "in": "run_detached_worker",
               "kind": "except",
-              "line": 1902
+              "line": 1918
             },
             {
               "in": "run_detached_worker",
               "kind": "raise",
-              "line": 1905
+              "line": 1921
             },
             {
               "in": "start_detached_worker",
               "kind": "raise",
-              "line": 1924
+              "line": 1940
             },
             {
               "in": "poll_detached_output",
               "kind": "except",
-              "line": 2016
+              "line": 2032
             },
             {
               "in": "stop_detached_worker",
               "kind": "except",
-              "line": 2084
+              "line": 2100
             },
             {
               "in": "stop_detached_worker",
               "kind": "except",
-              "line": 2099
+              "line": 2115
             },
             {
               "in": "stop_detached_worker",
               "kind": "except",
-              "line": 2106
+              "line": 2122
             },
             {
               "in": "stop_detached_worker",
               "kind": "except",
-              "line": 2111
+              "line": 2127
             },
             {
               "in": "apply_detached_poll_response",
               "kind": "raise",
-              "line": 2128
+              "line": 2144
             },
             {
               "in": "apply_detached_poll_response",
               "kind": "raise",
-              "line": 2133
+              "line": 2149
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 2273
+              "line": 2289
             },
             {
               "in": "main",
               "kind": "except",
-              "line": 2336
+              "line": 2352
             },
             {
               "kind": "raise",
-              "line": 2502
+              "line": 2518
             }
           ],
-          "hash": "62c8deff9bb91102bd735f445a4899b88749c469e75d69eb2709f172c793d2e3",
+          "hash": "3cd1964c9d08c179b89833f1d67c60024f0736bf4ef22b91a6836e3ffdf25f08",
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "ad0d51ce54737a8a09588d92d1e35713b5a0537cb17cf99f8b1fe24799c0235f",
+          "hash": "5c89d75db8f5a3774e01f1271e1ebc8e8e3a4253abfa60fd22b5138e15dc323a",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "388c7b94f1665940698546716af8a7f9705a03d4cb313b9f1848204576a04b9c",
+          "hash": "4a7c5a6f84b76a5fe10caae40cf24c3cc1b1e6981099de9714de483386f52f5f",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -19202,7 +19213,7 @@
           "path": "scripts/colab/preflight_resolve.sh"
         },
         {
-          "hash": "ae3ad24089636f4b07e2fb00893ba1f5e9cdf5375310249115d801281886ca2e",
+          "hash": "1b549b47d3c3ff4d46d250bb48995057db71e651b939b54262bbe40a6a2d1995",
           "path": "scripts/colab/probe_upload_limit.sh"
         },
         {
@@ -21615,7 +21626,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "d64afc828d5bdc4c69eb3d267237d97a9cd38a49f215d254d6a6b5aae2b32c0d",
+          "hash": "9cd9916cf12c7c5320851566427255e573c767645367edba615ae97fa636b29c",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -21772,7 +21783,7 @@
             "test_exec_queues_behind_a_running_cell_and_restart_kernel_ends_it",
             "test_uploads_do_not_wait_for_the_kernel_and_stop_ends_the_cell"
           ],
-          "hash": "f86c73a3845f54d72f95cf6eb84b5881313f19ef07731b08952ef1689e59b90b",
+          "hash": "cb7edd6459ff41c8b908d59fc2222e23cf8979d4421535cf0d445f2ae493e01f",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22298,7 +22309,7 @@
             "test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_usage_text_parsed_into_live_balance_and_rate_in_window_json"
           ],
-          "hash": "feb2c7c78dd4036eb84ba5d0cc7d95f2849898577291fcf2b9cd0c9228fa86db",
+          "hash": "25452a3de25febfe24ad8e56c5d64a8cf5a9c15dde72417c8563ca70b45240bf",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/remote_runner.py",
@@ -22376,16 +22387,23 @@
         {
           "exports": [
             "test_all_phase_txt_writers_are_atomic_and_concurrent_writes_never_tear",
+            "test_b1_every_writer_and_lane1_bundle_now_fail_loudly_on_temp_write_and_rename_failure",
+            "test_b1_launcher_stops_with_phase_write_failed_on_readonly_out_dir",
             "test_b2_fake_colab_empty_phase_window_reproduces_rc_93_on_d00ecbd_and_passes_at_head",
-            "test_b2_fake_colab_spawn_detached_fast_exec_and_probe_under_single_core_contention",
+            "test_b2_fake_colab_spawn_detached_ongoing_coverage_does_not_reproduce_d00ecbd",
+            "test_b2_stuck_run_and_stuck_setup_with_empty_reads_interleaved_trip_on_time_via_real_launchers",
+            "test_c3_readers_refuse_unknown_phase_word_with_vitals_phase_invalid",
             "test_real_vitals_readers_keep_last_known_phase_on_mid_tick_truncate_and_partial_write"
           ],
-          "hash": "f39e85a3d3c0e41bee9db63a9868c7b4f2cef9640bf0c6f6ede6cbd87fcd865b",
+          "hash": "b928d22b101e1b871af9adcaa2adf9caaffee6e804112d1ef8e85e7ba631d201",
           "importsFiles": [
             "tests/colab/test_launch_lane1_stub.py"
           ],
           "names": [
-            "scripts/colab/lane1_bundle_now.py"
+            "scripts/colab/lane1_bundle_now.py",
+            "scripts/colab/lane1_render.py",
+            "scripts/colab/lane3_rung.py",
+            "scripts/colab/launch_guards.py"
           ],
           "path": "tests/colab/test_phase_txt_atomic.py",
           "testFramework": "pytest"
@@ -23360,7 +23378,7 @@
           "why": "unplaced"
         }
       ],
-      "unresolvedSites": 4
+      "unresolvedSites": 5
     },
     {
       "dynamicReads": 0,
@@ -24539,7 +24557,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "7b7b06d9588f36969ad3ef40d0326020811581a9",
+    "commit": "9524bd22938cba8886baee9d8ca2fba7204d5922",
     "tracked": 3324
   },
   "landings": [

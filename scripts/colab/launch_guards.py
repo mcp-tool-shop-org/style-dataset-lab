@@ -961,6 +961,9 @@ def parse_vitals_log(vitals_text: str) -> list[dict[str, Any]]:
     return samples
 
 
+VALID_HARNESS_PHASES = ("setup", "run", "bundle")
+
+
 def evaluate_vitals_and_stall_guard(
     *,
     vitals_text: str,
@@ -983,9 +986,22 @@ def evaluate_vitals_and_stall_guard(
                 "reason": "Newest complete vitals block has no HARNESS phase; refusing rather than assuming setup",
                 "samples_count": len(samples),
             }
+        for sample in samples:
+            sp = sample["phase"]
+            if isinstance(sp, str) and sp.strip() and sp.strip() not in VALID_HARNESS_PHASES:
+                return {
+                    "tripped": True,
+                    "code": "VITALS_PHASE_INVALID",
+                    "cgroup_oom": False,
+                    "reason": (
+                        f"Unexpected HARNESS phase {sp.strip()!r}; "
+                        f"expected one of {', '.join(VALID_HARNESS_PHASES)}"
+                    ),
+                    "samples_count": len(samples),
+                }
         current_phase = raw_phase.strip()
         if (
-            (current_phase.startswith("run") or current_phase.startswith("setup") or current_phase.startswith("bundle"))
+            current_phase in VALID_HARNESS_PHASES
             and last["worker_proc_count"] == 0
             and last.get("oom_kill")
         ):
@@ -1007,7 +1023,7 @@ def evaluate_vitals_and_stall_guard(
     if len(samples) >= 2:
         last_two = samples[-2:]
         if all(
-            isinstance(s["phase"], str) and s["phase"].startswith("run") and s["worker_proc_count"] == 0
+            isinstance(s["phase"], str) and s["phase"].strip() == "run" and s["worker_proc_count"] == 0
             for s in last_two
         ):
             return {
@@ -1017,7 +1033,7 @@ def evaluate_vitals_and_stall_guard(
                 "reason": "2 consecutive vitals samples in phase=run with 0 active worker processes",
                 "samples_count": len(samples),
             }
-    if current_phase is not None and current_phase.startswith("setup"):
+    if current_phase == "setup":
         eff_setup_idle = float(setup_idle_seconds if setup_idle_seconds is not None else idle_seconds)
         if eff_setup_idle >= float(setup_stall_s):
             return {
@@ -1027,7 +1043,7 @@ def evaluate_vitals_and_stall_guard(
                 "reason": f"No new setup.log output (SETUP_BYTES unchanged) in phase=setup for {eff_setup_idle}s (setup_stall_s={setup_stall_s}s)",
                 "samples_count": len(samples),
             }
-    elif current_phase is not None and current_phase.startswith("bundle"):
+    elif current_phase == "bundle":
         # Post-train bundling (manifest, scrub, tar -czf of multi-GiB checkpoints) emits no run output
         # while compressing; idle_seconds is reset on phase transition in colab_window.sh and allowed up
         # to setup_stall_s (default 600s) before tripping STALL_GUARD_TRIPPED.

@@ -75,32 +75,24 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 1,
-      "changed": 9,
+      "added": 0,
+      "changed": 11,
       "moved": 0,
       "parts": 3,
       "removed": 0
     },
     "items": [
       {
-        "kind": "landing",
-        "sentence": "tests/colab/fixtures/fake_colab.py is now read by tests/colab/test_phase_txt_atomic.py.",
-        "subjects": [
-          "tests/colab/fixtures/fake_colab.py",
-          "tests/colab/test_phase_txt_atomic.py"
-        ]
-      },
-      {
         "kind": "counts",
-        "sentence": "1 file added and 9 changed content, across 3 parts.",
+        "sentence": "Nothing structural changed since 2026-11-19; 11 files changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "5502eda64c4c04c907891378d85bdba325bd1f34",
-      "generatedAt": "2026-11-18T16:23:54.764Z"
+      "commit": "7b7b06d9588f36969ad3ef40d0326020811581a9",
+      "generatedAt": "2026-11-19T00:33:36.470Z"
     },
-    "unchanged": false
+    "unchanged": true
   },
   "changesTogether": [
     {
@@ -170,8 +162,8 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "7b7b06d9588f36969ad3ef40d0326020811581a9",
-  "defaultBranch": "fix/watcher-pre-trip-launcher-death",
+  "commit": "9524bd22938cba8886baee9d8ca2fba7204d5922",
+  "defaultBranch": "main",
   "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (71), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
@@ -509,9 +501,9 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-19T00:33:36.470Z",
+  "generatedAt": "2026-11-19T02:46:14.402Z",
   "limits": [
-    "7 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 4 more.",
+    "8 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 5 more.",
     "45 writes and 79 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
     "176 writes and 337 reads go to a path their caller passes, not to this repository.",
@@ -539,7 +531,7 @@
   },
   "parts": 13,
   "readers": [],
-  "repo": "@mcptoolshop/style-dataset-lab",
+  "repo": "mcp-tool-shop-org/style-dataset-lab",
   "sequences": [
     {
       "alternatives": [

@@ -3766,12 +3766,16 @@ colab_run_exec_with_live_guards() {
 
     local cur_harness_phase=""
     cur_harness_phase="$(grep -E '^HARNESS:' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | sed -n 's/.*"phase"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' || true)"
-    if [ -n "${cur_harness_phase}" ] && [ "${cur_harness_phase}" != "${last_harness_phase}" ]; then
-      last_harness_phase="${cur_harness_phase}"
-      last_progress_epoch="${now_epoch}"
-      last_setup_progress_epoch="${now_epoch}"
-      idle_s=0
-    fi
+    case "${cur_harness_phase}" in
+      setup|run|bundle)
+        if [ "${cur_harness_phase}" != "${last_harness_phase}" ]; then
+          last_harness_phase="${cur_harness_phase}"
+          last_progress_epoch="${now_epoch}"
+          last_setup_progress_epoch="${now_epoch}"
+          idle_s=0
+        fi
+        ;;
+    esac
 
     cur_setup_bytes="$(grep -E '^SETUP_BYTES:[[:space:]]*[0-9]+[[:space:]]*$' "${out_dir}/vitals.log" 2>/dev/null | tail -n 1 | awk -F: '{gsub(/[[:space:]]/, "", $2); print $2}' || true)"
     if [ -n "${cur_setup_bytes}" ] && [ "${cur_setup_bytes}" != "${last_setup_bytes}" ]; then
@@ -5255,6 +5259,8 @@ REFUSAL_CODES = (
     "STALL_GUARD_TRIPPED",
     "SETUP_STALL_TRIPPED",
     "VITALS_PHASE_UNREADABLE",
+    "VITALS_PHASE_INVALID",
+    "PHASE_WRITE_FAILED",
     "DETACHED_START_FAILED",
     "POLL_RECONNECT_EXHAUSTED",
     "GUARD_FAILED",
