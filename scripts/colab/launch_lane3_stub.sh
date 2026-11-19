@@ -50,15 +50,15 @@ PINNED_AI_TOOLKIT_COMMIT="beb94824c51480a04d3c86c718603676fdef6938"
 PINNED_OVERRIDE_SHA="649f42488bf2f520b93c3efa105724be236094d614480440d0df8a07c72e1e94"
 PINNED_LOCAL_WHEELS_MANIFEST_SHA="579016010aae8e5549ffc5b4777f5899a6e410eafba680a61ab3841e758b6320"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
-PINNED_LAUNCH_GUARDS_SHA="62c8deff9bb91102bd735f445a4899b88749c469e75d69eb2709f172c793d2e3"
+PINNED_LAUNCH_GUARDS_SHA="3cd1964c9d08c179b89833f1d67c60024f0736bf4ef22b91a6836e3ffdf25f08"
 PINNED_REMOTE_RUNNER_SHA="68f215d26a85c7138cee1dcbc5bc80accae75fb3ba53f47de403d9460d2c5dc4"
-PINNED_COLAB_WINDOW_SHA="81f19194360077fed2facccb4d86e2d5d9e54fb998ebf211cd62bcb4ff7e2594"
+PINNED_COLAB_WINDOW_SHA="ce778e83488d09f384e9232e09d350df5a6849966a1cbc95cb593af3fc6c9128"
 PINNED_LANE3_RUNG_SHA="dd26b9183b2692dd2fcf25f9b8e8c85627ee310f1996d276f7ea11c96c851c20"
 PINNED_BUNDLE_NOW_SHA="7603d421be95872956eba16bfaff92fcf2f1bc4cf2247c6a808432bc7885ae09"
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="f00a87de145aeca9c11720252964581506561a75c6f77b357555f1f6b41c0fc0"
+PINNED_SELF_SHA="519491ad12a1eb3d4b8a3391df2679b3df3576bf25438b19b5722d74beff7aa5"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -179,7 +179,7 @@ done < /content/lane3_out/wheel-names.txt
 : "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 : "\${PINNED_OVERRIDE_SHA:?missing PINNED_OVERRIDE_SHA}"
 
-printf 'setup\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt
+{ printf 'setup\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt; } || { rm -f "/content/lane3_out/.phase.txt.tmp.\$\$" 2>/dev/null || true; echo "REFUSED: PHASE_WRITE_FAILED: failed to write /content/lane3_out/phase.txt (setup)" >&2; exit 77; }
 : > /content/lane3_out/setup.log
 (
   LAST_PHASE="setup"
@@ -209,8 +209,14 @@ printf 'setup\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/l
     if { IFS= read -r RAW_PHASE < /content/lane3_out/phase.txt; } 2>/dev/null; then
       RAW_PHASE="\${RAW_PHASE%\${PHASE_CR}}"
       case "\${RAW_PHASE}" in
-        setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+        setup|run|bundle)
           LAST_PHASE="\${RAW_PHASE}"
+          ;;
+        *)
+          SAFE_RAW_PHASE="\$(printf '%s' "\${RAW_PHASE}" | tr -d '\042\134')"
+          printf 'HARNESS: {"phase": "%s"}\n' "\${SAFE_RAW_PHASE}" | tee -a /content/lane3_out/vitals.log
+          echo "REFUSED: VITALS_PHASE_INVALID: unexpected phase in /content/lane3_out/phase.txt: \${RAW_PHASE}" | tee -a /content/lane3_out/vitals.log >&2
+          exit 78
           ;;
       esac
     fi
@@ -473,7 +479,7 @@ if [ -n "\${LANE3_PROJECTED_OUTPUT_BYTES:-}" ]; then
     --projected-bytes "\${LANE3_PROJECTED_OUTPUT_BYTES}" --out /content/lane3_out/output_disk_check.json 2>&1 | tee -a /content/lane3_out/setup.log
 fi
 
-printf 'run\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt
+{ printf 'run\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt; } || { rm -f "/content/lane3_out/.phase.txt.tmp.\$\$" 2>/dev/null || true; echo "REFUSED: PHASE_WRITE_FAILED: failed to write /content/lane3_out/phase.txt (run)" >&2; exit 77; }
 # >>> sdlab-train-step
 set +e
 HF_HOME="\${LANE3_HF_HOME}" HF_HUB_OFFLINE=1 HF_HUB_DISABLE_IMPLICIT_TOKEN=1 \
@@ -485,7 +491,7 @@ TRAIN_PID=\$!
 COPY_PID=\$!
 wait "\${TRAIN_PID}"
 TRAIN_RC=\$?
-printf 'bundle\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt
+{ printf 'bundle\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt; } || { rm -f "/content/lane3_out/.phase.txt.tmp.\$\$" 2>/dev/null || true; echo "REFUSED: PHASE_WRITE_FAILED: failed to write /content/lane3_out/phase.txt (bundle)" >&2; exit 77; }
 wait "\${COPY_PID}"
 # Record the complete manifest of the training folder before the final sweep so the rig can verify
 # every file (path, bytes, sha256) arrived in the downloaded bundle.

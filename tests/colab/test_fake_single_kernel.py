@@ -32,7 +32,7 @@ def test_exec_queues_behind_a_running_cell_and_restart_kernel_ends_it(tmp_path: 
     # A second exec on the same session queues behind it (and times out waiting).
     t0 = time.monotonic()
     second = _colab(env, bin_dir, "exec", "-s", "s1", "-f", str(quick), "--timeout", "5")
-    assert second.returncode == 124 and "quick ran" not in second.stdout and time.monotonic() - t0 >= 2
+    assert second.returncode == 124 and "quick ran" not in second.stdout and time.monotonic() - t0 >= 4.5
     # restart-kernel ends the running cell; the next exec runs at once.
     assert _colab(env, bin_dir, "restart-kernel", "-s", "s1").returncode == 0
     third = _colab(env, bin_dir, "exec", "-s", "s1", "-f", str(quick), "--timeout", "60")

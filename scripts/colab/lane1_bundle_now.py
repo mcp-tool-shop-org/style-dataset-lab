@@ -14,12 +14,14 @@ SDLAB_BUNDLE_NOW_RC=<rc> marker.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 
+PHASE_WRITE_FAILED_EXIT_CODE = 77
 _HF_TOKEN_RE = re.compile(r"\bhf_[A-Za-z0-9]{16,}\b")
 # Paths under the content root, so only this VM's render processes match.
 _PROCESS_SUFFIXES = ("ComfyUI/main.py", "lane1_render.py", "remote_lane1_stub.sh")
@@ -81,8 +83,19 @@ def bundle_now(env: dict[str, str] | None = None) -> int:
     # 4. tar everything, PNGs and renders.jsonl included; phase.txt reads `bundle` while it archives.
     bundle = Path(root) / "lane1_render_bundle.tar.gz"
     phase_tmp = out / f".phase.txt.tmp.{os.getpid()}"
-    phase_tmp.write_bytes(b"bundle\n")
-    os.replace(phase_tmp, out / "phase.txt")
+    try:
+        phase_tmp.write_bytes(b"bundle\n")
+        os.replace(phase_tmp, out / "phase.txt")
+    except OSError as exc:
+        with contextlib.suppress(OSError):
+            phase_tmp.unlink(missing_ok=True)
+        print(
+            f"REFUSED: PHASE_WRITE_FAILED: failed to write {out / 'phase.txt'} (bundle): {exc}",
+            file=sys.stderr,
+            flush=True,
+        )
+        print(f"SDLAB_BUNDLE_NOW_RC={PHASE_WRITE_FAILED_EXIT_CODE}", flush=True)
+        return PHASE_WRITE_FAILED_EXIT_CODE
     tar = _run(["tar", "-czf", str(bundle), "-C", str(out), "."], env)
     sys.stdout.write(_HF_TOKEN_RE.sub("hf_[REDACTED]", tar.stdout + tar.stderr))
     final_rc = 0 if bundle.is_file() and bundle.stat().st_size > 0 else 1
@@ -98,4 +111,4 @@ def bundle_now(env: dict[str, str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    bundle_now()
+    raise SystemExit(bundle_now())
