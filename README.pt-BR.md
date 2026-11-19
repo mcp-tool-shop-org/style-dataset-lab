@@ -321,7 +321,7 @@ Crie um problema em https://github.com/mcp-tool-shop-org/style-dataset-lab/issue
 
 Local por padrão. Sem telemetria, sem análises e sem solicitações externas da CLI `sdlab`: as imagens permanecem em sua GPU e sistema de arquivos, e `canon draft` recusa qualquer ponto de extremidade que não seja o loopback.
 
-A única exceção é a opção de adesão voluntária. `scripts/colab/` contém kits de lançamento para executar um processo de renderização ou uma etapa de treinamento LoRA na sua própria conta do Google Colab. Eles carregam apenas os arquivos que você especificar, são executados dentro de um limite de gastos lido do saldo atual da sua conta Colab e encerram a própria sessão ao serem encerrados. Estes kits são **experimentais**: ainda não passaram por um teste completo em um ambiente real.
+A única exceção é a opção de adesão voluntária. `scripts/colab/` contém kits de lançamento para executar um processo de renderização ou uma etapa de treinamento LoRA na sua própria conta do Google Colab. Eles carregam apenas os arquivos que você especificar, são executados dentro de um limite de gastos lido do saldo atual da sua conta Colab e encerram a própria sessão ao serem encerrados. Esses kits são **experimentais**. Eles concluíram ciclos reais de renderização e treinamento LoRA em uma GPU do Colab, mas seus parâmetros e registros ainda podem ser alterados. Consulte [Colab lanes](https://mcp-tool-shop-org.github.io/style-dataset-lab/handbook/colab-lanes/) no manual.
 
 ## Licença
 

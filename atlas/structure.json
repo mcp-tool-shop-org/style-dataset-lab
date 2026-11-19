@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "94187c3c1eb2f0f5ce841e337edb378ea4e45f1a1c736409f7ceb1faa2c8c2a3",
+          "hash": "d4c34b59438415ee81fd33ba25180b64300e1f0462804e2ba900ae0f45c78dd3",
           "path": "CHANGELOG.md"
         },
         {
@@ -16157,7 +16157,7 @@
           "path": "README.ja.md"
         },
         {
-          "hash": "ef13517554fcb595d7992714a24e44cd54b35466cbaaf3e7582c4fa072e78e42",
+          "hash": "beed26a72fc146f72dc4020ce1df7b75d27ce723e6f2a6e06ed1f45b9141720a",
           "path": "README.md"
         },
         {
@@ -16189,11 +16189,11 @@
           "path": "codecov.yml"
         },
         {
-          "hash": "f57c9af5145220b4675442b701280cf3b3cceb18765df2aa2d232553c7fb3f50",
+          "hash": "a71cd5be4ab8c32853d99bd41017557f35adcebc1df718dd3205ebb8f74f61f8",
           "path": "package-lock.json"
         },
         {
-          "hash": "a6a443eb30155aa533579809c540a831eba2e7388c3d2259596d9ea5a5e47713",
+          "hash": "a044292d3f3f9da611e5cc6165b29c191dc1337e811719dea89695e0abdacd3b",
           "path": "package.json"
         }
       ],
@@ -17252,7 +17252,7 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "f3f3c9f98e7e392d566a367cdc314eb8795d692e9b763ddd26882586636a1433",
+          "hash": "6881e2cf70c7a10b3981a471e22c8d886f61d43c0c19393c4ca42a626339d5a4",
           "path": "scripts/colab/README.md"
         },
         {
@@ -20904,7 +20904,7 @@
       "externals": 0,
       "files": [
         {
-          "hash": "800260353c23e72011d4682c427a6b578664cde84c7452a4385b76ddfe9d65d9",
+          "hash": "8fd53a2b65dadb1b31ba703538b39e09763426485d26a986c350d40d197fdc49",
           "path": "site/astro.config.mjs"
         },
         {
@@ -20947,6 +20947,10 @@
         {
           "hash": "d80e97931a20b88b52a58693fb7464a532b768aac1d7dc3d10991649c986baa7",
           "path": "site/src/content/docs/handbook/case-study-tallow-fen.md"
+        },
+        {
+          "hash": "12784b9816845f4ad81291dcabc133d3a9750c79c82a37632435a0a84930b22d",
+          "path": "site/src/content/docs/handbook/colab-lanes.md"
         },
         {
           "hash": "52e115f390a949b6eec8f9a2f66eb6d6851fe952ae273626052253851dd9410d",
@@ -21626,7 +21630,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "9cd9916cf12c7c5320851566427255e573c767645367edba615ae97fa636b29c",
+          "hash": "5de0227ba6f3a88e58e4477ef769da8f52c5d7333d9de1dc603434e3f130264e",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -22395,7 +22399,7 @@
             "test_c3_readers_refuse_unknown_phase_word_with_vitals_phase_invalid",
             "test_real_vitals_readers_keep_last_known_phase_on_mid_tick_truncate_and_partial_write"
           ],
-          "hash": "b928d22b101e1b871af9adcaa2adf9caaffee6e804112d1ef8e85e7ba631d201",
+          "hash": "ea6646588bc8e8b4c58e8655bb0a41b99c0a191b48a5fb11f49fea1a25f06207",
           "importsFiles": [
             "tests/colab/test_launch_lane1_stub.py"
           ],
@@ -24557,8 +24561,8 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "9524bd22938cba8886baee9d8ca2fba7204d5922",
-    "tracked": 3324
+    "commit": "a2ee86f077c16d4d67b9a17f71ce84eafebcd5e2",
+    "tracked": 3325
   },
   "landings": [
     {

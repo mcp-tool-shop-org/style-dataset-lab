@@ -34,6 +34,7 @@ export default defineConfig({
             { slug: 'handbook/two-lora-stacking' },
             { slug: 'handbook/asset-lane' },
             { slug: 'handbook/canon-build' },
+            { slug: 'handbook/colab-lanes' },
             { slug: 'handbook/canon-freeze' },
           ],
         },

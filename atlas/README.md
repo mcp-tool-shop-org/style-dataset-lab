@@ -1,14 +1,14 @@
 # style-dataset-lab: how it works
 
-Mapped at 2026-11-19 from commit 9524bd2 by Atlas 1.26.0.
+Mapped at 2026-11-19 from commit a2ee86f by Atlas 1.26.0.
 
 ## What this is
 
 13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (71), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.
 
-## What changed since 2026-11-19 (7b7b06d)
+## What changed since 2026-11-19 (9524bd2)
 
-Nothing structural changed since 2026-11-19; 11 files changed content.
+Nothing structural changed since 2026-11-19; 1 file added and 8 changed content.
 
 ## What comes in
 
@@ -62,8 +62,7 @@ CI writes nothing this map can see.
 
 ## What tends to change together
 
-- **tests/colab/test_launch_guards.py** and **tests/colab/test_launch_lane1_stub.py** changed together in 7 of 13 commits, inside the tests part.
-- **tests/colab/test_launch_lane1_stub.py** and **tests/colab/test_launch_lane3_stub.py** changed together in 8 of 16 commits, inside the tests part.
+- **tests/colab/test_launch_guards.py** and **tests/colab/test_launch_lane1_stub.py** changed together in 7 of 14 commits, inside the tests part.
 - **scripts/colab/lane3_rung.py** and **scripts/colab/remote_runner.py** changed together in 4 of 8 commits, inside the scripts part.
 - **tests/colab/test_gpu_rate_gate.py** and **tests/colab/test_host_ram_guard.py** changed together in 4 of 8 commits, inside the tests part.
 

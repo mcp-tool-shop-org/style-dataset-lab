@@ -140,6 +140,18 @@ Under `--render` (and CPU weights rehearsal `--render-cpu-stub`, mutually exclus
 
 ---
 
+### The `phase.txt` Contract: Atomic Writes, Loud Failures, Last-Known Phase
+
+Each lane's VM script writes its current phase (`setup`, `run` or `bundle`) to `phase.txt` in the lane's output folder, and the launcher's vitals reader reads it on every sample.
+
+- **Writers replace the file in one step.** Every writer writes a temporary file beside `phase.txt` and renames it over the old one (`printf … > .phase.txt.tmp.$$ && mv -f …` in shell, `os.replace` in `lane1_bundle_now.py`), so a reader never sees a half-written file.
+- **A failed write stops the run.** If the temporary write or the rename fails, the writer prints `REFUSED: PHASE_WRITE_FAILED` and exits `77`. The one exception is the on-exit salvage writer, which logs the failure and carries on so that the archive is still attempted.
+- **A reader keeps the last known phase on an empty read.** An empty or missing read does not change the phase and does not reset a stall clock. The stall clocks reset only when the phase word changes.
+- **An unknown phase word is refused.** A reader that sees a word other than `setup`, `run` or `bundle` stops with `VITALS_PHASE_INVALID` (exit `78` on the VM side, `93` from the rig-side guard).
+- **The launcher still stops its session.** `colab stop` runs from the launcher's EXIT trap on the rig, so no exit code from the VM can skip it.
+
+---
+
 ## Residual Risk: External `SIGKILL` to the Launcher
 
 No in-process shell trap (`EXIT`, `TERM`, `INT`) can catch `SIGKILL` (`kill -9`).

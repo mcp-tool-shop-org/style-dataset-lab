@@ -317,7 +317,7 @@ Aprire un problema all'indirizzo https://github.com/mcp-tool-shop-org/style-data
 
 Predefinito locale. Nessun telemetria, nessuna analisi e nessuna richiesta esterna dalla CLI `sdlab`: le immagini rimangono sulla GPU e sul file system e `canon draft` rifiuta qualsiasi endpoint che non sia loopback.
 
-L’unica eccezione è l’opzione di consenso esplicito. `scripts/colab/` contiene i kit di avvio per eseguire un rendering o un passaggio di addestramento LoRA sul proprio account Google Colab. Caricano solo i file che vengono specificati, vengono eseguiti entro un limite di spesa definito dal saldo attuale del proprio account Colab e interrompono la propria sessione all’uscita. Questi kit sono **sperimentali**: non hanno ancora completato un ciclo di test completo.
+L’unica eccezione è l’opzione di consenso esplicito. `scripts/colab/` contiene i kit di avvio per eseguire un rendering o un passaggio di addestramento LoRA sul proprio account Google Colab. Caricano solo i file che vengono specificati, vengono eseguiti entro un limite di spesa definito dal saldo attuale del proprio account Colab e interrompono la propria sessione all’uscita. Questi kit sono **sperimentali**. Hanno completato sessioni reali di rendering e addestramento LoRA su una GPU Colab, ma le loro impostazioni e i relativi dati potrebbero ancora subire modifiche. Consultare la sezione [Colab lanes](https://mcp-tool-shop-org.github.io/style-dataset-lab/handbook/colab-lanes/) nel manuale.
 
 ## Licenza
 

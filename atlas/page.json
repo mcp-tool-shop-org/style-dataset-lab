@@ -75,22 +75,22 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 11,
+      "added": 1,
+      "changed": 8,
       "moved": 0,
-      "parts": 3,
+      "parts": 4,
       "removed": 0
     },
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-19; 11 files changed content.",
+        "sentence": "Nothing structural changed since 2026-11-19; 1 file added and 8 changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "7b7b06d9588f36969ad3ef40d0326020811581a9",
-      "generatedAt": "2026-11-19T00:33:36.470Z"
+      "commit": "9524bd22938cba8886baee9d8ca2fba7204d5922",
+      "generatedAt": "2026-11-19T02:46:14.402Z"
     },
     "unchanged": true
   },
@@ -98,7 +98,7 @@
     {
       "a": "tests/colab/test_launch_guards.py",
       "b": "tests/colab/test_launch_lane1_stub.py",
-      "either": 13,
+      "either": 14,
       "partLabels": [
         "tests",
         "tests"
@@ -109,21 +109,6 @@
       ],
       "relation": "inside",
       "shared": 7
-    },
-    {
-      "a": "tests/colab/test_launch_lane1_stub.py",
-      "b": "tests/colab/test_launch_lane3_stub.py",
-      "either": 16,
-      "partLabels": [
-        "tests",
-        "tests"
-      ],
-      "parts": [
-        "tests",
-        "tests"
-      ],
-      "relation": "inside",
-      "shared": 8
     },
     {
       "a": "scripts/colab/lane3_rung.py",
@@ -162,7 +147,7 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "9524bd22938cba8886baee9d8ca2fba7204d5922",
+  "commit": "a2ee86f077c16d4d67b9a17f71ce84eafebcd5e2",
   "defaultBranch": "main",
   "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (71), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
@@ -501,7 +486,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-19T02:46:14.402Z",
+  "generatedAt": "2026-11-19T13:37:54.597Z",
   "limits": [
     "8 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 5 more.",
     "45 writes and 79 reads use paths built at run time and are not named here.",

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [3.7.0] - 2026-11-19
+
+The Colab lanes: a GPU render mode for lane 1, a detached runner that survives link blips, atomic and loud `phase.txt` writes, and a handbook page.
+
+### Docs
+
+- **Handbook: a new [Colab lanes](https://mcp-tool-shop-org.github.io/style-dataset-lab/handbook/colab-lanes/) page** (`site/src/content/docs/handbook/colab-lanes.md`): what a lane does, the CPU rehearsal, picture licences and the phase file.
+- **`scripts/colab/README.md`:** a section on the `phase.txt` contract (atomic writers, `PHASE_WRITE_FAILED` exit `77`, last-known phase, `VITALS_PHASE_INVALID`).
+- **`README.md`:** the Security section no longer says the kits have not completed a live window. They have completed real render and training windows on a Colab GPU; they stay experimental.
+
 ### Fixed
 
 - **Colab kits: `phase.txt` write failures fail loudly (`PHASE_WRITE_FAILED`, exit `77`), committed stuck-phase tests, and PR #85 follow-ups (C1–C4)** — previously in `scripts/colab/launch_lane1_stub.sh` and `scripts/colab/launch_lane3_stub.sh`, every `printf ... > .phase.txt.tmp.$$ && mv -f ...` writer ignored a failed temp write under `set -e` (because a failure on the left of `&&` never triggers `errexit`), while `scripts/colab/lane1_bundle_now.py` could leave `.phase.txt.tmp.<pid>` behind on `OSError`, and both VM vitals readers silently ignored unexpected phase words. Now:
