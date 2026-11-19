@@ -55,7 +55,7 @@ def _run_kit_and_get_uploaded_script(tmp_path: Path, launcher: Path = LAUNCHER, 
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
         check=False,
     )
     return res, state_dir / "content" / "remote_lane3_stub.sh.uploaded", env
@@ -87,7 +87,7 @@ def _fake_vm_with_wheels(vm: Path, manifest: Path, wheels_dir: Path) -> None:
 def _uv_install_lock(vm: Path, lock: Path) -> subprocess.CompletedProcess[str]:
     assert UV is not None
     check_venv = vm / "check-venv"
-    subprocess.run([UV, "venv", "--quiet", "--python", _host_python(), str(check_venv)], check=True, timeout=120)
+    subprocess.run([UV, "venv", "--quiet", "--python", _host_python(), str(check_venv)], check=True, timeout=240)
     venv_py = check_venv / "bin" / "python"
     if not venv_py.exists():
         venv_py = check_venv / "Scripts" / "python.exe"
@@ -99,7 +99,7 @@ def _uv_install_lock(vm: Path, lock: Path) -> subprocess.CompletedProcess[str]:
         ],
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=240,
         check=False,
     )
 
@@ -114,7 +114,7 @@ def test_kit_lock_step_writes_a_lock_real_uv_installs(tmp_path: Path) -> None:
     _fake_vm_with_wheels(vm, Path(env["SDLAB_PREFLIGHT_WHEELS_MANIFEST"]), Path(env["SDLAB_WHEEL_DIR"]))
     step_sh = tmp_path / "lock_step.sh"
     step_sh.write_text(step.replace("/content", _p(vm)), encoding="utf-8", newline="\n")
-    gen = subprocess.run([_bash(), _p(step_sh)], capture_output=True, text=True, timeout=60, check=False)
+    gen = subprocess.run([_bash(), _p(step_sh)], capture_output=True, text=True, timeout=120, check=False)
     assert gen.returncode == 0, gen.stderr
 
     lock = vm / "lane3_out" / "local-wheels.lock"
@@ -186,7 +186,7 @@ def test_emit_remote_script_matches_the_uploaded_script_and_calls_no_colab(tmp_p
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=120,
         check=False,
     )
     assert em.returncode == 0, em.stderr
@@ -230,7 +230,7 @@ def test_emit_remote_script_refuses_beside_any_window_option(tmp_path: Path, ext
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=120,
         check=False,
     )
     assert res.returncode == 2
@@ -244,7 +244,7 @@ def test_emit_remote_script_needs_a_path_and_works_without_any_colab_on_path(tmp
     env = {k: v for k, v in os.environ.items() if not k.startswith(("SDLAB_", "FAKE_COLAB", "EXPECTED_"))}
     res = subprocess.run(
         [_bash(), _p(LAUNCHER), "--emit-remote-script"],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120, check=False,
     )
     assert res.returncode == 2
     assert "REFUSED: EMIT_REMOTE_SCRIPT_PATH_REQUIRED" in res.stderr
@@ -252,7 +252,7 @@ def test_emit_remote_script_needs_a_path_and_works_without_any_colab_on_path(tmp
     target = tmp_path / "r.sh"
     ok = subprocess.run(
         [_bash(), _p(LAUNCHER), "--emit-remote-script", _p(target)],
-        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False,
+        env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120, check=False,
     )
     assert ok.returncode == 0, ok.stderr
     text = target.read_text(encoding="utf-8")

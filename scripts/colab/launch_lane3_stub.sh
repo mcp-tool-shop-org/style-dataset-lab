@@ -58,7 +58,7 @@ PINNED_BUNDLE_NOW_SHA="7603d421be95872956eba16bfaff92fcf2f1bc4cf2247c6a808432bc7
 PINNED_RUNG_YAML_SHA="11209a00067047f791d563ac1b083e22e7de6ae46dc2f240927d571c6cdb79d1"
 PINNED_RUNG500_YAML_SHA="05936602be498b9c59d13329109521567cd507e52b4984bdb1a493253bab71d7"
 PINNED_RUNG_DATASET_SHA="fa87eda99ceb4a900fa549041a187a75ebc2041e4e27ba7547b5822db43b701d"
-PINNED_SELF_SHA="20319e680705dc5efd02b02c10b4f23ac97eb2ae5d86c1a0ff053fce1928cda2"
+PINNED_SELF_SHA="f00a87de145aeca9c11720252964581506561a75c6f77b357555f1f6b41c0fc0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
@@ -179,9 +179,11 @@ done < /content/lane3_out/wheel-names.txt
 : "\${PINNED_AI_TOOLKIT_COMMIT:?missing PINNED_AI_TOOLKIT_COMMIT}"
 : "\${PINNED_OVERRIDE_SHA:?missing PINNED_OVERRIDE_SHA}"
 
-echo "setup" > /content/lane3_out/phase.txt
+printf 'setup\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt
 : > /content/lane3_out/setup.log
 (
+  LAST_PHASE="setup"
+  PHASE_CR="\$(printf '\r')"
   while true; do
     {
       echo "=== VITALS \$(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
@@ -202,9 +204,18 @@ echo "setup" > /content/lane3_out/phase.txt
       echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"
       ps -ef | grep -E "ai-toolkit|run\.py" | grep -v grep || true
-      CUR_PHASE="\$(cat /content/lane3_out/phase.txt 2>/dev/null || echo setup)"
-      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
     } | tee -a /content/lane3_out/vitals.log
+    RAW_PHASE=""
+    if { IFS= read -r RAW_PHASE < /content/lane3_out/phase.txt; } 2>/dev/null; then
+      RAW_PHASE="\${RAW_PHASE%\${PHASE_CR}}"
+      case "\${RAW_PHASE}" in
+        setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+          LAST_PHASE="\${RAW_PHASE}"
+          ;;
+      esac
+    fi
+    CUR_PHASE="\${LAST_PHASE}"
+    printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}" | tee -a /content/lane3_out/vitals.log
     sleep 15
   done
 ) &
@@ -462,7 +473,7 @@ if [ -n "\${LANE3_PROJECTED_OUTPUT_BYTES:-}" ]; then
     --projected-bytes "\${LANE3_PROJECTED_OUTPUT_BYTES}" --out /content/lane3_out/output_disk_check.json 2>&1 | tee -a /content/lane3_out/setup.log
 fi
 
-echo "run" > /content/lane3_out/phase.txt
+printf 'run\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt
 # >>> sdlab-train-step
 set +e
 HF_HOME="\${LANE3_HF_HOME}" HF_HUB_OFFLINE=1 HF_HUB_DISABLE_IMPLICIT_TOKEN=1 \
@@ -474,7 +485,7 @@ TRAIN_PID=\$!
 COPY_PID=\$!
 wait "\${TRAIN_PID}"
 TRAIN_RC=\$?
-echo "bundle" > /content/lane3_out/phase.txt
+printf 'bundle\n' > "/content/lane3_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane3_out/.phase.txt.tmp.\$\$" /content/lane3_out/phase.txt
 wait "\${COPY_PID}"
 # Record the complete manifest of the training folder before the final sweep so the rig can verify
 # every file (path, bytes, sha256) arrived in the downloaded bundle.

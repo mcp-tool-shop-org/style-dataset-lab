@@ -27,13 +27,13 @@ def _assert_shim_recorded_both(state_dirs: list[Path]) -> None:
     assert "GUARD_PY " in combined, f"slow shim never wrapped guard/rig python: {combined!r}"
 
 
-# Per-call delays are calibrated against each named test's d00ecbdc subprocess timeout:
-# the single-window probe runs 20 fake-colab + 23 guard calls against timeout=120 (~143 s at 4.0/2.5 s),
-# while the 6-window Lane 1 rate test exceeds timeout=30 per window at 1.0/1.5 s (~44 s on Sub-run 1).
+# Per-call delays are trimmed just above each named test's d00ecbd subprocess timeout:
+# the single-window probe runs 20 fake-colab + 23 guard calls against timeout=120 (~129 s at 3.6/2.4 s),
+# while the 6-window Lane 1 rate test exceeds timeout=30 per window at 0.85/1.1 s (~36 s on Sub-run 1).
 def test_slow_runner_shim_probe_upload_limit(
     tmp_path: Path, slow_runner_shim: Callable[..., list[Path]]
 ) -> None:
-    states = slow_runner_shim(colab_delay_s=4.0, guard_python_delay_s=2.5)
+    states = slow_runner_shim(colab_delay_s=3.6, guard_python_delay_s=2.4)
     t_probe.test_probe_upload_limit_sweeps_both_directions_stops_at_first_500_and_stops_session(tmp_path)
     _assert_shim_recorded_both(states)
 
@@ -41,6 +41,6 @@ def test_slow_runner_shim_probe_upload_limit(
 def test_slow_runner_shim_pre_open_zero_rate_and_post_open_rate(
     tmp_path: Path, slow_runner_shim: Callable[..., list[Path]]
 ) -> None:
-    states = slow_runner_shim(colab_delay_s=1.0, guard_python_delay_s=1.5, extra_modules=(t_l1,))
+    states = slow_runner_shim(colab_delay_s=0.85, guard_python_delay_s=1.1, extra_modules=(t_l1,))
     t_l1.test_pre_open_zero_rate_does_not_lower_configured_and_post_open_rate_is_used(tmp_path)
     _assert_shim_recorded_both(states)
