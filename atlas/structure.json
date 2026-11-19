@@ -16121,7 +16121,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "06518ca6eac91f7820009070eb570ac0bb8100fc051ef774004a0065f2d72174",
+          "hash": "d70f77a79f5d389cabf81d6c547d27cdd794134e76a265c062cd9865aedeaebe",
           "path": "CHANGELOG.md"
         },
         {
@@ -16282,7 +16282,7 @@
       "dynamicReads": 18,
       "dynamicSpawns": 1,
       "dynamicSpawnsInTests": 0,
-      "dynamicWrites": 22,
+      "dynamicWrites": 23,
       "entryPoints": [],
       "externals": 0,
       "files": [
@@ -17291,7 +17291,7 @@
           "exports": [
             "bundle_now"
           ],
-          "hash": "0cac2f3a550ae050c372ae0838889849f24ee45d285542d4e611c14305da9a61",
+          "hash": "ea01d36c75e54496253ddf8dd67815ad0dc2a8fe89441e832df4f696da1075a7",
           "importsFiles": [
             "scripts/colab/launch_guards.py"
           ],
@@ -19158,11 +19158,11 @@
           "path": "scripts/colab/launch_guards.py"
         },
         {
-          "hash": "a8d90c091ff4ab639210b7fc6c7b6cc3f7211c0e4b4315c725ccd1f97905b489",
+          "hash": "ad0d51ce54737a8a09588d92d1e35713b5a0537cb17cf99f8b1fe24799c0235f",
           "path": "scripts/colab/launch_lane1_stub.sh"
         },
         {
-          "hash": "86ab76f2a430e41f1c19cc5d2f098ce6d3a0d5ca0e0d080d559fa5cd7029868d",
+          "hash": "388c7b94f1665940698546716af8a7f9705a03d4cb313b9f1848204576a04b9c",
           "path": "scripts/colab/launch_lane3_stub.sh"
         },
         {
@@ -20881,7 +20881,7 @@
         "node --test",
         "pytest"
       ],
-      "testedBy": 36,
+      "testedBy": 37,
       "unresolvedSites": 0
     },
     {
@@ -21615,7 +21615,7 @@
             "make_fixture_wheels",
             "parse_help_fixture"
           ],
-          "hash": "843569313517f7dc9e1ed70963a669b68414ad2142bce3760ca2963def368339",
+          "hash": "d64afc828d5bdc4c69eb3d267237d97a9cd38a49f215d254d6a6b5aae2b32c0d",
           "path": "tests/colab/fixtures/fake_colab.py"
         },
         {
@@ -21772,7 +21772,7 @@
             "test_exec_queues_behind_a_running_cell_and_restart_kernel_ends_it",
             "test_uploads_do_not_wait_for_the_kernel_and_stop_ends_the_cell"
           ],
-          "hash": "e6bb2ede830ab4ba507cb25978c5ede37bd86178adace8fc5a6a349d70aadf49",
+          "hash": "f86c73a3845f54d72f95cf6eb84b5881313f19ef07731b08952ef1689e59b90b",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22178,7 +22178,7 @@
             "test_kit_lock_step_writes_a_lock_real_uv_installs",
             "test_lane3_lock_and_import_gate_carry_torchaudio"
           ],
-          "hash": "b9eab0d5551f3e3faa23f2aaa5db50de953bf2c7339dd065020aa87cecdbe69b",
+          "hash": "cd689918ef4d83c1d01f9fcb7dfc86360d2388755f1937108eeea435bdc91368",
           "importsFiles": [
             "tests/colab/fixtures/fake_colab.py"
           ],
@@ -22298,7 +22298,7 @@
             "test_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_0",
             "test_usage_text_parsed_into_live_balance_and_rate_in_window_json"
           ],
-          "hash": "71973cd54e4a1304d80a7f207ed9f8175b4fcef586c6bb5cd9349ce8b74c139f",
+          "hash": "feb2c7c78dd4036eb84ba5d0cc7d95f2849898577291fcf2b9cd0c9228fa86db",
           "importOrder": [
             "tests/colab/fixtures/fake_colab.py",
             "scripts/colab/remote_runner.py",
@@ -22375,6 +22375,23 @@
         },
         {
           "exports": [
+            "test_all_phase_txt_writers_are_atomic_and_concurrent_writes_never_tear",
+            "test_b2_fake_colab_empty_phase_window_reproduces_rc_93_on_d00ecbd_and_passes_at_head",
+            "test_b2_fake_colab_spawn_detached_fast_exec_and_probe_under_single_core_contention",
+            "test_real_vitals_readers_keep_last_known_phase_on_mid_tick_truncate_and_partial_write"
+          ],
+          "hash": "f39e85a3d3c0e41bee9db63a9868c7b4f2cef9640bf0c6f6ede6cbd87fcd865b",
+          "importsFiles": [
+            "tests/colab/test_launch_lane1_stub.py"
+          ],
+          "names": [
+            "scripts/colab/lane1_bundle_now.py"
+          ],
+          "path": "tests/colab/test_phase_txt_atomic.py",
+          "testFramework": "pytest"
+        },
+        {
+          "exports": [
             "test_body_drift_is_still_caught_under_the_bound",
             "test_bound_hides_a_newer_upstream_release",
             "test_committed_timestamp_files_are_well_formed",
@@ -22399,7 +22416,7 @@
             "test_slow_runner_shim_pre_open_zero_rate_and_post_open_rate",
             "test_slow_runner_shim_probe_upload_limit"
           ],
-          "hash": "a170553996edaa6d87655288e90c832a9b60863e8e0d67d81b94d8dbe2770506",
+          "hash": "6f79901c00edba8a9da1bcf1d0d1a0a2dad5d0ba2a70fb2f50e0a770e10d97e2",
           "importsFiles": [
             "tests/colab/test_chunked_transfer_and_probe.py",
             "tests/colab/test_launch_lane1_stub.py"
@@ -23336,9 +23353,14 @@
           "path": "tests/colab/test_lane3_gpu_rung.py",
           "specifier": null,
           "why": "dynamic"
+        },
+        {
+          "path": "tests/colab/test_phase_txt_atomic.py",
+          "specifier": "fake_colab",
+          "why": "unplaced"
         }
       ],
-      "unresolvedSites": 2
+      "unresolvedSites": 4
     },
     {
       "dynamicReads": 0,
@@ -23559,7 +23581,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 135
+          "files": 136
         },
         {
           "boundary": "lib",
@@ -23860,7 +23882,7 @@
         },
         {
           "coverage": true,
-          "files": 30,
+          "files": 31,
           "job": "verify",
           "runner": "pytest",
           "step": "Python tests and coverage (Node 22 only)"
@@ -24517,8 +24539,8 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "5502eda64c4c04c907891378d85bdba325bd1f34",
-    "tracked": 3323
+    "commit": "7b7b06d9588f36969ad3ef40d0326020811581a9",
+    "tracked": 3324
   },
   "landings": [
     {
@@ -27443,6 +27465,18 @@
     {
       "readers": [
         {
+          "by": "tests/colab/test_phase_txt_atomic.py",
+          "call": "read_text",
+          "confidence": "ast",
+          "fromTests": true
+        }
+      ],
+      "target": "tests/colab/fixtures/fake_colab.py",
+      "writers": []
+    },
+    {
+      "readers": [
+        {
           "by": "tests/colab/fixtures/fake_colab.py",
           "call": "literal",
           "confidence": "ast",
@@ -27546,7 +27580,7 @@
   "overlaps": [],
   "submodules": [],
   "symlinks": [],
-  "testFiles": 145,
+  "testFiles": 146,
   "testsNotRun": [
     "projects/ai-eye-test/compositor/test_compositor.py",
     "projects/ai-eye-test/compositor/test_phase2.py"
