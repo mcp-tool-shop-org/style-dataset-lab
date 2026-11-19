@@ -814,7 +814,7 @@ def _leftover_vitals_loops(fx_root: Path, *, settle_s: float = 5.0) -> list[str]
                 cwd = os.readlink(d / "cwd")
             except OSError:
                 continue
-            if cwd.startswith(want):
+            if Path(cwd).is_relative_to(want):
                 found.append(f"{d.name}: {cmd.strip()} (cwd {cwd})")
         return found
 
@@ -871,8 +871,10 @@ def test_b2_stuck_run_and_stuck_setup_with_empty_reads_interleaved_trip_on_time_
     assert m_idle_run and float(m_idle_run.group(1)) >= 4.0
     assert 3.0 <= elapsed_run < 30.0
     # No vitals loop of this run outlives the launcher. (The PR #87 review asked whether the fake's EXIT trap, which
-    # signals only the wrapper shell, leaves the forked loop behind. It does not on these paths: the loops are seen
-    # running during the window and are gone when the launcher returns. This pins that.)
+    # signals only the wrapper shell, leaves the forked loop behind. On these paths the trap never runs: the stall
+    # guard trips first and the fake's `colab stop` SIGKILLs the cell's process groups and every process whose
+    # command line names the content directory. This pins that nothing of the run survives that stop; it does not
+    # test the EXIT trap on its own.)
     assert _leftover_vitals_loops(tmp_path / f"fx_{lane}_run") == []
 
     # 2. Phase stuck at `setup` with empty and partial reads interleaved still trips SETUP_STALL_TRIPPED on time.
