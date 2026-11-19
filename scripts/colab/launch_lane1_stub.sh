@@ -37,13 +37,13 @@ PINNED_COMFYUI_COMMIT="49b61c3cd044fb65acd97a960467a00414694146"
 PINNED_COMFY_HEADLESS_SPEC="comfy-headless==3.1.0"
 PINNED_LOCK_SHA="619e7105be1bead576aecae2bfc4c5318c6a5f9935a6e12e85c7d8163ca594dd"
 PINNED_LANE1_RENDER_SHA="818580d18da800508efda37c4f0eb34d865f3c6fde1b39efe3854dddaec9d067"
-PINNED_LANE1_BUNDLE_NOW_SHA="0cac2f3a550ae050c372ae0838889849f24ee45d285542d4e611c14305da9a61"
+PINNED_LANE1_BUNDLE_NOW_SHA="ea01d36c75e54496253ddf8dd67815ad0dc2a8fe89441e832df4f696da1075a7"
 PINNED_LANE3_RUNG_SHA="dd26b9183b2692dd2fcf25f9b8e8c85627ee310f1996d276f7ea11c96c851c20"
 PINNED_INSTALL_CLASSIFIER_SHA="ccccf077795148c14a7aa430e3575db45f097549a8b6a43aa149d78238513fd1"
 PINNED_LAUNCH_GUARDS_SHA="62c8deff9bb91102bd735f445a4899b88749c469e75d69eb2709f172c793d2e3"
 PINNED_REMOTE_RUNNER_SHA="68f215d26a85c7138cee1dcbc5bc80accae75fb3ba53f47de403d9460d2c5dc4"
 PINNED_COLAB_WINDOW_SHA="81f19194360077fed2facccb4d86e2d5d9e54fb998ebf211cd62bcb4ff7e2594"
-PINNED_SELF_SHA="4483cff7bdd3dbee12db30e8488fcbe31dc17a70f6754c4c80acc3b86ee880e6"
+PINNED_SELF_SHA="1aec99c40155cdd86051e6966918f6b7d5c9f8e1342973301d5ec81db62af624"
 
 LANE1_DISK_REQUIRED_GIB="50"
 LANE1_CPU_STUB_DISK_REQUIRED_GIB="5"
@@ -718,9 +718,11 @@ sdlab_remote_mkdir /content/lane1_out
 : "\${PINNED_COMFY_HEADLESS_SPEC:?missing PINNED_COMFY_HEADLESS_SPEC}"
 : "\${PINNED_LOCK_SHA:?missing PINNED_LOCK_SHA}"
 
-echo "setup" > /content/lane1_out/phase.txt
+printf 'setup\n' > "/content/lane1_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane1_out/.phase.txt.tmp.\$\$" /content/lane1_out/phase.txt
 : > /content/lane1_out/setup.log
 (
+  LAST_PHASE="setup"
+  PHASE_CR="\$(printf '\r')"
   while true; do
     {
       echo "=== VITALS \$(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
@@ -741,9 +743,18 @@ echo "setup" > /content/lane1_out/phase.txt
       echo "SETUP_BYTES: \${SETUP_SZ:-0}"
       echo "PROC:"
       ps -ef | grep -E "comfy|main\.py|lane1_render\.py" | grep -v grep || true
-      CUR_PHASE="\$(cat /content/lane1_out/phase.txt 2>/dev/null || echo setup)"
-      printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}"
     } | tee -a /content/lane1_out/vitals.log
+    RAW_PHASE=""
+    if { IFS= read -r RAW_PHASE < /content/lane1_out/phase.txt; } 2>/dev/null; then
+      RAW_PHASE="\${RAW_PHASE%\${PHASE_CR}}"
+      case "\${RAW_PHASE}" in
+        setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+          LAST_PHASE="\${RAW_PHASE}"
+          ;;
+      esac
+    fi
+    CUR_PHASE="\${LAST_PHASE}"
+    printf 'HARNESS: {"phase": "%s"}\n' "\${CUR_PHASE}" | tee -a /content/lane1_out/vitals.log
     sleep 15
   done
 ) &
@@ -869,7 +880,7 @@ IMPEOF
 } 2>&1 | tee -a /content/lane1_out/setup.log
 
 if [ "\${LANE1_MODE:-stub}" = "stub" ]; then
-  echo "run" > /content/lane1_out/phase.txt
+  printf 'run\n' > "/content/lane1_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane1_out/.phase.txt.tmp.\$\$" /content/lane1_out/phase.txt
   /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1 --port 8188 --disable-auto-launch \
     > /content/lane1_out/comfyui.log 2>&1 &
   COMFY_PID="\$!"
@@ -933,7 +944,7 @@ JOBSEOF
   if [ "\${#SCRUB_ARGS[@]}" -gt 0 ]; then
     /content/venv-lane1/bin/python /content/launch_guards.py "\${SCRUB_ARGS[@]}" </dev/null || true
   fi
-  echo "bundle" > /content/lane1_out/phase.txt
+  printf 'bundle\n' > "/content/lane1_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane1_out/.phase.txt.tmp.\$\$" /content/lane1_out/phase.txt
   tar -czf /content/lane1_stub_bundle.tar.gz -C /content/lane1_out .
 else
 # >>> sdlab-lane1-render
@@ -960,7 +971,7 @@ lane1_render_on_exit() {
     if [ "\${#scrub_args[@]}" -gt 0 ]; then
       /content/venv-lane1/bin/python /content/launch_guards.py "\${scrub_args[@]}" </dev/null || true
     fi
-    echo "bundle" > /content/lane1_out/phase.txt 2>/dev/null || true
+    (printf 'bundle\n' > "/content/lane1_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane1_out/.phase.txt.tmp.\$\$" /content/lane1_out/phase.txt) 2>/dev/null || rm -f "/content/lane1_out/.phase.txt.tmp.\$\$" 2>/dev/null || true
     tar -czf /content/lane1_render_bundle.tar.gz -C /content/lane1_out . || true
     echo "RENDER_BUNDLE_AFTER_FAILURE rc=\${rc} /content/lane1_render_bundle.tar.gz"
   fi
@@ -1050,7 +1061,7 @@ else
   mv /content/jobs.jsonl /content/lane1_out/jobs.jsonl
   FIRST_JOB_ID="\$(/content/venv-lane1/bin/python -c 'import json, sys; print(next(json.loads(ln)["job_id"] for ln in open(sys.argv[1], encoding="utf-8") if ln.strip()))' /content/lane1_out/jobs.jsonl)"
 
-  echo "run" > /content/lane1_out/phase.txt
+  printf 'run\n' > "/content/lane1_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane1_out/.phase.txt.tmp.\$\$" /content/lane1_out/phase.txt
   COMFY_PORT="\${LANE1_COMFY_PORT:-8188}"
   COMFY_URL="http://127.0.0.1:\${COMFY_PORT}"
   /content/venv-lane1/bin/python /content/ComfyUI/main.py --listen 127.0.0.1 --port "\${COMFY_PORT}" --disable-auto-launch \
@@ -1148,7 +1159,7 @@ done < <(find /content/lane1_out -type f \( -name "*.log" -o -name "*.json" -o -
 if [ "\${#RENDER_SCRUB_ARGS[@]}" -gt 0 ]; then
   /content/venv-lane1/bin/python /content/launch_guards.py "\${RENDER_SCRUB_ARGS[@]}" </dev/null || true
 fi
-echo "bundle" > /content/lane1_out/phase.txt
+printf 'bundle\n' > "/content/lane1_out/.phase.txt.tmp.\$\$" && mv -f "/content/lane1_out/.phase.txt.tmp.\$\$" /content/lane1_out/phase.txt
 tar -czf /content/lane1_render_bundle.tar.gz -C /content/lane1_out .
 # <<< sdlab-lane1-render
 fi

@@ -632,45 +632,53 @@ run_uploaded_remote_dirs_block "remote_lane1_stub.sh.uploaded"
 printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 [ -d lane1_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane1_out not made by the kit" >&2; exit 1; }
 : > lane1_out/setup.log
-echo "setup" > lane1_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
 hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
 
-read_phase_nonempty() {
-  local pfile="$1" fallback="$2" val="" _try
-  for _try in 1 2 3 4 5; do
-    val="$(tr -d '\\r\\n[:space:]' < "${pfile}" 2>/dev/null || true)"
-    [ -n "${val}" ] && break
-    sleep 0.01
-  done
-  printf '%s' "${val:-${fallback}}"
+write_phase_atomic() {
+  local pfile="$1" pval="$2" ptmp
+  ptmp="$(dirname "${pfile}")/.$(basename "${pfile}").tmp.$$"
+  printf '%s\\n' "${pval}" > "${ptmp}" && mv -f "${ptmp}" "${pfile}"
 }
+
+read_phase_keep_last() {
+  local pfile="$1" last_ph="${2:-setup}" raw_ph="" cr
+  cr="$(printf '\\r')"
+  if { IFS= read -r raw_ph < "${pfile}"; } 2>/dev/null; then
+    raw_ph="${raw_ph%${cr}}"
+    case "${raw_ph}" in
+      setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+        last_ph="${raw_ph}"
+        ;;
+    esac
+  fi
+  printf '%s' "${last_ph}"
+}
+
+write_phase_atomic lane1_out/phase.txt "setup"
 
 emit_vitals() {
   local phase_val="${1:-setup}"
   local worker_line="$2"
-  local setup_sz blk
+  local setup_sz
   setup_sz="$(wc -c < lane1_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-  blk="$(
-    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-    echo "CGROUP_MEM_CURRENT: 536870912"
-    echo "CGROUP_MEM_MAX: 12884901888"
-    echo "CGROUP_MEM: oom_kill 0"
-    echo "CGROUP_MEM_STAT: anon 268435456"
-    echo "CGROUP_MEM_STAT: file 268435456"
-    echo "CGROUP_MEM_STAT: shmem 0"
-    echo "MEM: MemTotal:       12582912 kB"
-    echo "MEM: MemAvailable:   11534336 kB"
-    echo "MEM: AnonPages:        262144 kB"
-    echo "MEM: Shmem:                 0 kB"
-    echo "SETUP_BYTES: ${setup_sz:-0}"
-    echo "PROC:"
-    if [ -n "${worker_line}" ]; then
-      echo "${worker_line}"
-    fi
-    printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
-  )"
-  printf '%s\\n' "${blk}"
+  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  echo "CGROUP_MEM_CURRENT: 536870912"
+  echo "CGROUP_MEM_MAX: 12884901888"
+  echo "CGROUP_MEM: oom_kill 0"
+  echo "CGROUP_MEM_STAT: anon 268435456"
+  echo "CGROUP_MEM_STAT: file 268435456"
+  echo "CGROUP_MEM_STAT: shmem 0"
+  echo "MEM: MemTotal:       12582912 kB"
+  echo "MEM: MemAvailable:   11534336 kB"
+  echo "MEM: AnonPages:        262144 kB"
+  echo "MEM: Shmem:                 0 kB"
+  echo "SETUP_BYTES: ${setup_sz:-0}"
+  echo "PROC:"
+  if [ -n "${worker_line}" ]; then
+    echo "${worker_line}"
+  fi
+  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
 }
 """
         + venv_check_helper
@@ -688,7 +696,7 @@ elif [ "${mode}" = "wall" ]; then
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
-  echo "run" > lane1_out/phase.txt
+  write_phase_atomic lane1_out/phase.txt "run"
   for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" ""
     sleep "${vitals_interval}"
@@ -711,7 +719,7 @@ elif [ "${mode}" = "setup_stall" ]; then
   done
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
-  echo "run" > lane1_out/phase.txt
+  write_phase_atomic lane1_out/phase.txt "run"
   for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
     sleep "${vitals_interval}"
@@ -1038,8 +1046,9 @@ run_uploaded_render_block() {
   prepare_fake_lane1_vm_runtime
 
   (
+    cur_ph="$(read_phase_keep_last lane1_out/phase.txt setup)"
     while true; do
-      cur_ph="$(read_phase_nonempty lane1_out/phase.txt setup)"
+      cur_ph="$(read_phase_keep_last lane1_out/phase.txt "${cur_ph}")"
       if [ "${cur_ph}" = "run" ] && [ ! -f .fake-vm-archiving ]; then
         emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --listen 127.0.0.1"
       else
@@ -1104,13 +1113,13 @@ run_uploaded_stub_block() {
   fi
   case "${FAKE_COLAB_STUB_FAULT:-}" in
     missing_bundle)
-      echo "run" > lane1_out/phase.txt
+      write_phase_atomic lane1_out/phase.txt "run"
       emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
       rm -f lane1_stub_bundle.tar.gz
       return 0
       ;;
     failing_bundle)
-      echo "run" > lane1_out/phase.txt
+      write_phase_atomic lane1_out/phase.txt "run"
       emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
       echo 'WINDOW_JSON {"system_python": "3.13.16", "python": "3.14.9", "python_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "uv": "uv 0.13.5", "comfyui_commit": "'"${PINNED_COMFYUI_COMMIT}"'", "comfy_headless_version": "3.1.0", "comfy_bind": "127.0.0.1:8188", "listening_sockets": ["127.0.0.1:8188"]}'
       printf '{"job_id":"stub_01","status":"failed","error":"simulated_stub_render_failure"}\n' > lane1_out/renders.jsonl
@@ -1118,7 +1127,7 @@ run_uploaded_stub_block() {
       return 0
       ;;
     remote_fail)
-      echo "run" > lane1_out/phase.txt
+      write_phase_atomic lane1_out/phase.txt "run"
       emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
       echo "REFUSED: STUB_REMOTE_FAILED: simulated stub remote step failure" >&2
       return 1
@@ -1150,8 +1159,9 @@ Path("remote_lane1_stub.sh.stubblock").write_text("set -euo pipefail\n" + body +
 STUBBLKEOF
 
   (
+    cur_ph="$(read_phase_keep_last lane1_out/phase.txt run)"
     while true; do
-      cur_ph="$(read_phase_nonempty lane1_out/phase.txt run)"
+      cur_ph="$(read_phase_keep_last lane1_out/phase.txt "${cur_ph}")"
       emit_vitals "${cur_ph}" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
       sleep "${vitals_interval}"
     done
@@ -1182,7 +1192,7 @@ if [ "${LANE1_MODE:-stub}" != "stub" ]; then
   exit $?
 fi
 if [ -n "${FAKE_RUN_ROWS_N:-}" ] && [ "${FAKE_RUN_ROWS_N}" -gt 0 ]; then
-  echo "run" > lane1_out/phase.txt
+  write_phase_atomic lane1_out/phase.txt "run"
   row_sleep="${FAKE_RUN_ROW_SLEEP_S:-${vitals_interval}}"
   for row_idx in $(seq 1 "${FAKE_RUN_ROWS_N}"); do
     echo "RENDER_ROW idx=${row_idx}/${FAKE_RUN_ROWS_N} job=stub_${row_idx} status=ok"
@@ -1351,9 +1361,10 @@ RUNPYEOF
   } | sed -e "s#/content#${PWD}#g" -e "s#/proc/meminfo#${PWD}/.fake-vm-meminfo#g" -e "s#/dev/shm#${PWD}/.fake-vm-shm#g" > remote_lane3_stub.sh.trainblock
   if [ -n "${FAKE_VM_TRAIN_VITALS_TICKS:-}" ]; then
     (
+      _bg_phase="$(read_phase_keep_last lane3_out/phase.txt run)"
       for _ in $(seq 1 "${FAKE_VM_TRAIN_VITALS_TICKS}"); do
         sleep "${vitals_interval}"
-        _bg_phase="$(read_phase_nonempty lane3_out/phase.txt run)"
+        _bg_phase="$(read_phase_keep_last lane3_out/phase.txt "${_bg_phase}")"
         emit_vitals "${_bg_phase}" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/rung_job.yaml"
       done
     ) &
@@ -1367,8 +1378,9 @@ RUNPYEOF
     wait "${_train_vit_pid}" 2>/dev/null || true
   fi
   if [ -n "${FAKE_VM_POST_TRAIN_VITALS_TICKS:-}" ]; then
-    _cur_phase="$(read_phase_nonempty lane3_out/phase.txt setup)"
+    _cur_phase="$(read_phase_keep_last lane3_out/phase.txt setup)"
     for _ in $(seq 1 "${FAKE_VM_POST_TRAIN_VITALS_TICKS}"); do
+      _cur_phase="$(read_phase_keep_last lane3_out/phase.txt "${_cur_phase}")"
       emit_vitals "${_cur_phase}" ""
       sleep "${vitals_interval}"
     done
@@ -1412,45 +1424,53 @@ run_uploaded_remote_dirs_block "remote_lane3_stub.sh.uploaded"
 printf '%s\n' "$$" >> "${FAKE_COLAB_STATE_DIR:-..}/remote_script_runs.txt"
 [ -d lane3_out ] || { echo "REFUSED: REMOTE_DIR_CREATE_FAILED: lane3_out not made by the kit" >&2; exit 1; }
 : > lane3_out/setup.log
-echo "setup" > lane3_out/phase.txt
 vitals_interval="${FAKE_COLAB_VITALS_INTERVAL_S:-0.2}"
 hold_ticks="${FAKE_COLAB_HOLD_TICKS:-600}"
 
-read_phase_nonempty() {
-  local pfile="$1" fallback="$2" val="" _try
-  for _try in 1 2 3 4 5; do
-    val="$(tr -d '\\r\\n[:space:]' < "${pfile}" 2>/dev/null || true)"
-    [ -n "${val}" ] && break
-    sleep 0.01
-  done
-  printf '%s' "${val:-${fallback}}"
+write_phase_atomic() {
+  local pfile="$1" pval="$2" ptmp
+  ptmp="$(dirname "${pfile}")/.$(basename "${pfile}").tmp.$$"
+  printf '%s\\n' "${pval}" > "${ptmp}" && mv -f "${ptmp}" "${pfile}"
 }
+
+read_phase_keep_last() {
+  local pfile="$1" last_ph="${2:-setup}" raw_ph="" cr
+  cr="$(printf '\\r')"
+  if { IFS= read -r raw_ph < "${pfile}"; } 2>/dev/null; then
+    raw_ph="${raw_ph%${cr}}"
+    case "${raw_ph}" in
+      setup|setup[-_]*|run|run[-_]*|bundle|bundle[-_]*)
+        last_ph="${raw_ph}"
+        ;;
+    esac
+  fi
+  printf '%s' "${last_ph}"
+}
+
+write_phase_atomic lane3_out/phase.txt "setup"
 
 emit_vitals() {
   local phase_val="${1:-setup}"
   local worker_line="$2"
-  local setup_sz blk
+  local setup_sz
   setup_sz="$(wc -c < lane3_out/setup.log 2>/dev/null | tr -d '[:space:]' || echo 0)"
-  blk="$(
-    echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-    echo "CGROUP_MEM_CURRENT: 536870912"
-    echo "CGROUP_MEM_MAX: 12884901888"
-    echo "CGROUP_MEM: oom_kill 0"
-    echo "CGROUP_MEM_STAT: anon 268435456"
-    echo "CGROUP_MEM_STAT: file 268435456"
-    echo "CGROUP_MEM_STAT: shmem 0"
-    echo "MEM: MemTotal:       12582912 kB"
-    echo "MEM: MemAvailable:   11534336 kB"
-    echo "MEM: AnonPages:        262144 kB"
-    echo "MEM: Shmem:                 0 kB"
-    echo "SETUP_BYTES: ${setup_sz:-0}"
-    echo "PROC:"
-    if [ -n "${worker_line}" ]; then
-      echo "${worker_line}"
-    fi
-    printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
-  )"
-  printf '%s\\n' "${blk}"
+  echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  echo "CGROUP_MEM_CURRENT: 536870912"
+  echo "CGROUP_MEM_MAX: 12884901888"
+  echo "CGROUP_MEM: oom_kill 0"
+  echo "CGROUP_MEM_STAT: anon 268435456"
+  echo "CGROUP_MEM_STAT: file 268435456"
+  echo "CGROUP_MEM_STAT: shmem 0"
+  echo "MEM: MemTotal:       12582912 kB"
+  echo "MEM: MemAvailable:   11534336 kB"
+  echo "MEM: AnonPages:        262144 kB"
+  echo "MEM: Shmem:                 0 kB"
+  echo "SETUP_BYTES: ${setup_sz:-0}"
+  echo "PROC:"
+  if [ -n "${worker_line}" ]; then
+    echo "${worker_line}"
+  fi
+  printf 'HARNESS: {"phase": "%s"}\\n' "${phase_val}"
 }
 """
         + venv_check_helper
@@ -1468,7 +1488,7 @@ elif [ "${mode}" = "wall" ]; then
   done
   exit 0
 elif [ "${mode}" = "dead_harness" ]; then
-  echo "run" > lane3_out/phase.txt
+  write_phase_atomic lane3_out/phase.txt "run"
   for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" ""
     sleep "${vitals_interval}"
@@ -1499,7 +1519,7 @@ elif [ "${mode}" = "ram_replay" ]; then
   # held so the live guards read it more than once; FAKE_COLAB_RAM_TORN then ends the stream on a
   # sample cut mid-write (after_stat: after anon/file; number: inside "anon <n>"; meminfo:
   # inside the MEM: lines) and goes quiet.
-  echo "run" > lane3_out/phase.txt
+  write_phase_atomic lane3_out/phase.txt "run"
   emit_ram_head() {
     echo "=== VITALS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
     echo "CGROUP_MEM_CURRENT: $1"
@@ -1509,22 +1529,18 @@ elif [ "${mode}" = "ram_replay" ]; then
   emit_ram_sample() {
     local anon_b=$(( $4 * 1024 ))
     local file_b=$(( $1 > anon_b ? $1 - anon_b : 0 ))
-    local blk
-    blk="$(
-      emit_ram_head "$1"
-      echo "CGROUP_MEM_STAT: anon ${anon_b}"
-      echo "CGROUP_MEM_STAT: file ${file_b}"
-      echo "CGROUP_MEM_STAT: shmem 0"
-      echo "MEM: MemTotal:       $2 kB"
-      echo "MEM: MemAvailable:   $3 kB"
-      echo "MEM: AnonPages:      $4 kB"
-      echo "MEM: Shmem:          0 kB"
-      echo "SETUP_BYTES: 0"
-      echo "PROC:"
-      echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
-      printf 'HARNESS: {"phase": "run"}\\n'
-    )"
-    printf '%s\\n' "${blk}"
+    emit_ram_head "$1"
+    echo "CGROUP_MEM_STAT: anon ${anon_b}"
+    echo "CGROUP_MEM_STAT: file ${file_b}"
+    echo "CGROUP_MEM_STAT: shmem 0"
+    echo "MEM: MemTotal:       $2 kB"
+    echo "MEM: MemAvailable:   $3 kB"
+    echo "MEM: AnonPages:      $4 kB"
+    echo "MEM: Shmem:          0 kB"
+    echo "SETUP_BYTES: 0"
+    echo "PROC:"
+    echo "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+    printf 'HARNESS: {"phase": "run"}\\n'
   }
   last=""
   while read -r cg tot avail anon; do
@@ -1549,7 +1565,7 @@ elif [ "${mode}" = "ram_replay" ]; then
   fi
   exit 0
 elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
-  echo "run" > lane3_out/phase.txt
+  write_phase_atomic lane3_out/phase.txt "run"
   for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
     sleep "${vitals_interval}"

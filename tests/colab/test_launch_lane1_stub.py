@@ -1481,8 +1481,12 @@ def test_lane1_render_runs_comfy_without_cpu_on_loopback_and_stub_keeps_cpu(tmp_
     win_stub = json.loads((out_stub / "window.json").read_text(encoding="utf-8"))
     assert win_stub["listening_sockets"] == ["127.0.0.1:8188"]
     assert "lane1_stub_bundle.tar.gz" in win_stub["downloaded_files"]
-    # The stub path writes the bundle phase before it archives lane1_out, as the render path does.
-    assert "  echo \"bundle\" > /content/lane1_out/phase.txt\n  tar -czf /content/lane1_stub_bundle.tar.gz" in remote_stub_sh
+    # The stub path writes the bundle phase atomically before it archives lane1_out, as the render path does.
+    assert (
+        '  printf \'bundle\\n\' > "/content/lane1_out/.phase.txt.tmp.$$" && mv -f "/content/lane1_out/.phase.txt.tmp.$$" /content/lane1_out/phase.txt\n'
+        "  tar -czf /content/lane1_stub_bundle.tar.gz"
+    ) in remote_stub_sh
+    assert 'echo "bundle" > /content/lane1_out/phase.txt' not in remote_stub_sh
     ext_stub = _extract_bundle(out_stub / "lane1_stub_bundle.tar.gz", tmp_path / "ext_stub_pair")
     assert (ext_stub / "phase.txt").read_text(encoding="utf-8") == "bundle\n"
 

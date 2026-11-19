@@ -80,7 +80,9 @@ def bundle_now(env: dict[str, str] | None = None) -> int:
 
     # 4. tar everything, PNGs and renders.jsonl included; phase.txt reads `bundle` while it archives.
     bundle = Path(root) / "lane1_render_bundle.tar.gz"
-    (out / "phase.txt").write_text("bundle\n", encoding="utf-8")
+    phase_tmp = out / f".phase.txt.tmp.{os.getpid()}"
+    phase_tmp.write_bytes(b"bundle\n")
+    os.replace(phase_tmp, out / "phase.txt")
     tar = _run(["tar", "-czf", str(bundle), "-C", str(out), "."], env)
     sys.stdout.write(_HF_TOKEN_RE.sub("hf_[REDACTED]", tar.stdout + tar.stderr))
     final_rc = 0 if bundle.is_file() and bundle.stat().st_size > 0 else 1

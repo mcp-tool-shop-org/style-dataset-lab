@@ -75,39 +75,38 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 2,
-      "changed": 14,
+      "added": 1,
+      "changed": 9,
       "moved": 0,
-      "parts": 1,
+      "parts": 3,
       "removed": 0
     },
     "items": [
       {
         "kind": "landing",
-        "sentence": "tests/colab/fixtures/ is now read by tests/colab/conftest.py and tests/colab/test_slow_runner_shim.py.",
+        "sentence": "tests/colab/fixtures/fake_colab.py is now read by tests/colab/test_phase_txt_atomic.py.",
         "subjects": [
-          "tests/colab/fixtures/",
-          "tests/colab/conftest.py",
-          "tests/colab/test_slow_runner_shim.py"
+          "tests/colab/fixtures/fake_colab.py",
+          "tests/colab/test_phase_txt_atomic.py"
         ]
       },
       {
         "kind": "counts",
-        "sentence": "2 files added and 14 changed content, across 1 part.",
+        "sentence": "1 file added and 9 changed content, across 3 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "717bdb9da9d5d8582cfbb340750895f793f49202",
-      "generatedAt": "2026-11-18T11:45:32.054Z"
+      "commit": "5502eda64c4c04c907891378d85bdba325bd1f34",
+      "generatedAt": "2026-11-18T16:23:54.764Z"
     },
     "unchanged": false
   },
   "changesTogether": [
     {
-      "a": "tests/colab/fixtures/fake_colab.py",
+      "a": "tests/colab/test_launch_guards.py",
       "b": "tests/colab/test_launch_lane1_stub.py",
-      "either": 30,
+      "either": 13,
       "partLabels": [
         "tests",
         "tests"
@@ -117,7 +116,22 @@
         "tests"
       ],
       "relation": "inside",
-      "shared": 15
+      "shared": 7
+    },
+    {
+      "a": "tests/colab/test_launch_lane1_stub.py",
+      "b": "tests/colab/test_launch_lane3_stub.py",
+      "either": 16,
+      "partLabels": [
+        "tests",
+        "tests"
+      ],
+      "parts": [
+        "tests",
+        "tests"
+      ],
+      "relation": "inside",
+      "shared": 8
     },
     {
       "a": "scripts/colab/lane3_rung.py",
@@ -156,9 +170,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "5502eda64c4c04c907891378d85bdba325bd1f34",
-  "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (70), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "commit": "7b7b06d9588f36969ad3ef40d0326020811581a9",
+  "defaultBranch": "fix/watcher-pre-trip-launcher-death",
+  "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (71), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -183,7 +197,7 @@
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 135
+          "files": 136
         },
         {
           "boundary": "lib",
@@ -228,7 +242,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 34,
-      "runsMore": 130,
+      "runsMore": 131,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -495,10 +509,10 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-18T16:23:54.764Z",
+  "generatedAt": "2026-11-19T00:33:36.470Z",
   "limits": [
-    "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
-    "44 writes and 79 reads use paths built at run time and are not named here.",
+    "7 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 4 more.",
+    "45 writes and 79 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
     "176 writes and 337 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
@@ -525,7 +539,7 @@
   },
   "parts": 13,
   "readers": [],
-  "repo": "mcp-tool-shop-org/style-dataset-lab",
+  "repo": "@mcptoolshop/style-dataset-lab",
   "sequences": [
     {
       "alternatives": [
@@ -781,14 +795,14 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 145,
+  "testFiles": 146,
   "testedBy": {
     "bin": 11,
     "lib": 98,
-    "scripts": 36
+    "scripts": 37
   },
   "testedCodeParts": 3,
-  "unnamedWrites": 44,
+  "unnamedWrites": 45,
   "unread": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",
