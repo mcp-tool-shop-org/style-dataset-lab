@@ -984,6 +984,12 @@ def test_c3_readers_refuse_unknown_phase_word_with_vitals_phase_invalid(tmp_path
             check=False,
         )
         assert res_inv.returncode in (78, 93), f"{lane} invalid phase rc={res_inv.returncode}: {res_inv.stderr}"
+        # The fake VM's own log: its EXIT trap must not die under `set -u` (that turned 78 into 1 on main),
+        # and the reader must have refused inside the fake's wait budget.
+        live_log = tmp_path / f"fx_{lane}_inv" / "colab_state" / "content" / ".sdlab_live.log"
+        live_txt = live_log.read_text(encoding="utf-8", errors="replace") if live_log.is_file() else ""
+        assert "unbound variable" not in live_txt, f"{lane}: fake remote trap failed under set -u: {live_txt[-400:]}"
+        assert "FAKE_INVALID_PHASE_NOT_REFUSED" not in live_txt, f"{lane}: reader never refused: {live_txt[-400:]}"
         win_inv = json.loads((out_inv / "window.json").read_text(encoding="utf-8"))
         assert win_inv["status"] == "VITALS_PHASE_INVALID"
         assert win_inv["refusal_code"] == "VITALS_PHASE_INVALID"

@@ -616,10 +616,14 @@ sub = sub.replace("\n    sleep 15\n", f"\n    sleep {interval_s}\n")
 pathlib.Path(out_sh).write_text("#!/usr/bin/env bash\nset -euo pipefail\n" + sub + "\n", encoding="utf-8", newline="\n")
 VITEXEOF
 
-  local _rv_vit_pid="" _rv_worker_pid=""
+  # Globals on purpose: the EXIT trap below runs after this function has returned (the caller does
+  # `run_real_vitals_mode ... || exit $?`), when a `local` no longer exists. Under `set -u` the trap then
+  # died on "unbound variable" and turned the reader's named exit (78) into 1 (sdlab main CI run 44455714690).
+  _rv_vit_pid=""
+  _rv_worker_pid=""
   _rv_cleanup() {
-    kill "${_rv_vit_pid}" 2>/dev/null || true
-    kill "${_rv_worker_pid}" 2>/dev/null || true
+    if [ -n "${_rv_vit_pid:-}" ]; then kill "${_rv_vit_pid}" 2>/dev/null || true; fi
+    if [ -n "${_rv_worker_pid:-}" ]; then kill "${_rv_worker_pid}" 2>/dev/null || true; fi
   }
   trap _rv_cleanup EXIT
 
@@ -683,7 +687,7 @@ VITEXEOF
       sleep 0.02
     done
     printf '%s\n' "${FAKE_INVALID_PHASE_WORD:-train}" > "${out_dir}/phase.txt"
-    local _inv_ticks=0 _max_inv_ticks="${FAKE_COLAB_INVALID_WAIT_TICKS:-25}"
+    local _inv_ticks=0 _max_inv_ticks="${FAKE_COLAB_INVALID_WAIT_TICKS:-300}"
     while kill -0 "${_rv_vit_pid}" 2>/dev/null && [ "${_inv_ticks}" -lt "${_max_inv_ticks}" ]; do
       _inv_ticks=$(( _inv_ticks + 1 ))
       sleep "${vitals_interval}"
@@ -694,7 +698,10 @@ VITEXEOF
       _rv_vit_pid=""
       return "${_vrc}"
     fi
-    return 0
+    # The reader never refused the word inside the budget. Fail by name: returning 0 here made the remote
+    # job "succeed" on a slow runner and the launcher then failed later with a generic code.
+    echo "FAKE_INVALID_PHASE_NOT_REFUSED: vitals reader still running after ${_max_inv_ticks} ticks" >&2
+    return 97
   fi
 }
 """
