@@ -316,7 +316,7 @@ Créez un problème à l’adresse https://github.com/mcp-tool-shop-org/style-da
 
 Par défaut, il est local. Pas de télémétrie, pas d’analyse et aucune requête externe de l’interface de ligne de commande `sdlab` : les images restent sur votre GPU et votre système de fichiers, et `canon draft` refuse tout point de terminaison qui n’est pas en boucle locale.
 
-La seule exception est l’option d’adhésion. `scripts/colab/` contient des kits de lancement pour exécuter un rendu ou une étape d’entraînement LoRA sur votre propre compte Google Colab. Ils ne téléchargent que les fichiers que vous leur indiquez, s’exécutent dans les limites de dépenses définies à partir du solde actuel de votre compte Colab et arrêtent leur propre session à la fermeture. Ces kits sont **expérimentaux** : ils n’ont pas encore été entièrement testés de bout en bout.
+La seule exception est l’option d’adhésion. `scripts/colab/` contient des kits de lancement pour exécuter un rendu ou une étape d’entraînement LoRA sur votre propre compte Google Colab. Ils ne téléchargent que les fichiers que vous leur indiquez, s’exécutent dans les limites de dépenses définies à partir du solde actuel de votre compte Colab et arrêtent leur propre session à la fermeture. Ces ensembles sont **expérimentaux**. Ils ont terminé des cycles réels de rendu et d’entraînement LoRA sur un GPU Colab, mais leurs options et leurs enregistrements peuvent encore changer. Consultez [Colab lanes](https://mcp-tool-shop-org.github.io/style-dataset-lab/handbook/colab-lanes/) dans le manuel.
 
 ## Licence
 

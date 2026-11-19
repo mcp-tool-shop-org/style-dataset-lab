@@ -318,7 +318,7 @@ Crea un problema en https://github.com/mcp-tool-shop-org/style-dataset-lab/issue
 
 Local por defecto. Sin telemetría, sin análisis y sin solicitudes externas de la CLI de `sdlab`: las imágenes permanecen en tu GPU y sistema de archivos, y `canon draft` rechaza cualquier punto final que no sea de bucle local.
 
-La única excepción es la opción de participación voluntaria. `scripts/colab/` contiene los kits de inicio para ejecutar un proceso de renderizado o un paso de entrenamiento LoRA en su propia cuenta de Google Colab. Solo cargan los archivos que usted especifique, se ejecutan dentro de un límite de gasto que se lee del saldo actual de su cuenta de Colab y cierran su propia sesión al finalizar. Estos kits son **experimentales**: aún no han completado una prueba completa de principio a fin en un entorno real.
+La única excepción es la opción de participación voluntaria. `scripts/colab/` contiene los kits de inicio para ejecutar un proceso de renderizado o un paso de entrenamiento LoRA en su propia cuenta de Google Colab. Solo cargan los archivos que usted especifique, se ejecutan dentro de un límite de gasto que se lee del saldo actual de su cuenta de Colab y cierran su propia sesión al finalizar. Estos kits son **experimentales**. Ya han completado ciclos reales de renderizado y entrenamiento de LoRA en una GPU de Colab, pero sus parámetros y registros aún pueden cambiar. Consulte [Colab lanes](https://mcp-tool-shop-org.github.io/style-dataset-lab/handbook/colab-lanes/) en el manual.
 
 ## Licencia
 

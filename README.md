@@ -322,7 +322,7 @@ File an issue at https://github.com/mcp-tool-shop-org/style-dataset-lab/issues w
 
 Local by default. No telemetry, no analytics, and no external requests from the `sdlab` CLI: images stay on your GPU and filesystem, and `canon draft` refuses any endpoint that isn't loopback.
 
-The one exception is opt-in. `scripts/colab/` holds launch kits for running a render or a LoRA training step on your own Google Colab account. They upload only the files you point them at, run under a spending cap read from your live Colab balance, and stop their own session on exit. These kits are **experimental**: they have not yet completed a live window end to end.
+The one exception is opt-in. `scripts/colab/` holds launch kits for running a render or a LoRA training step on your own Google Colab account. They upload only the files you point them at, run under a spending cap read from your live Colab balance, and stop their own session on exit. These kits are **experimental**. They have completed real render and LoRA training windows on a Colab GPU, but their flags and records can still change. See [Colab lanes](https://mcp-tool-shop-org.github.io/style-dataset-lab/handbook/colab-lanes/) in the handbook.
 
 ## License
 
