@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Tests
+
+- **Colab kits, PR #87 review follow-ups (tests only):** `tests/colab/test_phase_txt_atomic.py` now asserts that no vitals loop of a run outlives its launcher after the stuck-run and stuck-setup cases (`_leftover_vitals_loops`, read from `/proc`), pins `LC_ALL=C` for the invalid-phase case, asserts the live log exists before reading it, and corrects one comment (two claims in it). No kit code changed.
+
 ## [3.7.0] - 2026-11-19
 
 The Colab lanes: a GPU render mode for lane 1, a detached runner that survives link blips, atomic and loud `phase.txt` writes, and a handbook page.
