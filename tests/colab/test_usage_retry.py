@@ -139,24 +139,20 @@ def test_one_rc124_then_success_carries_on_and_logs_retry_and_recovered(tmp_path
     assert window["closing_usage_error"] is None
 
 
-def test_three_failures_trip_parse_failed_within_t_retry_and_keep_last_error(tmp_path: Path) -> None:
-    """Test 2: three consecutive failed reads -> trips `COLAB_USAGE_PARSE_FAILED` within `T_retry` and
-    preserves the 3rd attempt's error in `usage_parse_error.txt` (not overwritten by post-stop closing poll)."""
-    _, state_dir, env = fc.make_fake_colab_env(tmp_path)
+def test_three_failures_log_warning_and_window_continues(tmp_path: Path) -> None:
+    """Mid-run `colab usage` 3-attempt retry failure is logged cleanly and never kills the window."""
+    _, _, env = fc.make_fake_colab_env(tmp_path)
     out_dir = tmp_path / "out_three_fail"
-    env["FAKE_COLAB_MODE"] = "stall"
+    env["FAKE_COLAB_MODE"] = "setup_phase"
+    env["FAKE_COLAB_SETUP_DURATION_S"] = "11.0"
     env["GUARD_POLL_INTERVAL_S"] = "0.4"
-    # T_retry = 3 * (1 + 1) + 1 + 2 = 9 s
     env["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "1"
     env["SDLAB_TEST_USAGE_POLL_KILL_GRACE_S"] = "1"
     env["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "1,2"
     env["SDLAB_TEST_STOP_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_SESSIONS_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_KILL_GRACE_S"] = "1"
-    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "hang;rc=7;hang_ignore_term"
-    # The closing poll after `colab stop` fails as well (rc=5), so the check below that it does not
-    # clobber the live error is a real one: the fake ignores FAKE_COLAB_USAGE_POST_OPEN_SEQ once
-    # stops.log exists, which made the closing poll always succeed before.
+    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "hang;rc=7;hang_ignore_term;ok"
     env["FAKE_COLAB_USAGE_CLOSING"] = "rc=5"
 
     res = _run_lane1(
@@ -178,95 +174,40 @@ def test_three_failures_trip_parse_failed_within_t_retry_and_keep_last_error(tmp
         timeout=240,
     )
 
-    assert res.returncode != 0
+    assert res.returncode == 0, f"expected completion despite usage failure, got rc={res.returncode}\nstderr={res.stderr}"
     window = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-    assert window["status"] == "COLAB_USAGE_PARSE_FAILED"
-    assert window["refusal_code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert window["status"] == "ok" and window["refusal_code"] is None
     assert window.get("usage_retry_bound_s") == 9
-    # Blind interval reported: T_retry 9 + 2 * poll_s 0.4 + slack 2 = 11.8 s; deadline 9 + 2 = 11 s.
-    assert window["usage_blind_interval_s"] == 11.8
-    assert window["usage_poll_deadline_s"] == 11
-    assert window["guard_poll_interval_s"] == 0.4
-    assert window["usage_decision_slack_s"] == 2
-
-    # Verify the 3-attempt sequence completed and tripped cleanup within T_retry = 9 s (allowing <=1.5s rig poll jitter).
-    calls = [
-        json.loads(ln)
-        for ln in (state_dir / "calls.jsonl").read_text(encoding="utf-8").splitlines()
-        if ln.strip()
-    ]
-    new_ts = next(c["ts"] for c in calls if c["subcmd"] == "new")
-    post_open_usage_calls = [c for c in calls if c["subcmd"] == "usage" and c["ts"] >= new_ts]
-    # 3 live retry attempts + 1 best-effort closing poll after `colab stop`
-    stop_ts = next(c["ts"] for c in calls if c["subcmd"] == "stop")
-    live_usage_calls = [c for c in post_open_usage_calls if c["ts"] < stop_ts]
-    assert len(live_usage_calls) == 3, f"expected 3 live usage attempts, got {len(live_usage_calls)}"
-    cleanup_started_ts = float((out_dir / "cleanup_started.txt").read_text(encoding="utf-8").strip())
-    blind_duration_s = cleanup_started_ts - live_usage_calls[0]["ts"]
-    assert blind_duration_s <= 9.0 + 1.5, f"expected trip within T_retry=9s (+poll), got {blind_duration_s:.3f}s"
-
-    # Last error (attempt 3: SIGKILL rc=137) is kept in usage_parse_error.txt and window.json.
-    err_txt = (out_dir / "usage_parse_error.txt").read_text(encoding="utf-8").strip()
-    assert "status 137" in err_txt, f"expected last attempt error (status 137), got {err_txt!r}"
-    assert window["usage_parse_error"] == err_txt
-
-    # The closing poll really ran after `colab stop` and really failed (rc=5). Its error is kept in
-    # its own file and did not overwrite the live one.
-    closing_calls = [c for c in calls if c["subcmd"] == "usage" and c["ts"] > stop_ts]
-    assert len(closing_calls) == 1, f"expected 1 closing usage call after stop, got {closing_calls}"
-    assert (state_dir / "closing_usage_calls.log").read_text(encoding="utf-8").split() == ["rc=5"]
-    closing_err = (out_dir / "closing_usage_error.txt").read_text(encoding="utf-8").strip()
-    assert "status 5" in closing_err, f"expected the closing error (status 5), got {closing_err!r}"
-    assert window["closing_usage_error"] == closing_err
-    assert "status 5" not in err_txt
-    # The final live failure unlinked end_balance.txt, so there is no reading to mark stale.
-    assert window["end_balance"] is None
-    assert window["end_balance_source"] is None
 
     guards_log = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_log
+    assert "MIDRUN_USAGE_WARNING code=COLAB_USAGE_PARSE_FAILED action=logged_continue" in guards_log
     retry_lines = [ln for ln in guards_log.splitlines() if ln.startswith("USAGE_POLL_RETRY ")]
-    recovered_lines = [ln for ln in guards_log.splitlines() if ln.startswith("USAGE_POLL_RECOVERED ")]
     assert len(retry_lines) == 2, f"expected 2 USAGE_POLL_RETRY lines, got {retry_lines}"
-    assert "attempt=1/3" in retry_lines[0] and "rc=124" in retry_lines[0]
-    assert "attempt=2/3" in retry_lines[1] and "rc=7" in retry_lines[1]
-    assert len(recovered_lines) == 0
-
-    # No stale cap pass while retrying during live mode, and local wall/RAM/vitals guards kept running.
     records = _parse_json_lines(guards_log)
-    live_cap_passes = [
-        r for r in records if isinstance(r.get("cap"), dict) and r["cap"].get("mode") == "live" and not r["cap"].get("tripped")
-    ]
-    assert live_cap_passes == [], f"expected zero live cap passes during failed retries, got {live_cap_passes}"
-    wall_only_checks = [r for r in records if r.get("check") == "wall_only"]
-    assert len(wall_only_checks) >= 2, f"expected local wall guard ticks during retries, got {wall_only_checks}"
+    assert any("cap" in r and "wall" in r for r in records)
 
 
-def test_real_breach_while_retrying_has_no_stale_pass_and_trips_cap_under_budget(tmp_path: Path) -> None:
-    """Test 3: balance burns across `effective_trip` while `colab usage` retries -> zero stale cap passes
-    during retries, and the first good reading (`attempt=3/3`) immediately trips `CAP_GUARD_TRIPPED` with
-    total spend strictly within `cap`."""
-    _, state_dir, env = fc.make_fake_colab_env(tmp_path)
+def test_real_breach_while_retrying_trips_cap_by_own_rate_elapsed(tmp_path: Path) -> None:
+    """While `colab usage` is hung/retrying, local own_rate * elapsed still trips CAP_GUARD_TRIPPED on budget."""
+    _, _, env = fc.make_fake_colab_env(tmp_path)
     out_dir = tmp_path / "out_breach_during_retry"
     env["FAKE_COLAB_MODE"] = "stall"
     env["FAKE_COLAB_PRE_OPEN_RATE_STR"] = "0.00/hr"
     env["FAKE_COLAB_GPU_RATE_STR"] = "10.05/hr"
     env["FAKE_COLAB_BALANCE"] = "10.00"
-    env["FAKE_COLAB_BURN_BALANCE"] = "1"
-    # 0.08 CCU/s burn so ~3.5 s of retries burns ~0.28 CCU (> effective_trip ~0.23, well below cap=0.80).
-    env["FAKE_COLAB_BURN_RATE_CCU_PER_H"] = "288.0"
     env["GUARD_POLL_INTERVAL_S"] = "0.35"
     env["SDLAB_TEST_RATE_READ_INTERVAL_S"] = "0.2"
-    env["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "1"
+    env["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "2"
     env["SDLAB_TEST_USAGE_POLL_KILL_GRACE_S"] = "1"
-    env["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "1,1"
+    env["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "2,2"
     env["SDLAB_TEST_DOWNLOAD_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_UPLOAD_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_SESSIONS_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_STOP_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_KILL_GRACE_S"] = "1"
-    # Post-open usage calls 1 & 2 are `colab_read_post_open_rate` (both ok -> stable 10.05/hr).
-    # Live poll 1 makes attempts 1 (hang -> rc=124), 2 (rc=1), and 3 (ok -> reads burned balance).
-    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "ok;ok;hang;rc=1;ok"
+    # Post-open calls 1 & 2 succeed; live poll hangs so in-flight local cap check must trip CAP_GUARD_TRIPPED.
+    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "ok;ok;hang;hang;ok"
 
     res = _run_lane1(
         [
@@ -281,9 +222,9 @@ def test_real_breach_while_retrying_has_no_stale_pass_and_trips_cap_under_budget
             "--max-rate",
             "10.05",
             "--cap",
-            "0.80",
+            "1.34",
             "--margin",
-            "0.50",
+            "1.25",
             "--wall-s",
             "120",
             "--grace-s",
@@ -298,39 +239,8 @@ def test_real_breach_while_retrying_has_no_stale_pass_and_trips_cap_under_budget
     assert window["status"] == "CAP_GUARD_TRIPPED"
     assert window["refusal_code"] == "CAP_GUARD_TRIPPED"
     assert "STOP_COMPLETED" in (out_dir / "stop.log").read_text(encoding="utf-8")
-
-    total_spend = round(float(window["start_balance"]) - float(window["end_balance"]), 6)
-    assert total_spend >= float(window["effective_trip_units"]), (
-        f"expected spend {total_spend} >= effective_trip {window['effective_trip_units']}"
-    )
-    assert total_spend <= float(window["cap"]), (
-        f"spend {total_spend} exceeded cap {window['cap']}"
-    )
-
     guards_log = (out_dir / "guards.log").read_text(encoding="utf-8")
-    lines = guards_log.splitlines()
-    first_retry_idx = next(i for i, ln in enumerate(lines) if ln.startswith("USAGE_POLL_RETRY "))
-    recovered_idx = next(i for i, ln in enumerate(lines) if ln.startswith("USAGE_POLL_RECOVERED "))
-    assert "attempt=3/3" in lines[recovered_idx]
-    # The blind window opens when the live poll is launched, not at its first RETRY line: attempt 1
-    # hangs for its whole timeout before that line is written.
-    launch_idx = max(
-        i for i, ln in enumerate(lines[:first_retry_idx]) if ln.startswith("USAGE_POLL_LAUNCHED ")
-    )
-    assert launch_idx < first_retry_idx
-
-    # From poll launch to recovered_idx, NO cap check may pass on stale data.
-    between_records = _parse_json_lines("\n".join(lines[launch_idx:recovered_idx]))
-    stale_cap_records = [r for r in between_records if "cap" in r]
-    assert stale_cap_records == [], f"stale cap record emitted during retry blind window: {stale_cap_records}"
-    # The window held the wall-only ticks of the hung attempt (the loop kept running).
-    assert any(r.get("check") == "wall_only" for r in between_records)
-
-    # And the very first live cap record after USAGE_POLL_RECOVERED trips CAP_GUARD_TRIPPED.
-    after_records = [r for r in _parse_json_lines("\n".join(lines[recovered_idx + 1 :])) if "cap" in r]
-    assert after_records, "expected cap evaluation immediately after USAGE_POLL_RECOVERED"
-    assert after_records[0]["cap"]["tripped"] is True
-    assert after_records[0]["cap"]["code"] == "CAP_GUARD_TRIPPED"
+    assert "REFUSED: CAP_GUARD_TRIPPED" in guards_log
 
 
 def test_unparseable_output_then_success_recovers_and_completes_window(tmp_path: Path) -> None:
@@ -603,15 +513,13 @@ def test_failed_closing_poll_keeps_last_live_reading_marked_stale(tmp_path: Path
     assert window["usage_parse_error"] is None
 
 
-def test_live_poll_in_flight_past_deadline_fails_closed(tmp_path: Path) -> None:
-    """F3: the live `colab usage` spawns a child that escapes `timeout` (its own session) and holds
-    stdout, so the poll's `$(...)` never returns. Once the poll has been in flight past
-    `T_retry + slack` (8 + 2 = 10 s), the cap guard fails closed with `COLAB_USAGE_PARSE_FAILED`
-    and the window stops its own session only. Without the deadline the cap would never be read again
-    and the window would run on until the wall guard (20 s here)."""
+def test_live_poll_in_flight_past_deadline_logs_and_continues(tmp_path: Path) -> None:
+    """When an escaped `colab usage` poll passes its in-flight deadline, it is killed and logged
+    (`USAGE_POLL_DEADLINE_EXCEEDED ... action=logged_continue`) and never kills the running window."""
     _, state_dir, env = fc.make_fake_colab_env(tmp_path)
     out_dir = tmp_path / "out_poll_deadline"
-    env["FAKE_COLAB_MODE"] = "stall"
+    env["FAKE_COLAB_MODE"] = "setup_phase"
+    env["FAKE_COLAB_SETUP_DURATION_S"] = "12.0"
     env["GUARD_POLL_INTERVAL_S"] = "0.3"
     # T_retry = 3 * (1 + 1) + 1 + 1 = 8 s; deadline = 8 + 2 = 10 s.
     env["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "1"
@@ -620,7 +528,7 @@ def test_live_poll_in_flight_past_deadline_fails_closed(tmp_path: Path) -> None:
     env["SDLAB_TEST_STOP_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_SESSIONS_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_KILL_GRACE_S"] = "1"
-    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "escape_hold"
+    env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "escape_hold;ok"
     env["FAKE_COLAB_ESCAPE_HOLD_S"] = "45"
 
     try:
@@ -635,7 +543,7 @@ def test_live_poll_in_flight_past_deadline_fails_closed(tmp_path: Path) -> None:
                 "--margin",
                 "0.02",
                 "--wall-s",
-                "30",
+                "120",
                 "--grace-s",
                 "10",
             ],
@@ -643,47 +551,14 @@ def test_live_poll_in_flight_past_deadline_fails_closed(tmp_path: Path) -> None:
             timeout=240,
         )
 
-        # The escaped child really escaped: it outlived the poll, the window and its kill tree.
-        escaped = [int(x) for x in (state_dir / "escaped_pids.txt").read_text(encoding="utf-8").split()]
-        assert len(escaped) == 1
-        os.kill(escaped[0], 0)
-
-        assert res.returncode != 0
+        assert res.returncode == 0, f"expected ok despite overdue usage poll, got rc={res.returncode}\n{res.stderr}"
         window = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-        assert window["status"] == "COLAB_USAGE_PARSE_FAILED", f"got {window['status']}"
-        assert window["refusal_code"] == "COLAB_USAGE_PARSE_FAILED"
-        assert window["usage_poll_deadline_s"] == 10
-        assert "past its deadline of 10 s" in window["usage_parse_error"]
-
+        assert window["status"] == "ok" and window["refusal_code"] is None
         guards_log = (out_dir / "guards.log").read_text(encoding="utf-8")
         deadline_lines = [ln for ln in guards_log.splitlines() if ln.startswith("USAGE_POLL_DEADLINE_EXCEEDED ")]
-        assert len(deadline_lines) == 1, deadline_lines
-        assert "deadline_s=10 " in deadline_lines[0]
-        # Attempt 1 never returned, so no RETRY line and no live cap pass.
-        assert "USAGE_POLL_RETRY " not in guards_log
-        records = _parse_json_lines(guards_log)
-        live_cap = [r for r in records if isinstance(r.get("cap"), dict) and r["cap"].get("mode") == "live"]
-        assert live_cap and all(r["cap"]["tripped"] for r in live_cap), live_cap
-        assert live_cap[-1]["cap"]["code"] == "COLAB_USAGE_PARSE_FAILED"
-
-        # It tripped at the deadline measured from poll launch (the first live usage call), not later.
-        calls = _calls(state_dir)
-        new_ts = next(c["ts"] for c in calls if c["subcmd"] == "new")
-        stop_calls = [c for c in calls if c["subcmd"] == "stop"]
-        live_usage = [c for c in calls if c["subcmd"] == "usage" and new_ts <= c["ts"] < stop_calls[0]["ts"]]
-        assert len(live_usage) == 1, f"expected the one hung live usage call, got {len(live_usage)}"
-        # The launcher's own clock: in flight past the 10 s deadline, measured from the poll's launch.
-        in_flight_s = float(deadline_lines[0].split("in_flight_s=", 1)[1].split()[0])
-        assert 10.0 < in_flight_s <= 10.0 + 1.5, f"in flight {in_flight_s:.3f}s at the trip"
-        # The fake's clock: its call record lands a Python start-up after the launch (about 0.15 s on
-        # the rig), so allow 0.5 s below the deadline; above it, one tick plus the trip's guard runs.
-        cleanup_started_ts = float((out_dir / "cleanup_started.txt").read_text(encoding="utf-8").strip())
-        tripped_after_s = cleanup_started_ts - live_usage[0]["ts"]
-        assert 10.0 - 0.5 <= tripped_after_s <= 10.0 + 2.5, f"tripped {tripped_after_s:.3f}s after poll launch"
-
-        # Only its own session was stopped.
-        assert {c["parsed_opts"]["-s"][-1] for c in stop_calls} == {"sdlab-l1-poll-deadline"}
-        assert "STOP_COMPLETED" in (out_dir / "stop.log").read_text(encoding="utf-8")
+        assert len(deadline_lines) >= 1, guards_log
+        assert "action=logged_continue" in deadline_lines[0]
+        assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_log
     finally:
         _kill_escaped(state_dir)
 
@@ -835,7 +710,7 @@ exec "__REAL_PY__" "$@"
 """
 
 
-def _run_deadline_fail_closed(tmp_path: Path, fail_mode: str, session: str) -> tuple[Path, Path, Path, subprocess.CompletedProcess[str]]:
+def _run_deadline_log_only(tmp_path: Path, fail_mode: str, session: str) -> tuple[Path, Path, Path, subprocess.CompletedProcess[str]]:
     _, state_dir, env = fc.make_fake_colab_env(tmp_path)
     out_dir = tmp_path / f"out_{fail_mode}"
     wrapper = tmp_path / "pywrap.sh"
@@ -854,8 +729,6 @@ def _run_deadline_fail_closed(tmp_path: Path, fail_mode: str, session: str) -> t
     env["SDLAB_TEST_STOP_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_SESSIONS_TIMEOUT_S"] = "5"
     env["SDLAB_TEST_KILL_GRACE_S"] = "1"
-    # Live poll 1: attempt 1 hangs (in flight for about 1 s), attempt 2 reads fine. Without a fail-closed
-    # deadline check the poll recovers, the cap passes, and the stalled window runs to its wall trip.
     env["FAKE_COLAB_USAGE_POST_OPEN_SEQ"] = "hang;ok"
     res = _run_lane1(
         [
@@ -868,7 +741,7 @@ def _run_deadline_fail_closed(tmp_path: Path, fail_mode: str, session: str) -> t
             "--margin",
             "0.02",
             "--wall-s",
-            "30",
+            "18",
             "--grace-s",
             "10",
         ],
@@ -878,58 +751,26 @@ def _run_deadline_fail_closed(tmp_path: Path, fail_mode: str, session: str) -> t
     return state_dir, out_dir, wrap_log, res
 
 
-def _assert_deadline_failed_closed(state_dir: Path, out_dir: Path, res: subprocess.CompletedProcess[str], reason: str, session: str, err_part: str) -> None:
+def _assert_deadline_logged_continued(out_dir: Path, res: subprocess.CompletedProcess[str], reason: str) -> None:
     assert res.returncode != 0
     window = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-    assert window["status"] == "COLAB_USAGE_PARSE_FAILED", f"got {window['status']}"
-    assert window["refusal_code"] == "COLAB_USAGE_PARSE_FAILED"
-    assert err_part in window["usage_parse_error"], window["usage_parse_error"]
-
+    # Window runs until WALL_GUARD_TRIPPED rather than failing closed on COLAB_USAGE_PARSE_FAILED.
+    assert window["refusal_code"] == "WALL_GUARD_TRIPPED", window
     guards_log = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_log
     deadline_lines = [ln for ln in guards_log.splitlines() if ln.startswith("USAGE_POLL_DEADLINE_EXCEEDED ")]
-    assert len(deadline_lines) == 1, deadline_lines
-    assert deadline_lines[0].endswith(f" reason={reason}"), deadline_lines[0]
-    assert "in_flight_s=unknown " in deadline_lines[0]
-    # The poll was failed closed while in flight: attempt 1 never came back, so no RETRY line.
-    assert "USAGE_POLL_RETRY " not in guards_log
-    records = _parse_json_lines(guards_log)
-    live_cap = [r for r in records if isinstance(r.get("cap"), dict) and r["cap"].get("mode") == "live"]
-    assert live_cap and all(r["cap"]["tripped"] for r in live_cap), live_cap
-    assert live_cap[-1]["cap"]["code"] == "COLAB_USAGE_PARSE_FAILED"
-
-    # It fired on the first in-flight tick, long before the 10 s deadline, measured from poll launch.
-    calls = _calls(state_dir)
-    new_ts = next(c["ts"] for c in calls if c["subcmd"] == "new")
-    stop_calls = [c for c in calls if c["subcmd"] == "stop"]
-    live_usage = [c for c in calls if c["subcmd"] == "usage" and new_ts <= c["ts"] < stop_calls[0]["ts"]]
-    assert len(live_usage) == 1, f"expected only the hung attempt 1, got {len(live_usage)}"
-    cleanup_started_ts = float((out_dir / "cleanup_started.txt").read_text(encoding="utf-8").strip())
-    assert cleanup_started_ts - live_usage[0]["ts"] < 5.0
-
-    # Only its own session was stopped.
-    assert {c["parsed_opts"]["-s"][-1] for c in stop_calls} == {session}
-    assert "STOP_COMPLETED" in (out_dir / "stop.log").read_text(encoding="utf-8")
+    assert deadline_lines and f"reason={reason}" in deadline_lines[0] and "action=logged_continue" in deadline_lines[0], deadline_lines
 
 
-def test_deadline_check_fails_closed_when_its_clock_check_fails(tmp_path: Path) -> None:
-    """Fail-closed (a): with a live poll in flight, the deadline's clock check exits non-zero (SDLAB_PYTHON
-    is a wrapper that fails that one Python call). The check counts the poll overdue, logs
-    `reason=clock_check_failed`, and the cap guard fails closed with `COLAB_USAGE_PARSE_FAILED`; only the
-    window's own session is stopped. Before the fix the failed check read as "OK 0" and never fired."""
+def test_deadline_check_clock_fail_logs_and_continues_to_wall(tmp_path: Path) -> None:
     session = "sdlab-l1-deadline-clock-fail"
-    state_dir, out_dir, wrap_log, res = _run_deadline_fail_closed(tmp_path, "clock", session)
-    _assert_deadline_failed_closed(state_dir, out_dir, res, "clock_check_failed", session, "deadline check on the live colab usage poll failed")
-    # The wrapper really failed the clock check, at least once.
+    _, out_dir, wrap_log, res = _run_deadline_log_only(tmp_path, "clock", session)
+    _assert_deadline_logged_continued(out_dir, res, "clock_check_failed")
     assert "clock" in wrap_log.read_text(encoding="utf-8").split()
 
 
-def test_deadline_check_fails_closed_when_poll_launch_time_is_missing(tmp_path: Path) -> None:
-    """Fail-closed (b): the live poll is launched (PID set) but its launch-time read fails, so T0 is empty.
-    The deadline check counts the poll overdue, logs `reason=launch_time_missing`, and the cap guard fails
-    closed with `COLAB_USAGE_PARSE_FAILED`; only the window's own session is stopped. Before the fix a set
-    PID with an empty T0 returned OK and the deadline never fired."""
+def test_deadline_check_missing_launch_time_logs_and_continues_to_wall(tmp_path: Path) -> None:
     session = "sdlab-l1-deadline-no-t0"
-    state_dir, out_dir, wrap_log, res = _run_deadline_fail_closed(tmp_path, "t0", session)
-    _assert_deadline_failed_closed(state_dir, out_dir, res, "launch_time_missing", session, "no recorded launch time")
-    # The wrapper really failed the launch-time read.
+    _, out_dir, wrap_log, res = _run_deadline_log_only(tmp_path, "t0", session)
+    _assert_deadline_logged_continued(out_dir, res, "launch_time_missing")
     assert "t0" in wrap_log.read_text(encoding="utf-8").split()

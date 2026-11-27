@@ -91,39 +91,39 @@ def test_cap_guard_trips_on_fixture_and_stays_quiet_just_under() -> None:
     assert live_rate_tripped["tripped"] is True
     assert live_rate_tripped["code"] == "CAP_GUARD_TRIPPED"
 
-    # Missing start or current balance in live/stub (non-fake) mode fails closed as COLAB_USAGE_PARSE_FAILED
+    # Running window (`live` / `pre_exec`) prices spend strictly locally (`own_rate * elapsed`):
+    # missing/negative balances, usage_parse_error, or shared balance drops are logged only and never trip.
+    live_quiet = lg.evaluate_cap_guard(
+        mode="live",
+        cap=0.05,
+        margin=0.01,
+        start_balance=10.0,
+        current_balance=9.0,  # large shared balance drop must NOT trip live window
+        rate_ccu_per_hour=0.24,
+        elapsed_s=599.0,
+    )
+    assert live_quiet["tripped"] is False and live_quiet["account_balance_drop_ccu"] == 1.0
+
     missing_start = lg.evaluate_cap_guard(
-        mode="live",
-        cap=0.05,
-        margin=0.01,
-        start_balance=None,
-        current_balance=9.85,
+        mode="live", cap=0.05, margin=0.01, start_balance=None, current_balance=9.85,
+        rate_ccu_per_hour=0.24, elapsed_s=10.0,
     )
-    assert missing_start["tripped"] is True
-    assert missing_start["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert missing_start["tripped"] is False and missing_start["usage_warning"] == "missing_balance_ignored"
 
-    missing_current = lg.evaluate_cap_guard(
-        mode="live",
-        cap=0.05,
-        margin=0.01,
-        start_balance=9.85,
-        current_balance=None,
-    )
-    assert missing_current["tripped"] is True
-    assert missing_current["code"] == "COLAB_USAGE_PARSE_FAILED"
-
-    # Negative start or current balance fails closed as COLAB_USAGE_PARSE_FAILED
     neg_bal = lg.evaluate_cap_guard(
-        mode="live",
-        cap=0.05,
-        margin=0.01,
-        start_balance=9.85,
-        current_balance=-5.0,
+        mode="live", cap=0.05, margin=0.01, start_balance=9.85, current_balance=-5.0,
+        rate_ccu_per_hour=0.24, elapsed_s=10.0,
     )
-    assert neg_bal["tripped"] is True
-    assert neg_bal["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert neg_bal["tripped"] is False and neg_bal["usage_warning"] == "negative_balance_ignored"
 
-    # Usage parse failure trips cap guard immediately with COLAB_USAGE_PARSE_FAILED
+    live_parse = lg.evaluate_cap_guard(
+        mode="live", cap=0.05, margin=0.01, rate_ccu_per_hour=0.24, elapsed_s=600.0,
+        usage_parse_error="COLAB_USAGE_PARSE_FAILED: transient",
+    )
+    assert live_parse["tripped"] is True and live_parse["code"] == "CAP_GUARD_TRIPPED"
+    assert live_parse["usage_warning"] == "COLAB_USAGE_PARSE_FAILED: transient"
+
+    # Pre-open (`stub`) usage parse failure or negative/missing balance still refuses before `colab new`.
     tripped_parse = lg.evaluate_cap_guard(
         mode="stub",
         cap=0.05,
@@ -133,6 +133,8 @@ def test_cap_guard_trips_on_fixture_and_stays_quiet_just_under() -> None:
     assert tripped_parse["tripped"] is True
     assert tripped_parse["code"] == "COLAB_USAGE_PARSE_FAILED"
     assert tripped_parse["spend_ccu"] is None
+    assert lg.evaluate_cap_guard(mode="stub", cap=0.05, margin=0.01, start_balance=-1.0, current_balance=5.0)["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert lg.evaluate_cap_guard(mode="stub", cap=0.05, margin=0.01, start_balance=None, current_balance=5.0)["code"] == "COLAB_USAGE_PARSE_FAILED"
 
 
 def test_parse_usage_text_anchored_regexes_and_rate_fallback() -> None:
@@ -915,6 +917,9 @@ def test_detached_poll_survives_transient_nic_and_usage_blip_and_refuses_when_ex
     # 3. Transient one-shot start failure and standalone `colab usage` timeout (rc=124) retry cleanly;
     # persistent start failure refuses with DETACHED_START_FAILED.
     _, state_s1, env_s1 = fc.make_fake_colab_env(tmp_path / "start_retry_ok_case")
+    env_s1["FAKE_COLAB_MODE"] = "setup_phase"
+    env_s1["FAKE_COLAB_SETUP_DURATION_S"] = "2.5"
+    env_s1["GUARD_POLL_INTERVAL_S"] = "0.2"
     env_s1["FAKE_COLAB_START_FAIL_ONCE"] = "1"
     # Calls 2 and 3 are the first post-open `colab usage` sequence (#83 polls asynchronously, so a short run
     # makes fewer live calls than a synchronous poll per tick did); call 4 recovers on attempt 3.

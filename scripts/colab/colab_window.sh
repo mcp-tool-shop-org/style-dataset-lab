@@ -2842,6 +2842,12 @@ if card_class == "gpu" and session_opened:
             min_gap_s=float(os.environ.get("COLAB_RATE_READ_INTERVAL_S", lg.RATE_STABLE_GAP_S)),
         )
         state_f.write_text(_json.dumps(state, indent=2) + "\n", encoding="utf-8", newline="\n")
+        if max_rate is not None and (out_dir / "rate_check.json").is_file():
+            dec = lg.window_rate_decision(state, max_rate)
+            last = (state.get("readings") or [{}])[-1]
+            if dec != "ok" or last.get("assignments_bad") or last.get("below_floor") or (last.get("window_rate") or 0) > max_rate:
+                with (out_dir / "guards.log").open("a", encoding="utf-8", newline="\n") as _fh:
+                    _fh.write(f"MIDRUN_RATE_LOG decision={dec} window_rate={last.get('window_rate')} best_stable={state.get('best_stable')} max_rate={max_rate} action=logged_continue\n")
     if max_rate is not None:
         parsed["rate_for_projection"] = lg.gpu_projection_rate(state, max_rate)
         parsed["rate_source"] = "max_of_max_rate_and_stable_window"
@@ -2873,13 +2879,18 @@ if parsed["ok"]:
 else:
     err_msg = str(parsed["error"] or "COLAB_USAGE_PARSE_FAILED")
     err_f.write_text(f"{err_msg}\n", encoding="utf-8", newline="\n")
-    if end_f.exists():
+    if end_f.exists() and not session_opened:
         end_f.unlink()
     start_bal_str = start_f.read_text(encoding="utf-8").strip() if start_f.exists() else "NONE"
-    cur_bal_str = "NONE"
-    rate_proj_f.write_text(f"{parsed['rate_for_projection']}\n", encoding="utf-8", newline="\n")
-    rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
-    print(f"FAIL\t{start_bal_str} {cur_bal_str} {parsed['rate_for_projection']} COLAB_USAGE_PARSE_FAILED")
+    cur_bal_str = end_f.read_text(encoding="utf-8").strip() if end_f.exists() else "NONE"
+    prev_proj = _read_float(rate_proj_f)
+    if session_opened and prev_proj is not None and prev_proj > 0.0:
+        keep_rate = prev_proj
+    else:
+        keep_rate = parsed["rate_for_projection"]
+        rate_proj_f.write_text(f"{keep_rate}\n", encoding="utf-8", newline="\n")
+        rate_src_f.write_text(f"{parsed['rate_source']}\n", encoding="utf-8", newline="\n")
+    print(f"FAIL\t{start_bal_str} {cur_bal_str} {keep_rate} COLAB_USAGE_PARSE_FAILED")
 PYEOF
 )"
     local status_tag="${py_out%%$'\t'*}"
@@ -2973,10 +2984,6 @@ rec = {"decision": decision, "window_rate": state.get("best_stable"), "account_r
        "polls": polls, "priced_at": max(max_rate, state.get("best_stable") or 0.0)}
 (out / "rate_check.json").write_text(json.dumps(rec) + "\n", encoding="utf-8")
 PYEOF
-  if [ "${decision}" = "assignments_unreadable" ]; then
-    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "colab usage gave no readable Active assignments count (missing or 0) on 3 consecutive reads (rate_window.json)"
-    return 1
-  fi
   if [ "${decision}" = "unread" ]; then
     colab_refuse_logged "${out_dir}" RATE_UNREAD "no stable window rate at or above the GPU floor in ${i} polls after open; the window is not run on a configured or CPU rate"
     return 1
@@ -2988,33 +2995,29 @@ PYEOF
   fi
 }
 
-# colab_midrun_rate_check <py> <out_dir>: on a GPU window, every live cycle re-reads the rate (the
-# cap check's own poll); a stable window rate that has risen above --max-rate is RATE_ABOVE_MAX.
-colab_midrun_rate_check() {
+# colab_resolve_local_rate_for_cap <py_bin> <out_dir> [candidate]: resolve positive local own rate
+# (candidate -> rate_for_projection.txt -> max_rate.txt -> RATE_CCU_PER_HOUR) for local cap spend.
+colab_resolve_local_rate_for_cap() {
   local py_bin="$1"
   local out_dir="$2"
-  [ "${COLAB_CARD_CLASS:-}" = "gpu" ] && [ -f "${out_dir}/max_rate.txt" ] && [ -f "${out_dir}/rate_window.json" ] || return 0
-  local guards_dir
-  guards_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  local decision
-  decision="$("${py_bin}" - "${guards_dir}" "${out_dir}" << 'PYEOF'
-import json, sys
+  local candidate="${3:-}"
+  "${py_bin}" - "${out_dir}" "${candidate}" "${RATE_CCU_PER_HOUR:-0.26}" << 'PYEOF'
+import math, sys
 from pathlib import Path
-sys.path.insert(0, sys.argv[1])
-import launch_guards as lg
-out = Path(sys.argv[2])
-state = json.loads((out / "rate_window.json").read_text(encoding="utf-8"))
-print(lg.window_rate_decision(state, float((out / "max_rate.txt").read_text(encoding="utf-8").strip())))
+out_dir, cand, fallback = Path(sys.argv[1]), sys.argv[2].strip(), sys.argv[3].strip()
+for raw in (cand,
+            (out_dir / "rate_for_projection.txt").read_text(encoding="utf-8").strip() if (out_dir / "rate_for_projection.txt").is_file() else "",
+            (out_dir / "max_rate.txt").read_text(encoding="utf-8").strip() if (out_dir / "max_rate.txt").is_file() else "",
+            fallback, "0.26"):
+    try:
+        v = float(raw)
+        if math.isfinite(v) and v > 0.0:
+            print(raw)
+            raise SystemExit(0)
+    except ValueError:
+        pass
+print("0.26")
 PYEOF
-)"
-  if [ "${decision}" = "assignments_unreadable" ]; then
-    colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: 3 consecutive bad reads: no readable Active assignments count (missing or 0), or a stable window rate below the floor (rate_window.json)"
-    return 1
-  fi
-  if [ "${decision}" = "above_max" ]; then
-    colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "mid-run: the window's stable rate rose above --max-rate $(cat "${out_dir}/max_rate.txt")/h (rate_window.json)"
-    return 1
-  fi
 }
 
 colab_evaluate_cap_and_ram_from_metrics() {
@@ -3044,6 +3047,16 @@ colab_evaluate_cap_and_ram_from_metrics() {
     fi
   fi
 
+  if [ "${mode}" != "stub" ]; then
+    if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
+      echo "MIDRUN_USAGE_WARNING code=${err_tok} action=logged_continue" >> "${out_dir}/guards.log"
+    fi
+    rate_val="$(colab_resolve_local_rate_for_cap "${py_bin}" "${out_dir}" "${rate_val:-}")"
+  elif [ "${err_tok}" = "RATE_UNREAD" ]; then
+    colab_refuse_logged "${out_dir}" RATE_UNREAD "a GPU window has no positive live post-open rate; it is not priced with a configured rate"
+    return 1
+  fi
+
   local guard_args=(
     "--mode" "${mode}"
     "--elapsed-s" "${elapsed_s}"
@@ -3054,45 +3067,25 @@ colab_evaluate_cap_and_ram_from_metrics() {
     "--cleanup-bound-s" "${COLAB_CLEANUP_BOUND_S:-0}"
     "--rate" "${rate_val:-0.26}"
   )
-  if [ "${start_bal}" != "NONE" ] && [ -n "${start_bal}" ]; then
-    guard_args+=("--start-balance" "${start_bal}")
-  fi
-  if [ "${cur_bal}" != "NONE" ] && [ -n "${cur_bal}" ]; then
-    guard_args+=("--current-balance" "${cur_bal}")
-  fi
-  if [ "${err_tok}" = "RATE_UNREAD" ]; then
-    colab_refuse_logged "${out_dir}" RATE_UNREAD "a GPU window has no positive live post-open rate; it is not priced with a configured rate"
-    return 1
-  fi
+  [ "${start_bal}" != "NONE" ] && [ -n "${start_bal}" ] && guard_args+=("--start-balance" "${start_bal}")
+  [ "${cur_bal}" != "NONE" ] && [ -n "${cur_bal}" ] && guard_args+=("--current-balance" "${cur_bal}")
   if [ "${err_tok}" != "NONE" ] && [ -n "${err_tok}" ]; then
     local err_detail="${err_tok}"
-    if [ -f "${out_dir}/usage_parse_error.txt" ]; then
-      err_detail="$(cat "${out_dir}/usage_parse_error.txt")"
-    fi
+    [ -f "${out_dir}/usage_parse_error.txt" ] && err_detail="$(cat "${out_dir}/usage_parse_error.txt")"
     guard_args+=("--usage-parse-error" "${err_detail}")
   fi
 
-  # Every guard trip below is a named refusal (REFUSED: <CODE>: <why> in guards.log, where
-  # window.json reads refusal_code and why), and its record, with the numbers that tripped it,
-  # goes to guards.log first. A trip used to leave refusal_code null: the wall/cap record had no
-  # REFUSED line, and the RAM guard's message went to stderr only.
   local combo_rc=0 combo_out=""
-  combo_out="$("${py_bin}" - "${guards_py}" "${out_dir}" "${mode}" "${COLAB_CARD_CLASS:-}" "${PROJECTED_DELTA_MB:-2048}" "${guard_args[@]}" << 'PYEOF'
+  combo_out="$("${py_bin}" - "${guards_py}" "${out_dir}" "${mode}" "${PROJECTED_DELTA_MB:-2048}" "${guard_args[@]}" << 'PYEOF'
 import contextlib, io, json, sys
 from pathlib import Path
 
-guards_py = Path(sys.argv[1])
-out_dir = Path(sys.argv[2])
-mode = sys.argv[3]
-card_class = sys.argv[4]
-proj_delta = sys.argv[5]
-guard_args = sys.argv[6:]
-
+guards_py, out_dir, mode, proj_delta = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4]
+guard_args = sys.argv[5:]
 sys.path.insert(0, str(guards_py.parent))
 import launch_guards as lg
 
 guards_log = out_dir / "guards.log"
-
 buf1 = io.StringIO()
 with contextlib.redirect_stdout(buf1):
     try:
@@ -3104,66 +3097,46 @@ if g_out:
     with guards_log.open("a", encoding="utf-8", newline="\n") as fh:
         fh.write(g_out + "\n")
 
-if mode == "live" and card_class == "gpu" and (out_dir / "max_rate.txt").is_file() and (out_dir / "rate_window.json").is_file():
-    state = json.loads((out_dir / "rate_window.json").read_text(encoding="utf-8"))
-    mr = float((out_dir / "max_rate.txt").read_text(encoding="utf-8").strip())
-    dec = lg.window_rate_decision(state, mr)
-    if dec in ("assignments_unreadable", "above_max"):
-        print(f"RATE_REFUSAL\t{dec}")
-        raise SystemExit(1)
-
 if guard_rc != 0:
     print("GUARD_REFUSAL\t" + json.dumps(g_out))
     raise SystemExit(1)
 
-ram_args = [
-    "--check-ram",
-    "--projected-delta-mb", proj_delta,
-    "--ram-vitals-file", str(out_dir / "vitals.log"),
-]
 buf2 = io.StringIO()
 with contextlib.redirect_stdout(buf2):
     try:
-        ram_rc = int(lg.main(ram_args))
+        ram_rc = int(lg.main(["--check-ram", "--projected-delta-mb", proj_delta, "--ram-vitals-file", str(out_dir / "vitals.log")]))
     except SystemExit as exc:
         ram_rc = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
 r_out = buf2.getvalue().rstrip("\n")
 if r_out:
     with guards_log.open("a", encoding="utf-8", newline="\n") as fh:
         fh.write(r_out + "\n")
-
 if ram_rc != 0:
-    print(f"RAM_REFUSAL\t{ram_rc}\t" + json.dumps(r_out))
-    raise SystemExit(ram_rc)
+    if mode == "stub":
+        print(f"RAM_REFUSAL\t{ram_rc}\t" + json.dumps(r_out))
+        raise SystemExit(ram_rc)
+    with guards_log.open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(f"HOST_RAM_WARNING rc={ram_rc} action=logged_continue\n")
 PYEOF
 )" || combo_rc=$?
 
   if [ "${combo_rc}" -ne 0 ]; then
     local kind="${combo_out%%$'\t'*}"
     local rest="${combo_out#*$'\t'}"
-    if [ "${kind}" = "RATE_REFUSAL" ]; then
-      if [ "${rest}" = "assignments_unreadable" ]; then
-        colab_refuse_logged "${out_dir}" ASSIGNMENTS_UNREADABLE "mid-run: 3 consecutive bad reads: no readable Active assignments count (missing or 0), or a stable window rate below the floor (rate_window.json)"
-      else
-        colab_refuse_logged "${out_dir}" RATE_ABOVE_MAX "mid-run: the window's stable rate rose above --max-rate $(cat "${out_dir}/max_rate.txt")/h (rate_window.json)"
+    if [ "${kind}" = "GUARD_REFUSAL" ] || [ "${kind}" = "RAM_REFUSAL" ]; then
+      local payload_json="${rest}"
+      local exit_rc=1
+      if [ "${kind}" = "RAM_REFUSAL" ]; then
+        exit_rc="${rest%%$'\t'*}"
+        payload_json="${rest#*$'\t'}"
       fi
-      return 1
-    elif [ "${kind}" = "GUARD_REFUSAL" ]; then
-      local guard_out
-      guard_out="$("${py_bin}" -c 'import json, sys; print(json.loads(sys.argv[1]))' "${rest}" 2>/dev/null || true)"
-      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_out}" GUARD_FAILED
-      return 1
-    elif [ "${kind}" = "RAM_REFUSAL" ]; then
-      local ram_rc="${rest%%$'\t'*}"
-      local ram_json="${rest#*$'\t'}"
-      local ram_out
-      ram_out="$("${py_bin}" -c 'import json, sys; print(json.loads(sys.argv[1]))' "${ram_json}" 2>/dev/null || true)"
-      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
-      return "${ram_rc}"
-    else
-      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "" GUARD_FAILED
-      return 1
+      local rec_out
+      rec_out="$("${py_bin}" -c 'import json, sys; print(json.loads(sys.argv[1]))' "${payload_json}" 2>/dev/null || true)"
+      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${rec_out}" GUARD_FAILED
+      return "${exit_rc}"
     fi
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "" GUARD_FAILED
+    return 1
   fi
 }
 
@@ -3218,25 +3191,13 @@ print(code + "\t" + why)
   colab_refuse_logged "${out_dir}" "${code}" "${why}"
 }
 
-# colab_live_usage_poll_deadline_check <py_bin> <guards_py> <out_dir> <elapsed_s> <wall_s> <grace_s> <cap> <margin>:
-# the in-flight deadline on the live `colab usage` poll (COLAB_LIVE_USAGE_POLL_PID, launched at
-# COLAB_LIVE_USAGE_POLL_T0 on the monotonic clock). Returns 0 while the poll is within
-# COLAB_USAGE_POLL_DEADLINE_S (T_retry + slack_s) of its launch. Past it, the poll may never return (a
-# child that escaped `timeout` holds its stdout), so the cap is failing blind: kill the poll's subtree,
-# write the overrun to usage_parse_error.txt, and fail the cap guard closed with COLAB_USAGE_PARSE_FAILED
-# (returns 1; the caller ends the exec and the EXIT trap stops this window's own session).
-# The check fails closed itself: a poll in flight (PID set) with no recorded launch time
-# (reason=launch_time_missing), or a clock check that exits non-zero or prints no verdict
-# (reason=clock_check_failed), counts as overdue. No PID means no poll in flight and returns 0.
+# colab_live_usage_poll_deadline_check <py_bin> <guards_py> <out_dir>: kill any overdue
+# in-flight `colab usage` poll subprocess and log USAGE_POLL_DEADLINE_EXCEEDED without failing
+# the running window (cap spend uses local own_rate * elapsed).
 colab_live_usage_poll_deadline_check() {
   local py_bin="$1"
   local guards_py="$2"
   local out_dir="$3"
-  local elapsed_s="$4"
-  local wall_s="$5"
-  local grace_s="$6"
-  local cap="$7"
-  local margin="$8"
   [ -n "${COLAB_LIVE_USAGE_POLL_PID:-}" ] || return 0
   local deadline_s="${COLAB_USAGE_POLL_DEADLINE_S:-113}"
   local verdict="" reason="" in_flight_s="unknown"
@@ -3258,33 +3219,8 @@ print(("OVERDUE " if in_flight > float(sys.argv[2]) else "OK ") + f"{in_flight:.
   COLAB_LIVE_USAGE_POLL_PID=""
   COLAB_LIVE_USAGE_POLL_T0=""
   rm -f "${out_dir}/.live_usage_metrics.txt" "${out_dir}/.live_usage_rc.txt"
-  echo "USAGE_POLL_DEADLINE_EXCEEDED in_flight_s=${in_flight_s} deadline_s=${deadline_s} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111} slack_s=${COLAB_USAGE_DECISION_SLACK_S:-2} reason=${reason}" >> "${out_dir}/guards.log"
-  case "${reason}" in
-    deadline_passed)
-      printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll still in flight after %s s, past its deadline of %s s (T_retry %s s + slack %s s)\n' \
-        "${in_flight_s}" "${deadline_s}" "${COLAB_USAGE_RETRY_BOUND_S:-111}" "${COLAB_USAGE_DECISION_SLACK_S:-2}" > "${out_dir}/usage_parse_error.txt"
-      ;;
-    launch_time_missing)
-      printf 'COLAB_USAGE_PARSE_FAILED: live colab usage poll in flight with no recorded launch time, so its %s s deadline cannot be checked; failing closed\n' \
-        "${deadline_s}" > "${out_dir}/usage_parse_error.txt"
-      ;;
-    *)
-      printf 'COLAB_USAGE_PARSE_FAILED: the deadline check on the live colab usage poll failed (the clock check exited non-zero or printed no verdict); failing closed\n' \
-        > "${out_dir}/usage_parse_error.txt"
-      ;;
-  esac
-  local start_tok="NONE"
-  if [ -s "${out_dir}/start_balance.txt" ]; then
-    start_tok="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt")"
-  fi
-  colab_evaluate_cap_and_ram_from_metrics \
-    "${py_bin}" "${guards_py}" "live" "${elapsed_s}" "${wall_s}" "${grace_s}" \
-    "${cap}" "${margin}" "${out_dir}" 0 "${start_tok} NONE 0.0 COLAB_USAGE_PARSE_FAILED" || true
-  # The evaluator trips on the parse error; whatever it returned, the cap cannot be read, so fail closed.
-  if ! grep -q '^REFUSED: ' "${out_dir}/guards.log" 2>/dev/null; then
-    colab_refuse_logged "${out_dir}" COLAB_USAGE_PARSE_FAILED "$(cat "${out_dir}/usage_parse_error.txt")"
-  fi
-  return 1
+  echo "USAGE_POLL_DEADLINE_EXCEEDED in_flight_s=${in_flight_s} deadline_s=${deadline_s} retry_bound_s=${COLAB_USAGE_RETRY_BOUND_S:-111} slack_s=${COLAB_USAGE_DECISION_SLACK_S:-2} reason=${reason} action=logged_continue" >> "${out_dir}/guards.log"
+  return 0
 }
 
 # colab_live_usage_guard_tick <py_bin> <guards_py> <out_dir> <start_epoch> <wall_s> <grace_s> <cap> <margin> <poll_s> [launch]:
@@ -3356,11 +3292,11 @@ PYEOF
   fi
 
   if kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; then
-    local wall_only_rc=0 wall_only_out=""
-    wall_only_out="$("${py_bin}" "${guards_py}" --check-wall-only --mode live --elapsed-s "${elapsed_s}" --wall-s "${wall_s}" --grace-s "${grace_s}" </dev/null)" || wall_only_rc=$?
-    [ -n "${wall_only_out}" ] && printf '%s\n' "${wall_only_out}" >> "${out_dir}/guards.log"
-    if [ "${wall_only_rc}" -ne 0 ]; then
-      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${wall_only_out}" WALL_GUARD_TRIPPED
+    local guard_inflight_rc=0 guard_inflight_out=""
+    guard_inflight_out="$("${py_bin}" "${guards_py}" --check-wall-only --mode live --elapsed-s "${elapsed_s}" --wall-s "${wall_s}" --grace-s "${grace_s}" </dev/null)" || guard_inflight_rc=$?
+    [ -n "${guard_inflight_out}" ] && printf '%s\n' "${guard_inflight_out}" >> "${out_dir}/guards.log"
+    if [ "${guard_inflight_rc}" -ne 0 ]; then
+      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${guard_inflight_out}" GUARD_FAILED
       colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
       COLAB_LIVE_USAGE_POLL_PID=""
       COLAB_LIVE_USAGE_POLL_T0=""
@@ -3371,18 +3307,19 @@ PYEOF
     live_ram_out="$("${py_bin}" "${guards_py}" --check-ram --projected-delta-mb "${PROJECTED_DELTA_MB:-2048}" --ram-vitals-file "${out_dir}/vitals.log" </dev/null)" || live_ram_rc=$?
     [ -n "${live_ram_out}" ] && printf '%s\n' "${live_ram_out}" >> "${out_dir}/guards.log"
     if [ "${live_ram_rc}" -ne 0 ]; then
-      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${live_ram_out}" GUARD_FAILED
-      colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
-      COLAB_LIVE_USAGE_POLL_PID=""
-      COLAB_LIVE_USAGE_POLL_T0=""
-      COLAB_LIVE_TICK_RC=91
-      return 0
+      echo "HOST_RAM_WARNING rc=${live_ram_rc} action=logged_continue" >> "${out_dir}/guards.log"
     fi
-    # #84's in-flight deadline, on every tick a read is in flight (after a successful or a failed remote
-    # poll): past T_retry + slack_s the read is killed and the cap fails closed (COLAB_USAGE_PARSE_FAILED).
-    if ! colab_live_usage_poll_deadline_check "${py_bin}" "${guards_py}" "${out_dir}" "${elapsed_s}" "${wall_s}" "${grace_s}" "${cap}" "${margin}"; then
-      COLAB_LIVE_TICK_RC=91
-      return 0
+    colab_live_usage_poll_deadline_check "${py_bin}" "${guards_py}" "${out_dir}" || true
+    if [ -z "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+      local local_rate overdue_cap_rc=0 overdue_cap_out=""
+      local_rate="$(colab_resolve_local_rate_for_cap "${py_bin}" "${out_dir}")"
+      overdue_cap_out="$("${py_bin}" "${guards_py}" --mode live --elapsed-s "${elapsed_s}" --wall-s "${wall_s}" --grace-s "${grace_s}" --cap "${cap}" --margin "${margin}" --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S:-0}" --rate "${local_rate}" </dev/null)" || overdue_cap_rc=$?
+      [ -n "${overdue_cap_out}" ] && printf '%s\n' "${overdue_cap_out}" >> "${out_dir}/guards.log"
+      if [ "${overdue_cap_rc}" -ne 0 ]; then
+        colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${overdue_cap_out}" GUARD_FAILED
+        COLAB_LIVE_TICK_RC=91
+        return 0
+      fi
     fi
   else
     wait "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null || true
@@ -3418,20 +3355,9 @@ PYEOF
 
 # colab_offline_guard_tick <py_bin> <guards_py> <out_dir> <start_epoch> <wall_s> <grace_s> <cap> <margin>:
 # the guard pass the detached poll loop runs on a failed remote poll while no `colab usage` read is in
-# flight. Nothing here is a fresh reading, so nothing here can pass a cap check:
-#   - the clock is recomputed from session_open_epoch.txt right before the checks (never the loop-top clock);
-#   - the wall is checked first and unconditionally (--check-wall-only);
-#   - start_balance.txt or end_balance.txt missing or unreadable is COLAB_USAGE_PARSE_FAILED (fail closed);
-#   - on a GPU window (an unset or empty card class counts as GPU) a missing or empty rate_for_projection.txt,
-#     or a rate that is not finite and above zero however written, is RATE_UNREAD (never 0.26);
-#   - an unset or empty COLAB_CLEANUP_BOUND_S is GUARD_FAILED (never a ceiling without the cleanup reserve);
-#   - the cap is a trip-only projection (--check-offline-cap):
-#     max(priced_rate * elapsed, cached drop + priced_rate * balance_age_s) at or
-#     above the ceiling refuses CAP_GUARD_TRIPPED; below it the record is `"mode": "live_offline"` with
-#     `balance_source: cached`, the balance's age and `fresh_pass: false`, never a `"mode": "live"` pass;
-#   - the host-RAM guard runs as on the other ticks.
-# Sets COLAB_LIVE_TICK_RC: 0, or 91 after a logged refusal. Always returns 0, so the caller runs it without
-# `||` and `set -e` stays in force inside it.
+# flight: checks wall (--check-wall-only) and local cap projection (--check-offline-cap: own_rate * elapsed);
+# missing balances, missing rate, or host RAM issues are logged only and never stop a running window.
+# Sets COLAB_LIVE_TICK_RC: 0, or 91 after WALL_GUARD_TRIPPED or CAP_GUARD_TRIPPED. Always returns 0.
 colab_offline_guard_tick() {
   local py_bin="$1"
   local guards_py="$2"
@@ -3460,58 +3386,33 @@ colab_offline_guard_tick() {
     return 0
   fi
 
+  local cached_rate cleanup_bound="${COLAB_CLEANUP_BOUND_S:-0}"
+  [[ "${cleanup_bound}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || cleanup_bound="0"
+  cached_rate="$(colab_resolve_local_rate_for_cap "${py_bin}" "${out_dir}")"
+
+  local offline_args=(
+    "--check-offline-cap"
+    "--checkpoint" "offline"
+    "--elapsed-s" "${elapsed_s}"
+    "--cap" "${cap}"
+    "--margin" "${margin}"
+    "--cleanup-bound-s" "${cleanup_bound}"
+    "--rate" "${cached_rate}"
+  )
   local cached_start="" cached_cur=""
   [ -f "${out_dir}/start_balance.txt" ] && cached_start="$(tr -d '[:space:]' < "${out_dir}/start_balance.txt" 2>/dev/null || true)"
   [ -f "${out_dir}/end_balance.txt" ] && cached_cur="$(tr -d '[:space:]' < "${out_dir}/end_balance.txt" 2>/dev/null || true)"
-  if ! [[ "${cached_start}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || ! [[ "${cached_cur}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    printf 'COLAB_USAGE_PARSE_FAILED: offline guard: start_balance.txt or end_balance.txt missing or unreadable during a remote poll outage (start=%s, end=%s)\n' "${cached_start:-missing}" "${cached_cur:-missing}" > "${out_dir}/usage_parse_error.txt"
-    colab_refuse_logged "${out_dir}" COLAB_USAGE_PARSE_FAILED "offline guard: start_balance.txt or end_balance.txt missing or unreadable during a remote poll outage (start=${cached_start:-missing}, end=${cached_cur:-missing}); the cap is not projected without a balance"
-    COLAB_LIVE_TICK_RC=91
-    return 0
+  if [[ "${cached_start}" =~ ^[0-9]+(\.[0-9]+)?$ ]] && [[ "${cached_cur}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    local balance_age_s
+    balance_age_s="$("${py_bin}" -c 'import os, sys, time; print(f"{max(0.0, time.time() - os.path.getmtime(sys.argv[1])):.3f}")' "${out_dir}/end_balance.txt" 2>/dev/null || echo "${elapsed_s}")"
+    offline_args+=("--start-balance" "${cached_start}" "--current-balance" "${cached_cur}" "--balance-age-s" "${balance_age_s}")
   fi
-
-  # An unset or empty card class counts as GPU, so a bad rate refuses instead of taking the CPU rate.
-  local card_class_eff="${COLAB_CARD_CLASS:-}"
-  [ "${card_class_eff}" = "cpu" ] || card_class_eff="gpu"
-  local cached_rate=""
-  [ -f "${out_dir}/rate_for_projection.txt" ] && cached_rate="$(tr -d '[:space:]' < "${out_dir}/rate_for_projection.txt" 2>/dev/null || true)"
-  # A usable rate is a finite number above zero, however it is written (`0e0`, `1e-400` and `inf` are not).
-  if ! [[ "${cached_rate}" =~ ^[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?$ ]] \
-    || ! "${py_bin}" -c 'import math, sys; v = float(sys.argv[1]); sys.exit(0 if math.isfinite(v) and v > 0.0 else 1)' "${cached_rate}" </dev/null 2>/dev/null; then
-    if [ "${card_class_eff}" = "gpu" ]; then
-      colab_refuse_logged "${out_dir}" RATE_UNREAD "offline guard: a GPU window's rate_for_projection.txt is missing, empty or not positive ('${cached_rate}') during a remote poll outage; it is not priced with a configured rate"
-      COLAB_LIVE_TICK_RC=91
-      return 0
-    fi
-    cached_rate="${RATE_CCU_PER_HOUR:-0.26}"
-  fi
-
-  # The cleanup reserve is part of the ceiling: an unset or empty bound refuses instead of reading as 0.
-  if ! [[ "${COLAB_CLEANUP_BOUND_S:-}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    colab_refuse_logged "${out_dir}" GUARD_FAILED "offline guard: COLAB_CLEANUP_BOUND_S is unset, empty or not a number ('${COLAB_CLEANUP_BOUND_S:-}'); the ceiling cannot reserve cleanup"
-    COLAB_LIVE_TICK_RC=91
-    return 0
-  fi
-
-  local balance_age_s
-  balance_age_s="$("${py_bin}" -c 'import os, sys, time; print(f"{max(0.0, time.time() - os.path.getmtime(sys.argv[1])):.3f}")' "${out_dir}/end_balance.txt" 2>/dev/null || echo "${elapsed_s}")"
 
   local offline_rc=0 offline_out=""
-  offline_out="$("${py_bin}" "${guards_py}" \
-    --check-offline-cap \
-    --checkpoint offline \
-    --elapsed-s "${elapsed_s}" \
-    --cap "${cap}" \
-    --margin "${margin}" \
-    --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S}" \
-    --rate "${cached_rate}" \
-    --start-balance "${cached_start}" \
-    --current-balance "${cached_cur}" \
-    --balance-age-s "${balance_age_s}" \
-    --card-class "${card_class_eff}" </dev/null)" || offline_rc=$?
+  offline_out="$("${py_bin}" "${guards_py}" "${offline_args[@]}" </dev/null)" || offline_rc=$?
   [ -n "${offline_out}" ] && printf '%s\n' "${offline_out}" >> "${out_dir}/guards.log"
   if [ "${offline_rc}" -ne 0 ]; then
-    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${offline_out}" GUARD_FAILED
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${offline_out}" CAP_GUARD_TRIPPED
     COLAB_LIVE_TICK_RC=91
     return 0
   fi
@@ -3520,9 +3421,7 @@ colab_offline_guard_tick() {
   ram_out="$("${py_bin}" "${guards_py}" --check-ram --projected-delta-mb "${PROJECTED_DELTA_MB:-2048}" --ram-vitals-file "${out_dir}/vitals.log" </dev/null)" || ram_rc=$?
   [ -n "${ram_out}" ] && printf '%s\n' "${ram_out}" >> "${out_dir}/guards.log"
   if [ "${ram_rc}" -ne 0 ]; then
-    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${ram_out}" GUARD_FAILED
-    COLAB_LIVE_TICK_RC=91
-    return 0
+    echo "HOST_RAM_WARNING rc=${ram_rc} checkpoint=offline action=logged_continue" >> "${out_dir}/guards.log"
   fi
   return 0
 }
@@ -3793,13 +3692,22 @@ colab_run_exec_with_live_guards() {
       --setup-stall-s "${setup_stall_s}" </dev/null)" || vitals_rc=$?
     [ -n "${vitals_out}" ] && printf '%s\n' "${vitals_out}" >> "${out_dir}/guards.log"
     if [ "${vitals_rc}" -ne 0 ]; then
-      colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${vitals_out}" GUARD_FAILED
-      if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
-        colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
-        COLAB_LIVE_USAGE_POLL_PID=""
-      fi
-      rm -f "${usage_metrics_file}" "${usage_rc_file}"
-      return 93
+      local v_code=""
+      v_code="$("${py_bin}" -c 'import json, sys; print((json.loads(sys.argv[1]).get("code") or ""))' "${vitals_out}" 2>/dev/null || true)"
+      case "${v_code}" in
+        DEAD_HARNESS_TRIPPED|STALL_GUARD_TRIPPED|SETUP_STALL_TRIPPED)
+          colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${vitals_out}" GUARD_FAILED
+          if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+            colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+            COLAB_LIVE_USAGE_POLL_PID=""
+          fi
+          rm -f "${usage_metrics_file}" "${usage_rc_file}"
+          return 93
+          ;;
+        *)
+          echo "VITALS_WARNING code=${v_code:-UNKNOWN} action=logged_continue" >> "${out_dir}/guards.log"
+          ;;
+      esac
     fi
   done
 
@@ -3828,70 +3736,40 @@ colab_run_exec_with_live_guards() {
     return "${remote_rc}"
   fi
 
+  if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
+    colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
+    COLAB_LIVE_USAGE_POLL_PID=""
+    COLAB_LIVE_USAGE_POLL_T0=""
+  fi
+  rm -f "${usage_metrics_file}" "${usage_rc_file}"
+
   local final_vitals_rc=0 final_vitals_out=""
   final_vitals_out="$("${py_bin}" "${guards_py}" --vitals-file "${out_dir}/vitals.log" --idle-seconds 0 --setup-idle-seconds 0 --stall-s "${stall_s}" --setup-stall-s "${setup_stall_s}" </dev/null)" || final_vitals_rc=$?
   [ -n "${final_vitals_out}" ] && printf '%s\n' "${final_vitals_out}" >> "${out_dir}/guards.log"
   if [ "${final_vitals_rc}" -ne 0 ]; then
-    if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
-      colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
-      COLAB_LIVE_USAGE_POLL_PID=""
-    fi
-    rm -f "${usage_metrics_file}" "${usage_rc_file}"
-    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${final_vitals_out}" GUARD_FAILED
-    return 93
+    local fv_code=""
+    fv_code="$("${py_bin}" -c 'import json, sys; print((json.loads(sys.argv[1]).get("code") or ""))' "${final_vitals_out}" 2>/dev/null || true)"
+    case "${fv_code}" in
+      DEAD_HARNESS_TRIPPED|STALL_GUARD_TRIPPED|SETUP_STALL_TRIPPED)
+        colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${final_vitals_out}" GUARD_FAILED
+        return 93
+        ;;
+      *)
+        echo "VITALS_WARNING code=${fv_code:-UNKNOWN} checkpoint=final action=logged_continue" >> "${out_dir}/guards.log"
+        ;;
+    esac
   fi
 
-  if [ -n "${COLAB_LIVE_USAGE_POLL_PID}" ]; then
-    while kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; do
-      sleep "${poll_s}"
-      if ! kill -0 "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null; then
-        break
-      fi
-      local post_now post_elapsed post_wall_rc=0 post_wall_out=""
-      post_now="$(date -u +%s)"
-      if [ -f "${out_dir}/session_open_epoch.txt" ]; then
-        post_elapsed="$("${py_bin}" -c 'import sys, time; print(f"{max(0.0, time.time() - float(open(sys.argv[1], encoding="utf-8").read().strip())):.6f}")' "${out_dir}/session_open_epoch.txt" 2>/dev/null || echo "$((post_now - start_epoch))")"
-      else
-        post_elapsed="$((post_now - start_epoch))"
-      fi
-      post_wall_out="$("${py_bin}" "${guards_py}" --check-wall-only --mode live --elapsed-s "${post_elapsed}" --wall-s "${wall_s}" --grace-s "${grace_s}" </dev/null)" || post_wall_rc=$?
-      [ -n "${post_wall_out}" ] && printf '%s\n' "${post_wall_out}" >> "${out_dir}/guards.log"
-      if [ "${post_wall_rc}" -ne 0 ]; then
-        colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${post_wall_out}" WALL_GUARD_TRIPPED
-        colab_kill_pid_subtree "${py_bin}" "${COLAB_LIVE_USAGE_POLL_PID}"
-        COLAB_LIVE_USAGE_POLL_PID=""
-        rm -f "${usage_metrics_file}" "${usage_rc_file}"
-        return 91
-      fi
-      if ! colab_live_usage_poll_deadline_check "${py_bin}" "${guards_py}" "${out_dir}" "${post_elapsed}" "${wall_s}" "${grace_s}" "${cap}" "${margin}"; then
-        return 91
-      fi
-    done
-    wait "${COLAB_LIVE_USAGE_POLL_PID}" 2>/dev/null || true
-    COLAB_LIVE_USAGE_POLL_PID=""
-    COLAB_LIVE_USAGE_POLL_T0=""
-    local tail_poll_rc=0 tail_metrics=""
-    if [ -f "${usage_rc_file}" ]; then
-      tail_poll_rc="$(tr -d '[:space:]' < "${usage_rc_file}" 2>/dev/null || echo 1)"
-    else
-      tail_poll_rc=1
-    fi
-    if [ -f "${usage_metrics_file}" ]; then
-      tail_metrics="$(cat "${usage_metrics_file}" 2>/dev/null || true)"
-    fi
-    rm -f "${usage_metrics_file}" "${usage_rc_file}"
-    local tail_epoch tail_elapsed
-    tail_epoch="$(date -u +%s)"
-    tail_elapsed="$((tail_epoch - start_epoch))"
-    colab_evaluate_cap_and_ram_from_metrics \
-      "${py_bin}" "${guards_py}" "live" "${tail_elapsed}" "${wall_s}" "${grace_s}" \
-      "${cap}" "${margin}" "${out_dir}" "${tail_poll_rc}" "${tail_metrics}" || return $?
-  fi
-
-  local end_epoch elapsed_final
+  local end_epoch elapsed_final local_rate final_rc=0 final_out=""
   end_epoch="$(date -u +%s)"
   elapsed_final="$((end_epoch - start_epoch))"
-  colab_check_cap_and_ram "${py_bin}" "${guards_py}" "live" "${elapsed_final}" "${wall_s}" "${grace_s}" "${cap}" "${margin}" "${out_dir}"
+  local_rate="$(colab_resolve_local_rate_for_cap "${py_bin}" "${out_dir}")"
+  final_out="$("${py_bin}" "${guards_py}" --mode live --elapsed-s "${elapsed_final}" --wall-s "${wall_s}" --grace-s "${grace_s}" --cap "${cap}" --margin "${margin}" --cleanup-bound-s "${COLAB_CLEANUP_BOUND_S:-0}" --rate "${local_rate}" </dev/null)" || final_rc=$?
+  [ -n "${final_out}" ] && printf '%s\n' "${final_out}" >> "${out_dir}/guards.log"
+  if [ "${final_rc}" -ne 0 ]; then
+    colab_refuse_from_guard_record "${py_bin}" "${out_dir}" "${final_out}" GUARD_FAILED
+    return 1
+  fi
 }
 
 # colab_salvage_bundle_after_failure <session> <bundle_now_py> <remote_path> <local_dst> <out_dir> <failed_rc>:

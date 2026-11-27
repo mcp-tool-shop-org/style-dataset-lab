@@ -1330,24 +1330,18 @@ def test_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(tmp_pa
 
 
 @pytest.mark.parametrize("rise", ["9.80", "12.00"])
-def test_a_midrun_rise_above_max_rate_refuses_and_bundles(tmp_path: Path, rise: str) -> None:
-    # Our own rise, the assignment count unchanged (the fake's default 1): it trips the max.
-    state_dir, env, src = _rung_env(tmp_path)
+def test_a_midrun_rise_above_max_rate_logs_and_runs_on(tmp_path: Path, rise: str) -> None:
+    _, env, src = _rung_env(tmp_path)
     env.update({"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
-                "FAKE_COLAB_POST_OPEN_RATE_SEQ": f"8.88/hr,8.88/hr,8.88/hr,8.88/hr,{rise}/hr",
-                "FAKE_VM_TRAIN": "hang_after_save", "GUARD_POLL_INTERVAL_S": "0.5"})
+                "FAKE_COLAB_POST_OPEN_RATE_SEQ": f"8.88/hr,8.88/hr,{rise}/hr,{rise}/hr",
+                "FAKE_VM_TRAIN_SECONDS": "6", "GUARD_POLL_INTERVAL_S": "0.3"})
     res, out_dir = _launch(tmp_path, env, src, "--max-rate", "9.5")
-    content = state_dir / "content"
-    try:
-        assert res.returncode != 0
-        win = _win(out_dir)
-        assert win["refusal_code"] == "RATE_ABOVE_MAX"
-        assert "mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
-        assert "BUNDLE_AFTER_FAILURE: downloaded" in (out_dir / "guards.log").read_text(encoding="utf-8")
-        assert max(r["window_rate"] or 0 for r in win["rate_readings"]) == float(rise)
-    finally:
-        for pid in _rung_processes(content):
-            os.kill(pid, 9)
+    assert res.returncode == 0, res.stderr[-2000:]
+    win = _win(out_dir)
+    assert win["status"] == "ok" and win["refusal_code"] is None
+    assert "MIDRUN_RATE_LOG decision=above_max" in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert max(r["window_rate"] or 0 for r in win["rate_readings"]) == float(rise)
+    assert win["rate_used_for_cap_and_projection"] == 9.5
 
 
 def test_cap_clock_starts_at_open_success_and_counts_the_rate_polls(tmp_path: Path) -> None:
@@ -1475,33 +1469,34 @@ def test_the_rebaseline_uses_the_highest_stable_rate_seen() -> None:
     assert lg.window_rate_decision(st, 9.5) == "above_max"
 
 
-def test_a_stable_mid_run_rate_below_the_floor_is_a_bad_read() -> None:
+def test_a_stable_mid_run_rate_below_the_floor_is_logged_only() -> None:
     import launch_guards as lg
 
     # After our first stable 8.88, the account drops to 0.50 at an unchanged count: the stable pair
-    # below the floor is recorded below_floor and counts as bad; three in a row end the window.
+    # below the floor is recorded below_floor and stable=False, never triggering a kill.
     one = _fold({}, (8.88, 8.88, 0.5, 0.5, 8.88), pre=0.0)
     r = one["readings"]
     assert r[2].get("below_floor") is None and r[3]["below_floor"] is True and r[3]["stable"] is False
     assert one["best_stable"] == 8.88 and not one.get("assignments_unreadable")
-    assert one["assignments_bad_streak"] == 0 and lg.window_rate_decision(one, 9.5) == "ok"
+    assert lg.window_rate_decision(one, 9.5) == "ok"
     three = _fold({}, (8.88, 8.88, 0.5, 0.5, 0.5, 0.5), pre=0.0)
     assert [x.get("below_floor", False) for x in three["readings"]] == [False, False, False, True, True, True]
-    assert lg.window_rate_decision(three, 9.5) == "assignments_unreadable"
-    # Before the first stable read a sub-floor rate stays "unread" (the RATE_UNREAD budget), not bad.
+    assert lg.window_rate_decision(three, 9.5) == "ok"
+    # Before the first stable read a sub-floor rate stays "unread" (the RATE_UNREAD budget).
     low = _fold({}, (0.5, 0.5, 0.5, 0.5), pre=0.0)
     assert not any(x.get("below_floor") for x in low["readings"]) and lg.window_rate_decision(low, 9.5) == "unread"
 
 
 @pytest.mark.parametrize("bad", [None, 0])
-def test_a_bad_count_for_three_reads_is_unreadable_and_one_is_recorded_only(bad) -> None:
+def test_a_bad_count_midrun_is_logged_only(bad) -> None:
     import launch_guards as lg
 
     one = _fold({}, (8.88, 8.88, 8.88, 8.88), pre=0.0, counts=(1, 1, bad, 1))
     assert one["readings"][2]["assignments_bad"] is True
-    assert lg.window_rate_decision(one, 9.5) == "ok" and not one.get("assignments_unreadable")
+    assert lg.window_rate_decision(one, 9.5) == "ok"
     three = _fold({}, (8.88, 8.88, 8.88, 8.88, 8.88), pre=0.0, counts=(1, 1, bad, bad, bad))
-    assert lg.window_rate_decision(three, 9.5) == "assignments_unreadable"
+    assert sum(1 for r in three["readings"] if r.get("assignments_bad")) == 3
+    assert lg.window_rate_decision(three, 9.5) == "ok"
     assert lg.parse_active_assignments("Current balance: 1 compute units\nUsage rate: 8.88/hr\n") is None
 
 
@@ -1598,8 +1593,8 @@ def test_cap_at_8_88_per_hour_trips_at_20_3_seconds() -> None:
     kw = dict(mode="live", cap=0.06, margin=0.01, start_balance=100.0, current_balance=100.0, rate_ccu_per_hour=8.88)
     assert lg.evaluate_cap_guard(elapsed_s=20.0, **kw)["tripped"] is False
     assert lg.evaluate_cap_guard(elapsed_s=20.3, **kw)["tripped"] is True
-    # The balance drop counts too: the larger of the drop and the projection is the spend.
-    assert lg.evaluate_cap_guard(elapsed_s=0.0, **{**kw, "current_balance": 99.94})["tripped"] is True
+    # Shared balance drop does not trip a live window (own_rate * elapsed only).
+    assert lg.evaluate_cap_guard(elapsed_s=0.0, **{**kw, "current_balance": 99.94})["tripped"] is False
 
 
 # The machine shape gate (colab_window.sh) on lane 3: required for the GPU rung, checked after open.
@@ -2086,34 +2081,27 @@ def test_cap_guard_reserves_cleanup_and_trips_earlier_matching_hand_computed_win
         _kill_hung_test_pids(state_dir)
 
 
-def test_rising_rate_reprices_cleanup_reserve_and_lowers_effective_trip(tmp_path: Path) -> None:
+def test_gpu_projection_rate_stays_locked_at_open_rate_when_midrun_rises(tmp_path: Path) -> None:
     import launch_guards as lg
 
-    # 1. Unit: as the stable window rate rises from 8.88/h to 10.50/h under --max-rate 9.5,
-    # priced_rate rises from 9.5 to 10.5, re-pricing cleanup_reserve from 3.404167 to 3.7625
-    # and lowering effective_trip (for cap 4.9, margin 0.01) from 1.485833 to 1.1275.
-    # A spend of 1.30 units (start 100.0 -> current 98.7) is below 1.485833 before the rise,
-    # and trips CAP_GUARD_TRIPPED once the rising rate re-prices the reserve.
+    # 1. Unit: open_stable is 8.88 under --max-rate 9.5 -> gpu_projection_rate stays 9.5 even if
+    # mid-run stable readings rise to 10.5 (best_stable updates for logging only).
     st = _fold({}, (8.88, 8.88), pre=0.0)
-    rate_initial = lg.gpu_projection_rate(st, 9.5)
-    assert rate_initial == 9.5
+    assert lg.gpu_projection_rate(st, 9.5) == 9.5
+    st = _fold(st, (10.5, 10.5), pre=0.0, start=10.0)
+    assert st["best_stable"] == 10.5 and st["open_stable"] == 8.88
+    assert lg.gpu_projection_rate(st, 9.5) == 9.5
     before = lg.evaluate_cap_guard(
         mode="live", cap=4.9, margin=0.01, cleanup_bound_s=1290,
-        start_balance=100.0, current_balance=98.7, rate_ccu_per_hour=rate_initial, elapsed_s=0.0,
+        rate_ccu_per_hour=9.5, elapsed_s=500.0,
     )
     assert before["cleanup_reserve_units"] == 3.404167
     assert before["effective_trip_units"] == 1.485833
     assert before["tripped"] is False
-
-    st = _fold(st, (10.5, 10.5), pre=0.0, start=10.0)
-    rate_risen = lg.gpu_projection_rate(st, 9.5)
-    assert rate_risen == 10.5
     after = lg.evaluate_cap_guard(
         mode="live", cap=4.9, margin=0.01, cleanup_bound_s=1290,
-        start_balance=100.0, current_balance=98.7, rate_ccu_per_hour=rate_risen, elapsed_s=0.0,
+        rate_ccu_per_hour=9.5, elapsed_s=570.0,
     )
-    assert after["cleanup_reserve_units"] == 3.7625
-    assert after["effective_trip_units"] == 1.1275
     assert after["tripped"] is True and after["code"] == "CAP_GUARD_TRIPPED"
 
     # 2. End-to-end through the launcher: pre-open rate is 0.26/hr (reserve = 0.093167, effective_trip = 0.396833

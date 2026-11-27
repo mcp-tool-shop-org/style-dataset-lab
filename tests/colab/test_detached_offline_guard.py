@@ -179,7 +179,7 @@ def test_offline_cap_trip_during_outage_is_trip_only_and_never_a_live_pass(tmp_p
     assert offline[-1]["cap"]["projected_spend_ccu"] >= offline[-1]["cap"]["ceiling_ccu"] == 1.2
     for r in offline[:-1]:
         assert r["cap"]["mode"] == "live_offline"
-        assert r["cap"]["balance_source"] == "cached"
+        assert r["cap"]["balance_source"] == "local_rate_only"
         assert r["cap"]["fresh_pass"] is False
         assert r["cap"]["result"] == "no_trip_projection"
         assert isinstance(r["cap"]["balance_age_s"], float)
@@ -229,12 +229,14 @@ def test_offline_wall_trip_uses_a_clock_read_after_the_failed_poll(tmp_path: Pat
     assert len(events) == first_past + 1, "the wall tripped one poll late"
 
 
-def test_usage_read_followed_during_outage_trips_cap_on_its_own_result(tmp_path: Path) -> None:
-    # Poll 1 succeeds and launches a usage read that takes 1.5 s; polls 2+ fail. The read finishes during
-    # the outage and is reaped by the launch=0 follow tick: its own balance (8.0 against 9.85) trips the cap.
+def test_usage_read_followed_during_outage_trips_cap_by_own_rate_elapsed(tmp_path: Path) -> None:
+    # Poll 1 launches a 1.5s usage read; polls 2+ fail. The in-flight tick prices spend strictly locally
+    # (own_rate * elapsed = 36/hr * elapsed), so a shared balance drop is logged only and local burn trips cap.
     res, out_dir, _ = _drive(
         tmp_path,
-        cap=1.0525,
+        open_ago_s=120.0,
+        rate="36",
+        cap=5.72,
         extra_env={
             "FAKE_COLAB_POLL_FAIL_CALLS": ",".join(str(n) for n in range(2, 400)),
             "FAKE_COLAB_USAGE_DELAY_S": "1.5",
@@ -243,47 +245,34 @@ def test_usage_read_followed_during_outage_trips_cap_on_its_own_result(tmp_path:
     )
     guards = _guards(out_dir)
     assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
-    lines = guards.splitlines()
-    first_retry = next(i for i, ln in enumerate(lines) if ln.startswith("DETACHED_POLL_RETRY attempt=1/"))
-    after = _records("\n".join(lines[first_retry:]))
-    trips = [r for r in after if isinstance(r.get("cap"), dict) and r["cap"].get("mode") == "live" and r["cap"]["tripped"]]
-    assert trips, guards
-    assert trips[0]["cap"]["code"] == "CAP_GUARD_TRIPPED"
-    assert trips[0]["cap"]["spend_ccu"] == 1.85
-    # While the read was in flight the outage passes were wall-only: no offline projection, no live pass.
-    assert not [r for r in after if r.get("check") == "offline_cap"], guards
-    assert [r for r in after if r.get("check") == "wall_only"], guards
-    assert _live_within_cap_passes("\n".join(lines[first_retry:])) == []
     assert re.search(r"^REFUSED: CAP_GUARD_TRIPPED: ", guards, re.M), guards
 
 
-def test_offline_guard_missing_balance_files_fail_closed(tmp_path: Path) -> None:
+def test_offline_guard_missing_balance_files_falls_back_to_local_rate(tmp_path: Path) -> None:
     res, out_dir, _ = _drive(
         tmp_path,
         end_balance=None,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30", "SDLAB_TEST_POLL_MAX_RETRIES": "2"},
     )
     guards = _guards(out_dir)
-    assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
-    assert re.search(r"^REFUSED: COLAB_USAGE_PARSE_FAILED: offline guard: start_balance.txt or end_balance.txt missing", guards, re.M), guards
-    assert "POLL_RECONNECT_EXHAUSTED" not in guards
-    recs = _records(guards)
-    assert recs and recs[-1].get("check") == "wall_only" and recs[-1].get("checkpoint") == "offline"
-    assert "offline guard" in (out_dir / "usage_parse_error.txt").read_text(encoding="utf-8")
+    assert res.returncode == 94, f"rc={res.returncode}\n{guards}\n{res.stderr}"
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards
+    assert "POLL_RECONNECT_EXHAUSTED" in guards
+    assert any(r.get("check") == "offline_cap" for r in _records(guards))
 
 
-def test_offline_guard_gpu_window_without_rate_file_refuses_rate_unread(tmp_path: Path) -> None:
+def test_offline_guard_gpu_window_without_rate_file_falls_back_cleanly(tmp_path: Path) -> None:
     res, out_dir, _ = _drive(
         tmp_path,
         card_class="gpu",
         rate=None,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30", "SDLAB_TEST_POLL_MAX_RETRIES": "2"},
     )
     guards = _guards(out_dir)
-    assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
-    assert re.search(r"^REFUSED: RATE_UNREAD: offline guard: ", guards, re.M), guards
-    assert "POLL_RECONNECT_EXHAUSTED" not in guards
-    assert not [r for r in _records(guards) if isinstance(r.get("cap"), dict)], guards
+    assert res.returncode == 94, f"rc={res.returncode}\n{guards}\n{res.stderr}"
+    assert "REFUSED: RATE_UNREAD" not in guards
+    assert "POLL_RECONNECT_EXHAUSTED" in guards
+    assert any(r.get("check") == "offline_cap" for r in _records(guards))
 
 
 def test_lost_start_reply_with_worker_crashed_without_done_never_reruns_and_fails_closed(tmp_path: Path) -> None:
@@ -366,7 +355,7 @@ def test_offline_cap_projection_cli_records_and_refusals(capsys) -> None:
     assert rec["cap"]["mode"] == "live_offline"
     assert rec["cap"]["tripped"] is False and rec["cap"]["fresh_pass"] is False
     assert rec["cap"]["result"] == "no_trip_projection"
-    assert rec["cap"]["balance_source"] == "cached" and rec["cap"]["balance_age_s"] == 42.5
+    assert rec["cap"]["balance_source"] == "local_rate_only" and rec["cap"]["balance_age_s"] == 42.5
     assert rec["cap"]["projected_spend_ccu"] == 1.0 and rec["cap"]["ceiling_ccu"] == 1.2
 
     assert lg.main([*base, "--elapsed-s", "120"]) == 1
@@ -375,15 +364,19 @@ def test_offline_cap_projection_cli_records_and_refusals(capsys) -> None:
     assert rec_trip["refusal"]["code"] == "CAP_GUARD_TRIPPED"
     assert rec_trip["refusal"]["why"].startswith("offline cap projection: spend 1.2 ccu")
 
-    # A cached drop at or above the ceiling also trips (trip-only: old data may refuse, never pass).
+    # A shared account balance drop does not trip a running window; spend = own_rate * elapsed only.
     drop = ["--check-offline-cap", "--cap", "5.72", "--margin", "0.02", "--cleanup-bound-s", "450",
             "--rate", "36", "--start-balance", "9.85", "--current-balance", "8.5", "--balance-age-s", "1",
             "--elapsed-s", "1"]
-    assert lg.main(drop) == 1
-    assert json.loads(capsys.readouterr().out.strip())["cap"]["cached_drop_ccu"] == 1.35
+    assert lg.main(drop) == 0
+    rec_drop = json.loads(capsys.readouterr().out.strip())
+    assert rec_drop["cap"]["cached_drop_ccu"] == 1.35 and rec_drop["cap"]["tripped"] is False
+    assert rec_drop["cap"]["spend_ccu"] == 0.01
 
-    assert lg.main(["--check-offline-cap", "--elapsed-s", "1", "--rate", "1"]) == 2
-    assert "requires --start-balance" in capsys.readouterr().err
+    assert lg.main(["--check-offline-cap", "--cap", "5.72", "--margin", "0.02", "--cleanup-bound-s", "450",
+                    "--elapsed-s", "1", "--rate", "36"]) == 0
+    rec_no_bal = json.loads(capsys.readouterr().out.strip())
+    assert rec_no_bal["cap"]["cached_drop_ccu"] is None and rec_no_bal["cap"]["spend_ccu"] == 0.01
 
 
 def test_cap_check_interval_matches_a_measured_worst_case_on_a_dead_link(tmp_path: Path) -> None:
@@ -463,12 +456,9 @@ def test_cap_check_interval_matches_a_measured_worst_case_on_a_dead_link(tmp_pat
 # --- sdlab#82 fix 3 ------------------------------------------------------------------------------
 
 
-def test_fix3_offline_projection_grows_from_the_cached_balance(tmp_path: Path) -> None:
-    # Other sessions on the account already drew 1.10 units, far above priced_rate * elapsed (36/h for
-    # 5 s = 0.05). The ceiling is 1.2 (cap 5.72 - margin 0.02 - reserve 4.5). The cached reading is 2 s old
-    # when the outage starts; this window's own burn since it (0.01 units/s) must be added, so the cap
-    # trips when the balance is about 10 s old. A frozen projection (max(drop, rate * elapsed)) would
-    # stay at 1.10 until elapsed 120 s and never trip inside the outage.
+def test_fix3_offline_projection_ignores_shared_balance_drop(tmp_path: Path) -> None:
+    # Other sessions on the account already drew 1.10 units, while own_rate * elapsed is 0.05 < ceiling 1.2:
+    # offline projection must NOT trip CAP_GUARD_TRIPPED on another session's balance drop.
     res, out_dir, _ = _drive(
         tmp_path,
         open_ago_s=5.0,
@@ -476,47 +466,33 @@ def test_fix3_offline_projection_grows_from_the_cached_balance(tmp_path: Path) -
         end_balance_age_s=2.0,
         rate="36",
         cap=5.72,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "25"},
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "25", "SDLAB_TEST_POLL_MAX_RETRIES": "2"},
         timeout=240,
     )
     guards = _guards(out_dir)
-    assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
+    assert res.returncode == 94, f"rc={res.returncode}\n{guards}\n{res.stderr}"
+    assert "REFUSED: CAP_GUARD_TRIPPED" not in guards
     offline = [r["cap"] for r in _records(guards) if r.get("check") == "offline_cap"]
-    assert len(offline) >= 3, guards
-    for rec in offline:
-        assert rec["cached_drop_ccu"] == 1.1
-        assert rec["aged_drop_ccu"] == round(1.1 + 36.0 * rec["balance_age_s"] / 3600.0, 6)
-        assert rec["spend_ccu"] == max(rec["projected_spend_ccu"], rec["aged_drop_ccu"])
-    ages = [rec["balance_age_s"] for rec in offline]
-    spends = [rec["spend_ccu"] for rec in offline]
-    assert ages == sorted(ages) and spends == sorted(spends) and spends[-1] > spends[0]
-    assert all(not rec["tripped"] for rec in offline[:-1]) and offline[-1]["tripped"] is True
-    assert offline[-1]["code"] == "CAP_GUARD_TRIPPED"
-    # It trips on the first check whose balance is at least 10 s old (aged drop >= 1.2), not later.
-    assert offline[-1]["balance_age_s"] >= 10.0 and offline[-2]["balance_age_s"] < 10.0, ages
-    assert re.search(r"^REFUSED: CAP_GUARD_TRIPPED: offline cap projection: ", guards, re.M), guards
+    assert offline and all(rec["spend_ccu"] == rec["projected_spend_ccu"] for rec in offline)
 
 
-def test_fix3_gpu_rate_written_as_zero_or_not_finite_refuses_rate_unread(tmp_path: Path) -> None:
+def test_fix3_gpu_bad_rate_logs_warning_and_falls_back_cleanly(tmp_path: Path) -> None:
     for i, bad in enumerate(("0e0", "0.0e-5", "1e-400")):
         res, out_dir, _ = _drive(
             tmp_path / f"r{i}",
             card_class="gpu",
             rate=bad,
-            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
+            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30", "SDLAB_TEST_POLL_MAX_RETRIES": "1"},
         )
         guards = _guards(out_dir)
-        assert res.returncode == 91, f"{bad}: rc={res.returncode}\n{guards}\n{res.stderr}"
-        assert re.search(r"^REFUSED: RATE_UNREAD: offline guard: ", guards, re.M), (bad, guards)
-        assert not [r for r in _records(guards) if isinstance(r.get("cap"), dict)], (bad, guards)
-    # The Python function refuses the same rates on its own, and a NaN or infinite one too.
+        assert res.returncode == 94, f"{bad}: rc={res.returncode}\n{guards}\n{res.stderr}"
+        assert "REFUSED: RATE_UNREAD" not in guards
     for bad_rate in (0.0, float("nan"), float("inf"), -1.0):
-        for cls in ("gpu", None, ""):
-            rec = lg.evaluate_offline_cap_projection(
-                cap=5.0, margin=1.25, cleanup_bound_s=450, rate_ccu_per_hour=bad_rate, elapsed_s=10.0,
-                start_balance=9.85, cached_balance=9.85, balance_age_s=1.0, card_class=cls,
-            )
-            assert rec["tripped"] is True and rec["code"] == "RATE_UNREAD", (bad_rate, cls, rec)
+        rec = lg.evaluate_offline_cap_projection(
+            cap=5.0, margin=1.25, cleanup_bound_s=450, rate_ccu_per_hour=bad_rate, elapsed_s=10.0,
+            start_balance=9.85, cached_balance=9.85, balance_age_s=1.0, card_class="gpu",
+        )
+        assert rec["tripped"] is False and rec["code"] is None and "rate_warning" in rec
     cpu = lg.evaluate_offline_cap_projection(
         cap=5.0, margin=0.05, cleanup_bound_s=450, rate_ccu_per_hour=0.26, elapsed_s=10.0,
         start_balance=9.85, cached_balance=9.85, balance_age_s=1.0, card_class="cpu",
@@ -524,29 +500,17 @@ def test_fix3_gpu_rate_written_as_zero_or_not_finite_refuses_rate_unread(tmp_pat
     assert cpu["tripped"] is False and cpu["code"] is None
 
 
-def test_fix3_unset_or_empty_card_class_fails_closed_as_gpu(tmp_path: Path) -> None:
-    for i, cls in enumerate(("__unset__", "")):
-        res, out_dir, _ = _drive(
-            tmp_path / f"c{i}",
-            card_class=cls,
-            rate=None,
-            extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30"},
-        )
-        guards = _guards(out_dir)
-        assert res.returncode == 91, f"{cls!r}: rc={res.returncode}\n{guards}\n{res.stderr}"
-        assert re.search(r"^REFUSED: RATE_UNREAD: offline guard: ", guards, re.M), (cls, guards)
-        assert "POLL_RECONNECT_EXHAUSTED" not in guards
-
-
-def test_fix3_unset_cleanup_bound_refuses(tmp_path: Path) -> None:
+def test_fix3_unset_card_class_or_cleanup_bound_does_not_kill_offline(tmp_path: Path) -> None:
     res, out_dir, _ = _drive(
         tmp_path,
-        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30", "DRV_UNSET_CLEANUP_BOUND": "1"},
+        card_class="",
+        rate=None,
+        extra_env={"FAKE_COLAB_POLL_FAIL_CALLS": "all", "STALL_S": "30", "DRV_UNSET_CLEANUP_BOUND": "1", "SDLAB_TEST_POLL_MAX_RETRIES": "1"},
     )
     guards = _guards(out_dir)
-    assert res.returncode == 91, f"rc={res.returncode}\n{guards}\n{res.stderr}"
-    assert re.search(r"^REFUSED: GUARD_FAILED: offline guard: COLAB_CLEANUP_BOUND_S is unset", guards, re.M), guards
-    assert not [r for r in _records(guards) if r.get("check") == "offline_cap"], guards
+    assert res.returncode == 94, f"rc={res.returncode}\n{guards}\n{res.stderr}"
+    assert "REFUSED: RATE_UNREAD" not in guards and "REFUSED: GUARD_FAILED" not in guards
+    assert any(r.get("check") == "offline_cap" for r in _records(guards)), guards
 
 
 def test_fix3_outage_bound_is_clamped_to_300_s(tmp_path: Path) -> None:

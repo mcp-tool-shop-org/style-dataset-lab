@@ -858,13 +858,20 @@ elif [ "${mode}" = "setup_stall" ]; then
     sleep "${vitals_interval}"
   done
   exit 0
-elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
+elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ]; then
   write_phase_atomic lane1_out/phase.txt "run"
   for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
     sleep "${vitals_interval}"
   done
   exit 0
+elif [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
+  write_phase_atomic lane1_out/phase.txt "run"
+  mid_ticks="$(awk -v d="${FAKE_COLAB_SETUP_DURATION_S:-4}" -v iv="${vitals_interval}" 'BEGIN { n = int((d / iv) + 0.999); print (n < 3 ? 3 : n) }')"
+  for _ in $(seq 1 "${mid_ticks}"); do
+    emit_vitals "run" "101 /content/venv-lane1/bin/python /content/ComfyUI/main.py --cpu --listen 127.0.0.1"
+    sleep "${vitals_interval}"
+  done
 fi
 
 verify_uploaded_venv_script "remote_lane1_stub.sh.uploaded" "1" 2>&1 | tee -a lane1_out/setup.log
@@ -1730,15 +1737,22 @@ elif [ "${mode}" = "ram_replay" ]; then
       meminfo) printf 'CGROUP_MEM_STAT: anon %s\nCGROUP_MEM_STAT: file 0\nCGROUP_MEM_STAT: shmem 0\nMEM: MemTotal:       %s kB\nMEM: MemAvail' "$(( $4 * 1024 ))" "$2" ;;
     esac
     sleep "${FAKE_COLAB_RAM_TORN_QUIET_S:-6}"
+    exit 0
   fi
-  exit 0
-elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ] || [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
+elif [ "${mode}" = "stall" ] || [ "${mode}" = "cap_burn" ]; then
   write_phase_atomic lane3_out/phase.txt "run"
   for _ in $(seq 1 "${hold_ticks}"); do
     emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
     sleep "${vitals_interval}"
   done
   exit 0
+elif [ "${mode}" = "usage_fail_midrun" ] || [ "${mode}" = "negative_balance_midrun" ]; then
+  write_phase_atomic lane3_out/phase.txt "run"
+  mid_ticks="$(awk -v d="${FAKE_COLAB_SETUP_DURATION_S:-4}" -v iv="${vitals_interval}" 'BEGIN { n = int((d / iv) + 0.999); print (n < 3 ? 3 : n) }')"
+  for _ in $(seq 1 "${mid_ticks}"); do
+    emit_vitals "run" "101 /content/venv-lane3/bin/python /content/ai-toolkit/run.py /content/lane3_out/synth_job.yaml"
+    sleep "${vitals_interval}"
+  done
 fi
 
 verify_uploaded_venv_script "remote_lane3_stub.sh.uploaded" "3" 2>&1 | tee -a lane3_out/setup.log

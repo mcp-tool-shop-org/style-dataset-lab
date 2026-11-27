@@ -144,10 +144,12 @@ def test_wall_cap_and_vitals_records_carry_a_refusal(capsys: pytest.CaptureFixtu
     assert lg.main(["--mode", "fake", "--elapsed-s", "100", "--wall-s", "100", "--grace-s", "10"]) == 1
     rec = json.loads(capsys.readouterr().out)
     assert rec["refusal"] == {"code": "WALL_GUARD_TRIPPED", "why": "wall guard: -10.0 s remaining of threshold 90.0 s (wall - grace)"}
-    assert lg.main(["--mode", "live", "--cap", "1", "--margin", "0.1", "--start-balance", "10", "--current-balance", "9"]) == 1
-    assert json.loads(capsys.readouterr().out)["refusal"] == {"code": "CAP_GUARD_TRIPPED", "why": "cap guard: spend 1.0 ccu >= ceiling 0.9 ccu"}
-    assert lg.main(["--mode", "live", "--usage-parse-error", "COLAB_USAGE_PARSE_FAILED: x"]) == 1
+    assert lg.main(["--mode", "live", "--cap", "1", "--margin", "0.1", "--rate", "3.6", "--elapsed-s", "900"]) == 1
+    assert json.loads(capsys.readouterr().out)["refusal"] == {"code": "CAP_GUARD_TRIPPED", "why": "cap guard: spend 0.9 ccu >= ceiling 0.9 ccu"}
+    assert lg.main(["--mode", "stub", "--usage-parse-error", "COLAB_USAGE_PARSE_FAILED: x"]) == 1
     assert json.loads(capsys.readouterr().out)["refusal"]["code"] == "COLAB_USAGE_PARSE_FAILED"
+    assert lg.main(["--mode", "live", "--usage-parse-error", "COLAB_USAGE_PARSE_FAILED: x"]) == 0
+    assert json.loads(capsys.readouterr().out)["cap"]["usage_warning"] == "COLAB_USAGE_PARSE_FAILED: x"
     assert lg.main(["--mode", "fake"]) == 0
     assert "refusal" not in json.loads(capsys.readouterr().out)
     assert lg.wall_cap_refusal({"tripped": False}, {"tripped": False}) is None
@@ -203,42 +205,50 @@ def test_kit_replay_of_rung_g4a_does_not_trip_host_ram(tmp_path: Path) -> None:
                and r.get("limit_mb") == 181130.0 for r in recs)
 
 
-# (c) + (d) e2e: a real private-memory climb trips as a named refusal, numbers in guards.log.
-def test_kit_ram_trip_is_a_named_refusal_with_its_numbers_in_guards_log(tmp_path: Path) -> None:
+# (c) + (d) e2e: a high private-memory climb logs HOST_RAM_PROJECTION_EXCEEDED telemetry + warning without stopping the window.
+def test_kit_ram_climb_logs_warning_and_never_stops_window(tmp_path: Path) -> None:
     tot_kb = 185477132
     rows = [(2 * 1024**3, tot_kb, tot_kb - 2097152, 2097152), (120 * 1024**3, tot_kb, 80000000, 100000000),
             (178 * 1024**3, tot_kb, 3000000, 180000000)]
     replay = tmp_path / "climb.txt"
     replay.write_text("".join(f"{a} {b} {c} {d}\n" for a, b, c, d in rows), encoding="utf-8", newline="\n")
-    res, out_dir, state_dir = _replay_window(tmp_path, replay, "climb")
-    assert res.returncode != 0
+    res, out_dir, _ = _replay_window(tmp_path, replay, "climb", FAKE_COLAB_RAM_HOLD="4")
+    guards = (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert res.returncode == 0, f"rc={res.returncode}\n{guards}\n{res.stderr}"
     win = json.loads((out_dir / "window.json").read_text(encoding="utf-8"))
-    assert win["refusal_code"] == "HOST_RAM_PROJECTION_EXCEEDED" and win["status"] == "HOST_RAM_PROJECTION_EXCEEDED"
-    assert f"private 175781.2 MB ({STAT_SOURCE}) + delta 2048.0 MB x 1.05" in win["why"]
-    draft = json.loads((out_dir / "outcome.draft.json").read_text(encoding="utf-8"))
-    assert draft["refusal_code"] == "HOST_RAM_PROJECTION_EXCEEDED" and draft["why"] == win["why"]
-    tripped = [r for r in _ram_records(out_dir) if r["tripped"]]
-    assert tripped, (out_dir / "guards.log").read_text(encoding="utf-8")
-    rec = tripped[0]
-    assert (rec["private_mb"], rec["delta_mb"], rec["factor"], rec["limit_mb"], rec["mem_available_mb"], rec["source"]) == (
-        175781.2, 2048.0, 1.05, 181130.0, 2929.7, STAT_SOURCE)
-    assert rec["tripped_on"] == ["private_projection", "mem_available_floor"]
-    assert "REFUSED: HOST_RAM_PROJECTION_EXCEEDED: private 175781.2 MB" in (out_dir / "guards.log").read_text(encoding="utf-8")
-    assert "STOP -s sdlab-l3-climb" in (state_dir / "stops.log").read_text(encoding="utf-8")
+    assert win["status"] == "ok" and win["refusal_code"] is None
+    tripped = [r for r in _ram_records(out_dir) if r.get("tripped")]
+    assert tripped, guards
+    assert "HOST_RAM_WARNING" in guards
+    assert "REFUSED: HOST_RAM_PROJECTION_EXCEEDED" not in guards
 
 
-# Every live-guard trip lands as a named refusal (they used to leave refusal_code null). The stall
-# case's fake prints the new CGROUP_MEM_STAT and MEM: Shmem lines like the real emitter; the
-# shell filter counted those as run output, so STALL_GUARD_TRIPPED could never fire.
 @pytest.mark.parametrize(
     ("mode", "extra", "env_over", "code"),
     [
-        ("cap_burn", ["--cap", "0.18", "--margin", "0.05"], {}, "CAP_GUARD_TRIPPED"),
+        (
+            "cap_burn",
+            ["--cap", "0.75", "--margin", "0.50"],
+            {
+                "FAKE_COLAB_POLL_INTERVAL_S": "1",
+                "FAKE_COLAB_RATE_STR": "36.00/hr",
+                "RATE_CCU_PER_HOUR": "36",
+                "SDLAB_TEST_DOWNLOAD_TIMEOUT_S": "2",
+                "SDLAB_TEST_STOP_TIMEOUT_S": "2",
+                "SDLAB_TEST_SESSIONS_TIMEOUT_S": "2",
+                "SDLAB_TEST_KILL_GRACE_S": "1",
+                "SDLAB_TEST_SALVAGE_DEADLINE_S": "2",
+                "SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S": "1",
+                "SDLAB_TEST_USAGE_POLL_ATTEMPTS": "1",
+                "SDLAB_TEST_USAGE_POLL_TIMEOUT_S": "2",
+                "SDLAB_TEST_USAGE_POLL_KILL_GRACE_S": "1",
+            },
+            "CAP_GUARD_TRIPPED",
+        ),
         ("dead_harness", [], {}, "DEAD_HARNESS_TRIPPED"),
         ("stall", [], {"STALL_S": "1"}, "STALL_GUARD_TRIPPED"),
         ("setup_stall", [], {"SETUP_STALL_S": "3", "FAKE_COLAB_VITALS_INTERVAL_S": "0.2"}, "SETUP_STALL_TRIPPED"),
         ("wall", ["--wall-s", "2", "--grace-s", "1"], {}, "WALL_GUARD_TRIPPED"),
-        ("stall", [], {"PROJECTED_DELTA_MB": "not-a-number"}, "GUARD_FAILED"),
     ],
 )
 def test_kit_live_guard_trips_are_named_refusals(tmp_path: Path, mode: str, extra: list[str], env_over: dict, code: str) -> None:

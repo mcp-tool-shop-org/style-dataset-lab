@@ -176,17 +176,11 @@ CARD_CLASSES = ("gpu", "cpu")
 # Before our window's first stable read, a missing count or 0 means "not yet registered": the
 # receipts show the rate and the count arriving together (windowC2-12-t4-s1a-20261027 reads 0.00
 # with 0 assignments until the session registers, then 1.07 with 1). Such a read is recorded,
-# uncounted, and spends only the RATE_UNREAD poll budget. After the first stable read, a missing
-# count or 0 is a bad read: recorded, the rate not judged, and ASSIGNMENTS_UNREADABLE after
-# ASSIGNMENTS_BAD_LIMIT consecutive bad reads. After the first stable read the floor applies too: a
-# stable pair below GPU_RATE_FLOOR (our window cannot bill under the cheapest GPU) is never
-# accepted; it is recorded `below_floor` and counts as a bad read toward the same limit. Known
-# limit: a rate that leads its count by two or more reads at open waits for the count before it
-# can be stable.
+# uncounted, and spends only the RATE_UNREAD poll budget. Mid-run, bad assignment counts or reads
+# below GPU_RATE_FLOOR are logged in rate_window.json only and never kill the running window.
 GPU_RATE_FLOOR = 1.00
 RATE_STABLE_TOLERANCE = 0.01
 RATE_STABLE_GAP_S = 5.0
-ASSIGNMENTS_BAD_LIMIT = 3
 
 
 def parse_active_assignments(raw_usage: str) -> int | None:
@@ -199,12 +193,10 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
                        min_gap_s: float = RATE_STABLE_GAP_S, floor: float = GPU_RATE_FLOOR,
                        tolerance: float = RATE_STABLE_TOLERANCE) -> dict[str, Any]:
     """Fold one post-open `colab usage` reading into the window-rate state (kept in the out dir).
-    Every reading is recorded. A bad count (missing, or 0) is recorded and judged nothing; three in
-    a row set `assignments_unreadable`. A read less than `min_gap_s` after the last counted one is
-    recorded as `counted: false`. A changed count starts a pending re-baseline that settles on two
-    agreeing reads at the new count. Otherwise the window rate is `stable` when it is at or above
-    the floor and agrees with the last counted window rate within the tolerance; `best_stable` is
-    the highest stable one."""
+    Every reading is recorded. Mid-run missing/0 assignment counts or reads below floor are recorded
+    for logging only and never trigger a kill. A read less than `min_gap_s` after the last counted
+    one is recorded as `counted: false`. A changed count starts a pending re-baseline that settles on
+    two agreeing reads at the new count; `best_stable` is the highest stable rate at or above floor."""
     readings = state.setdefault("readings", [])
     state["floor"] = floor
     if "neighbour_baseline" not in state:
@@ -213,19 +205,11 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
     rec: dict[str, Any] = {"at": at, "epoch": round(float(epoch), 3), "account_rate": account_rate,
                            "pre_open_rate": pre_open_rate, "assignments": assignments,
                            "neighbour_baseline": base, "window_rate": None, "stable": False}
-    if (assignments is None or int(assignments) <= 0) and state.get("best_stable") is None:
-        rec.update({"counted": False, "not_registered": True})
-        readings.append(rec)
-        return state
     if assignments is None or int(assignments) <= 0:
-        state["assignments_bad_streak"] = int(state.get("assignments_bad_streak", 0)) + 1
-        if state["assignments_bad_streak"] >= ASSIGNMENTS_BAD_LIMIT:
-            state["assignments_unreadable"] = True
-        rec.update({"counted": False, "assignments_bad": True})
+        tag = "not_registered" if state.get("best_stable") is None else "assignments_bad"
+        rec.update({"counted": False, tag: True})
         readings.append(rec)
         return state
-    bad_streak_before = int(state.get("assignments_bad_streak", 0))
-    state["assignments_bad_streak"] = 0
     last_epoch = state.get("last_counted_epoch")
     if last_epoch is not None and float(epoch) - float(last_epoch) < float(min_gap_s):
         rec["counted"] = False
@@ -272,14 +256,11 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
                    and abs(window - float(prev)) <= tolerance and state.get("best_stable") is not None)
     rec.update({"window_rate": window, "stable": stable})
     if below_floor:
-        # Mid-run, a stable own rate below the floor is a bad read, never an accepted rate.
-        state["assignments_bad_streak"] = bad_streak_before + 1
-        if state["assignments_bad_streak"] >= ASSIGNMENTS_BAD_LIMIT:
-            state["assignments_unreadable"] = True
         rec["below_floor"] = True
     readings.append(rec)
     state["last_window"] = window
     if stable:
+        state.setdefault("open_stable", window)
         state["last_stable"] = window
         if state.get("best_stable") is None or window > state["best_stable"]:
             state["best_stable"] = window
@@ -287,16 +268,13 @@ def update_window_rate(state: dict[str, Any], *, account_rate: float | None, pre
 
 
 def gpu_projection_rate(state: dict[str, Any], max_rate: float) -> float:
-    """The rate a GPU window's cap is projected with: max(--max-rate, highest stable window rate)."""
-    best = state.get("best_stable")
-    return max(float(max_rate), float(best)) if best is not None else float(max_rate)
+    """The rate a GPU window's cap is projected with: max(--max-rate, open stable window rate)."""
+    ref = state.get("open_stable", state.get("best_stable"))
+    return max(float(max_rate), float(ref)) if ref is not None else float(max_rate)
 
 
 def window_rate_decision(state: dict[str, Any], max_rate: float) -> str:
-    """`assignments_unreadable`, `unread` (no stable window rate at or above the floor yet),
-    `above_max` or `ok`."""
-    if state.get("assignments_unreadable"):
-        return "assignments_unreadable"
+    """`unread` (no stable window rate at or above the floor yet), `above_max` or `ok`."""
     best = state.get("best_stable")
     if best is None:
         return "unread"
@@ -793,45 +771,35 @@ def evaluate_cap_guard(
         extra["phase"] = phase
     if checkpoint is not None:
         extra["checkpoint"] = checkpoint
-    if usage_parse_error:
-        return {
-            "mode": mode,
-            "tripped": True,
-            "code": "COLAB_USAGE_PARSE_FAILED",
-            "spend_ccu": None,
-            "ceiling_ccu": ceiling,
-            **extra,
-            "usage_parse_error": usage_parse_error,
-        }
-    if (start_balance is not None and float(start_balance) < 0.0) or (
-        current_balance is not None and float(current_balance) < 0.0
-    ):
-        return {
-            "mode": mode,
-            "tripped": True,
-            "code": "COLAB_USAGE_PARSE_FAILED",
-            "spend_ccu": None,
-            "ceiling_ccu": ceiling,
-            **extra,
-            "usage_parse_error": "COLAB_USAGE_PARSE_FAILED: negative balance is impossible",
-        }
-    if mode not in ("fake", "dry_run", "offline") and (start_balance is None or current_balance is None):
-        return {
-            "mode": mode,
-            "tripped": True,
-            "code": "COLAB_USAGE_PARSE_FAILED",
-            "spend_ccu": None,
-            "ceiling_ccu": ceiling,
-            **extra,
-            "usage_parse_error": "COLAB_USAGE_PARSE_FAILED: missing start_balance or current_balance in non-fake mode",
-        }
-    drop = (
-        round(max(0.0, float(start_balance) - float(current_balance)), 6)
-        if start_balance is not None and current_balance is not None
-        else 0.0
-    )
     rate_est = round(max(0.0, (float(rate_ccu_per_hour) * float(elapsed_s)) / 3600.0), 6)
-    spend = round(max(drop, rate_est), 6)
+    neg_bal = (start_balance is not None and float(start_balance) < 0.0) or (
+        current_balance is not None and float(current_balance) < 0.0
+    )
+    if mode == "stub":
+        parse_err = usage_parse_error or (
+            "COLAB_USAGE_PARSE_FAILED: negative balance is impossible" if neg_bal
+            else "COLAB_USAGE_PARSE_FAILED: missing start_balance or current_balance in non-fake mode"
+            if (start_balance is None or current_balance is None) else None
+        )
+        if parse_err:
+            return {
+                "mode": mode, "tripped": True, "code": "COLAB_USAGE_PARSE_FAILED",
+                "spend_ccu": None, "ceiling_ccu": ceiling, **extra, "usage_parse_error": parse_err,
+            }
+        drop = round(max(0.0, float(start_balance) - float(current_balance)), 6)
+        spend = round(max(drop, rate_est), 6)
+    else:
+        # Running paid windows price spend strictly as own_rate * elapsed; flaky/missing/negative
+        # colab usage reads or shared account drops are logged only and never trip a running window.
+        if usage_parse_error:
+            extra["usage_warning"] = usage_parse_error
+        elif neg_bal:
+            extra["usage_warning"] = "negative_balance_ignored"
+        elif start_balance is None or current_balance is None:
+            extra["usage_warning"] = "missing_balance_ignored"
+        if start_balance is not None and current_balance is not None and not neg_bal:
+            extra["account_balance_drop_ccu"] = round(max(0.0, float(start_balance) - float(current_balance)), 6)
+        spend = rate_est
     tripped = spend >= ceiling
     return {
         "mode": mode,
@@ -853,52 +821,38 @@ def evaluate_offline_cap_projection(
     cleanup_bound_s: float,
     rate_ccu_per_hour: float,
     elapsed_s: float,
-    start_balance: float,
-    cached_balance: float,
-    balance_age_s: float,
+    start_balance: float | None = None,
+    cached_balance: float | None = None,
+    balance_age_s: float | None = None,
     card_class: str | None = None,
 ) -> dict[str, Any]:
-    """The detached loop's cap check on a failed remote poll with no `colab usage` read in flight.
-
-    Trip-only: spend = max(priced_rate * elapsed, cached drop + priced_rate * balance_age_s) at or above
-    the ceiling refuses (CAP_GUARD_TRIPPED). The second term grows the cached reading by this window's own
-    burn since it was taken, so a drop that already exceeds priced_rate * elapsed (other sessions on the
-    same account balance) does not freeze the projection. Below the ceiling the record is never a pass:
-    its mode is `live_offline`, its `balance_source` is `cached` with the balance's age in seconds, and
-    `fresh_pass` is False. A within-cap `"mode": "live"` record is written only on a fresh reading.
-    On a GPU window (card_class not "cpu"; unset counts as GPU) a rate that is not finite and positive
-    refuses RATE_UNREAD."""
+    """The detached loop's local cap projection when a remote poll fails: spend = own_rate * elapsed_s."""
+    del card_class
     rate_raw = float(rate_ccu_per_hour)
     rate_ok = math.isfinite(rate_raw) and rate_raw > 0.0
-    is_cpu = (card_class or "").strip().lower() == "cpu"
-    rate_v = rate_raw if math.isfinite(rate_raw) else 0.0
-    trip = compute_cap_trip(
-        cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=max(0.0, rate_v)
-    )
+    rate_v = rate_raw if rate_ok else 0.0
+    trip = compute_cap_trip(cap=cap, margin=margin, cleanup_bound_s=cleanup_bound_s, priced_rate=rate_v)
     ceiling = trip["ceiling_ccu"]
-    age_s = max(0.0, float(balance_age_s)) if math.isfinite(float(balance_age_s)) else float(elapsed_s)
-    cached_drop = round(max(0.0, float(start_balance) - float(cached_balance)), 6)
-    projected = round(max(0.0, (max(0.0, rate_v) * float(elapsed_s)) / 3600.0), 6)
-    aged_drop = round(cached_drop + (max(0.0, rate_v) * age_s) / 3600.0, 6)
-    spend = round(max(projected, aged_drop), 6)
-    if not rate_ok and not is_cpu:
-        tripped, code = True, "RATE_UNREAD"
-    else:
-        tripped = spend >= ceiling
-        code = "CAP_GUARD_TRIPPED" if tripped else None
-    return {
+    age_s = max(0.0, float(balance_age_s)) if balance_age_s is not None and math.isfinite(float(balance_age_s)) else float(elapsed_s)
+    cached_drop = (
+        round(max(0.0, float(start_balance) - float(cached_balance)), 6)
+        if start_balance is not None and cached_balance is not None
+        else None
+    )
+    projected = round(max(0.0, (rate_v * float(elapsed_s)) / 3600.0), 6)
+    tripped = projected >= ceiling
+    rec: dict[str, Any] = {
         "mode": OFFLINE_CAP_MODE,
         "result": "trip" if tripped else "no_trip_projection",
         "fresh_pass": False,
         "tripped": tripped,
-        "code": code,
-        "balance_source": "cached",
+        "code": "CAP_GUARD_TRIPPED" if tripped else None,
+        "balance_source": "local_rate_only",
         "balance_age_s": round(age_s, 3),
         "elapsed_s": round(float(elapsed_s), 6),
         "projected_spend_ccu": projected,
         "cached_drop_ccu": cached_drop,
-        "aged_drop_ccu": aged_drop,
-        "spend_ccu": spend,
+        "spend_ccu": projected,
         "ceiling_ccu": ceiling,
         "cap_ccu": trip["cap_ccu"],
         "margin_ccu": trip["margin_ccu"],
@@ -909,6 +863,9 @@ def evaluate_offline_cap_projection(
         "formula": CAP_TRIP_FORMULA,
         "cap_trip_formula": CAP_TRIP_FORMULA,
     }
+    if not rate_ok:
+        rec["rate_warning"] = f"non_positive_or_non_finite_rate_fallback:{rate_ccu_per_hour!r}"
+    return rec
 
 
 def parse_vitals_log(vitals_text: str) -> list[dict[str, Any]]:
@@ -2437,9 +2394,6 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if vit["tripped"] else 0
 
     if args.check_offline_cap:
-        if args.start_balance is None or args.current_balance is None or args.balance_age_s is None:
-            print("REFUSED: --check-offline-cap requires --start-balance, --current-balance and --balance-age-s", file=sys.stderr)
-            return 2
         offline_cap = evaluate_offline_cap_projection(
             cap=args.cap,
             margin=args.margin,
@@ -2457,18 +2411,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.checkpoint is not None:
             out_off["checkpoint"] = args.checkpoint
         if offline_cap["tripped"]:
-            if offline_cap["code"] == "RATE_UNREAD":
-                why_off = (
-                    f"offline cap projection: a GPU window's priced rate {args.rate!r}/h is not finite and "
-                    "positive; it is not priced with a configured rate"
-                )
-            else:
-                why_off = (
-                    f"offline cap projection: spend {offline_cap['spend_ccu']} ccu (max of priced_rate "
-                    f"{offline_cap['priced_rate']}/h * elapsed {offline_cap['elapsed_s']} s and the cached drop "
-                    f"{offline_cap['cached_drop_ccu']} + priced_rate * balance age {offline_cap['balance_age_s']} s "
-                    f"= {offline_cap['aged_drop_ccu']}) >= ceiling {offline_cap['ceiling_ccu']} ccu"
-                )
+            why_off = (
+                f"offline cap projection: spend {offline_cap['spend_ccu']} ccu "
+                f"(priced_rate {offline_cap['priced_rate']}/h * elapsed {offline_cap['elapsed_s']} s) "
+                f">= ceiling {offline_cap['ceiling_ccu']} ccu"
+            )
             out_off["refusal"] = {"code": offline_cap["code"], "why": why_off}
         print(json.dumps(out_off))
         return 1 if offline_cap["tripped"] else 0

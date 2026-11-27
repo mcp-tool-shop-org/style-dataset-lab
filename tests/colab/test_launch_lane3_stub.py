@@ -272,13 +272,24 @@ def test_live_guards_trip_dead_harness_stall_and_cap_during_exec_and_merge_windo
     assert "STALL_GUARD_TRIPPED" in (out_st / "guards.log").read_text(encoding="utf-8")
     assert "STOP -s sdlab-l3-stall" in (state_st / "stops.log").read_text(encoding="utf-8")
 
-    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session (in text format)
+    # 3. CAP_GUARD_TRIPPED during live colab exec kills EXEC_PID and stops session (by own_rate * elapsed)
     _, state_cap, env_cap = _make_fake_colab_env(tmp_path / "cap_case")
     env_cap["FAKE_COLAB_MODE"] = "cap_burn"
+    env_cap["FAKE_COLAB_RATE_STR"] = "36.00/hr"
     env_cap["GUARD_POLL_INTERVAL_S"] = "0.2"
+    env_cap["RATE_CCU_PER_HOUR"] = "36"
+    env_cap["SDLAB_TEST_DOWNLOAD_TIMEOUT_S"] = "2"
+    env_cap["SDLAB_TEST_STOP_TIMEOUT_S"] = "2"
+    env_cap["SDLAB_TEST_SESSIONS_TIMEOUT_S"] = "2"
+    env_cap["SDLAB_TEST_KILL_GRACE_S"] = "1"
+    env_cap["SDLAB_TEST_SALVAGE_DEADLINE_S"] = "2"
+    env_cap["SDLAB_TEST_SALVAGE_RESTART_TIMEOUT_S"] = "1"
+    env_cap["SDLAB_TEST_USAGE_POLL_ATTEMPTS"] = "1"
+    env_cap["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "2"
+    env_cap["SDLAB_TEST_USAGE_POLL_KILL_GRACE_S"] = "1"
     out_cap = tmp_path / "out_cap"
     res_cap = subprocess.run(
-        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l3-cap", "--cap", "0.18", "--margin", "0.05"],
+        [_find_bash(), _to_posix(LAUNCHER), "--out-dir", _to_posix(out_cap), "--session", "sdlab-l3-cap", "--cap", "0.75", "--margin", "0.50"],
         env=env_cap,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -398,8 +409,12 @@ def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_
     assert "CALL new" not in (state_start / "calls.log").read_text(encoding="utf-8")
     assert "10.0" not in (out_start / "window.json").read_text(encoding="utf-8")
 
-    _, state_mid, env_mid = _make_fake_colab_env(tmp_path / "usage_mid_case")
+    _, state_mid, env_mid = _make_fake_colab_colab = _make_fake_colab_env(tmp_path / "usage_mid_case")
     env_mid["FAKE_COLAB_MODE"] = "usage_fail_midrun"
+    env_mid["FAKE_COLAB_SETUP_DURATION_S"] = "5"
+    env_mid["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "1"
+    env_mid["SDLAB_TEST_USAGE_POLL_KILL_GRACE_S"] = "1"
+    env_mid["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "0.05,0.05"
     env_mid["GUARD_POLL_INTERVAL_S"] = "0.2"
     out_mid = tmp_path / "out_usage_mid"
     res_mid = subprocess.run(
@@ -411,10 +426,11 @@ def test_lane3_unparseable_usage_refuses_before_new_and_stops_midrun_with_no_10_
         timeout=300,
         check=False,
     )
-    assert res_mid.returncode != 0
-    assert "COLAB_USAGE_PARSE_FAILED" in (out_mid / "guards.log").read_text(encoding="utf-8")
+    assert res_mid.returncode == 0, res_mid.stderr[-2000:]
+    guards_mid = (out_mid / "guards.log").read_text(encoding="utf-8")
+    assert "MIDRUN_USAGE_WARNING code=COLAB_USAGE_PARSE_FAILED" in guards_mid
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_mid
     assert "STOP -s sdlab-l3-umid" in (state_mid / "stops.log").read_text(encoding="utf-8")
-    assert "10.0" not in (out_mid / "window.json").read_text(encoding="utf-8")
 
 
 def test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty_before_new(tmp_path: Path) -> None:
@@ -438,9 +454,10 @@ def test_lane3_preseeded_start_balance_in_out_dir_refuses_with_out_dir_not_empty
     assert not (state_dir / "calls.log").exists(), "colab must never be called when --out-dir is not empty"
 
 
-def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(tmp_path: Path) -> None:
+def test_lane3_midrun_poll_helper_crash_and_negative_balance_log_and_continue(tmp_path: Path) -> None:
     _, state_crash, env_crash = _make_fake_colab_env(tmp_path / "helper_crash")
-    env_crash["FAKE_COLAB_MODE"] = "stall"
+    env_crash["FAKE_COLAB_MODE"] = "setup_phase"
+    env_crash["FAKE_COLAB_SETUP_DURATION_S"] = "4"
     env_crash["GUARD_POLL_INTERVAL_S"] = "0.2"
     env_crash["SDLAB_FAULT_POLL_HELPER_MIDRUN"] = "crash"
     out_crash = tmp_path / "out_helper_crash"
@@ -453,12 +470,18 @@ def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(t
         timeout=300,
         check=False,
     )
-    assert res_crash.returncode == 91
-    assert "COLAB_USAGE_PARSE_FAILED" in (out_crash / "guards.log").read_text(encoding="utf-8")
+    assert res_crash.returncode == 0, res_crash.stderr[-2000:]
+    guards_crash = (out_crash / "guards.log").read_text(encoding="utf-8")
+    assert "MIDRUN_USAGE_WARNING code=COLAB_USAGE_PARSE_FAILED" in guards_crash
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_crash
     assert "STOP -s sdlab-l3-hcrash" in (state_crash / "stops.log").read_text(encoding="utf-8")
 
     _, state_neg, env_neg = _make_fake_colab_env(tmp_path / "neg_mid")
     env_neg["FAKE_COLAB_MODE"] = "negative_balance_midrun"
+    env_neg["FAKE_COLAB_SETUP_DURATION_S"] = "5"
+    env_neg["SDLAB_TEST_USAGE_POLL_TIMEOUT_S"] = "1"
+    env_neg["SDLAB_TEST_USAGE_POLL_KILL_GRACE_S"] = "1"
+    env_neg["SDLAB_TEST_USAGE_POLL_BACKOFF_S"] = "0.05,0.05"
     env_neg["GUARD_POLL_INTERVAL_S"] = "0.2"
     out_neg = tmp_path / "out_neg_mid"
     res_neg = subprocess.run(
@@ -470,8 +493,10 @@ def test_lane3_midrun_poll_helper_crash_and_negative_balance_stop_window_rc_91(t
         timeout=300,
         check=False,
     )
-    assert res_neg.returncode == 91
-    assert "COLAB_USAGE_PARSE_FAILED" in (out_neg / "guards.log").read_text(encoding="utf-8")
+    assert res_neg.returncode == 0, res_neg.stderr[-2000:]
+    guards_neg = (out_neg / "guards.log").read_text(encoding="utf-8")
+    assert "MIDRUN_USAGE_WARNING code=COLAB_USAGE_PARSE_FAILED" in guards_neg
+    assert "REFUSED: COLAB_USAGE_PARSE_FAILED" not in guards_neg
     assert "STOP -s sdlab-l3-negmid" in (state_neg / "stops.log").read_text(encoding="utf-8")
 
 

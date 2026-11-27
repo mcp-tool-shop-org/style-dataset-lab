@@ -117,15 +117,17 @@ def test_lane1_a_low_window_rate_is_priced_at_max_rate_so_the_cap_trips_on_time(
 
 
 @pytest.mark.parametrize("rise", ["9.80", "12.00"])
-def test_lane1_a_midrun_rise_above_max_rate_refuses(tmp_path: Path, rise: str) -> None:
+def test_lane1_a_midrun_rise_above_max_rate_logs_and_runs_on(tmp_path: Path, rise: str) -> None:
     res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
-                                        "FAKE_COLAB_POST_OPEN_RATE_SEQ": f"8.88/hr,8.88/hr,8.88/hr,8.88/hr,{rise}/hr"},
-                             mode="stall")
-    assert res.returncode == 91, res.stderr[-2000:]
+                                        "FAKE_COLAB_SETUP_DURATION_S": "6",
+                                        "FAKE_COLAB_POST_OPEN_RATE_SEQ": f"8.88/hr,8.88/hr,{rise}/hr,{rise}/hr"},
+                             mode="setup_phase")
+    assert res.returncode == 0, res.stderr[-2000:]
     win = _win(out_dir)
-    assert win["refusal_code"] == "RATE_ABOVE_MAX"
-    assert "mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert win["status"] == "ok" and win["refusal_code"] is None
+    assert "MIDRUN_RATE_LOG decision=above_max" in (out_dir / "guards.log").read_text(encoding="utf-8")
     assert max(r["window_rate"] or 0 for r in win["rate_readings"]) == float(rise)
+    assert win["rate_used_for_cap_and_projection"] == 9.5
 
 
 def test_lane1_a_neighbour_opening_midrun_rebaselines_and_runs_on(tmp_path: Path) -> None:
@@ -143,6 +145,7 @@ def test_lane1_a_neighbour_opening_midrun_rebaselines_and_runs_on(tmp_path: Path
 
 def test_lane1_a_neighbour_closing_midrun_is_not_an_under_read(tmp_path: Path) -> None:
     res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "8.88/hr",
+                                        "FAKE_COLAB_SETUP_DURATION_S": "6",
                                         "FAKE_COLAB_POST_OPEN_RATE_SEQ": "17.76/hr,17.76/hr,17.76/hr,17.76/hr,8.88/hr",
                                         "FAKE_COLAB_ASSIGNMENTS_SEQ": "2,2,2,2,1"})
     assert res.returncode == 0, res.stderr[-3000:]
@@ -152,15 +155,15 @@ def test_lane1_a_neighbour_closing_midrun_is_not_an_under_read(tmp_path: Path) -
 
 
 @pytest.mark.parametrize("bad", ["OMITLINE", "0"])
-def test_lane1_a_bad_assignments_count_for_three_cycles_ends_the_window(tmp_path: Path, bad: str) -> None:
-    res, out_dir, state_dir = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
-                                                "FAKE_COLAB_ASSIGNMENTS_SEQ": f"1,1,1,1,{bad}"}, mode="stall")
-    assert res.returncode == 91, res.stderr[-2000:]
+def test_lane1_a_bad_assignments_count_for_three_cycles_logs_and_runs_on(tmp_path: Path, bad: str) -> None:
+    res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                                        "FAKE_COLAB_SETUP_DURATION_S": "5",
+                                        "FAKE_COLAB_ASSIGNMENTS_SEQ": f"1,1,1,1,{bad}"}, mode="setup_phase")
+    assert res.returncode == 0, res.stderr[-2000:]
     win = _win(out_dir)
-    assert win["refusal_code"] == "ASSIGNMENTS_UNREADABLE"
-    assert "mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert win["status"] == "ok" and win["refusal_code"] is None
     assert sum(1 for r in win["rate_readings"] if r.get("assignments_bad")) >= 3
-    assert "STOP -s sdlab-l1-gpu" in (state_dir / "stops.log").read_text(encoding="utf-8")
+    assert "MIDRUN_RATE_LOG" in (out_dir / "guards.log").read_text(encoding="utf-8")
 
 
 def test_lane1_count_0_until_the_session_registers_proceeds(tmp_path: Path) -> None:
@@ -185,14 +188,44 @@ def test_lane1_count_0_for_the_whole_open_budget_is_rate_unread(tmp_path: Path) 
     assert _no_uploads(state_dir)
 
 
-def test_lane1_count_0_at_open_then_mid_run_still_ends(tmp_path: Path) -> None:
+def test_lane1_count_0_at_open_then_mid_run_logs_and_runs_on(tmp_path: Path) -> None:
     res, out_dir, _ = _lane1(tmp_path, {"FAKE_COLAB_PRE_OPEN_RATE_STR": "0.00/hr",
+                                        "FAKE_COLAB_SETUP_DURATION_S": "5",
                                         "FAKE_COLAB_POST_OPEN_RATE_SEQ": "0.00/hr,0.00/hr,0.00/hr,8.88/hr",
-                                        "FAKE_COLAB_ASSIGNMENTS_SEQ": "0,0,0,1,1,1,1,0"}, mode="stall")
-    assert res.returncode == 91, res.stderr[-2000:]
+                                        "FAKE_COLAB_ASSIGNMENTS_SEQ": "0,0,0,1,1,1,1,0"}, mode="setup_phase")
+    assert res.returncode == 0, res.stderr[-2000:]
     win = _win(out_dir)
-    assert win["refusal_code"] == "ASSIGNMENTS_UNREADABLE" and win["rate_check"]["window_rate"] == 8.88
-    assert "REFUSED: ASSIGNMENTS_UNREADABLE: mid-run" in (out_dir / "guards.log").read_text(encoding="utf-8")
+    assert win["status"] == "ok" and win["refusal_code"] is None and win["rate_check"]["window_rate"] == 8.88
+    assert sum(1 for r in win["rate_readings"] if r.get("assignments_bad")) >= 3
+
+
+def test_replay_2026_11_26_below_floor_and_bad_usage_keeps_running_while_dead_job_stops(tmp_path: Path) -> None:
+    # Incident replay (2026-11-26): neighbour pre-open 30.35/hr, post-open 39.23/hr (8.88 own), then
+    # mid-run account drops to 27.39/hr (below_floor=True for 3+ reads) and 3+ bad assignment reads
+    # while progress continues -> finishes ok; with a dead job -> stops with DEAD_HARNESS_TRIPPED.
+    res_ok, out_ok, _ = _lane1(
+        tmp_path / "live_ok",
+        {"FAKE_COLAB_PRE_OPEN_RATE_STR": "30.35/hr",
+         "FAKE_COLAB_SETUP_DURATION_S": "12",
+         "FAKE_COLAB_POST_OPEN_RATE_SEQ": "39.23/hr,39.23/hr,27.39/hr,27.39/hr,27.39/hr,27.39/hr,27.39/hr",
+         "FAKE_COLAB_ASSIGNMENTS_SEQ": "1,1,1,1,1,1,OMITLINE,0,OMITLINE"},
+        "--margin", "2.0", mode="setup_phase", max_rate="18.0", cap="10.0",
+    )
+    assert res_ok.returncode == 0, res_ok.stderr[-2000:]
+    win_ok = _win(out_ok)
+    assert win_ok["status"] == "ok" and win_ok["refusal_code"] is None
+    assert sum(1 for r in win_ok["rate_readings"] if r.get("below_floor")) >= 3
+    assert sum(1 for r in win_ok["rate_readings"] if r.get("assignments_bad")) >= 3
+    assert "MIDRUN_RATE_LOG" in (out_ok / "guards.log").read_text(encoding="utf-8")
+
+    res_dead, out_dead, _ = _lane1(
+        tmp_path / "dead",
+        {"FAKE_COLAB_PRE_OPEN_RATE_STR": "30.35/hr",
+         "FAKE_COLAB_POST_OPEN_RATE_SEQ": "39.23/hr,39.23/hr,27.39/hr,27.39/hr,27.39/hr"},
+        "--margin", "2.0", mode="dead_harness", max_rate="18.0", cap="10.0",
+    )
+    assert res_dead.returncode != 0
+    assert _win(out_dead)["refusal_code"] == "DEAD_HARNESS_TRIPPED"
 
 
 def test_lane1_a_single_missing_count_is_recorded_only(tmp_path: Path) -> None:
