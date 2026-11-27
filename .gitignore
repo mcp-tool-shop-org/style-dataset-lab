@@ -88,3 +88,8 @@ projects/*/inputs/blender/out/
 
 # Out dirs of live-mode kit tests (tests/colab/conftest.py); removed after each test
 .pytest-live-out/
+
+# Private world projects live in the charter-worlds org, never in this public repo.
+projects/hesperia/
+projects/rustline/
+projects/tallow-fen/
