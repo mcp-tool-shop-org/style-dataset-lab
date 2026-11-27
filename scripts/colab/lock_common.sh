@@ -19,12 +19,12 @@ lock_lane_config() {
     lane1|1)
       LANE="lane1"
       PY_VER="3.14.9"
-      LAUNCH_SH="${SCRIPT_DIR}/launch_lane1_stub.sh"
+      LAUNCH_SH="${SCRIPT_DIR}/lane1/vm_job.sh"
       ;;
     lane3|3)
       LANE="lane3"
       PY_VER="3.12.15"
-      LAUNCH_SH="${SCRIPT_DIR}/launch_lane3_stub.sh"
+      LAUNCH_SH="${SCRIPT_DIR}/lane3/vm_job.sh"
       ;;
     *)
       return 1

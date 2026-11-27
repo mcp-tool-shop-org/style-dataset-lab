@@ -1,0 +1,41 @@
+schema_version = 1
+
+[project]
+repo = "mcp-tool-shop-org/style-dataset-lab"
+study = "sdlab-lane1"
+job = "lane1"
+description = "Style Dataset Lab Lane 1 headless ComfyUI render window"
+purpose = "sdlab Lane 1 render window"
+line = "sdlab-lane1"
+
+[compute]
+card = "T4"
+shape = "standard"
+max_rate = 1.6
+cap = 2.0
+margin = 0.02
+wall_s = 900
+poll_s = 10
+setup_stall_s = 300
+progress_stall_s = 300
+omp_num_threads = 4
+
+[inputs]
+root = ".."
+files = [
+  { src = "lane1/vm_job.sh", dst = "vm_job.sh" },
+  { src = "locks/lane1.lock", dst = "lane1.lock" },
+  { src = "lane1_render.py", dst = "lane1_render.py" },
+  { src = "classify_install_log.py", dst = "classify_install_log.py" },
+  { src = "lane3_rung.py", dst = "lane3_rung.py" },
+]
+
+[job]
+run = ["bash vm_job.sh"]
+env = ["LANE1_MODE=stub", "LANE1_SYNTHETIC_PROOF=0", "LANE1_LOCAL_FAST=0"]
+units_glob = "lane1_out/pngs/*.png"
+
+[outputs]
+collect = ["lane1_out"]
+salvage = ["lane1_out"]
+download_parts = 2

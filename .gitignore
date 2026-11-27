@@ -93,3 +93,6 @@ projects/*/inputs/blender/out/
 projects/hesperia/
 projects/rustline/
 projects/tallow-fen/
+
+# Pre-built Lane 3 local wheels (verified by sha256 via lane3-local-wheels.json; staged at launch)
+scripts/colab/locks/wheels/*.whl
