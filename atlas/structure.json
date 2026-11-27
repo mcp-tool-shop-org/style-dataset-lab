@@ -12630,7 +12630,7 @@
           "path": ".gitattributes"
         },
         {
-          "hash": "ad6e1daa0b233d7ad28da94e7586337b7999e8a951f5fddded2ce4a3f51a1db3",
+          "hash": "8ea3ab5eb2e513c0a26da805e12e3b25b5b802787b6e7b3213c390f56883b28d",
           "path": ".gitignore"
         },
         {
@@ -13765,7 +13765,7 @@
           "path": "scripts/checkpoint-eval/checkpoint_eval.py"
         },
         {
-          "hash": "90f5b88bc2e927b616d1e9751d1216d9bc333ed84f697bd2fcfac1a8d90088b1",
+          "hash": "95de1b92c863784fea7ac38fe830a9160c595a37c0b2a08522ba8654203bac24",
           "path": "scripts/colab/README.md"
         },
         {
@@ -14569,7 +14569,7 @@
           "path": "scripts/colab/lane1_render.py"
         },
         {
-          "hash": "b8ce0c83e11a872f631cdaf2e3a0c1a141e4e67798bfcc356220d0b6e78409d6",
+          "hash": "84284b445c9a78d4bfa592cf6fffc7bbc9e70140c2c437653977c11fc9ca558c",
           "path": "scripts/colab/lane3/colab-window.toml"
         },
         {
@@ -14585,7 +14585,7 @@
           "path": "scripts/colab/lane3/rung-qwen-image.yaml"
         },
         {
-          "hash": "399c1f3832ae661a29fd386eedeb882e61b743362c6ae5bb835ecf0f77ab4043",
+          "hash": "0fefe309a9243af283dc46e3e315e5d49aa7847f107f7066e94a15070168127e",
           "path": "scripts/colab/lane3/vm_job.sh"
         },
         {
@@ -17911,7 +17911,7 @@
             "test_lane1_vm_job_local_fast_and_mode_refusals",
             "test_lane3_vm_job_local_fast_and_token_shred"
           ],
-          "hash": "76c361acc562771c64b6a206b1e9ab83e5a1659f8f7d9a37fd5d11543fbb4d6a",
+          "hash": "0d64092c4854e4c42cf147fe5d6341961e6aa32142a661de700db61df801bc00",
           "path": "tests/colab/test_colab_runner_manifests.py",
           "testFramework": "pytest"
         },
@@ -20165,7 +20165,7 @@
   ],
   "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "aa51a0324d7beb672b38e52e7cebb45c57db1926",
+    "commit": "c52019608b504d0c173a37f5b39827d2e3b0e524",
     "tracked": 2447
   },
   "landings": [

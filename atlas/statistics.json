@@ -250,8 +250,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 23,
-        "lines": 328,
+        "commits": 24,
+        "lines": 332,
         "path": "CHANGELOG.md"
       },
       {
@@ -300,8 +300,8 @@
         "path": "SCORECARD.md"
       },
       {
-        "commits": 30,
-        "lines": 758,
+        "commits": 31,
+        "lines": 790,
         "path": "atlas/README.md"
       },
       {
@@ -310,18 +310,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 30,
-        "lines": 2492,
+        "commits": 31,
+        "lines": 2591,
         "path": "atlas/page.json"
       },
       {
-        "commits": 30,
-        "lines": 58264,
+        "commits": 31,
+        "lines": 61736,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 30,
-        "lines": 45289,
+        "commits": 31,
+        "lines": 46768,
         "path": "atlas/structure.json"
       },
       {
@@ -355,8 +355,8 @@
         "path": "docs/colab-cli-contract.md"
       },
       {
-        "commits": 1,
-        "lines": 87,
+        "commits": 2,
+        "lines": 91,
         "path": "docs/colab-locks.md"
       },
       {
@@ -475,8 +475,8 @@
         "path": "lib/card.js"
       },
       {
-        "commits": 1,
-        "lines": 285,
+        "commits": 2,
+        "lines": 570,
         "path": "lib/colab-launcher-guards.js"
       },
       {
@@ -7120,13 +7120,13 @@
         "path": "scripts/checkpoint-eval/checkpoint_eval.py"
       },
       {
-        "commits": 11,
-        "lines": 264,
+        "commits": 12,
+        "lines": 441,
         "path": "scripts/colab/README.md"
       },
       {
-        "commits": 16,
-        "lines": 254,
+        "commits": 17,
+        "lines": 323,
         "path": "scripts/colab/REAL_SERVICE_ASSUMPTIONS.md"
       },
       {
@@ -7140,9 +7140,14 @@
         "path": "scripts/colab/classify_install_log.py"
       },
       {
-        "commits": 24,
-        "lines": 7112,
+        "commits": 25,
+        "lines": 12946,
         "path": "scripts/colab/colab_window.sh"
+      },
+      {
+        "commits": 1,
+        "lines": 41,
+        "path": "scripts/colab/lane1/colab-window.toml"
       },
       {
         "commits": 1,
@@ -7151,12 +7156,17 @@
       },
       {
         "commits": 1,
+        "lines": 354,
+        "path": "scripts/colab/lane1/vm_job.sh"
+      },
+      {
+        "commits": 1,
         "lines": 36,
         "path": "scripts/colab/lane1/weights-manifest-qwen-image-2512.example.json"
       },
       {
-        "commits": 3,
-        "lines": 122,
+        "commits": 4,
+        "lines": 236,
         "path": "scripts/colab/lane1_bundle_now.py"
       },
       {
@@ -7168,6 +7178,11 @@
         "commits": 3,
         "lines": 2670,
         "path": "scripts/colab/lane1_render.py"
+      },
+      {
+        "commits": 1,
+        "lines": 43,
+        "path": "scripts/colab/lane3/colab-window.toml"
       },
       {
         "commits": 1,
@@ -7186,6 +7201,11 @@
       },
       {
         "commits": 1,
+        "lines": 285,
+        "path": "scripts/colab/lane3/vm_job.sh"
+      },
+      {
+        "commits": 1,
         "lines": 29,
         "path": "scripts/colab/lane3/walk_a_real_load.sh"
       },
@@ -7195,8 +7215,8 @@
         "path": "scripts/colab/lane3/walk_b_quantised.sh"
       },
       {
-        "commits": 1,
-        "lines": 267,
+        "commits": 2,
+        "lines": 317,
         "path": "scripts/colab/lane3/walk_common.sh"
       },
       {
@@ -7205,33 +7225,33 @@
         "path": "scripts/colab/lane3/walk_probe.py"
       },
       {
-        "commits": 4,
-        "lines": 268,
+        "commits": 5,
+        "lines": 348,
         "path": "scripts/colab/lane3_bundle_now.py"
       },
       {
-        "commits": 7,
-        "lines": 3395,
+        "commits": 8,
+        "lines": 3578,
         "path": "scripts/colab/lane3_rung.py"
       },
       {
-        "commits": 15,
-        "lines": 2736,
+        "commits": 16,
+        "lines": 5254,
         "path": "scripts/colab/launch_guards.py"
       },
       {
-        "commits": 26,
-        "lines": 1795,
+        "commits": 27,
+        "lines": 3036,
         "path": "scripts/colab/launch_lane1_stub.sh"
       },
       {
-        "commits": 28,
-        "lines": 2889,
+        "commits": 29,
+        "lines": 4410,
         "path": "scripts/colab/launch_lane3_stub.sh"
       },
       {
-        "commits": 1,
-        "lines": 120,
+        "commits": 2,
+        "lines": 124,
         "path": "scripts/colab/lock_common.sh"
       },
       {
@@ -7275,18 +7295,18 @@
         "path": "scripts/colab/preflight_resolve.sh"
       },
       {
-        "commits": 9,
-        "lines": 642,
+        "commits": 10,
+        "lines": 1226,
         "path": "scripts/colab/probe_upload_limit.sh"
       },
       {
-        "commits": 1,
-        "lines": 105,
+        "commits": 2,
+        "lines": 109,
         "path": "scripts/colab/relock.sh"
       },
       {
-        "commits": 5,
-        "lines": 360,
+        "commits": 6,
+        "lines": 502,
         "path": "scripts/colab/remote_runner.py"
       },
       {
@@ -7485,8 +7505,8 @@
         "path": "site/src/content/docs/handbook/case-study-tallow-fen.md"
       },
       {
-        "commits": 1,
-        "lines": 47,
+        "commits": 2,
+        "lines": 89,
         "path": "site/src/content/docs/handbook/colab-lanes.md"
       },
       {
@@ -7600,23 +7620,23 @@
         "path": "tests/cli-scripts/qwen-python-parity.test.js"
       },
       {
-        "commits": 2,
-        "lines": 63,
+        "commits": 3,
+        "lines": 121,
         "path": "tests/colab/conftest.py"
       },
       {
-        "commits": 3,
-        "lines": 109,
+        "commits": 4,
+        "lines": 218,
         "path": "tests/colab/fixtures/colab-cli-contract.json"
       },
       {
-        "commits": 2,
-        "lines": 159,
+        "commits": 3,
+        "lines": 318,
         "path": "tests/colab/fixtures/colab_help.txt"
       },
       {
-        "commits": 24,
-        "lines": 3429,
+        "commits": 25,
+        "lines": 6135,
         "path": "tests/colab/fixtures/fake_colab.py"
       },
       {
@@ -7640,8 +7660,8 @@
         "path": "tests/colab/fixtures/fake_vm_site/torch/__init__.py"
       },
       {
-        "commits": 1,
-        "lines": 70,
+        "commits": 2,
+        "lines": 140,
         "path": "tests/colab/fixtures/slow_runner_shim.py"
       },
       {
@@ -7670,13 +7690,13 @@
         "path": "tests/colab/fixtures/uv_logs/not_found.txt"
       },
       {
-        "commits": 1,
-        "lines": 17,
+        "commits": 2,
+        "lines": 34,
         "path": "tests/colab/fixtures/vitals_ram_sdlab-l3-rung-g4a.txt"
       },
       {
-        "commits": 3,
-        "lines": 1034,
+        "commits": 4,
+        "lines": 2046,
         "path": "tests/colab/test_chunked_transfer_and_probe.py"
       },
       {
@@ -7685,33 +7705,38 @@
         "path": "tests/colab/test_classify_install_log.py"
       },
       {
-        "commits": 2,
-        "lines": 590,
+        "commits": 1,
+        "lines": 116,
+        "path": "tests/colab/test_colab_runner_manifests.py"
+      },
+      {
+        "commits": 3,
+        "lines": 1158,
         "path": "tests/colab/test_detached_offline_guard.py"
       },
       {
-        "commits": 3,
-        "lines": 81,
+        "commits": 4,
+        "lines": 148,
         "path": "tests/colab/test_fake_single_kernel.py"
       },
       {
-        "commits": 6,
-        "lines": 290,
+        "commits": 7,
+        "lines": 556,
         "path": "tests/colab/test_gpu_rate_gate.py"
       },
       {
-        "commits": 6,
-        "lines": 511,
+        "commits": 7,
+        "lines": 1012,
         "path": "tests/colab/test_host_ram_guard.py"
       },
       {
-        "commits": 3,
-        "lines": 514,
+        "commits": 4,
+        "lines": 1022,
         "path": "tests/colab/test_kit_uploads_and_refusals.py"
       },
       {
-        "commits": 1,
-        "lines": 462,
+        "commits": 2,
+        "lines": 924,
         "path": "tests/colab/test_lane1_addendum3.py"
       },
       {
@@ -7725,23 +7750,23 @@
         "path": "tests/colab/test_lane1_render.py"
       },
       {
-        "commits": 15,
-        "lines": 5828,
+        "commits": 16,
+        "lines": 10044,
         "path": "tests/colab/test_lane3_gpu_rung.py"
       },
       {
-        "commits": 1,
-        "lines": 449,
+        "commits": 2,
+        "lines": 647,
         "path": "tests/colab/test_lane3_inprocess_fix3.py"
       },
       {
-        "commits": 3,
-        "lines": 440,
+        "commits": 4,
+        "lines": 713,
         "path": "tests/colab/test_lane3_install_stub.py"
       },
       {
-        "commits": 3,
-        "lines": 361,
+        "commits": 4,
+        "lines": 611,
         "path": "tests/colab/test_lane3_local_wheels_lock.py"
       },
       {
@@ -7750,28 +7775,28 @@
         "path": "tests/colab/test_lane3_walk_probe.py"
       },
       {
-        "commits": 9,
-        "lines": 1828,
+        "commits": 10,
+        "lines": 3532,
         "path": "tests/colab/test_launch_guards.py"
       },
       {
-        "commits": 12,
-        "lines": 2673,
+        "commits": 13,
+        "lines": 4884,
         "path": "tests/colab/test_launch_lane1_stub.py"
       },
       {
-        "commits": 13,
-        "lines": 1445,
+        "commits": 14,
+        "lines": 2432,
         "path": "tests/colab/test_launch_lane3_stub.py"
       },
       {
-        "commits": 4,
-        "lines": 198,
+        "commits": 5,
+        "lines": 384,
         "path": "tests/colab/test_machine_shape.py"
       },
       {
-        "commits": 4,
-        "lines": 1134,
+        "commits": 5,
+        "lines": 2176,
         "path": "tests/colab/test_phase_txt_atomic.py"
       },
       {
@@ -7780,13 +7805,13 @@
         "path": "tests/colab/test_preflight_resolve.py"
       },
       {
-        "commits": 2,
-        "lines": 56,
+        "commits": 3,
+        "lines": 102,
         "path": "tests/colab/test_slow_runner_shim.py"
       },
       {
-        "commits": 4,
-        "lines": 1017,
+        "commits": 5,
+        "lines": 1952,
         "path": "tests/colab/test_usage_retry.py"
       },
       {
@@ -7975,8 +8000,8 @@
         "path": "tests/lib-pipeline/lane2-canon-memory.test.js"
       },
       {
-        "commits": 3,
-        "lines": 549,
+        "commits": 4,
+        "lines": 699,
         "path": "tests/lib-pipeline/lane3-train-guards.test.js"
       },
       {
@@ -8070,9 +8095,9 @@
     "level": "low",
     "reason": "fewer than 25 source files reach 10 revisions in the window"
   },
-  "generatedAt": "2026-11-27T04:31:52.278Z",
+  "generatedAt": "2026-11-27T06:01:04.091Z",
   "generatedFrom": {
-    "commit": "aa51a0324d7beb672b38e52e7cebb45c57db1926"
+    "commit": "c52019608b504d0c173a37f5b39827d2e3b0e524"
   },
   "pairs": [
     {
@@ -8576,7 +8601,7 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "revision-depth",
-    "headDate": "2026-11-26T21:27:37-05:00",
+    "headDate": "2026-11-26T23:31:58-05:00",
     "inScopeFiles": 2452,
     "pinnedStart": null,
     "priorFloor": "fallen",
@@ -8585,7 +8610,7 @@
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-05-31T02:27:37.000Z",
+    "since": "2026-05-31T04:31:58.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

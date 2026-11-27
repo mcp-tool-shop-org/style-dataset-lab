@@ -56,9 +56,20 @@ def test_colab_window_toml_matches_strict_schema_and_pinned_lock_sha(lane_dir: s
             assert set(raw[sec]) <= allowed, (lane_dir, sec, set(raw[sec]) - allowed)
 
     root = (spec_path.parent / raw["inputs"]["root"]).resolve()
+    wheel_entries: dict[str, str] = {}
     for item in raw["inputs"]["files"]:
         src = item["src"] if isinstance(item, dict) else item
-        assert (root / src).is_file(), f"missing staged input: {src}"
+        dst = item["dst"] if isinstance(item, dict) else item
+        if src.startswith("locks/wheels/"):
+            wheel_entries[src] = dst
+        else:
+            assert (root / src).is_file(), f"missing staged input: {src}"
+    if lane_dir == "lane3":
+        wheels_meta = json.loads((COLAB_DIR / "locks" / "lane3-local-wheels.json").read_text(encoding="utf-8"))
+        expected_wheels = {
+            f"locks/wheels/{w['filename']}": f"wheels/{w['filename']}" for w in wheels_meta["wheels"]
+        }
+        assert wheel_entries == expected_wheels
 
     vm_job = (COLAB_DIR / lane_dir / "vm_job.sh").read_text(encoding="utf-8")
     pin_line = next(ln for ln in vm_job.splitlines() if ln.startswith(f"{pin_var}="))

@@ -26,6 +26,8 @@ files = [
   { src = "lane3/vm_job.sh", dst = "vm_job.sh" },
   { src = "locks/lane3.lock", dst = "lane3.lock" },
   { src = "locks/lane3-local-wheels.json", dst = "lane3-local-wheels.json" },
+  { src = "locks/wheels/lycoris_lora-1.8.3-py3-none-any.whl", dst = "wheels/lycoris_lora-1.8.3-py3-none-any.whl" },
+  { src = "locks/wheels/diffusers-0.39.0.dev0-py3-none-any.whl", dst = "wheels/diffusers-0.39.0.dev0-py3-none-any.whl" },
   { src = "classify_install_log.py", dst = "classify_install_log.py" },
   { src = "lane3_rung.py", dst = "lane3_rung.py" },
   { src = "lane3/rung-qwen-image.yaml", dst = "rung-qwen-image.yaml" },

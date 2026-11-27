@@ -144,8 +144,9 @@ import hashlib, json, os, sys
 from pathlib import Path
 
 want_manifest_sha = sys.argv[1]
-work_cand = Path(os.environ.get("CR_WORK_DIR") or "/content") / "lane3-local-wheels.json"
-mf_path = work_cand if work_cand.is_file() else Path("/content/lane3-local-wheels.json")
+work_dir = Path(os.environ.get("CR_WORK_DIR") or "/content")
+mf_path = work_dir / "lane3-local-wheels.json" if (work_dir / "lane3-local-wheels.json").is_file() else Path("/content/lane3-local-wheels.json")
+wheels_dir = work_dir / "wheels" if (work_dir / "wheels").is_dir() else Path("/content/wheels")
 actual_mf_sha = hashlib.sha256(mf_path.read_bytes()).hexdigest()
 if actual_mf_sha != want_manifest_sha:
     sys.stderr.write(f"REFUSED: LOCAL_WHEELS_MANIFEST_SHA_MISMATCH: {actual_mf_sha} != {want_manifest_sha}\n")
@@ -154,7 +155,7 @@ data = json.loads(mf_path.read_text(encoding="utf-8"))
 lines = []
 for entry in data.get("wheels", []):
     pkg, ver, fname, exp_sha = entry["package"], entry["version"], entry["filename"], entry["sha256"].lower().removeprefix("sha256:")
-    wpath = Path("/content/wheels") / fname
+    wpath = wheels_dir / fname
     if not wpath.is_file():
         sys.stderr.write(f"REFUSED: LOCAL_WHEEL_MISSING on VM: {wpath}\n")
         raise SystemExit(1)
@@ -176,10 +177,12 @@ WHEELPYEOF
   fi
   git -C /content/ai-toolkit fetch --depth 1 origin "${PINNED_AI_TOOLKIT_COMMIT}" || true
   git -C /content/ai-toolkit checkout "${PINNED_AI_TOOLKIT_COMMIT}"
+  WHEELS_DIR="${WORK_DIR}/wheels"
+  [ -d "${WHEELS_DIR}" ] || WHEELS_DIR="/content/wheels"
   set +e
   uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --extra-index-url "${PINNED_PYTORCH_INDEX_URL}" --index-strategy unsafe-best-match -r "${LOCK_FILE}" > "${LANE3_OUT}/wheels.log" 2>&1
   UV_RC1=$?
-  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --no-index --find-links /content/wheels --no-deps -r "${LANE3_OUT}/local-wheels.lock" >> "${LANE3_OUT}/wheels.log" 2>&1
+  uv pip install --python /content/venv-lane3/bin/python --require-hashes --only-binary :all: --no-index --find-links "${WHEELS_DIR}" --no-deps -r "${LANE3_OUT}/local-wheels.lock" >> "${LANE3_OUT}/wheels.log" 2>&1
   UV_RC2=$?
   set -e
   cat "${LANE3_OUT}/wheels.log"
@@ -193,8 +196,10 @@ import importlib, sys
 REQUIRED = ("sentencepiece", "torch", "torchaudio", "safetensors", "yaml", "oyaml", "PIL", "diffusers", "lycoris")
 for m in REQUIRED:
     mod = importlib.import_module(m)
-    if not (getattr(mod, "__file__", "") or "").startswith("/content/venv-lane3/"):
-        sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {m}\n")
+    mod_file = getattr(mod, "__file__", None) or ""
+    print(f"VENV_IMPORT {m} {mod_file}", flush=True)
+    if not mod_file.startswith("/content/venv-lane3/"):
+        sys.stderr.write(f"REFUSED: VENV_IMPORT_OUTSIDE_VENV {m}: {mod_file}\n")
         raise SystemExit(1)
 import sentencepiece as spm
 print("SENTENCEPIECE_OK", spm.__version__, flush=True)
@@ -204,6 +209,7 @@ print("SENTENCEPIECE_OK", spm.__version__, flush=True)
 # >>> sdlab-train-or-skip
 CHECKPOINT_PATH=""
 if [ "${LANE3_MODE:-install}" != "train" ]; then
+  write_phase_atomic run
   LANE3_TRAIN_STATE="skipped_cpu_stub"
   echo "TRAIN_SKIPPED: cpu stub; training needs a GPU rung" | tee -a "${LANE3_OUT}/setup.log"
 else
