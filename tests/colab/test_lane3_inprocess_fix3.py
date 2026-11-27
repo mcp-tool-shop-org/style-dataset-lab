@@ -1,16 +1,12 @@
-"""In-process (import and call) tests for code the subprocess end-to-end tests exercise but coverage
-cannot trace: `lane3_rung.repair_bundle_with_files` and `run_repair_bundle`, the verify-bundle missing /
-unreadable / size / sha branches, the VM download split free-disk and ENOSPC paths in
-`launch_guards.prepare_single_content_download`, and `remote_runner._load_launch_guards` /
-`_resolve_bash`. Plus the optimizer provenance refusal in `lane3_rung.plan-run` (Part 6)."""
+"""In-process (import and call) tests for code that subprocess tests exercise:
+`lane3_rung.repair_bundle_with_files` and `run_repair_bundle`, the verify-bundle missing /
+unreadable / size / sha branches, and the optimizer provenance refusal in `lane3_rung.plan-run`."""
 
 from __future__ import annotations
 
-import errno
 import hashlib
 import io
 import json
-import os
 import sys
 import tarfile
 from pathlib import Path
@@ -21,9 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 COLAB_DIR = REPO_ROOT / "scripts" / "colab"
 sys.path.insert(0, str(COLAB_DIR))
 
-import launch_guards as lg  # noqa: E402
 import lane3_rung as lr  # noqa: E402
-import remote_runner as rr  # noqa: E402
 
 
 def _sha(data: bytes) -> str:
@@ -242,192 +236,6 @@ def test_repair_bundle_refuses_by_name_and_leaves_the_bundle_untouched(
     with pytest.raises(lr.Refusal) as exc_evil:
         lr.repair_bundle_with_files(evil, stage, [])
     assert "unsafe member path" in exc_evil.value.detail
-
-
-# --------------------------------------------------------------------------------------------
-# launch_guards: the VM download split (free-disk check, ENOSPC mid-split, success)
-# --------------------------------------------------------------------------------------------
-
-
-def test_split_free_bytes_override_fake_site_env_and_real_disk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("FAKE_VM_SITE", raising=False)
-    monkeypatch.delenv("FAKE_VM_DL_SPLIT_FREE_BYTES", raising=False)
-    assert lg._dl_split_free_bytes(tmp_path, 1234) == 1234
-    real = lg._dl_split_free_bytes(tmp_path / "not" / "yet" / "made")  # walks up to an existing parent
-    assert real > 0
-    monkeypatch.setenv("FAKE_VM_SITE", "1")
-    monkeypatch.setenv("FAKE_VM_DL_SPLIT_FREE_BYTES", "777")
-    assert lg._dl_split_free_bytes(tmp_path) == 777
-    assert lg._dl_split_free_bytes(tmp_path, 5) == 5  # the explicit override still wins
-
-
-def test_download_prep_missing_single_and_prefix_helpers(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    root = tmp_path / "content"
-    root.mkdir()
-    missing = lg.prepare_single_content_download(root, "nope.tar.gz", 100)
-    assert missing["exists"] is False
-    assert capsys.readouterr().out.startswith("SDLAB_DOWNLOAD_PREPARE_JSON ")
-
-    data = b"z" * 50
-    (root / "small.bin").write_bytes(data)
-    single = lg.prepare_single_content_download(root, "small.bin", 100, emit=False)
-    assert single["split"] is False and single["whole_sha256"] == _sha(data) and single["part_count"] == 1
-    assert capsys.readouterr().out == ""
-
-    assert lg._dl_safe_prefix("a b/c.tar.gz") == ".sdlab_dl_a_b_c.tar.gz"
-    long_prefix = lg._dl_safe_prefix("x" * 80)
-    assert long_prefix.startswith(".sdlab_dl_" + "x" * 39 + "_") and len(long_prefix) == len(".sdlab_dl_") + 39 + 1 + 8
-
-    lg._unlink_dl_prefix_files(tmp_path / "no_such_dir", ".sdlab_dl_x")  # not a directory: a no-op
-    (root / ".sdlab_dl_x.part.0000").write_bytes(b"1")
-    (root / ".sdlab_dl_x.manifest.json").write_bytes(b"2")
-    (root / ".sdlab_dl_y.part.0000").write_bytes(b"3")
-    lg._unlink_dl_prefix_files(root, ".sdlab_dl_x")
-    assert sorted(p.name for p in root.iterdir() if p.name.startswith(".sdlab_dl_")) == [".sdlab_dl_y.part.0000"]
-
-
-def test_download_split_refuses_low_disk_before_any_part_is_written(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    root = tmp_path / "content"
-    root.mkdir()
-    data = os.urandom(300)
-    (root / "big.tar.gz").write_bytes(data)
-    # `free_b < size + 16 MiB` is the whole check: one byte short of the headroom refuses, exactly size + 16 MiB free goes ahead.
-    rec = lg.prepare_single_content_download(root, "big.tar.gz", 100, free_bytes_override=len(data) + 16 * 1024 * 1024 - 1)
-    assert rec["split_failed"] is True and rec["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
-    assert rec["free_bytes"] == len(data) + 16 * 1024 * 1024 - 1 and rec["whole_bytes"] == len(data)
-    assert f"only {len(data) + 16 * 1024 * 1024 - 1} bytes are free" in rec["why"] and "16777216 bytes of headroom" in rec["why"]
-    assert not [p for p in root.iterdir() if p.name.startswith(".sdlab_dl_")]
-    printed = json.loads(capsys.readouterr().out.split("SDLAB_DOWNLOAD_PREPARE_JSON ", 1)[1])
-    assert printed["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
-
-    ok = lg.prepare_single_content_download(root, "big.tar.gz", 100, free_bytes_override=len(data) + 16 * 1024 * 1024, emit=False)
-    assert ok["split"] is True and ok["part_count"] == 3 and "split_failed" not in ok
-    manifest = json.loads((root / Path(ok["manifest_remote"]).name).read_text(encoding="utf-8"))
-    assert manifest["whole_sha256"] == _sha(data) == ok["whole_sha256"]
-    joined = b"".join((root / Path(p["remote_path"]).name).read_bytes() for p in manifest["parts"])
-    assert joined == data
-
-
-def test_download_split_enospc_mid_split_unlinks_partial_parts_and_reports_named_code(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    root = tmp_path / "content"
-    root.mkdir()
-    data = os.urandom(450)
-    (root / "big.tar.gz").write_bytes(data)
-    # The FAKE_VM_SITE hook raises ENOSPC when part 2 is about to be written (parts 0 and 1 exist by then).
-    monkeypatch.setenv("FAKE_VM_SITE", "1")
-    monkeypatch.setenv("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART", "2")
-    rec = lg.prepare_single_content_download(root, "big.tar.gz", 100)
-    assert rec["split_failed"] is True and rec["error_code"] == "DOWNLOAD_SPLIT_DISK_LOW"
-    assert "failed at part 2" in rec["why"] and "No space left on device" in rec["why"]
-    assert not [p for p in root.iterdir() if p.name.startswith(".sdlab_dl_")], "partial parts must be unlinked"
-    assert "SDLAB_DOWNLOAD_PREPARE_JSON" in capsys.readouterr().out
-
-    # A real OSError while writing a part (not the injected one) takes the same path, and emit=False prints nothing.
-    monkeypatch.delenv("FAKE_VM_DL_SPLIT_ENOSPC_ON_PART")
-    monkeypatch.delenv("FAKE_VM_SITE")
-    real_open = Path.open
-
-    def _boom(self: Path, mode: str = "r", *a: object, **kw: object) -> object:
-        if "wb" in mode and self.name.endswith(".part.0001"):
-            raise OSError(errno.ENOSPC, "No space left on device")
-        return real_open(self, mode, *a, **kw)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(Path, "open", _boom)
-    rec2 = lg.prepare_single_content_download(root, "big.tar.gz", 100, emit=False)
-    monkeypatch.setattr(Path, "open", real_open)
-    assert rec2["split_failed"] is True and "failed at part 1" in rec2["why"]
-    assert not [p for p in root.iterdir() if p.name.startswith(".sdlab_dl_")]
-    assert capsys.readouterr().out == ""
-
-
-def test_prepare_content_downloads_skips_non_bundles_and_reports_each_bundle(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    assert lg.prepare_content_downloads(tmp_path / "no_such_root", 100) == []
-    root = tmp_path / "content"
-    root.mkdir()
-    assert lg.prepare_content_downloads(root, 0) == []
-    (root / "a.tar.gz").write_bytes(b"a" * 10)
-    (root / "b.tar.gz").write_bytes(b"b" * 250)
-    (root / ".sdlab_dl_old.tar.gz").write_bytes(b"x")
-    (root / "notes.txt").write_text("hi", encoding="utf-8")
-    recs = lg.prepare_content_downloads(root, 100, free_bytes_override=16 * 1024 * 1024 + 10_000)
-    assert [r["rel"] for r in recs] == ["a.tar.gz", "b.tar.gz"]
-    assert recs[0]["split"] is False and recs[1]["part_count"] == 3
-    out = capsys.readouterr().out
-    assert out.strip().splitlines()[-1] == "SDLAB_DOWNLOAD_PREPARE_DONE chunk_bytes=100"
-    quiet = lg.prepare_content_downloads(root, 100, free_bytes_override=16 * 1024 * 1024 + 10_000, emit=False)
-    assert len(quiet) == 2 and capsys.readouterr().out == ""
-
-
-# --------------------------------------------------------------------------------------------
-# remote_runner
-# --------------------------------------------------------------------------------------------
-
-
-def test_remote_runner_scrubs_tokens_resolves_bash_and_loads_launch_guards(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    assert rr.scrub_line("x hf_" + "A" * 20 + " y") == "x hf_[REDACTED] y"
-    assert rr.scrub_line("no token here") == "no token here"
-
-    assert rr._resolve_bash({"PATH": os.environ.get("PATH", "")}).endswith(("bash", "bash.exe"))
-    assert rr._resolve_bash({"PATH": str(tmp_path)}) == "bash" or os.name == "nt"
-
-    # 1. a directory that holds launch_guards.py is put on sys.path and the module is returned.
-    root_with = tmp_path / "with_guards"
-    root_with.mkdir()
-    (root_with / "launch_guards.py").write_text("MARK = 'with-guards'\n", encoding="utf-8")
-    monkeypatch.setattr(sys, "path", list(sys.path))
-    monkeypatch.delitem(sys.modules, "launch_guards", raising=False)
-    mod = rr._load_launch_guards(root_with)
-    assert mod.MARK == "with-guards" and str(root_with) in sys.path
-
-    # 2. neither content_root nor the cwd has it: fall back to the directory of remote_runner.py itself.
-    empty_root = tmp_path / "empty"
-    empty_root.mkdir()
-    monkeypatch.chdir(empty_root)
-    monkeypatch.delitem(sys.modules, "launch_guards", raising=False)
-    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != str(COLAB_DIR)])
-    mod2 = rr._load_launch_guards(empty_root)
-    assert hasattr(mod2, "prepare_content_downloads") and str(COLAB_DIR) in sys.path
-
-    # 3. with no __file__ (a `colab exec` cell) and nothing to find, the import is left to sys.path.
-    monkeypatch.delitem(sys.modules, "launch_guards", raising=False)
-    monkeypatch.setitem(rr._load_launch_guards.__globals__, "__file__", None)
-    mod3 = rr._load_launch_guards(empty_root)
-    assert hasattr(mod3, "prepare_content_downloads")
-
-    # 4. prepare_content_downloads delegates to the single source.
-    content = tmp_path / "content"
-    content.mkdir()
-    (content / "x.tar.gz").write_bytes(b"x" * 5)
-    recs = rr.prepare_content_downloads(content, 100)
-    assert recs and recs[0]["rel"] == "x.tar.gz"
-    capsys.readouterr()
-
-
-def test_remote_runner_runs_script_and_prepares_downloads_or_refuses_without_one(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    assert rr.run_remote_script(env={}) == 2
-    cap = capsys.readouterr()
-    assert "REFUSED: SDLAB_REMOTE_SCRIPT is required" in cap.err and "SDLAB_REMOTE_RC=2" in cap.out
-
-    content = tmp_path / "content"
-    content.mkdir()
-    (content / "r.tar.gz").write_bytes(b"r" * 20)
-    script = tmp_path / "s.sh"
-    script.write_text("echo hello hf_" + "B" * 20 + "\nexit 3\n", encoding="utf-8", newline="\n")
-    monkeypatch.delitem(sys.modules, "launch_guards", raising=False)
-    env = dict(os.environ)
-    env.update({"SDLAB_CONTENT": str(content), "SDLAB_DL_CHUNK_BYTES": "100"})
-    rc = rr.run_remote_script(str(script), env=env)
-    out = capsys.readouterr().out
-    assert rc == 3 and "hello hf_[REDACTED]" in out and "SDLAB_REMOTE_RC=3" in out
-    assert "SDLAB_DOWNLOAD_PREPARE_JSON" in out and "SDLAB_DOWNLOAD_PREPARE_DONE chunk_bytes=100" in out
 
 
 # --------------------------------------------------------------------------------------------

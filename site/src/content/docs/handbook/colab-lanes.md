@@ -1,47 +1,23 @@
 ---
 title: Colab Lanes
-description: Opt-in launch kits that run a render or a LoRA training step on your own Google Colab account, under a spending cap, and stop their own session.
+description: Opt-in launch manifests that run a render or a LoRA training window on Google Colab through colab-runner, under a spend cap and wall bound, and stop their own session.
 sidebar:
   order: 12
 ---
 
-`sdlab` is local by default. The Colab lanes are the one opt-in exception: launch kits under `scripts/colab/` that run a render or a LoRA training step on your own Google Colab account. They are **experimental**. They have completed real render and training windows on a Colab GPU, but their flags and records can still change.
+`sdlab` is local by default. The Colab lanes under `scripts/colab/` are opt-in manifests launched via [`colab-runner`](https://github.com/mcp-tool-shop-org/colab-runner).
 
-## What a lane does
+## What a lane runs
 
-A lane is one launcher script that you run from your own machine. It opens one Colab session, runs one job, brings the results back, and stops the session.
+Each lane ships a declarative `colab-window.toml` spec and a VM script (`vm_job.sh`):
 
-| Lane | Launcher | What it runs |
+| Lane | Manifest | What it runs |
 |---|---|---|
-| Lane 1, render | `scripts/colab/launch_lane1_stub.sh` | Headless ComfyUI renders from a jobs file (`--render`), or a CPU rehearsal of the install and weights download (`--render-cpu-stub`) |
-| Lane 3, training | `scripts/colab/launch_lane3_stub.sh` | A LoRA training run from a job file and a dataset manifest (`--train`) |
+| Lane 1, render | `scripts/colab/lane1/colab-window.toml` | Headless ComfyUI renders (`LANE1_MODE=render`), CPU rehearsal (`LANE1_MODE=render_cpu_stub`), or CPU stub (`LANE1_MODE=stub`) via `scripts/colab/lane1/vm_job.sh` |
+| Lane 3, training | `scripts/colab/lane3/colab-window.toml` | Pinned `uv`/wheel install stub (`LANE3_MODE=install`) or LoRA training run (`LANE3_MODE=train`) via `scripts/colab/lane3/vm_job.sh` |
 
-Every launcher:
-
-1. **Checks its own inputs first.** It verifies the pinned sha256 of every pinned input script, including itself, and refuses to open a session if one differs.
-2. **Runs under a spending cap.** It reads your live Colab balance and rate, and ends the run at the wall time, at the cap, or when the job stalls or dies. The cap reserves the time that cleanup needs.
-3. **Uploads only the files you point it at.**
-4. **Brings the results back and records the window.** `window.json` records the card, the end balance, the rate readings, the cap and the downloaded files. When a guard trips, a salvage step still tries to bring back what was produced.
-5. **Stops its own session on every exit,** from an exit trap on your machine.
-
-## Run the CPU rehearsal first
-
-Each lane has a CPU rehearsal on a cheap CPU session. Lane 1's (`--render-cpu-stub`) installs the pinned environment and checks the weights download. Lane 3's installs the pinned environment and stops before any model download or training; its record says the training was skipped. Run the rehearsal at the commit you intend to use before any paid GPU window, and run the GPU window at that same commit.
-
-## Pictures and licences
-
-- The render lane accepts only weights whose licence is `Apache-2.0` or `MIT`, and refuses any other.
-- Rendered pictures carry `licence: "CC-BY-4.0"` and `credit: "mcp-tool-shop"` in their provenance.
-- `scripts/colab/lane1_jobs_from_canon.py` builds a jobs file from a canon folder at an exact git commit, so every picture traces back to the canon text that produced it.
-
-## The phase file
-
-Each lane's script on the Colab VM writes its phase (`setup`, `run` or `bundle`) to a small file, `phase.txt`, that the launcher reads.
-
-- Writers replace the file in one step, so the launcher never reads a half-written file.
-- If a write fails, the run stops with `PHASE_WRITE_FAILED` (exit `77`). It does not carry on with a stale phase.
-- An empty or missing read keeps the last known phase, and it never resets a stall clock. A stuck job is still caught: the stall clocks reset only on new output from the run or on a changed phase word.
+`colab-runner` checks spec fields and staged input hashes upfront, enforces card/shape and open-time rate limits, stops running windows only on spend cap, wall limit, or dead/stalled jobs, collects outputs through chunked `.tar.partNNNN` downloads into `collected/` or `salvage/`, confirms session teardown, and writes `outcome.json`. Uploading results to Hugging Face stays outside the runner (`hf upload`).
 
 ## Where the detail is
 
-The full contract is in the repository: [`scripts/colab/README.md`](https://github.com/mcp-tool-shop-org/style-dataset-lab/blob/main/scripts/colab/README.md) covers the timeouts, the cleanup bounds, the guards and every refusal code. [`docs/colab-cli-contract.md`](https://github.com/mcp-tool-shop-org/style-dataset-lab/blob/main/docs/colab-cli-contract.md) records what the kits assume about the `colab` CLI.
+See [`scripts/colab/README.md`](https://github.com/mcp-tool-shop-org/style-dataset-lab/blob/main/scripts/colab/README.md) for retained helper scripts and [`docs/colab-locks.md`](https://github.com/mcp-tool-shop-org/style-dataset-lab/blob/main/docs/colab-locks.md) for pinned lock maintenance.

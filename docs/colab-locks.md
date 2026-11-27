@@ -68,8 +68,8 @@ A bump is a deliberate PR that moves the bound and re-locks in the same change:
    `RELOCK_OK lane=… exclude_newer=… pins=… lock_sha256=…`.
 3. A relock always changes the lock's bytes, at least its header (which records the command and
    the bound), so its sha256 changes even when no package does. Move the lock's sha256 pin in
-   the kit in the same PR, using the `lock_sha256` that `relock.sh` prints: `PINNED_LOCK_SHA` in `launch_lane1_stub.sh` for lane 1,
-   `PINNED_OVERRIDE_SHA` in `launch_lane3_stub.sh` for lane 3, and whatever else the kit's
+   the kit in the same PR, using the `lock_sha256` that `relock.sh` prints: `PINNED_LOCK_SHA` in `scripts/colab/lane1/vm_job.sh` for lane 1,
+   `PINNED_OVERRIDE_SHA` in `scripts/colab/lane3/vm_job.sh` for lane 3, and whatever else the kit's
    sha checks then require (its `PINNED_*` block and `tests/colab`). `relock.sh` edits neither.
 4. Run `bash scripts/colab/preflight_resolve.sh lane1` and
    `bash scripts/colab/preflight_resolve.sh lane3 --skip-local-wheels`, the `tests/colab` suite,

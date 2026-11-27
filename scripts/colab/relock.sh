@@ -12,8 +12,8 @@
 # Refusals are one `REFUSED: <CODE>: <detail>` line on stderr, exit 1: `LOCK_TIMESTAMP_MISSING`
 # (no bound given), `LOCK_TIMESTAMP_MALFORMED`, `PREFLIGHT_TOOL_MISSING` (no uv),
 # `LOCK_INPUT_MISSING`, `UV_VERSION_MISMATCH`, `LOCK_COMPILE_FAILED`. It makes no `colab` call.
-# A lane-1 change also moves PINNED_LOCK_SHA in launch_lane1_stub.sh, and a lane-3 change
-# PINNED_OVERRIDE_SHA in launch_lane3_stub.sh; this script prints the new sha256 and edits neither.
+# A lane-1 change also moves PINNED_LOCK_SHA in scripts/colab/lane1/vm_job.sh, and a lane-3 change
+# PINNED_OVERRIDE_SHA in scripts/colab/lane3/vm_job.sh; this script prints the new sha256 and edits neither.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

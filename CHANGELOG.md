@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Migrated Colab lanes onto `colab-runner` and removed legacy shell harness (`scripts/colab/`):** added `scripts/colab/lane1/{colab-window.toml,vm_job.sh}` and `scripts/colab/lane3/{colab-window.toml,vm_job.sh}`; updated `lock_common.sh`, `relock.sh`, `lane3/walk_common.sh`, `lane3_rung.py`, and docs; deleted `colab_window.sh`, `launch_guards.py`, `remote_runner.py`, `probe_upload_limit.sh`, `lane1_bundle_now.py`, `lane3_bundle_now.py`, `launch_lane1_stub.sh`, `launch_lane3_stub.sh`, `lib/colab-launcher-guards.js`, and obsolete harness tests.
+
 ### Tests
 
 - **Colab kits, PR #87 review follow-ups (tests only):** `tests/colab/test_phase_txt_atomic.py` now asserts that no vitals loop of a run outlives its launcher after the stuck-run and stuck-setup cases (`_leftover_vitals_loops`, read from `/proc`), pins `LC_ALL=C` for the invalid-phase case, asserts the live log exists before reading it, and corrects one comment (two claims in it). No kit code changed.

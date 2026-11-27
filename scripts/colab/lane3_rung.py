@@ -55,9 +55,7 @@ Subcommands (each refusal is one `REFUSED: <CODE>: <detail>` line on stderr and 
   model-check   rig side, before a window opens: the model at the pinned revision answers the
                 request's read token (MODEL_AUTH_FAILED, MODEL_REVISION_NOT_FOUND,
                 MODEL_METADATA_FAILED; the same names for the VM's metadata call).
-  bundle-now    the kit's failure path after a rig-side kill: stop the VM-side rung, sweep the
-                training folder, write the failure record and tar lane3_out.
-  finish        gather the train-mode records into lane3_out/train_facts.json (and, after a
+  finish        gather train records into lane3_out/train_facts.json (and, after a
                 failure, into vm_window.json) so the bundle carries them either way.
 """
 
@@ -1661,44 +1659,6 @@ def _resolve_download_timeout_basis(
     )
 
 
-def run_dry_download_bounds(args: argparse.Namespace) -> int:
-    """Resolve download_timeout_s, source, and projected salvage part_count for `launch_lane3_stub.sh --dry`."""
-    try:
-        job_p = Path(args.job_yaml)
-        if not job_p.is_file():
-            raise Refusal("JOB_TEMPLATE_INVALID", f"missing job file {job_p}")
-        doc = parse_job_yaml(job_p.read_text(encoding="utf-8"))
-        cfg = doc.get("config") if isinstance(doc.get("config"), dict) else {}
-        procs = cfg.get("process") if isinstance(cfg.get("process"), list) else []
-        proc = procs[0] if procs and isinstance(procs[0], dict) else {}
-        train_cfg = proc.get("train") if isinstance(proc.get("train"), dict) else {}
-        save_cfg = proc.get("save") if isinstance(proc.get("save"), dict) else {}
-        steps = int(train_cfg.get("steps") or 0)
-        save_every = int(save_cfg.get("save_every") or 0)
-        meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
-        chosen_dl_s, _, part_count, _, basis, _, _, _, _ = _resolve_download_timeout_basis(
-            steps=steps,
-            save_every=save_every,
-            meta=meta,
-            is_real_job=str(args.is_real_job).strip() == "1",
-            download_chunk_bytes_raw=args.download_chunk_bytes,
-            explicit_download_timeout_raw=args.explicit_download_timeout_s,
-            download_timeout_source_raw=args.download_timeout_source,
-            default_download_timeout_raw=args.default_download_timeout_s,
-            download_floor_mb_s_arg=args.download_floor_mb_s,
-            checkpoint_size_bytes_arg=args.checkpoint_size_bytes,
-            optimizer_size_bytes_arg=args.optimizer_size_bytes,
-            samples_and_logs_bytes_arg=args.samples_and_logs_bytes,
-            auxiliary_keep_all_bytes_arg=args.auxiliary_keep_all_bytes,
-        )
-        src_out = "projected" if basis["mode"] == "projected" else str(basis["source"])
-        print(f"{chosen_dl_s}\t{src_out}\t{int(part_count)}", flush=True)
-        return 0
-    except Refusal as exc:
-        print(refuse_line(exc.code, exc.detail), file=sys.stderr, flush=True)
-        return 2
-
-
 def run_plan_run(args: argparse.Namespace) -> int:
     """Rig-side pre-open planner for Parts 1, 2, 4, and 5: resolves download/upload timeouts,
     wall allowance from steps * seconds_per_step, and projected VM output disk fit."""
@@ -1910,7 +1870,7 @@ def run_plan_run(args: argparse.Namespace) -> int:
         raw_output_bytes = full_bundle_bytes
         split_copy_overhead = 1.0 if raw_output_bytes > download_chunk_bytes else 0.0
         effective_overhead = round(overhead + split_copy_overhead, 6)
-        # the VM split check needs size + 16 MiB free (launch_guards.prepare_single_content_download)
+        # the VM split check needs size + 16 MiB free (colab-runner tar part streaming handles splitting)
         split_disk_headroom_bytes = SPLIT_DISK_HEADROOM_BYTES if raw_output_bytes > download_chunk_bytes else 0
         projected_output_bytes = math.ceil(raw_output_bytes * effective_overhead) + split_disk_headroom_bytes
         vm_budget_bytes = int(vm_budget_gib * GIB)
@@ -2634,125 +2594,6 @@ def run_finish(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------------------------
-# bundle-now (the kit's failure path, after a rig-side kill)
-# ---------------------------------------------------------------------------------------------
-
-BUNDLE_NAME = "lane3_stub_bundle.tar.gz"
-
-
-def rung_pids(root: Path, proc: Path = Path("/proc"), skip: Iterable[int] = ()) -> list[int]:
-    """Processes of the rung on this VM: the detached worker supervisor FIRST (so killing child
-    processes never triggers EOF download-prep in the worker), followed by the remote script (and
-    its subshells), ai-toolkit's run.py and the lane3_rung.py helpers, found under `root`."""
-    worker_marks = (f"--detached-worker --content-root {root}", f"{root}/launch_guards.py --detached-worker")
-    child_marks = (f"{root}/remote_lane3_stub.sh", f"{root}/ai-toolkit/run.py", f"{root}/lane3_rung.py copy-off",
-                   f"{root}/lane3_rung.py download", "snapshot_download(repo_id=sys.argv[1]")
-    skip_set = set(skip)
-    worker_pids: list[int] = []
-    child_pids: list[int] = []
-    meta_p = root / ".sdlab_live.meta.json"
-    if meta_p.is_file() and proc.is_dir():
-        try:
-            meta = json.loads(meta_p.read_text(encoding="utf-8"))
-        except (ValueError, OSError):
-            meta = {}
-        wpid = meta.get("worker_pid")
-        if isinstance(wpid, int) and wpid > 0 and wpid not in skip_set and (proc / str(wpid)).is_dir():
-            worker_pids.append(wpid)
-        cpid = meta.get("child_pid")
-        if isinstance(cpid, int) and cpid > 0 and cpid not in skip_set and (proc / str(cpid)).is_dir() and cpid not in worker_pids:
-            child_pids.append(cpid)
-    for entry in proc.iterdir() if proc.is_dir() else []:
-        if not entry.name.isdigit() or int(entry.name) in skip_set:
-            continue
-        pid_val = int(entry.name)
-        try:
-            cmd = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace")
-        except OSError:
-            continue
-        if any(m in cmd for m in worker_marks):
-            if pid_val not in worker_pids:
-                worker_pids.append(pid_val)
-        elif any(m in cmd for m in child_marks):
-            if pid_val not in child_pids and pid_val not in worker_pids:
-                child_pids.append(pid_val)
-    return worker_pids + child_pids
-
-
-def _tar_gz_is_complete(path: Path) -> bool:
-    if not path.is_file() or path.stat().st_size <= 0:
-        return False
-    try:
-        with tarfile.open(path, "r:gz") as tf:
-            while True:
-                member = tf.next()
-                if member is None:
-                    break
-                if member.isfile():
-                    src = tf.extractfile(member)
-                    if src is not None:
-                        with src:
-                            while src.read(1 << 20):
-                                pass
-        return True
-    except (tarfile.TarError, EOFError, OSError):
-        return False
-
-
-def run_bundle_now(args: argparse.Namespace, *, kill: Callable[[int, int], None] = os.kill,
-                   proc: Path = Path("/proc")) -> int:
-    """After the kit killed its exec (wall, cap, stall, dead harness), the VM-side script is still
-    running and its EXIT trap never fires. Stop it (SIGKILL, so no trap races this), sweep the
-    training folder into the bundle directory, write the failure record, scrub, and tar lane3_out."""
-    import signal  # noqa: PLC0415
-
-    root = Path(args.content)
-    out = root / "lane3_out"
-    bundle = root / BUNDLE_NAME
-    bundle_tmp = root / f"{BUNDLE_NAME}.tmp"
-    pids = rung_pids(root, proc, skip=(os.getpid(), os.getppid()))
-    for pid in pids:
-        try:
-            kill(pid, signal.SIGKILL)
-        except OSError:
-            continue
-    bundle_tmp.unlink(missing_ok=True)
-    if not pids and _tar_gz_is_complete(bundle):
-        print(f"BUNDLE_NOW: the remote script already bundled {bundle}", flush=True)
-        return 0
-    if not out.is_dir():
-        print(f"BUNDLE_NOW: no {out} on this VM; nothing to bundle", flush=True)
-        return 1
-    time.sleep(float(args.settle_s))
-    train_dir = root / "lane3_train"
-    if train_dir.is_dir():
-        write_json(out / "training_folder_manifest.json", build_training_folder_manifest(train_dir))
-    rung_dir = out / "rung_outputs"
-    rung_dir.mkdir(parents=True, exist_ok=True)
-    manifest = rung_dir / "manifest.jsonl"
-    copy_off_once(train_dir, rung_dir, manifest, {"done": load_done(manifest)}, final=True)
-    run_finish(argparse.Namespace(lane3_out=str(out), failed_rc=int(args.rc)))
-    guards = root / "launch_guards.py"
-    err_log = root / ".sdlab_live.err.log"
-    if err_log.is_file():
-        shutil.copyfile(err_log, out / "detached_worker_stderr.log")
-        scrub_guard = guards if guards.is_file() else (Path(__file__).resolve().parent / "launch_guards.py")
-        if scrub_guard.is_file():
-            subprocess.run([sys.executable, str(scrub_guard), "--scrub-file", str(out / "detached_worker_stderr.log")],
-                           check=False, stdin=subprocess.DEVNULL)
-    for f in out.rglob("*"):
-        if f.is_file() and f.suffix in (".log", ".json", ".jsonl", ".txt") and guards.is_file():
-            subprocess.run([sys.executable, str(guards), "--scrub-file", str(f)], check=False,
-                           stdin=subprocess.DEVNULL)
-    bundle.unlink(missing_ok=True)
-    with tarfile.open(bundle_tmp, "w:gz") as tf:
-        tf.add(str(out), arcname=".")
-    os.replace(bundle_tmp, bundle)
-    print(f"BUNDLE_NOW: killed {len(pids)} rung process(es) and bundled {bundle}", flush=True)
-    return 0
-
-
-# ---------------------------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------------------------
 
@@ -2879,24 +2720,6 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("--bundle", required=True)
     ck.add_argument("--manifest", required=True)
 
-    bn = sub.add_parser("bundle-now")
-    bn.add_argument("--content", required=True)
-    bn.add_argument("--rc", required=True, type=int)
-    bn.add_argument("--settle-s", default=2.0, type=float)
-
-    ddb = sub.add_parser("dry-download-bounds")
-    ddb.add_argument("--job-yaml", required=True)
-    ddb.add_argument("--is-real-job", default="0")
-    ddb.add_argument("--explicit-download-timeout-s", default="")
-    ddb.add_argument("--download-timeout-source", default="default")
-    ddb.add_argument("--default-download-timeout-s", default="300")
-    ddb.add_argument("--download-chunk-bytes", default=None)
-    ddb.add_argument("--download-floor-mb-s", default=None)
-    ddb.add_argument("--checkpoint-size-bytes", default=None)
-    ddb.add_argument("--optimizer-size-bytes", default=None)
-    ddb.add_argument("--samples-and-logs-bytes", default=None)
-    ddb.add_argument("--auxiliary-keep-all-bytes", default=None)
-
     f = sub.add_parser("finish")
     f.add_argument("--lane3-out", required=True)
     f.add_argument("--failed-rc", default=None, type=int)
@@ -2911,7 +2734,6 @@ def main(argv: list[str] | None = None) -> int:
         "dataset": run_dataset,
         "check-job": run_check_job,
         "plan-run": run_plan_run,
-        "dry-download-bounds": run_dry_download_bounds,
         "render-job": run_render_job,
         "copy-off": run_copy_off,
         "check-output-disk": run_check_output_disk,
@@ -2921,7 +2743,6 @@ def main(argv: list[str] | None = None) -> int:
         "repair-bundle": run_repair_bundle,
         "finish": run_finish,
         "model-check": run_model_check,
-        "bundle-now": run_bundle_now,
         "checkpoint": run_checkpoint,
     }
     return handlers[args.cmd](args)

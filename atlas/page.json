@@ -75,24 +75,53 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 0,
-      "changed": 12,
+      "added": 5,
+      "changed": 16,
       "moved": 0,
-      "parts": 5,
-      "removed": 856
+      "parts": 6,
+      "removed": 27
     },
     "items": [
       {
+        "kind": "landing",
+        "sentence": "scripts/colab/lane1/colab-window.toml is now read by scripts/colab/README.md.",
+        "subjects": [
+          "scripts/colab/lane1/colab-window.toml",
+          "scripts/colab/README.md"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "scripts/colab/lane1/vm_job.sh is now read by scripts/colab/lane1/colab-window.toml.",
+        "subjects": [
+          "scripts/colab/lane1/vm_job.sh",
+          "scripts/colab/lane1/colab-window.toml"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "scripts/colab/lane3/colab-window.toml is now read by scripts/colab/README.md.",
+        "subjects": [
+          "scripts/colab/lane3/colab-window.toml",
+          "scripts/colab/README.md"
+        ]
+      },
+      {
+        "kind": "landing",
+        "sentence": "And 3 more new writers and readers of places.",
+        "subjects": []
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-19; 856 files removed and 12 changed content.",
+        "sentence": "5 files added, 27 removed and 16 changed content, across 6 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "a2ee86f077c16d4d67b9a17f71ce84eafebcd5e2",
-      "generatedAt": "2026-11-19T13:37:54.597Z"
+      "commit": "011165f23a868b0d2cc97ac42c1633aa65d4d83b",
+      "generatedAt": "2026-11-27T01:40:26.741Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [
     {
@@ -100,14 +129,14 @@
       "b": "tests/colab/test_launch_lane1_stub.py",
       "either": 14,
       "partLabels": [
-        "tests",
-        "tests"
+        null,
+        null
       ],
       "parts": [
-        "tests",
-        "tests"
+        null,
+        null
       ],
-      "relation": "inside",
+      "relation": "unassigned",
       "shared": 7
     },
     {
@@ -116,13 +145,13 @@
       "either": 8,
       "partLabels": [
         "scripts",
-        "scripts"
+        null
       ],
       "parts": [
         "scripts",
-        "scripts"
+        null
       ],
-      "relation": "inside",
+      "relation": "unassigned",
       "shared": 4
     },
     {
@@ -130,14 +159,14 @@
       "b": "tests/colab/test_host_ram_guard.py",
       "either": 8,
       "partLabels": [
-        "tests",
-        "tests"
+        null,
+        null
       ],
       "parts": [
-        "tests",
-        "tests"
+        null,
+        null
       ],
-      "relation": "inside",
+      "relation": "unassigned",
       "shared": 4
     }
   ],
@@ -147,9 +176,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "011165f23a868b0d2cc97ac42c1633aa65d4d83b",
+  "commit": "aa51a0324d7beb672b38e52e7cebb45c57db1926",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (1794 files); code in JavaScript (249), Python (65), shell (10), Astro (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (1793 files); code in JavaScript (248), Python (47), shell (8), Astro (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -169,17 +198,17 @@
         {
           "boundary": "scripts",
           "depth": 0,
-          "files": 52
+          "files": 48
         },
         {
           "boundary": "tests",
           "depth": 0,
-          "files": 136
+          "files": 122
         },
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 82
+          "files": 81
         }
       ],
       "runs": [
@@ -219,7 +248,7 @@
         "tests/lib-runtime/"
       ],
       "runsCount": 34,
-      "runsMore": 131,
+      "runsMore": 117,
       "sends": [
         "uploads coverage to Codecov"
       ],
@@ -253,7 +282,7 @@
         {
           "boundary": "lib",
           "depth": 1,
-          "files": 82
+          "files": 81
         },
         {
           "boundary": "scripts",
@@ -486,12 +515,12 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-27T01:40:26.741Z",
+  "generatedAt": "2026-11-27T04:31:52.278Z",
   "limits": [
-    "8 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 5 more.",
-    "45 writes and 79 reads use paths built at run time and are not named here.",
+    "5 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 2 more.",
+    "43 writes and 73 reads use paths built at run time and are not named here.",
     "3 writes go to places this repository does not track, so they are not listed as generated.",
-    "176 writes and 337 reads go to a path their caller passes, not to this repository.",
+    "161 writes and 315 reads go to a path their caller passes, not to this repository.",
     "12 writes and 3 reads go to the directory the command is run in or a path their caller passes, not to this repository.",
     "7 reads go to the directory the command is run in, not to this repository.",
     "1 write and 2 reads go to a temporary directory, not to this repository.",
@@ -772,14 +801,14 @@
   ],
   "summary": null,
   "summaryFrom": null,
-  "testFiles": 146,
+  "testFiles": 129,
   "testedBy": {
     "bin": 11,
     "lib": 98,
-    "scripts": 37
+    "scripts": 29
   },
   "testedCodeParts": 3,
-  "unnamedWrites": 45,
+  "unnamedWrites": 43,
   "unread": [
     {
       "place": "projects/ai-eye-test/outputs/synthetic/phase2/apple_n*_s*.json",

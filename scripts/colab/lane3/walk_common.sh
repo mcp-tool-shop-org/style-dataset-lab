@@ -94,14 +94,10 @@ walk_main() {
   content="${walk}/content"
   mkdir -p "${ev}" "${walk}/home"
 
-  # Walk (a) sets the host-RAM threshold to a 1 GiB placeholder: it is the walk that measures the
-  # peak the request's real threshold (+20%) comes from. Walk (b) keeps the same placeholder.
-  local ram_placeholder_gib="1"
-  bash "${WALK_KIT_DIR}/launch_lane3_stub.sh" --emit-remote-script "${ev}/remote_lane3_stub.sh" --train \
-    --model "${WALK_MODEL}" --model-revision "${WALK_REVISION}" --host-ram-required-gib "${ram_placeholder_gib}" \
-    --download-max-seconds "${wall_s}" > "${ev}/emit.out"
+  local vm_job="${WALK_KIT_DIR}/lane3/vm_job.sh"
+  cp "${vm_job}" "${ev}/vm_job.sh"
   local kit_sha
-  kit_sha="$(sha256sum "${ev}/remote_lane3_stub.sh" | cut -d' ' -f1)"
+  kit_sha="$(sha256sum "${ev}/vm_job.sh" | cut -d' ' -f1)"
 
   if [ "${mode}" = "prepare" ]; then
     rm -rf "${content}" "${walk}/prepared.ok"
@@ -112,12 +108,12 @@ walk_main() {
       [ -f "${walk}/prepared.ok" ] && [ "$(cat "${walk}/prepared.ok")" = "${kit_sha}" ] \
         || walk_refuse WALK_NOT_PREPARED "run the same walk with --prepare first (network on, no GPU) for this kit"
     fi
-    rm -rf "${content}/lane3_out" "${content}/lane3_train" "${content}/lane3_dataset" "${content}/lane3_stub_bundle.tar.gz"
+    rm -rf "${content}/lane3_out" "${content}/lane3_train" "${content}/lane3_dataset"
   fi
   mkdir -p "${content}/hf_home" "${content}/.walk_wheelhouse"
-  cp "${WALK_KIT_DIR}/locks/lane3.lock" "${WALK_KIT_DIR}/locks/lane3-local-wheels.json" "${WALK_KIT_DIR}/launch_guards.py" \
+  cp "${WALK_KIT_DIR}/locks/lane3.lock" "${WALK_KIT_DIR}/locks/lane3-local-wheels.json" \
     "${WALK_KIT_DIR}/classify_install_log.py" "${WALK_KIT_DIR}/lane3_rung.py" "${WALK_KIT_DIR}/lane3/rung-dataset.json" "${content}/"
-  cp "${ev}/remote_lane3_stub.sh" "${content}/remote_lane3_stub.sh"
+  cp "${ev}/vm_job.sh" "${content}/vm_job.sh"
   "${py}" -c 'import json, sys; [print(w["filename"]) for w in json.load(open(sys.argv[1]))["wheels"]]' \
     "${WALK_KIT_DIR}/locks/lane3-local-wheels.json" | while IFS= read -r w; do cp "${wheel_dir}/${w}" "${content}/"; done
   "${py}" -c 'import json, sys; [print(i["image"]) for i in json.load(open(sys.argv[1]))["items"]]' \
@@ -182,16 +178,21 @@ walk_main() {
       run_env+=(CUDA_VISIBLE_DEVICES=)
     else
       [ -e /dev/dxg ] && bw+=(--dev-bind /dev/dxg /dev/dxg)
-      while IFS= read -r kv; do lane3_mode_env+=("$kv"); done < <(grep '^LANE3_' "${ev}/remote_lane3_stub.sh.env")
+      lane3_mode_env+=(
+        "LANE3_MODE=train"
+        "LANE3_MODEL_NAME_OR_PATH=${WALK_MODEL}"
+        "LANE3_MODEL_REVISION=${WALK_REVISION}"
+        "LANE3_HOST_RAM_REQUIRED_GIB=1"
+        "LANE3_DOWNLOAD_MAX_SECONDS=${wall_s}"
+      )
     fi
   fi
+  local pinned_pytorch_url
+  pinned_pytorch_url="$(grep '^PINNED_PYTORCH_INDEX_URL=' "${vm_job}" | head -n 1 | cut -d'"' -f2)"
   local base_env=()
-  while IFS= read -r kv; do
-    if [ "${mode}" != "prepare" ] && [[ "${kv}" == PINNED_PYTORCH_INDEX_URL=* ]]; then
-      kv="PINNED_PYTORCH_INDEX_URL=file:///content/.walk_simple"
-    fi
-    base_env+=("$kv")
-  done < <(grep -v '^LANE3_' "${ev}/remote_lane3_stub.sh.env")
+  if [ "${mode}" != "prepare" ]; then
+    base_env+=("PINNED_PYTORCH_INDEX_URL=file:///content/.walk_simple")
+  fi
 
   if [ "${mode}" = "gpu" ]; then
     "${py}" "${WALK_KIT_DIR}/lane3/walk_probe.py" gpu-busy --nvidia-smi "${WALK_NVIDIA_SMI}" \
@@ -203,16 +204,14 @@ walk_main() {
   date -u +%Y-%m-%dT%H:%M:%SZ > "${ev}/started_at.txt"
   local start_s
   start_s="$(date +%s)"
-  # The wall binds independently of the sampler: `timeout` kills the whole sandbox at --wall-s
-  # (SIGKILL 30 s later if it has not gone), and --die-with-parent takes the sandbox down with it.
   timeout --kill-after=30 "${wall_s}" bwrap "${bw[@]}" -- taskset -c 0-7 env -i \
     HOME="${walk}/home" \
     PATH="${walk}/colab-sys/bin:/usr/lib/wsl/lib:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     LD_LIBRARY_PATH=/usr/lib/wsl/lib LANG=C.UTF-8 UV_SYSTEM_PYTHON=1 \
     OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 \
-    SDLAB_REMOTE_SCRIPT=/content/remote_lane3_stub.sh "${run_env[@]}" \
+    CR_WORK_DIR=/content CR_OUT_DIR=/content "${run_env[@]}" \
     "${base_env[@]}" "${lane3_mode_env[@]}" \
-    /usr/bin/python3 -u "${WALK_KIT_DIR}/remote_runner.py" > "${ev}/runner.log" 2>&1 &
+    bash /content/vm_job.sh > "${ev}/runner.log" 2>&1 &
   local run_pid=$!
   local smi_args=()
   [ "${mode}" = "gpu" ] && smi_args=(--nvidia-smi "${WALK_NVIDIA_SMI}" --vram-csv "${ev}/vram.csv" \
@@ -225,18 +224,11 @@ walk_main() {
   local rc=0
   wait "${run_pid}" || rc=$?
   wait "${sampler_pid}" || true
-  # remote_runner.py exits 0 whatever the script did; the script's own rc is its SDLAB_REMOTE_RC line.
-  local remote_rc
-  remote_rc="$(grep -E '^SDLAB_REMOTE_RC=-?[0-9]+$' "${ev}/runner.log" | tail -n 1 | cut -d= -f2)"
-  if [ "${rc}" -eq 0 ]; then
-    rc="${remote_rc:-99}"
-  fi
   echo "rc=${rc} wall_s=$(( $(date +%s) - start_s ))" | tee "${ev}/result.txt"
   date -u +%Y-%m-%dT%H:%M:%SZ > "${ev}/ended_at.txt"
 
   mkdir -p "${ev}/lane3_out"
   cp -r "${content}/lane3_out/." "${ev}/lane3_out/" 2>/dev/null || true
-  [ -f "${content}/lane3_stub_bundle.tar.gz" ] && cp "${content}/lane3_stub_bundle.tar.gz" "${ev}/" || true
   touch "${ev}/lane3_out/train.log"
   "${py}" "${WALK_KIT_DIR}/lane3/walk_probe.py" summarize --host-csv "${ev}/host_rss.csv" --vram-csv "${ev}/vram.csv" \
     --train-log "${ev}/lane3_out/train.log" --stop-file "${ev}/host_rss.stop.txt" --out "${ev}/summary.json"
@@ -250,7 +242,7 @@ walk_main() {
     for v in $(seq 17 39); do plats+=(--platform "manylinux_2_${v}_x86_64"); done
     "${walk}/colab-sys/bin/pip" download --quiet --require-hashes --only-binary :all: --no-deps "${plats[@]}" \
       --platform manylinux2014_x86_64 --platform linux_x86_64 --platform any --python-version 3.12 \
-      --implementation cp --abi cp312 --abi abi3 --abi none --extra-index-url "$(grep '^PINNED_PYTORCH_INDEX_URL=' "${ev}/remote_lane3_stub.sh.env" | cut -d= -f2-)" \
+      --implementation cp --abi cp312 --abi abi3 --abi none --extra-index-url "${pinned_pytorch_url}" \
       -r "${WALK_KIT_DIR}/locks/lane3.lock" -d "${walk}/wheelhouse" \
       || walk_refuse WALK_INPUT_MISSING "pip could not fill the wheelhouse from lane3.lock"
     "${walk}/colab-sys/bin/pip" download --quiet --only-binary :all: --no-deps --platform manylinux2014_x86_64 \

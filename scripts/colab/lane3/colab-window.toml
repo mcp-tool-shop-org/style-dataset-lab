@@ -1,0 +1,43 @@
+schema_version = 1
+
+[project]
+repo = "mcp-tool-shop-org/style-dataset-lab"
+study = "sdlab-lane3"
+job = "lane3"
+description = "Style Dataset Lab Lane 3 LoRA training window"
+purpose = "sdlab Lane 3 LoRA training window"
+line = "sdlab-lane3"
+
+[compute]
+card = "A100"
+shape = "high-mem"
+max_rate = 10.5
+cap = 15.0
+margin = 0.25
+wall_s = 3600
+poll_s = 15
+setup_stall_s = 600
+progress_stall_s = 600
+omp_num_threads = 8
+
+[inputs]
+root = ".."
+files = [
+  { src = "lane3/vm_job.sh", dst = "vm_job.sh" },
+  { src = "locks/lane3.lock", dst = "lane3.lock" },
+  { src = "locks/lane3-local-wheels.json", dst = "lane3-local-wheels.json" },
+  { src = "classify_install_log.py", dst = "classify_install_log.py" },
+  { src = "lane3_rung.py", dst = "lane3_rung.py" },
+  { src = "lane3/rung-qwen-image.yaml", dst = "rung-qwen-image.yaml" },
+  { src = "lane3/rung-dataset.json", dst = "rung-dataset.json" },
+]
+
+[job]
+run = ["bash vm_job.sh"]
+env = ["LANE3_MODE=install", "LANE3_LOCAL_FAST=0"]
+units_glob = "lane3_out/rung_outputs/**/*"
+
+[outputs]
+collect = ["lane3_out"]
+salvage = ["lane3_out"]
+download_parts = 8
