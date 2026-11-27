@@ -231,16 +231,18 @@ def test_offline_wall_trip_uses_a_clock_read_after_the_failed_poll(tmp_path: Pat
 
 def test_usage_read_followed_during_outage_trips_cap_by_own_rate_elapsed(tmp_path: Path) -> None:
     # Poll 1 launches a 1.5s usage read; polls 2+ fail. The in-flight tick prices spend strictly locally
-    # (own_rate * elapsed = 36/hr * elapsed), so a shared balance drop is logged only and local burn trips cap.
+    # (own_rate * elapsed = 36/hr * elapsed), so cap=5.12 (ceiling 1.20 after margin 0.02 + cleanup reserve 3.90)
+    # trips deterministically at ~121.5s elapsed (~1.5s into the run), well inside the 60s outage limit.
     res, out_dir, _ = _drive(
         tmp_path,
         open_ago_s=120.0,
         rate="36",
-        cap=5.72,
+        cap=5.12,
         extra_env={
             "FAKE_COLAB_POLL_FAIL_CALLS": ",".join(str(n) for n in range(2, 400)),
             "FAKE_COLAB_USAGE_DELAY_S": "1.5",
             "FAKE_COLAB_BALANCE": "8.0",
+            "FAKE_COLAB_RATE_STR": "36.00/hr",
         },
     )
     guards = _guards(out_dir)
