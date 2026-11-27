@@ -75,22 +75,22 @@
   ],
   "changes": {
     "fileCounts": {
-      "added": 1,
-      "changed": 8,
+      "added": 0,
+      "changed": 12,
       "moved": 0,
-      "parts": 4,
-      "removed": 0
+      "parts": 5,
+      "removed": 856
     },
     "items": [
       {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-11-19; 1 file added and 8 changed content.",
+        "sentence": "Nothing structural changed since 2026-11-19; 856 files removed and 12 changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "9524bd22938cba8886baee9d8ca2fba7204d5922",
-      "generatedAt": "2026-11-19T02:46:14.402Z"
+      "commit": "a2ee86f077c16d4d67b9a17f71ce84eafebcd5e2",
+      "generatedAt": "2026-11-19T13:37:54.597Z"
     },
     "unchanged": true
   },
@@ -147,9 +147,9 @@
     "Window: 180 days; a pair counts from 3 shared commits, since 5 source files reach 10 revisions; the floor rises to 10 when 25 do."
   ],
   "changesTogetherWithTests": 1,
-  "commit": "a2ee86f077c16d4d67b9a17f71ce84eafebcd5e2",
+  "commit": "011165f23a868b0d2cc97ac42c1633aa65d4d83b",
   "defaultBranch": "main",
-  "derived": "13 parts, mostly JSON data (2621 files); code in JavaScript (249), Python (71), shell (10), Astro (3), PowerShell (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
+  "derived": "13 parts, mostly JSON data (1794 files); code in JavaScript (249), Python (65), shell (10), Astro (3), CSS (2), HTML (2) and TypeScript (2). Work enters through 4 doors; CI and Publish each reach 4 parts, and CI is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run sdlab.",
   "doors": [
     {
       "checks": [],
@@ -486,7 +486,7 @@
       ]
     }
   ],
-  "generatedAt": "2026-11-19T13:37:54.597Z",
+  "generatedAt": "2026-11-27T01:40:26.741Z",
   "limits": [
     "8 imports could not be resolved: `bin/sdlab.js` imports a path built at run time; `lib/training-adapters.js` imports a path built at run time; `projects/salt-road/inputs/prompts/wave-runner.py` imports a path built at run time; and 5 more.",
     "45 writes and 79 reads use paths built at run time and are not named here.",
